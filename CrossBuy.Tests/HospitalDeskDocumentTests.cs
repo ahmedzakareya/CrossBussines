@@ -78,6 +78,7 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalDocumentDatasetCodes.DepositReceipt)]
 		[InlineData(HospitalDocumentDatasetCodes.RxLabel)]   // H147
 		[InlineData(HospitalDocumentDatasetCodes.CreditNote)]   // H149
+		[InlineData(HospitalDocumentDatasetCodes.CompoundLabel)]   // H153
 		public void Each_designed_paper_passes_the_studio_validator_whole_and_fits_its_paper(string code)
 		{
 			var dataset = HospitalDocumentDatasets.All().Single(d => d.DatasetCode == code);
@@ -98,6 +99,7 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalDocumentDatasetCodes.DepositReceipt)]
 		[InlineData(HospitalDocumentDatasetCodes.RxLabel)]   // H147
 		[InlineData(HospitalDocumentDatasetCodes.CreditNote)]   // H149
+		[InlineData(HospitalDocumentDatasetCodes.CompoundLabel)]   // H153
 		public void No_text_is_given_less_height_than_its_font_needs_and_nothing_overlaps_its_neighbour_below(string code)
 		{
 			// the owner's "النصوص مقصوصة": Arabic at 9.5pt in a 6 mm box loses its marks

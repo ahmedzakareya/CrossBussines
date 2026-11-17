@@ -207,6 +207,44 @@ namespace CrossBuy.BL.Reporting
 			return OneBand(Roll(), r.Y + 2, r.E);
 		}
 
+		/// H153 — the COMPOUNDED PREPARATION's bag label, on the dispensing label stock: whose it is, what it is (the dose
+		/// and route), in what (diluent and volume), until when it may be given — framed in red with how it is kept — the
+		/// cytotoxic warning, and the two pharmacists who prepared and checked it.
+		public static ReportVisualLayout CompoundLabel()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.RxLabel, MarginTopMm = 1, MarginBottomMm = 1, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 96, H = 58;
+			double a = Need(7.5), b = Need(9.5), c = Need(11), lab = Need(6.5), bud = Need(11), haz = Need(8), sign = Need(6.5);
+			double yB = a + 0.8, yC = yB + b, yD = yC + c, yBox = yD + b + 0.5, box = bud + 1, yH = yBox + box + 0.4, yS = yH + haz;
+			var e = new List<ReportElement>
+			{
+				Field("CompanyName", 0, 0, 56, a, S(7.5, true, Brand)),
+				Field("DocumentNo", 56, 0, 40, a, S(7.5, color: Muted, align: ReportTextAlign.End)),
+				Line(0, a + 0.4, W),
+				Field("PatientName", 0, yB, 70, b, S(9.5, true)),
+				Field("PatientMrn", 70, yB, 26, b, S(8.5, true, Brand, ReportTextAlign.End)),
+				Field("Product", 0, yC, W, c, S(11, true)),
+				Field("Dose", 0, yD, 40, b, S(9.5, true, Brand)),
+				Field("Diluent", 40, yD, 56, b, S(8, color: Ink, align: ReportTextAlign.End)),
+				// until when: framed in red, with how it is kept
+				Box(0, yBox, W, box, Alert),
+				Text("يُستعمل قبل", "Use before", 1, yBox + (box - lab) / 2, 20, lab, S(6.5, color: Muted)),
+				Field("BeyondUse", 21, yBox + 0.5, 40, bud, S(11, true, Alert, date: "yyyy-MM-dd HH:mm")),
+				Field("Storage", 62, yBox + (box - lab) / 2, 33, lab, S(6.5, true, align: ReportTextAlign.End)),
+				Field("Hazard", 0, yH, W, haz, S(8, true, Alert)),
+				Text("حضّره", "Prepared", 0, yS, 12, sign, S(6.5, color: Muted)),
+				Field("PreparedBy", 12, yS, 36, sign, S(6.5)),
+				Text("راجعه", "Checked", 48, yS, 12, sign, S(6.5, color: Muted)),
+				Field("CheckedBy", 60, yS, 36, sign, S(6.5)),
+			};
+			if (yS + sign > H) throw new InvalidOperationException("The preparation label no longer fits its label: " + (yS + sign) + " mm");
+			var band = new ReportBand { Kind = ReportBandKind.Detail, HeightMm = H };
+			band.Elements.AddRange(e);
+			var layout = new ReportVisualLayout { Page = page, GridMm = 1, SnapToGrid = false };
+			layout.Bands.Add(band);
+			return layout;
+		}
+
 		/// H147 — the PHARMACY LABEL: a 100 × 60 mm thermal label, one per medicine. The label is a DETAIL band exactly
 		/// one label page high, so each dispensed medicine (one row) prints on a label of its own. Read top to bottom the
 		/// way a patient does: whose it is, what it is, how to take it (framed, the largest instruction text), then how
@@ -256,6 +294,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.DepositReceipt => DepositReceipt(),
 			HospitalDocumentDatasetCodes.RxLabel => RxLabel(),   // H147
 			HospitalDocumentDatasetCodes.CreditNote => CreditNote(),   // H149
+			HospitalDocumentDatasetCodes.CompoundLabel => CompoundLabel(),   // H153
 			_ => null,
 		};
 	}

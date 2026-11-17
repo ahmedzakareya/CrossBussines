@@ -214,4 +214,52 @@ namespace CrossBuy.BL.Reporting
 			return builder.Build(totalRowCount: 1);
 		}
 	}
+
+	// ============================================================================================
+	// HOSPITAL H153 — a compounded preparation's bag label as ONE row, read from its batch record: the patient, the product,
+	// the dose and route, the diluent and final volume, the beyond-use time and how it is kept, the cytotoxic warning for
+	// a chemotherapy dose, who prepared it and who checked it. Another company's id is an empty set.
+	// ============================================================================================
+	public sealed class HospitalCompoundLabelSource : IReportDataSource
+	{
+		private readonly CrossDbContext _db;
+		public HospitalCompoundLabelSource(CrossDbContext db) { _db = db; }
+		public string Key => HospitalDocumentDatasetCodes.CompoundLabel;
+
+		public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(query);
+			var ctx = query.Context; var ct = cancellationToken;
+			var builder = new ReportDataSetBuilder(query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns);
+			if (ctx.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+			var id = query.Parameters.GetInt("CompoundingId");
+			if (id is not > 0) return builder.Build(totalRowCount: 0);
+			var r = await _db.Set<HospitalCompounding>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id.Value && x.CompanyId == ctx.CompanyId, ct);
+			if (r == null) return builder.Build(totalRowCount: 0);
+			var patient = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(p => p.ID == r.PatientId && p.CompanyId == ctx.CompanyId, ct);
+			if (patient == null) return builder.Build(totalRowCount: 0);
+			bool ar = AccountingSourceHelpers.Arabic(query);
+			var empIds = new[] { r.PreparedByEmployeeId, r.CheckedByEmployeeId }.Where(e => e != null).Select(e => e!.Value).ToList();
+			var emps = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == ctx.CompanyId && empIds.Contains(e.ID)).ToDictionaryAsync(e => e.ID, e => HospitalDocumentRows.P(ar, e.FullName, e.FullNameEn), ct);
+			var line = await _db.HospitalDispenseLines.AsNoTracking().FirstOrDefaultAsync(x => x.ID == r.LineId && x.CompanyId == ctx.CompanyId, ct);
+			var en = line?.PrescriptionLineId is int plid ? await _db.HospitalPrescriptionLines.AsNoTracking().Where(x => x.ID == plid && x.CompanyId == ctx.CompanyId).Select(x => x.DrugEn).FirstOrDefaultAsync(ct) : null;
+			var inv = CultureInfo.InvariantCulture;
+			var header = await HospitalDocumentRows.HeaderAsync(_db, ctx, ar, patient, null, r.CompoundNo, r.PreparedAt, r.PreparedAt, ct);
+			header["LineNo"] = 1;
+			header["Product"] = HospitalDocumentRows.P(ar, r.Product, en);
+			var dose = r.DoseMg is decimal mg ? mg.ToString("0.##", inv) + (ar ? " مجم" : " mg") : null;
+			header["Dose"] = string.Join(" · ", new[] { dose, r.Route }.Where(x => !string.IsNullOrWhiteSpace(x)));
+			var vol = r.FinalVolumeMl is decimal ml ? ml.ToString("0.##", inv) + (ar ? " مل" : " mL") : null;
+			// each part in its own direction: a diluent written in Arabic beside "250 mL" would otherwise reorder
+			header["Diluent"] = string.Join(" · ", new[] { r.Diluent == null ? null : "⁨" + r.Diluent + "⁩", vol == null ? null : "⁦" + vol + "⁩" }.Where(x => !string.IsNullOrWhiteSpace(x)));
+			header["BeyondUse"] = r.BeyondUseAt.ToLocalTime();
+			header["Storage"] = r.Storage == HospitalCompoundStorage.Fridge ? (ar ? "في الثلاجة 2–8 °م" : "Refrigerate 2–8 °C") : (ar ? "حرارة الغرفة حتى 25 °م" : "Room temperature, up to 25 °C");
+			header["Hazard"] = r.Kind == HospitalCompoundKind.Chemo ? (ar ? "دواء سام للخلايا — تعامل بالقفازات" : "CYTOTOXIC — handle with gloves") : null;
+			header["Kind"] = r.Kind == HospitalCompoundKind.Chemo ? (ar ? "علاج كيماوي" : "Chemotherapy") : r.Kind == HospitalCompoundKind.TPN ? (ar ? "تغذية وريدية" : "Parenteral nutrition") : (ar ? "محلول وريدي" : "IV admixture");
+			header["PreparedBy"] = r.PreparedByEmployeeId is int pb ? emps.GetValueOrDefault(pb) : null;
+			header["CheckedBy"] = r.CheckedByEmployeeId is int cb ? emps.GetValueOrDefault(cb) : null;
+			builder.AddRow(header);
+			return builder.Build(totalRowCount: 1);
+		}
+	}
 }

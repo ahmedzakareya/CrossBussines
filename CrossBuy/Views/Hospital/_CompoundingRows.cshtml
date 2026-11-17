@@ -1,0 +1,53 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCompoundTask>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H153 — one preparation: the patient and the prescription, the product with its dose and route (and whether it must be
+   compounded), the batch record (number, diluent and volume, batches, storage, beyond-use time, who made it), the state,
+   and the actions: prepare (to make), release / reject (another pharmacist), and the bag label (Report Studio). *@
+@{
+    bool canPharmacy = ViewBag.CanPharmacy == true; int? me = ViewBag.Me as int?;
+    var inv = System.Globalization.CultureInfo.InvariantCulture; var now = DateTime.UtcNow;
+}
+@foreach (var x in Model)
+{
+    var r = x.Record; var patient = DisplayName.Of(x.PatientName, x.PatientNameEn);
+    bool toMake = r == null || r.Status == HospitalCompoundStatus.Rejected;
+    string tone = r == null || r.Status == HospitalCompoundStatus.Rejected ? "danger" : r.Status == HospitalCompoundStatus.Prepared ? "secondary" : "primary";
+    <tr>
+        <td class="ps-4"><div class="d-flex flex-column"><a href="@Url.Action("Pharmacy", new { rx = x.DispenseId })#rx-detail" class="text-gray-900 fw-bold fs-6 text-hover-primary">@patient</a>
+            <span class="text-muted fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@x.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@x.RxNo</bdi></span></div></td>
+        <td><div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6"><bdi>@x.Product</bdi></span>
+            <span class="fs-7">@if (x.Required) {<span class="badge badge-light-danger fs-8 fw-bold me-1">@T["Cytotoxic"]</span>}@if (r != null) {<span class="badge badge-light fs-8 fw-bold">@T["cmpk:" + r.Kind]</span>}</span></div></td>
+        <td>@if (r != null)
+            {
+                <span class="text-gray-800 fw-bold fs-7"><bdi class="hp-num" dir="ltr">@r.CompoundNo</bdi></span>
+                <span class="d-block text-gray-600 fs-8"><bdi>@(r.Diluent ?? "—")</bdi>@if (r.FinalVolumeMl != null) {<text> · </text><span class="hp-num" dir="ltr">@r.FinalVolumeMl.Value.ToString("0.##", inv)</span> @T["mL"]}@if (r.DrugBatch != null) {<text> · </text><bdi class="hp-num" dir="ltr">@r.DrugBatch</bdi>}</span>
+                <span class="d-block fs-8 fw-bold text-@(r.BeyondUseAt <= now ? "danger" : "gray-700")">@T["Use before"] <bdi class="hp-num" dir="ltr">@r.BeyondUseAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi> · @T["cmps:" + r.Storage]</span>
+                <span class="d-block text-muted fs-8">@(x.PreparedBy ?? "—")@if (x.CheckedBy != null) {<text> · @T["checked by"] @x.CheckedBy</text>}</span>
+            }
+            else {<span class="text-muted fs-7">@T["Not prepared yet"]</span>}</td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@(r == null ? T["To prepare"].Value : T["cmpst:" + r.Status].Value)</span>
+            @if (r?.RejectReason != null) {<span class="d-block text-danger fs-8 mt-1"><bdi>@r.RejectReason</bdi></span>}</td>
+        <td class="text-end pe-4"><div class="d-flex justify-content-end flex-wrap gap-2">
+            @if (canPharmacy && toMake)
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-c-prepare="@x.LineId" data-dispense="@x.DispenseId" data-product="@x.Product" data-patient="@(patient + " · " + x.Mrn)" @(x.Required ? "data-required" : "")><i class="ki-outline ki-flask fs-5"></i>@T["Prepare"]</button>
+            }
+            @if (canPharmacy && r?.Status == HospitalCompoundStatus.Prepared)
+            {
+                if (me != r.PreparedByEmployeeId)
+                {
+                    <button type="button" class="btn btn-sm btn-primary" data-c-check="@r.ID" data-release="1" data-no="@r.CompoundNo"><i class="ki-outline ki-check fs-5"></i>@T["Release"]</button>
+                    <button type="button" class="btn btn-sm btn-light-danger" data-c-check="@r.ID" data-release="0" data-no="@r.CompoundNo">@T["Reject"]</button>
+                }
+                else {<span class="text-muted fs-8 align-self-center">@T["You prepared it: another pharmacist checks it"]</span>}
+            }
+            @if (r != null && r.Status != HospitalCompoundStatus.Rejected)
+            {
+                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCompounding, DocumentId = r.ID.ToString(), DocumentTitle = r.CompoundNo, ButtonLabel = T["Label"].Value })
+            }
+        </div></td>
+    </tr>
+}

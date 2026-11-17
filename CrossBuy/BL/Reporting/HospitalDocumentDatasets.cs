@@ -43,6 +43,8 @@ namespace CrossBuy.BL.Reporting
         public const string RxLabel = "Hospital.RxLabel";
         /// H149: one credit note on a closed bill (medicine brought back), as ONE row.
         public const string CreditNote = "Hospital.CreditNote";
+        /// H153: a compounded preparation's bag label, as ONE row.
+        public const string CompoundLabel = "Hospital.CompoundLabel";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -533,6 +535,25 @@ namespace CrossBuy.BL.Reporting
             },
             Params("CreditNoteId", "رقم الإشعار الداخلي", "Credit note id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
 
+        public static ReportDatasetDefinition CompoundLabel() => Show(Doc(HospitalDocumentDatasetCodes.CompoundLabel,
+            "ملصق تحضير", "Compounded preparation label",
+            "ملصق كيس التحضير المعقَّم لمريض واحد: المريض والمستحضر والجرعة والمذيب والحجم، وموعد انتهاء الاستعمال وطريقة الحفظ، والتحذير للأدوية السامة للخلايا، ومن حضّر ومن راجع.",
+            "The bag label of one patient's sterile preparation: the patient, the product, the dose, the diluent and volume, the beyond-use time and storage, the cytotoxic warning, who prepared it and who checked it.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Product", "المستحضر", "Product", width: 60, visible: true),
+                F("Dose", "الجرعة", "Dose", width: 30, visible: true),
+                F("Diluent", "المذيب والحجم", "Diluent and volume", width: 40, visible: true),
+                F("BeyondUse", "يُستعمل قبل", "Use before", ReportFieldType.DateTime, visible: true),
+                F("Storage", "الحفظ", "Storage", width: 30, visible: true),
+                F("Hazard", "تحذير", "Hazard", width: 50),
+                F("Kind", "النوع", "Kind", width: 20),
+                F("PreparedBy", "حضّره", "Prepared by", width: 40),
+                F("CheckedBy", "راجعه", "Checked by", width: 40),
+            },
+            Params("CompoundingId", "رقم التحضير الداخلي", "Preparation id")), "DocumentNo", "PatientName", "PatientMrn");
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -553,6 +574,7 @@ namespace CrossBuy.BL.Reporting
             yield return DepositReceipt();   // H144
             yield return RxLabel();          // H147
             yield return CreditNote();       // H149
+            yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }
     }

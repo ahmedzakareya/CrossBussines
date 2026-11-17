@@ -38,6 +38,8 @@ namespace CrossBuy.Controllers
 				ViewBag.Returns = await ReturnSvc.ListAsync(ctx, sel.Dispense.ID, ct);       // H146
 				ViewBag.Returned = await ReturnSvc.ReturnedAsync(ctx, sel.Dispense.ID, ct);
 				ViewBag.Scans = await ScanSvc.PendingAsync(ctx, sel.Dispense.ID, ct);          // H150: packs scanned, not yet given
+				ViewBag.CompoundRequired = await HospitalCompoundingService.RequiredAsync(_db, ctx, sel.Dispense, sel.Lines.Select(x => x.Line).ToList(), ct);   // H153
+				ViewBag.Compounds = await CompoundSvc.LatestByLineAsync(ctx, sel.Dispense.ID, ct);
 				var frs = await GovSvc.ForDispenseAsync(ctx, sel.Dispense.ID, ct);             // H152: the committee's requests, by line
 				ViewBag.FormularyRequests = frs;
 				var frAlt = frs.Values.Where(r => r.AlternativeItemId != null).Select(r => r.AlternativeItemId!.Value).Distinct().ToList();

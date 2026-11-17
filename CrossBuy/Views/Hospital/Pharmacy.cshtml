@@ -249,6 +249,20 @@
                                                             @if (dm.FormularyStatus != HospitalFormularyStatus.Formulary) {<span class="badge badge-light-danger fs-9 fw-bold">@T["fstat:" + dm.FormularyStatus]</span>}</span>
                                                     }
                                                     @if (l.Instructions != null) {<span class="text-muted fw-semibold d-block fs-7"><bdi>@l.Instructions</bdi></span>}
+                                                    @{ var cmpReq = ViewBag.CompoundRequired as Dictionary<int, (decimal DoseMg, string Route)> ?? new(); var cmps = ViewBag.Compounds as Dictionary<int, HospitalCompounding> ?? new(); var cmp = cmps.GetValueOrDefault(l.Line.ID); }
+                                                    @if (cmp != null || (cmpReq.ContainsKey(l.Line.ID) && HospitalDispenseStatus.Dispensable(d.Status)))
+                                                    {
+                                                        @* H153: a chemotherapy dose by injection leaves only once its preparation is released *@
+                                                        <span class="d-block fs-8 fw-bold mt-1" data-compound-state>
+                                                            @if (cmp?.Status == HospitalCompoundStatus.Released) {<span class="text-primary"><i class="ki-outline ki-flask fs-8 text-primary me-1"></i>@string.Format(T["Prepared and released ({0}) — use before {1}"].Value, cmp.CompoundNo, cmp.BeyondUseAt.ToLocalTime().ToString("HH:mm"))</span>}
+                                                            else if (cmp?.Status == HospitalCompoundStatus.Prepared) {<span class="text-gray-700"><i class="ki-outline ki-shield-search fs-8 me-1"></i>@string.Format(T["Prepared ({0}) — waiting for the check"].Value, cmp.CompoundNo)</span>}
+                                                            else {<a href="@Url.Action("Compounding", new { dispense = d.ID, line = l.Line.ID })" class="text-danger"><i class="ki-outline ki-flask fs-8 text-danger me-1"></i>@T["To be compounded before it leaves — prepare it"]</a>}
+                                                        </span>
+                                                    }
+                                                    else if (canPharmacy && HospitalDispenseStatus.Dispensable(d.Status) && l.Line.ItemId != null && HospitalPartialDispenseRules.Owed(l.Line) > 0)
+                                                    {
+                                                        <a href="@Url.Action("Compounding", new { dispense = d.ID, line = l.Line.ID })" class="d-inline-block fs-8 fw-bold text-gray-600 text-hover-primary mt-1"><i class="ki-outline ki-flask fs-8 me-1"></i>@T["Prepare as an IV admixture or TPN"]</a>
+                                                    }
                                                     @{ var back = returnedQ.GetValueOrDefault(l.Line.ID); var canBack = dispensed && canPharmacy && l.Line.ItemId != null && HospitalReturnRules.Returnable(l.Line, back) > 0; }
                                                     @if (back > 0) {<span class="text-primary fw-semibold d-block fs-8">@string.Format(T["{0} returned"].Value, HospitalUi.LabNum(back, 0))</span>}
                                                     @if (canBack) {<a href="#" class="fw-bold fs-8" data-return-line="@l.Line.ID" data-id="@d.ID" data-max="@HospitalReturnRules.Returnable(l.Line, back).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" data-drug="@l.Drug"><i class="ki-outline ki-arrow-circle-left fs-7 me-1"></i>@T["Patient returned some"]</a>}</div></div></td>

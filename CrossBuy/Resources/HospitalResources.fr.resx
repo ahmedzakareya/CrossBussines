@@ -7432,4 +7432,64 @@
   <data name="in the last 30 days" xml:space="preserve"><value>sur les 30 derniers jours</value></data>
   <data name="oldest first" xml:space="preserve"><value>les plus anciennes d'abord</value></data>
   <data name="{0} needs the formulary committee's approval for this patient" xml:space="preserve"><value>{0} nécessite l'approbation du comité pour ce patient</value></data>
+  <data name="Batch record" xml:space="preserve"><value>Fiche de fabrication</value></data>
+  <data name="Beyond-use time (hours)" xml:space="preserve"><value>Délai d'utilisation (heures)</value></data>
+  <data name="Choose how the preparation is kept" xml:space="preserve"><value>Choisissez la conservation de la préparation</value></data>
+  <data name="Choose what is prepared" xml:space="preserve"><value>Choisissez ce qui est préparé</value></data>
+  <data name="Compounding" xml:space="preserve"><value>Préparations stériles</value></data>
+  <data name="Diluent" xml:space="preserve"><value>Solvant</value></data>
+  <data name="Diluent batch" xml:space="preserve"><value>Lot du solvant</value></data>
+  <data name="Drug batch" xml:space="preserve"><value>Lot du médicament</value></data>
+  <data name="Final volume (mL)" xml:space="preserve"><value>Volume final (mL)</value></data>
+  <data name="Label" xml:space="preserve"><value>Étiquette</value></data>
+  <data name="Not prepared yet" xml:space="preserve"><value>Pas encore préparé</value></data>
+  <data name="Preparation" xml:space="preserve"><value>Préparation</value></data>
+  <data name="Preparations" xml:space="preserve"><value>Préparations</value></data>
+  <data name="Prepare" xml:space="preserve"><value>Préparer</value></data>
+  <data name="Prepared ({0}) — waiting for the check" xml:space="preserve"><value>Préparé ({0}) — en attente du contrôle</value></data>
+  <data name="Prepared and released ({0}) — use before {1}" xml:space="preserve"><value>Préparé et libéré ({0}) — à utiliser avant {1}</value></data>
+  <data name="Release" xml:space="preserve"><value>Libérer</value></data>
+  <data name="Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time." xml:space="preserve"><value>Libérer {0} ? Vous confirmez le produit, la dose, le solvant, l'étiquette et le délai d'utilisation.</value></data>
+  <data name="Released" xml:space="preserve"><value>Libérée</value></data>
+  <data name="Released today" xml:space="preserve"><value>Libérées aujourd'hui</value></data>
+  <data name="Released: it may be given before its beyond-use time" xml:space="preserve"><value>Libéré : il peut être administré avant son échéance</value></data>
+  <data name="Save the batch record" xml:space="preserve"><value>Enregistrer la fiche</value></data>
+  <data name="Save the batch record of {0}? Another pharmacist checks it before it is given." xml:space="preserve"><value>Enregistrer la fiche de {0} ? Un autre pharmacien la contrôle avant administration.</value></data>
+  <data name="Search by patient, medicine or number…" xml:space="preserve"><value>Rechercher par patient, médicament ou numéro…</value></data>
+  <data name="Set the beyond-use time in hours" xml:space="preserve"><value>Indiquez le délai d'utilisation en heures</value></data>
+  <data name="Sterile preparations" xml:space="preserve"><value>Préparations stériles</value></data>
+  <data name="Storage" xml:space="preserve"><value>Conservation</value></data>
+  <data name="The beyond-use time is longer than its storage allows ({0} h)" xml:space="preserve"><value>Le délai dépasse ce que permet la conservation ({0} h)</value></data>
+  <data name="The final volume must be above zero" xml:space="preserve"><value>Le volume final doit être supérieur à zéro</value></data>
+  <data name="The pharmacist who prepared it cannot check it" xml:space="preserve"><value>Le pharmacien qui l'a préparé ne peut pas le contrôler</value></data>
+  <data name="The pharmacy store holds no batch {0} of this medicine" xml:space="preserve"><value>Le stock de la pharmacie ne détient pas le lot {0} de ce médicament</value></data>
+  <data name="The preparation is past its beyond-use time: reject it and make it again" xml:space="preserve"><value>La préparation a dépassé son délai : rejetez-la et refaites-la</value></data>
+  <data name="This line already has a preparation" xml:space="preserve"><value>Cette ligne a déjà une préparation</value></data>
+  <data name="This preparation was already checked" xml:space="preserve"><value>Cette préparation a déjà été contrôlée</value></data>
+  <data name="To be compounded before it leaves — prepare it" xml:space="preserve"><value>À préparer avant sa sortie — préparez-le</value></data>
+  <data name="To prepare" xml:space="preserve"><value>À préparer</value></data>
+  <data name="Use before" xml:space="preserve"><value>À utiliser avant</value></data>
+  <data name="Waiting for the check" xml:space="preserve"><value>En attente du contrôle</value></data>
+  <data name="What is prepared" xml:space="preserve"><value>Ce qui est préparé</value></data>
+  <data name="Why is {0} rejected? It is made again." xml:space="preserve"><value>Pourquoi {0} est-il rejeté ? Il sera refait.</value></data>
+  <data name="Write the diluent" xml:space="preserve"><value>Indiquez le solvant</value></data>
+  <data name="Write why the preparation is rejected" xml:space="preserve"><value>Indiquez pourquoi la préparation est rejetée</value></data>
+  <data name="You prepared it: another pharmacist checks it" xml:space="preserve"><value>Vous l'avez préparé : un autre pharmacien le contrôle</value></data>
+  <data name="another pharmacist releases them" xml:space="preserve"><value>un autre pharmacien les libère</value></data>
+  <data name="checked by" xml:space="preserve"><value>contrôlé par</value></data>
+  <data name="chemotherapy by injection, and rejected ones" xml:space="preserve"><value>chimiothérapie injectable, et celles rejetées</value></data>
+  <data name="cmpk:Chemo" xml:space="preserve"><value>Chimiothérapie</value></data>
+  <data name="cmpk:IV" xml:space="preserve"><value>Mélange IV</value></data>
+  <data name="cmpk:TPN" xml:space="preserve"><value>Nutrition parentérale</value></data>
+  <data name="cmps:Fridge" xml:space="preserve"><value>Au réfrigérateur</value></data>
+  <data name="cmps:Room" xml:space="preserve"><value>Température ambiante</value></data>
+  <data name="cmpst:Prepared" xml:space="preserve"><value>En attente du contrôle</value></data>
+  <data name="cmpst:Rejected" xml:space="preserve"><value>Rejeté</value></data>
+  <data name="cmpst:Released" xml:space="preserve"><value>Libéré</value></data>
+  <data name="e.g. Sodium chloride 0.9%" xml:space="preserve"><value>ex. Chlorure de sodium 0,9 %</value></data>
+  <data name="ready to give before their time" xml:space="preserve"><value>prêtes à administrer avant leur échéance</value></data>
+  <data name="up to {0} h" xml:space="preserve"><value>jusqu'à {0} h</value></data>
+  <data name="{0} must be compounded and checked before it leaves" xml:space="preserve"><value>{0} doit être préparé et contrôlé avant sa sortie</value></data>
+  <data name="Prepare as an IV admixture or TPN" xml:space="preserve"><value>Préparer en mélange IV ou nutrition parentérale</value></data>
+  <data name="mL" xml:space="preserve"><value>mL</value></data>
 </root>

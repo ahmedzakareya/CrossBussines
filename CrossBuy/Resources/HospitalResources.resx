@@ -7430,4 +7430,64 @@
   <data name="in the last 30 days" xml:space="preserve"><value>in the last 30 days</value></data>
   <data name="oldest first" xml:space="preserve"><value>oldest first</value></data>
   <data name="{0} needs the formulary committee's approval for this patient" xml:space="preserve"><value>{0} needs the formulary committee's approval for this patient</value></data>
+  <data name="Batch record" xml:space="preserve"><value>Batch record</value></data>
+  <data name="Beyond-use time (hours)" xml:space="preserve"><value>Beyond-use time (hours)</value></data>
+  <data name="Choose how the preparation is kept" xml:space="preserve"><value>Choose how the preparation is kept</value></data>
+  <data name="Choose what is prepared" xml:space="preserve"><value>Choose what is prepared</value></data>
+  <data name="Compounding" xml:space="preserve"><value>Compounding</value></data>
+  <data name="Diluent" xml:space="preserve"><value>Diluent</value></data>
+  <data name="Diluent batch" xml:space="preserve"><value>Diluent batch</value></data>
+  <data name="Drug batch" xml:space="preserve"><value>Drug batch</value></data>
+  <data name="Final volume (mL)" xml:space="preserve"><value>Final volume (mL)</value></data>
+  <data name="Label" xml:space="preserve"><value>Label</value></data>
+  <data name="Not prepared yet" xml:space="preserve"><value>Not prepared yet</value></data>
+  <data name="Preparation" xml:space="preserve"><value>Preparation</value></data>
+  <data name="Preparations" xml:space="preserve"><value>Preparations</value></data>
+  <data name="Prepare" xml:space="preserve"><value>Prepare</value></data>
+  <data name="Prepared ({0}) — waiting for the check" xml:space="preserve"><value>Prepared ({0}) — waiting for the check</value></data>
+  <data name="Prepared and released ({0}) — use before {1}" xml:space="preserve"><value>Prepared and released ({0}) — use before {1}</value></data>
+  <data name="Release" xml:space="preserve"><value>Release</value></data>
+  <data name="Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time." xml:space="preserve"><value>Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time.</value></data>
+  <data name="Released" xml:space="preserve"><value>Released</value></data>
+  <data name="Released today" xml:space="preserve"><value>Released today</value></data>
+  <data name="Released: it may be given before its beyond-use time" xml:space="preserve"><value>Released: it may be given before its beyond-use time</value></data>
+  <data name="Save the batch record" xml:space="preserve"><value>Save the batch record</value></data>
+  <data name="Save the batch record of {0}? Another pharmacist checks it before it is given." xml:space="preserve"><value>Save the batch record of {0}? Another pharmacist checks it before it is given.</value></data>
+  <data name="Search by patient, medicine or number…" xml:space="preserve"><value>Search by patient, medicine or number…</value></data>
+  <data name="Set the beyond-use time in hours" xml:space="preserve"><value>Set the beyond-use time in hours</value></data>
+  <data name="Sterile preparations" xml:space="preserve"><value>Sterile preparations</value></data>
+  <data name="Storage" xml:space="preserve"><value>Storage</value></data>
+  <data name="The beyond-use time is longer than its storage allows ({0} h)" xml:space="preserve"><value>The beyond-use time is longer than its storage allows ({0} h)</value></data>
+  <data name="The final volume must be above zero" xml:space="preserve"><value>The final volume must be above zero</value></data>
+  <data name="The pharmacist who prepared it cannot check it" xml:space="preserve"><value>The pharmacist who prepared it cannot check it</value></data>
+  <data name="The pharmacy store holds no batch {0} of this medicine" xml:space="preserve"><value>The pharmacy store holds no batch {0} of this medicine</value></data>
+  <data name="The preparation is past its beyond-use time: reject it and make it again" xml:space="preserve"><value>The preparation is past its beyond-use time: reject it and make it again</value></data>
+  <data name="This line already has a preparation" xml:space="preserve"><value>This line already has a preparation</value></data>
+  <data name="This preparation was already checked" xml:space="preserve"><value>This preparation was already checked</value></data>
+  <data name="To be compounded before it leaves — prepare it" xml:space="preserve"><value>To be compounded before it leaves — prepare it</value></data>
+  <data name="To prepare" xml:space="preserve"><value>To prepare</value></data>
+  <data name="Use before" xml:space="preserve"><value>Use before</value></data>
+  <data name="Waiting for the check" xml:space="preserve"><value>Waiting for the check</value></data>
+  <data name="What is prepared" xml:space="preserve"><value>What is prepared</value></data>
+  <data name="Why is {0} rejected? It is made again." xml:space="preserve"><value>Why is {0} rejected? It is made again.</value></data>
+  <data name="Write the diluent" xml:space="preserve"><value>Write the diluent</value></data>
+  <data name="Write why the preparation is rejected" xml:space="preserve"><value>Write why the preparation is rejected</value></data>
+  <data name="You prepared it: another pharmacist checks it" xml:space="preserve"><value>You prepared it: another pharmacist checks it</value></data>
+  <data name="another pharmacist releases them" xml:space="preserve"><value>another pharmacist releases them</value></data>
+  <data name="checked by" xml:space="preserve"><value>checked by</value></data>
+  <data name="chemotherapy by injection, and rejected ones" xml:space="preserve"><value>chemotherapy by injection, and rejected ones</value></data>
+  <data name="cmpk:Chemo" xml:space="preserve"><value>Chemotherapy</value></data>
+  <data name="cmpk:IV" xml:space="preserve"><value>IV admixture</value></data>
+  <data name="cmpk:TPN" xml:space="preserve"><value>Parenteral nutrition</value></data>
+  <data name="cmps:Fridge" xml:space="preserve"><value>Refrigerated</value></data>
+  <data name="cmps:Room" xml:space="preserve"><value>Room temperature</value></data>
+  <data name="cmpst:Prepared" xml:space="preserve"><value>Waiting for the check</value></data>
+  <data name="cmpst:Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="cmpst:Released" xml:space="preserve"><value>Released</value></data>
+  <data name="e.g. Sodium chloride 0.9%" xml:space="preserve"><value>e.g. Sodium chloride 0.9%</value></data>
+  <data name="ready to give before their time" xml:space="preserve"><value>ready to give before their time</value></data>
+  <data name="up to {0} h" xml:space="preserve"><value>up to {0} h</value></data>
+  <data name="{0} must be compounded and checked before it leaves" xml:space="preserve"><value>{0} must be compounded and checked before it leaves</value></data>
+  <data name="Prepare as an IV admixture or TPN" xml:space="preserve"><value>Prepare as an IV admixture or TPN</value></data>
+  <data name="mL" xml:space="preserve"><value>mL</value></data>
 </root>

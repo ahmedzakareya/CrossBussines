@@ -114,6 +114,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalCreditNoteModel.Configure(b);       // H148: credit notes on a closed bill
 			HospitalDispenseScanModel.Configure(b);     // H150: packs scanned at the counter (GS1)
 			HospitalFormularyRequestModel.Configure(b); // H152: formulary governance (the committee's decisions)
+			HospitalCompoundingModel.Configure(b);      // H153: compounding batch records
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

@@ -1,0 +1,305 @@
+{
+ "unit": "H153 - compounding: batch records, independent check and release, beyond-use time, bag label",
+ "strings": {
+  "Compounding": {
+   "ar": "التحضير المعقَّم",
+   "en": "Compounding",
+   "fr": "Préparations stériles"
+  },
+  "Sterile preparations": {
+   "ar": "المستحضرات المعقَّمة",
+   "en": "Sterile preparations",
+   "fr": "Préparations stériles"
+  },
+  "To prepare": {
+   "ar": "للتحضير",
+   "en": "To prepare",
+   "fr": "À préparer"
+  },
+  "chemotherapy by injection, and rejected ones": {
+   "ar": "علاج كيماوي بالحقن، والمرفوض",
+   "en": "chemotherapy by injection, and rejected ones",
+   "fr": "chimiothérapie injectable, et celles rejetées"
+  },
+  "Waiting for the check": {
+   "ar": "بانتظار المراجعة",
+   "en": "Waiting for the check",
+   "fr": "En attente du contrôle"
+  },
+  "another pharmacist releases them": {
+   "ar": "يُجيزها صيدلي آخر",
+   "en": "another pharmacist releases them",
+   "fr": "un autre pharmacien les libère"
+  },
+  "Released today": {
+   "ar": "أُجيزت اليوم",
+   "en": "Released today",
+   "fr": "Libérées aujourd'hui"
+  },
+  "ready to give before their time": {
+   "ar": "جاهزة للإعطاء قبل موعدها",
+   "en": "ready to give before their time",
+   "fr": "prêtes à administrer avant leur échéance"
+  },
+  "Preparations": {
+   "ar": "التحضيرات",
+   "en": "Preparations",
+   "fr": "Préparations"
+  },
+  "Search by patient, medicine or number…": {
+   "ar": "ابحث بالمريض أو الدواء أو الرقم…",
+   "en": "Search by patient, medicine or number…",
+   "fr": "Rechercher par patient, médicament ou numéro…"
+  },
+  "Released": {
+   "ar": "مُجازة",
+   "en": "Released",
+   "fr": "Libérée"
+  },
+  "Preparation": {
+   "ar": "التحضير",
+   "en": "Preparation",
+   "fr": "Préparation"
+  },
+  "Batch record": {
+   "ar": "سجل التحضير",
+   "en": "Batch record",
+   "fr": "Fiche de fabrication"
+  },
+  "What is prepared": {
+   "ar": "ما يُحضَّر",
+   "en": "What is prepared",
+   "fr": "Ce qui est préparé"
+  },
+  "Diluent": {
+   "ar": "المذيب",
+   "en": "Diluent",
+   "fr": "Solvant"
+  },
+  "e.g. Sodium chloride 0.9%": {
+   "ar": "مثال: كلوريد الصوديوم 0.9%",
+   "en": "e.g. Sodium chloride 0.9%",
+   "fr": "ex. Chlorure de sodium 0,9 %"
+  },
+  "Final volume (mL)": {
+   "ar": "الحجم النهائي (مل)",
+   "en": "Final volume (mL)",
+   "fr": "Volume final (mL)"
+  },
+  "Drug batch": {
+   "ar": "تشغيلة الدواء",
+   "en": "Drug batch",
+   "fr": "Lot du médicament"
+  },
+  "Diluent batch": {
+   "ar": "تشغيلة المذيب",
+   "en": "Diluent batch",
+   "fr": "Lot du solvant"
+  },
+  "Storage": {
+   "ar": "الحفظ",
+   "en": "Storage",
+   "fr": "Conservation"
+  },
+  "up to {0} h": {
+   "ar": "حتى ⁦{0}⁩ ساعة",
+   "en": "up to {0} h",
+   "fr": "jusqu'à {0} h"
+  },
+  "Beyond-use time (hours)": {
+   "ar": "مدة الصلاحية بعد التحضير (ساعات)",
+   "en": "Beyond-use time (hours)",
+   "fr": "Délai d'utilisation (heures)"
+  },
+  "Save the batch record": {
+   "ar": "حفظ سجل التحضير",
+   "en": "Save the batch record",
+   "fr": "Enregistrer la fiche"
+  },
+  "Save the batch record of {0}? Another pharmacist checks it before it is given.": {
+   "ar": "حفظ سجل تحضير ⁦{0}⁩؟ يراجعه صيدلي آخر قبل إعطائه.",
+   "en": "Save the batch record of {0}? Another pharmacist checks it before it is given.",
+   "fr": "Enregistrer la fiche de {0} ? Un autre pharmacien la contrôle avant administration."
+  },
+  "Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time.": {
+   "ar": "إجازة ⁦{0}⁩؟ أنت تؤكد المستحضر والجرعة والمذيب والملصق ومدة الصلاحية.",
+   "en": "Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time.",
+   "fr": "Libérer {0} ? Vous confirmez le produit, la dose, le solvant, l'étiquette et le délai d'utilisation."
+  },
+  "Why is {0} rejected? It is made again.": {
+   "ar": "لماذا رُفض ⁦{0}⁩؟ سيُحضَّر من جديد.",
+   "en": "Why is {0} rejected? It is made again.",
+   "fr": "Pourquoi {0} est-il rejeté ? Il sera refait."
+  },
+  "Released: it may be given before its beyond-use time": {
+   "ar": "أُجيز: يمكن إعطاؤه قبل انتهاء مدته",
+   "en": "Released: it may be given before its beyond-use time",
+   "fr": "Libéré : il peut être administré avant son échéance"
+  },
+  "Not prepared yet": {
+   "ar": "لم يُحضَّر بعد",
+   "en": "Not prepared yet",
+   "fr": "Pas encore préparé"
+  },
+  "Use before": {
+   "ar": "يُستعمل قبل",
+   "en": "Use before",
+   "fr": "À utiliser avant"
+  },
+  "checked by": {
+   "ar": "راجعه",
+   "en": "checked by",
+   "fr": "contrôlé par"
+  },
+  "Prepare": {
+   "ar": "حضِّر",
+   "en": "Prepare",
+   "fr": "Préparer"
+  },
+  "Release": {
+   "ar": "أجِز",
+   "en": "Release",
+   "fr": "Libérer"
+  },
+  "You prepared it: another pharmacist checks it": {
+   "ar": "أنت حضّرته: يراجعه صيدلي آخر",
+   "en": "You prepared it: another pharmacist checks it",
+   "fr": "Vous l'avez préparé : un autre pharmacien le contrôle"
+  },
+  "Label": {
+   "ar": "الملصق",
+   "en": "Label",
+   "fr": "Étiquette"
+  },
+  "Prepared and released ({0}) — use before {1}": {
+   "ar": "حُضِّر وأُجيز (⁦{0}⁩) — يُستعمل قبل ⁦{1}⁩",
+   "en": "Prepared and released ({0}) — use before {1}",
+   "fr": "Préparé et libéré ({0}) — à utiliser avant {1}"
+  },
+  "Prepared ({0}) — waiting for the check": {
+   "ar": "حُضِّر (⁦{0}⁩) — بانتظار المراجعة",
+   "en": "Prepared ({0}) — waiting for the check",
+   "fr": "Préparé ({0}) — en attente du contrôle"
+  },
+  "To be compounded before it leaves — prepare it": {
+   "ar": "يُحضَّر قبل خروجه — حضِّره",
+   "en": "To be compounded before it leaves — prepare it",
+   "fr": "À préparer avant sa sortie — préparez-le"
+  },
+  "{0} must be compounded and checked before it leaves": {
+   "ar": "⁦{0}⁩ يجب تحضيره ومراجعته قبل خروجه",
+   "en": "{0} must be compounded and checked before it leaves",
+   "fr": "{0} doit être préparé et contrôlé avant sa sortie"
+  },
+  "Choose how the preparation is kept": {
+   "ar": "اختر طريقة حفظ التحضير",
+   "en": "Choose how the preparation is kept",
+   "fr": "Choisissez la conservation de la préparation"
+  },
+  "Set the beyond-use time in hours": {
+   "ar": "حدد مدة الصلاحية بالساعات",
+   "en": "Set the beyond-use time in hours",
+   "fr": "Indiquez le délai d'utilisation en heures"
+  },
+  "The beyond-use time is longer than its storage allows ({0} h)": {
+   "ar": "مدة الصلاحية أطول مما يسمح به الحفظ (⁦{0}⁩ ساعة)",
+   "en": "The beyond-use time is longer than its storage allows ({0} h)",
+   "fr": "Le délai dépasse ce que permet la conservation ({0} h)"
+  },
+  "The final volume must be above zero": {
+   "ar": "يجب أن يكون الحجم النهائي أكبر من صفر",
+   "en": "The final volume must be above zero",
+   "fr": "Le volume final doit être supérieur à zéro"
+  },
+  "Write the diluent": {
+   "ar": "اكتب المذيب",
+   "en": "Write the diluent",
+   "fr": "Indiquez le solvant"
+  },
+  "The pharmacist who prepared it cannot check it": {
+   "ar": "لا يراجع التحضير من حضّره",
+   "en": "The pharmacist who prepared it cannot check it",
+   "fr": "Le pharmacien qui l'a préparé ne peut pas le contrôler"
+  },
+  "Write why the preparation is rejected": {
+   "ar": "اكتب سبب رفض التحضير",
+   "en": "Write why the preparation is rejected",
+   "fr": "Indiquez pourquoi la préparation est rejetée"
+  },
+  "The preparation is past its beyond-use time: reject it and make it again": {
+   "ar": "انتهت مدة صلاحية التحضير: ارفضه وحضّره من جديد",
+   "en": "The preparation is past its beyond-use time: reject it and make it again",
+   "fr": "La préparation a dépassé son délai : rejetez-la et refaites-la"
+  },
+  "Choose what is prepared": {
+   "ar": "اختر ما يُحضَّر",
+   "en": "Choose what is prepared",
+   "fr": "Choisissez ce qui est préparé"
+  },
+  "This line already has a preparation": {
+   "ar": "لهذا السطر تحضير قائم",
+   "en": "This line already has a preparation",
+   "fr": "Cette ligne a déjà une préparation"
+  },
+  "The pharmacy store holds no batch {0} of this medicine": {
+   "ar": "لا توجد في مخزن الصيدلية تشغيلة ⁦{0}⁩ من هذا الدواء",
+   "en": "The pharmacy store holds no batch {0} of this medicine",
+   "fr": "Le stock de la pharmacie ne détient pas le lot {0} de ce médicament"
+  },
+  "This preparation was already checked": {
+   "ar": "رُوجع هذا التحضير من قبل",
+   "en": "This preparation was already checked",
+   "fr": "Cette préparation a déjà été contrôlée"
+  },
+  "Prepare as an IV admixture or TPN": {
+   "ar": "حضّره كمحلول وريدي أو تغذية وريدية",
+   "en": "Prepare as an IV admixture or TPN",
+   "fr": "Préparer en mélange IV ou nutrition parentérale"
+  },
+  "mL": {
+   "ar": "مل",
+   "en": "mL",
+   "fr": "mL"
+  },
+  "cmpk:Chemo": {
+   "ar": "علاج كيماوي",
+   "en": "Chemotherapy",
+   "fr": "Chimiothérapie"
+  },
+  "cmpk:IV": {
+   "ar": "محلول وريدي",
+   "en": "IV admixture",
+   "fr": "Mélange IV"
+  },
+  "cmpk:TPN": {
+   "ar": "تغذية وريدية",
+   "en": "Parenteral nutrition",
+   "fr": "Nutrition parentérale"
+  },
+  "cmps:Room": {
+   "ar": "حرارة الغرفة",
+   "en": "Room temperature",
+   "fr": "Température ambiante"
+  },
+  "cmps:Fridge": {
+   "ar": "في الثلاجة",
+   "en": "Refrigerated",
+   "fr": "Au réfrigérateur"
+  },
+  "cmpst:Prepared": {
+   "ar": "بانتظار المراجعة",
+   "en": "Waiting for the check",
+   "fr": "En attente du contrôle"
+  },
+  "cmpst:Released": {
+   "ar": "مُجاز",
+   "en": "Released",
+   "fr": "Libéré"
+  },
+  "cmpst:Rejected": {
+   "ar": "مرفوض",
+   "en": "Rejected",
+   "fr": "Rejeté"
+  }
+ }
+}

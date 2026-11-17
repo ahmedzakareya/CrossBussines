@@ -7432,4 +7432,64 @@
   <data name="in the last 30 days" xml:space="preserve"><value>في آخر 30 يومًا</value></data>
   <data name="oldest first" xml:space="preserve"><value>الأقدم أولًا</value></data>
   <data name="{0} needs the formulary committee's approval for this patient" xml:space="preserve"><value>⁦{0}⁩ يحتاج موافقة لجنة الدليل لهذا المريض</value></data>
+  <data name="Batch record" xml:space="preserve"><value>سجل التحضير</value></data>
+  <data name="Beyond-use time (hours)" xml:space="preserve"><value>مدة الصلاحية بعد التحضير (ساعات)</value></data>
+  <data name="Choose how the preparation is kept" xml:space="preserve"><value>اختر طريقة حفظ التحضير</value></data>
+  <data name="Choose what is prepared" xml:space="preserve"><value>اختر ما يُحضَّر</value></data>
+  <data name="Compounding" xml:space="preserve"><value>التحضير المعقَّم</value></data>
+  <data name="Diluent" xml:space="preserve"><value>المذيب</value></data>
+  <data name="Diluent batch" xml:space="preserve"><value>تشغيلة المذيب</value></data>
+  <data name="Drug batch" xml:space="preserve"><value>تشغيلة الدواء</value></data>
+  <data name="Final volume (mL)" xml:space="preserve"><value>الحجم النهائي (مل)</value></data>
+  <data name="Label" xml:space="preserve"><value>الملصق</value></data>
+  <data name="Not prepared yet" xml:space="preserve"><value>لم يُحضَّر بعد</value></data>
+  <data name="Preparation" xml:space="preserve"><value>التحضير</value></data>
+  <data name="Preparations" xml:space="preserve"><value>التحضيرات</value></data>
+  <data name="Prepare" xml:space="preserve"><value>حضِّر</value></data>
+  <data name="Prepared ({0}) — waiting for the check" xml:space="preserve"><value>حُضِّر (⁦{0}⁩) — بانتظار المراجعة</value></data>
+  <data name="Prepared and released ({0}) — use before {1}" xml:space="preserve"><value>حُضِّر وأُجيز (⁦{0}⁩) — يُستعمل قبل ⁦{1}⁩</value></data>
+  <data name="Release" xml:space="preserve"><value>أجِز</value></data>
+  <data name="Release {0}? You confirm the product, the dose, the diluent, the label and the beyond-use time." xml:space="preserve"><value>إجازة ⁦{0}⁩؟ أنت تؤكد المستحضر والجرعة والمذيب والملصق ومدة الصلاحية.</value></data>
+  <data name="Released" xml:space="preserve"><value>مُجازة</value></data>
+  <data name="Released today" xml:space="preserve"><value>أُجيزت اليوم</value></data>
+  <data name="Released: it may be given before its beyond-use time" xml:space="preserve"><value>أُجيز: يمكن إعطاؤه قبل انتهاء مدته</value></data>
+  <data name="Save the batch record" xml:space="preserve"><value>حفظ سجل التحضير</value></data>
+  <data name="Save the batch record of {0}? Another pharmacist checks it before it is given." xml:space="preserve"><value>حفظ سجل تحضير ⁦{0}⁩؟ يراجعه صيدلي آخر قبل إعطائه.</value></data>
+  <data name="Search by patient, medicine or number…" xml:space="preserve"><value>ابحث بالمريض أو الدواء أو الرقم…</value></data>
+  <data name="Set the beyond-use time in hours" xml:space="preserve"><value>حدد مدة الصلاحية بالساعات</value></data>
+  <data name="Sterile preparations" xml:space="preserve"><value>المستحضرات المعقَّمة</value></data>
+  <data name="Storage" xml:space="preserve"><value>الحفظ</value></data>
+  <data name="The beyond-use time is longer than its storage allows ({0} h)" xml:space="preserve"><value>مدة الصلاحية أطول مما يسمح به الحفظ (⁦{0}⁩ ساعة)</value></data>
+  <data name="The final volume must be above zero" xml:space="preserve"><value>يجب أن يكون الحجم النهائي أكبر من صفر</value></data>
+  <data name="The pharmacist who prepared it cannot check it" xml:space="preserve"><value>لا يراجع التحضير من حضّره</value></data>
+  <data name="The pharmacy store holds no batch {0} of this medicine" xml:space="preserve"><value>لا توجد في مخزن الصيدلية تشغيلة ⁦{0}⁩ من هذا الدواء</value></data>
+  <data name="The preparation is past its beyond-use time: reject it and make it again" xml:space="preserve"><value>انتهت مدة صلاحية التحضير: ارفضه وحضّره من جديد</value></data>
+  <data name="This line already has a preparation" xml:space="preserve"><value>لهذا السطر تحضير قائم</value></data>
+  <data name="This preparation was already checked" xml:space="preserve"><value>رُوجع هذا التحضير من قبل</value></data>
+  <data name="To be compounded before it leaves — prepare it" xml:space="preserve"><value>يُحضَّر قبل خروجه — حضِّره</value></data>
+  <data name="To prepare" xml:space="preserve"><value>للتحضير</value></data>
+  <data name="Use before" xml:space="preserve"><value>يُستعمل قبل</value></data>
+  <data name="Waiting for the check" xml:space="preserve"><value>بانتظار المراجعة</value></data>
+  <data name="What is prepared" xml:space="preserve"><value>ما يُحضَّر</value></data>
+  <data name="Why is {0} rejected? It is made again." xml:space="preserve"><value>لماذا رُفض ⁦{0}⁩؟ سيُحضَّر من جديد.</value></data>
+  <data name="Write the diluent" xml:space="preserve"><value>اكتب المذيب</value></data>
+  <data name="Write why the preparation is rejected" xml:space="preserve"><value>اكتب سبب رفض التحضير</value></data>
+  <data name="You prepared it: another pharmacist checks it" xml:space="preserve"><value>أنت حضّرته: يراجعه صيدلي آخر</value></data>
+  <data name="another pharmacist releases them" xml:space="preserve"><value>يُجيزها صيدلي آخر</value></data>
+  <data name="checked by" xml:space="preserve"><value>راجعه</value></data>
+  <data name="chemotherapy by injection, and rejected ones" xml:space="preserve"><value>علاج كيماوي بالحقن، والمرفوض</value></data>
+  <data name="cmpk:Chemo" xml:space="preserve"><value>علاج كيماوي</value></data>
+  <data name="cmpk:IV" xml:space="preserve"><value>محلول وريدي</value></data>
+  <data name="cmpk:TPN" xml:space="preserve"><value>تغذية وريدية</value></data>
+  <data name="cmps:Fridge" xml:space="preserve"><value>في الثلاجة</value></data>
+  <data name="cmps:Room" xml:space="preserve"><value>حرارة الغرفة</value></data>
+  <data name="cmpst:Prepared" xml:space="preserve"><value>بانتظار المراجعة</value></data>
+  <data name="cmpst:Rejected" xml:space="preserve"><value>مرفوض</value></data>
+  <data name="cmpst:Released" xml:space="preserve"><value>مُجاز</value></data>
+  <data name="e.g. Sodium chloride 0.9%" xml:space="preserve"><value>مثال: كلوريد الصوديوم 0.9%</value></data>
+  <data name="ready to give before their time" xml:space="preserve"><value>جاهزة للإعطاء قبل موعدها</value></data>
+  <data name="up to {0} h" xml:space="preserve"><value>حتى ⁦{0}⁩ ساعة</value></data>
+  <data name="{0} must be compounded and checked before it leaves" xml:space="preserve"><value>⁦{0}⁩ يجب تحضيره ومراجعته قبل خروجه</value></data>
+  <data name="Prepare as an IV admixture or TPN" xml:space="preserve"><value>حضّره كمحلول وريدي أو تغذية وريدية</value></data>
+  <data name="mL" xml:space="preserve"><value>مل</value></data>
 </root>

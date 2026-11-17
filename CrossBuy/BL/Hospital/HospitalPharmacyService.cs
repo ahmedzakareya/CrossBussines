@@ -370,6 +370,10 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			var unapproved = await HospitalFormularyGovernanceService.NeedsApprovalAsync(_db, ctx, d.ID, givingNow, ct);
 			if (unapproved.Count > 0 && items.TryGetValue(unapproved[0].ItemId!.Value, out var ui))
 				return HospitalResult.Fail("{0} needs the formulary committee's approval for this patient", DisplayName.Of(ui.Name, ui.NameEn ?? ui.Name));
+			// H153: a chemotherapy dose given by injection leaves only once its preparation is checked and released
+			// (a line the store does not stock still has to be prepared and checked: nothing leaves, but the request completes)
+			var notReleased = await HospitalCompoundingService.NotReleasedAsync(_db, ctx, d, lines, givingNow.Concat(lines.Where(l => l.ItemId == null)), nowUtc, ct);
+			if (notReleased.Count > 0) return HospitalResult.Fail("{0} must be compounded and checked before it leaves", notReleased[0].Drug);
 			var catIds = items.Values.Select(i => i.ItemCategoryId).Distinct().ToList();
 			var cogs = await _db.ItemCategories.AsNoTracking().Where(c => catIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CogsAccountId, ct);
 			if (items.Values.FirstOrDefault(i => cogs.GetValueOrDefault(i.ItemCategoryId) == null) is { } noCogs)
