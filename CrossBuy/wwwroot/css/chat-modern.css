@@ -93,6 +93,17 @@
 #chatScroll .chat-tools .btn.rxmore::before {
     content: ""; position: absolute; inset-inline-start: -5px; top: 8px; bottom: 8px; width: 1px; background: var(--bs-gray-200);
 }
+/* emoji: Keenicons' ki-emoji-happy is a square face that reads as a robot. Every one in the chat (composer, the
+   toolbar's "more reactions", the picker headings) is redrawn as the familiar round smiley - a mask, so it takes
+   the button's own colour and size (1em) and no markup changes. */
+.ki-outline.ki-emoji-happy::before { content: none !important; }
+.ki-outline.ki-emoji-happy {
+    display: inline-block; width: 1em; height: 1em; vertical-align: -0.125em; background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 14s1.5 2 4 2 4-2 4-2'/%3E%3Cline x1='9' y1='9' x2='9.01' y2='9'/%3E%3Cline x1='15' y1='9' x2='15.01' y2='9'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 14s1.5 2 4 2 4-2 4-2'/%3E%3Cline x1='9' y1='9' x2='9.01' y2='9'/%3E%3Cline x1='15' y1='9' x2='15.01' y2='9'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+#chatEmojiBtn .ki-emoji-happy { font-size: 1.35rem !important; }
+
 /* reply: the universal curved back-arrow (Keenicons has none; ki-share read as "share"), mirrored in RTL */
 .cb-reply-ic { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
 html[dir="rtl"] .cb-reply-ic { transform: scaleX(-1); }
