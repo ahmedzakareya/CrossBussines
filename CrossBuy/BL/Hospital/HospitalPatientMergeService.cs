@@ -58,6 +58,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalCreditNote), "HospitalCreditNotes"),   // H148: a credit note follows its patient (its bill moves too)
 			(typeof(HospitalFormularyRequest), "HospitalFormularyRequests"),   // H152: the committee's decision follows its patient
 			(typeof(HospitalCompounding), "HospitalCompoundings"),   // H153: a preparation's batch record follows its patient
+			(typeof(HospitalDeskHandoff), "HospitalDeskHandoffs"),   // H158: where the desk sent the patient follows the patient
 			(typeof(HospitalConsent), "HospitalConsents"),   // H60: the signature stays on the consent, which moves whole
 			(typeof(HospitalCharityGrant), "HospitalCharityGrants"),   // H63: a waiver follows its patient (its bill moves too)
 			(typeof(HospitalRestrictedFile), "HospitalRestrictedFiles"),   // H64: a restriction (live: one per patient — see the conflict)

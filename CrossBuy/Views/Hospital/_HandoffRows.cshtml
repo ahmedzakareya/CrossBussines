@@ -1,0 +1,34 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalHandoffRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H158 — one handoff: the patient, why they came and where the desk sent them (with what for, who referred them, the
+   desk's note), its state and age (red when not taken in time), who sent and who took it, and — for the receiving
+   team — accept, arrived, cannot take. *@
+@{ bool canReceive = ViewBag.CanReceive == true; }
+@foreach (var r in Model)
+{
+    var h = r.H; bool open = HospitalHandoffStatus.Open(h.Status);
+    string who = r.PatientName == null ? T["Unidentified — urgent"].Value : DisplayName.Of(r.PatientName, r.PatientNameEn);
+    string tone = h.Status == HospitalHandoffStatus.Failed || r.Overdue ? "danger" : h.Status == HospitalHandoffStatus.Sent ? "secondary" : "primary";
+    <tr>
+        <td class="ps-4"><div class="d-flex flex-column">
+            <span class="text-gray-900 fw-bold fs-6 @(r.PatientName == null ? "text-danger" : "")"><bdi>@who</bdi></span>
+            <span class="text-muted fw-semibold fs-7"><span class="hp-num">@(r.Mrn ?? "—")</span> · <span class="hp-num">@h.HandoffNo</span></span></div></td>
+        <td><div class="fs-7 fw-bold text-gray-800">@T["arr:" + h.Reason] → @T["dest:" + h.Destination]</div>
+            @if (h.Detail != null) {<div class="fs-8 text-gray-700"><bdi>@DisplayName.Of(h.Detail, h.DetailEn)</bdi></div>}
+            @if (h.ReferralFrom != null) {<div class="fs-8 text-gray-600">@T["Referred by"] <bdi>@h.ReferralFrom</bdi></div>}
+            @if (h.VisitorName != null) {<div class="fs-8 text-gray-600"><bdi>@h.VisitorName</bdi> · <bdi>@h.VisitorRelation</bdi></div>}
+            @if (h.Note != null) {<div class="fs-8 text-muted"><bdi>@h.Note</bdi></div>}</td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["hos:" + h.Status]</span>
+            @if (open) {<div class="fs-8 mt-1 @(r.Overdue ? "text-danger fw-bold" : "text-muted")"><span class="hp-num">@r.AgeMinutes</span> @T["min"]@if (h.Reminders > 0) {<text> · @T["chased"] </text><span class="hp-num">@h.Reminders</span>}</div>}
+            @if (h.FailReason != null) {<div class="fs-8 text-danger"><bdi>@h.FailReason</bdi></div>}</td>
+        <td><span class="fs-7 hp-num" dir="ltr">@h.SentAt.ToLocalTime().ToString("HH:mm")</span><div class="fs-8 text-muted">@(r.SentBy ?? "—")@if (r.AcceptedBy != null) {<text> → </text>@r.AcceptedBy}</div></td>
+        <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
+            @if (canReceive && h.Status == HospitalHandoffStatus.Sent) {<button type="button" class="btn btn-sm btn-primary" data-ho-act="Accept" data-id="@h.ID" data-who="@who">@T["Accept"]</button>}
+            @if (canReceive && open) {<button type="button" class="btn btn-sm btn-light-primary" data-ho-act="Arrived" data-id="@h.ID" data-who="@who">@T["Arrived"]</button>
+                <button type="button" class="btn btn-sm btn-light-danger" data-ho-act="Fail" data-id="@h.ID" data-who="@who">@T["Cannot take"]</button>}
+        </div></td>
+    </tr>
+}

@@ -47,6 +47,7 @@ namespace CrossBuy.Controllers
 			var where = await ActivatorUtilities.CreateInstance<HospitalWhereaboutsService>(HttpContext.RequestServices).CountsAsync(ctx, local, ct);
 			ViewBag.Inbox = await FrontDeskSvc.InboxAsync(ctx, now, ct);
 			ViewBag.Unconfirmed = await DeskWorkSvc.UnconfirmedAsync(ctx, today.AddDays(1), ct);   // H141
+			ViewBag.Handoffs = await HandoffSvc.CountsAsync(ctx, now, ct);   // H158
 			ViewBag.StageCounts = board.GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count());
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.Doctors = await _outpatient.PractitionersAsync(ctx, ct);

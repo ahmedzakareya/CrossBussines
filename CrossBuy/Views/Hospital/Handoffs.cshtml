@@ -1,0 +1,93 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H158 — "incoming from reception": every handoff the desk sent, for the receiving teams (filter by your team) to accept,
+    mark arrived, or say why they cannot take the person; the desk follows the same list. Stat tiles (demo39), the
+    theme's table widget, cbServerList (searched, filtered, paged); every act is confirmed first.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Incoming from reception"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    int open = ViewBag.Open ?? 0, overdue = ViewBag.Overdue ?? 0; string? dest = ViewBag.Destination as string;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Incoming from reception"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("FrontDesk")" class="text-muted text-hover-primary">@T["Front desk"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Handoffs"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var (label, n, icon, alert) in new[] { (T["On the way"].Value, open, "ki-send", false), (T["Not taken in time"].Value, overdue, "ki-time", overdue > 0) })
+            {
+                <div class="col-sm-6">
+                    <div class="card card-flush h-100"><div class="card-body d-flex align-items-center gap-5 py-6">
+                        <div class="symbol symbol-50px"><span class="symbol-label bg-light-@(alert ? "danger" : "primary")"><i class="ki-outline @icon fs-2x text-@(alert ? "danger" : "primary")"></i></span></div>
+                        <div class="d-flex flex-column"><span class="fs-2hx fw-bold text-@(alert ? "danger" : "gray-900") lh-1 hp-num">@n</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span></div>
+                    </div></div>
+                </div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Handoffs"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-225px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, file or number…"]" /></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_dest">
+                        <option value="">@T["Every team"]</option>
+                        @foreach (var d in HospitalHandoffDestination.All.Where(x => x != HospitalHandoffDestination.Desk)) { <option value="@d" selected="@(d == dest)">@T["dest:" + d]</option> }
+                    </select></div>
+                    <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_open">
+                        <option value="open">@T["Still open"]</option><option value="all">@T["Today, all"]</option>
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 min-w-200px rounded-start">@T["Patient"]</th><th class="min-w-200px">@T["Why and where"]</th><th>@T["State"]</th><th>@T["Sent"]</th><th class="text-end pe-4 rounded-end"></th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="5" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="5" class="text-center py-12"><i class="ki-outline ki-send fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var dest = document.getElementById('f_dest'), open = document.getElementById('f_open');
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("HandoffsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('destination', dest.value); p.set('open', open.value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, base = @Json.Serialize(Url.Content("~/Hospital/Handoffs/"));
+            var W = { accept: @Json.Serialize(T["Take responsibility for {0}?"].Value), arrived: @Json.Serialize(T["{0} has arrived with your team?"].Value),
+                fail: @Json.Serialize(T["Why can your team not take {0}? The desk is told."].Value), saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(r) { if (!r.ok) { toastr.error(r.error || r.message || W.failed); return; } toastr.success(W.saved); list.reload(); }
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-ho-act]'); if (!b) return;
+                e.preventDefault(); var id = b.getAttribute('data-id'), who = b.getAttribute('data-who'), act = b.getAttribute('data-ho-act');
+                if (act === 'Fail') { cbPrompt(W.fail.replace('{0}', who), { textarea: true }).then(function (why) { if (why != null) post(base + id + '/Fail', { reason: why }).then(done); }); return; }
+                cbConfirm((act === 'Accept' ? W.accept : W.arrived).replace('{0}', who), { kind: 'primary' }).then(function (ok) { if (ok) post(base + id + '/' + act).then(done); });
+            });
+        })();
+    </script>
+}

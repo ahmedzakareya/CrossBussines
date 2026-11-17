@@ -1,0 +1,79 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H158 — why they came and where they go: the reason (theme option tiles), what the hospital already has waiting for the
+   patient under that reason (today's visit, a test or scan ordered, an operation today, the stay in progress), the
+   referral or the visitor's details where they apply, a note, and "send" — the handoff the receiving team must accept.
+   With no patient yet only an urgent call for help can be sent. *@
+@{
+    var p = ViewBag.Patient as HospitalPatient;
+    var options = ViewBag.Options as IReadOnlyList<HospitalArrivalOption> ?? Array.Empty<HospitalArrivalOption>();
+    var reasons = new (string Key, string Icon)[] {
+        (HospitalArrivalReason.Clinic, "ki-calendar-tick"), (HospitalArrivalReason.Lab, "ki-test-tubes"), (HospitalArrivalReason.Imaging, "ki-scan-barcode"),
+        (HospitalArrivalReason.Admission, "ki-home-2"), (HospitalArrivalReason.Operation, "ki-pulse"), (HospitalArrivalReason.Urgent, "ki-heart-circle"),
+        (HospitalArrivalReason.Referral, "ki-send"), (HospitalArrivalReason.Visitor, "ki-people"), (HospitalArrivalReason.Admin, "ki-document") };
+    if (p == null) { reasons = reasons.Where(r => r.Key == HospitalArrivalReason.Urgent).ToArray(); }
+}
+<div data-arrival data-patient="@(p?.ID)">
+    @if (p != null)
+    {
+        <div class="d-flex align-items-center mb-6">
+            <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+            <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7"><span class="hp-num">@p.Mrn</span>@if (p.BirthDate is DateTime bd) {<text> · @T["Born"] </text><span class="hp-num" dir="ltr">@bd.ToString("yyyy-MM-dd")</span>}</div></div>
+        </div>
+    }
+    else
+    {
+        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-6"><i class="ki-outline ki-heart-circle fs-2tx text-danger me-4"></i>
+            <div class="fs-7 text-gray-800">@T["Someone needs urgent help: the emergency team is called now; the patient is identified afterwards."]</div></div>
+    }
+
+    <div class="fw-bold fs-7 text-gray-800 mb-3">@T["Why did they come?"]</div>
+    <div class="row g-3 mb-6" data-kt-buttons="true" data-kt-buttons-target="[data-arr-reason-tile]">
+        @foreach (var r in reasons)
+        {
+            int n = options.Count(o => o.Reason == r.Key);
+            <div class="col-6 col-md-4">
+                <label class="btn btn-outline btn-outline-dashed btn-active-light-@(r.Key == HospitalArrivalReason.Urgent ? "danger" : "primary") d-flex align-items-center text-start p-4 h-100 @(p == null ? "active" : "")" data-arr-reason-tile>
+                    <input class="form-check-input d-none" type="radio" name="arrReason" value="@r.Key" @(p == null ? "checked" : "") />
+                    <i class="ki-outline @r.Icon fs-2x me-3 text-@(r.Key == HospitalArrivalReason.Urgent ? "danger" : "primary")"></i>
+                    <span class="d-flex flex-column"><span class="fw-bold fs-7 text-gray-900">@T["arr:" + r.Key]</span>@if (n > 0) {<span class="fs-8 text-primary fw-semibold">@string.Format(T["{0} waiting"].Value, n)</span>}</span>
+                </label>
+            </div>
+        }
+    </div>
+
+    @* what is waiting, under the chosen reason *@
+    <div class="mb-6 d-none" data-arr-section="options">
+        <div class="fw-bold fs-7 text-gray-800 mb-3">@T["What is it for?"]</div>
+        @foreach (var o in options)
+        {
+            <label class="d-flex align-items-center gap-3 rounded border border-gray-300 px-4 py-3 mb-2 cursor-pointer bg-hover-light" data-opt-reason="@o.Reason">
+                <input type="radio" class="form-check-input m-0" name="arrOption" value="@o.LinkId" data-kind="@o.LinkKind" data-dest="@o.Destination" />
+                <span class="flex-grow-1"><span class="fw-bold fs-7 text-gray-900"><bdi>@(string.IsNullOrEmpty(o.Title) ? T["arr:" + o.Reason].Value : DisplayName.Of(o.Title, o.TitleEn))</bdi></span>
+                    @if (o.When != null) {<span class="text-muted fs-8 ms-2 hp-num" dir="ltr">@o.When</span>}</span>
+                <span class="badge badge-light fs-8">@T["dest:" + o.Destination]</span>
+            </label>
+        }
+        <div class="text-muted fs-7 d-none" data-arr-none>@T["Nothing of this kind is waiting for the patient: book it first, or choose another reason."]</div>
+    </div>
+
+    <div class="row g-4 mb-6 d-none" data-arr-section="referral">
+        <div class="col-md-7"><label class="fs-7 fw-semibold mb-2">@T["Referred by"]</label><input class="form-control form-control-solid" data-arr="referralFrom" placeholder="@T["The clinic, hospital or doctor who referred them"]" /></div>
+        <div class="col-md-5"><label class="fs-7 fw-semibold mb-2">@T["Send to"]</label>
+            <select class="form-select form-select-solid" data-arr="destination" data-control="select2" data-hide-search="true" data-dropdown-parent="#desk_modal">
+                @foreach (var d in new[] { HospitalHandoffDestination.Clinic, HospitalHandoffDestination.Emergency, HospitalHandoffDestination.Lab, HospitalHandoffDestination.Imaging, HospitalHandoffDestination.Ward }) { <option value="@d">@T["dest:" + d]</option> }
+            </select></div>
+    </div>
+
+    <div class="row g-4 mb-6 d-none" data-arr-section="visitor">
+        <div class="col-md-7"><label class="fs-7 fw-semibold mb-2">@T["Visitor's name"]</label><input class="form-control form-control-solid" data-arr="visitorName" /></div>
+        <div class="col-md-5"><label class="fs-7 fw-semibold mb-2">@T["Relation to the patient"]</label><input class="form-control form-control-solid" data-arr="visitorRelation" placeholder="@T["Son, wife, friend…"]" /></div>
+        <div class="col-12"><div class="text-muted fs-8">@T["A confidential file is never located; otherwise the place is given and the inquiry is recorded."]</div></div>
+        <div class="col-12 d-none" data-arr-answer></div>
+    </div>
+
+    <div class="mb-6"><label class="fs-7 fw-semibold mb-2">@T["Note for the receiving team"]</label><textarea class="form-control form-control-solid" rows="2" data-arr="note" maxlength="300"></textarea></div>
+    <div class="text-end"><button type="button" class="btn @(p == null ? "btn-danger" : "btn-primary")" data-arr-send><i class="ki-outline ki-send fs-4"></i>@(p == null ? T["Call the emergency team"] : T["Send"])</button></div>
+</div>

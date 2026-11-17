@@ -224,5 +224,6 @@ else
     {
         <button type="button" class="btn btn-primary flex-grow-1" data-desk-walkin="@p.ID"><i class="ki-outline ki-entrance-right fs-3"></i>@T["Walk-in"]</button>
     }
+    <button type="button" class="btn btn-light-primary" data-desk-arrival="@p.ID"><i class="ki-outline ki-send fs-3"></i>@T["Send on"]</button>   @* H158 *@
     <a href="@Url.Action("Patient", "Hospital", new { id = p.ID })" class="btn btn-light btn-active-light-primary"><i class="ki-outline ki-document fs-3"></i>@T["File"]</a>
 </div>

@@ -1,0 +1,33 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalHandoffRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H158 — the desk's handoffs in progress (and today's finished ones): who, why, to whom, its state and age; one not taken
+   in time is red and can be chased. The receiving teams accept on their "incoming from reception" list. *@
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-8"><i class="ki-outline ki-send fs-3x text-gray-300 d-block mb-3"></i>@T["Nobody is on the way from the desk."]</div>
+}
+@foreach (var r in Model)
+{
+    var h = r.H; bool open = HospitalHandoffStatus.Open(h.Status);
+    string tone = h.Status == HospitalHandoffStatus.Failed || r.Overdue ? "danger" : h.Status == HospitalHandoffStatus.Sent ? "secondary" : "primary";
+    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed" data-ho="@h.ID">
+        <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-@(r.Overdue ? "danger" : "primary")"><i class="ki-outline ki-send fs-3 text-@(r.Overdue ? "danger" : "primary")"></i></span></span>
+        <div class="flex-grow-1 min-w-0">
+            <div class="fs-7 fw-bold text-gray-900">@if (r.PatientName != null) {<bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi><span class="text-muted fw-semibold hp-num ms-1">@r.Mrn</span>} else {<span class="text-danger">@T["Unidentified — urgent"]</span>}</div>
+            <div class="fs-8 text-gray-700">@T["arr:" + h.Reason] → @T["dest:" + h.Destination]@if (h.Detail != null) {<text> · </text><bdi>@DisplayName.Of(h.Detail, h.DetailEn)</bdi>}@if (h.ReferralFrom != null) {<text> · @T["Referred by"] </text><bdi>@h.ReferralFrom</bdi>}</div>
+            @if (h.FailReason != null) {<div class="fs-8 text-danger"><bdi>@h.FailReason</bdi></div>}
+        </div>
+        <div class="text-end">
+            <span class="badge badge-light-@tone fs-8 fw-bold">@T["hos:" + h.Status]</span>
+            @if (open) {<div class="fs-8 mt-1 @(r.Overdue ? "text-danger fw-bold" : "text-muted")"><span class="hp-num">@r.AgeMinutes</span> @T["min"]@if (h.Reminders > 0) {<text> · @T["chased"] </text><span class="hp-num">@h.Reminders</span>}</div>}
+        </div>
+        @if (open && r.Overdue)
+        {
+            <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-ho-remind="@h.ID">@T["Chase"]</button>
+        }
+    </div>
+}
+<div class="text-end mt-3"><a href="@Url.Action("Handoffs", "Hospital")" class="fs-7 fw-bold">@T["Every handoff"] <span class="hp-num">(@(ViewBag.Total ?? 0))</span></a></div>

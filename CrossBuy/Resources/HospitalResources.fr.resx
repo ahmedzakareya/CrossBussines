@@ -7539,4 +7539,75 @@
   <data name="I confirmed the name and the date of birth (or the file number) with the patient" xml:space="preserve"><value>J'ai vérifié le nom et la date de naissance (ou le n° de dossier) avec le patient</value></data>
   <data name="This file" xml:space="preserve"><value>Ce dossier</value></data>
   <data name="no date of birth" xml:space="preserve"><value>sans date de naissance</value></data>
+  <data name="A confidential file is never located; otherwise the place is given and the inquiry is recorded." xml:space="preserve"><value>Un dossier confidentiel n'est jamais localisé ; sinon le lieu est donné et la demande enregistrée.</value></data>
+  <data name="Arrival: why they came and where they go" xml:space="preserve"><value>Arrivée : pourquoi et vers où</value></data>
+  <data name="Call the emergency team" xml:space="preserve"><value>Appeler l'équipe des urgences</value></data>
+  <data name="Cannot take" xml:space="preserve"><value>Impossible de prendre</value></data>
+  <data name="Chase" xml:space="preserve"><value>Relancer</value></data>
+  <data name="Choose the request they came for" xml:space="preserve"><value>Choisissez la demande pour laquelle il vient</value></data>
+  <data name="Choose what it is for" xml:space="preserve"><value>Choisissez l'objet</value></data>
+  <data name="Choose where to send them" xml:space="preserve"><value>Choisissez où l'envoyer</value></data>
+  <data name="Choose why they came" xml:space="preserve"><value>Choisissez le motif de venue</value></data>
+  <data name="Enter the visitor's name" xml:space="preserve"><value>Saisissez le nom du visiteur</value></data>
+  <data name="Enter who referred them" xml:space="preserve"><value>Saisissez qui l'a adressé</value></data>
+  <data name="Every handoff" xml:space="preserve"><value>Tous les transferts</value></data>
+  <data name="Every team" xml:space="preserve"><value>Toutes les équipes</value></data>
+  <data name="Handoffs" xml:space="preserve"><value>Transferts</value></data>
+  <data name="Incoming from reception" xml:space="preserve"><value>Arrivées depuis l'accueil</value></data>
+  <data name="Nobody is on the way from the desk." xml:space="preserve"><value>Personne n'est en route depuis l'accueil.</value></data>
+  <data name="Not taken in time" xml:space="preserve"><value>Non pris à temps</value></data>
+  <data name="Note for the receiving team" xml:space="preserve"><value>Note pour l'équipe qui reçoit</value></data>
+  <data name="Nothing of this kind is waiting for the patient: book it first, or choose another reason." xml:space="preserve"><value>Rien de ce type n'attend le patient : réservez d'abord, ou choisissez un autre motif.</value></data>
+  <data name="On the way" xml:space="preserve"><value>En route</value></data>
+  <data name="Open the patient's file first" xml:space="preserve"><value>Ouvrez d'abord le dossier du patient</value></data>
+  <data name="People the desk sent on: each must be taken by the receiving team; one not taken in time is chased." xml:space="preserve"><value>Les personnes envoyées par l'accueil : chacune doit être prise en charge ; celle qui ne l'est pas à temps est relancée.</value></data>
+  <data name="Search by patient, file or number…" xml:space="preserve"><value>Rechercher par patient, dossier ou numéro…</value></data>
+  <data name="Send on" xml:space="preserve"><value>Orienter</value></data>
+  <data name="Send to" xml:space="preserve"><value>Envoyer vers</value></data>
+  <data name="Sent; the receiving team must take them." xml:space="preserve"><value>Envoyé ; l'équipe qui reçoit doit le prendre en charge.</value></data>
+  <data name="Someone needs urgent help: the emergency team is called now; the patient is identified afterwards." xml:space="preserve"><value>Quelqu'un a besoin d'aide urgente : l'équipe des urgences est appelée maintenant ; le patient est identifié ensuite.</value></data>
+  <data name="Son, wife, friend…" xml:space="preserve"><value>Fils, épouse, ami…</value></data>
+  <data name="Take responsibility for {0}?" xml:space="preserve"><value>Prendre en charge {0} ?</value></data>
+  <data name="The clinic, hospital or doctor who referred them" xml:space="preserve"><value>Le cabinet, l'hôpital ou le médecin qui l'a adressé</value></data>
+  <data name="The patient is not inside the hospital now." xml:space="preserve"><value>Le patient n'est pas dans l'hôpital actuellement.</value></data>
+  <data name="The patient was already sent for this request" xml:space="preserve"><value>Le patient a déjà été envoyé pour cette demande</value></data>
+  <data name="The receiving team is reminded." xml:space="preserve"><value>L'équipe qui reçoit a été relancée.</value></data>
+  <data name="This file is confidential: no place may be given. The inquiry is recorded." xml:space="preserve"><value>Ce dossier est confidentiel : aucun lieu ne peut être donné. La demande est enregistrée.</value></data>
+  <data name="This handoff has moved on already" xml:space="preserve"><value>Ce transfert a déjà avancé</value></data>
+  <data name="This request is not open for the patient" xml:space="preserve"><value>Cette demande n'est pas ouverte pour le patient</value></data>
+  <data name="Today, all" xml:space="preserve"><value>Aujourd'hui, tout</value></data>
+  <data name="Unidentified — urgent" xml:space="preserve"><value>Non identifié — urgence</value></data>
+  <data name="Urgent help" xml:space="preserve"><value>Aide urgente</value></data>
+  <data name="Visitor's name" xml:space="preserve"><value>Nom du visiteur</value></data>
+  <data name="What is it for?" xml:space="preserve"><value>Pour quoi ?</value></data>
+  <data name="Where the patient is now" xml:space="preserve"><value>Où est le patient maintenant</value></data>
+  <data name="Why and where" xml:space="preserve"><value>Motif et destination</value></data>
+  <data name="Why can your team not take {0}? The desk is told." xml:space="preserve"><value>Pourquoi votre équipe ne peut-elle pas prendre {0} ? L'accueil est prévenu.</value></data>
+  <data name="Why did they come?" xml:space="preserve"><value>Pourquoi est-il venu ?</value></data>
+  <data name="Write the visitor's name and relation to the patient" xml:space="preserve"><value>Indiquez le nom du visiteur et son lien avec le patient</value></data>
+  <data name="Write who referred the patient" xml:space="preserve"><value>Indiquez qui a adressé le patient</value></data>
+  <data name="Write why the team cannot take the patient" xml:space="preserve"><value>Indiquez pourquoi l'équipe ne peut pas prendre le patient</value></data>
+  <data name="arr:Admin" xml:space="preserve"><value>Démarche administrative</value></data>
+  <data name="arr:Admission" xml:space="preserve"><value>Admission</value></data>
+  <data name="arr:Clinic" xml:space="preserve"><value>Rendez-vous en consultation</value></data>
+  <data name="arr:Imaging" xml:space="preserve"><value>Imagerie</value></data>
+  <data name="arr:Lab" xml:space="preserve"><value>Analyses</value></data>
+  <data name="arr:Operation" xml:space="preserve"><value>Opération</value></data>
+  <data name="arr:Urgent" xml:space="preserve"><value>Urgence</value></data>
+  <data name="arr:Visitor" xml:space="preserve"><value>Visiteur ou renseignement</value></data>
+  <data name="chased" xml:space="preserve"><value>relances</value></data>
+  <data name="dest:Billing" xml:space="preserve"><value>Facturation</value></data>
+  <data name="dest:Clinic" xml:space="preserve"><value>Consultation</value></data>
+  <data name="dest:Desk" xml:space="preserve"><value>Accueil</value></data>
+  <data name="dest:Emergency" xml:space="preserve"><value>Urgences</value></data>
+  <data name="dest:Imaging" xml:space="preserve"><value>Imagerie</value></data>
+  <data name="dest:Lab" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="dest:Theatre" xml:space="preserve"><value>Bloc opératoire</value></data>
+  <data name="dest:Ward" xml:space="preserve"><value>Service</value></data>
+  <data name="hos:Accepted" xml:space="preserve"><value>Pris en charge</value></data>
+  <data name="hos:Arrived" xml:space="preserve"><value>Arrivé</value></data>
+  <data name="hos:Closed" xml:space="preserve"><value>Clos</value></data>
+  <data name="hos:Failed" xml:space="preserve"><value>Non pris en charge</value></data>
+  <data name="hos:Sent" xml:space="preserve"><value>En route</value></data>
+  <data name="{0} has arrived with your team?" xml:space="preserve"><value>{0} est arrivé auprès de votre équipe ?</value></data>
 </root>

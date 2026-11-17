@@ -1,0 +1,360 @@
+{
+ "unit": "H158 - the desk's handoffs: why they came, where they go, and the receiving team's acceptance",
+ "strings": {
+  "arr:Clinic": {
+   "ar": "موعد عيادة",
+   "en": "Clinic appointment",
+   "fr": "Rendez-vous en consultation"
+  },
+  "arr:Lab": {
+   "ar": "تحاليل",
+   "en": "Lab tests",
+   "fr": "Analyses"
+  },
+  "arr:Imaging": {
+   "ar": "أشعة",
+   "en": "Imaging",
+   "fr": "Imagerie"
+  },
+  "arr:Admission": {
+   "ar": "دخول / إقامة",
+   "en": "Admission",
+   "fr": "Admission"
+  },
+  "arr:Operation": {
+   "ar": "عملية",
+   "en": "Operation",
+   "fr": "Opération"
+  },
+  "arr:Urgent": {
+   "ar": "حالة عاجلة",
+   "en": "Urgent",
+   "fr": "Urgence"
+  },
+  "arr:Visitor": {
+   "ar": "زائر / استفسار",
+   "en": "Visitor or inquiry",
+   "fr": "Visiteur ou renseignement"
+  },
+  "arr:Admin": {
+   "ar": "أمر إداري",
+   "en": "Administrative",
+   "fr": "Démarche administrative"
+  },
+  "dest:Clinic": {
+   "ar": "العيادة",
+   "en": "Clinic",
+   "fr": "Consultation"
+  },
+  "dest:Lab": {
+   "ar": "المعمل",
+   "en": "Laboratory",
+   "fr": "Laboratoire"
+  },
+  "dest:Imaging": {
+   "ar": "الأشعة",
+   "en": "Imaging",
+   "fr": "Imagerie"
+  },
+  "dest:Ward": {
+   "ar": "القسم الداخلي",
+   "en": "Ward",
+   "fr": "Service"
+  },
+  "dest:Theatre": {
+   "ar": "العمليات",
+   "en": "Theatre",
+   "fr": "Bloc opératoire"
+  },
+  "dest:Emergency": {
+   "ar": "الطوارئ",
+   "en": "Emergency",
+   "fr": "Urgences"
+  },
+  "dest:Billing": {
+   "ar": "الحسابات",
+   "en": "Billing",
+   "fr": "Facturation"
+  },
+  "dest:Desk": {
+   "ar": "الاستقبال",
+   "en": "Front desk",
+   "fr": "Accueil"
+  },
+  "hos:Sent": {
+   "ar": "في الطريق",
+   "en": "On the way",
+   "fr": "En route"
+  },
+  "hos:Accepted": {
+   "ar": "استلمه الفريق",
+   "en": "Taken by the team",
+   "fr": "Pris en charge"
+  },
+  "hos:Arrived": {
+   "ar": "وصل",
+   "en": "Arrived",
+   "fr": "Arrivé"
+  },
+  "hos:Failed": {
+   "ar": "تعذّر الاستلام",
+   "en": "Could not be taken",
+   "fr": "Non pris en charge"
+  },
+  "hos:Closed": {
+   "ar": "انتهى",
+   "en": "Closed",
+   "fr": "Clos"
+  },
+  "A confidential file is never located; otherwise the place is given and the inquiry is recorded.": {
+   "ar": "لا يُفصَح أبدًا عن مكان صاحب الملف السري؛ وفيما عدا ذلك يُذكَر المكان ويُسجَّل الاستفسار.",
+   "en": "A confidential file is never located; otherwise the place is given and the inquiry is recorded.",
+   "fr": "Un dossier confidentiel n'est jamais localisé ; sinon le lieu est donné et la demande enregistrée."
+  },
+  "Arrival: why they came and where they go": {
+   "ar": "الوصول: سبب الحضور والوجهة",
+   "en": "Arrival: why they came and where they go",
+   "fr": "Arrivée : pourquoi et vers où"
+  },
+  "Call the emergency team": {
+   "ar": "استدعِ فريق الطوارئ",
+   "en": "Call the emergency team",
+   "fr": "Appeler l'équipe des urgences"
+  },
+  "Cannot take": {
+   "ar": "تعذّر الاستلام",
+   "en": "Cannot take",
+   "fr": "Impossible de prendre"
+  },
+  "Chase": {
+   "ar": "تذكير",
+   "en": "Chase",
+   "fr": "Relancer"
+  },
+  "Choose the request they came for": {
+   "ar": "اختر الطلب الذي حضر من أجله",
+   "en": "Choose the request they came for",
+   "fr": "Choisissez la demande pour laquelle il vient"
+  },
+  "Choose what it is for": {
+   "ar": "اختر الغرض",
+   "en": "Choose what it is for",
+   "fr": "Choisissez l'objet"
+  },
+  "Choose where to send them": {
+   "ar": "اختر الجهة التي يُوجَّه إليها",
+   "en": "Choose where to send them",
+   "fr": "Choisissez où l'envoyer"
+  },
+  "Choose why they came": {
+   "ar": "اختر سبب الحضور",
+   "en": "Choose why they came",
+   "fr": "Choisissez le motif de venue"
+  },
+  "Enter the visitor's name": {
+   "ar": "اكتب اسم الزائر",
+   "en": "Enter the visitor's name",
+   "fr": "Saisissez le nom du visiteur"
+  },
+  "Enter who referred them": {
+   "ar": "اكتب جهة التحويل",
+   "en": "Enter who referred them",
+   "fr": "Saisissez qui l'a adressé"
+  },
+  "Every handoff": {
+   "ar": "كل التسليمات",
+   "en": "Every handoff",
+   "fr": "Tous les transferts"
+  },
+  "Every team": {
+   "ar": "كل الفرق",
+   "en": "Every team",
+   "fr": "Toutes les équipes"
+  },
+  "Handoffs": {
+   "ar": "التسليمات",
+   "en": "Handoffs",
+   "fr": "Transferts"
+  },
+  "Incoming from reception": {
+   "ar": "الوارد من الاستقبال",
+   "en": "Incoming from reception",
+   "fr": "Arrivées depuis l'accueil"
+  },
+  "Nobody is on the way from the desk.": {
+   "ar": "لا يوجد أحد في الطريق من الاستقبال.",
+   "en": "Nobody is on the way from the desk.",
+   "fr": "Personne n'est en route depuis l'accueil."
+  },
+  "Not taken in time": {
+   "ar": "لم يُستلم في وقته",
+   "en": "Not taken in time",
+   "fr": "Non pris à temps"
+  },
+  "Note for the receiving team": {
+   "ar": "ملاحظة للفريق المختص",
+   "en": "Note for the receiving team",
+   "fr": "Note pour l'équipe qui reçoit"
+  },
+  "Nothing of this kind is waiting for the patient: book it first, or choose another reason.": {
+   "ar": "لا يوجد شيء من هذا النوع بانتظار المريض: احجزه أولًا أو اختر سببًا آخر.",
+   "en": "Nothing of this kind is waiting for the patient: book it first, or choose another reason.",
+   "fr": "Rien de ce type n'attend le patient : réservez d'abord, ou choisissez un autre motif."
+  },
+  "On the way": {
+   "ar": "في الطريق",
+   "en": "On the way",
+   "fr": "En route"
+  },
+  "Open the patient's file first": {
+   "ar": "افتح ملف المريض أولًا",
+   "en": "Open the patient's file first",
+   "fr": "Ouvrez d'abord le dossier du patient"
+  },
+  "People the desk sent on: each must be taken by the receiving team; one not taken in time is chased.": {
+   "ar": "المرضى الذين وجّههم الاستقبال: يجب أن يستلم الفريقُ المختص كلَّ حالة، ويُذكَّر بما لم يُستلَم في وقته.",
+   "en": "People the desk sent on: each must be taken by the receiving team; one not taken in time is chased.",
+   "fr": "Les personnes envoyées par l'accueil : chacune doit être prise en charge ; celle qui ne l'est pas à temps est relancée."
+  },
+  "Search by patient, file or number…": {
+   "ar": "ابحث بالمريض أو الملف أو الرقم…",
+   "en": "Search by patient, file or number…",
+   "fr": "Rechercher par patient, dossier ou numéro…"
+  },
+  "Send on": {
+   "ar": "توجيه",
+   "en": "Send on",
+   "fr": "Orienter"
+  },
+  "Send to": {
+   "ar": "أرسل إلى",
+   "en": "Send to",
+   "fr": "Envoyer vers"
+  },
+  "Sent; the receiving team must take them.": {
+   "ar": "أُرسِل؛ ويجب أن يستلمه الفريق المختص.",
+   "en": "Sent; the receiving team must take them.",
+   "fr": "Envoyé ; l'équipe qui reçoit doit le prendre en charge."
+  },
+  "Someone needs urgent help: the emergency team is called now; the patient is identified afterwards.": {
+   "ar": "شخص يحتاج إلى مساعدة عاجلة: يُستدعى فريق الطوارئ الآن، ويُتعرَّف على المريض لاحقًا.",
+   "en": "Someone needs urgent help: the emergency team is called now; the patient is identified afterwards.",
+   "fr": "Quelqu'un a besoin d'aide urgente : l'équipe des urgences est appelée maintenant ; le patient est identifié ensuite."
+  },
+  "Son, wife, friend…": {
+   "ar": "ابن، زوجة، صديق…",
+   "en": "Son, wife, friend…",
+   "fr": "Fils, épouse, ami…"
+  },
+  "Take responsibility for {0}?": {
+   "ar": "هل تستلم {0}؟",
+   "en": "Take responsibility for {0}?",
+   "fr": "Prendre en charge {0} ?"
+  },
+  "The clinic, hospital or doctor who referred them": {
+   "ar": "العيادة أو المستشفى أو الطبيب المحوِّل",
+   "en": "The clinic, hospital or doctor who referred them",
+   "fr": "Le cabinet, l'hôpital ou le médecin qui l'a adressé"
+  },
+  "The patient is not inside the hospital now.": {
+   "ar": "المريض ليس داخل المستشفى الآن.",
+   "en": "The patient is not inside the hospital now.",
+   "fr": "Le patient n'est pas dans l'hôpital actuellement."
+  },
+  "The patient was already sent for this request": {
+   "ar": "وُجِّه المريض بالفعل لهذا الطلب",
+   "en": "The patient was already sent for this request",
+   "fr": "Le patient a déjà été envoyé pour cette demande"
+  },
+  "The receiving team is reminded.": {
+   "ar": "أُرسِل تذكير إلى الفريق المختص.",
+   "en": "The receiving team is reminded.",
+   "fr": "L'équipe qui reçoit a été relancée."
+  },
+  "This file is confidential: no place may be given. The inquiry is recorded.": {
+   "ar": "هذا الملف سري: لا يجوز الإفصاح عن أي مكان. وقد سُجِّل الاستفسار.",
+   "en": "This file is confidential: no place may be given. The inquiry is recorded.",
+   "fr": "Ce dossier est confidentiel : aucun lieu ne peut être donné. La demande est enregistrée."
+  },
+  "This handoff has moved on already": {
+   "ar": "تقدّمت هذه الحالة بالفعل",
+   "en": "This handoff has moved on already",
+   "fr": "Ce transfert a déjà avancé"
+  },
+  "This request is not open for the patient": {
+   "ar": "هذا الطلب غير مفتوح للمريض",
+   "en": "This request is not open for the patient",
+   "fr": "Cette demande n'est pas ouverte pour le patient"
+  },
+  "Today, all": {
+   "ar": "اليوم، الكل",
+   "en": "Today, all",
+   "fr": "Aujourd'hui, tout"
+  },
+  "Unidentified — urgent": {
+   "ar": "غير معروف — عاجل",
+   "en": "Unidentified — urgent",
+   "fr": "Non identifié — urgence"
+  },
+  "Urgent help": {
+   "ar": "مساعدة عاجلة",
+   "en": "Urgent help",
+   "fr": "Aide urgente"
+  },
+  "Visitor's name": {
+   "ar": "اسم الزائر",
+   "en": "Visitor's name",
+   "fr": "Nom du visiteur"
+  },
+  "What is it for?": {
+   "ar": "ما الغرض؟",
+   "en": "What is it for?",
+   "fr": "Pour quoi ?"
+  },
+  "Where the patient is now": {
+   "ar": "مكان المريض الآن",
+   "en": "Where the patient is now",
+   "fr": "Où est le patient maintenant"
+  },
+  "Why and where": {
+   "ar": "السبب والوجهة",
+   "en": "Why and where",
+   "fr": "Motif et destination"
+  },
+  "Why can your team not take {0}? The desk is told.": {
+   "ar": "لماذا يتعذّر على فريقك استلام {0}؟ سيُبلَّغ الاستقبال.",
+   "en": "Why can your team not take {0}? The desk is told.",
+   "fr": "Pourquoi votre équipe ne peut-elle pas prendre {0} ? L'accueil est prévenu."
+  },
+  "Why did they come?": {
+   "ar": "ما سبب الحضور؟",
+   "en": "Why did they come?",
+   "fr": "Pourquoi est-il venu ?"
+  },
+  "Write the visitor's name and relation to the patient": {
+   "ar": "اكتب اسم الزائر وصلته بالمريض",
+   "en": "Write the visitor's name and relation to the patient",
+   "fr": "Indiquez le nom du visiteur et son lien avec le patient"
+  },
+  "Write who referred the patient": {
+   "ar": "اكتب الجهة التي حوّلت المريض",
+   "en": "Write who referred the patient",
+   "fr": "Indiquez qui a adressé le patient"
+  },
+  "Write why the team cannot take the patient": {
+   "ar": "اكتب سبب تعذّر استلام الفريق للمريض",
+   "en": "Write why the team cannot take the patient",
+   "fr": "Indiquez pourquoi l'équipe ne peut pas prendre le patient"
+  },
+  "chased": {
+   "ar": "تذكيرات",
+   "en": "chased",
+   "fr": "relances"
+  },
+  "{0} has arrived with your team?": {
+   "ar": "هل وصل {0} إلى فريقك؟",
+   "en": "{0} has arrived with your team?",
+   "fr": "{0} est arrivé auprès de votre équipe ?"
+  }
+ }
+}
