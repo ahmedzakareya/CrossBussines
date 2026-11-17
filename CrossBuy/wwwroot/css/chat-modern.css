@@ -75,8 +75,27 @@
 #chatScroll .chat-msg .d-flex.gap-1 .badge { background: #fff !important; color: #1F2D4D; border: 1px solid var(--bs-gray-200); border-radius: 12px; font-weight: 600; }
 #chatScroll .chat-msg .d-flex.gap-1 .badge.badge-light-primary { background: #E7F0FF !important; border-color: #C9D8F5; }
 
-/* the hover tools float as one white strip */
-#chatScroll .chat-tools { border-radius: 12px !important; box-shadow: 0 4px 14px rgba(31,45,77,.12) !important; padding: 3px; }
+/* the hover tools: one white strip - three quick reactions, a divider, then the actions as clear brand icons */
+#chatScroll .chat-tools {
+    align-items: center; gap: 2px !important; padding: 4px !important; border-radius: 14px !important;
+    border: 1px solid var(--bs-gray-200) !important; box-shadow: 0 6px 18px rgba(31,45,77,.14) !important; top: -20px !important;
+}
+#chatScroll .chat-tools .btn {
+    width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 10px !important; border: 0 !important;
+    background: transparent !important; display: inline-flex; align-items: center; justify-content: center;
+    transition: background-color .12s ease, transform .12s ease;
+}
+#chatScroll .chat-tools .btn.rx { font-size: 1.15rem; line-height: 1; }
+#chatScroll .chat-tools .btn.rx:hover { background: var(--bs-gray-100) !important; transform: scale(1.15); }
+#chatScroll .chat-tools .btn i { font-size: 1.2rem !important; color: #3A5795 !important; }
+#chatScroll .chat-tools .btn:not(.rx):hover { background: #E7F0FF !important; }
+#chatScroll .chat-tools .btn.rxmore { position: relative; margin-inline-start: 7px; }
+#chatScroll .chat-tools .btn.rxmore::before {
+    content: ""; position: absolute; inset-inline-start: -5px; top: 8px; bottom: 8px; width: 1px; background: var(--bs-gray-200);
+}
+#chatScroll .chat-tools .btn.dl i { color: var(--bs-gray-600) !important; }
+#chatScroll .chat-tools .btn.dl:hover { background: var(--bs-danger-light, #fff5f8) !important; }
+#chatScroll .chat-tools .btn.dl:hover i { color: var(--bs-danger) !important; }
 
 /* ---------- the composer ---------- */
 #chatFooter { background: var(--bs-body-bg); border-top: 1px solid var(--bs-gray-200) !important; padding: .6rem .8rem !important; }
