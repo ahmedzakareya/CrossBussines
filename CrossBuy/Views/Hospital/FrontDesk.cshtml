@@ -47,8 +47,10 @@
     var stages = new[] { (Key: "", Label: T["All"].Value) }.Concat(HospitalDeskStage.All.Select(s => (Key: s, Label: T["desk:" + s].Value))).ToList();
     int unconfirmed = ViewBag.Unconfirmed is int uc ? uc : 0;
     var (hoOpen, hoOverdue) = ViewBag.Handoffs is ValueTuple<int, int> ho ? ho : (0, 0);   // H158
+    var gapN = ViewBag.Gaps as HospitalCheckinGapCounts ?? new HospitalCheckinGapCounts(0, 0, 0, 0);   // H159
     var work = new (string Key, string Label, int N, string Tone, string Text)[] {
         ("handoff", T["On the way"].Value, hoOpen, hoOverdue > 0 ? "danger" : "primary", T["People the desk sent on: each must be taken by the receiving team; one not taken in time is chased."].Value),
+        ("gaps", T["Check-in gaps"].Value, gapN.Mine + gapN.Unassigned, gapN.Overdue > 0 ? "danger" : "primary", T["Check-in steps followed up after the counter: yours and those nobody has taken yet."].Value),
         ("confirm", T["Confirm tomorrow"].Value, unconfirmed, "primary", T["Tomorrow's appointments: call those who have not confirmed."].Value),
         ("portal", T["Portal requests"].Value, inbox.PortalRequests, "primary", T["Booking requests patients sent from the portal, waiting for a slot."].Value),
         ("waitlist", T["Waitlist"].Value, inbox.WaitlistOffers, "primary", T["Freed slots offered to patients waiting for an earlier one."].Value),
@@ -251,7 +253,7 @@
                 <div class="card h-100 mb-0">
                     <div class="card-header border-0 pt-6">
                         <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The desk's work"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@string.Format(T["{0} items"].Value, inbox.Total + unconfirmed + hoOpen)</span></div>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@string.Format(T["{0} items"].Value, inbox.Total + unconfirmed + hoOpen + gapN.Mine + gapN.Unassigned)</span></div>
                     </div>
                     <div class="card-body pt-2">
                         <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold mb-6" role="tablist">
@@ -343,7 +345,10 @@
                 card: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), slots: @Json.Serialize(Url.Action("FrontDeskWalkInSlots")), walkin: @Json.Serialize(Url.Action("FrontDeskWalkIn")),
                 move: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")), collect: @Json.Serialize(Url.Content("~/Hospital/Bill/")), deskCollect: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Bill/")),
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")),
-                arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")) };
+                arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")),
+                gapWin: @Json.Serialize(Url.Action("FrontDeskGap")), gaps: @Json.Serialize(Url.Action("FrontDeskGaps")), gapsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Gaps")), gapAct: @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/")) };
+            var W6 = { gap: @Json.Serialize(T["Follow up a check-in step"].Value), reason: @Json.Serialize(T["Write why it could not be finished at the counter"].Value), opened: @Json.Serialize(T["Followed up; it is on the check-in gaps list."].Value),
+                done: @Json.Serialize(T["Mark \"{0}\" as finished?"].Value), take: @Json.Serialize(T["Take this follow-up as yours?"].Value) };
             var W5 = { arrival: @Json.Serialize(T["Arrival: why they came and where they go"].Value), urgent: @Json.Serialize(T["Urgent help"].Value), pick: @Json.Serialize(T["Choose why they came"].Value),
                 pickOpt: @Json.Serialize(T["Choose what it is for"].Value), sent: @Json.Serialize(T["Sent; the receiving team must take them."].Value), chased: @Json.Serialize(T["The receiving team is reminded."].Value),
                 where: @Json.Serialize(T["Where the patient is now"].Value), secret: @Json.Serialize(T["This file is confidential: no place may be given. The inquiry is recorded."].Value), nowhere: @Json.Serialize(T["The patient is not inside the hospital now."].Value),
@@ -421,7 +426,7 @@
 
             // the desk's work: a tab loads when it is opened (the first at once)
             function loadWork(k) { var el = document.querySelector('[data-desk-work="' + k + '"]'); if (!el) return;
-                get(k === 'handoff' ? U.handoffs : U.work + '?kind=' + k).then(function (h) { el.innerHTML = h; tips(el); }); }
+                get(k === 'handoff' ? U.handoffs : k === 'gaps' ? U.gaps : U.work + '?kind=' + k).then(function (h) { el.innerHTML = h; tips(el); }); }
             document.querySelectorAll('a[href^="#desk_w_"]').forEach(function (a) { a.addEventListener('shown.bs.tab', function () { loadWork(a.getAttribute('href').replace('#desk_w_', '')); }); });
             loadWork('handoff');
 
@@ -442,6 +447,22 @@
                 box.querySelector('[data-arr-none]').classList.toggle('d-none', !withOpts || n > 0);
             }
             mBody.addEventListener('change', function (e) { if (e.target.name === 'arrReason') arrShow(); });
+            // H159: a check-in step followed up after the counter — the step, why, who, by when
+            function gapWindow(patient, item) {
+                windowOf(W6.gap, U.gapWin + '?patient=' + patient + (item ? '&item=' + item : ''), 'mw-650px');
+                var wait = setInterval(function () { var box = mBody.querySelector('[data-gap]'); if (!box) return; clearInterval(wait);
+                    var d = box.querySelector('[data-gap-f="due"]');
+                    if (d && window.flatpickr) flatpickr(d, { dateFormat: 'Y-m-d', defaultDate: d.value, minDate: box.getAttribute('data-today'), maxDate: new Date(new Date(box.getAttribute('data-today')).getTime() + 90 * 864e5), disableMobile: true, static: true,
+                        locale: @(isAr ? "true" : "false") && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default' });
+                }, 100);
+            }
+            function gapSave(btn) {
+                var box = mBody.querySelector('[data-gap]'), f = function (k) { return box.querySelector('[data-gap-f="' + k + '"]').value.trim(); };
+                if (!f('reason')) { toastr.warning(W6.reason); return; }
+                var pid = Number(box.getAttribute('data-patient')); btn.disabled = true;
+                post(U.gapsPost, { patientId: pid, item: f('item'), reason: f('reason'), ownerEmployeeId: f('owner') ? Number(f('owner')) : null, dueDate: f('due') })
+                    .then(function (r) { btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W6.opened); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); if (current === pid) openCard(pid, false); loadWork('gaps'); });
+            }
             function arrSend(btn) {
                 var box = mBody.querySelector('[data-arrival]'), v = function (k) { var el = box.querySelector('[data-arr="' + k + '"]'); return el ? el.value.trim() : ''; };
                 var r = (box.querySelector('input[name="arrReason"]:checked') || {}).value; if (!r) { toastr.warning(W5.pick); return; }
@@ -664,6 +685,11 @@
                     return;
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }
+                if ((t = e.target.closest('[data-desk-gap]'))) { e.preventDefault(); gapWindow(t.getAttribute('data-desk-gap'), t.getAttribute('data-item')); return; }
+                if ((t = e.target.closest('[data-gap-save]'))) { e.preventDefault(); gapSave(t); return; }
+                if ((t = e.target.closest('[data-gap-act]'))) { e.preventDefault(); var gid = t.getAttribute('data-id'), gact = t.getAttribute('data-gap-act'), gb = t;
+                    cbConfirm(gact === 'Take' ? W6.take : W6.done.replace('{0}', t.getAttribute('data-what') || ''), { kind: 'primary' }).then(function (ok) { if (!ok) return; gb.disabled = true;
+                        post(U.gapAct + gid + '/' + gact).then(function (r) { gb.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.saved); loadWork('gaps'); if (current) openCard(current, false); }); }); return; }
                 if ((t = e.target.closest('[data-desk-arrival]'))) { e.preventDefault(); arrivalWindow(t.getAttribute('data-desk-arrival')); return; }
                 if ((t = e.target.closest('[data-arr-send]'))) { e.preventDefault(); arrSend(t); return; }
                 if ((t = e.target.closest('[data-ho-remind]'))) { e.preventDefault(); t.disabled = true;

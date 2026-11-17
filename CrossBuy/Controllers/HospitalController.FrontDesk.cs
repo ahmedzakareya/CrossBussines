@@ -48,6 +48,8 @@ namespace CrossBuy.Controllers
 			ViewBag.Inbox = await FrontDeskSvc.InboxAsync(ctx, now, ct);
 			ViewBag.Unconfirmed = await DeskWorkSvc.UnconfirmedAsync(ctx, today.AddDays(1), ct);   // H141
 			ViewBag.Handoffs = await HandoffSvc.CountsAsync(ctx, now, ct);   // H158
+			await GapSvc.SettleAsync(ctx, null, now, ct);   // H159
+			ViewBag.Gaps = await GapSvc.CountsAsync(ctx, ctx.EmployeeId, today, ct);
 			ViewBag.StageCounts = board.GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count());
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.Doctors = await _outpatient.PractitionersAsync(ctx, ct);
@@ -148,6 +150,8 @@ namespace CrossBuy.Controllers
 			ViewBag.Where = where.GetValueOrDefault(id) ?? Array.Empty<HospitalWhere>(); ViewBag.Restricted = restricted.Contains(id);
 			ViewBag.History = await ActivatorUtilities.CreateInstance<HospitalDeskHistoryService>(HttpContext.RequestServices).HistoryAsync(ctx, id, 8, today, ct);
 			ViewBag.Lookalikes = await ActivatorUtilities.CreateInstance<HospitalDeskIdentityService>(HttpContext.RequestServices).LookalikesAsync(ctx, id, 3, ct);   // H157
+			await GapSvc.SettleAsync(ctx, new[] { id }, now, ct);   // H159: a step done on the file closes its follow-up
+			ViewBag.Gaps = await GapSvc.ForPatientAsync(ctx, id, ct); ViewBag.Today = today;
 			return PartialView("_DeskCard", card);
 		}
 

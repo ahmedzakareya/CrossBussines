@@ -1024,7 +1024,7 @@
   <data name="Acknowledged with read-back — the lab sees it now" xml:space="preserve"><value>سُجّل الاستلام مع قراءة القيمة — يراه المختبر الآن</value></data>
   <data name="Alert by danger" xml:space="preserve"><value>شكل التنبيه حسب الخطر</value></data>
   <data name="Alert sent to {0}" xml:space="preserve"><value>أُرسل التنبيه إلى {0}</value></data>
-  <data name="An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system" xml:space="preserve"><value>تنبيه يظهر في أي شاشة من النظام ويمنع العمل حتى الاستلام — ولو مش داخل النظام يظهر أول ما يفتحه</value></data>
+  <data name="An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system" xml:space="preserve"><value>تنبيه يظهر في أي شاشة من النظام ويمنع العمل حتى الاستلام — وإن لم يكن داخل النظام يظهر فور دخوله</value></data>
   <data name="Awaiting acknowledgement with read-back" xml:space="preserve"><value>بانتظار الاستلام وقراءة القيمة</value></data>
   <data name="Choose the doctor to tell" xml:space="preserve"><value>اختر الطبيب الذي سيُبلَّغ</value></data>
   <data name="Choose the doctor to tell: he gets an alert on any screen of the system until he reads the value back. The flag stays raised until then." xml:space="preserve"><value>اختر الطبيب الذي سيُبلَّغ: يصله تنبيه في أي شاشة من النظام حتى يقرأ القيمة. تبقى العلامة مرفوعة حتى ذلك.</value></data>
@@ -5095,7 +5095,7 @@
   <data name="Anticoagulation" xml:space="preserve"><value>مضاد التجلط</value></data>
   <data name="Before" xml:space="preserve"><value>قبل الجلسة</value></data>
   <data name="Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain." xml:space="preserve">
-    <value>أقل من 90 يعني هبوط ضغط أثناء الغسيل؛ وكذلك نزول 20 عن ضغط ما قبل الجلسة مع تقلصات أو غثيان أو صداع أو ألم في الصدر.</value>
+    <value>ما دون 90 يُعدّ هبوطًا في الضغط أثناء الغسيل؛ وكذلك انخفاض 20 عن ضغط ما قبل الجلسة مع تقلصات أو غثيان أو صداع أو ألم في الصدر.</value>
   </data>
   <data name="Blood / dialysate flow" xml:space="preserve"><value>تدفق الدم / المحلول</value></data>
   <data name="Blood flow" xml:space="preserve"><value>تدفق الدم</value></data>
@@ -6421,7 +6421,7 @@
   <data name="Patient emergency plan" xml:space="preserve"><value>خطة الطوارئ للمريض</value></data>
   <data name="The glasses prescription and the letter print once the visit is signed: they say what was signed." xml:space="preserve"><value>وصفة النظارة والتقرير يُطبعان بعد توقيع الزيارة: لأنهما يقولان ما تم توقيعه.</value></data>
   <data name="Earlier results" xml:space="preserve"><value>النتائج السابقة</value></data>
-  <data name="0 means no pain at all; 10 means the worst pain you can imagine." xml:space="preserve"><value>صفر يعني لا ألم إطلاقًا، و١٠ يعني أسوأ ألم ممكن تتخيله.</value></data>
+  <data name="0 means no pain at all; 10 means the worst pain you can imagine." xml:space="preserve"><value>الصفر يدل على انعدام الألم تمامًا، و١٠ يدل على أشد ألم يمكن تخيّله.</value></data>
   <data name="Check before you send" xml:space="preserve"><value>راجع قبل الإرسال</value></data>
   <data name="Choose every word that fits, or none." xml:space="preserve"><value>اختر كل كلمة تناسب ألمك، أو لا شيء.</value></data>
   <data name="Choose how strong the pain is, from 0 to 10" xml:space="preserve"><value>اختر شدة الألم من ٠ إلى ١٠</value></data>
@@ -7610,4 +7610,56 @@
   <data name="hos:Failed" xml:space="preserve"><value>تعذّر الاستلام</value></data>
   <data name="hos:Sent" xml:space="preserve"><value>في الطريق</value></data>
   <data name="{0} has arrived with your team?" xml:space="preserve"><value>هل وصل {0} إلى فريقك؟</value></data>
+  <data name="Check-in gaps" xml:space="preserve"><value>نواقص التسجيل</value></data>
+  <data name="Check-in steps followed up after the counter: yours and those nobody has taken yet." xml:space="preserve"><value>خطوات التسجيل التي تُتابَع بعد الشباك: المسندة إليك وتلك التي لم يتسلمها أحد بعد.</value></data>
+  <data name="Choose someone from this company" xml:space="preserve"><value>اختر موظفًا من هذه الشركة</value></data>
+  <data name="Choose the date it must be finished by" xml:space="preserve"><value>اختر الموعد النهائي للإنجاز</value></data>
+  <data name="Choose the missing step" xml:space="preserve"><value>اختر الخطوة الناقصة</value></data>
+  <data name="Closed" xml:space="preserve"><value>مغلق</value></data>
+  <data name="Done on the file" xml:space="preserve"><value>أُنجز في الملف</value></data>
+  <data name="Every check-in gap" xml:space="preserve"><value>جميع نواقص التسجيل</value></data>
+  <data name="Every step" xml:space="preserve"><value>جميع الخطوات</value></data>
+  <data name="Everyone's" xml:space="preserve"><value>الجميع</value></data>
+  <data name="Finished" xml:space="preserve"><value>أُنجز</value></data>
+  <data name="Follow up" xml:space="preserve"><value>متابعة</value></data>
+  <data name="Follow up a check-in step" xml:space="preserve"><value>متابعة خطوة تسجيل</value></data>
+  <data name="Follow up later" xml:space="preserve"><value>متابعة لاحقًا</value></data>
+  <data name="Follow-ups" xml:space="preserve"><value>المتابعات</value></data>
+  <data name="Followed up" xml:space="preserve"><value>قيد المتابعة</value></data>
+  <data name="Followed up; it is on the check-in gaps list." xml:space="preserve"><value>سُجِّلت المتابعة، وهي الآن في قائمة نواقص التسجيل.</value></data>
+  <data name="For example: the patient will bring the ID tomorrow" xml:space="preserve"><value>مثال: سيُحضر المريض الهوية غدًا</value></data>
+  <data name="Mark &quot;{0}&quot; as finished?" xml:space="preserve"><value>هل تريد تسجيل «{0}» على أنه أُنجز؟</value></data>
+  <data name="Mine" xml:space="preserve"><value>المسندة إليّ</value></data>
+  <data name="No check-in step is waiting on you." xml:space="preserve"><value>لا توجد خطوة تسجيل بانتظارك.</value></data>
+  <data name="Nobody yet" xml:space="preserve"><value>لم يتسلمها أحد</value></data>
+  <data name="Nobody yet: whoever takes it" xml:space="preserve"><value>لا أحد بعد: يتسلمها أول من يتولاها</value></data>
+  <data name="Search by patient, file or reason…" xml:space="preserve"><value>ابحث بالمريض أو الملف أو السبب…</value></data>
+  <data name="Step and reason" xml:space="preserve"><value>الخطوة والسبب</value></data>
+  <data name="Take" xml:space="preserve"><value>تسلّم</value></data>
+  <data name="Take this follow-up as yours?" xml:space="preserve"><value>هل تتسلم هذه المتابعة؟</value></data>
+  <data name="The due date must be within 90 days" xml:space="preserve"><value>يجب أن يكون الموعد النهائي خلال 90 يومًا</value></data>
+  <data name="The missing step" xml:space="preserve"><value>الخطوة الناقصة</value></data>
+  <data name="This follow-up is closed already" xml:space="preserve"><value>هذه المتابعة مغلقة بالفعل</value></data>
+  <data name="This step is already being followed for the patient" xml:space="preserve"><value>هذه الخطوة قيد المتابعة بالفعل لهذا المريض</value></data>
+  <data name="This step is already done on the file" xml:space="preserve"><value>هذه الخطوة منجزة بالفعل في الملف</value></data>
+  <data name="To be finished by" xml:space="preserve"><value>الموعد النهائي</value></data>
+  <data name="Waive" xml:space="preserve"><value>إعفاء</value></data>
+  <data name="Who follows it" xml:space="preserve"><value>المسؤول عن المتابعة</value></data>
+  <data name="Why is &quot;{0}&quot; waived?" xml:space="preserve"><value>ما سبب الإعفاء من «{0}»؟</value></data>
+  <data name="Why it could not be finished now" xml:space="preserve"><value>سبب تعذّر إنجازها الآن</value></data>
+  <data name="Write why it could not be finished at the counter" xml:space="preserve"><value>اكتب سبب تعذّر إنجازها عند الشباك</value></data>
+  <data name="Write why the step is waived" xml:space="preserve"><value>اكتب سبب الإعفاء من الخطوة</value></data>
+  <data name="gap:balance" xml:space="preserve"><value>المبلغ المستحق</value></data>
+  <data name="gap:consent" xml:space="preserve"><value>الإقرارات والموافقات</value></data>
+  <data name="gap:document" xml:space="preserve"><value>مستند ناقص</value></data>
+  <data name="gap:identity" xml:space="preserve"><value>إثبات الهوية</value></data>
+  <data name="gap:payer" xml:space="preserve"><value>جهة الدفع</value></data>
+  <data name="gap:phone" xml:space="preserve"><value>بيانات التواصل</value></data>
+  <data name="gap:photo" xml:space="preserve"><value>الصورة</value></data>
+  <data name="gst:Done" xml:space="preserve"><value>أُنجز</value></data>
+  <data name="gst:Open" xml:space="preserve"><value>مفتوح</value></data>
+  <data name="gst:Waived" xml:space="preserve"><value>أُعفي منه</value></data>
+  <data name="me" xml:space="preserve"><value>أنا</value></data>
+  <data name="opened by" xml:space="preserve"><value>فتحها</value></data>
+  <data name="due by" xml:space="preserve"><value>الموعد</value></data>
 </root>

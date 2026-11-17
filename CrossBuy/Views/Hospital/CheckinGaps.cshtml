@@ -1,0 +1,107 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H159 — check-in gaps: every check-in step followed up after the counter, with its owner, reason and due date. Four
+    tiles (open, overdue, mine, nobody's — each sets the filter), whose / step / state filters, search, pages; take,
+    finished and waive are confirmed first (a waiver says why). Steps the file proves done close by themselves.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Check-in gaps"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var c = ViewBag.Counts as HospitalCheckinGapCounts ?? new HospitalCheckinGapCounts(0, 0, 0, 0); string? whose = ViewBag.Whose as string;
+    var tiles = new[] {
+        (Label: T["Open"].Value, N: c.Open, Icon: "ki-notepad-edit", Alert: false, Whose: "", State: "open"),
+        (Label: T["Overdue"].Value, N: c.Overdue, Icon: "ki-time", Alert: c.Overdue > 0, Whose: "", State: "overdue"),
+        (Label: T["Mine"].Value, N: c.Mine, Icon: "ki-user", Alert: false, Whose: "mine", State: "open"),
+        (Label: T["Nobody yet"].Value, N: c.Unassigned, Icon: "ki-questionnaire-tablet", Alert: false, Whose: "unassigned", State: "open") };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Check-in gaps"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("FrontDesk")" class="text-muted text-hover-primary">@T["Front desk"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Check-in gaps"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var t in tiles)
+            {
+                <div class="col-sm-6 col-xl-3">
+                    <a href="#" class="card card-flush h-100 bg-hover-light" data-gap-tile data-whose="@t.Whose" data-state="@t.State"><div class="card-body d-flex align-items-center gap-5 py-6">
+                        <div class="symbol symbol-50px"><span class="symbol-label bg-light-@(t.Alert ? "danger" : "primary")"><i class="ki-outline @t.Icon fs-2x text-@(t.Alert ? "danger" : "primary")"></i></span></div>
+                        <div class="d-flex flex-column"><span class="fs-2hx fw-bold text-@(t.Alert ? "danger" : "gray-900") lh-1 hp-num">@t.N</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@t.Label</span></div>
+                    </div></a>
+                </div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Follow-ups"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-200px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, file or reason…"]" /></div>
+                    <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_whose">
+                        <option value="">@T["Everyone's"]</option><option value="mine" selected="@(whose == "mine")">@T["Mine"]</option><option value="unassigned" selected="@(whose == "unassigned")">@T["Nobody yet"]</option>
+                    </select></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_item">
+                        <option value="">@T["Every step"]</option>
+                        @foreach (var k in HospitalCheckinItem.All) { <option value="@k">@T["gap:" + k]</option> }
+                    </select></div>
+                    <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state">
+                        <option value="open">@T["Open"]</option><option value="overdue">@T["Overdue"]</option><option value="closed">@T["Closed"]</option><option value="all">@T["All"]</option>
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 min-w-200px rounded-start">@T["Patient"]</th><th class="min-w-200px">@T["Step and reason"]</th><th class="min-w-150px">@T["Who follows it"]</th><th>@T["By"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="6" class="text-center py-12"><i class="ki-outline ki-check-square fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var whose = document.getElementById('f_whose'), item = document.getElementById('f_item'), state = document.getElementById('f_state');
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("CheckinGapsData")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('whose', whose.value); p.set('item', item.value); p.set('state', state.value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, base = @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/"));
+            var W = { done: @Json.Serialize(T["Mark \"{0}\" as finished?"].Value), waive: @Json.Serialize(T["Why is \"{0}\" waived?"].Value), take: @Json.Serialize(T["Take this follow-up as yours?"].Value),
+                saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(r) { if (!r.ok) { toastr.error(r.error || r.message || W.failed); return; } toastr.success(W.saved); list.reload(); }
+            // a native event reaches both the list's own listener and select2's (a jQuery-only trigger misses the former)
+            function setSel(el, v) { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-gap-tile]');
+                if (t) { e.preventDefault(); setSel(whose, t.getAttribute('data-whose')); setSel(state, t.getAttribute('data-state')); return; }
+                var b = e.target.closest('[data-gap-act]'); if (!b) return;
+                e.preventDefault(); var id = b.getAttribute('data-id'), act = b.getAttribute('data-gap-act'), what = b.getAttribute('data-what') || '';
+                if (act === 'Waive') { cbPrompt(W.waive.replace('{0}', what), { textarea: true }).then(function (why) { if (why != null) post(base + id + '/Waive', { note: why }).then(done); }); return; }
+                cbConfirm(act === 'Take' ? W.take : W.done.replace('{0}', what), { kind: 'primary' }).then(function (ok) { if (ok) post(base + id + '/' + act).then(done); });
+            });
+        })();
+    </script>
+}

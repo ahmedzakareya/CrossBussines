@@ -1,0 +1,28 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCheckinGapRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H159 — one check-in gap: the patient, the step and why, who follows it, the due date (red when past), its state, and
+   take / finished / waive while it is open. *@
+@foreach (var r in Model)
+{
+    var g = r.G; bool open = g.Status == HospitalCheckinGapStatus.Open;
+    string tone = r.Overdue ? "danger" : open ? "primary" : "secondary";
+    <tr>
+        <td class="ps-4"><div class="d-flex flex-column">
+            <a href="@Url.Action("Patient", "Hospital", new { id = g.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi></a>
+            <span class="text-muted fw-semibold fs-7 hp-num">@r.Mrn</span></div></td>
+        <td><div class="fs-7 fw-bold text-gray-800">@T["gap:" + g.Item]</div><div class="fs-8 text-gray-700"><bdi>@g.Reason</bdi></div>
+            @if (g.CloseNote != null && g.CloseNote != "auto") {<div class="fs-8 text-muted"><bdi>@g.CloseNote</bdi></div>}</td>
+        <td><div class="fs-7 @(g.OwnerEmployeeId == null ? "text-muted" : "text-gray-800 fw-semibold")">@(r.Owner ?? T["Nobody yet"].Value)</div>
+            <div class="fs-8 text-muted">@T["opened by"] @(r.OpenedBy ?? "—")</div></td>
+        <td><span class="fs-7 hp-num @(r.Overdue ? "text-danger fw-bold" : "")" dir="ltr">@g.DueDate.ToString("yyyy-MM-dd")</span></td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@(r.Overdue ? T["Overdue"] : g.CloseNote == "auto" ? T["Done on the file"] : T["gst:" + g.Status])</span></td>
+        <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
+            @if (open && g.OwnerEmployeeId == null) {<button type="button" class="btn btn-sm btn-light-primary" data-gap-act="Take" data-id="@g.ID">@T["Take"]</button>}
+            @if (open) {<button type="button" class="btn btn-sm btn-primary" data-gap-act="Done" data-id="@g.ID" data-what="@T["gap:" + g.Item]">@T["Finished"]</button>
+                <button type="button" class="btn btn-sm btn-light-danger" data-gap-act="Waive" data-id="@g.ID" data-what="@T["gap:" + g.Item]">@T["Waive"]</button>}
+        </div></td>
+    </tr>
+}

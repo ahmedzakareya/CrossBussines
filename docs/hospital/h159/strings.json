@@ -1,0 +1,265 @@
+{
+ "unit": "H159 - check-in gaps: a step not finished at the counter followed up with an owner, a reason and a due date",
+ "strings": {
+  "gap:identity": {
+   "ar": "إثبات الهوية",
+   "en": "Identity",
+   "fr": "Identité"
+  },
+  "gap:payer": {
+   "ar": "جهة الدفع",
+   "en": "Payer",
+   "fr": "Payeur"
+  },
+  "gap:phone": {
+   "ar": "بيانات التواصل",
+   "en": "Contact details",
+   "fr": "Coordonnées"
+  },
+  "gap:photo": {
+   "ar": "الصورة",
+   "en": "Photo",
+   "fr": "Photo"
+  },
+  "gap:consent": {
+   "ar": "الإقرارات والموافقات",
+   "en": "Consents",
+   "fr": "Consentements"
+  },
+  "gap:balance": {
+   "ar": "المبلغ المستحق",
+   "en": "Amount owed",
+   "fr": "Montant dû"
+  },
+  "gap:document": {
+   "ar": "مستند ناقص",
+   "en": "Missing document",
+   "fr": "Document manquant"
+  },
+  "gst:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "gst:Done": {
+   "ar": "أُنجز",
+   "en": "Finished",
+   "fr": "Terminé"
+  },
+  "gst:Waived": {
+   "ar": "أُعفي منه",
+   "en": "Waived",
+   "fr": "Dispensé"
+  },
+  "Check-in gaps": {
+   "ar": "نواقص التسجيل",
+   "en": "Check-in gaps",
+   "fr": "Formalités d'accueil à compléter"
+  },
+  "Check-in steps followed up after the counter: yours and those nobody has taken yet.": {
+   "ar": "خطوات التسجيل التي تُتابَع بعد الشباك: المسندة إليك وتلك التي لم يتسلمها أحد بعد.",
+   "en": "Check-in steps followed up after the counter: yours and those nobody has taken yet.",
+   "fr": "Étapes d'accueil suivies après le guichet : les vôtres et celles que personne n'a encore prises."
+  },
+  "Choose someone from this company": {
+   "ar": "اختر موظفًا من هذه الشركة",
+   "en": "Choose someone from this company",
+   "fr": "Choisissez une personne de cette société"
+  },
+  "Choose the date it must be finished by": {
+   "ar": "اختر الموعد النهائي للإنجاز",
+   "en": "Choose the date it must be finished by",
+   "fr": "Choisissez la date limite"
+  },
+  "Choose the missing step": {
+   "ar": "اختر الخطوة الناقصة",
+   "en": "Choose the missing step",
+   "fr": "Choisissez l'étape manquante"
+  },
+  "Closed": {
+   "ar": "مغلق",
+   "en": "Closed",
+   "fr": "Clos"
+  },
+  "Done on the file": {
+   "ar": "أُنجز في الملف",
+   "en": "Done on the file",
+   "fr": "Fait dans le dossier"
+  },
+  "Every check-in gap": {
+   "ar": "جميع نواقص التسجيل",
+   "en": "Every check-in gap",
+   "fr": "Toutes les formalités à compléter"
+  },
+  "Every step": {
+   "ar": "جميع الخطوات",
+   "en": "Every step",
+   "fr": "Toutes les étapes"
+  },
+  "Everyone's": {
+   "ar": "الجميع",
+   "en": "Everyone's",
+   "fr": "Tout le monde"
+  },
+  "Finished": {
+   "ar": "أُنجز",
+   "en": "Finished",
+   "fr": "Terminé"
+  },
+  "Follow up": {
+   "ar": "متابعة",
+   "en": "Follow up",
+   "fr": "Suivre"
+  },
+  "Follow up a check-in step": {
+   "ar": "متابعة خطوة تسجيل",
+   "en": "Follow up a check-in step",
+   "fr": "Suivre une étape d'accueil"
+  },
+  "Follow up later": {
+   "ar": "متابعة لاحقًا",
+   "en": "Follow up later",
+   "fr": "Suivre plus tard"
+  },
+  "Follow-ups": {
+   "ar": "المتابعات",
+   "en": "Follow-ups",
+   "fr": "Suivis"
+  },
+  "Followed up": {
+   "ar": "قيد المتابعة",
+   "en": "Followed up",
+   "fr": "En suivi"
+  },
+  "Followed up; it is on the check-in gaps list.": {
+   "ar": "سُجِّلت المتابعة، وهي الآن في قائمة نواقص التسجيل.",
+   "en": "Followed up; it is on the check-in gaps list.",
+   "fr": "Suivi enregistré ; il figure dans la liste des formalités à compléter."
+  },
+  "For example: the patient will bring the ID tomorrow": {
+   "ar": "مثال: سيُحضر المريض الهوية غدًا",
+   "en": "For example: the patient will bring the ID tomorrow",
+   "fr": "Par exemple : le patient apportera sa pièce d'identité demain"
+  },
+  "Mark \"{0}\" as finished?": {
+   "ar": "هل تريد تسجيل «{0}» على أنه أُنجز؟",
+   "en": "Mark \"{0}\" as finished?",
+   "fr": "Marquer « {0} » comme terminé ?"
+  },
+  "Mine": {
+   "ar": "المسندة إليّ",
+   "en": "Mine",
+   "fr": "Les miens"
+  },
+  "No check-in step is waiting on you.": {
+   "ar": "لا توجد خطوة تسجيل بانتظارك.",
+   "en": "No check-in step is waiting on you.",
+   "fr": "Aucune étape d'accueil ne vous attend."
+  },
+  "Nobody yet": {
+   "ar": "لم يتسلمها أحد",
+   "en": "Nobody yet",
+   "fr": "Personne encore"
+  },
+  "Nobody yet: whoever takes it": {
+   "ar": "لا أحد بعد: يتسلمها أول من يتولاها",
+   "en": "Nobody yet: whoever takes it",
+   "fr": "Personne encore : celui qui la prendra"
+  },
+  "Search by patient, file or reason…": {
+   "ar": "ابحث بالمريض أو الملف أو السبب…",
+   "en": "Search by patient, file or reason…",
+   "fr": "Rechercher par patient, dossier ou motif…"
+  },
+  "Step and reason": {
+   "ar": "الخطوة والسبب",
+   "en": "Step and reason",
+   "fr": "Étape et motif"
+  },
+  "Take": {
+   "ar": "تسلّم",
+   "en": "Take",
+   "fr": "Prendre"
+  },
+  "Take this follow-up as yours?": {
+   "ar": "هل تتسلم هذه المتابعة؟",
+   "en": "Take this follow-up as yours?",
+   "fr": "Prendre ce suivi en charge ?"
+  },
+  "The due date must be within 90 days": {
+   "ar": "يجب أن يكون الموعد النهائي خلال 90 يومًا",
+   "en": "The due date must be within 90 days",
+   "fr": "La date limite doit être dans les 90 jours"
+  },
+  "The missing step": {
+   "ar": "الخطوة الناقصة",
+   "en": "The missing step",
+   "fr": "L'étape manquante"
+  },
+  "This follow-up is closed already": {
+   "ar": "هذه المتابعة مغلقة بالفعل",
+   "en": "This follow-up is closed already",
+   "fr": "Ce suivi est déjà clos"
+  },
+  "This step is already being followed for the patient": {
+   "ar": "هذه الخطوة قيد المتابعة بالفعل لهذا المريض",
+   "en": "This step is already being followed for the patient",
+   "fr": "Cette étape est déjà suivie pour ce patient"
+  },
+  "This step is already done on the file": {
+   "ar": "هذه الخطوة منجزة بالفعل في الملف",
+   "en": "This step is already done on the file",
+   "fr": "Cette étape est déjà faite dans le dossier"
+  },
+  "To be finished by": {
+   "ar": "الموعد النهائي",
+   "en": "To be finished by",
+   "fr": "À terminer avant le"
+  },
+  "Waive": {
+   "ar": "إعفاء",
+   "en": "Waive",
+   "fr": "Dispenser"
+  },
+  "Who follows it": {
+   "ar": "المسؤول عن المتابعة",
+   "en": "Who follows it",
+   "fr": "Qui la suit"
+  },
+  "Why is \"{0}\" waived?": {
+   "ar": "ما سبب الإعفاء من «{0}»؟",
+   "en": "Why is \"{0}\" waived?",
+   "fr": "Pourquoi « {0} » est-il dispensé ?"
+  },
+  "Why it could not be finished now": {
+   "ar": "سبب تعذّر إنجازها الآن",
+   "en": "Why it could not be finished now",
+   "fr": "Pourquoi elle n'a pas pu être terminée maintenant"
+  },
+  "Write why it could not be finished at the counter": {
+   "ar": "اكتب سبب تعذّر إنجازها عند الشباك",
+   "en": "Write why it could not be finished at the counter",
+   "fr": "Indiquez pourquoi elle n'a pas pu être terminée au guichet"
+  },
+  "Write why the step is waived": {
+   "ar": "اكتب سبب الإعفاء من الخطوة",
+   "en": "Write why the step is waived",
+   "fr": "Indiquez pourquoi l'étape est dispensée"
+  },
+  "due by": {
+   "ar": "الموعد",
+   "en": "due by",
+   "fr": "à faire avant le"
+  },
+  "me": {
+   "ar": "أنا",
+   "en": "me",
+   "fr": "moi"
+  },
+  "opened by": {
+   "ar": "فتحها",
+   "en": "opened by",
+   "fr": "ouvert par"
+  }
+ }
+}

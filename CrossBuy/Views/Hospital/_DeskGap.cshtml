@@ -1,0 +1,32 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H159 — follow up a check-in step that could not be finished at the counter: which step, why, who follows it (me, a
+   colleague, or nobody yet — whoever takes it), and the date it must be finished by. *@
+@{
+    var p = (HospitalPatient)ViewBag.Patient; string? item = ViewBag.Item as string; DateTime today = ViewBag.Today;
+    var people = ViewBag.People as IReadOnlyList<HospitalDeskPerson> ?? Array.Empty<HospitalDeskPerson>(); int? me = ViewBag.Me as int?;
+}
+<div data-gap data-patient="@p.ID" data-today="@today.ToString("yyyy-MM-dd")">
+    <div class="d-flex align-items-center mb-6">
+        <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+        <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@p.Mrn</div></div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-6"><label class="required fs-7 fw-semibold mb-2">@T["The missing step"]</label>
+            <select class="form-select form-select-solid" data-gap-f="item">
+                @foreach (var k in HospitalCheckinItem.All) { <option value="@k" selected="@(k == item)">@T["gap:" + k]</option> }
+            </select></div>
+        <div class="col-md-6"><label class="required fs-7 fw-semibold mb-2">@T["To be finished by"]</label>
+            <input class="form-control form-control-solid" data-gap-f="due" value="@today.AddDays(1).ToString("yyyy-MM-dd")" readonly /></div>
+        <div class="col-12"><label class="required fs-7 fw-semibold mb-2">@T["Why it could not be finished now"]</label>
+            <textarea class="form-control form-control-solid" rows="2" maxlength="300" data-gap-f="reason" placeholder="@T["For example: the patient will bring the ID tomorrow"]"></textarea></div>
+        <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Who follows it"]</label>
+            <select class="form-select form-select-solid" data-gap-f="owner">
+                <option value="">@T["Nobody yet: whoever takes it"]</option>
+                @foreach (var x in people) { <option value="@x.Id" selected="@(x.Id == me)">@x.Name@(x.Id == me ? " — " + T["me"].Value : "")</option> }
+            </select></div>
+    </div>
+    <div class="text-end mt-7"><button type="button" class="btn btn-primary" data-gap-save><i class="ki-outline ki-check fs-4"></i>@T["Follow up"]</button></div>
+</div>

@@ -1,0 +1,29 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCheckinGapRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H159 — the desk's open check-in gaps: mine and nobody's, overdue first; take, finish, open the patient. *@
+@{ int? me = ViewBag.Me as int?; }
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-8"><i class="ki-outline ki-check-square fs-3x text-gray-300 d-block mb-3"></i>@T["No check-in step is waiting on you."]</div>
+}
+@foreach (var r in Model.OrderByDescending(x => x.Overdue))
+{
+    var g = r.G;
+    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+        <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-@(r.Overdue ? "danger" : "primary")"><i class="ki-outline ki-notepad-edit fs-3 text-@(r.Overdue ? "danger" : "primary")"></i></span></span>
+        <div class="flex-grow-1 min-w-0">
+            <a href="#" class="fs-7 fw-bold text-gray-900 text-hover-primary" data-open-patient="@g.PatientId"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi><span class="text-muted fw-semibold hp-num ms-1">@r.Mrn</span></a>
+            <div class="fs-8 text-gray-700">@T["gap:" + g.Item] · <bdi>@g.Reason</bdi></div>
+        </div>
+        <div class="text-end text-nowrap">
+            <div class="fs-8 @(r.Overdue ? "text-danger fw-bold" : "text-muted")">@T["due by"] <span class="hp-num" dir="ltr">@g.DueDate.ToString("yyyy-MM-dd")</span></div>
+            <div class="fs-8 text-muted">@(r.Owner ?? T["Nobody yet"].Value)</div>
+        </div>
+        @if (g.OwnerEmployeeId == null) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-gap-act="Take" data-id="@g.ID">@T["Take"]</button>}
+        <button type="button" class="btn btn-sm btn-primary py-1 px-3" data-gap-act="Done" data-id="@g.ID" data-what="@T["gap:" + g.Item]">@T["Finished"]</button>
+    </div>
+}
+<div class="text-end mt-3"><a href="@Url.Action("CheckinGaps", "Hospital")" class="fs-7 fw-bold">@T["Every check-in gap"] <span class="hp-num">(@(ViewBag.Total ?? 0))</span></a></div>
