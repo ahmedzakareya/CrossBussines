@@ -182,7 +182,7 @@
                                             <div class="d-flex flex-column"><bdi class="text-gray-900 fw-bold fs-7 hp-num">@c.Cycle.CycleNo</bdi><span class="text-muted fw-semibold fs-8"><bdi>@c.Cycle.Unit</bdi> · <span class="hp-num">@c.Cycle.RunAt.ToString("yyyy-MM-dd HH:mm")</span></span>
                                                 @if (c.Cycle.PhysicalOk != null)
                                                 {
-                                                    <span class="fs-8 fw-semibold @(c.Cycle.PhysicalOk == true ? "text-gray-700" : "text-danger")"><bdi class="hp-num">@c.Cycle.TemperatureC?.ToString("0.#") °C · @c.Cycle.ExposureMinutes @T["min"]@if (c.Cycle.PressureKpa != null) { <text> · @c.Cycle.PressureKpa.Value.ToString("0.#") kPa</text> }</bdi>@if (c.Cycle.PhysicalOk == false) { <text> · @T["programme not met"]</text> }</span>
+                                                    <span class="fs-8 fw-semibold @(c.Cycle.PhysicalOk == true ? "text-gray-700" : "text-danger")"><bdi class="hp-num" dir="ltr">@c.Cycle.TemperatureC?.ToString("0.#") °C · @c.Cycle.ExposureMinutes <bdi>@T["min"]</bdi>@if (c.Cycle.PressureKpa != null) { <text> · @c.Cycle.PressureKpa.Value.ToString("0.#") kPa</text> }</bdi>@if (c.Cycle.PhysicalOk == false) { <text> · @T["programme not met"]</text> }</span>
                                                 }
                                                 else if (canConsult && c.Cycle.ReleasedAt == null && !HospitalDentalPracticeRules.Held(c.Cycle))
                                                 {

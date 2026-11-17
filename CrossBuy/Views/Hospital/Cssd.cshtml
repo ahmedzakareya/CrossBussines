@@ -16,7 +16,7 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Kind(string s) => s switch
     {
-        HospitalSetStatus.Sterile => "success", HospitalSetStatus.InAutoclave => "primary", HospitalSetStatus.Packed => "info",
+        HospitalSetStatus.Sterile => "success", HospitalSetStatus.InAutoclave => "primary", HospitalSetStatus.Packed => "secondary", HospitalSetStatus.Quarantine => "info",
         HospitalSetStatus.InUse => "dark", HospitalCssdRules.Expired => "danger", _ => "secondary",
     };
     var packed = b.Sets.Where(s => s.Set.Status == HospitalSetStatus.Packed).ToList();
@@ -74,7 +74,7 @@
         @* H128: the sets in figures — the theme's stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 mb-5">
             <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Sterile), T["set:" + HospitalSetStatus.Sterile].Value, "shield-tick", "success", "success"); }</div>
-            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.InAutoclave), T["set:" + HospitalSetStatus.InAutoclave].Value, "timer", "primary"); }</div>
+            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Quarantine), T["set:" + HospitalSetStatus.Quarantine].Value, "shield-search", "info"); }</div>
             <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.AwaitingWash), T["set:" + HospitalSetStatus.AwaitingWash].Value, "drop", "info"); }</div>
             <div class="col-sm-6 col-xl-3">@{ int ex = CountOf(HospitalCssdRules.Expired); Tile(ex, T["set:" + HospitalCssdRules.Expired].Value, "information-5", "danger", ex > 0 ? "danger" : "gray-900"); }</div>
         </div>
@@ -102,7 +102,7 @@
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(s.Name, s.NameEn ?? s.Name)</bdi></span><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@s.Code</bdi></div>
                                     </div></td>
                                     <td><span class="badge badge-light-@Kind(r.State) fs-7 fw-bold">@T["set:" + r.State]</span>
-                                        @if (s.Status == HospitalSetStatus.InAutoclave && r.CycleNo != null) {<bdi class="text-muted fw-semibold fs-7 hp-num ms-1" dir="ltr">@r.CycleNo</bdi>}
+                                        @if (s.Status is HospitalSetStatus.InAutoclave or HospitalSetStatus.Quarantine && r.CycleNo != null) {<bdi class="text-muted fw-semibold fs-7 hp-num ms-1" dir="ltr">@r.CycleNo</bdi>}
                                         @if (s.Status == HospitalSetStatus.InUse && r.CaseNo != null) {<bdi class="text-muted fw-semibold fs-7 hp-num ms-1" dir="ltr">@r.CaseNo</bdi>}</td>
                                     <td>@if (s.SterileUntil is DateTime u) {<span class="hp-num fw-bold fs-6 @(r.State == HospitalCssdRules.Expired ? "text-danger" : "text-gray-800")" dir="ltr">@u.ToString("yyyy-MM-dd", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
                                     <td class="text-end pe-4">@if (canWork)
@@ -113,7 +113,8 @@
                                                     case HospitalSetStatus.AwaitingWash: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Washed"><i class="ki-outline ki-drop fs-5"></i>@T["Washed & packed"]</button> break;
                                                     case HospitalSetStatus.InAutoclave:
                                                         <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-cs-end="@s.CycleId" data-passed="0" title="@T["Cycle failed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>
-                                                        <button type="button" class="btn btn-sm btn-primary" data-cs-end="@s.CycleId" data-passed="1"><i class="ki-outline ki-check fs-5"></i>@T["Cycle passed"]</button> break;
+                                                        <button type="button" class="btn btn-sm btn-primary" data-cs-endopen="@s.CycleId" data-what="@r.CycleNo"><i class="ki-outline ki-check fs-5"></i>@T["cssd:Cycle ended"]</button> break;
+                                                    case HospitalSetStatus.Quarantine: <span class="text-muted fw-semibold fs-7">@T["rel:Awaiting"]</span> break;
                                                     case HospitalSetStatus.Sterile: <button type="button" class="btn btn-sm btn-primary" data-cs-issue="@s.ID"><i class="ki-outline ki-delivery fs-5"></i>@T["Issue to a case"]</button> break;
                                                     case HospitalSetStatus.InUse: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Returned"><i class="ki-outline ki-exit-left fs-5"></i>@T["Returned from the case"]</button> break;
                                                     case HospitalCssdRules.Expired: <button type="button" class="btn btn-sm btn-light-danger" data-cs-step="@s.ID" data-step="Reprocess"><i class="ki-outline ki-arrows-circle fs-5"></i>@T["Reprocess"]</button> break;
@@ -127,6 +128,77 @@
                 }
             </div>
         </div>
+
+        @* H170: the cycles waiting on a person or a result — the dental release policy (H169) *@
+        @if (b.Pending.Count > 0)
+        {
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Cycles awaiting release"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Sets wait in quarantine until a person releases their cycle; a load with implantable items waits for its biological indicator"]</span></h3>
+                </div>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Cycle"]</th><th>@T["Sets"]</th><th>@T["Physical readings"]</th><th>@T["Chemical"]</th><th>@T["Biological"]</th><th>@T["State"]</th><th class="pe-4 rounded-end text-end"></th></tr></thead>
+                    <tbody>
+                        @foreach (var c in b.Pending)
+                        {
+                            var y = c.Cycle; var refuse = HospitalCssdRules.ReleaseRefusal(y);
+                            <tr>
+                                <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@y.CycleNo</span>
+                                    <div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@y.Autoclave</div>
+                                    @if (y.ImplantLoad) { <span class="badge badge-light-info fs-9 fw-bold mt-1">@T["Implantable items"]</span> }</td>
+                                <td><span class="text-gray-600 fw-semibold hp-num fs-7" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
+                                <td><bdi class="text-gray-800 fw-semibold fs-7 hp-num" dir="ltr">@y.TemperatureC?.ToString("0.#", inv) °C · @y.ExposureMinutes <bdi>@T["min"]</bdi>@if (y.PressureKpa != null) { <text> · @y.PressureKpa.Value.ToString("0.#", inv) kPa</text> }</bdi></td>
+                                <td><span class="badge badge-light-@(y.Chemical == HospitalIndicator.Pass ? "success" : y.Chemical == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Chemical:" + y.Chemical]</span></td>
+                                <td><span class="badge badge-light-@(y.Biological == HospitalIndicator.Pass ? "success" : y.Biological == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Biological:" + y.Biological]</span>
+                                    @if (canWork && y.Biological == HospitalIndicator.Pending)
+                                    {
+                                        <div class="d-flex gap-1 mt-2"><button type="button" class="btn btn-icon btn-sm btn-light-success w-25px h-25px" title="@T["Pass"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Pass" data-what="@y.CycleNo"><i class="ki-outline ki-check fs-5"></i></button><button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Fail"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Fail" data-what="@y.CycleNo"><i class="ki-outline ki-cross fs-5"></i></button></div>
+                                    }</td>
+                                <td>@if (y.ReleasedAt != null) { <span class="badge badge-light-primary fs-8 fw-bold">@T["rel:Released"]</span>@if (c.ReleasedBy != null) { <div class="text-muted fs-8 mt-1">@c.ReleasedBy</div> } }
+                                    else { <span class="badge badge-light-secondary fs-8 fw-bold">@T["rel:Awaiting"]</span>@if (refuse != null) { <div class="text-muted fs-8 mt-1">@T[refuse]</div> } }</td>
+                                <td class="pe-4 text-end text-nowrap">@if (canWork)
+                                    {
+                                        if (refuse == null) { <button type="button" class="btn btn-sm btn-primary" data-cs-release="@y.ID" data-what="@y.CycleNo">@T["rel:Release"]</button> }
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-danger ms-1" title="@T["Recall this cycle"]" data-bs-toggle="tooltip" data-cs-recall="@y.ID" data-what="@y.CycleNo"><i class="ki-outline ki-arrow-circle-left fs-4"></i></button>
+                                    }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div></div>
+            </div>
+        }
+        @if (b.Recalls.Count > 0)
+        {
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Recall follow-up"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each patient is told, followed up by infection control, then closed with the outcome"]</span></h3>
+                    <div class="card-toolbar"><span class="badge badge-light-danger fs-7 fw-bold">@T["rcl:Open"]: <span class="hp-num ms-1">@b.Recalls.Count(f => f.Recall.ClosedAt == null)</span></span></div>
+                </div>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Theatre case"]</th><th>@T["Cycle"]</th><th>@T["State"]</th><th class="pe-4 rounded-end text-end"></th></tr></thead>
+                    <tbody>
+                        @foreach (var f in b.Recalls)
+                        {
+                            <tr>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-7">@DisplayName.Of(f.PatientName, f.PatientNameEn)</span><div class="text-muted fw-semibold fs-8"><bdi class="hp-num">@f.Mrn</bdi>@if (f.Phone != null) { <text> · </text><bdi class="hp-num">@f.Phone</bdi> }</div></td>
+                                <td><bdi class="text-gray-900 fw-bold fs-7 hp-num" dir="ltr">@f.CaseNo</bdi><div class="text-muted fw-semibold fs-8"><bdi class="hp-num" dir="ltr">@f.SetCode</bdi> · <span class="hp-num" dir="ltr">@f.IssuedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></div></td>
+                                <td><bdi class="text-gray-900 fw-bold fs-7 hp-num" dir="ltr">@f.CycleNo</bdi>@if (f.RecallReason != null) { <div class="text-muted fw-semibold fs-8">@T[f.RecallReason]</div> }</td>
+                                <td>@if (f.Recall.ClosedAt != null) { <span class="badge badge-light-primary fs-8 fw-bold">@T["rcl:Closed"]</span><div class="text-gray-700 fs-8 mt-1" dir="auto">@f.Recall.Outcome</div> }
+                                    else if (f.Recall.NotifiedAt != null) { <span class="badge badge-light-info fs-8 fw-bold">@T["rcl:Told"]</span> }
+                                    else { <span class="badge badge-light-danger fs-8 fw-bold">@T["rcl:ToTell"]</span> }</td>
+                                <td class="pe-4 text-end text-nowrap">@if (canWork && f.Recall.ClosedAt == null)
+                                    {
+                                        if (f.Recall.NotifiedAt == null) { <button type="button" class="btn btn-sm btn-light-primary" data-cs-told="@f.Recall.ID" data-what="@DisplayName.Of(f.PatientName, f.PatientNameEn)"><i class="ki-outline ki-message-text fs-5"></i>@T["Patient told"]</button> }
+                                        else { <button type="button" class="btn btn-sm btn-light-primary" data-cs-close="@f.Recall.ID"><i class="ki-outline ki-check-square fs-5"></i>@T["Close with outcome"]</button> }
+                                    }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div></div>
+            </div>
+        }
 
         @* rendered here, shown in their windows (the swap keeps them current) *@
         <div class="d-none" data-cs-packed-body>
@@ -150,7 +222,9 @@
                                 <td class="text-gray-800 fw-semibold" dir="auto">@c.Cycle.Autoclave</td>
                                 <td><span class="text-gray-800 fw-semibold hp-num text-nowrap" dir="ltr" data-utc="@c.Cycle.StartedAt.ToString("o", inv)">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></td>
                                 <td><span class="text-gray-600 fw-semibold hp-num fs-7" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
-                                <td class="pe-4"><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary") fs-7 fw-bold">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@c.Cycle.Note</div>}</td>
+                                <td class="pe-4"><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary") fs-7 fw-bold">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@c.Cycle.Note</div>}
+                                    @if (c.Cycle.RecalledAt != null) { <div class="mt-1"><span class="badge badge-danger fs-8 fw-bold">@T["rel:Recalled"]</span></div> }
+                                    else if (c.Cycle.ReleasedAt != null) { <div class="mt-1"><span class="badge badge-light-primary fs-8 fw-bold">@T["rel:Released"]</span>@if (canWork) { <button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px ms-1" title="@T["Recall this cycle"]" data-cs-recall="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-arrow-circle-left fs-5"></i></button> }</div> }</td>
                             </tr>
                         }
                     </tbody>
@@ -180,6 +254,8 @@
                 <input class="form-control form-control-solid" maxlength="60" dir="auto" data-cs-autoclave value="@T["Autoclave 1"]" /></div>
             <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Washed and packed sets"]</label>
                 <div data-cs-packed-view></div></div>
+            <div class="mt-8"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-cs-implant /><span class="form-check-label fw-semibold text-gray-700">@T["The load holds implantable items"]</span></label>
+                <div class="text-muted fs-8 mt-2">@T["Such a load is released only after its biological indicator passes."]</div></div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-load-save><i class="ki-outline ki-check fs-4"></i>@T["Load & start"]</button></div>
         </div>
     </div></div></div>
@@ -191,11 +267,30 @@
             else
             {
                 <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Theatre case"]</label>
-                <select class="form-select form-select-solid" data-cs-case>
+                <select class="form-select form-select-solid" data-cs-case data-control="select2" data-hide-search="true" data-dropdown-parent="#csIssueModal">
                     @foreach (var c in b.Cases) { <option value="@c.Id">@c.CaseNo · @DisplayName.Of(c.Name, c.NameEn) · @DisplayName.Of(c.Patient, c.PatientEn)</option> }
                 </select></div>
             }
+            @if (b.Cases.Count > 0) { <label class="form-check form-check-custom form-check-solid mt-7"><input class="form-check-input" type="checkbox" data-cs-intact /><span class="form-check-label fw-semibold text-gray-700">@T["The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned"]</span></label> }
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>@if (b.Cases.Count > 0) {<button type="button" class="btn btn-primary" data-cs-issue-save><i class="ki-outline ki-check fs-4"></i>@T["Issue"]</button>}</div>
+        </div>
+    </div></div></div>
+}
+@if (ready && canWork)
+{
+    @* H170: the end of a cycle — the physical record from the autoclave's printout, and the chemical indicator *@
+    <div class="modal fade" id="csEndModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        @Close()
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["cssd:Cycle ended"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-cs-end-what></bdi> — @T["from the unit's printout or display"]</div></div>
+            <div class="row g-6">
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Exposure (min)"]</label><input type="number" min="1" max="240" class="form-control form-control-solid hp-num" data-ce="min" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Temperature (°C)"]</label><input type="number" min="100" max="150" step="0.1" class="form-control form-control-solid hp-num" data-ce="temp" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Pressure (kPa)"]</label><input type="number" min="0" max="400" step="0.1" class="form-control form-control-solid hp-num" data-ce="kpa" /></div>
+            </div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-8"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                <div class="fs-7 fw-semibold text-gray-700">@T["Recording the end means the run met its programme and the chemical indicator passed. The sets wait in quarantine until the cycle is released."]</div></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-end-save><i class="ki-outline ki-check fs-4"></i>@T["Record"]</button></div>
         </div>
     </div></div></div>
 }
@@ -222,7 +317,12 @@
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Cssd"));
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
-                passed: @Json.Serialize(T["Mark this cycle passed? Every set in it becomes sterile."].Value), failedWhy: @Json.Serialize(T["Why did the cycle fail?"].Value) };
+                failedWhy: @Json.Serialize(T["Why did the cycle fail?"].Value),
+                end: @Json.Serialize(T["Record these readings? They are not changed afterwards."].Value), release: @Json.Serialize(T["Release {0}? Its kits become usable."].Value),
+                ind: @Json.Serialize(T["Record {1} for {0}? A result is not changed afterwards."].Value), pass: @Json.Serialize(T["Pass"].Value), fail: @Json.Serialize(T["Fail"].Value),
+                recall: @Json.Serialize(T["Why is {0} recalled? Its kits are held and the patients they reached are listed."].Value), told: @Json.Serialize(T["Record that {0} was told?"].Value),
+                outcome: @Json.Serialize(T["The outcome of the follow-up"].Value), intact: @Json.Serialize(T["Confirm the pack was checked intact"].Value) };
+            var endCycle = null;
             var issueSet = null;
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
@@ -244,15 +344,32 @@
             function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); toast('success', W.saved); swap(); }; }
             mirror();
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-cs-cycles],[data-cs-newset],[data-cs-load],[data-cs-load-save],[data-cs-set-save],[data-cs-step],[data-cs-end],[data-cs-issue],[data-cs-issue-save]'); if (!t) return;
-                var lm = document.getElementById('csLoadModal'), sm = document.getElementById('csSetModal'), im = document.getElementById('csIssueModal');
+                var t = e.target.closest('[data-cs-cycles],[data-cs-newset],[data-cs-load],[data-cs-load-save],[data-cs-set-save],[data-cs-step],[data-cs-end],[data-cs-issue],[data-cs-issue-save],[data-cs-endopen],[data-cs-end-save],[data-cs-release],[data-cs-bio],[data-cs-recall],[data-cs-told],[data-cs-close]'); if (!t) return;
+                var lm = document.getElementById('csLoadModal'), sm = document.getElementById('csSetModal'), im = document.getElementById('csIssueModal'), em = document.getElementById('csEndModal');
+                // H170: the end record, release, the biological result, recall and its follow-up
+                if (t.hasAttribute('data-cs-endopen')) { endCycle = t.getAttribute('data-cs-endopen'); em.querySelector('[data-cs-end-what]').textContent = t.getAttribute('data-what') || ''; em.querySelectorAll('[data-ce]').forEach(function (i) { i.value = ''; }); bootstrap.Modal.getOrCreateInstance(em).show(); return; }
+                if (t.hasAttribute('data-cs-end-save')) {
+                    var g = function (k) { var x = em.querySelector('[data-ce=' + k + ']').value.trim(); return x === '' ? null : +x; };
+                    var eb = { passed: true, exposureMinutes: g('min'), temperatureC: g('temp'), pressureKpa: g('kpa') };
+                    cbConfirm(W.end).then(function (ok) { if (!ok) return; t.disabled = true; post('/Cycles/' + endCycle + '/End', eb).then(done(t, em)); });
+                    return;
+                }
+                if (t.hasAttribute('data-cs-release')) { cbConfirm(W.release.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post('/Cycles/' + t.getAttribute('data-cs-release') + '/Release').then(done(t)); }); return; }
+                if (t.hasAttribute('data-cs-bio')) {
+                    var res = t.getAttribute('data-result');
+                    cbConfirm(W.ind.replace('{0}', t.getAttribute('data-what')).replace('{1}', res === 'Pass' ? W.pass : W.fail), { kind: res === 'Fail' ? 'danger' : 'primary' }).then(function (ok) { if (!ok) return; t.disabled = true; post('/Cycles/' + t.getAttribute('data-cs-bio') + '/Biological', { result: res }).then(done(t)); });
+                    return;
+                }
+                if (t.hasAttribute('data-cs-recall')) { var cm = t.closest('.modal'); cbPrompt(W.recall.replace('{0}', t.getAttribute('data-what')), { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Cycles/' + t.getAttribute('data-cs-recall') + '/Recall', { reason: why }).then(done(t, cm)); }); return; }
+                if (t.hasAttribute('data-cs-told')) { cbConfirm(W.told.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post('/Recalls/' + t.getAttribute('data-cs-told') + '/Notified').then(done(t)); }); return; }
+                if (t.hasAttribute('data-cs-close')) { cbPrompt(W.outcome).then(function (o) { if (!o) return; t.disabled = true; post('/Recalls/' + t.getAttribute('data-cs-close') + '/Close', { reason: o }).then(done(t)); }); return; }
                 if (t.hasAttribute('data-cs-cycles')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('csCyclesModal')).show(); return; }
                 if (t.hasAttribute('data-cs-newset')) { bootstrap.Modal.getOrCreateInstance(sm).show(); return; }
                 if (t.hasAttribute('data-cs-load')) { bootstrap.Modal.getOrCreateInstance(lm).show(); return; }
-                if (t.hasAttribute('data-cs-issue')) { issueSet = t.getAttribute('data-cs-issue'); bootstrap.Modal.getOrCreateInstance(im).show(); return; }
+                if (t.hasAttribute('data-cs-issue')) { issueSet = t.getAttribute('data-cs-issue'); var ic = im.querySelector('[data-cs-intact]'); if (ic) ic.checked = false; bootstrap.Modal.getOrCreateInstance(im).show(); return; }
                 if (t.hasAttribute('data-cs-load-save')) {
                     var ids = Array.prototype.slice.call(lm.querySelectorAll('[data-cs-pick]:checked')).map(function (c) { return +c.value; });
-                    t.disabled = true; post('/Cycles', { setIds: ids, autoclave: lm.querySelector('[data-cs-autoclave]').value }).then(done(t, lm)); return;
+                    t.disabled = true; post('/Cycles', { setIds: ids, autoclave: lm.querySelector('[data-cs-autoclave]').value, implantLoad: lm.querySelector('[data-cs-implant]').checked }).then(done(t, lm)); return;
                 }
                 if (t.hasAttribute('data-cs-set-save')) {
                     var v = function (k) { return sm.querySelector('[data-s=' + k + ']').value; };
@@ -261,10 +378,12 @@
                         .then(function (res) { done(t, sm)(res); if (res.ok) sm.querySelectorAll('[data-s=code],[data-s=name],[data-s=nameEn]').forEach(function (i) { i.value = ''; }); });
                     return;
                 }
-                if (t.hasAttribute('data-cs-issue-save')) { t.disabled = true; post('/Sets/' + issueSet + '/Step', { step: 'Issued', surgeryId: +im.querySelector('[data-cs-case]').value }).then(done(t, im)); return; }
+                if (t.hasAttribute('data-cs-issue-save')) {
+                    if (!im.querySelector('[data-cs-intact]').checked) { toast('error', W.intact); return; }
+                    t.disabled = true; post('/Sets/' + issueSet + '/Step', { step: 'Issued', surgeryId: +im.querySelector('[data-cs-case]').value, packIntact: true }).then(done(t, im)); return;
+                }
                 if (t.hasAttribute('data-cs-step')) { t.disabled = true; post('/Sets/' + t.getAttribute('data-cs-step') + '/Step', { step: t.getAttribute('data-step') }).then(done(t)); return; }
                 var cy = t.getAttribute('data-cs-end');
-                if (t.getAttribute('data-passed') === '1') { cbConfirm(W.passed).then(function (ok) { if (!ok) return; t.disabled = true; post('/Cycles/' + cy + '/End', { passed: true }).then(done(t)); }); return; }
                 cbPrompt(W.failedWhy, { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Cycles/' + cy + '/End', { passed: false, note: why }).then(done(t)); });
             });
         })();

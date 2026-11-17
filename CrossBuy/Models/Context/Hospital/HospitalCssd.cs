@@ -15,9 +15,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string AwaitingWash = "AwaitingWash";
 		public const string Packed = "Packed";
 		public const string InAutoclave = "InAutoclave";
+		/// H170: the run is over and passed its physical and chemical checks, but nobody has released it yet.
+		public const string Quarantine = "Quarantine";
 		public const string Sterile = "Sterile";
 		public const string InUse = "InUse";
-		public static readonly IReadOnlyList<string> All = new[] { AwaitingWash, Packed, InAutoclave, Sterile, InUse };
+		public static readonly IReadOnlyList<string> All = new[] { AwaitingWash, Packed, InAutoclave, Quarantine, Sterile, InUse };
 	}
 
 	public static class HospitalCycleResult
@@ -37,7 +39,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Issued = "Issued";
 		public const string Returned = "Returned";
 		public const string Reprocess = "Reprocess";
-		public static readonly IReadOnlyList<string> All = new[] { Washed, Loaded, Sterilised, CycleFailed, Issued, Returned, Reprocess };
+		/// H170: released by a person (quarantine → sterile), and recalled after a late failure or by hand.
+		public const string Released = "Released";
+		public const string Recalled = "Recalled";
+		public static readonly IReadOnlyList<string> All = new[] { Washed, Loaded, Sterilised, CycleFailed, Issued, Returned, Reprocess, Released, Recalled };
 	}
 
 	public class HospitalInstrumentSet
@@ -72,6 +77,19 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? StartedByEmployeeId { get; set; }
 		public DateTime? EndedAt { get; set; }
 		public int? EndedByEmployeeId { get; set; }
+		// H170: the same release policy as the dental cycles (H169). The physical record of the run, its chemical and
+		// biological indicators (HospitalIndicator: Pending, Pass, Fail), whether the load holds implantable items (then
+		// the biological must pass before release), who released it and when, and a recall.
+		public bool ImplantLoad { get; set; }
+		public int? ExposureMinutes { get; set; }
+		public decimal? TemperatureC { get; set; }
+		public decimal? PressureKpa { get; set; }
+		public string Chemical { get; set; } = HospitalIndicator.Pending;
+		public string Biological { get; set; } = HospitalIndicator.Pending;
+		public DateTime? ReleasedAt { get; set; }
+		public int? ReleasedByEmployeeId { get; set; }
+		public DateTime? RecalledAt { get; set; }
+		public string? RecallReason { get; set; }
 	}
 
 	public class HospitalSetEvent
@@ -84,6 +102,27 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? SurgeryId { get; set; }
 		public DateTime At { get; set; }
 		public int? ByEmployeeId { get; set; }
+		/// H170: on an issue, the pack was checked intact (wrap, seal, dry, its indicator turned) before it went out.
+		public bool? PackIntact { get; set; }
+	}
+
+	/// H170: a theatre case a recalled cycle's set reached — followed up by infection control until closed.
+	public class HospitalCssdRecall
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CycleId { get; set; }
+		public int SetId { get; set; }
+		/// The issue event that sent the set to the case.
+		public int EventId { get; set; }
+		public int SurgeryId { get; set; }
+		public int PatientId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public DateTime? NotifiedAt { get; set; }
+		public int? NotifiedByEmployeeId { get; set; }
+		public string? Outcome { get; set; }
+		public DateTime? ClosedAt { get; set; }
+		public int? ClosedByEmployeeId { get; set; }
 	}
 
 	public static class HospitalCssdModel
@@ -107,7 +146,19 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Autoclave).HasMaxLength(60);
 				e.Property(x => x.Result).HasMaxLength(10);
 				e.Property(x => x.Note).HasMaxLength(300);
+				e.Property(x => x.TemperatureC).HasColumnType("decimal(5,1)");   // H170
+				e.Property(x => x.PressureKpa).HasColumnType("decimal(6,1)");
+				e.Property(x => x.Chemical).HasMaxLength(10);
+				e.Property(x => x.Biological).HasMaxLength(10);
+				e.Property(x => x.RecallReason).HasMaxLength(300);
 				e.HasIndex(x => new { x.CompanyId, x.CycleNo }).IsUnique();
+			});
+			b.Entity<HospitalCssdRecall>(e =>   // H170
+			{
+				e.ToTable("HospitalCssdRecalls");
+				e.Property(x => x.Outcome).HasMaxLength(300);
+				e.HasIndex(x => new { x.CompanyId, x.CycleId, x.EventId }).IsUnique();
+				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});
 			b.Entity<HospitalSetEvent>(e =>
 			{

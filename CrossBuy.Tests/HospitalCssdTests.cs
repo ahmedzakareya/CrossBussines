@@ -18,7 +18,8 @@ namespace CrossBuy.Tests
 			var s = HospitalSetStatus.AwaitingWash;
 			DateTime? until = null;
 			foreach (var (step, to) in new[] { (HospitalSetEventKind.Washed, HospitalSetStatus.Packed), (HospitalSetEventKind.Loaded, HospitalSetStatus.InAutoclave),
-				(HospitalSetEventKind.Sterilised, HospitalSetStatus.Sterile), (HospitalSetEventKind.Issued, HospitalSetStatus.InUse), (HospitalSetEventKind.Returned, HospitalSetStatus.AwaitingWash) })
+				(HospitalSetEventKind.Sterilised, HospitalSetStatus.Quarantine), (HospitalSetEventKind.Released, HospitalSetStatus.Sterile),   // H170: held until a person releases it
+				(HospitalSetEventKind.Issued, HospitalSetStatus.InUse), (HospitalSetEventKind.Returned, HospitalSetStatus.AwaitingWash) })
 			{
 				if (to == HospitalSetStatus.Sterile) until = HospitalCssdRules.SterileUntil(Today, 30);
 				Assert.Equal(to, HospitalCssdRules.After(s, step, until, Today));
@@ -34,6 +35,7 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalSetStatus.InUse, HospitalSetEventKind.Issued)]              // never on two cases
 		[InlineData(HospitalSetStatus.InUse, HospitalSetEventKind.Washed)]
 		[InlineData(HospitalSetStatus.Sterile, HospitalSetEventKind.Loaded)]
+		[InlineData(HospitalSetStatus.Quarantine, HospitalSetEventKind.Issued)]          // H170: never issued before release
 		public void A_set_cannot_skip_a_step(string from, string step) =>
 			Assert.Null(HospitalCssdRules.After(from, step, Today.AddDays(10), Today));
 
@@ -67,20 +69,21 @@ namespace CrossBuy.Tests
 			Assert.Equal("The shelf life is 1 to 365 days", HospitalCssdRules.SetRefusal("S1", "x", 0));
 		}
 
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h42_cssd.sql");
+		private static string H42() => HospitalSliceParity.Slice("hospital_h42_cssd.sql");
+		private static string Slice() => H42() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h170_cssd_release.sql");   // H170: release, indicators, recall
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalCssdModel.Configure);
 
 		[Fact]
 		public void The_tables_match_their_slice()
 		{
-			foreach (var (type, table) in new[] { (typeof(HospitalInstrumentSet), "HospitalInstrumentSets"), (typeof(HospitalSterilisationCycle), "HospitalSterilisationCycles"), (typeof(HospitalSetEvent), "HospitalSetEvents") })
+			foreach (var (type, table) in new[] { (typeof(HospitalInstrumentSet), "HospitalInstrumentSets"), (typeof(HospitalSterilisationCycle), "HospitalSterilisationCycles"), (typeof(HospitalSetEvent), "HospitalSetEvents"), (typeof(HospitalCssdRecall), "HospitalCssdRecalls") })
 			{
 				HospitalSliceParity.NamesItsTable(Model(), Slice(), type, table);
 				HospitalSliceParity.ColumnsMatch(Model(), Slice(), type, table);
 			}
 			foreach (var v in HospitalSetStatus.All.Concat(HospitalCycleResult.All).Concat(HospitalSetEventKind.All)) Assert.Contains($"N'{v}'", Slice());
-			Assert.Equal(new[] { "HospitalSurgeries" }, HospitalSliceParity.CheckedPrerequisites(Slice()));
-			Assert.DoesNotContain("ALTER TABLE", Slice(), StringComparison.OrdinalIgnoreCase);
+			Assert.Equal(new[] { "HospitalSurgeries" }, HospitalSliceParity.CheckedPrerequisites(H42()));
+			Assert.DoesNotContain("ALTER TABLE", H42(), StringComparison.OrdinalIgnoreCase);
 			Assert.Equal(new[] { "CompanyId", "Code" }, Model().FindEntityType(typeof(HospitalInstrumentSet))!.GetIndexes().Single(i => i.IsUnique).Properties.Select(x => x.Name));
 		}
 	}

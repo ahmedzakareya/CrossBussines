@@ -1,0 +1,40 @@
+{
+ "unit": "H170 - central sterile supply under the release policy: quarantine, release by a person, biological for implant loads, pack integrity at issue, recall and follow-up",
+ "strings": {
+  "set:Quarantine": {
+   "ar": "في الحجر بانتظار الإفراج",
+   "en": "In quarantine",
+   "fr": "En quarantaine"
+  },
+  "cssd:Cycle ended": {
+   "ar": "انتهت الدورة",
+   "en": "Cycle ended",
+   "fr": "Cycle terminé"
+  },
+  "Cycles awaiting release": {
+   "ar": "دورات بانتظار الإفراج",
+   "en": "Cycles awaiting release",
+   "fr": "Cycles en attente de libération"
+  },
+  "Sets wait in quarantine until a person releases their cycle; a load with implantable items waits for its biological indicator": {
+   "ar": "تبقى الأطقم في الحجر حتى يُفرج شخص عن دورتها، والحمولة التي تضم مواد قابلة للزرع تنتظر مؤشرها البيولوجي",
+   "en": "Sets wait in quarantine until a person releases their cycle; a load with implantable items waits for its biological indicator",
+   "fr": "Les sets restent en quarantaine jusqu'à ce qu'une personne libère leur cycle ; une charge implantable attend son indicateur biologique"
+  },
+  "Recording the end means the run met its programme and the chemical indicator passed. The sets wait in quarantine until the cycle is released.": {
+   "ar": "تسجيل انتهاء الدورة يعني أنها استوفت برنامجها ونجح مؤشرها الكيميائي. تبقى الأطقم في الحجر حتى يُفرج عن الدورة.",
+   "en": "Recording the end means the run met its programme and the chemical indicator passed. The sets wait in quarantine until the cycle is released.",
+   "fr": "Enregistrer la fin signifie que le cycle a respecté son programme et que l'indicateur chimique est conforme. Les sets restent en quarantaine jusqu'à la libération du cycle."
+  },
+  "This cycle is still running": {
+   "ar": "هذه الدورة ما زالت قيد التشغيل",
+   "en": "This cycle is still running",
+   "fr": "Ce cycle est encore en cours"
+  },
+  "This cycle has not passed": {
+   "ar": "لم تنجح هذه الدورة",
+   "en": "This cycle has not passed",
+   "fr": "Ce cycle n'a pas réussi"
+  }
+ }
+}

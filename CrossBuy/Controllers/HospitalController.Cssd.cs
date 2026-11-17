@@ -16,9 +16,10 @@ namespace CrossBuy.Controllers
 		private HospitalCssdService? _cssdSvc;
 		private HospitalCssdService CssdSvc => _cssdSvc ??= ActivatorUtilities.CreateInstance<HospitalCssdService>(HttpContext.RequestServices);
 
-		public sealed class HospitalSetStepInput { public string Step { get; set; } = ""; public int? SurgeryId { get; set; } }
-		public sealed class HospitalCycleStartInput { public List<int> SetIds { get; set; } = new(); public string? Autoclave { get; set; } }
-		public sealed class HospitalCycleEndInput { public bool Passed { get; set; } public string? Note { get; set; } }
+		public sealed class HospitalSetStepInput { public string Step { get; set; } = ""; public int? SurgeryId { get; set; } public bool PackIntact { get; set; } }
+		public sealed class HospitalCycleStartInput { public List<int> SetIds { get; set; } = new(); public string? Autoclave { get; set; } public bool ImplantLoad { get; set; } }
+		public sealed class HospitalCssdResultInput { public string Result { get; set; } = ""; }
+		public sealed class HospitalCssdReasonInput { public string? Reason { get; set; } }
 
 		[HttpGet("Cssd")]
 		[HospitalPerm(HospitalActions.Read)]
@@ -47,7 +48,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await CssdSvc.StepAsync(ctx, id, input.Step, input.SurgeryId, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await CssdSvc.StepAsync(ctx, id, input.Step, input.SurgeryId, ctx.EmployeeId, DateTime.UtcNow, ct, input.PackIntact));
 		}
 
 		[HttpPost("Cssd/Cycles"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
@@ -55,15 +56,56 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await CssdSvc.StartCycleAsync(ctx, input.SetIds, input.Autoclave, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await CssdSvc.StartCycleAsync(ctx, input.SetIds, input.Autoclave, ctx.EmployeeId, DateTime.UtcNow, ct, input.ImplantLoad));
 		}
 
 		[HttpPost("Cssd/Cycles/{id:int}/End"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
-		public async Task<IActionResult> CssdEndCycle(int id, [FromBody] HospitalCycleEndInput input, CancellationToken ct = default)
+		public async Task<IActionResult> CssdEndCycle(int id, [FromBody] HospitalCycleEndRecord input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await CssdSvc.EndCycleAsync(ctx, id, input.Passed, input.Note, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await CssdSvc.EndCycleAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		// H170: release, the biological result, a recall by hand, and the recall follow-up
+		[HttpPost("Cssd/Cycles/{id:int}/Release"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CssdRelease(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CssdSvc.ReleaseAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Cssd/Cycles/{id:int}/Biological"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CssdBiological(int id, [FromBody] HospitalCssdResultInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CssdSvc.BiologicalAsync(ctx, id, input.Result, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Cssd/Cycles/{id:int}/Recall"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CssdRecall(int id, [FromBody] HospitalCssdReasonInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CssdSvc.RecallAsync(ctx, id, input.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Cssd/Recalls/{id:int}/Notified"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CssdRecallNotified(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CssdSvc.RecallNotifyAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Cssd/Recalls/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CssdRecallClose(int id, [FromBody] HospitalCssdReasonInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CssdSvc.RecallCloseAsync(ctx, id, input.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 	}
 }
