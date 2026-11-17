@@ -1,0 +1,62 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCheckoutSheet
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H160 — the checkout window: what the finished visit left for the desk (money owed on its bill, the follow-up advised
+   and whether it is booked, a referral, tests / scans / medicines still waiting, a sick-leave paper), each with the act
+   that settles it, then "complete checkout" (a word is required while anything is still open). Administrative only. *@
+@{
+    var a = Model.Appointment; var inv = System.Globalization.CultureInfo.InvariantCulture;
+    int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? ""; bool canBill = ViewBag.CanBill == true;
+    string Money(decimal v) => v.ToString("N" + dp, inv);
+    string Time(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00");
+    var items = new List<(string Icon, string Title, string State, bool Open, string? Act, string? ActAttr, string? ActValue, string? Href)>();
+    items.Add(("ki-wallet", T["Payment"].Value, Model.Owed > 0 ? string.Format(T["Still owed on the visit's bill: {0}"].Value, Money(Model.Owed) + " " + cur) : T["Nothing owed on the visit"].Value,
+        Model.Owed > 0, Model.Owed > 0 && canBill ? T["Collect payment"].Value : null, "data-desk-pay", a.PatientId.ToString(), null));
+    if (Model.FollowUpDays is int)
+        items.Add(("ki-calendar-add", T["Follow-up"].Value, Model.NextBooked is DateTime nb ? string.Format(T["Advised by {0}; booked for {1}"].Value, Model.FollowUpBy!.Value.ToString("yyyy-MM-dd"), nb.ToString("yyyy-MM-dd")) : string.Format(T["Advised by {0}; not booked yet"].Value, Model.FollowUpBy!.Value.ToString("yyyy-MM-dd")),
+            Model.FollowUpOpen, Model.FollowUpOpen ? T["Book"].Value : null, null, null, Model.FollowUpOpen ? Url.Action("Appointments", "Hospital", new { date = Model.FollowUpBy!.Value.ToString("yyyy-MM-dd") }) : null));
+    if (Model.ReferredTo != null)
+        items.Add(("ki-send", T["Referral"].Value, string.Format(T["Referred to {0}"].Value, DisplayName.Of(Model.ReferredTo, Model.ReferredToEn)), false, T["Send on"].Value, "data-desk-arrival", a.PatientId.ToString(), null));
+    if (Model.Tests + Model.Scans > 0)
+        items.Add(("ki-test-tubes", T["Tests and scans"].Value, string.Format(T["Tests waiting: {0} · scans waiting: {1}"].Value, Model.Tests, Model.Scans), true, T["Send on"].Value, "data-desk-arrival", a.PatientId.ToString(), null));
+    if (Model.Medicines > 0)
+        items.Add(("ki-capsule", T["Medicines"].Value, string.Format(T["Prescriptions waiting at the pharmacy: {0}"].Value, Model.Medicines), true, null, null, null, null));
+    if (Model.SickLeaveDays > 0)
+        items.Add(("ki-document", T["Sick leave"].Value, string.Format(T["Sick leave issued (days: {0}): hand the paper to the patient"].Value, Model.SickLeaveDays), false, null, null, null, null));
+}
+<div data-checkout="@a.ID" data-unresolved="@(Model.Unresolved ? "1" : "0")">
+    <div class="d-flex align-items-center mb-6">
+        <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(Model.PatientName, Model.PatientNameEn)</bdi> <span class="text-muted fs-7 hp-num">@Model.Mrn</span></div>
+            <div class="text-muted fs-7"><bdi>@DisplayName.Of(Model.Doctor, Model.DoctorEn)</bdi> · <span class="hp-num" dir="ltr">@Time(a.StartMinute)</span></div></div>
+        @if (Model.Done != null) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Checked out"]</span>}
+    </div>
+    @if (a.Status != HospitalAppointmentStatus.Done)
+    {
+        <div class="notice d-flex bg-light rounded border border-dashed p-5 mb-5 fs-7 text-gray-700">@T["The consultation is not finished yet"]</div>
+    }
+    @foreach (var it in items)
+    {
+        <div class="d-flex align-items-center rounded border border-dashed @(it.Open ? "border-danger" : "border-gray-300") p-4 mb-3">
+            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-@(it.Open ? "danger" : "primary")"><i class="ki-outline @it.Icon fs-2 text-@(it.Open ? "danger" : "primary")"></i></span></span>
+            <div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900">@it.Title</div><div class="fs-8 @(it.Open ? "text-danger fw-semibold" : "text-muted")">@it.State</div></div>
+            @if (Model.Done == null && it.Act != null)
+            {
+                if (it.Href != null) {<a href="@it.Href" target="_blank" class="btn btn-sm btn-light-primary">@it.Act</a>}
+                else {<button type="button" class="btn btn-sm btn-light-primary" @Html.Raw(it.ActAttr + "=\"" + it.ActValue + "\"")>@it.Act</button>}   @* a fixed attribute name and a number *@
+            }
+            else if (!it.Open) {<i class="ki-outline ki-check-circle fs-2 text-primary"></i>}
+        </div>
+    }
+    @if (Model.Done == null && a.Status == HospitalAppointmentStatus.Done)
+    {
+        <div class="mt-5"><label class="fs-7 fw-semibold mb-2 @(Model.Unresolved ? "required" : "")">@(Model.Unresolved ? T["Something is still open: why is the visit closed anyway?"] : T["Note (optional)"])</label>
+            <textarea class="form-control form-control-solid" rows="2" maxlength="300" data-co-note></textarea></div>
+        <div class="text-end mt-5"><button type="button" class="btn btn-primary" data-co-close="@a.ID"><i class="ki-outline ki-check fs-4"></i>@T["Complete checkout"]</button></div>
+    }
+    else if (Model.Done is HospitalDeskCheckout d)
+    {
+        <div class="text-muted fs-7 mt-4">@T["Closed at"] <span class="hp-num" dir="ltr">@d.CompletedAt.ToLocalTime().ToString("HH:mm")</span>@if (d.Note != null) {<text> · </text><bdi>@d.Note</bdi>}</div>
+    }
+</div>

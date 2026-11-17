@@ -117,6 +117,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalCompoundingModel.Configure(b);      // H153: compounding batch records
 			HospitalDeskHandoffModel.Configure(b);      // H158: the desk's handoffs (why they came, where they were sent)
 			HospitalCheckinGapModel.Configure(b);        // H159: check-in steps followed up after the counter
+			HospitalDeskCheckoutModel.Configure(b);      // H160: checkout at the desk after the consultation
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

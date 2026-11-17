@@ -7662,4 +7662,26 @@
   <data name="me" xml:space="preserve"><value>moi</value></data>
   <data name="opened by" xml:space="preserve"><value>ouvert par</value></data>
   <data name="due by" xml:space="preserve"><value>à faire avant le</value></data>
+  <data name="Awaiting desk completion" xml:space="preserve"><value>En attente de clôture à l'accueil</value></data>
+  <data name="Check out" xml:space="preserve"><value>Clôturer la visite</value></data>
+  <data name="Checked out" xml:space="preserve"><value>Visite clôturée</value></data>
+  <data name="Closed at" xml:space="preserve"><value>Clôturée à</value></data>
+  <data name="Complete checkout" xml:space="preserve"><value>Terminer la clôture</value></data>
+  <data name="Follow-up" xml:space="preserve"><value>Suivi</value></data>
+  <data name="No visit is waiting for the desk to complete it." xml:space="preserve"><value>Aucune visite n'attend d'être clôturée à l'accueil.</value></data>
+  <data name="Nothing owed on the visit" xml:space="preserve"><value>Rien n'est dû sur la visite</value></data>
+  <data name="Referral" xml:space="preserve"><value>Orientation</value></data>
+  <data name="Referred to {0}" xml:space="preserve"><value>Orienté vers {0}</value></data>
+  <data name="Something is still open: why is the visit closed anyway?" xml:space="preserve"><value>Un point reste ouvert : pourquoi clôturer la visite malgré tout ?</value></data>
+  <data name="Something is still open: write why the visit is closed anyway" xml:space="preserve"><value>Un point reste ouvert : indiquez pourquoi la visite est clôturée malgré tout</value></data>
+  <data name="Tests and scans" xml:space="preserve"><value>Analyses et imagerie</value></data>
+  <data name="The consultation is not finished yet" xml:space="preserve"><value>La consultation n'est pas encore terminée</value></data>
+  <data name="This visit is checked out already" xml:space="preserve"><value>Cette visite est déjà clôturée</value></data>
+  <data name="Today's visits whose consultation is finished: settle what the visit left for the desk, then check out." xml:space="preserve"><value>Visites du jour dont la consultation est terminée : réglez ce que la visite laisse à l'accueil, puis clôturez.</value></data>
+  <data name="Advised by {0}; booked for {1}" xml:space="preserve"><value>Conseillé avant le {0} ; réservé pour le {1}</value></data>
+  <data name="Advised by {0}; not booked yet" xml:space="preserve"><value>Conseillé avant le {0} ; pas encore réservé</value></data>
+  <data name="Prescriptions waiting at the pharmacy: {0}" xml:space="preserve"><value>Ordonnances en attente à la pharmacie : {0}</value></data>
+  <data name="Sick leave issued (days: {0}): hand the paper to the patient" xml:space="preserve"><value>Arrêt de travail émis (jours : {0}) : remettez le document au patient</value></data>
+  <data name="Still owed on the visit's bill: {0}" xml:space="preserve"><value>Reste dû sur la facture de la visite : {0}</value></data>
+  <data name="Tests waiting: {0} · scans waiting: {1}" xml:space="preserve"><value>Analyses en attente : {0} · imagerie en attente : {1}</value></data>
 </root>

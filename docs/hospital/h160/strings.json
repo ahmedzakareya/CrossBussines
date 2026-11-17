@@ -1,0 +1,115 @@
+{
+ "unit": "H160 - checkout at the desk after the consultation: what the visit left for the desk, then close it",
+ "strings": {
+  "Awaiting desk completion": {
+   "ar": "بانتظار إنهاء الاستقبال",
+   "en": "Awaiting desk completion",
+   "fr": "En attente de clôture à l'accueil"
+  },
+  "Check out": {
+   "ar": "إنهاء الزيارة",
+   "en": "Check out",
+   "fr": "Clôturer la visite"
+  },
+  "Checked out": {
+   "ar": "أُنهيت الزيارة",
+   "en": "Checked out",
+   "fr": "Visite clôturée"
+  },
+  "Closed at": {
+   "ar": "أُغلقت في",
+   "en": "Closed at",
+   "fr": "Clôturée à"
+  },
+  "Complete checkout": {
+   "ar": "إتمام إنهاء الزيارة",
+   "en": "Complete checkout",
+   "fr": "Terminer la clôture"
+  },
+  "Follow-up": {
+   "ar": "المراجعة",
+   "en": "Follow-up",
+   "fr": "Suivi"
+  },
+  "No visit is waiting for the desk to complete it.": {
+   "ar": "لا توجد زيارة بانتظار إنهاء الاستقبال.",
+   "en": "No visit is waiting for the desk to complete it.",
+   "fr": "Aucune visite n'attend d'être clôturée à l'accueil."
+  },
+  "Nothing owed on the visit": {
+   "ar": "لا مبالغ مستحقة على الزيارة",
+   "en": "Nothing owed on the visit",
+   "fr": "Rien n'est dû sur la visite"
+  },
+  "Referral": {
+   "ar": "التحويل",
+   "en": "Referral",
+   "fr": "Orientation"
+  },
+  "Referred to {0}": {
+   "ar": "حُوِّل إلى {0}",
+   "en": "Referred to {0}",
+   "fr": "Orienté vers {0}"
+  },
+  "Something is still open: why is the visit closed anyway?": {
+   "ar": "ما زال هناك أمر مفتوح: ما سبب إنهاء الزيارة رغم ذلك؟",
+   "en": "Something is still open: why is the visit closed anyway?",
+   "fr": "Un point reste ouvert : pourquoi clôturer la visite malgré tout ?"
+  },
+  "Something is still open: write why the visit is closed anyway": {
+   "ar": "ما زال هناك أمر مفتوح: اكتب سبب إنهاء الزيارة رغم ذلك",
+   "en": "Something is still open: write why the visit is closed anyway",
+   "fr": "Un point reste ouvert : indiquez pourquoi la visite est clôturée malgré tout"
+  },
+  "Tests and scans": {
+   "ar": "التحاليل والأشعة",
+   "en": "Tests and scans",
+   "fr": "Analyses et imagerie"
+  },
+  "The consultation is not finished yet": {
+   "ar": "لم تنتهِ المعاينة بعد",
+   "en": "The consultation is not finished yet",
+   "fr": "La consultation n'est pas encore terminée"
+  },
+  "This visit is checked out already": {
+   "ar": "أُنهيت هذه الزيارة بالفعل",
+   "en": "This visit is checked out already",
+   "fr": "Cette visite est déjà clôturée"
+  },
+  "Today's visits whose consultation is finished: settle what the visit left for the desk, then check out.": {
+   "ar": "زيارات اليوم التي انتهت معاينتها: أنجز ما تركته الزيارة للاستقبال، ثم أنهِ الزيارة.",
+   "en": "Today's visits whose consultation is finished: settle what the visit left for the desk, then check out.",
+   "fr": "Visites du jour dont la consultation est terminée : réglez ce que la visite laisse à l'accueil, puis clôturez."
+  },
+  "Advised by {0}; not booked yet": {
+   "ar": "موصى بها قبل {0}، ولم تُحجز بعد",
+   "en": "Advised by {0}; not booked yet",
+   "fr": "Conseillé avant le {0} ; pas encore réservé"
+  },
+  "Advised by {0}; booked for {1}": {
+   "ar": "موصى بها قبل {0}، وقد حُجزت في {1}",
+   "en": "Advised by {0}; booked for {1}",
+   "fr": "Conseillé avant le {0} ; réservé pour le {1}"
+  },
+  "Tests waiting: {0} · scans waiting: {1}": {
+   "ar": "تحاليل بالانتظار: {0} · أشعة بالانتظار: {1}",
+   "en": "Tests waiting: {0} · scans waiting: {1}",
+   "fr": "Analyses en attente : {0} · imagerie en attente : {1}"
+  },
+  "Prescriptions waiting at the pharmacy: {0}": {
+   "ar": "وصفات بانتظار الصيدلية: {0}",
+   "en": "Prescriptions waiting at the pharmacy: {0}",
+   "fr": "Ordonnances en attente à la pharmacie : {0}"
+  },
+  "Sick leave issued (days: {0}): hand the paper to the patient": {
+   "ar": "صدرت إجازة مرضية (عدد الأيام: {0}): سلّم الورقة إلى المريض",
+   "en": "Sick leave issued (days: {0}): hand the paper to the patient",
+   "fr": "Arrêt de travail émis (jours : {0}) : remettez le document au patient"
+  },
+  "Still owed on the visit's bill: {0}": {
+   "ar": "المتبقي على فاتورة الزيارة: {0}",
+   "en": "Still owed on the visit's bill: {0}",
+   "fr": "Reste dû sur la facture de la visite : {0}"
+  }
+ }
+}

@@ -1,0 +1,21 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalCheckoutRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H160 — today's visits whose consultation is finished and the desk has not closed: oldest first, "check out". *@
+@{ string Time(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00"); }
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-8"><i class="ki-outline ki-exit-right fs-3x text-gray-300 d-block mb-3"></i>@T["No visit is waiting for the desk to complete it."]</div>
+}
+@foreach (var r in Model)
+{
+    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+        <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-exit-right fs-3 text-primary"></i></span></span>
+        <div class="flex-grow-1 min-w-0">
+            <a href="#" class="fs-7 fw-bold text-gray-900 text-hover-primary" data-open-patient="@r.PatientId"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi><span class="text-muted fw-semibold hp-num ms-1">@r.Mrn</span></a>
+            <div class="fs-8 text-gray-700"><bdi>@DisplayName.Of(r.Doctor, r.DoctorEn)</bdi> · <span class="hp-num" dir="ltr">@Time(r.StartMinute)</span>@if (r.DoneAt is DateTime d) {<text> · @T["Ended"] </text><span class="hp-num" dir="ltr">@d.ToLocalTime().ToString("HH:mm")</span>}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary py-1 px-3" data-desk-checkout="@r.AppointmentId">@T["Check out"]</button>
+    </div>
+}
