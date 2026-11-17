@@ -1,0 +1,91 @@
+/*
+ * Chat - the modern messenger look (2026-11-17), on the existing markup of Views/Chat/Index.cshtml: no render function
+ * changes, so every live handler (edited/deleted/reaction look for the first .rounded, .d-flex.gap-1 and the
+ * .d-flex.flex-column column) keeps working. Brand palette only: ink #1F2D4D, primary #3A5795, surface #E7F0FF;
+ * no green and no red for state - an unread count and presence are brand blue.
+ * Applies to the full page and to the drawer (body.cb-embed, crossbuy-chat-drawer.js).
+ */
+
+/* ---------- the conversation list ---------- */
+#cbchat_listpane .card { border: 0; box-shadow: none; }
+#cbchat_contacts_header { padding: 1rem 1.25rem .5rem !important; min-height: 0; }
+#cbchat_listpane .card-body { padding: .25rem .75rem 1rem !important; }
+#chatSearch { border-radius: 12px; height: 44px; }
+#cbchat_contacts_header .btn-icon.btn-primary { width: 44px; height: 44px; border-radius: 12px; }
+
+#chatConvList .chat-conv {
+    position: relative; padding: .7rem .8rem !important; margin-bottom: .2rem !important; border-radius: 14px !important;
+    transition: background-color .15s ease;
+}
+#chatConvList .chat-conv.bg-hover-light:hover { background: var(--bs-gray-100) !important; }
+#chatConvList .chat-conv.bg-light-primary { background: #E7F0FF !important; }
+#chatConvList .chat-conv.bg-light-primary::before {
+    content: ""; position: absolute; inset-block: 12px; inset-inline-start: 0; width: 3px; border-radius: 3px; background: #3A5795;
+}
+#chatConvList .chat-conv .symbol-40px > img, #chatConvList .chat-conv .symbol-40px > .symbol-label { width: 46px; height: 46px; }
+#chatConvList .chat-conv .fw-bold.text-gray-900 { font-size: .95rem; color: #1F2D4D !important; }
+#chatConvList .chat-conv .text-muted.fs-8 { font-size: .8rem !important; color: var(--bs-gray-600) !important; margin-top: 2px; }
+/* unread: a brand pill, not a red alarm */
+#chatConvList .chat-conv .badge-danger {
+    background: #3A5795 !important; color: #fff; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px !important;
+    font-size: .72rem; font-weight: 700;
+}
+#chatConvList .chat-conv .badge-danger ~ *, #chatConvList .chat-conv:has(.badge-danger) .text-muted.fs-8 { color: #1F2D4D !important; font-weight: 600; }
+/* presence: a brand dot with a white ring */
+#chatConvList .chat-conv .badge-success { background: #3A5795 !important; box-shadow: 0 0 0 2px var(--bs-body-bg); width: 11px !important; height: 11px !important; }
+#chatConvList .chat-conv .badge-secondary { background: var(--bs-gray-300) !important; box-shadow: 0 0 0 2px var(--bs-body-bg); width: 11px !important; height: 11px !important; }
+
+/* ---------- the thread ---------- */
+#cbchat_messenger { border: 0; box-shadow: none; overflow: hidden; }
+#cbchat_messenger_header { min-height: 64px; padding: .6rem 1rem !important; border-bottom: 1px solid var(--bs-gray-200) !important; background: var(--bs-body-bg); }
+#cbchat_messenger_header #chatTitle { font-size: 1.05rem !important; color: #1F2D4D; }
+#cbchat_messenger_header #chatPresence { font-size: .78rem !important; }
+#cbchat_messenger_body { background: #F4F7FC; }
+#chatScroll { padding: 1rem 1rem .5rem !important; margin: 0 !important; }
+
+/* a message: tighter rhythm, a small meta line */
+#chatScroll .chat-msg { margin-bottom: 1rem !important; }
+#chatScroll .chat-msg .chat-col { max-width: 82%; }
+#chatScroll .chat-msg .chat-col > .d-flex.align-items-center.mb-1 .fs-6.fw-bold { font-size: .8rem !important; color: var(--bs-gray-700) !important; }
+#chatScroll .chat-msg .chat-col > .d-flex.align-items-center.mb-1 .fs-8 { font-size: .7rem !important; }
+#chatScroll .chat-msg .chat-col > .d-flex.align-items-center.mb-1 .symbol-35px > img { width: 28px; height: 28px; }
+/* my own messages need no avatar and no "You": the side says it */
+#chatScroll .chat-msg[data-mine="1"] .chat-col > .d-flex.align-items-center.mb-1 .symbol,
+#chatScroll .chat-msg[data-mine="1"] .chat-col > .d-flex.align-items-center.mb-1 .fs-6.fw-bold { display: none; }
+#chatScroll .chat-msg[data-mine="1"] .chat-col > .d-flex.align-items-center.mb-1 > div { margin: 0 !important; }
+
+/* the bubble (the first .rounded in the message - the handlers rely on it) */
+#chatScroll .chat-msg .chat-col > .rounded.p-4 {
+    padding: .6rem .9rem !important; border-radius: 18px !important; font-weight: 500 !important; font-size: .95rem; line-height: 1.55;
+    text-align: start !important; max-width: 100%; word-break: break-word;
+}
+#chatScroll .chat-msg[data-mine="0"] .chat-col > .rounded.p-4 {
+    background: #fff !important; color: #1F2D4D !important; box-shadow: 0 1px 2px rgba(31,45,77,.08); border-start-start-radius: 6px !important;
+}
+#chatScroll .chat-msg[data-mine="1"] .chat-col > .rounded.p-4 {
+    background: #3A5795 !important; color: #fff !important; border-start-end-radius: 6px !important;
+}
+#chatScroll .chat-msg[data-mine="1"] .chat-col > .rounded.p-4 a { color: #fff; text-decoration: underline; }
+#chatScroll .chat-msg[data-mine="1"] .cbchat-quote { background: rgba(255,255,255,.14) !important; border-color: rgba(255,255,255,.7) !important; }
+#chatScroll .chat-msg[data-mine="1"] .cbchat-quote .text-primary,
+#chatScroll .chat-msg[data-mine="1"] .cbchat-quote .text-gray-600 { color: #fff !important; }
+#chatScroll .chat-msg .chat-col > .rounded.bg-light.fst-italic { background: transparent !important; border: 1px dashed var(--bs-gray-300); border-radius: 18px !important; }
+
+/* reactions: small pills hanging under the bubble */
+#chatScroll .chat-msg .d-flex.gap-1 .badge { background: #fff !important; color: #1F2D4D; border: 1px solid var(--bs-gray-200); border-radius: 12px; font-weight: 600; }
+#chatScroll .chat-msg .d-flex.gap-1 .badge.badge-light-primary { background: #E7F0FF !important; border-color: #C9D8F5; }
+
+/* the hover tools float as one white strip */
+#chatScroll .chat-tools { border-radius: 12px !important; box-shadow: 0 4px 14px rgba(31,45,77,.12) !important; padding: 3px; }
+
+/* ---------- the composer ---------- */
+#chatFooter { background: var(--bs-body-bg); border-top: 1px solid var(--bs-gray-200) !important; padding: .6rem .8rem !important; }
+#chatFooter .cbchat-pill { background: #F4F7FC; min-height: 44px; }
+#chatFooter .cbchat-send { width: 44px; height: 44px; border-radius: 50% !important; background: #3A5795 !important; border: 0; }
+#chatFooter .cbchat-send:hover { background: #1F2D4D !important; }
+#chatSeen, #chatTyping { padding-inline: 1rem; }
+
+/* ---------- inside the drawer ---------- */
+body.cb-embed #kt_app_content, body.cb-embed .app-content { padding: 0 !important; }
+body.cb-embed #cbchat_listpane { margin: 0 !important; }
+body.cb-embed #cbchat_listpane .card { border-radius: 0; }
