@@ -93,6 +93,11 @@
 #chatScroll .chat-tools .btn.rxmore::before {
     content: ""; position: absolute; inset-inline-start: -5px; top: 8px; bottom: 8px; width: 1px; background: var(--bs-gray-200);
 }
+/* reply: the universal curved back-arrow (Keenicons has none; ki-share read as "share"), mirrored in RTL */
+.cb-reply-ic { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+html[dir="rtl"] .cb-reply-ic { transform: scaleX(-1); }
+#chatScroll .chat-tools .btn .cb-reply-ic { color: #3A5795; }
+#chatReplyBar .cb-reply-ic { width: 17px; height: 17px; }
 #chatScroll .chat-tools .btn.dl i { color: var(--bs-gray-600) !important; }
 #chatScroll .chat-tools .btn.dl:hover { background: var(--bs-danger-light, #fff5f8) !important; }
 #chatScroll .chat-tools .btn.dl:hover i { color: var(--bs-danger) !important; }

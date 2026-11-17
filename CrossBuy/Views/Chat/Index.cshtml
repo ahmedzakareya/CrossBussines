@@ -162,7 +162,7 @@
                     <div class="card-footer pt-4 d-none" id="chatFooter">
                         <div id="chatMentionBox" class="d-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-1" style="bottom:100%;inset-inline-start:12px;margin-bottom:6px;max-height:230px;overflow:auto;width:270px;z-index:30;"></div>
                         <div id="chatReplyBar" class="d-none align-items-center bg-light-primary rounded p-2 mb-2">
-                            <i class="ki-outline ki-share fs-5 text-primary me-2"></i>
+                            <svg class="cb-reply-ic text-primary me-2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                             <span class="fs-8 text-gray-700 flex-grow-1 text-truncate" id="chatReplyText"></span>
                             <button type="button" class="btn btn-icon btn-sm" id="chatReplyCancel"><i class="ki-outline ki-cross fs-6"></i></button>
                         </div>
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="❤️">❤️</button>' +
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="😂">😂</button>' +
               '<button class="btn btn-icon btn-xs btn-light rxmore" title="@Localizer["React"]"><i class="ki-outline ki-emoji-happy fs-7"></i></button>' +
-              '<button class="btn btn-icon btn-xs btn-light re" title="@Localizer["Reply"]"><i class="ki-outline ki-share fs-7"></i></button>' +
+              '<button class="btn btn-icon btn-xs btn-light re" title="@Localizer["Reply"]"><svg class="cb-reply-ic" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>' +
               (mine ? '<button class="btn btn-icon btn-xs btn-light ed"><i class="ki-outline ki-pencil fs-7"></i></button><button class="btn btn-icon btn-xs btn-light-danger dl"><i class="ki-outline ki-trash fs-7"></i></button>' : '') +
             '</div>';
         return '<div class="d-flex justify-content-' + side + ' mb-6 chat-msg" data-id="' + m.id + '" data-mine="' + (mine ? 1 : 0) + '" data-body="' + esc(m.body || '') + '" data-text="' + esc(m.body || (m.attachmentName || '')) + '">' +
