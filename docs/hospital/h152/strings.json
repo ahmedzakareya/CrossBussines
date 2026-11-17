@@ -1,0 +1,175 @@
+{
+ "unit": "H152 - formulary governance: the committee's requests, decisions and therapeutic interchange",
+ "strings": {
+  "Formulary requests": {
+   "ar": "طلبات دليل الأدوية",
+   "en": "Formulary requests",
+   "fr": "Demandes hors livret"
+  },
+  "Pharmacy and therapeutics committee": {
+   "ar": "لجنة الصيدلة والعلاج",
+   "en": "Pharmacy and therapeutics committee",
+   "fr": "Comité du médicament (COMEDIMS)"
+  },
+  "Waiting for the committee": {
+   "ar": "بانتظار اللجنة",
+   "en": "Waiting for the committee",
+   "fr": "En attente du comité"
+  },
+  "oldest first": {
+   "ar": "الأقدم أولًا",
+   "en": "oldest first",
+   "fr": "les plus anciennes d'abord"
+  },
+  "Refused": {
+   "ar": "مرفوضة",
+   "en": "Refused",
+   "fr": "Refusées"
+  },
+  "in the last 30 days": {
+   "ar": "في آخر 30 يومًا",
+   "en": "in the last 30 days",
+   "fr": "sur les 30 derniers jours"
+  },
+  "Requests": {
+   "ar": "الطلبات",
+   "en": "Requests",
+   "fr": "Demandes"
+  },
+  "Search by patient, medicine or request number…": {
+   "ar": "ابحث بالمريض أو الدواء أو رقم الطلب…",
+   "en": "Search by patient, medicine or request number…",
+   "fr": "Rechercher par patient, médicament ou n° de demande…"
+  },
+  "frs:Pending": {
+   "ar": "بانتظار اللجنة",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "frs:Approved": {
+   "ar": "موافق عليها",
+   "en": "Approved",
+   "fr": "Approuvée"
+  },
+  "frs:Refused": {
+   "ar": "مرفوضة",
+   "en": "Refused",
+   "fr": "Refusée"
+  },
+  "The committee's decision": {
+   "ar": "قرار اللجنة",
+   "en": "The committee's decision",
+   "fr": "La décision du comité"
+  },
+  "Approve for this patient": {
+   "ar": "موافقة لهذا المريض",
+   "en": "Approve for this patient",
+   "fr": "Approuver pour ce patient"
+  },
+  "The committee's note": {
+   "ar": "ملاحظة اللجنة",
+   "en": "The committee's note",
+   "fr": "Note du comité"
+  },
+  "Required when refusing": {
+   "ar": "مطلوبة عند الرفض",
+   "en": "Required when refusing",
+   "fr": "Obligatoire en cas de refus"
+  },
+  "Formulary alternative (therapeutic interchange)": {
+   "ar": "بديل من الدليل (استبدال علاجي)",
+   "en": "Formulary alternative (therapeutic interchange)",
+   "fr": "Alternative du livret (substitution thérapeutique)"
+  },
+  "Save the committee's decision on {0}? The pharmacy acts on it at once.": {
+   "ar": "حفظ قرار اللجنة في ⁦{0}⁩؟ تعمل به الصيدلية فورًا.",
+   "en": "Save the committee's decision on {0}? The pharmacy acts on it at once.",
+   "fr": "Enregistrer la décision du comité sur {0} ? La pharmacie l'applique aussitôt."
+  },
+  "Instead: {0}": {
+   "ar": "بدلًا منه: ⁦{0}⁩",
+   "en": "Instead: {0}",
+   "fr": "À la place : {0}"
+  },
+  "Decide": {
+   "ar": "قرّر",
+   "en": "Decide",
+   "fr": "Décider"
+  },
+  "You asked: another member decides": {
+   "ar": "أنت من طلب: يقرر عضو آخر",
+   "en": "You asked: another member decides",
+   "fr": "Vous avez demandé : un autre membre décide"
+  },
+  "Approved by the committee ({0})": {
+   "ar": "وافقت اللجنة (⁦{0}⁩)",
+   "en": "Approved by the committee ({0})",
+   "fr": "Approuvé par le comité ({0})"
+  },
+  "Waiting for the committee ({0})": {
+   "ar": "بانتظار اللجنة (⁦{0}⁩)",
+   "en": "Waiting for the committee ({0})",
+   "fr": "En attente du comité ({0})"
+  },
+  "Refused by the committee: {0}": {
+   "ar": "رفضت اللجنة: ⁦{0}⁩",
+   "en": "Refused by the committee: {0}",
+   "fr": "Refusé par le comité : {0}"
+  },
+  "The committee suggests {0} instead — ask the prescriber": {
+   "ar": "تقترح اللجنة ⁦{0}⁩ بدلًا منه — راجع الطبيب",
+   "en": "The committee suggests {0} instead — ask the prescriber",
+   "fr": "Le comité propose {0} à la place — voyez le prescripteur"
+  },
+  "Ask the committee": {
+   "ar": "اطلب موافقة اللجنة",
+   "en": "Ask the committee",
+   "fr": "Demander au comité"
+  },
+  "Why does this patient need {0}? The committee reads this.": {
+   "ar": "لماذا يحتاج هذا المريض ⁦{0}⁩؟ اللجنة تقرأ هذا.",
+   "en": "Why does this patient need {0}? The committee reads this.",
+   "fr": "Pourquoi ce patient a-t-il besoin de {0} ? Le comité le lira."
+  },
+  "Sent to the committee": {
+   "ar": "أُرسل إلى اللجنة",
+   "en": "Sent to the committee",
+   "fr": "Envoyé au comité"
+  },
+  "Write the clinical reason the patient needs this medicine": {
+   "ar": "اكتب السبب الإكلينيكي لحاجة المريض لهذا الدواء",
+   "en": "Write the clinical reason the patient needs this medicine",
+   "fr": "Indiquez la raison clinique pour laquelle le patient a besoin de ce médicament"
+  },
+  "This medicine is on the formulary: no approval is needed": {
+   "ar": "هذا الدواء ضمن الدليل: لا يحتاج موافقة",
+   "en": "This medicine is on the formulary: no approval is needed",
+   "fr": "Ce médicament est au livret : aucune approbation n'est nécessaire"
+  },
+  "This medicine already has a request for this prescription": {
+   "ar": "لهذا الدواء طلب قائم في هذه الوصفة",
+   "en": "This medicine already has a request for this prescription",
+   "fr": "Ce médicament a déjà une demande pour cette ordonnance"
+  },
+  "The person who asked cannot decide the request": {
+   "ar": "من طلب لا يقرر الطلب",
+   "en": "The person who asked cannot decide the request",
+   "fr": "La personne qui a demandé ne peut pas décider"
+  },
+  "Write why the committee refuses it": {
+   "ar": "اكتب سبب رفض اللجنة",
+   "en": "Write why the committee refuses it",
+   "fr": "Indiquez pourquoi le comité refuse"
+  },
+  "The alternative must be a formulary medicine": {
+   "ar": "يجب أن يكون البديل دواءً من الدليل",
+   "en": "The alternative must be a formulary medicine",
+   "fr": "L'alternative doit être un médicament du livret"
+  },
+  "{0} needs the formulary committee's approval for this patient": {
+   "ar": "⁦{0}⁩ يحتاج موافقة لجنة الدليل لهذا المريض",
+   "en": "{0} needs the formulary committee's approval for this patient",
+   "fr": "{0} nécessite l'approbation du comité pour ce patient"
+  }
+ }
+}

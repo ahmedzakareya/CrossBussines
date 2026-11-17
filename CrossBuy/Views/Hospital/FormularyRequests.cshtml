@@ -1,0 +1,161 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalFormularyRequestStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H152 — the pharmacy and therapeutics committee's requests: a restricted or non-formulary medicine asked for one
+    patient. The figures (demo39 stat tiles), the list (the theme's table widget, cbServerList: searched, filtered, paged),
+    and the decision in the theme's modal — approve, or refuse with the reason and a formulary alternative. The person who
+    asked never decides; the decision is confirmed before it is saved.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Formulary requests"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    bool canManage = ViewBag.CanManage == true;
+    var alternatives = ViewBag.Alternatives as List<(int Id, string Name)> ?? new();
+    var tiles = new (string Label, int N, string Note, string Icon, bool Alert, string Filter)[] {
+        (T["Waiting for the committee"].Value, Model.Pending, T["oldest first"].Value, "ki-time", Model.Pending > 0, HospitalFormularyRequestStatus.Pending),
+        (T["Approved"].Value, Model.Approved30, T["in the last 30 days"].Value, "ki-check-circle", false, HospitalFormularyRequestStatus.Approved),
+        (T["Refused"].Value, Model.Refused30, T["in the last 30 days"].Value, "ki-cross-circle", false, HospitalFormularyRequestStatus.Refused) };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Formulary requests"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Pharmacy and therapeutics committee"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="@Url.Action("Formulary")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-book-open fs-4"></i>@T["Drug formulary"]</a>
+            <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-capsule fs-4"></i>@T["Dispensing queue"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-sm-4">
+                    <a href="#@s.Filter" class="card card-flush h-100 hover-elevate-up" data-tile-filter="@s.Filter">
+                        <div class="card-body d-flex align-items-center gap-5 py-6">
+                            <div class="symbol symbol-50px"><span class="symbol-label bg-light-@(s.Alert ? "danger" : "primary")"><i class="ki-outline @s.Icon fs-2x text-@(s.Alert ? "danger" : "primary")"></i></span></div>
+                            <div class="d-flex flex-column"><span class="fs-2hx fw-bold text-@(s.Alert ? "danger" : "gray-900") lh-1 hp-num">@s.N</span>
+                                <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Label</span><span class="text-gray-400 fs-8">@s.Note</span></div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Requests"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, medicine or request number…"]" /></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_status">
+                        <option value="">@T["All"]</option>
+                        @foreach (var st in HospitalFormularyRequestStatus.All) { <option value="@st">@T["frs:" + st]</option> }
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 min-w-200px rounded-start">@T["Patient"]</th><th class="min-w-200px">@T["Medicine"]</th><th class="min-w-250px">@T["Why"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="5" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="5" class="text-center py-12"><i class="ki-outline ki-questionnaire-tablet fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="frDecide" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold mb-0">@T["The committee's decision"] <bdi class="text-primary hp-num ms-1" data-fr-no></bdi></h2>
+            <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-8 px-lg-10">
+            <div class="text-gray-700 fs-6 mb-6" data-fr-what></div>
+            <div class="d-flex gap-4 mb-7" data-kt-buttons="true">
+                <label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex align-items-center flex-grow-1 p-5 active">
+                    <input class="form-check-input me-3" type="radio" name="frApprove" value="1" checked /><span class="fw-bold fs-6">@T["Approve for this patient"]</span></label>
+                <label class="btn btn-outline btn-outline-dashed btn-active-light-danger d-flex align-items-center flex-grow-1 p-5">
+                    <input class="form-check-input me-3" type="radio" name="frApprove" value="0" /><span class="fw-bold fs-6">@T["Refuse"]</span></label>
+            </div>
+            <div class="fv-row mb-7"><label class="fs-6 fw-semibold mb-2">@T["The committee's note"]</label>
+                <textarea class="form-control form-control-solid" rows="3" data-fr-note placeholder="@T["Required when refusing"]"></textarea></div>
+            <div class="fv-row mb-2" data-fr-alt-row><label class="fs-6 fw-semibold mb-2">@T["Formulary alternative (therapeutic interchange)"]</label>
+                <select class="form-select form-select-solid" data-fr-alt data-control="select2" data-dropdown-parent="#frDecide" data-placeholder="@T["None"]">
+                    <option value="">@T["None"]</option>
+                    @foreach (var a in alternatives) { <option value="@a.Id">@a.Name</option> }
+                </select></div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-fr-save>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var st = document.getElementById('f_status');
+            function fromHash() { var h = (location.hash || '').replace('#', '');
+                if (!h || !Array.prototype.some.call(st.options, function (o) { return o.value === h; })) return false;
+                st.value = h; if (window.jQuery) jQuery(st).trigger('change.select2'); return true; }
+            fromHash();
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("FormularyRequestsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('status', st.value); } });
+            window.addEventListener('hashchange', function () { if (fromHash()) list.reload(); });
+            @if (canManage)
+            {
+                <text>
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value, m = document.getElementById('frDecide'), id = null;
+                document.body.appendChild(m);   // no card clips the backdrop
+                var W = { ask: @Json.Serialize(T["Save the committee's decision on {0}? The pharmacy acts on it at once."].Value), saved: @Json.Serialize(T["Saved"].Value),
+                    failed: @Json.Serialize(T["The change could not be saved"].Value), needNote: @Json.Serialize(T["Write why the committee refuses it"].Value) };
+                function approving() { return m.querySelector('[name="frApprove"]:checked').value === '1'; }
+                function altRow() { m.querySelector('[data-fr-alt-row]').classList.toggle('d-none', approving()); }
+                m.addEventListener('change', function (e) { if (e.target.name === 'frApprove') altRow(); });
+                document.addEventListener('click', function (e) {
+                    var b = e.target.closest('[data-fr-decide]');
+                    if (b) {
+                        e.preventDefault(); id = b.getAttribute('data-fr-decide');
+                        m.querySelector('[data-fr-no]').textContent = b.getAttribute('data-no');
+                        m.querySelector('[data-fr-what]').textContent = b.getAttribute('data-what');
+                        m.querySelector('[data-fr-note]').value = '';
+                        m.querySelector('[name="frApprove"][value="1"]').checked = true;
+                        m.querySelectorAll('[data-kt-buttons] label').forEach(function (l, i) { l.classList.toggle('active', i === 0); });
+                        var s = m.querySelector('[data-fr-alt]'); s.value = ''; if (window.jQuery) jQuery(s).trigger('change.select2');
+                        altRow(); bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                    }
+                    var sv = e.target.closest('[data-fr-save]'); if (!sv) return;
+                    var note = m.querySelector('[data-fr-note]').value.trim(), alt = m.querySelector('[data-fr-alt]').value;
+                    if (!approving() && !note) { if (window.toastr) toastr.error(W.needNote); return; }
+                    cbConfirm(W.ask.replace('{0}', m.querySelector('[data-fr-no]').textContent), { kind: 'primary' }).then(function (ok) {
+                        if (!ok) return;
+                        sv.disabled = true;
+                        fetch(@Json.Serialize(Url.Action("FormularyRequests")) + '/' + id + '/Decide', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                            body: JSON.stringify({ approve: approving(), note: note || null, alternativeItemId: !approving() && alt ? +alt : null }) })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(function (r) {
+                                sv.disabled = false;
+                                if (!r.ok) { if (window.toastr) toastr.error(r.error || W.failed); return; }
+                                bootstrap.Modal.getOrCreateInstance(m).hide(); if (window.toastr) toastr.success(W.saved); list.reload();
+                            });
+                    });
+                });
+                </text>
+            }
+        })();
+    </script>
+}

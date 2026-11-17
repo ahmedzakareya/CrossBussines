@@ -1,0 +1,37 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalFormularyRequestRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H152 — one committee request: the patient and the prescription, the medicine and why it is governed, the clinical
+   reason, the decision (with the alternative on a refusal), and — for the committee, never the person who asked — Decide. *@
+@{
+    bool canManage = ViewBag.CanManage == true; int? me = ViewBag.Me as int?;
+    string Tone(string s) => s == HospitalFormularyRequestStatus.Approved ? "primary" : s == HospitalFormularyRequestStatus.Refused ? "danger" : "secondary";
+}
+@foreach (var x in Model)
+{
+    var r = x.R; var drug = DisplayName.Of(x.ItemName, x.ItemNameEn);
+    <tr>
+        <td class="ps-4"><div class="d-flex flex-column"><a href="@Url.Action("Pharmacy", new { rx = r.DispenseId })#rx-detail" class="text-gray-900 fw-bold fs-6 text-hover-primary">@DisplayName.Of(x.PatientName, x.PatientNameEn)</a>
+            <span class="text-muted fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@x.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@x.RxNo</bdi> · <bdi class="hp-num" dir="ltr">@r.RequestNo</bdi></span></div></td>
+        <td><div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6"><bdi>@drug</bdi></span>
+            <span class="text-muted fs-7"><bdi dir="ltr">@x.ItemCode</bdi> · <span class="badge badge-light-danger fs-8 fw-bold">@T["fstat:" + r.FormularyStatus]</span></span></div></td>
+        <td><span class="text-gray-700 fs-7"><bdi>@r.Justification</bdi></span>
+            <span class="d-block text-muted fs-8 mt-1">@(x.RequestedBy ?? "—") · <bdi class="hp-num" dir="ltr">@r.RequestedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span></td>
+        <td><span class="badge badge-light-@Tone(r.Status) fs-7 fw-bold">@T["frs:" + r.Status]</span>
+            @if (r.DecisionNote != null) {<span class="d-block text-gray-700 fs-8 mt-1"><bdi>@r.DecisionNote</bdi></span>}
+            @if (x.AlternativeName != null) {<span class="d-block text-primary fw-bold fs-8 mt-1">@string.Format(T["Instead: {0}"].Value, x.AlternativeName)</span>}
+            @if (x.DecidedBy != null) {<span class="d-block text-muted fs-8">@x.DecidedBy</span>}</td>
+        <td class="text-end pe-4">
+            @if (canManage && r.Status == HospitalFormularyRequestStatus.Pending && me != r.RequestedByEmployeeId)
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-fr-decide="@r.ID" data-no="@r.RequestNo" data-what="@(drug + " — " + DisplayName.Of(x.PatientName, x.PatientNameEn))"><i class="ki-outline ki-judge fs-5"></i>@T["Decide"]</button>
+            }
+            else if (canManage && r.Status == HospitalFormularyRequestStatus.Pending)
+            {
+                <span class="text-muted fs-8">@T["You asked: another member decides"]</span>
+            }
+        </td>
+    </tr>
+}

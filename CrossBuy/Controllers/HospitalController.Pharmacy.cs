@@ -4,6 +4,7 @@ using CrossBuy.Models;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers
 {
@@ -37,6 +38,11 @@ namespace CrossBuy.Controllers
 				ViewBag.Returns = await ReturnSvc.ListAsync(ctx, sel.Dispense.ID, ct);       // H146
 				ViewBag.Returned = await ReturnSvc.ReturnedAsync(ctx, sel.Dispense.ID, ct);
 				ViewBag.Scans = await ScanSvc.PendingAsync(ctx, sel.Dispense.ID, ct);          // H150: packs scanned, not yet given
+				var frs = await GovSvc.ForDispenseAsync(ctx, sel.Dispense.ID, ct);             // H152: the committee's requests, by line
+				ViewBag.FormularyRequests = frs;
+				var frAlt = frs.Values.Where(r => r.AlternativeItemId != null).Select(r => r.AlternativeItemId!.Value).Distinct().ToList();
+				ViewBag.FrAlternatives = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && frAlt.Contains(i.ID))
+					.ToDictionaryAsync(i => i.ID, i => DisplayName.Of(i.Name, i.NameEn), ct);
 			}
 			ViewBag.Settings = await _pharmacy.SettingsAsync(ctx, ct);
 			ViewBag.Warehouses = await _pharmacy.WarehousesAsync(ctx, ct);

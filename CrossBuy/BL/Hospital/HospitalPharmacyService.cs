@@ -365,6 +365,11 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			var withdrawn = (await HospitalDrugMasterService.LookupAsync(_db, ctx.CompanyId, itemIds, ct)).Values.FirstOrDefault(x => x.FormularyStatus == HospitalFormularyStatus.Unavailable);
 			if (withdrawn != null && items.TryGetValue(withdrawn.ItemId, out var wi))
 				return HospitalResult.Fail("{0} is withdrawn from the formulary and cannot be dispensed", DisplayName.Of(wi.Name, wi.NameEn ?? wi.Name));
+			// H152: a restricted or non-formulary medicine leaves only with the committee's approval for its line
+			var givingNow = stocked.Where(l => plan!.TryGetValue(l.ID, out var g) && g > 0).ToList();
+			var unapproved = await HospitalFormularyGovernanceService.NeedsApprovalAsync(_db, ctx, d.ID, givingNow, ct);
+			if (unapproved.Count > 0 && items.TryGetValue(unapproved[0].ItemId!.Value, out var ui))
+				return HospitalResult.Fail("{0} needs the formulary committee's approval for this patient", DisplayName.Of(ui.Name, ui.NameEn ?? ui.Name));
 			var catIds = items.Values.Select(i => i.ItemCategoryId).Distinct().ToList();
 			var cogs = await _db.ItemCategories.AsNoTracking().Where(c => catIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CogsAccountId, ct);
 			if (items.Values.FirstOrDefault(i => cogs.GetValueOrDefault(i.ItemCategoryId) == null) is { } noCogs)
