@@ -208,7 +208,7 @@ else
             {
                 bool bad = e.State is HospitalAppointmentStatus.NoShow or HospitalAppointmentStatus.Cancelled or HospitalSurgeryStatus.Cancelled or HospitalErOutcome.LeftWithoutBeingSeen or HospitalErOutcome.Deceased;
                 <div class="d-flex align-items-start gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
-                    <span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label bg-light"><i class="ki-outline @EventIcon(e.Kind) fs-4 text-gray-700"></i></span></span>
+                    @if (e.Kind == HospitalDeskEventKind.Visit) {<span class="symbol symbol-30px symbol-circle flex-shrink-0" title="@DisplayName.Of(e.Title, e.TitleEn)">@if (e.Photo != null) {<img src="@e.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-9">@HospitalUi.Initials(e.TitleEn ?? e.Title)</span>}</span>} else {<span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label bg-light"><i class="ki-outline @EventIcon(e.Kind) fs-4 text-gray-700"></i></span></span>}
                     <div class="flex-grow-1 min-w-0">
                         <div class="fs-7 fw-bold text-gray-800">@T["hk:" + e.Kind]@if (!string.IsNullOrWhiteSpace(e.Title)) {<text> · </text><bdi>@DisplayName.Of(e.Title, e.TitleEn)</bdi>}</div>
                         <div class="fs-8 text-muted"><span class="hp-num" dir="ltr">@e.At.ToString("yyyy-MM-dd")</span>@if (e.Until is DateTime u) {<text> → </text><span class="hp-num" dir="ltr">@u.ToLocalTime().ToString("yyyy-MM-dd")</span>}@if (e.Detail != null) {<text> · </text><bdi>@DisplayName.Of(e.Detail, e.DetailEn)</bdi>}</div>

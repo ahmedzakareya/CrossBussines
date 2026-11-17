@@ -19,7 +19,7 @@ namespace CrossBuy.BL.Hospital
 	}
 
 	/// One event: what, when (until when, for a stay), where / with whom (both languages) and its state code.
-	public sealed record HospitalDeskEvent(string Kind, DateTime At, DateTime? Until, string Title, string? TitleEn, string? Detail, string? DetailEn, string State);
+	public sealed record HospitalDeskEvent(string Kind, DateTime At, DateTime? Until, string Title, string? TitleEn, string? Detail, string? DetailEn, string State, string? Photo = null);
 	public sealed record HospitalDeskHistory(bool Restricted, int Visits, int NoShows, int Admissions, int EmergencyVisits, int Operations, DateTime? FirstSeen, IReadOnlyList<HospitalDeskEvent> Recent);
 
 	public sealed class HospitalDeskHistoryService
@@ -41,10 +41,13 @@ namespace CrossBuy.BL.Hospital
 							   from dep in dj.DefaultIfEmpty()
 							   where a.CompanyId == cid && a.PatientId == patientId && (a.AppointmentDate < todayLocal
 								   || a.Status == HospitalAppointmentStatus.Done || a.Status == HospitalAppointmentStatus.NoShow || a.Status == HospitalAppointmentStatus.Cancelled)
-							   select new { a.AppointmentDate, a.StartMinute, a.Status, Doctor = d.Name, DoctorEn = d.NameEn, Dept = (string?)dep.Name, DeptEn = dep.NameEn }).ToListAsync(ct);
+							   select new { a.AppointmentDate, a.StartMinute, a.Status, Doctor = d.Name, DoctorEn = d.NameEn, Dept = (string?)dep.Name, DeptEn = dep.NameEn, d.EmployeeId }).ToListAsync(ct);
+			// the doctor is shown by face, like everywhere else on the desk
+			var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, appts.Where(x => x.EmployeeId != null).Select(x => x.EmployeeId!.Value).Distinct(), ct);
 			foreach (var a in appts)
 				events.Add(new HospitalDeskEvent(HospitalDeskEventKind.Visit, a.AppointmentDate.AddMinutes(a.StartMinute), null, a.Doctor, a.DoctorEn, a.Dept, a.DeptEn,
-					a.Status == HospitalAppointmentStatus.Booked ? HospitalAppointmentStatus.NoShow : a.Status));   // a past day still "booked" was never attended
+					a.Status == HospitalAppointmentStatus.Booked ? HospitalAppointmentStatus.NoShow : a.Status,   // a past day still "booked" was never attended
+					a.EmployeeId is int de ? photos.GetValueOrDefault(de) : null));   // a past day still "booked" was never attended
 
 			// stays: from admission to discharge, with the ward of the first bed
 			var stays = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == cid && a.PatientId == patientId).ToListAsync(ct);
