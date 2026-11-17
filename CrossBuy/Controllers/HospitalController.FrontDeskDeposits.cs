@@ -11,7 +11,12 @@ namespace CrossBuy.Controllers
 	// ==========================================================================================
 	public partial class HospitalController
 	{
-		public sealed class HospitalDepositTakeInput { public decimal Amount { get; set; } public string? Method { get; set; } public string? Purpose { get; set; } public string? Note { get; set; } }
+		public sealed class HospitalDepositTakeInput { public decimal Amount { get; set; } public string? Method { get; set; } public string? Purpose { get; set; } public string? Note { get; set; } public bool IdentityChecked { get; set; } }
+		public sealed class HospitalDeskCollectInput { public decimal Amount { get; set; } public string? Method { get; set; } public bool IdentityChecked { get; set; } }
+
+		/// H157: no money moves at the counter until two identifiers were confirmed with the patient.
+		private IActionResult? IdentityUnchecked(bool checkedFlag) => checkedFlag ? null
+			: Json(new { ok = false, error = _t["Confirm the patient's name and date of birth (or file number) first"].Value });
 		public sealed class HospitalDepositUseInput { public decimal Amount { get; set; } }
 		public sealed class HospitalDepositRefundInput { public decimal Amount { get; set; } public string? Method { get; set; } public string? Reason { get; set; } }
 
@@ -24,7 +29,18 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx?.EmployeeId is not int me || input == null) return NotFound(new { ok = false, code = "not_found" });
+			if (IdentityUnchecked(input.IdentityChecked) is { } refuse) return refuse;
 			return Result(await DepositSvc.TakeAsync(ctx, id, input.Amount, input.Method, input.Purpose, input.Note, me, DateTime.UtcNow, ct));
+		}
+
+		[HospitalReceptionAllowed]   // H157: the counter's collect — the identity check first, then the billing service
+		[HttpPost("FrontDesk/Bill/{id:int}/Collect"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		public async Task<IActionResult> FrontDeskCollect(int id, [FromBody] HospitalDeskCollectInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx?.EmployeeId is not int me || input == null) return NotFound(new { ok = false, code = "not_found" });
+			if (IdentityUnchecked(input.IdentityChecked) is { } refuse) return refuse;
+			return Result(await _billing.CollectAsync(ctx, id, input.Amount, input.Method ?? "", me, DateTime.UtcNow, ct));
 		}
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)

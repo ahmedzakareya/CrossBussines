@@ -41,6 +41,23 @@
     </div>
 </div>
 
+@* H157: a similar name is a reason to check, never a match *@
+@{ var looks = ViewBag.Lookalikes as IReadOnlyList<HospitalLookalike> ?? Array.Empty<HospitalLookalike>(); }
+@if (looks.Count > 0)
+{
+    <div class="rounded border border-dashed border-danger bg-light-danger p-4 mb-5" data-desk-lookalikes>
+        <div class="d-flex align-items-center gap-2 fw-bold fs-7 text-danger mb-2"><i class="ki-outline ki-shield-cross fs-4 text-danger"></i>@T["Another file has a similar name: confirm the date of birth with the patient"]</div>
+        <div class="fs-8 text-gray-800 mb-2">@T["This file"]: <span class="hp-num fw-bold">@p.Mrn</span> · @(p.BirthDate is DateTime bd0 ? Html.Raw("<span class=\"hp-num\" dir=\"ltr\">" + bd0.ToString("yyyy-MM-dd") + "</span>") : T["no date of birth"])</div>
+        @foreach (var o in looks)
+        {
+            <div class="d-flex flex-stack fs-8 py-1 border-top border-dashed border-gray-300">
+                <span><bdi class="fw-bold">@DisplayName.Of(o.Name, o.NameEn)</bdi> · <span class="hp-num">@o.Mrn</span> · @(o.BirthDate is DateTime bd ? Html.Raw("<span class=\"hp-num\" dir=\"ltr\">" + bd.ToString("yyyy-MM-dd") + "</span>") : T["no date of birth"])@if (o.PhoneTail != null) {<text> · </text><span class="hp-num" dir="ltr">…@o.PhoneTail</span>}</span>
+                <a href="@Url.Action("DuplicatesCompare", "Hospital", new { a = p.ID, b = o.Id })" class="fw-bold text-nowrap ms-2" target="_blank">@T["Compare"]</a>
+            </div>
+        }
+    </div>
+}
+
 @* H154: where the patient is now — what the desk answers a visitor *@
 <div class="mb-5" data-desk-where>
     @if (restricted)

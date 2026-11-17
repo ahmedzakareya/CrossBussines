@@ -332,13 +332,13 @@
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), loading: @Json.Serialize(T["Loading…"].Value),
+            var W = { idFirst: @Json.Serialize(T["Confirm the patient's name and date of birth (or file number) first"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), loading: @Json.Serialize(T["Loading…"].Value),
                 pickFirst: @Json.Serialize(T["Open the patient at the counter first."].Value), scan: @Json.Serialize(T["Scan the card now: the reader types into the search."].Value),
                 walkin: @Json.Serialize(T["Walk-in"].Value), pay: @Json.Serialize(T["Collect at the counter"].Value), done: @Json.Serialize(T["Booked and checked in"].Value),
                 collected: @Json.Serialize(T["Collected; the receipt is in the bill."].Value), askSlot: @Json.Serialize(T["Book {0} at {1} and check them in now?"].Value) };
             var U = { board: @Json.Serialize(Url.Action("FrontDeskBoard")), grid: @Json.Serialize(Url.Action("FrontDeskGrid")), search: @Json.Serialize(Url.Action("FrontDeskSearch")),
                 card: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), slots: @Json.Serialize(Url.Action("FrontDeskWalkInSlots")), walkin: @Json.Serialize(Url.Action("FrontDeskWalkIn")),
-                move: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")), collect: @Json.Serialize(Url.Content("~/Hospital/Bill/")),
+                move: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")), collect: @Json.Serialize(Url.Content("~/Hospital/Bill/")), deskCollect: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Bill/")),
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")) };
             var W2 = { resched: @Json.Serialize(T["Move the appointment"].Value), moved: @Json.Serialize(T["Moved; the old appointment is cancelled."].Value), noSlot: @Json.Serialize(T["No free slot that day"].Value),
                 askCollect: @Json.Serialize(T["Collect {0} by {1} on bill {2}?"].Value), amount: @Json.Serialize(T["Enter an amount above zero"].Value),
@@ -389,14 +389,19 @@
 
             // the patient at the counter
             var cardEl = document.querySelector('[data-desk-card]'), current = null;
+            var cardSeq = 0;   // H157: only the last patient asked for may fill the card
             function openCard(id, scroll) {
+                var mySeq = ++cardSeq;
                 current = Number(id); cardEl.innerHTML = '<div class="text-center text-muted py-15"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
-                get(U.card + id).then(function (h) { cardEl.innerHTML = h; tips(cardEl); menus(); if (scroll) cardEl.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+                get(U.card + id).then(function (h) { if (mySeq !== cardSeq) return; cardEl.innerHTML = h; tips(cardEl); menus(); if (scroll) cardEl.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
             }
             function refresh() { list.reload(); if (view === 'grid') loadGrid(); if (current) openCard(current); }
 
             // the window
             var modalEl = document.getElementById('desk_modal'), mTitle = modalEl.querySelector('[data-desk-modal-title]'), mBody = modalEl.querySelector('[data-desk-modal-body]');
+            // H157: the two-identifier check of the money window (it belongs to the window's own patient)
+            function idChecked() { var c = mBody.querySelector('[data-id-check]'); return !!(c && c.checked); }
+            function idRow() { var r = mBody.querySelector('[data-id-check-row]'); if (r) { r.classList.add('border-danger'); r.scrollIntoView({ block: 'center' }); } }
             function windowOf(title, url, size) { mTitle.textContent = title; modalEl.querySelector('.modal-dialog').className = 'modal-dialog modal-dialog-centered ' + (size || 'mw-850px'); mBody.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
                 bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); menus(); }); }
             function walkIn(patient, doctor) { if (!patient) { toastr.warning(W.pickFirst); return; } windowOf(W.walkin, U.slots + '?patient=' + patient + (doctor ? '&doctor=' + doctor : '')); }
@@ -565,9 +570,10 @@
                 if ((t = e.target.closest('[data-desk-deposit]'))) {
                     e.preventDefault(); var f = t.closest('[data-deposit-form]'), amt = Number(f.querySelector('[data-dep-amount]').value), ms = f.querySelector('[data-dep-method]');
                     if (!(amt > 0)) { toastr.error(W4.amount); return; }
+                    if (!idChecked()) { toastr.error(W.idFirst); idRow(); return; }
                     cbConfirm(W4.take.replace('{0}', amt + ' ' + f.getAttribute('data-cur')).replace('{1}', ms.options[ms.selectedIndex].text).replace('{2}', (mBody.querySelector('bdi') || {}).textContent || ''), { kind: 'primary' }).then(function (ok) {
                         if (!ok) return; t.disabled = true;
-                        post(U4.take + f.getAttribute('data-patient') + '/Deposit', { amount: amt, method: ms.value, purpose: f.querySelector('[data-dep-purpose]').value, note: f.querySelector('[data-dep-note]').value })
+                        post(U4.take + f.getAttribute('data-patient') + '/Deposit', { amount: amt, method: ms.value, purpose: f.querySelector('[data-dep-purpose]').value, note: f.querySelector('[data-dep-note]').value, identityChecked: idChecked() })
                             .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W4.done); reloadPay(); });
                     });
                     return;
@@ -597,10 +603,11 @@
                 if ((t = e.target.closest('[data-desk-collect]'))) {
                     e.preventDefault(); var row = t.closest('[data-bill]'), amount = Number(row.querySelector('[data-amount]').value), sel = row.querySelector('[data-method]'), method = sel.value;
                     if (!(amount > 0)) { toastr.error(W2.amount); return; }
+                    if (!idChecked()) { toastr.error(W.idFirst); idRow(); return; }
                     var ask = W2.askCollect.replace('{0}', amount + ' ' + row.getAttribute('data-cur')).replace('{1}', sel.options[sel.selectedIndex].text).replace('{2}', row.getAttribute('data-bill-no'));
                     cbConfirm(ask, { kind: 'primary' }).then(function (ok) {
                         if (!ok) return; t.disabled = true;
-                        post(U.collect + row.getAttribute('data-bill') + '/Collect', { amount: amount, method: method })
+                        post(U.deskCollect + row.getAttribute('data-bill') + '/Collect', { amount: amount, method: method, identityChecked: idChecked() })
                             .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.collected); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
                     });
                     return;

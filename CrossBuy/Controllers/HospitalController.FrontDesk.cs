@@ -146,6 +146,7 @@ namespace CrossBuy.Controllers
 			var (where, restricted) = await WhereSvc.ForDeskAsync(ctx, new[] { id }, DateTime.Now, ct);
 			ViewBag.Where = where.GetValueOrDefault(id) ?? Array.Empty<HospitalWhere>(); ViewBag.Restricted = restricted.Contains(id);
 			ViewBag.History = await ActivatorUtilities.CreateInstance<HospitalDeskHistoryService>(HttpContext.RequestServices).HistoryAsync(ctx, id, 8, today, ct);
+			ViewBag.Lookalikes = await ActivatorUtilities.CreateInstance<HospitalDeskIdentityService>(HttpContext.RequestServices).LookalikesAsync(ctx, id, 3, ct);   // H157
 			return PartialView("_DeskCard", card);
 		}
 
