@@ -7903,4 +7903,49 @@
   <data name="The request key is too long" xml:space="preserve"><value>La clé de requête est trop longue</value></data>
   <data name="This request is still being handled" xml:space="preserve"><value>Cette requête est encore en cours</value></data>
   <data name="This request key belongs to another request" xml:space="preserve"><value>Cette clé appartient à une autre requête</value></data>
+  <data name="Choose the service an orthodontic instalment is billed as, in the orthodontics settings" xml:space="preserve"><value>Choisissez l'acte de facturation de l'échéance d'orthodontie dans les paramètres d'orthodontie</value></data>
+  <data name="Instalment service" xml:space="preserve"><value>Acte de l'échéance</value></data>
+  <data name="Payment method" xml:space="preserve"><value>Mode de paiement</value></data>
+  <data name="The instalment goes on the patient's bill and is collected in your cashier shift: a receipt, posted to the ledger." xml:space="preserve"><value>L'échéance est portée sur la facture du patient et encaissée dans votre caisse : un reçu, comptabilisé.</value></data>
+  <data name="The service each orthodontic instalment goes on the patient's bill as; its amount is the instalment paid." xml:space="preserve"><value>L'acte sous lequel chaque échéance d'orthodontie est portée sur la facture ; son montant est l'échéance payée.</value></data>
+  <data name="unitset:DentalOrtho" xml:space="preserve"><value>Acte de l'échéance d'orthodontie</value></data>
+  <data name="A measurement cannot be before the implant was placed" xml:space="preserve"><value>Une mesure ne peut pas précéder la pose</value></data>
+  <data name="Approve the protocol" xml:space="preserve"><value>Valider le protocole</value></data>
+  <data name="Approve this loading protocol for the clinic?" xml:space="preserve"><value>Valider ce protocole de mise en charge pour la clinique ?</value></data>
+  <data name="Approved by" xml:space="preserve"><value>Validé par</value></data>
+  <data name="Below the clinic's protocol for this loading: record why the dentist accepts the exception" xml:space="preserve"><value>En dessous du protocole de la clinique pour cette mise en charge : indiquez pourquoi le dentiste accepte l'exception</value></data>
+  <data name="Below the protocol — dentist's exception" xml:space="preserve"><value>Sous le protocole — exception du dentiste</value></data>
+  <data name="Choose a provisional or a definitive restoration" xml:space="preserve"><value>Choisissez une restauration provisoire ou définitive</value></data>
+  <data name="Choose how the implant is loaded" xml:space="preserve"><value>Choisissez le mode de mise en charge</value></data>
+  <data name="Choose when the stability was measured" xml:space="preserve"><value>Choisissez le moment de la mesure</value></data>
+  <data name="Enter the ISQ or the insertion torque" xml:space="preserve"><value>Saisissez l'ISQ ou le couple d'insertion</value></data>
+  <data name="Enter the day it was measured (not in the future)" xml:space="preserve"><value>Saisissez le jour de la mesure (pas dans le futur)</value></data>
+  <data name="Exception — only when below the clinic's protocol" xml:space="preserve"><value>Exception — seulement sous le protocole de la clinique</value></data>
+  <data name="Fitted on" xml:space="preserve"><value>Posée le</value></data>
+  <data name="Following" xml:space="preserve"><value>Référence</value></data>
+  <data name="Immediate loading rests on the stability at placement; early and conventional on the latest measurement before loading." xml:space="preserve"><value>La mise en charge immédiate repose sur la stabilité à la pose ; précoce et conventionnelle sur la dernière mesure avant mise en charge.</value></data>
+  <data name="Insertion torque (N·cm)" xml:space="preserve"><value>Couple d'insertion (N·cm)</value></data>
+  <data name="Loading" xml:space="preserve"><value>Mise en charge</value></data>
+  <data name="Loading protocol" xml:space="preserve"><value>Protocole de mise en charge</value></data>
+  <data name="Measured on" xml:space="preserve"><value>Mesuré le</value></data>
+  <data name="Name the guideline or document the protocol follows" xml:space="preserve"><value>Indiquez la recommandation ou le document suivi</value></data>
+  <data name="No loading protocol is approved: no stability threshold is applied — the dentist decides on the measurements recorded." xml:space="preserve"><value>Aucun protocole de mise en charge validé : aucun seuil de stabilité n'est appliqué — le dentiste décide selon les mesures.</value></data>
+  <data name="No threshold" xml:space="preserve"><value>Sans seuil</value></data>
+  <data name="Record a stability measurement" xml:space="preserve"><value>Enregistrer une mesure de stabilité</value></data>
+  <data name="Record the restoration of {0}?" xml:space="preserve"><value>Enregistrer la restauration de {0} ?</value></data>
+  <data name="Restoration" xml:space="preserve"><value>Restauration</value></data>
+  <data name="Restoration fitted" xml:space="preserve"><value>Restauration posée</value></data>
+  <data name="Stability is measured on a placed implant" xml:space="preserve"><value>La stabilité se mesure sur un implant posé</value></data>
+  <data name="Stability measurement" xml:space="preserve"><value>Mesure de stabilité</value></data>
+  <data name="The guideline or document it follows" xml:space="preserve"><value>La recommandation ou le document suivi</value></data>
+  <data name="The insertion torque is 1 to 150 N·cm" xml:space="preserve"><value>Le couple d'insertion est de 1 à 150 N·cm</value></data>
+  <data name="The least stability the clinic's lead accepts for each loading. Leave a box empty for no threshold." xml:space="preserve"><value>La stabilité minimale acceptée par le responsable clinique pour chaque mise en charge. Laissez vide pour aucun seuil.</value></data>
+  <data name="load:Conventional" xml:space="preserve"><value>Mise en charge conventionnelle</value></data>
+  <data name="load:Early" xml:space="preserve"><value>Mise en charge précoce</value></data>
+  <data name="load:Immediate" xml:space="preserve"><value>Mise en charge immédiate</value></data>
+  <data name="mom:BeforeLoading" xml:space="preserve"><value>Avant la mise en charge</value></data>
+  <data name="mom:FollowUp" xml:space="preserve"><value>Suivi</value></data>
+  <data name="mom:Placement" xml:space="preserve"><value>À la pose</value></data>
+  <data name="rest:Definitive" xml:space="preserve"><value>Définitive</value></data>
+  <data name="rest:Provisional" xml:space="preserve"><value>Provisoire</value></data>
 </root>

@@ -42,7 +42,10 @@
                 <li class="breadcrumb-item text-muted">@T["Orthodontics"]</li>
             </ul>
         </div>
-        @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-case-open><i class="ki-outline ki-plus fs-4"></i>@T["New ortho case"]</button> }
+        <div class="d-flex gap-2">
+            @await Html.PartialAsync("_UnitSettings", ViewBag.UnitSettings as HospitalUnitSettingsView)   @* H167: the service an instalment is billed as *@
+            @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-case-open><i class="ki-outline ki-plus fs-4"></i>@T["New ortho case"]</button> }
+        </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
@@ -147,6 +150,23 @@
     </div></div></div>
 }
 
+@* H167: an instalment is taken at the cashier — the amount, how it is paid, a reference; a receipt in the shift *@
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0" data-pay-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-8 px-lg-10">
+            <div class="mb-5"><label class="required fs-7 fw-semibold mb-2">@T["Amount"]</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-pay-f="amount" /></div>
+            <div class="mb-5"><label class="required fs-7 fw-semibold mb-2">@T["Payment method"]</label>
+                <select class="form-select form-select-solid" data-pay-f="method" data-control="select2" data-hide-search="true" data-dropdown-parent="#payModal">
+                    @foreach (var m in HospitalPaymentMethods.All) { <option value="@m">@T["pm:" + m]</option> }
+                </select></div>
+            <div class="mb-5"><label class="fs-7 fw-semibold mb-2">@T["Reference"]</label><input class="form-control form-control-solid" maxlength="60" data-pay-f="reference" /></div>
+            <div class="text-muted fs-8 mb-5">@T["The instalment goes on the patient's bill and is collected in your cashier shift: a receipt, posted to the ledger."]</div>
+            <div class="text-end"><button type="button" class="btn btn-primary" data-pay-save><i class="ki-outline ki-wallet fs-4"></i>@T["Collect payment"]</button></div>
+        </div>
+    </div></div>
+</div>
+
 @section Scripts {
     <partial name="_PersonSelect" />
     <partial name="_HospitalPrompt" />
@@ -169,11 +189,11 @@
                 });
             }
             function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
-            var cm = document.getElementById('caseModal'), vm = document.getElementById('visitModal'), visiting = null;
+            var cm = document.getElementById('caseModal'), vm = document.getElementById('visitModal'), visiting = null, pm = document.getElementById('payModal'), paying = null;   // H167
             // clear aligners are planned in stages; nothing else is
             if (cm) cm.querySelector('[data-oc=appliance]').addEventListener('change', function (e) { cm.querySelector('[data-oc-stages]').classList.toggle('d-none', e.target.value !== 'ClearAligners'); });
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-case-open],[data-oc-save],[data-visit],[data-v-save],[data-pay]'); if (!t) return;
+                var t = e.target.closest('[data-case-open],[data-oc-save],[data-visit],[data-v-save],[data-pay],[data-pay-save]'); if (!t) return;
                 if (t.hasAttribute('data-case-open')) { bootstrap.Modal.getOrCreateInstance(cm).show(); return; }
                 if (t.hasAttribute('data-oc-save')) {
                     var g = function (k) { return cm.querySelector('[data-oc=' + k + ']').value.trim(); }, aligners = g('appliance') === 'ClearAligners';
@@ -200,9 +220,16 @@
                     cbConfirm(W.visit.replace('{0}', iso(visiting.no))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + visiting.id + '/Visit', b).then(done(t, vm)); });
                     return;
                 }
-                cbPrompt(W.pay.replace('{0}', iso(t.getAttribute('data-what'))), { value: (+t.getAttribute('data-due')).toFixed(3), number: true, numberText: W.num }).then(function (amt) {
-                    if (!amt) return; t.disabled = true; post(root + '/' + t.getAttribute('data-pay') + '/Payment', { amount: +amt.replace(',', '.') || 0 }).then(done(t));
-                });
+                if (t.hasAttribute('data-pay-save')) {   // H167
+                    var pf = function (k) { return pm.querySelector('[data-pay-f=' + k + ']').value.trim(); }, amt = +pf('amount').replace(',', '.') || 0;
+                    if (amt <= 0) { toast('warning', W.num); return; }
+                    t.disabled = true; post(root + '/' + paying + '/Payment', { amount: amt, method: pf('method'), reference: pf('reference') || null }).then(done(t, pm));
+                    return;
+                }
+                paying = t.getAttribute('data-pay');
+                pm.querySelector('[data-pay-title]').textContent = W.pay.replace('{0}', iso(t.getAttribute('data-what')));
+                pm.querySelector('[data-pay-f=amount]').value = (+t.getAttribute('data-due')).toFixed(3); pm.querySelector('[data-pay-f=reference]').value = '';
+                bootstrap.Modal.getOrCreateInstance(pm).show();
             });
             document.addEventListener('input', function (e) {
                 if (!e.target.matches('[data-filter]')) return; var q = e.target.value.trim().toLowerCase();

@@ -1,0 +1,35 @@
+{
+ "unit": "H167 - an orthodontic instalment is taken at the cashier: a charge, a receipt in the shift, the ledger",
+ "strings": {
+  "unitset:DentalOrtho": {
+   "ar": "خدمة قسط التقويم",
+   "en": "Orthodontic instalment service",
+   "fr": "Acte de l'échéance d'orthodontie"
+  },
+  "Choose the service an orthodontic instalment is billed as, in the orthodontics settings": {
+   "ar": "اختر الخدمة التي يُفوتر بها قسط التقويم من إعدادات التقويم",
+   "en": "Choose the service an orthodontic instalment is billed as, in the orthodontics settings",
+   "fr": "Choisissez l'acte de facturation de l'échéance d'orthodontie dans les paramètres d'orthodontie"
+  },
+  "Instalment service": {
+   "ar": "خدمة القسط",
+   "en": "Instalment service",
+   "fr": "Acte de l'échéance"
+  },
+  "Payment method": {
+   "ar": "طريقة الدفع",
+   "en": "Payment method",
+   "fr": "Mode de paiement"
+  },
+  "The instalment goes on the patient's bill and is collected in your cashier shift: a receipt, posted to the ledger.": {
+   "ar": "يُضاف القسط إلى فاتورة المريض ويُحصَّل في ورديتك لدى الخزينة: إيصال يُرحَّل إلى القيود.",
+   "en": "The instalment goes on the patient's bill and is collected in your cashier shift: a receipt, posted to the ledger.",
+   "fr": "L'échéance est portée sur la facture du patient et encaissée dans votre caisse : un reçu, comptabilisé."
+  },
+  "The service each orthodontic instalment goes on the patient's bill as; its amount is the instalment paid.": {
+   "ar": "الخدمة التي يُضاف بها كل قسط تقويم إلى فاتورة المريض، ومبلغها هو القسط المدفوع.",
+   "en": "The service each orthodontic instalment goes on the patient's bill as; its amount is the instalment paid.",
+   "fr": "L'acte sous lequel chaque échéance d'orthodontie est portée sur la facture ; son montant est l'échéance payée."
+  }
+ }
+}

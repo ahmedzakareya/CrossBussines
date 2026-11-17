@@ -7903,4 +7903,49 @@
   <data name="The request key is too long" xml:space="preserve"><value>مفتاح الطلب طويل جدًا</value></data>
   <data name="This request is still being handled" xml:space="preserve"><value>ما زال هذا الطلب قيد التنفيذ</value></data>
   <data name="This request key belongs to another request" xml:space="preserve"><value>مفتاح الطلب هذا يخص طلبًا آخر</value></data>
+  <data name="Choose the service an orthodontic instalment is billed as, in the orthodontics settings" xml:space="preserve"><value>اختر الخدمة التي يُفوتر بها قسط التقويم من إعدادات التقويم</value></data>
+  <data name="Instalment service" xml:space="preserve"><value>خدمة القسط</value></data>
+  <data name="Payment method" xml:space="preserve"><value>طريقة الدفع</value></data>
+  <data name="The instalment goes on the patient's bill and is collected in your cashier shift: a receipt, posted to the ledger." xml:space="preserve"><value>يُضاف القسط إلى فاتورة المريض ويُحصَّل في ورديتك لدى الخزينة: إيصال يُرحَّل إلى القيود.</value></data>
+  <data name="The service each orthodontic instalment goes on the patient's bill as; its amount is the instalment paid." xml:space="preserve"><value>الخدمة التي يُضاف بها كل قسط تقويم إلى فاتورة المريض، ومبلغها هو القسط المدفوع.</value></data>
+  <data name="unitset:DentalOrtho" xml:space="preserve"><value>خدمة قسط التقويم</value></data>
+  <data name="A measurement cannot be before the implant was placed" xml:space="preserve"><value>لا يجوز أن يسبق القياس تاريخ الزرع</value></data>
+  <data name="Approve the protocol" xml:space="preserve"><value>اعتماد البروتوكول</value></data>
+  <data name="Approve this loading protocol for the clinic?" xml:space="preserve"><value>هل تعتمد بروتوكول التحميل هذا للعيادة؟</value></data>
+  <data name="Approved by" xml:space="preserve"><value>اعتمده</value></data>
+  <data name="Below the clinic's protocol for this loading: record why the dentist accepts the exception" xml:space="preserve"><value>القياس أقل مما يشترطه بروتوكول العيادة لهذا التحميل: سجّل سبب قبول الطبيب للاستثناء</value></data>
+  <data name="Below the protocol — dentist's exception" xml:space="preserve"><value>أقل من البروتوكول — استثناء من الطبيب</value></data>
+  <data name="Choose a provisional or a definitive restoration" xml:space="preserve"><value>اختر تركيبة مؤقتة أو نهائية</value></data>
+  <data name="Choose how the implant is loaded" xml:space="preserve"><value>اختر نوع تحميل الزرعة</value></data>
+  <data name="Choose when the stability was measured" xml:space="preserve"><value>اختر توقيت قياس الثبات</value></data>
+  <data name="Enter the ISQ or the insertion torque" xml:space="preserve"><value>أدخل قيمة ISQ أو عزم الإدخال</value></data>
+  <data name="Enter the day it was measured (not in the future)" xml:space="preserve"><value>أدخل يوم القياس (لا يكون في المستقبل)</value></data>
+  <data name="Exception — only when below the clinic's protocol" xml:space="preserve"><value>الاستثناء — فقط عند انخفاض القياس عن بروتوكول العيادة</value></data>
+  <data name="Fitted on" xml:space="preserve"><value>تاريخ التركيب</value></data>
+  <data name="Following" xml:space="preserve"><value>المرجع</value></data>
+  <data name="Immediate loading rests on the stability at placement; early and conventional on the latest measurement before loading." xml:space="preserve"><value>يعتمد التحميل الفوري على الثبات عند الزرع، والمبكر والتقليدي على آخر قياس قبل التحميل.</value></data>
+  <data name="Insertion torque (N·cm)" xml:space="preserve"><value>عزم الإدخال (نيوتن·سم)</value></data>
+  <data name="Loading" xml:space="preserve"><value>التحميل</value></data>
+  <data name="Loading protocol" xml:space="preserve"><value>بروتوكول التحميل</value></data>
+  <data name="Measured on" xml:space="preserve"><value>تاريخ القياس</value></data>
+  <data name="Name the guideline or document the protocol follows" xml:space="preserve"><value>اذكر الدليل أو المستند الذي يتبعه البروتوكول</value></data>
+  <data name="No loading protocol is approved: no stability threshold is applied — the dentist decides on the measurements recorded." xml:space="preserve"><value>لا يوجد بروتوكول تحميل معتمد: لا يُطبَّق أي حد للثبات — يقرر الطبيب بناءً على القياسات المسجلة.</value></data>
+  <data name="No threshold" xml:space="preserve"><value>بلا حد</value></data>
+  <data name="Record a stability measurement" xml:space="preserve"><value>تسجيل قياس ثبات</value></data>
+  <data name="Record the restoration of {0}?" xml:space="preserve"><value>هل تسجل تركيب الزرعة {0}؟</value></data>
+  <data name="Restoration" xml:space="preserve"><value>التركيبة</value></data>
+  <data name="Restoration fitted" xml:space="preserve"><value>رُكّبت التركيبة</value></data>
+  <data name="Stability is measured on a placed implant" xml:space="preserve"><value>يُقاس الثبات على زرعة مزروعة</value></data>
+  <data name="Stability measurement" xml:space="preserve"><value>قياس الثبات</value></data>
+  <data name="The guideline or document it follows" xml:space="preserve"><value>الدليل أو المستند المتَّبع</value></data>
+  <data name="The insertion torque is 1 to 150 N·cm" xml:space="preserve"><value>عزم الإدخال من 1 إلى 150 نيوتن·سم</value></data>
+  <data name="The least stability the clinic's lead accepts for each loading. Leave a box empty for no threshold." xml:space="preserve"><value>أدنى ثبات يقبله المسؤول السريري للعيادة لكل نوع تحميل. اترك الخانة فارغة إن لم يكن هناك حد.</value></data>
+  <data name="load:Conventional" xml:space="preserve"><value>تحميل تقليدي</value></data>
+  <data name="load:Early" xml:space="preserve"><value>تحميل مبكر</value></data>
+  <data name="load:Immediate" xml:space="preserve"><value>تحميل فوري</value></data>
+  <data name="mom:BeforeLoading" xml:space="preserve"><value>قبل التحميل</value></data>
+  <data name="mom:FollowUp" xml:space="preserve"><value>متابعة</value></data>
+  <data name="mom:Placement" xml:space="preserve"><value>عند الزرع</value></data>
+  <data name="rest:Definitive" xml:space="preserve"><value>تركيبة نهائية</value></data>
+  <data name="rest:Provisional" xml:space="preserve"><value>تركيبة مؤقتة</value></data>
 </root>

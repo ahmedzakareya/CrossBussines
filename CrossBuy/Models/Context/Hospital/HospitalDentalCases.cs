@@ -75,6 +75,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? Reference { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
+		/// H167: an instalment is money taken at the cashier — the charge it put on the patient's bill, the receipt that paid
+		/// it (in the cashier's shift, posted to the ledger), and how it was paid. Null on payments recorded before H167.
+		public string? Method { get; set; }
+		public int? BillLineId { get; set; }
+		public int? PaymentId { get; set; }
 	}
 
 	public static class HospitalImplantStage
@@ -109,6 +114,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? FailureReason { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
+		/// H168: how it was loaded and what was fitted; a restoration below the clinic's protocol carries the dentist's exception.
+		public string? LoadingKind { get; set; }
+		public string? Restoration { get; set; }
+		public string? ExceptionReason { get; set; }
+		public int? ExceptionByEmployeeId { get; set; }
 	}
 
 	public static class HospitalDentalCasesModel
@@ -141,6 +151,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.ToTable("HospitalOrthoPayments");
 				e.Property(x => x.PaidOn).HasColumnType("date");
 				e.Property(x => x.Amount).HasPrecision(18, 3);
+				e.Property(x => x.Method).HasMaxLength(20);   // H167
 				e.HasIndex(x => new { x.CompanyId, x.CaseId });
 			});
 			b.Entity<HospitalImplant>(e =>
@@ -153,6 +164,9 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.RestoredOn).HasColumnType("date");
 				e.Property(x => x.FailedOn).HasColumnType("date");
 				e.Property(x => x.Isq).HasColumnType("tinyint").HasConversion<byte?>();
+				e.Property(x => x.LoadingKind).HasMaxLength(15);   // H168
+				e.Property(x => x.Restoration).HasMaxLength(15);
+				e.Property(x => x.ExceptionReason).HasMaxLength(300);
 				e.HasIndex(x => new { x.CompanyId, x.ImplantNo }).IsUnique();
 				// a recall by the maker is answered by lot
 				e.HasIndex(x => new { x.CompanyId, x.Lot });

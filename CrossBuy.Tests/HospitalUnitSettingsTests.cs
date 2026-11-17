@@ -94,7 +94,8 @@ namespace CrossBuy.Tests
 			var s = HospitalSliceParity.Slice("hospital_h123_unit_settings.sql");
 			foreach (var u in HospitalKitUnits.Sessions) Assert.Contains(u, HospitalSessionKinds.All);
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h129_eye_services.sql");   // H129: the eye clinic's tests
-			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s[s.LastIndexOf("CK_HospitalUnitKits_Unit CHECK", StringComparison.Ordinal)..]);
+			var all = s + Environment.NewLine + HospitalSliceParity.Slice("hospital_h167_ortho_payments.sql");   // H167: the orthodontic instalment service
+			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", all[all.LastIndexOf("CK_HospitalUnitKits_Unit CHECK", StringComparison.Ordinal)..]);
 			Assert.Contains("ALTER TABLE dbo.HospitalUnitKits ADD SessionServiceId int NULL", s);
 			Assert.Equal(new[] { "HospitalServices" }, HospitalSliceParity.CheckedPrerequisites(s));
 		}

@@ -17,7 +17,9 @@ namespace CrossBuy.Models.Context.Hospital
 		/// H129: the eye clinic's two ordered tests — each names its service from the services list (no session, no kit)
 		public const string EyeOct = "EyeOct";
 		public const string EyeVf = "EyeVf";
-		public static readonly IReadOnlyList<string> All = new[] { Dialysis, Chemo, Physio, EyeOct, EyeVf };
+		/// H167: the service an orthodontic instalment is billed as (no session, no kit)
+		public const string DentalOrtho = "DentalOrtho";
+		public static readonly IReadOnlyList<string> All = new[] { Dialysis, Chemo, Physio, EyeOct, EyeVf, DentalOrtho };
 		/// The units whose sessions are charged (H119/H123) — the treatment-session kinds.
 		public static readonly IReadOnlyList<string> Sessions = new[] { Dialysis, Chemo, Physio };
 		/// The eye clinic's ordered tests (H129).

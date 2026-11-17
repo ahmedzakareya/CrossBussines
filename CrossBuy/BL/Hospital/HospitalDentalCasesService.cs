@@ -54,6 +54,29 @@ namespace CrossBuy.BL.Hospital
 		public DateTime? On { get; set; }
 		public int? Isq { get; set; }
 		public string? Reason { get; set; }
+		/// H168: the insertion torque at placement; at restoration, how it is loaded, what is fitted, and any exception.
+		public int? TorqueNcm { get; set; }
+		public string? LoadingKind { get; set; }
+		public string? Restoration { get; set; }
+		public string? ExceptionReason { get; set; }
+	}
+
+	public sealed class HospitalImplantMeasureInput
+	{
+		public string? Moment { get; set; }
+		public int? Isq { get; set; }
+		public int? TorqueNcm { get; set; }
+		public DateTime? On { get; set; }
+		public string? Note { get; set; }
+	}
+
+	public sealed class HospitalImplantProtocolInput
+	{
+		public int? MinIsqImmediate { get; set; }
+		public int? MinIsqEarly { get; set; }
+		public int? MinIsqConventional { get; set; }
+		public int? MinTorqueImmediate { get; set; }
+		public string? Reference { get; set; }
 	}
 
 	public sealed record HospitalOrthoRow(HospitalOrthoCase Case, string PatientName, string PatientNameEn, string Mrn, string? Photo, string Sex, DateTime? BirthDate,
@@ -71,7 +94,8 @@ namespace CrossBuy.BL.Hospital
 		private readonly IHospitalAccessService _access;
 		private readonly HospitalDentalService _dental;
 
-		public HospitalDentalCasesService(CrossDbContext db, IHospitalAccessService access, HospitalDentalService dental) { _db = db; _access = access; _dental = dental; }
+		private readonly HospitalBillingService? _billing;   // H167: an instalment is collected at the cashier
+		public HospitalDentalCasesService(CrossDbContext db, IHospitalAccessService access, HospitalDentalService dental, HospitalBillingService? billing = null) { _db = db; _access = access; _dental = dental; _billing = billing; }
 
 		public const string ConcurrentChange = HospitalInsuranceService.ConcurrentChange;
 		private Task<bool> Can(BusinessContext ctx, string action, CancellationToken ct) => _access.CanAsync(ctx, action, null, ct);
@@ -153,15 +177,41 @@ namespace CrossBuy.BL.Hospital
 			return r.Ok ? HospitalResult.Success(caseId) : r;
 		}
 
-		public async Task<HospitalResult> RecordPaymentAsync(BusinessContext ctx, int caseId, decimal amount, string? reference, int? employeeId, DateTime nowUtc, DateTime today, CancellationToken ct = default)
+		/// H167: an instalment is money, so it is the cashier's act (`bill`, never `consult` alone) and goes the way all the
+		/// hospital's money goes: a charge on the patient's bill at the instalment's amount, as the service the orthodontics
+		/// settings name, then a collection on that bill in the cashier's open shift — a receipt, posted to the ledger. The
+		/// case row then links the charge and the receipt. A refused collection takes the charge back off the bill.
+		public async Task<HospitalResult> RecordPaymentAsync(BusinessContext ctx, int caseId, decimal amount, string? method, string? reference, int? employeeId, DateTime nowUtc, DateTime today, CancellationToken ct = default)
 		{
-			if (!await Can(ctx, HospitalActions.Bill, ct) && !await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			if (!await Can(ctx, HospitalActions.Bill, ct)) return HospitalResult.Fail("forbidden");
 			var c = await Cases(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == caseId, ct);
 			if (c == null) return HospitalResult.Fail("not_found");
 			if (amount <= 0) return HospitalResult.Fail("A payment is more than zero");
+			if (!HospitalPaymentMethods.IsKnown(method)) return HospitalResult.Fail("Unknown payment method");
 			decimal paid = await _db.Set<HospitalOrthoPayment>().Where(p => p.CompanyId == ctx.CompanyId && p.CaseId == caseId).SumAsync(p => (decimal?)p.Amount, ct) ?? 0;
 			if (paid + amount > c.ContractTotal) return HospitalResult.Fail("This is more than what is left on the contract");
-			_db.Add(new HospitalOrthoPayment { CompanyId = ctx.CompanyId, CaseId = caseId, PaidOn = today.Date, Amount = amount, Reference = Clip(reference, 60), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId });
+			if (_billing == null || employeeId is not int me) return HospitalResult.Fail("forbidden");
+			var unit = await HospitalUnitSettingsService.RowAsync(_db, ctx.CompanyId, HospitalKitUnits.DentalOrtho, ct);
+			if (unit?.SessionServiceId is not int serviceId) return HospitalResult.Fail("Choose the service an orthodontic instalment is billed as, in the orthodontics settings");
+			if (await _billing.OpenShiftOfAsync(ctx, me, ct) == null) return HospitalResult.Fail("Open your cashier shift before taking a payment");
+
+			var now = HospitalNursingService.UtcToWard(nowUtc);
+			var bill = await _billing.BillForWardChargeAsync(ctx, c.PatientId, employeeId, now, ct);
+			var charge = await _billing.AddServiceChargeAsync(ctx, bill, serviceId, employeeId, now, ct, 1, amount);
+			await _db.SaveChangesAsync(ct);
+			if (charge == null) return HospitalResult.Fail("Choose the service an orthodontic instalment is billed as, in the orthodontics settings");
+			var receipt = await _billing.CollectAsync(ctx, bill.ID, amount, method!, me, nowUtc, ct);
+			if (!receipt.Ok)
+			{
+				// nothing owed for money that was not taken: exactly this charge leaves the (open) bill
+				await _db.HospitalBillLines.Where(l => l.ID == charge.ID && l.CompanyId == ctx.CompanyId).ExecuteDeleteAsync(ct);
+				return receipt;
+			}
+			_db.Add(new HospitalOrthoPayment
+			{
+				CompanyId = ctx.CompanyId, CaseId = caseId, PaidOn = today.Date, Amount = amount, Reference = Clip(reference, 60), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
+				Method = method, BillLineId = charge.ID, PaymentId = receipt.Id,
+			});
 			var r = await SaveAsync(ct);
 			return r.Ok ? HospitalResult.Success(caseId) : r;
 		}
@@ -203,7 +253,54 @@ namespace CrossBuy.BL.Hospital
 			return r.Ok ? HospitalResult.Success(m.ID) : r;
 		}
 
-		public async Task<HospitalResult> MoveImplantAsync(BusinessContext ctx, int id, HospitalImplantMoveInput input, DateTime today, CancellationToken ct = default)
+		private IQueryable<HospitalImplantMeasure> Measures(BusinessContext ctx) => _db.Set<HospitalImplantMeasure>().Where(x => x.CompanyId == ctx.CompanyId);
+
+		/// H168: the clinic's approved loading protocol, or null (none approved yet, or not installed).
+		public async Task<HospitalImplantProtocol?> ProtocolAsync(BusinessContext ctx, CancellationToken ct = default)
+		{
+			try { return await _db.Set<HospitalImplantProtocol>().AsNoTracking().FirstOrDefaultAsync(p => p.CompanyId == ctx.CompanyId, ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return null; }
+		}
+
+		/// H168: the clinical lead approves the protocol (`manage`); each save is a new approval, by the one who saves it.
+		public async Task<HospitalResult> SaveProtocolAsync(BusinessContext ctx, HospitalImplantProtocolInput input, int employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
+			var why = HospitalImplantStabilityRules.RefuseProtocol(input.MinIsqImmediate, input.MinIsqEarly, input.MinIsqConventional, input.MinTorqueImmediate, input.Reference);
+			if (why != null) return HospitalResult.Fail(why);
+			var p = await _db.Set<HospitalImplantProtocol>().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId, ct);
+			if (p == null) { p = new HospitalImplantProtocol { CompanyId = ctx.CompanyId }; _db.Add(p); }
+			p.MinIsqImmediate = input.MinIsqImmediate; p.MinIsqEarly = input.MinIsqEarly; p.MinIsqConventional = input.MinIsqConventional; p.MinTorqueImmediate = input.MinTorqueImmediate;
+			p.Reference = Clip(input.Reference, 300)!; p.ApprovedByEmployeeId = employeeId; p.ApprovedAt = nowUtc;
+			var r = await SaveAsync(ct);
+			return r.Ok ? HospitalResult.Success(p.ID) : r;
+		}
+
+		/// H168: a stability measurement on an implant (not one that failed), with its date and moment.
+		public async Task<HospitalResult> AddMeasureAsync(BusinessContext ctx, int implantId, HospitalImplantMeasureInput input, int? employeeId, DateTime nowUtc, DateTime today, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var m = await Implants(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == implantId, ct);
+			if (m == null) return HospitalResult.Fail("not_found");
+			if (m.Stage is HospitalImplantStage.Planned or HospitalImplantStage.Failed) return HospitalResult.Fail("Stability is measured on a placed implant");
+			var why = HospitalImplantStabilityRules.RefuseMeasure(input.Moment, input.Isq, input.TorqueNcm, input.On ?? today, today);
+			if (why != null) return HospitalResult.Fail(why);
+			if (m.PlacedOn is DateTime placed && (input.On ?? today).Date < placed.Date) return HospitalResult.Fail("A measurement cannot be before the implant was placed");
+			var row = new HospitalImplantMeasure { CompanyId = ctx.CompanyId, ImplantId = m.ID, PatientId = m.PatientId, MeasuredOn = (input.On ?? today).Date, Moment = input.Moment!,
+				Isq = input.Isq, TorqueNcm = input.TorqueNcm, Note = Clip(input.Note, 300), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId };
+			_db.Add(row);
+			var r = await SaveAsync(ct);
+			return r.Ok ? HospitalResult.Success(row.ID) : r;
+		}
+
+		/// H168: the measurements of these implants, oldest first.
+		public async Task<ILookup<int, HospitalImplantMeasure>> MeasuresOfAsync(BusinessContext ctx, IReadOnlyCollection<int> implantIds, CancellationToken ct = default)
+		{
+			try { return (await Measures(ctx).AsNoTracking().Where(x => implantIds.Contains(x.ImplantId)).OrderBy(x => x.MeasuredOn).ThenBy(x => x.ID).ToListAsync(ct)).ToLookup(x => x.ImplantId); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return Array.Empty<HospitalImplantMeasure>().ToLookup(x => x.ImplantId); }
+		}
+
+		public async Task<HospitalResult> MoveImplantAsync(BusinessContext ctx, int id, HospitalImplantMoveInput input, DateTime today, CancellationToken ct = default, int? employeeId = null)
 		{
 			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
 			var m = await Implants(ctx).FirstOrDefaultAsync(x => x.ID == id, ct);
@@ -216,13 +313,24 @@ namespace CrossBuy.BL.Hospital
 				case HospitalImplantStage.Healing:
 					var why = HospitalDentalCasesRules.PlaceRefusal(input.Lot, day, input.Isq, today);
 					if (why != null) return HospitalResult.Fail(why);
-					m.Lot = Clip(input.Lot, 40); m.PlacedOn = day; m.Isq = input.Isq; break;
+					if (input.TorqueNcm is < 1 or > 150) return HospitalResult.Fail("The insertion torque is 1 to 150 N·cm");
+					m.Lot = Clip(input.Lot, 40); m.PlacedOn = day; m.Isq = input.Isq;
+					// H168: the stability at placement is a measurement of its own, kept with its date
+					if (input.Isq != null || input.TorqueNcm != null)
+						_db.Add(new HospitalImplantMeasure { CompanyId = ctx.CompanyId, ImplantId = m.ID, PatientId = m.PatientId, MeasuredOn = day, Moment = HospitalImplantMoment.Placement,
+							Isq = input.Isq, TorqueNcm = input.TorqueNcm, CreatedAt = DateTime.UtcNow, CreatedByEmployeeId = employeeId });
+					break;
 				case HospitalImplantStage.Restored:
-					if (input.Isq is < 1 or > 100) return HospitalResult.Fail("ISQ is 1 to 100");
-					var isq = input.Isq ?? m.Isq;
-					var no = HospitalDentalCasesRules.RestoreRefusal(isq);
-					if (no != null) return HospitalResult.Fail(no, HospitalDentalCasesRules.IsqLoadable);
-					m.Isq = isq; m.RestoredOn = day; break;
+					// H168: loading readiness is the clinic's protocol over the measurement the loading rests on — no fixed number
+					var measures = await Measures(ctx).AsNoTracking().Where(x => x.ImplantId == m.ID).ToListAsync(ct);
+					var basis = HospitalImplantStabilityRules.Basis(measures, input.LoadingKind, day);
+					var protocol = await ProtocolAsync(ctx, ct);
+					var no = HospitalImplantStabilityRules.RefuseRestoration(input.LoadingKind, input.Restoration, basis, protocol, input.ExceptionReason);
+					if (no != null) return HospitalResult.Fail(no);
+					bool below = HospitalImplantStabilityRules.BelowProtocol(protocol, input.LoadingKind, basis!);
+					m.Isq = basis!.Isq ?? m.Isq; m.RestoredOn = day; m.LoadingKind = input.LoadingKind; m.Restoration = input.Restoration;
+					m.ExceptionReason = below ? Clip(input.ExceptionReason, 300) : null; m.ExceptionByEmployeeId = below ? employeeId : null;
+					break;
 				case HospitalImplantStage.Failed:
 					var reason = Clip(input.Reason, 300);
 					if (reason == null) return HospitalResult.Fail("Say why the implant failed");

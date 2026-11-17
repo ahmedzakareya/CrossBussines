@@ -1,0 +1,200 @@
+{
+ "unit": "H168 - implant stability by protocol: measurements, loading, the clinic's approved thresholds, documented exceptions",
+ "strings": {
+  "load:Immediate": {
+   "ar": "تحميل فوري",
+   "en": "Immediate loading",
+   "fr": "Mise en charge immédiate"
+  },
+  "load:Early": {
+   "ar": "تحميل مبكر",
+   "en": "Early loading",
+   "fr": "Mise en charge précoce"
+  },
+  "load:Conventional": {
+   "ar": "تحميل تقليدي",
+   "en": "Conventional loading",
+   "fr": "Mise en charge conventionnelle"
+  },
+  "rest:Provisional": {
+   "ar": "تركيبة مؤقتة",
+   "en": "Provisional",
+   "fr": "Provisoire"
+  },
+  "rest:Definitive": {
+   "ar": "تركيبة نهائية",
+   "en": "Definitive",
+   "fr": "Définitive"
+  },
+  "mom:Placement": {
+   "ar": "عند الزرع",
+   "en": "At placement",
+   "fr": "À la pose"
+  },
+  "mom:BeforeLoading": {
+   "ar": "قبل التحميل",
+   "en": "Before loading",
+   "fr": "Avant la mise en charge"
+  },
+  "mom:FollowUp": {
+   "ar": "متابعة",
+   "en": "Follow-up",
+   "fr": "Suivi"
+  },
+  "A measurement cannot be before the implant was placed": {
+   "ar": "لا يجوز أن يسبق القياس تاريخ الزرع",
+   "en": "A measurement cannot be before the implant was placed",
+   "fr": "Une mesure ne peut pas précéder la pose"
+  },
+  "Approve the protocol": {
+   "ar": "اعتماد البروتوكول",
+   "en": "Approve the protocol",
+   "fr": "Valider le protocole"
+  },
+  "Approve this loading protocol for the clinic?": {
+   "ar": "هل تعتمد بروتوكول التحميل هذا للعيادة؟",
+   "en": "Approve this loading protocol for the clinic?",
+   "fr": "Valider ce protocole de mise en charge pour la clinique ?"
+  },
+  "Approved by": {
+   "ar": "اعتمده",
+   "en": "Approved by",
+   "fr": "Validé par"
+  },
+  "Below the clinic's protocol for this loading: record why the dentist accepts the exception": {
+   "ar": "القياس أقل مما يشترطه بروتوكول العيادة لهذا التحميل: سجّل سبب قبول الطبيب للاستثناء",
+   "en": "Below the clinic's protocol for this loading: record why the dentist accepts the exception",
+   "fr": "En dessous du protocole de la clinique pour cette mise en charge : indiquez pourquoi le dentiste accepte l'exception"
+  },
+  "Below the protocol — dentist's exception": {
+   "ar": "أقل من البروتوكول — استثناء من الطبيب",
+   "en": "Below the protocol — dentist's exception",
+   "fr": "Sous le protocole — exception du dentiste"
+  },
+  "Choose a provisional or a definitive restoration": {
+   "ar": "اختر تركيبة مؤقتة أو نهائية",
+   "en": "Choose a provisional or a definitive restoration",
+   "fr": "Choisissez une restauration provisoire ou définitive"
+  },
+  "Choose how the implant is loaded": {
+   "ar": "اختر نوع تحميل الزرعة",
+   "en": "Choose how the implant is loaded",
+   "fr": "Choisissez le mode de mise en charge"
+  },
+  "Choose when the stability was measured": {
+   "ar": "اختر توقيت قياس الثبات",
+   "en": "Choose when the stability was measured",
+   "fr": "Choisissez le moment de la mesure"
+  },
+  "Enter the ISQ or the insertion torque": {
+   "ar": "أدخل قيمة ISQ أو عزم الإدخال",
+   "en": "Enter the ISQ or the insertion torque",
+   "fr": "Saisissez l'ISQ ou le couple d'insertion"
+  },
+  "Enter the day it was measured (not in the future)": {
+   "ar": "أدخل يوم القياس (لا يكون في المستقبل)",
+   "en": "Enter the day it was measured (not in the future)",
+   "fr": "Saisissez le jour de la mesure (pas dans le futur)"
+  },
+  "Exception — only when below the clinic's protocol": {
+   "ar": "الاستثناء — فقط عند انخفاض القياس عن بروتوكول العيادة",
+   "en": "Exception — only when below the clinic's protocol",
+   "fr": "Exception — seulement sous le protocole de la clinique"
+  },
+  "Fitted on": {
+   "ar": "تاريخ التركيب",
+   "en": "Fitted on",
+   "fr": "Posée le"
+  },
+  "Following": {
+   "ar": "المرجع",
+   "en": "Following",
+   "fr": "Référence"
+  },
+  "Immediate loading rests on the stability at placement; early and conventional on the latest measurement before loading.": {
+   "ar": "يعتمد التحميل الفوري على الثبات عند الزرع، والمبكر والتقليدي على آخر قياس قبل التحميل.",
+   "en": "Immediate loading rests on the stability at placement; early and conventional on the latest measurement before loading.",
+   "fr": "La mise en charge immédiate repose sur la stabilité à la pose ; précoce et conventionnelle sur la dernière mesure avant mise en charge."
+  },
+  "Insertion torque (N·cm)": {
+   "ar": "عزم الإدخال (نيوتن·سم)",
+   "en": "Insertion torque (N·cm)",
+   "fr": "Couple d'insertion (N·cm)"
+  },
+  "Loading": {
+   "ar": "التحميل",
+   "en": "Loading",
+   "fr": "Mise en charge"
+  },
+  "Loading protocol": {
+   "ar": "بروتوكول التحميل",
+   "en": "Loading protocol",
+   "fr": "Protocole de mise en charge"
+  },
+  "Measured on": {
+   "ar": "تاريخ القياس",
+   "en": "Measured on",
+   "fr": "Mesuré le"
+  },
+  "Name the guideline or document the protocol follows": {
+   "ar": "اذكر الدليل أو المستند الذي يتبعه البروتوكول",
+   "en": "Name the guideline or document the protocol follows",
+   "fr": "Indiquez la recommandation ou le document suivi"
+  },
+  "No loading protocol is approved: no stability threshold is applied — the dentist decides on the measurements recorded.": {
+   "ar": "لا يوجد بروتوكول تحميل معتمد: لا يُطبَّق أي حد للثبات — يقرر الطبيب بناءً على القياسات المسجلة.",
+   "en": "No loading protocol is approved: no stability threshold is applied — the dentist decides on the measurements recorded.",
+   "fr": "Aucun protocole de mise en charge validé : aucun seuil de stabilité n'est appliqué — le dentiste décide selon les mesures."
+  },
+  "No threshold": {
+   "ar": "بلا حد",
+   "en": "No threshold",
+   "fr": "Sans seuil"
+  },
+  "Record a stability measurement": {
+   "ar": "تسجيل قياس ثبات",
+   "en": "Record a stability measurement",
+   "fr": "Enregistrer une mesure de stabilité"
+  },
+  "Record the restoration of {0}?": {
+   "ar": "هل تسجل تركيب الزرعة {0}؟",
+   "en": "Record the restoration of {0}?",
+   "fr": "Enregistrer la restauration de {0} ?"
+  },
+  "Restoration": {
+   "ar": "التركيبة",
+   "en": "Restoration",
+   "fr": "Restauration"
+  },
+  "Restoration fitted": {
+   "ar": "رُكّبت التركيبة",
+   "en": "Restoration fitted",
+   "fr": "Restauration posée"
+  },
+  "Stability is measured on a placed implant": {
+   "ar": "يُقاس الثبات على زرعة مزروعة",
+   "en": "Stability is measured on a placed implant",
+   "fr": "La stabilité se mesure sur un implant posé"
+  },
+  "Stability measurement": {
+   "ar": "قياس الثبات",
+   "en": "Stability measurement",
+   "fr": "Mesure de stabilité"
+  },
+  "The guideline or document it follows": {
+   "ar": "الدليل أو المستند المتَّبع",
+   "en": "The guideline or document it follows",
+   "fr": "La recommandation ou le document suivi"
+  },
+  "The insertion torque is 1 to 150 N·cm": {
+   "ar": "عزم الإدخال من 1 إلى 150 نيوتن·سم",
+   "en": "The insertion torque is 1 to 150 N·cm",
+   "fr": "Le couple d'insertion est de 1 à 150 N·cm"
+  },
+  "The least stability the clinic's lead accepts for each loading. Leave a box empty for no threshold.": {
+   "ar": "أدنى ثبات يقبله المسؤول السريري للعيادة لكل نوع تحميل. اترك الخانة فارغة إن لم يكن هناك حد.",
+   "en": "The least stability the clinic's lead accepts for each loading. Leave a box empty for no threshold.",
+   "fr": "La stabilité minimale acceptée par le responsable clinique pour chaque mise en charge. Laissez vide pour aucun seuil."
+  }
+ }
+}

@@ -9,7 +9,6 @@ namespace CrossBuy.BL.Hospital
 	public static class HospitalDentalCasesRules
 	{
 		/// An implant with an ISQ below this is not loaded yet (the healing is extended).
-		public const int IsqLoadable = 70;
 
 		/// Whole months from the start to today (0 in the first month).
 		public static int MonthsElapsed(DateTime start, DateTime today)
@@ -61,7 +60,7 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// A restored implant must have reached a loadable stability.
-		public static string? RestoreRefusal(int? isq) => isq is int v && v < IsqLoadable ? "Stability is below {0}: extend the healing before the crown" : null;
+		// H168: there is no one ISQ for every case — the loading decision is the clinic's protocol (HospitalImplantStabilityRules).
 
 		/// Of the implants placed in the last three years, the share not failed.
 		public static decimal? SurvivalRate(IEnumerable<(DateTime? Placed, string Stage)> implants, DateTime today)

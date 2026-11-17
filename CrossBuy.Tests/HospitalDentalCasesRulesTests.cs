@@ -75,16 +75,13 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
-		public void A_placed_fixture_has_its_lot_and_a_crown_waits_for_stability()
+		public void A_placed_fixture_has_its_lot_and_a_real_day()
 		{
 			var today = new DateTime(2026, 11, 3);
 			Assert.Null(HospitalDentalCasesRules.PlaceRefusal("STR-24K118", today, 74, today));
 			Assert.NotNull(HospitalDentalCasesRules.PlaceRefusal(" ", today, 74, today));
 			Assert.NotNull(HospitalDentalCasesRules.PlaceRefusal("STR-24K118", today.AddDays(1), null, today));
 			Assert.NotNull(HospitalDentalCasesRules.PlaceRefusal("STR-24K118", today, 0, today));
-			Assert.Null(HospitalDentalCasesRules.RestoreRefusal(70));
-			Assert.NotNull(HospitalDentalCasesRules.RestoreRefusal(68));
-			Assert.Null(HospitalDentalCasesRules.RestoreRefusal(null));
 		}
 
 		[Fact]
@@ -98,7 +95,7 @@ namespace CrossBuy.Tests
 
 		// ---------------- model and slice ----------------
 
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h17_dental_cases.sql");
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h17_dental_cases.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h167_ortho_payments.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h168_implant_stability.sql");   // H167 payment columns, H168 implant loading columns
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDentalCasesModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

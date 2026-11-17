@@ -124,6 +124,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalDeskClaimModel.Configure(b);         // H164: who owns an item of the desk's queues
 			HospitalDeskHandoverModel.Configure(b);      // H165: the desk's shift handover
 			HospitalRequestKeyModel.Configure(b);        // H166: a desk action sent twice is done once
+			HospitalImplantStabilityModel.Configure(b);  // H168: implant stability by protocol
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();
