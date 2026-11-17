@@ -160,6 +160,36 @@ namespace CrossBuy.BL.Hospital
 			catch (DbUpdateException) { if (row != null) db.Entry(row).State = EntityState.Detached; return null; }   // the same event, written at the same moment
 		}
 
+		/// H161: a written message to one patient (not from a template — a clinic disruption says what changed), once per
+		/// dedup key. Same rules as a templated one: no valid mobile or an opt-out leaves it Skipped with the reason.
+		public static async Task<int?> QueueTextAsync(CrossDbContext db, int companyId, int patientId, string body, string sourceType, int sourceId, string dedupKey, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		{
+			HospitalSmsMessage? row = null;
+			try
+			{
+				var set = db.Set<HospitalSmsMessage>();
+				var have = await set.Where(m => m.CompanyId == companyId && m.DedupKey == dedupKey).Select(m => (int?)m.ID).FirstOrDefaultAsync(ct);
+				if (have != null) return have;
+				var p = await db.HospitalPatients.AsNoTracking().Where(x => x.ID == patientId && x.CompanyId == companyId).Select(x => new { x.Phone }).FirstOrDefaultAsync(ct);
+				if (p == null || string.IsNullOrWhiteSpace(body)) return null;
+				var phone = HospitalSmsRules.Phone(p.Phone);
+				bool optedOut = await db.Set<HospitalSmsOptOut>().AnyAsync(o => o.CompanyId == companyId && o.PatientId == patientId, ct);
+				var nos = await set.Where(m => m.CompanyId == companyId).Select(m => m.MessageNo).ToListAsync(ct);
+				row = new HospitalSmsMessage
+				{
+					CompanyId = companyId, MessageNo = HospitalDentalPracticeRules.NextNo(nos, "SMS-", 6), PatientId = patientId, Phone = phone, Kind = HospitalSmsKind.Custom, Language = "ar",
+					Body = Clip(body, 640)!, SourceType = sourceType, SourceId = sourceId, DedupKey = dedupKey, QueuedAt = nowUtc, QueuedByEmployeeId = employeeId,
+					Status = optedOut || phone == null ? HospitalSmsStatus.Skipped : HospitalSmsStatus.Queued,
+					Error = optedOut ? "The patient asked for no messages" : phone == null ? "No valid mobile number on the patient's file" : null,
+				};
+				set.Add(row);
+				await db.SaveChangesAsync(ct);
+				return row.ID;
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { if (row != null) db.Entry(row).State = EntityState.Detached; return null; }
+			catch (DbUpdateException) { if (row != null) db.Entry(row).State = EntityState.Detached; return null; }
+		}
+
 		/// An appointment's message (booked, reminder, missed): the doctor, the day and the time put in.
 		public static async Task<int?> QueueAppointmentAsync(CrossDbContext db, int companyId, int appointmentId, string kind, int? employeeId, DateTime nowUtc, CancellationToken ct)
 		{

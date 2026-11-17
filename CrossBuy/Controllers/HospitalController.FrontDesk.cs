@@ -51,6 +51,7 @@ namespace CrossBuy.Controllers
 			await GapSvc.SettleAsync(ctx, null, now, ct);   // H159
 			ViewBag.Gaps = await GapSvc.CountsAsync(ctx, ctx.EmployeeId, today, ct);
 			ViewBag.Checkouts = (await CheckoutSvc.AwaitingAsync(ctx, today, ct)).Count;   // H160
+			ViewBag.ToCall = (await DisruptionSvc.ToCallAsync(ctx, ct)).Count;   // H161
 			ViewBag.StageCounts = board.GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count());
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.Doctors = await _outpatient.PractitionersAsync(ctx, ct);
@@ -97,6 +98,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Today = DeskClock(now).Today;
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
 			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
+			ViewBag.ClinicDelays = await DisruptionSvc.ClinicDelaysAsync(ctx, DeskClock(now).Today, ct);   // H161
 			await MoneyFormatAsync(ctx, ct);
 			return PartialView("_DeskRows", await FrontDeskSvc.FlagAsync(ctx, list.Skip((page - 1) * pageSize).Take(pageSize).ToList(), DeskClock(now).Today, now, ct));
 		}

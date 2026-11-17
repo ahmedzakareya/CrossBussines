@@ -7684,4 +7684,66 @@
   <data name="Sick leave issued (days: {0}): hand the paper to the patient" xml:space="preserve"><value>Sick leave issued (days: {0}): hand the paper to the patient</value></data>
   <data name="Still owed on the visit's bill: {0}" xml:space="preserve"><value>Still owed on the visit's bill: {0}</value></data>
   <data name="Tests waiting: {0} · scans waiting: {1}" xml:space="preserve"><value>Tests waiting: {0} · scans waiting: {1}</value></data>
+  <data name="A disruption cannot be declared for a past day" xml:space="preserve"><value>A disruption cannot be declared for a past day</value></data>
+  <data name="Administrative hold" xml:space="preserve"><value>Administrative hold</value></data>
+  <data name="Affected patients" xml:space="preserve"><value>Affected patients</value></data>
+  <data name="Applied: {0} · could not be applied: {1}" xml:space="preserve"><value>Applied: {0} · could not be applied: {1}</value></data>
+  <data name="Apply and notify" xml:space="preserve"><value>Apply and notify</value></data>
+  <data name="Apply the plan before calling the patient" xml:space="preserve"><value>Apply the plan before calling the patient</value></data>
+  <data name="Apply the plans before closing" xml:space="preserve"><value>Apply the plans before closing</value></data>
+  <data name="Apply the plans now? Kept and informed: {0} · moved: {1} · cancelled: {2}. Every patient is messaged." xml:space="preserve"><value>Apply the plans now? Kept and informed: {0} · moved: {1} · cancelled: {2}. Every patient is messaged.</value></data>
+  <data name="Calls" xml:space="preserve"><value>Calls</value></data>
+  <data name="Choose keep, move or cancel" xml:space="preserve"><value>Choose keep, move or cancel</value></data>
+  <data name="Choose the hours it covers" xml:space="preserve"><value>Choose the hours it covers</value></data>
+  <data name="Choose what happened" xml:space="preserve"><value>Choose what happened</value></data>
+  <data name="Clinic delayed" xml:space="preserve"><value>Clinic delayed</value></data>
+  <data name="Clinic disruption" xml:space="preserve"><value>Clinic disruption</value></data>
+  <data name="Clinic disruptions" xml:space="preserve"><value>Clinic disruptions</value></data>
+  <data name="Close the disruption" xml:space="preserve"><value>Close the disruption</value></data>
+  <data name="Close this disruption?" xml:space="preserve"><value>Close this disruption?</value></data>
+  <data name="Declare a disruption" xml:space="preserve"><value>Declare a disruption</value></data>
+  <data name="Delay (minutes)" xml:space="preserve"><value>Delay (minutes)</value></data>
+  <data name="Doctor and hours" xml:space="preserve"><value>Doctor and hours</value></data>
+  <data name="Every patient booked with the doctor in these hours is listed next with a plan; nothing moves and nobody is messaged until you approve." xml:space="preserve"><value>Every patient booked with the doctor in these hours is listed next with a plan; nothing moves and nobody is messaged until you approve.</value></data>
+  <data name="Kept and informed" xml:space="preserve"><value>Kept and informed</value></data>
+  <data name="Mark the patient as reached?" xml:space="preserve"><value>Mark the patient as reached?</value></data>
+  <data name="Moved" xml:space="preserve"><value>Moved</value></data>
+  <data name="No free slot was found to move this patient to: keep or cancel" xml:space="preserve"><value>No free slot was found to move this patient to: keep or cancel</value></data>
+  <data name="No message" xml:space="preserve"><value>No message</value></data>
+  <data name="Nobody is booked with the doctor in these hours." xml:space="preserve"><value>Nobody is booked with the doctor in these hours.</value></data>
+  <data name="Nobody is waiting for a call." xml:space="preserve"><value>Nobody is waiting for a call.</value></data>
+  <data name="Not closed" xml:space="preserve"><value>Not closed</value></data>
+  <data name="Not reached" xml:space="preserve"><value>Not reached</value></data>
+  <data name="Not sent yet" xml:space="preserve"><value>Not sent yet</value></data>
+  <data name="Nothing moves and nobody is messaged until you apply." xml:space="preserve"><value>Nothing moves and nobody is messaged until you apply.</value></data>
+  <data name="Patient late" xml:space="preserve"><value>Patient late</value></data>
+  <data name="Patients a clinic disruption has not reached yet: call them and record the call." xml:space="preserve"><value>Patients a clinic disruption has not reached yet: call them and record the call.</value></data>
+  <data name="Patients still to call: {0}" xml:space="preserve"><value>Patients still to call: {0}</value></data>
+  <data name="Proposed slot" xml:space="preserve"><value>Proposed slot</value></data>
+  <data name="Reached" xml:space="preserve"><value>Reached</value></data>
+  <data name="Search by number or doctor…" xml:space="preserve"><value>Search by number or doctor…</value></data>
+  <data name="Show the affected patients" xml:space="preserve"><value>Show the affected patients</value></data>
+  <data name="The appointment changed meanwhile" xml:space="preserve"><value>The appointment changed meanwhile</value></data>
+  <data name="The device that is down" xml:space="preserve"><value>The device that is down</value></data>
+  <data name="The new room" xml:space="preserve"><value>The new room</value></data>
+  <data name="The patient is reached already" xml:space="preserve"><value>The patient is reached already</value></data>
+  <data name="The plans are applied already" xml:space="preserve"><value>The plans are applied already</value></data>
+  <data name="This disruption is closed already" xml:space="preserve"><value>This disruption is closed already</value></data>
+  <data name="To call" xml:space="preserve"><value>To call</value></data>
+  <data name="What happened" xml:space="preserve"><value>What happened</value></data>
+  <data name="What happened on the call?" xml:space="preserve"><value>What happened on the call?</value></data>
+  <data name="Write the delay in minutes (up to 8 hours)" xml:space="preserve"><value>Write the delay in minutes (up to 8 hours)</value></data>
+  <data name="Write the new room" xml:space="preserve"><value>Write the new room</value></data>
+  <data name="Write what happened on the call" xml:space="preserve"><value>Write what happened on the call</value></data>
+  <data name="Write which device is down" xml:space="preserve"><value>Write which device is down</value></data>
+  <data name="cdk:Absent" xml:space="preserve"><value>Doctor absent</value></data>
+  <data name="cdk:Equipment" xml:space="preserve"><value>Device down</value></data>
+  <data name="cdk:Late" xml:space="preserve"><value>Doctor late</value></data>
+  <data name="cdk:Room" xml:space="preserve"><value>Room changed</value></data>
+  <data name="cdp:Cancel" xml:space="preserve"><value>Cancel the appointment</value></data>
+  <data name="cdp:Keep" xml:space="preserve"><value>Keep and inform</value></data>
+  <data name="cdp:Move" xml:space="preserve"><value>Move to the proposed slot</value></data>
+  <data name="dst:Applied" xml:space="preserve"><value>Plans applied</value></data>
+  <data name="dst:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="dst:Open" xml:space="preserve"><value>Awaiting approval</value></data>
 </root>

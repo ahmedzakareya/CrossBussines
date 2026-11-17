@@ -118,6 +118,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalDeskHandoffModel.Configure(b);      // H158: the desk's handoffs (why they came, where they were sent)
 			HospitalCheckinGapModel.Configure(b);        // H159: check-in steps followed up after the counter
 			HospitalDeskCheckoutModel.Configure(b);      // H160: checkout at the desk after the consultation
+			HospitalClinicDisruptionModel.Configure(b);   // H161: clinic disruptions and the patients they reach
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

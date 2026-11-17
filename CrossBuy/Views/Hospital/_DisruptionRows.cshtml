@@ -1,0 +1,23 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalDisruptionListRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H161 — one disruption: its number, the doctor, the day and hours, what happened, how many patients and how many still
+   to call, its state; the row opens it. *@
+@{ string Hm(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00"); }
+@foreach (var r in Model)
+{
+    var d = r.D;
+    string tone = d.Status == HospitalDisruptionStatus.Closed ? "secondary" : r.ToCall > 0 ? "danger" : "primary";
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("ClinicDisruption", "Hospital", new { id = d.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6 hp-num">@d.DisruptionNo</a></td>
+        <td><div class="fw-bold fs-7 text-gray-800"><bdi>@DisplayName.Of(r.Doctor, r.DoctorEn)</bdi></div>
+            <div class="fs-8 text-muted"><span class="hp-num" dir="ltr">@d.Day.ToString("yyyy-MM-dd") · @Hm(d.FromMinute)–@Hm(d.ToMinute)</span></div></td>
+        <td><span class="fs-7 fw-semibold">@T["cdk:" + d.Kind]</span>
+            <div class="fs-8 text-muted">@if (d.DelayMinutes is int dm) {<text>+</text><span class="hp-num">@dm</span> @T["min"]} else if (d.Room != null) {<bdi>@d.Room</bdi>} else if (d.Equipment != null) {<bdi>@d.Equipment</bdi>}</div></td>
+        <td><span class="hp-num fw-bold">@r.Patients</span></td>
+        <td><span class="hp-num fw-bold @(r.ToCall > 0 ? "text-danger" : "text-muted")">@r.ToCall</span></td>
+        <td class="text-end pe-4"><span class="badge badge-light-@tone fs-7 fw-bold">@T["dst:" + d.Status]</span></td>
+    </tr>
+}

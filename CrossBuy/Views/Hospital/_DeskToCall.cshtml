@@ -1,0 +1,23 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<(HospitalClinicDisruption D, HospitalDisruptionRow Row)>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H161 — patients a clinic disruption has not reached yet (their message was not sent, or a call did not reach them):
+   who, what changed for them, the calls so far; the disruption's page records the next call. *@
+@{ string Hm(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00"); }
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-8"><i class="ki-outline ki-phone fs-3x text-gray-300 d-block mb-3"></i>@T["Nobody is waiting for a call."]</div>
+}
+@foreach (var (d, r) in Model)
+{
+    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+        <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-phone fs-3 text-danger"></i></span></span>
+        <div class="flex-grow-1 min-w-0">
+            <a href="#" class="fs-7 fw-bold text-gray-900 text-hover-primary" data-open-patient="@r.R.PatientId"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi><span class="text-muted fw-semibold hp-num ms-1">@r.Mrn</span></a>
+            <div class="fs-8 text-gray-700">@T["cdk:" + d.Kind] · @T["cdp:" + r.R.Plan] · <span class="hp-num" dir="ltr">@d.Day.ToString("yyyy-MM-dd") @Hm(r.StartMinute)</span>@if (r.R.Calls > 0) {<text> · @T["Calls"] </text><span class="hp-num">@r.R.Calls</span>}</div>
+        </div>
+        <a href="@Url.Action("ClinicDisruption", "Hospital", new { id = d.ID })" class="btn btn-sm btn-light-primary py-1 px-3 hp-num">@d.DisruptionNo</a>
+    </div>
+}

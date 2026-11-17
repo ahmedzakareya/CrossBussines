@@ -1,0 +1,315 @@
+{
+ "unit": "H161 - clinic disruptions: affected patients, plans previewed and approved, messages, and calls until reached",
+ "strings": {
+  "cdk:Late": {
+   "ar": "تأخر الطبيب",
+   "en": "Doctor late",
+   "fr": "Médecin en retard"
+  },
+  "cdk:Absent": {
+   "ar": "غياب الطبيب",
+   "en": "Doctor absent",
+   "fr": "Médecin absent"
+  },
+  "cdk:Room": {
+   "ar": "تغيير الغرفة",
+   "en": "Room changed",
+   "fr": "Changement de salle"
+  },
+  "cdk:Equipment": {
+   "ar": "عطل جهاز",
+   "en": "Device down",
+   "fr": "Appareil en panne"
+  },
+  "dst:Open": {
+   "ar": "بانتظار الاعتماد",
+   "en": "Awaiting approval",
+   "fr": "En attente de validation"
+  },
+  "dst:Applied": {
+   "ar": "طُبِّقت الخطط",
+   "en": "Plans applied",
+   "fr": "Plans appliqués"
+  },
+  "dst:Closed": {
+   "ar": "مغلق",
+   "en": "Closed",
+   "fr": "Clos"
+  },
+  "cdp:Keep": {
+   "ar": "إبقاء الموعد وإبلاغ المريض",
+   "en": "Keep and inform",
+   "fr": "Maintenir et informer"
+  },
+  "cdp:Move": {
+   "ar": "نقل إلى الموعد المقترح",
+   "en": "Move to the proposed slot",
+   "fr": "Déplacer vers le créneau proposé"
+  },
+  "cdp:Cancel": {
+   "ar": "إلغاء الموعد",
+   "en": "Cancel the appointment",
+   "fr": "Annuler le rendez-vous"
+  },
+  "A disruption cannot be declared for a past day": {
+   "ar": "لا يجوز تسجيل تغيير طارئ ليوم مضى",
+   "en": "A disruption cannot be declared for a past day",
+   "fr": "Une perturbation ne peut pas être déclarée pour un jour passé"
+  },
+  "Administrative hold": {
+   "ar": "موقوف إداريًا",
+   "en": "Administrative hold",
+   "fr": "Retenu à l'accueil"
+  },
+  "Affected patients": {
+   "ar": "المرضى المتأثرون",
+   "en": "Affected patients",
+   "fr": "Patients concernés"
+  },
+  "Applied: {0} · could not be applied: {1}": {
+   "ar": "طُبِّق: {0} · تعذّر تطبيقه: {1}",
+   "en": "Applied: {0} · could not be applied: {1}",
+   "fr": "Appliqués : {0} · non appliqués : {1}"
+  },
+  "Apply and notify": {
+   "ar": "اعتماد وإبلاغ المرضى",
+   "en": "Apply and notify",
+   "fr": "Appliquer et informer"
+  },
+  "Apply the plan before calling the patient": {
+   "ar": "اعتمد الخطة قبل الاتصال بالمريض",
+   "en": "Apply the plan before calling the patient",
+   "fr": "Appliquez le plan avant d'appeler le patient"
+  },
+  "Apply the plans before closing": {
+   "ar": "اعتمد الخطط قبل الإغلاق",
+   "en": "Apply the plans before closing",
+   "fr": "Appliquez les plans avant de clôturer"
+  },
+  "Apply the plans now? Kept and informed: {0} · moved: {1} · cancelled: {2}. Every patient is messaged.": {
+   "ar": "هل تريد اعتماد الخطط الآن؟ إبقاء وإبلاغ: {0} · نقل: {1} · إلغاء: {2}. ستُرسل رسالة إلى كل مريض.",
+   "en": "Apply the plans now? Kept and informed: {0} · moved: {1} · cancelled: {2}. Every patient is messaged.",
+   "fr": "Appliquer les plans maintenant ? Maintenus : {0} · déplacés : {1} · annulés : {2}. Chaque patient reçoit un message."
+  },
+  "Calls": {
+   "ar": "الاتصالات",
+   "en": "Calls",
+   "fr": "Appels"
+  },
+  "Choose keep, move or cancel": {
+   "ar": "اختر الإبقاء أو النقل أو الإلغاء",
+   "en": "Choose keep, move or cancel",
+   "fr": "Choisissez maintenir, déplacer ou annuler"
+  },
+  "Choose the hours it covers": {
+   "ar": "اختر الساعات التي يشملها",
+   "en": "Choose the hours it covers",
+   "fr": "Choisissez les heures concernées"
+  },
+  "Choose what happened": {
+   "ar": "اختر ما حدث",
+   "en": "Choose what happened",
+   "fr": "Choisissez ce qui s'est passé"
+  },
+  "Clinic delayed": {
+   "ar": "تأخر العيادة",
+   "en": "Clinic delayed",
+   "fr": "Consultation retardée"
+  },
+  "Clinic disruption": {
+   "ar": "تغيير طارئ في العيادة",
+   "en": "Clinic disruption",
+   "fr": "Perturbation de consultation"
+  },
+  "Clinic disruptions": {
+   "ar": "تغييرات العيادات الطارئة",
+   "en": "Clinic disruptions",
+   "fr": "Perturbations des consultations"
+  },
+  "Close the disruption": {
+   "ar": "إغلاق التغيير الطارئ",
+   "en": "Close the disruption",
+   "fr": "Clôturer la perturbation"
+  },
+  "Close this disruption?": {
+   "ar": "هل تريد إغلاق هذا التغيير الطارئ؟",
+   "en": "Close this disruption?",
+   "fr": "Clôturer cette perturbation ?"
+  },
+  "Declare a disruption": {
+   "ar": "تسجيل تغيير طارئ",
+   "en": "Declare a disruption",
+   "fr": "Déclarer une perturbation"
+  },
+  "Delay (minutes)": {
+   "ar": "مدة التأخر (بالدقائق)",
+   "en": "Delay (minutes)",
+   "fr": "Retard (minutes)"
+  },
+  "Doctor and hours": {
+   "ar": "الطبيب والساعات",
+   "en": "Doctor and hours",
+   "fr": "Médecin et heures"
+  },
+  "Every patient booked with the doctor in these hours is listed next with a plan; nothing moves and nobody is messaged until you approve.": {
+   "ar": "سيُعرض كل مريض محجوز لدى الطبيب في هذه الساعات مع خطة مقترحة؛ ولن يُنقل أي موعد ولن تُرسل أي رسالة قبل اعتمادك.",
+   "en": "Every patient booked with the doctor in these hours is listed next with a plan; nothing moves and nobody is messaged until you approve.",
+   "fr": "Chaque patient réservé chez ce médecin à ces heures sera listé avec un plan ; rien ne bouge et personne n'est prévenu avant votre validation."
+  },
+  "Kept and informed": {
+   "ar": "أُبقي وأُبلغ",
+   "en": "Kept and informed",
+   "fr": "Maintenus et informés"
+  },
+  "Mark the patient as reached?": {
+   "ar": "هل تم التواصل مع المريض؟",
+   "en": "Mark the patient as reached?",
+   "fr": "Marquer le patient comme joint ?"
+  },
+  "Moved": {
+   "ar": "نُقل",
+   "en": "Moved",
+   "fr": "Déplacés"
+  },
+  "No free slot was found to move this patient to: keep or cancel": {
+   "ar": "لم يُعثر على موعد متاح لنقل هذا المريض: اختر الإبقاء أو الإلغاء",
+   "en": "No free slot was found to move this patient to: keep or cancel",
+   "fr": "Aucun créneau libre trouvé pour ce patient : maintenez ou annulez"
+  },
+  "No message": {
+   "ar": "لا توجد رسالة",
+   "en": "No message",
+   "fr": "Aucun message"
+  },
+  "Nobody is booked with the doctor in these hours.": {
+   "ar": "لا يوجد مرضى محجوزون لدى الطبيب في هذه الساعات.",
+   "en": "Nobody is booked with the doctor in these hours.",
+   "fr": "Personne n'est réservé chez ce médecin à ces heures."
+  },
+  "Nobody is waiting for a call.": {
+   "ar": "لا يوجد من ينتظر اتصالًا.",
+   "en": "Nobody is waiting for a call.",
+   "fr": "Personne n'attend d'appel."
+  },
+  "Not closed": {
+   "ar": "غير مغلقة",
+   "en": "Not closed",
+   "fr": "Non clôturées"
+  },
+  "Not reached": {
+   "ar": "لم يُتواصل معه",
+   "en": "Not reached",
+   "fr": "Non joint"
+  },
+  "Not sent yet": {
+   "ar": "لم تُرسل بعد",
+   "en": "Not sent yet",
+   "fr": "Pas encore envoyé"
+  },
+  "Nothing moves and nobody is messaged until you apply.": {
+   "ar": "لن يُنقل أي موعد ولن تُرسل أي رسالة قبل الاعتماد.",
+   "en": "Nothing moves and nobody is messaged until you apply.",
+   "fr": "Rien ne bouge et personne n'est prévenu avant l'application."
+  },
+  "Patient late": {
+   "ar": "تأخر المريض",
+   "en": "Patient late",
+   "fr": "Patient en retard"
+  },
+  "Patients a clinic disruption has not reached yet: call them and record the call.": {
+   "ar": "مرضى لم يصلهم إبلاغ التغيير الطارئ بعد: اتصل بهم وسجّل الاتصال.",
+   "en": "Patients a clinic disruption has not reached yet: call them and record the call.",
+   "fr": "Patients qu'une perturbation n'a pas encore joints : appelez-les et enregistrez l'appel."
+  },
+  "Patients still to call: {0}": {
+   "ar": "مرضى بانتظار الاتصال: {0}",
+   "en": "Patients still to call: {0}",
+   "fr": "Patients encore à appeler : {0}"
+  },
+  "Proposed slot": {
+   "ar": "الموعد المقترح",
+   "en": "Proposed slot",
+   "fr": "Créneau proposé"
+  },
+  "Reached": {
+   "ar": "تم التواصل",
+   "en": "Reached",
+   "fr": "Joint"
+  },
+  "Search by number or doctor…": {
+   "ar": "ابحث بالرقم أو الطبيب…",
+   "en": "Search by number or doctor…",
+   "fr": "Rechercher par numéro ou médecin…"
+  },
+  "Show the affected patients": {
+   "ar": "عرض المرضى المتأثرين",
+   "en": "Show the affected patients",
+   "fr": "Afficher les patients concernés"
+  },
+  "The appointment changed meanwhile": {
+   "ar": "تغيّر الموعد في أثناء ذلك",
+   "en": "The appointment changed meanwhile",
+   "fr": "Le rendez-vous a changé entre-temps"
+  },
+  "The device that is down": {
+   "ar": "الجهاز المعطّل",
+   "en": "The device that is down",
+   "fr": "L'appareil en panne"
+  },
+  "The new room": {
+   "ar": "الغرفة الجديدة",
+   "en": "The new room",
+   "fr": "La nouvelle salle"
+  },
+  "The patient is reached already": {
+   "ar": "تم التواصل مع المريض بالفعل",
+   "en": "The patient is reached already",
+   "fr": "Le patient est déjà joint"
+  },
+  "The plans are applied already": {
+   "ar": "اعتُمدت الخطط بالفعل",
+   "en": "The plans are applied already",
+   "fr": "Les plans sont déjà appliqués"
+  },
+  "This disruption is closed already": {
+   "ar": "هذا التغيير الطارئ مغلق بالفعل",
+   "en": "This disruption is closed already",
+   "fr": "Cette perturbation est déjà clôturée"
+  },
+  "To call": {
+   "ar": "بانتظار الاتصال",
+   "en": "To call",
+   "fr": "À appeler"
+  },
+  "What happened": {
+   "ar": "ما حدث",
+   "en": "What happened",
+   "fr": "Ce qui s'est passé"
+  },
+  "What happened on the call?": {
+   "ar": "ماذا حدث في الاتصال؟",
+   "en": "What happened on the call?",
+   "fr": "Que s'est-il passé lors de l'appel ?"
+  },
+  "Write the delay in minutes (up to 8 hours)": {
+   "ar": "اكتب مدة التأخر بالدقائق (حتى 8 ساعات)",
+   "en": "Write the delay in minutes (up to 8 hours)",
+   "fr": "Indiquez le retard en minutes (jusqu'à 8 heures)"
+  },
+  "Write the new room": {
+   "ar": "اكتب الغرفة الجديدة",
+   "en": "Write the new room",
+   "fr": "Indiquez la nouvelle salle"
+  },
+  "Write what happened on the call": {
+   "ar": "اكتب ما حدث في الاتصال",
+   "en": "Write what happened on the call",
+   "fr": "Indiquez ce qui s'est passé lors de l'appel"
+  },
+  "Write which device is down": {
+   "ar": "اكتب الجهاز المعطّل",
+   "en": "Write which device is down",
+   "fr": "Indiquez l'appareil en panne"
+  }
+ }
+}

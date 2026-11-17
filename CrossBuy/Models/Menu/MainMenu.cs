@@ -418,6 +418,7 @@
 				new() { LabelAr = "مكتب الاستقبال", LabelEn = "Front desk", Action = "FrontDesk", Controller = "Hospital" },   // H139
 				new() { LabelAr = "الوارد من الاستقبال", LabelEn = "Incoming from reception", Action = "Handoffs", Controller = "Hospital" },   // H158
 				new() { LabelAr = "نواقص التسجيل", LabelEn = "Check-in gaps", Action = "CheckinGaps", Controller = "Hospital" },   // H159
+				new() { LabelAr = "تغييرات العيادات الطارئة", LabelEn = "Clinic disruptions", Action = "ClinicDisruptions", Controller = "Hospital" },   // H161
 				new() { LabelAr = "سجل المرضى", LabelEn = "Patient registry", Action = "Patients", Controller = "Hospital" },
 				new() { LabelAr = "تسجيل مريض", LabelEn = "Register patient", Action = "RegisterPatient", Controller = "Hospital" },
 				new() { LabelAr = "التسجيل الذاتي", LabelEn = "Self-intake", Action = "Intake", Controller = "Hospital" },   // H91

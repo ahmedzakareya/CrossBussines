@@ -1,0 +1,151 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDisruptionView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H161 — one clinic disruption: what happened, then every affected patient with their plan (keep and inform / move to
+    the proposed slot / cancel — changeable until applied), the preview counts, "apply and notify" (confirmed), each
+    patient's message state and the calls (reached / not reached, with a word) until everyone is reached; "close".
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var d = Model.D; bool open = d.Status == HospitalDisruptionStatus.Open; bool canBook = ViewBag.CanBook == true;
+    ViewData["Title"] = T["Clinic disruption"].Value + " " + d.DisruptionNo;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    string Hm(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00");
+    int nKeep = Model.Rows.Count(r => r.R.Plan == HospitalDisruptionPlan.Keep), nMove = Model.Rows.Count(r => r.R.Plan == HospitalDisruptionPlan.Move), nCancel = Model.Rows.Count(r => r.R.Plan == HospitalDisruptionPlan.Cancel);
+    int nCall = Model.Rows.Count(r => r.ToCall);
+    var tiles = new[] { (T["Affected patients"].Value, Model.Rows.Count, "ki-people", false), (T["Kept and informed"].Value, nKeep, "ki-check", false),
+        (T["Moved"].Value, nMove, "ki-calendar-edit", false), (T["Cancelled"].Value, nCancel, "ki-cross-circle", false), (T["To call"].Value, nCall, "ki-phone", nCall > 0) };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Clinic disruption"] <span class="hp-num">@d.DisruptionNo</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("ClinicDisruptions")" class="text-muted text-hover-primary">@T["Clinic disruptions"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@d.DisruptionNo</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2">
+            @if (canBook && open && Model.Rows.Count > 0) {<button type="button" class="btn btn-sm btn-primary" data-cd-apply data-keep="@nKeep" data-move="@nMove" data-cancel="@nCancel"><i class="ki-outline ki-send fs-4"></i>@T["Apply and notify"]</button>}
+            @if (canBook && d.Status != HospitalDisruptionStatus.Closed && (!open || Model.Rows.Count == 0)) {<button type="button" class="btn btn-sm btn-light" data-cd-close><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the disruption"]</button>}
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-6 py-6">
+            <span class="symbol symbol-50px"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-information-2 fs-2x text-danger"></i></span></span>
+            <div class="flex-grow-1">
+                <div class="fs-4 fw-bold text-gray-900">@T["cdk:" + d.Kind] · <bdi>@DisplayName.Of(Model.Doctor, Model.DoctorEn)</bdi></div>
+                <div class="fs-7 text-gray-600"><span class="hp-num" dir="ltr">@d.Day.ToString("yyyy-MM-dd") · @Hm(d.FromMinute)–@Hm(d.ToMinute)</span>
+                    @if (d.DelayMinutes is int dm) {<text> · @T["Delay"] </text><span class="hp-num">@dm</span> @T["min"]}
+                    @if (d.Room != null) {<text> · @T["The new room"]: </text><bdi>@d.Room</bdi>}
+                    @if (d.Equipment != null) {<text> · @T["The device that is down"]: </text><bdi>@d.Equipment</bdi>}</div>
+                @if (d.Note != null) {<div class="fs-7 text-muted mt-1"><bdi>@d.Note</bdi></div>}
+            </div>
+            <span class="badge badge-light-@(d.Status == HospitalDisruptionStatus.Closed ? "secondary" : "primary") fs-6 fw-bold">@T["dst:" + d.Status]</span>
+        </div></div>
+
+        <div class="row g-5 mb-5">
+            @foreach (var (label, n, icon, alert) in tiles)
+            {
+                <div class="col"><div class="card card-flush h-100"><div class="card-body d-flex align-items-center gap-4 py-5">
+                    <span class="symbol symbol-40px"><span class="symbol-label bg-light-@(alert ? "danger" : "primary")"><i class="ki-outline @icon fs-2 text-@(alert ? "danger" : "primary")"></i></span></span>
+                    <div><div class="fs-2 fw-bold hp-num text-@(alert ? "danger" : "gray-900")">@n</div><div class="fs-7 text-gray-500 fw-semibold">@label</div></div>
+                </div></div></div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header pt-5 border-0"><h3 class="card-title fw-bold text-gray-800">@T["Affected patients"]</h3>
+                @if (open && Model.Rows.Count > 0) {<div class="card-toolbar fs-7 text-muted">@T["Nothing moves and nobody is messaged until you apply."]</div>}</div>
+            <div class="card-body pt-2">
+                @if (Model.Rows.Count == 0)
+                {
+                    <div class="text-center text-muted py-10"><i class="ki-outline ki-people fs-3x text-gray-300 d-block mb-3"></i>@T["Nobody is booked with the doctor in these hours."]</div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 min-w-200px rounded-start">@T["Patient"]</th><th>@T["Time"]</th><th class="min-w-175px">@T["Plan"]</th><th class="min-w-200px">@T["Proposed slot"]</th><th class="min-w-150px">@T["Message"]</th><th class="text-end pe-4 rounded-end min-w-200px">@T["Call"]</th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                var x = r.R;
+                                <tr data-cd-row="@x.ID">
+                                    <td class="ps-4"><a href="@Url.Action("Patient", "Hospital", new { id = x.PatientId })" class="text-gray-900 fw-bold text-hover-primary"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi></a><div class="fs-8 text-muted hp-num">@r.Mrn</div></td>
+                                    <td><span class="hp-num fw-semibold" dir="ltr">@Hm(r.StartMinute)</span></td>
+                                    <td>
+                                        @if (open && x.AppliedAt == null && canBook)
+                                        {
+                                            <select class="form-select form-select-solid form-select-sm" data-cd-plan="@x.ID">
+                                                @foreach (var p in HospitalDisruptionPlan.All) { if (p == HospitalDisruptionPlan.Move && x.NewMinute == null) { continue; } <option value="@p" selected="@(p == x.Plan)">@T["cdp:" + p]</option> }
+                                            </select>
+                                        }
+                                        else {<span class="fw-semibold fs-7">@T["cdp:" + x.Plan]</span>}
+                                        @if (x.ApplyError != null) {<div class="fs-8 text-danger mt-1">@T[x.ApplyError]</div>}
+                                    </td>
+                                    <td>@if (x.Plan == HospitalDisruptionPlan.Move && x.NewDay is DateTime nd && x.NewMinute is int nm) {<div class="fs-7 fw-semibold"><bdi>@DisplayName.Of(r.NewDoctor ?? "", r.NewDoctorEn)</bdi></div><div class="fs-8 text-muted hp-num" dir="ltr">@nd.ToString("yyyy-MM-dd") · @Hm(nm)</div>} else {<span class="text-muted fs-8">—</span>}</td>
+                                    <td>@if (x.AppliedAt == null) {<span class="text-muted fs-8">@T["Not sent yet"]</span>}
+                                        else if (r.SmsStatus == null) {<span class="badge badge-light-danger fs-8">@T["No message"]</span>}
+                                        else {<span class="badge badge-light-@(r.SmsStatus == HospitalSmsStatus.Sent ? "primary" : "danger") fs-8">@T["sms:" + r.SmsStatus]</span>@if (r.SmsError != null) {<div class="fs-8 text-muted mt-1">@T[r.SmsError]</div>}}</td>
+                                    <td class="text-end pe-4">
+                                        @if (x.Reached == true) {<span class="badge badge-light-primary fs-7">@T["Reached"]</span>}
+                                        else if (r.ToCall)
+                                        {
+                                            <div class="d-flex justify-content-end gap-2"><button type="button" class="btn btn-sm btn-primary py-1 px-3" data-cd-call="@x.ID" data-reached="1">@T["Reached"]</button>
+                                                <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-cd-call="@x.ID" data-reached="0">@T["Not reached"]</button></div>
+                                        }
+                                        @if (x.Calls > 0) {<div class="fs-8 text-muted mt-1">@T["Calls"] <span class="hp-num">@x.Calls</span>@if (x.CallNote != null) {<text> · </text><bdi>@x.CallNote</bdi>}</div>}
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, base = @Json.Serialize(Url.Content("~/Hospital/ClinicDisruptions/"));
+            var W = { apply: @Json.Serialize(T["Apply the plans now? Kept and informed: {0} · moved: {1} · cancelled: {2}. Every patient is messaged."].Value),
+                close: @Json.Serialize(T["Close this disruption?"].Value), why: @Json.Serialize(T["What happened on the call?"].Value), reached: @Json.Serialize(T["Mark the patient as reached?"].Value),
+                done: @Json.Serialize(T["Applied: {0} · could not be applied: {1}"].Value), saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function reload(r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } location.reload(); }
+            // the plan: select2, and its change through jQuery (select2 never reaches a plain listener)
+            document.querySelectorAll('[data-cd-plan]').forEach(function (el) {
+                var send = function () { post(base + 'Rows/' + el.getAttribute('data-cd-plan') + '/Plan', { plan: el.value }).then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } location.reload(); }); };
+                if (window.jQuery && jQuery.fn.select2) { jQuery(el).select2({ width: '100%', minimumResultsForSearch: Infinity, dir: document.documentElement.dir || 'rtl' }); jQuery(el).on('change', send); } else el.addEventListener('change', send);
+            });
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-cd-apply]'))) {
+                    var msg = W.apply.replace('{0}', t.getAttribute('data-keep')).replace('{1}', t.getAttribute('data-move')).replace('{2}', t.getAttribute('data-cancel'));
+                    cbConfirm(msg, { kind: 'primary' }).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post(base + @d.ID + '/Apply').then(function (r) { if (!r.ok) { t.disabled = false; toastr.error(r.error || W.failed); return; }
+                            toastr.success(W.done.replace('{0}', r.applied).replace('{1}', r.failed)); setTimeout(function () { location.reload(); }, 700); }); });
+                    return;
+                }
+                if ((t = e.target.closest('[data-cd-close]'))) { cbConfirm(W.close, { kind: 'primary' }).then(function (ok) { if (ok) post(base + @d.ID + '/Close').then(reload); }); return; }
+                if ((t = e.target.closest('[data-cd-call]'))) {
+                    var id = t.getAttribute('data-cd-call'), yes = t.getAttribute('data-reached') === '1';
+                    if (yes) cbConfirm(W.reached, { kind: 'primary' }).then(function (ok) { if (ok) post(base + 'Rows/' + id + '/Call', { reached: true }).then(reload); });
+                    else cbPrompt(W.why, { textarea: true }).then(function (why) { if (why != null) post(base + 'Rows/' + id + '/Call', { reached: false, note: why }).then(reload); });
+                }
+            });
+        })();
+    </script>
+}

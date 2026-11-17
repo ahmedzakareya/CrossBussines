@@ -1,0 +1,36 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H161 — declare a clinic disruption: the doctor (select2), what happened (option tiles), the day (flatpickr), the hours it
+   covers (flatpickr time), and the delay / the new room / the device, as the kind needs; a note. *@
+@{
+    var docs = ViewBag.Doctors as IReadOnlyList<HospitalPractitioner> ?? Array.Empty<HospitalPractitioner>(); DateTime today = ViewBag.Today; int minute = ViewBag.Minute; int? doctor = ViewBag.Doctor as int?;
+    string Hm(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00");
+    var kinds = new (string Key, string Icon)[] { (HospitalDisruptionKind.Late, "ki-time"), (HospitalDisruptionKind.Absent, "ki-user-square"), (HospitalDisruptionKind.Room, "ki-geolocation"), (HospitalDisruptionKind.Equipment, "ki-setting-3") };
+}
+<div data-cd-new data-today="@today.ToString("yyyy-MM-dd")">
+    <div class="row g-4">
+        <div class="col-md-7"><label class="required fs-7 fw-semibold mb-2">@T["Doctor"]</label>
+            <select class="form-select form-select-solid" data-cd="doctor">
+                @foreach (var d in docs) { <option value="@d.ID" selected="@(d.ID == doctor)">@DisplayName.Of(d.Name, d.NameEn)</option> }
+            </select></div>
+        <div class="col-md-5"><label class="required fs-7 fw-semibold mb-2">@T["Day"]</label><input class="form-control form-control-solid" data-cd="day" value="@today.ToString("yyyy-MM-dd")" readonly /></div>
+        <div class="col-12"><label class="required fs-7 fw-semibold mb-2">@T["What happened?"]</label>
+            <div class="row g-3">
+                @foreach (var k in kinds)
+                {
+                    <div class="col-6 col-md-3"><label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex flex-column align-items-center p-4 h-100 @(k.Key == HospitalDisruptionKind.Late ? "active" : "")" data-cd-kind-tile>
+                        <input class="d-none" type="radio" name="cdKind" value="@k.Key" @(k.Key == HospitalDisruptionKind.Late ? "checked" : "") />
+                        <i class="ki-outline @k.Icon fs-2x text-primary mb-2"></i><span class="fw-bold fs-7 text-gray-900 text-center">@T["cdk:" + k.Key]</span></label></div>
+                }
+            </div></div>
+        <div class="col-6 col-md-3"><label class="required fs-7 fw-semibold mb-2">@T["From"]</label><input class="form-control form-control-solid" data-cd="from" value="@Hm(Math.Min(minute / 15 * 15, 23 * 60))" readonly /></div>
+        <div class="col-6 col-md-3"><label class="required fs-7 fw-semibold mb-2">@T["To"]</label><input class="form-control form-control-solid" data-cd="to" value="23:45" readonly /></div>
+        <div class="col-md-6" data-cd-for="Late"><label class="required fs-7 fw-semibold mb-2">@T["Delay (minutes)"]</label><input type="number" min="5" max="480" step="5" class="form-control form-control-solid" data-cd="delay" value="30" /></div>
+        <div class="col-md-6 d-none" data-cd-for="Room"><label class="required fs-7 fw-semibold mb-2">@T["The new room"]</label><input class="form-control form-control-solid" data-cd="room" maxlength="60" /></div>
+        <div class="col-md-6 d-none" data-cd-for="Equipment"><label class="required fs-7 fw-semibold mb-2">@T["The device that is down"]</label><input class="form-control form-control-solid" data-cd="equipment" maxlength="120" /></div>
+        <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-cd="note"></textarea></div>
+    </div>
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-6 fs-7 text-gray-700">@T["Every patient booked with the doctor in these hours is listed next with a plan; nothing moves and nobody is messaged until you approve."]</div>
+    <div class="text-end mt-6"><button type="button" class="btn btn-primary" data-cd-declare><i class="ki-outline ki-arrow-right fs-4"></i>@T["Show the affected patients"]</button></div>
+</div>

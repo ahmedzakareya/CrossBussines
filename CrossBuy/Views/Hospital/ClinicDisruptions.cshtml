@@ -1,0 +1,110 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H161 — clinic disruptions: the list (open or all, searched, paged) and "declare a disruption" (a window: the doctor,
+    what happened, the day and hours). Declaring lists the affected patients on the disruption's own page, where the
+    plans are previewed and approved.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Clinic disruptions"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    int toCall = ViewBag.ToCall ?? 0; bool canBook = ViewBag.CanBook == true;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Clinic disruptions"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("FrontDesk")" class="text-muted text-hover-primary">@T["Front desk"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Clinic disruptions"]</li>
+            </ul>
+        </div>
+        @if (canBook) {<button type="button" class="btn btn-sm btn-danger" data-cd-open><i class="ki-outline ki-information-2 fs-4"></i>@T["Declare a disruption"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (toCall > 0)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-phone fs-2tx text-danger me-4"></i>
+                <div class="fs-6 text-gray-800 fw-semibold align-self-center">@string.Format(T["Patients still to call: {0}"].Value, toCall)</div></div>
+        }
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Clinic disruptions"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-200px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number or doctor…"]" /></div>
+                    <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_open"><option value="open">@T["Not closed"]</option><option value="all">@T["All"]</option></select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 rounded-start">@T["Number"]</th><th class="min-w-200px">@T["Doctor and hours"]</th><th class="min-w-150px">@T["What happened"]</th><th>@T["Patients"]</th><th>@T["To call"]</th><th class="text-end pe-4 rounded-end">@T["State"]</th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="6" class="text-center py-12"><i class="ki-outline ki-information-2 fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="cd_modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Declare a disruption"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-8 px-lg-10" data-cd-body></div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var open = document.getElementById('f_open');
+            cbServerList({ url: @Json.Serialize(Url.Action("ClinicDisruptionsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('open', open.value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var modalEl = document.getElementById('cd_modal'), body = modalEl.querySelector('[data-cd-body]');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), loading: @Json.Serialize(T["Loading…"].Value) };
+            var loc = @(isAr ? "true" : "false") && window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default';
+            function minutes(v) { var p = (v || '').split(':'); return p.length === 2 ? Number(p[0]) * 60 + Number(p[1]) : null; }
+            function kindShow() { var k = (body.querySelector('input[name="cdKind"]:checked') || {}).value;
+                body.querySelectorAll('[data-cd-kind-tile]').forEach(function (l) { l.classList.toggle('active', l.querySelector('input').checked); });
+                body.querySelectorAll('[data-cd-for]').forEach(function (el) { el.classList.toggle('d-none', el.getAttribute('data-cd-for') !== k); }); }
+            function openWindow() {
+                body.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                fetch(@Json.Serialize(Url.Action("ClinicDisruptionNew")), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (h) {
+                    body.innerHTML = h; var box = body.querySelector('[data-cd-new]');
+                    if (window.jQuery && jQuery.fn.select2) jQuery(box.querySelector('[data-cd="doctor"]')).select2({ width: '100%', dir: document.documentElement.dir || 'rtl', dropdownParent: jQuery(modalEl) });
+                    if (window.flatpickr) {
+                        flatpickr(box.querySelector('[data-cd="day"]'), { dateFormat: 'Y-m-d', minDate: box.getAttribute('data-today'), disableMobile: true, static: true, locale: loc });
+                        ['from', 'to'].forEach(function (k) { flatpickr(box.querySelector('[data-cd="' + k + '"]'), { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, minuteIncrement: 15, disableMobile: true, static: true }); });
+                    }
+                });
+            }
+            body.addEventListener('change', function (e) { if (e.target.name === 'cdKind') kindShow(); });
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-cd-open]'))) { e.preventDefault(); openWindow(); return; }
+                if ((t = e.target.closest('[data-cd-declare]'))) {
+                    e.preventDefault(); var box = body.querySelector('[data-cd-new]'), v = function (k) { return box.querySelector('[data-cd="' + k + '"]').value.trim(); };
+                    var payload = { practitionerId: Number(v('doctor')), day: v('day'), kind: (box.querySelector('input[name="cdKind"]:checked') || {}).value, fromMinute: minutes(v('from')), toMinute: minutes(v('to')),
+                        delayMinutes: v('delay') ? Number(v('delay')) : null, room: v('room') || null, equipment: v('equipment') || null, note: v('note') || null };
+                    t.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("ClinicDisruptionDeclare")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(payload) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } window.location = r.url; });
+                }
+            });
+            if (new URLSearchParams(location.search).get('declare') === '1') openWindow();
+        })();
+    </script>
+}

@@ -138,12 +138,14 @@ namespace CrossBuy.BL.Hospital
 			if (!HospitalFrontDeskWorkRules.SlotFree(free, startMinute)) return HospitalResult.Fail("This slot is no longer free");
 			bool wanted = await Safe(() => _db.Set<HospitalDeskConfirmation>().AnyAsync(c => c.CompanyId == ctx.CompanyId && c.AppointmentId == old.ID && c.Status == HospitalConfirmStatus.WantsToMove, ct), false);
 
+			// H161: the old one is cancelled FIRST, so a move to the same hour with another doctor does not collide with the
+			// patient's own appointment; a booking that then fails rolls the cancellation back with it.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var cancelled = await _op.MoveAsync(ctx, old.ID, HospitalAppointmentStatus.Cancelled, employeeId, nowUtc, ct);
+			if (!cancelled.Ok) { await tx.RollbackAsync(); return cancelled; }
 			var booked = await _op.BookAsync(ctx, new HospitalBookingInput { PatientId = old.PatientId, PractitionerId = practitionerId, Date = day.Date, StartMinute = startMinute, VisitType = old.VisitType, Note = old.Note },
 				employeeId, nowLocal.Date, ct);
-			if (!booked.Ok) return booked;
-			var cancelled = await _op.MoveAsync(ctx, old.ID, HospitalAppointmentStatus.Cancelled, employeeId, nowUtc, ct);
-			if (!cancelled.Ok) return cancelled;
+			if (!booked.Ok) { await tx.RollbackAsync(); return booked; }
 			if (wanted)
 			{
 				_db.Set<HospitalDeskConfirmation>().Add(new HospitalDeskConfirmation { CompanyId = ctx.CompanyId, AppointmentId = booked.Id!.Value, Status = HospitalConfirmStatus.Confirmed, Note = "Moved at the patient's request", Calls = 1, LastAt = nowUtc, ByEmployeeId = employeeId });
