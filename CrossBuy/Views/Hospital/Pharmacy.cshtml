@@ -183,6 +183,19 @@
                             }
                             @{ bool giving = HospitalDispenseStatus.Dispensable(d.Status) && canPharmacy; }
                             @{ var returnedQ = ViewBag.Returned as Dictionary<int, decimal> ?? new(); var returnRows = ViewBag.Returns as IReadOnlyList<HospitalReturnView> ?? Array.Empty<HospitalReturnView>(); }   @* H145: the quantity to give now *@
+                            @{ var scans = ViewBag.Scans as Dictionary<int, HospitalScanView> ?? new(); }
+                            @if (giving)
+                            {
+                                @* H150: each pack scanned (GS1 DataMatrix) — checked, then given from its own batch *@
+                                <div class="d-flex flex-wrap align-items-center gap-4 rounded border border-dashed border-primary bg-light-primary px-5 py-4 mb-5" data-scan-box>
+                                    <i class="ki-outline ki-scan-barcode fs-2tx text-primary"></i>
+                                    <div class="flex-grow-1 min-w-200px">
+                                        <div class="fw-bold text-gray-900 fs-6">@T["Scan each pack"]</div>
+                                        <div class="text-gray-700 fs-7">@T["The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice."]</div>
+                                    </div>
+                                    <input type="text" class="form-control form-control-solid w-300px hp-num" dir="ltr" autocomplete="off" spellcheck="false" data-scan="@d.ID" placeholder="@T["Scan or type the code"]" aria-label="@T["Scan each pack"]" />
+                                </div>
+                            }
                             <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
                                 <thead><tr class="fw-bold text-muted bg-light">
                                     <th class="ps-4 min-w-200px rounded-start">@T["Item"]</th><th>@T["Batch"]</th><th>@T["Expiry"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["On hand"]</th>
@@ -220,7 +233,14 @@
                                             <td class="text-end hp-num text-gray-600 @(l.Warnings.Contains(HospitalPharmacyService.WarnShort) ? "text-danger fw-bold" : "")">@(l.OnHand == null ? "—" : HospitalUi.LabNum(l.OnHand, 0))</td>
                                             @if (giving)
                                             {
-                                                <td class="text-end">@if (l.Line.ItemId != null && owed > 0) {<input type="number" min="0" max="@owed.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="any" class="form-control form-control-sm form-control-solid text-end hp-num w-80px ms-auto" data-give="@l.Line.ID" value="@Math.Min(owed, Math.Max(0, l.OnHand ?? 0)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" />} else {<span class="text-muted">—</span>}</td>
+                                                var sc = scans.GetValueOrDefault(l.Line.ID);
+                                                var giveNow = sc != null ? Math.Min(owed, sc.Count) : Math.Min(owed, Math.Max(0, l.OnHand ?? 0));
+                                                <td class="text-end">@if (l.Line.ItemId != null && owed > 0) {<input type="number" min="0" max="@owed.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="any" class="form-control form-control-sm form-control-solid text-end hp-num w-80px ms-auto" data-give="@l.Line.ID" value="@giveNow.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" />
+                                                    @if (sc != null)
+                                                    {
+                                                        <span class="d-block text-primary fw-bold fs-8 text-nowrap mt-1" data-scanned="@l.Line.ID"><i class="ki-outline ki-scan-barcode fs-8 text-primary me-1"></i>@string.Format(T["{0} scanned"].Value, sc.Count)@if (sc.Batches.Count > 0) {<text> · </text><bdi class="hp-num" dir="ltr">@string.Join(", ", sc.Batches)</bdi>}</span>
+                                                        <a href="#" class="fs-8 fw-bold text-gray-600 text-hover-danger" data-clear-scans="@l.Line.ID" data-id="@d.ID">@T["Clear the scans"]</a>
+                                                    }} else {<span class="text-muted">—</span>}</td>
                                             }
                                             <td class="text-end pe-4"><span class="text-gray-900 fw-bold hp-num">@(l.Line.ItemId == null || l.Price == null ? "—" : Money(l.Price.Value * (l.Line.DispensedQty ?? l.Line.Quantity)))</span></td>
                                         </tr>
@@ -477,8 +497,22 @@
             var base = @Json.Serialize(Url.Action("Pharmacy"));
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), dispensed: @Json.Serialize(T["Dispensed — the stock left the store and the bill was charged"].Value),
                 retQty: @Json.Serialize(T["How much of {0} did the patient bring back? (up to {1})"].Value), retWhy: @Json.Serialize(T["Why did it come back? It goes back on the shelf only if it can be sold again."].Value),
-                retAsk: @Json.Serialize(T["Put {0} of {1} back on the shelf and take it off the patient's bill?"].Value), returned: @Json.Serialize(T["Returned: back on the shelf and off the bill"].Value) };
+                retAsk: @Json.Serialize(T["Put {0} of {1} back on the shelf and take it off the patient's bill?"].Value), returned: @Json.Serialize(T["Returned: back on the shelf and off the bill"].Value),
+                scanOk: @Json.Serialize(T["Pack checked: it will be given from its own batch"].Value), clearAsk: @Json.Serialize(T["Clear this medicine's scans? The packs go back on the shelf before anything is given."].Value) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function focusScan() { var s = document.querySelector('[data-scan]'); if (s) s.focus(); }
+            document.addEventListener('keydown', function (e) {
+                var s = e.target.closest && e.target.closest('[data-scan]');
+                if (!s || e.key !== 'Enter') return;
+                e.preventDefault();
+                var code = s.value; if (!code.trim()) return;
+                s.disabled = true;
+                post(base + '/' + s.getAttribute('data-scan') + '/Scan', { code: code }).then(function (r) {
+                    s.disabled = false; s.value = '';
+                    if (!r.ok) { toast('error', r.error || W.failed); s.focus(); return; }
+                    toast('success', W.scanOk); swap().then(focusScan);
+                });
+            });
             function post(url, body) {
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
@@ -527,6 +561,16 @@
                     sv.disabled = true;
                     post(base + '/' + sv.getAttribute('data-iv-save') + '/Interventions', body).then(function (r) { sv.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; }
                         bootstrap.Modal.getOrCreateInstance(m2).hide(); toast('success', W.saved); swap(); });
+                    return;
+                }
+                var cs = e.target.closest('[data-clear-scans]');
+                if (cs) {
+                    e.preventDefault();
+                    cbConfirm(W.clearAsk, { kind: 'primary' }).then(function (ok) {
+                        if (!ok) return;
+                        post(base + '/' + cs.getAttribute('data-id') + '/Lines/' + cs.getAttribute('data-clear-scans') + '/ClearScans', {}).then(function (r) {
+                            if (!r.ok) { toast('error', r.error || W.failed); return; } swap().then(focusScan); });
+                    });
                     return;
                 }
                 var rb = e.target.closest('[data-return-line]');

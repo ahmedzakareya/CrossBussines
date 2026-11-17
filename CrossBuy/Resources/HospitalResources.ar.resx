@@ -7347,4 +7347,18 @@
   <data name="Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less." xml:space="preserve"><value>دواء أُرجع بعد إغلاق الفاتورة: تبقى الفاتورة كما رُحّلت، ويقل ما على المريض بهذا القدر.</value></data>
   <data name="The bill was closed in a foreign currency: settle this return at billing" xml:space="preserve"><value>أُغلقت الفاتورة بعملة أجنبية: سوِّ هذا المرتجع من الفوترة</value></data>
   <data name="The insurer paid part of this medicine: correct it through the insurance claim" xml:space="preserve"><value>دفعت شركة التأمين جزءًا من هذا الدواء: صحّحه من خلال مطالبة التأمين</value></data>
+  <data name="All of this medicine is already scanned" xml:space="preserve"><value>مُسحت كل كمية هذا الدواء</value></data>
+  <data name="Batch {0} is under recall: put the pack aside" xml:space="preserve"><value>التشغيلة ⁦{0}⁩ مسحوبة: ضع العلبة جانبًا</value></data>
+  <data name="Clear the scans" xml:space="preserve"><value>إلغاء المسح</value></data>
+  <data name="Clear this medicine's scans? The packs go back on the shelf before anything is given." xml:space="preserve"><value>إلغاء مسح هذا الدواء؟ تعود العلب للرف قبل صرف أي شيء.</value></data>
+  <data name="Pack checked: it will be given from its own batch" xml:space="preserve"><value>تم فحص العلبة: ستُصرف من تشغيلتها</value></data>
+  <data name="Scan each pack" xml:space="preserve"><value>امسح كل علبة</value></data>
+  <data name="Scan or type the code" xml:space="preserve"><value>امسح الرمز أو اكتبه</value></data>
+  <data name="The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice." xml:space="preserve"><value>يُفحص رمز GS1 على العلبة: دواء هذه الوصفة، غير منتهي الصلاحية، غير مسحوب، من تشغيلة موجودة في المخزن، ولا يُصرف مرتين.</value></data>
+  <data name="The pharmacy store holds no more of batch {0}: check the pack" xml:space="preserve"><value>لا يوجد في مخزن الصيدلية المزيد من التشغيلة ⁦{0}⁩: افحص العلبة</value></data>
+  <data name="This is not a GS1 code this counter can read" xml:space="preserve"><value>هذا ليس رمز GS1 يمكن قراءته هنا</value></data>
+  <data name="This pack (serial {0}) was already scanned" xml:space="preserve"><value>هذه العلبة (الرقم التسلسلي ⁦{0}⁩) مُسحت من قبل</value></data>
+  <data name="This pack expired on {0}: it cannot be given" xml:space="preserve"><value>انتهت صلاحية هذه العلبة في ⁦{0}⁩: لا تُصرف</value></data>
+  <data name="This pack is not a medicine of this prescription" xml:space="preserve"><value>هذه العلبة ليست من أدوية هذه الوصفة</value></data>
+  <data name="{0} scanned" xml:space="preserve"><value>مُسح ⁦{0}⁩</value></data>
 </root>

@@ -36,6 +36,7 @@ namespace CrossBuy.Controllers
 				ViewBag.Interventions = await ReviewSvc.InterventionsAsync(ctx, sel.Dispense.ID, ct);
 				ViewBag.Returns = await ReturnSvc.ListAsync(ctx, sel.Dispense.ID, ct);       // H146
 				ViewBag.Returned = await ReturnSvc.ReturnedAsync(ctx, sel.Dispense.ID, ct);
+				ViewBag.Scans = await ScanSvc.PendingAsync(ctx, sel.Dispense.ID, ct);          // H150: packs scanned, not yet given
 			}
 			ViewBag.Settings = await _pharmacy.SettingsAsync(ctx, ct);
 			ViewBag.Warehouses = await _pharmacy.WarehousesAsync(ctx, ct);

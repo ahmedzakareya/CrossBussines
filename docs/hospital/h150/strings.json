@@ -1,0 +1,75 @@
+{
+ "unit": "H150 - GS1 DataMatrix scanning at the pharmacy counter",
+ "strings": {
+  "Scan each pack": {
+   "ar": "امسح كل علبة",
+   "en": "Scan each pack",
+   "fr": "Scannez chaque boîte"
+  },
+  "The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice.": {
+   "ar": "يُفحص رمز GS1 على العلبة: دواء هذه الوصفة، غير منتهي الصلاحية، غير مسحوب، من تشغيلة موجودة في المخزن، ولا يُصرف مرتين.",
+   "en": "The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice.",
+   "fr": "Le code GS1 de la boîte est vérifié : le médicament de cette ordonnance, non périmé, non rappelé, un lot détenu par le stock, et jamais délivré deux fois."
+  },
+  "Scan or type the code": {
+   "ar": "امسح الرمز أو اكتبه",
+   "en": "Scan or type the code",
+   "fr": "Scannez ou saisissez le code"
+  },
+  "{0} scanned": {
+   "ar": "مُسح ⁦{0}⁩",
+   "en": "{0} scanned",
+   "fr": "{0} scanné(s)"
+  },
+  "Clear the scans": {
+   "ar": "إلغاء المسح",
+   "en": "Clear the scans",
+   "fr": "Effacer les scans"
+  },
+  "Pack checked: it will be given from its own batch": {
+   "ar": "تم فحص العلبة: ستُصرف من تشغيلتها",
+   "en": "Pack checked: it will be given from its own batch",
+   "fr": "Boîte vérifiée : elle sera délivrée de son propre lot"
+  },
+  "Clear this medicine's scans? The packs go back on the shelf before anything is given.": {
+   "ar": "إلغاء مسح هذا الدواء؟ تعود العلب للرف قبل صرف أي شيء.",
+   "en": "Clear this medicine's scans? The packs go back on the shelf before anything is given.",
+   "fr": "Effacer les scans de ce médicament ? Les boîtes retournent en rayon avant toute délivrance."
+  },
+  "This is not a GS1 code this counter can read": {
+   "ar": "هذا ليس رمز GS1 يمكن قراءته هنا",
+   "en": "This is not a GS1 code this counter can read",
+   "fr": "Ce n'est pas un code GS1 lisible à ce comptoir"
+  },
+  "This pack is not a medicine of this prescription": {
+   "ar": "هذه العلبة ليست من أدوية هذه الوصفة",
+   "en": "This pack is not a medicine of this prescription",
+   "fr": "Cette boîte n'est pas un médicament de cette ordonnance"
+  },
+  "All of this medicine is already scanned": {
+   "ar": "مُسحت كل كمية هذا الدواء",
+   "en": "All of this medicine is already scanned",
+   "fr": "Tout ce médicament est déjà scanné"
+  },
+  "This pack expired on {0}: it cannot be given": {
+   "ar": "انتهت صلاحية هذه العلبة في ⁦{0}⁩: لا تُصرف",
+   "en": "This pack expired on {0}: it cannot be given",
+   "fr": "Cette boîte a expiré le {0} : elle ne peut pas être délivrée"
+  },
+  "This pack (serial {0}) was already scanned": {
+   "ar": "هذه العلبة (الرقم التسلسلي ⁦{0}⁩) مُسحت من قبل",
+   "en": "This pack (serial {0}) was already scanned",
+   "fr": "Cette boîte (n° de série {0}) a déjà été scannée"
+  },
+  "Batch {0} is under recall: put the pack aside": {
+   "ar": "التشغيلة ⁦{0}⁩ مسحوبة: ضع العلبة جانبًا",
+   "en": "Batch {0} is under recall: put the pack aside",
+   "fr": "Le lot {0} est rappelé : mettez la boîte de côté"
+  },
+  "The pharmacy store holds no more of batch {0}: check the pack": {
+   "ar": "لا يوجد في مخزن الصيدلية المزيد من التشغيلة ⁦{0}⁩: افحص العلبة",
+   "en": "The pharmacy store holds no more of batch {0}: check the pack",
+   "fr": "Le stock de la pharmacie ne détient plus le lot {0} : vérifiez la boîte"
+  }
+ }
+}

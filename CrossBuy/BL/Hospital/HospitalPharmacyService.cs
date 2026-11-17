@@ -370,6 +370,13 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			if (items.Values.FirstOrDefault(i => cogs.GetValueOrDefault(i.ItemCategoryId) == null) is { } noCogs)
 				return HospitalResult.Fail("Map the cost-of-goods account of {0}'s inventory category first", DisplayName.Of(noCogs.Name, noCogs.NameEn ?? noCogs.Name));
 
+			// H150: the packs scanned at the counter and not yet given leave FROM THEIR OWN BATCH (scan order); the rest of a
+			// line's quantity is picked nearest-expiry-first as before
+			List<HospitalDispenseScan> scanned;
+			try { scanned = await _db.Set<HospitalDispenseScan>().Where(s => s.CompanyId == ctx.CompanyId && s.DispenseId == d.ID && s.FillId == null).OrderBy(s => s.ID).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { scanned = new(); }
+			var taken = new List<(HospitalDispenseScan Scan, HospitalDispenseFill Fill)>();
+
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			try
 			{
@@ -382,13 +389,18 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					// this fill's movements are the ones after the line's last
 					long before = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.SourceLineId == l.ID)
 						.Select(m => (long?)m.ID).MaxAsync(ct) ?? 0;
-					var (ok, error, _) = await _stock.PostMovementAsync(ctx.CompanyId, new MovementRequest
+					var packs = scanned.Where(s => s.LineId == l.ID).Take((int)Math.Floor(give)).ToList();
+					var parts = HospitalScanRules.Segments(it.TrackExpiry, packs.Select(p => p.BatchNo), give);
+					foreach (var (batchNo, partQty) in parts)
 					{
-						Date = nowUtc, ItemId = it.ID, WarehouseId = wh, Direction = -1, Qty = give,
-						SourceType = MovementSource, SourceId = d.ID, SourceLineId = l.ID, PostToGl = true, CounterAccountOverride = cogs[it.ItemCategoryId],
-						Notes = "Pharmacy dispense " + d.RxNo,
-					}, userId);
-					if (!ok) { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return HospitalResult.Fail("{0}: {1}", DisplayName.Of(it.Name, it.NameEn ?? it.Name), error ?? ""); }
+						var (ok, error, _) = await _stock.PostMovementAsync(ctx.CompanyId, new MovementRequest
+						{
+							Date = nowUtc, ItemId = it.ID, WarehouseId = wh, Direction = -1, Qty = partQty, BatchNo = batchNo,
+							SourceType = MovementSource, SourceId = d.ID, SourceLineId = l.ID, PostToGl = true, CounterAccountOverride = cogs[it.ItemCategoryId],
+							Notes = "Pharmacy dispense " + d.RxNo,
+						}, userId);
+						if (!ok) { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return HospitalResult.Fail("{0}: {1}", DisplayName.Of(it.Name, it.NameEn ?? it.Name), error ?? ""); }
+					}
 					// What actually left: one movement per batch when the inventory split it nearest-expiry-first.
 					var all = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.SourceLineId == l.ID).ToListAsync(ct);
 					var moved = all.Where(m => m.ID > before).ToList();
@@ -402,11 +414,14 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					l.Batches = Names(all);
 					l.NearestExpiry = all.Where(m => m.BatchId != null && batches.ContainsKey(m.BatchId.Value)).Select(m => batches[m.BatchId!.Value].ExpiryDate).Where(x => x != null).Min();
 					l.BillLineId ??= charge.ID;
-					_db.Add(new HospitalDispenseFill { CompanyId = ctx.CompanyId, DispenseId = d.ID, LineId = l.ID, Quantity = give, UnitCost = nowQty == 0 ? 0 : Math.Round(nowCost / nowQty, 4),
-						UnitPrice = charge.UnitPrice, Batches = Names(moved), BillLineId = charge.ID, At = nowUtc, ByEmployeeId = employeeId });
+					var fill = new HospitalDispenseFill { CompanyId = ctx.CompanyId, DispenseId = d.ID, LineId = l.ID, Quantity = give, UnitCost = nowQty == 0 ? 0 : Math.Round(nowCost / nowQty, 4),
+						UnitPrice = charge.UnitPrice, Batches = Names(moved), BillLineId = charge.ID, At = nowUtc, ByEmployeeId = employeeId };
+					_db.Add(fill);
+					taken.AddRange(packs.Select(p => (p, fill)));
 				}
 				d.Status = HospitalPartialDispenseRules.StatusAfter(stocked); d.DispensedAt = nowUtc; d.DispensedByEmployeeId = employeeId; d.WarehouseId = wh; d.BillId ??= bill?.ID;
 				await _db.SaveChangesAsync(ct);
+				if (taken.Count > 0) { foreach (var (scan, fill) in taken) scan.FillId = fill.ID; await _db.SaveChangesAsync(ct); }   // H150: the packs this fill gave
 				await tx.CommitAsync();
 				return HospitalResult.Success(d.ID);
 			}

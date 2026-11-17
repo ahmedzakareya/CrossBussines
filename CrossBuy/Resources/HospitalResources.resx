@@ -7345,4 +7345,18 @@
   <data name="Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less." xml:space="preserve"><value>Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less.</value></data>
   <data name="The bill was closed in a foreign currency: settle this return at billing" xml:space="preserve"><value>The bill was closed in a foreign currency: settle this return at billing</value></data>
   <data name="The insurer paid part of this medicine: correct it through the insurance claim" xml:space="preserve"><value>The insurer paid part of this medicine: correct it through the insurance claim</value></data>
+  <data name="All of this medicine is already scanned" xml:space="preserve"><value>All of this medicine is already scanned</value></data>
+  <data name="Batch {0} is under recall: put the pack aside" xml:space="preserve"><value>Batch {0} is under recall: put the pack aside</value></data>
+  <data name="Clear the scans" xml:space="preserve"><value>Clear the scans</value></data>
+  <data name="Clear this medicine's scans? The packs go back on the shelf before anything is given." xml:space="preserve"><value>Clear this medicine's scans? The packs go back on the shelf before anything is given.</value></data>
+  <data name="Pack checked: it will be given from its own batch" xml:space="preserve"><value>Pack checked: it will be given from its own batch</value></data>
+  <data name="Scan each pack" xml:space="preserve"><value>Scan each pack</value></data>
+  <data name="Scan or type the code" xml:space="preserve"><value>Scan or type the code</value></data>
+  <data name="The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice." xml:space="preserve"><value>The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice.</value></data>
+  <data name="The pharmacy store holds no more of batch {0}: check the pack" xml:space="preserve"><value>The pharmacy store holds no more of batch {0}: check the pack</value></data>
+  <data name="This is not a GS1 code this counter can read" xml:space="preserve"><value>This is not a GS1 code this counter can read</value></data>
+  <data name="This pack (serial {0}) was already scanned" xml:space="preserve"><value>This pack (serial {0}) was already scanned</value></data>
+  <data name="This pack expired on {0}: it cannot be given" xml:space="preserve"><value>This pack expired on {0}: it cannot be given</value></data>
+  <data name="This pack is not a medicine of this prescription" xml:space="preserve"><value>This pack is not a medicine of this prescription</value></data>
+  <data name="{0} scanned" xml:space="preserve"><value>{0} scanned</value></data>
 </root>

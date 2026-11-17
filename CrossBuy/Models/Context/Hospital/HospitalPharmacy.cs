@@ -112,6 +112,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalDispenseFillModel.Configure(b);   // H145: each time a dispense line leaves the store (partial dispensing)
 			HospitalDispenseReturnModel.Configure(b);   // H146: medicine the patient brings back
 			HospitalCreditNoteModel.Configure(b);       // H148: credit notes on a closed bill
+			HospitalDispenseScanModel.Configure(b);     // H150: packs scanned at the counter (GS1)
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();
