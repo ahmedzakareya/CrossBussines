@@ -26,11 +26,12 @@
             --cb-ai-ok:#17795E;--cb-ai-ok-bg:#E6F6F1;--cb-ai-part:#4B5675;--cb-ai-part-bg:#EEF1F6}
 
         /* ---- launcher ---- */
-        /* The theme's back-to-top button lives in the same corner and sat UNDER this 60px launcher. It stacks above
-           it instead, centred on it with a 14px gap: 24 + 60 + 14 from the bottom, (60 - 36) / 2 + 24 from the side. */
-        #kt_scrolltop{inset-block-end:calc(98px + env(safe-area-inset-bottom,0px)) !important;
+        /* The theme's back-to-top button lives in the same corner and sat UNDER this 60px launcher. Owner: the assistant
+           stands ON TOP. Back-to-top keeps the corner (30px up, centred on the launcher's column: (60 - 36) / 2 + 24 = 36px
+           in), the launcher stands 14px above it (30 + 36 + 14 = 80px), and the panel opens 12px above the launcher. */
+        #kt_scrolltop{inset-block-end:calc(30px + env(safe-area-inset-bottom,0px)) !important;
             inset-inline-end:calc(36px + env(safe-area-inset-right,0px)) !important;inset-inline-start:auto !important}
-        .cb-ai-fab{position:fixed;inset-block-end:calc(24px + env(safe-area-inset-bottom,0px));
+        .cb-ai-fab{position:fixed;inset-block-end:calc(80px + env(safe-area-inset-bottom,0px));
             inset-inline-end:calc(24px + env(safe-area-inset-right,0px));z-index:1040;
             width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;padding:0;
             background:var(--cb-ai-brand);color:#fff;
@@ -40,9 +41,9 @@
         .cb-ai-fab:focus-visible{outline:3px solid #9CC4F2;outline-offset:3px}
 
         /* ---- panel: hugs its content, capped — never a tall empty box ---- */
-        .cb-ai-panel{position:fixed;inset-block-end:calc(96px + env(safe-area-inset-bottom,0px));
+        .cb-ai-panel{position:fixed;inset-block-end:calc(152px + env(safe-area-inset-bottom,0px));
             inset-inline-end:calc(24px + env(safe-area-inset-right,0px));z-index:1041;
-            width:min(420px,calc(100vw - 24px));max-height:min(720px,calc(100vh - 150px));
+            width:min(420px,calc(100vw - 24px));max-height:min(720px,calc(100vh - 206px));
             background:var(--cb-ai-surface);border-radius:14px;border:1px solid var(--cb-ai-line);
             box-shadow:0 20px 48px rgba(27,27,41,.16),0 2px 6px rgba(27,27,41,.06);
             display:none;flex-direction:column;overflow:hidden;
