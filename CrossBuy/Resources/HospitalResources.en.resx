@@ -8012,4 +8012,60 @@
   <data name="This cycle is still running" xml:space="preserve"><value>This cycle is still running</value></data>
   <data name="cssd:Cycle ended" xml:space="preserve"><value>Cycle ended</value></data>
   <data name="set:Quarantine" xml:space="preserve"><value>In quarantine</value></data>
+  <data name="A value is outside what the rule allows" xml:space="preserve"><value>A value is outside what the rule allows</value></data>
+  <data name="Approve again" xml:space="preserve"><value>Approve again</value></data>
+  <data name="Approve this version" xml:space="preserve"><value>Approve this version</value></data>
+  <data name="Approve {0}, version {1}, for this clinic?" xml:space="preserve"><value>Approve {0}, version {1}, for this clinic?</value></data>
+  <data name="Clinical rules" xml:space="preserve"><value>Clinical rules</value></data>
+  <data name="Each rule the system applies to a patient, with its source" xml:space="preserve"><value>Each rule the system applies to a patient, with its source</value></data>
+  <data name="Enter every value of the rule" xml:space="preserve"><value>Enter every value of the rule</value></data>
+  <data name="Limits" xml:space="preserve"><value>Limits</value></data>
+  <data name="The clinic's values" xml:space="preserve"><value>The clinic's values</value></data>
+  <data name="The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values." xml:space="preserve"><value>The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values.</value></data>
+  <data name="The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults." xml:space="preserve"><value>The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults.</value></data>
+  <data name="This rule changed since the page was opened: approve the version shown now" xml:space="preserve"><value>This rule changed since the page was opened: approve the version shown now</value></data>
+  <data name="What it does" xml:space="preserve"><value>What it does</value></data>
+  <data name="area:Allergy" xml:space="preserve"><value>Allergy</value></data>
+  <data name="area:Cardiology" xml:space="preserve"><value>Cardiology</value></data>
+  <data name="area:Emergency" xml:space="preserve"><value>Emergency</value></data>
+  <data name="area:Nephrology" xml:space="preserve"><value>Nephrology</value></data>
+  <data name="area:Obstetrics" xml:space="preserve"><value>Obstetrics</value></data>
+  <data name="area:Oncology" xml:space="preserve"><value>Oncology</value></data>
+  <data name="area:Pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
+  <data name="param:fluidsAdultPct" xml:space="preserve"><value>IV fluids for an adult from</value></data>
+  <data name="param:fluidsChildPct" xml:space="preserve"><value>IV fluids for a child from</value></data>
+  <data name="param:gfrCap" xml:space="preserve"><value>GFR cap</value></data>
+  <data name="param:largeLocalMm" xml:space="preserve"><value>Large local reaction from</value></data>
+  <data name="param:recencyDays" xml:space="preserve"><value>Oldest eGFR used</value></data>
+  <data name="param:referPartialPct" xml:space="preserve"><value>Refer partial thickness above</value></data>
+  <data name="param:restartStepsDown" xml:space="preserve"><value>Steps down on restart</value></data>
+  <data name="rule:Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="rule:Awaiting" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="rule:Changed" xml:space="preserve"><value>Changed since approval</value></data>
+  <data name="rule:af-stroke:covers" xml:space="preserve"><value>Scores from age and the coded diagnoses, without sex, as in the ESC 2024 guidelines: 0 no anticoagulant, 1 consider, 2 or more recommended.</value></data>
+  <data name="rule:af-stroke:limits" xml:space="preserve"><value>Scored only when atrial fibrillation (I48) is on file; it does not assess bleeding risk, and does not apply to AF with mitral stenosis or mechanical valves.</value></data>
+  <data name="rule:af-stroke:name" xml:space="preserve"><value>Stroke risk in atrial fibrillation (CHA₂DS₂-VA)</value></data>
+  <data name="rule:burns:covers" xml:space="preserve"><value>Computes the %TBSA (rule of nines for an adult, Lund–Browder for a child), Parkland fluids, and suggests a burn-centre referral by the ABA criteria: partial thickness above the approved share, any full thickness, or burns of the face, hands, feet, genitals, perineum or major joints.</value></data>
+  <data name="rule:burns:limits" xml:space="preserve"><value>Does not assess electrical, chemical or inhalation injury or associated trauma; those are added by the doctor's decision. Fluids are a starting point adjusted to urine output.</value></data>
+  <data name="rule:burns:name" xml:space="preserve"><value>Burn size, fluids and referral</value></data>
+  <data name="rule:carboplatin:covers" xml:space="preserve"><value>Dose = AUC × (GFR + 25), with the GFR from the Cockcroft–Gault clearance (× 0.85 for a woman) capped at the approved value.</value></data>
+  <data name="rule:carboplatin:limits" xml:space="preserve"><value>Relies on creatinine and actual body weight; not valid when kidney function is unstable, and needs the doctor's adjustment in severe obesity or wasting.</value></data>
+  <data name="rule:carboplatin:name" xml:space="preserve"><value>Carboplatin dose (Calvert)</value></data>
+  <data name="rule:egfr-dosing:covers" xml:space="preserve"><value>Compares the last stored eGFR with each medicine's review and stop thresholds in its dose limits, and warns of a falling trend.</value></data>
+  <data name="rule:egfr-dosing:limits" xml:space="preserve"><value>Only an eGFR stored within the approved window is used; an older one is not. Not valid in acute kidney injury or on dialysis; the thresholds themselves are the pharmacy's.</value></data>
+  <data name="rule:egfr-dosing:name" xml:space="preserve"><value>Kidney dosing of medicines</value></data>
+  <data name="rule:immunotherapy:covers" xml:space="preserve"><value>The build-up schedule (vials 1:1000 to 1:1, 0.05 to 0.50 mL), a repeated dose after a large local reaction, and a course held after a systemic reaction then resumed the approved number of steps lower.</value></data>
+  <data name="rule:immunotherapy:limits" xml:space="preserve"><value>Does not adjust the dose for a late dose's interval or for uncontrolled asthma; the doctor decides those before each dose.</value></data>
+  <data name="rule:immunotherapy:name" xml:space="preserve"><value>Allergen immunotherapy schedule</value></data>
+  <data name="rule:kdigo:covers" xml:space="preserve"><value>Places the eGFR in G1–G5 and the albumin-to-creatinine ratio in A1–A3, and marks the KDIGO risk cell.</value></data>
+  <data name="rule:kdigo:limits" xml:space="preserve"><value>A single value is shown as provisional: chronic disease is confirmed only when an eGFR below 60 or albuminuria lasts more than three months. Not valid in acute kidney injury, in pregnancy, or under 18.</value></data>
+  <data name="rule:kdigo:name" xml:space="preserve"><value>Chronic kidney disease staging (KDIGO)</value></data>
+  <data name="rule:labour:covers" xml:space="preserve"><value>Plots labour on the partograph (alert and action lines) with maternal and fetal observations.</value></data>
+  <data name="rule:labour:limits" xml:space="preserve"><value>This is the partograph, which the WHO Labour Care Guide replaced in 2020; the move to the Labour Care Guide is not done yet. Not to be relied on alone in early labour before 5 cm.</value></data>
+  <data name="rule:labour:name" xml:space="preserve"><value>Labour monitoring</value></data>
+  <data name="unit:%" xml:space="preserve"><value>%</value></data>
+  <data name="unit:days" xml:space="preserve"><value>days</value></data>
+  <data name="unit:mL/min" xml:space="preserve"><value>mL/min</value></data>
+  <data name="unit:mm" xml:space="preserve"><value>mm</value></data>
+  <data name="unit:steps" xml:space="preserve"><value>steps</value></data>
 </root>

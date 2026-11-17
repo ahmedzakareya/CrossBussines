@@ -1,0 +1,285 @@
+{
+ "unit": "H171 - the clinical rule register: each rule's source, version, cover, limits, the clinic's values and its approval",
+ "strings": {
+  "Clinical rules": {
+   "ar": "القواعد السريرية المعتمدة",
+   "en": "Clinical rules",
+   "fr": "Règles cliniques"
+  },
+  "Each rule the system applies to a patient, with its source": {
+   "ar": "كل قاعدة يطبقها النظام على المريض، ومصدرها",
+   "en": "Each rule the system applies to a patient, with its source",
+   "fr": "Chaque règle que le système applique à un patient, avec sa source"
+  },
+  "The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values.": {
+   "ar": "يعتمد المسؤول السريري الإصدار المعروض. وإذا تغيّرت القاعدة في النظام تغيّر إصدارها وعادت تنتظر الاعتماد. والقاعدة غير المعتمدة تعمل بقيمها المنشورة.",
+   "en": "The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values.",
+   "fr": "Le responsable clinique valide la version affichée. Quand le système modifie une règle, sa version change et elle attend une nouvelle validation. Une règle non validée s'applique avec ses valeurs publiées."
+  },
+  "The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults.": {
+   "ar": "جدول السجل غير منشأ بعد (hospital_h171_clinical_rules.sql): تعمل القواعد بقيمها الافتراضية المنشورة.",
+   "en": "The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults.",
+   "fr": "La table du registre n'est pas encore créée (hospital_h171_clinical_rules.sql) : les règles s'appliquent avec leurs valeurs publiées."
+  },
+  "rule:Approved": {
+   "ar": "معتمدة",
+   "en": "Approved",
+   "fr": "Validée"
+  },
+  "rule:Awaiting": {
+   "ar": "بانتظار الاعتماد",
+   "en": "Awaiting approval",
+   "fr": "En attente de validation"
+  },
+  "rule:Changed": {
+   "ar": "تغيّرت بعد الاعتماد",
+   "en": "Changed since approval",
+   "fr": "Modifiée depuis la validation"
+  },
+  "What it does": {
+   "ar": "ما تفعله",
+   "en": "What it does",
+   "fr": "Ce qu'elle fait"
+  },
+  "Limits": {
+   "ar": "حدودها",
+   "en": "Limits",
+   "fr": "Limites"
+  },
+  "The clinic's values": {
+   "ar": "قيم العيادة",
+   "en": "The clinic's values",
+   "fr": "Valeurs de la clinique"
+  },
+  "Approve this version": {
+   "ar": "اعتماد هذا الإصدار",
+   "en": "Approve this version",
+   "fr": "Valider cette version"
+  },
+  "Approve again": {
+   "ar": "إعادة الاعتماد",
+   "en": "Approve again",
+   "fr": "Valider à nouveau"
+  },
+  "Approve {0}, version {1}, for this clinic?": {
+   "ar": "هل تعتمد «{0}» بالإصدار {1} لهذه المنشأة؟",
+   "en": "Approve {0}, version {1}, for this clinic?",
+   "fr": "Valider « {0} », version {1}, pour cet établissement ?"
+  },
+  "This rule changed since the page was opened: approve the version shown now": {
+   "ar": "تغيّرت هذه القاعدة بعد فتح الصفحة: اعتمد الإصدار المعروض الآن",
+   "en": "This rule changed since the page was opened: approve the version shown now",
+   "fr": "Cette règle a changé depuis l'ouverture de la page : validez la version affichée maintenant"
+  },
+  "Enter every value of the rule": {
+   "ar": "أدخل كل قيم القاعدة",
+   "en": "Enter every value of the rule",
+   "fr": "Saisissez toutes les valeurs de la règle"
+  },
+  "A value is outside what the rule allows": {
+   "ar": "إحدى القيم خارج ما تسمح به القاعدة",
+   "en": "A value is outside what the rule allows",
+   "fr": "Une valeur est hors de ce que la règle autorise"
+  },
+  "area:Nephrology": {
+   "ar": "الكُلى",
+   "en": "Nephrology",
+   "fr": "Néphrologie"
+  },
+  "area:Pharmacy": {
+   "ar": "الصيدلة",
+   "en": "Pharmacy",
+   "fr": "Pharmacie"
+  },
+  "area:Emergency": {
+   "ar": "الطوارئ",
+   "en": "Emergency",
+   "fr": "Urgences"
+  },
+  "area:Obstetrics": {
+   "ar": "التوليد",
+   "en": "Obstetrics",
+   "fr": "Obstétrique"
+  },
+  "area:Cardiology": {
+   "ar": "القلب",
+   "en": "Cardiology",
+   "fr": "Cardiologie"
+  },
+  "area:Oncology": {
+   "ar": "الأورام",
+   "en": "Oncology",
+   "fr": "Oncologie"
+  },
+  "area:Allergy": {
+   "ar": "الحساسية",
+   "en": "Allergy",
+   "fr": "Allergologie"
+  },
+  "param:recencyDays": {
+   "ar": "أقصى عمر لقيمة eGFR",
+   "en": "Oldest eGFR used",
+   "fr": "eGFR le plus ancien utilisé"
+  },
+  "param:referPartialPct": {
+   "ar": "التحويل عند حرق جزئي السماكة يتجاوز",
+   "en": "Refer partial thickness above",
+   "fr": "Orienter si épaisseur partielle au-delà de"
+  },
+  "param:fluidsAdultPct": {
+   "ar": "السوائل الوريدية للبالغ من",
+   "en": "IV fluids for an adult from",
+   "fr": "Perfusion chez l'adulte à partir de"
+  },
+  "param:fluidsChildPct": {
+   "ar": "السوائل الوريدية للطفل من",
+   "en": "IV fluids for a child from",
+   "fr": "Perfusion chez l'enfant à partir de"
+  },
+  "param:gfrCap": {
+   "ar": "الحد الأعلى لتصفية الكرياتينين",
+   "en": "GFR cap",
+   "fr": "Plafond du DFG"
+  },
+  "param:restartStepsDown": {
+   "ar": "درجات النزول عند الاستئناف",
+   "en": "Steps down on restart",
+   "fr": "Paliers de réduction à la reprise"
+  },
+  "param:largeLocalMm": {
+   "ar": "التفاعل الموضعي الكبير من",
+   "en": "Large local reaction from",
+   "fr": "Réaction locale étendue à partir de"
+  },
+  "unit:days": {
+   "ar": "يوم",
+   "en": "days",
+   "fr": "jours"
+  },
+  "unit:%": {
+   "ar": "٪",
+   "en": "%",
+   "fr": "%"
+  },
+  "unit:mL/min": {
+   "ar": "مل/دقيقة",
+   "en": "mL/min",
+   "fr": "mL/min"
+  },
+  "unit:steps": {
+   "ar": "درجة",
+   "en": "steps",
+   "fr": "paliers"
+  },
+  "unit:mm": {
+   "ar": "مم",
+   "en": "mm",
+   "fr": "mm"
+  },
+  "rule:kdigo:name": {
+   "ar": "تصنيف أمراض الكلى المزمنة (KDIGO)",
+   "en": "Chronic kidney disease staging (KDIGO)",
+   "fr": "Classification de la maladie rénale chronique (KDIGO)"
+  },
+  "rule:kdigo:covers": {
+   "ar": "يضع قيمة eGFR في فئة G1–G5 ونسبة الألبومين إلى الكرياتينين في A1–A3، ويحدد خانة الخطورة في جدول KDIGO.",
+   "en": "Places the eGFR in G1–G5 and the albumin-to-creatinine ratio in A1–A3, and marks the KDIGO risk cell.",
+   "fr": "Place le DFGe en G1–G5 et le rapport albumine/créatinine en A1–A3, et indique la case de risque KDIGO."
+  },
+  "rule:kdigo:limits": {
+   "ar": "القيمة الواحدة تُعرض مبدئية: لا يُثبت المرض المزمن إلا إذا استمر eGFR أقل من 60 أو وجود الألبومين في البول أكثر من ثلاثة أشهر. لا تصلح في القصور الكلوي الحاد، ولا في الحمل، ولا لمن هم دون 18 عامًا.",
+   "en": "A single value is shown as provisional: chronic disease is confirmed only when an eGFR below 60 or albuminuria lasts more than three months. Not valid in acute kidney injury, in pregnancy, or under 18.",
+   "fr": "Une valeur isolée est provisoire : la maladie chronique n'est confirmée que si un DFGe inférieur à 60 ou une albuminurie persiste plus de trois mois. Non valable en insuffisance rénale aiguë, pendant la grossesse ou avant 18 ans."
+  },
+  "rule:egfr-dosing:name": {
+   "ar": "ضبط جرعات الأدوية حسب وظائف الكلى",
+   "en": "Kidney dosing of medicines",
+   "fr": "Adaptation des doses à la fonction rénale"
+  },
+  "rule:egfr-dosing:covers": {
+   "ar": "يقارن آخر eGFR مسجل بحدّي المراجعة والإيقاف في حدود جرعة كل دواء، وينبه عند انخفاض متسارع.",
+   "en": "Compares the last stored eGFR with each medicine's review and stop thresholds in its dose limits, and warns of a falling trend.",
+   "fr": "Compare le dernier DFGe enregistré aux seuils de révision et d'arrêt de chaque médicament, et signale une baisse."
+  },
+  "rule:egfr-dosing:limits": {
+   "ar": "لا تُستخدم إلا قيمة eGFR مسجلة خلال المدة المعتمدة؛ والأقدم منها لا يُعتد به. لا تصلح في القصور الكلوي الحاد ولا في غسيل الكلى، والحدود نفسها من مسؤولية الصيدلية.",
+   "en": "Only an eGFR stored within the approved window is used; an older one is not. Not valid in acute kidney injury or on dialysis; the thresholds themselves are the pharmacy's.",
+   "fr": "Seul un DFGe enregistré dans la fenêtre validée est utilisé. Non valable en insuffisance rénale aiguë ni sous dialyse ; les seuils relèvent de la pharmacie."
+  },
+  "rule:burns:name": {
+   "ar": "مساحة الحروق والسوائل والتحويل",
+   "en": "Burn size, fluids and referral",
+   "fr": "Surface brûlée, perfusion et orientation"
+  },
+  "rule:burns:covers": {
+   "ar": "يحسب نسبة المساحة المحروقة (قاعدة التسعات للبالغ، ولوند وبراودر للطفل)، وسوائل باركلاند، ويقترح التحويل إلى مركز حروق وفق معايير الجمعية الأمريكية للحروق: حرق جزئي السماكة فوق النسبة المعتمدة، أو أي حرق كامل السماكة، أو حروق الوجه واليدين والقدمين والأعضاء التناسلية والعجان والمفاصل الكبرى.",
+   "en": "Computes the %TBSA (rule of nines for an adult, Lund–Browder for a child), Parkland fluids, and suggests a burn-centre referral by the ABA criteria: partial thickness above the approved share, any full thickness, or burns of the face, hands, feet, genitals, perineum or major joints.",
+   "fr": "Calcule la SCB (règle des neuf chez l'adulte, Lund–Browder chez l'enfant), la perfusion de Parkland, et propose une orientation en centre des brûlés selon les critères ABA : épaisseur partielle au-delà du seuil validé, toute épaisseur totale, ou brûlures du visage, des mains, des pieds, des organes génitaux, du périnée ou des grandes articulations."
+  },
+  "rule:burns:limits": {
+   "ar": "لا يقيّم الحروق الكهربائية أو الكيميائية أو الاستنشاقية ولا الإصابات المصاحبة؛ تُضاف هذه بقرار الطبيب. السوائل نقطة بداية تُعدَّل حسب إدرار البول.",
+   "en": "Does not assess electrical, chemical or inhalation injury or associated trauma; those are added by the doctor's decision. Fluids are a starting point adjusted to urine output.",
+   "fr": "N'évalue pas les brûlures électriques, chimiques ou par inhalation ni les traumatismes associés ; le médecin les ajoute. La perfusion est un point de départ ajusté à la diurèse."
+  },
+  "rule:labour:name": {
+   "ar": "متابعة المخاض",
+   "en": "Labour monitoring",
+   "fr": "Surveillance du travail"
+  },
+  "rule:labour:covers": {
+   "ar": "يرسم تقدم المخاض على البارتوجراف (خطا الإنذار والفعل) مع العلامات الحيوية للأم والجنين.",
+   "en": "Plots labour on the partograph (alert and action lines) with maternal and fetal observations.",
+   "fr": "Trace le travail sur le partogramme (lignes d'alerte et d'action) avec les observations maternelles et fœtales."
+  },
+  "rule:labour:limits": {
+   "ar": "هذا هو البارتوجراف الذي حلّ محله دليل رعاية المخاض الصادر عن منظمة الصحة العالمية عام 2020؛ والانتقال إليه لم يتم بعد. لا يُعتمد عليه وحده في المخاض المبكر قبل 5 سم.",
+   "en": "This is the partograph, which the WHO Labour Care Guide replaced in 2020; the move to the Labour Care Guide is not done yet. Not to be relied on alone in early labour before 5 cm.",
+   "fr": "Il s'agit du partogramme, remplacé en 2020 par le Labour Care Guide de l'OMS ; le passage n'est pas encore fait. Ne pas s'y fier seul avant 5 cm."
+  },
+  "rule:af-stroke:name": {
+   "ar": "خطر السكتة في الرجفان الأذيني (CHA₂DS₂-VA)",
+   "en": "Stroke risk in atrial fibrillation (CHA₂DS₂-VA)",
+   "fr": "Risque d'AVC dans la fibrillation atriale (CHA₂DS₂-VA)"
+  },
+  "rule:af-stroke:covers": {
+   "ar": "يحسب الدرجة من العمر والتشخيصات المرمّزة دون احتساب الجنس، كما في إرشادات الجمعية الأوروبية لأمراض القلب 2024: صفر بلا مضاد تخثر، وواحد يُنظر فيه، واثنان فأكثر يُوصى به.",
+   "en": "Scores from age and the coded diagnoses, without sex, as in the ESC 2024 guidelines: 0 no anticoagulant, 1 consider, 2 or more recommended.",
+   "fr": "Calcule le score à partir de l'âge et des diagnostics codés, sans le sexe, selon l'ESC 2024 : 0 pas d'anticoagulant, 1 à envisager, 2 ou plus recommandé."
+  },
+  "rule:af-stroke:limits": {
+   "ar": "لا يُحسب إلا بوجود تشخيص رجفان أذيني (I48) في الملف، ولا يقيّم خطر النزف؛ ولا يشمل الرجفان مع تضيق الصمام التاجي أو الصمامات الصناعية.",
+   "en": "Scored only when atrial fibrillation (I48) is on file; it does not assess bleeding risk, and does not apply to AF with mitral stenosis or mechanical valves.",
+   "fr": "Calculé seulement si une fibrillation atriale (I48) figure au dossier ; n'évalue pas le risque hémorragique et ne s'applique pas en cas de rétrécissement mitral ou de valve mécanique."
+  },
+  "rule:carboplatin:name": {
+   "ar": "جرعة الكاربوبلاتين (معادلة كالفيرت)",
+   "en": "Carboplatin dose (Calvert)",
+   "fr": "Dose de carboplatine (Calvert)"
+  },
+  "rule:carboplatin:covers": {
+   "ar": "الجرعة = AUC × (GFR + 25)، وGFR من تصفية كوكروفت وجولت (× 0.85 للمرأة) بحد أعلى معتمد.",
+   "en": "Dose = AUC × (GFR + 25), with the GFR from the Cockcroft–Gault clearance (× 0.85 for a woman) capped at the approved value.",
+   "fr": "Dose = AUC × (DFG + 25), le DFG par Cockcroft–Gault (× 0,85 chez la femme) plafonné à la valeur validée."
+  },
+  "rule:carboplatin:limits": {
+   "ar": "يعتمد على الكرياتينين ووزن الجسم الفعلي؛ لا يصلح عند عدم استقرار وظائف الكلى، ويحتاج تعديلًا يقرره الطبيب في السمنة الشديدة أو الهزال.",
+   "en": "Relies on creatinine and actual body weight; not valid when kidney function is unstable, and needs the doctor's adjustment in severe obesity or wasting.",
+   "fr": "Repose sur la créatinine et le poids réel ; non valable si la fonction rénale est instable, à ajuster par le médecin en cas d'obésité sévère ou de cachexie."
+  },
+  "rule:immunotherapy:name": {
+   "ar": "جدول العلاج المناعي للحساسية",
+   "en": "Allergen immunotherapy schedule",
+   "fr": "Schéma d'immunothérapie allergénique"
+  },
+  "rule:immunotherapy:covers": {
+   "ar": "جدول التصعيد (القوارير 1:1000 إلى 1:1، من 0.05 إلى 0.50 مل)، وتكرار الجرعة بعد تفاعل موضعي كبير، وإيقاف الكورس بعد تفاعل جهازي ثم استئنافه بعدد الدرجات المعتمد أقل.",
+   "en": "The build-up schedule (vials 1:1000 to 1:1, 0.05 to 0.50 mL), a repeated dose after a large local reaction, and a course held after a systemic reaction then resumed the approved number of steps lower.",
+   "fr": "Le schéma de progression (flacons 1:1000 à 1:1, 0,05 à 0,50 mL), la répétition après une réaction locale étendue, et l'arrêt après une réaction systémique puis la reprise du nombre de paliers validé plus bas."
+  },
+  "rule:immunotherapy:limits": {
+   "ar": "لا يعدّل الجرعة حسب الفاصل الزمني بين الجرعات المتأخرة، ولا حسب الربو غير المنضبط؛ يقرر الطبيب ذلك قبل كل جرعة.",
+   "en": "Does not adjust the dose for a late dose's interval or for uncontrolled asthma; the doctor decides those before each dose.",
+   "fr": "N'ajuste pas la dose selon l'intervalle d'une injection en retard ni selon un asthme non contrôlé ; le médecin en décide avant chaque dose."
+  }
+ }
+}

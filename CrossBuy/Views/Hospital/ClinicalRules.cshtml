@@ -1,0 +1,161 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalRuleRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H171 — the clinical rule register: each rule the software applies to a patient, the guideline and version it
+    implements, what it covers and what it does not, the clinic's values, and who approved which version. Cards of the
+    theme (demo39 pages/projects): a header with the rule and its state, the body as label/value rows, the approval at
+    the foot.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Clinical rules"].Value;
+    bool canManage = ViewBag.CanManage == true, notReady = ViewBag.NotReady == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    int approved = Model.Count(r => r.Current), awaiting = Model.Count - approved;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Clinical rules"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Supply & quality"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Clinical rules"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (notReady)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="fs-6 text-gray-700 fw-semibold">@T["The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults."]</div>
+            </div>
+        }
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3">
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Each rule the system applies to a patient, with its source"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values."]</div></div>
+                <div class="d-flex gap-2 flex-shrink-0">
+                    <span class="badge badge-light-primary fs-7 fw-bold px-4 py-2">@T["rule:Approved"]: <span class="hp-num ms-1">@approved</span></span>
+                    <span class="badge badge-light-danger fs-7 fw-bold px-4 py-2">@T["rule:Awaiting"]: <span class="hp-num ms-1">@awaiting</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-5">
+            @foreach (var r in Model)
+            {
+                var d = r.Rule;
+                <div class="col-xl-6"><div class="card card-flush h-100" data-rule="@d.Code">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">@T[d.Name]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["area:" + d.Area]</span>
+                        </h3>
+                        <div class="card-toolbar">
+                            @if (r.Current) { <span class="badge badge-light-primary fs-7 fw-bold">@T["rule:Approved"]</span> }
+                            else if (r.Latest != null) { <span class="badge badge-light-danger fs-7 fw-bold">@T["rule:Changed"]</span> }
+                            else { <span class="badge badge-light-danger fs-7 fw-bold">@T["rule:Awaiting"]</span> }
+                        </div>
+                    </div>
+                    <div class="card-body pt-3">
+                        <div class="d-flex flex-column gap-4">
+                            <div><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Source"]</div><div class="text-gray-900 fw-semibold fs-7" dir="ltr" style="text-align:start">@d.Reference</div></div>
+                            <div><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Version"]</div><bdi class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">@d.Version</bdi></div>
+                            <div><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["What it does"]</div><div class="text-gray-800 fs-7">@T[d.Covers]</div></div>
+                            <div><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Limits"]</div><div class="text-gray-800 fs-7">@T[d.Limits]</div></div>
+                            @if (d.Params.Count > 0)
+                            {
+                                <div><div class="text-gray-500 fw-semibold fs-8 mb-2">@T["The clinic's values"]</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var p in d.Params)
+                                        {
+                                            <span class="badge badge-light-info fs-8 fw-bold py-2 px-3">@T["param:" + p.Key]: <bdi class="hp-num ms-1" dir="ltr">@r.Values[p.Key].ToString("0.##", inv) @T["unit:" + p.Unit]</bdi></span>
+                                        }
+                                    </div></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex flex-stack flex-wrap gap-3 pt-0 border-0">
+                        <div class="fs-8 fw-semibold text-gray-600">
+                            @if (r.Latest != null)
+                            {
+                                <span>@T["Approved by"] <span class="text-gray-900">@(r.ApprovedBy ?? "—")</span> · <span class="hp-num" dir="ltr">@r.Latest.ApprovedAt.ToLocalTime().ToString("yyyy-MM-dd", inv)</span> · @T["Version"] <bdi class="hp-num" dir="ltr">@r.Latest.Version</bdi></span>
+                                @if (r.Latest.Note != null) { <div class="text-muted mt-1" dir="auto">@r.Latest.Note</div> }
+                            }
+                            else { <span>@T["Not approved yet"]</span> }
+                        </div>
+                        @if (canManage && !notReady)
+                        {
+                            <button type="button" class="btn btn-sm @(r.Current ? "btn-light-primary" : "btn-primary")" data-approve="@d.Code" data-version="@d.Version" data-name="@T[d.Name]"
+                                    data-params='@Json.Serialize(d.Params.Select(p => new { key = p.Key, label = T["param:" + p.Key].Value, unit = T["unit:" + p.Unit].Value, min = p.Min, max = p.Max, value = r.Values[p.Key] }))'>
+                                <i class="ki-outline ki-shield-tick fs-5"></i>@(r.Current ? T["Approve again"] : T["Approve this version"])</button>
+                        }
+                    </div>
+                </div></div>
+            }
+        </div>
+    </div></div>
+</div>
+
+@if (canManage && !notReady)
+{
+    <div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3" data-rule-name></h1><div class="text-muted fw-semibold fs-5">@T["Version"] <bdi class="hp-num" dir="ltr" data-rule-version></bdi></div></div>
+            <div class="row g-6" data-rule-params></div>
+            <div class="mt-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-rule-note></textarea></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rule-save>@T["Approve this version"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokenEl) return;
+            var token = tokenEl.value, url = @Json.Serialize(Url.Content("~/Hospital/ClinicalRules/Approve"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Approve {0}, version {1}, for this clinic?"].Value) };
+            var m = document.getElementById('ruleModal'), cur = null;
+            function toast(k, s) { if (window.toastr) toastr[k](s); }
+            function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-approve],[data-rule-save]'); if (!t || !m) return;
+                if (t.hasAttribute('data-approve')) {
+                    cur = { code: t.getAttribute('data-approve'), version: t.getAttribute('data-version'), name: t.getAttribute('data-name'), params: JSON.parse(t.getAttribute('data-params') || '[]') };
+                    m.querySelector('[data-rule-name]').textContent = cur.name; m.querySelector('[data-rule-version]').textContent = cur.version;
+                    m.querySelector('[data-rule-params]').innerHTML = cur.params.map(function (p) {
+                        return '<div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">' + esc(p.label) + ' <span class="text-muted fs-8">(' + esc(p.unit) + ')</span></label>'
+                            + '<input type="number" class="form-control form-control-solid hp-num" data-p="' + esc(p.key) + '" min="' + p.min + '" max="' + p.max + '" value="' + p.value + '" />'
+                            + '<div class="text-muted fs-8 mt-1 hp-num" dir="ltr">' + p.min + ' – ' + p.max + '</div></div>';
+                    }).join('');
+                    m.querySelector('[data-rule-note]').value = '';
+                    bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                }
+                var values = {}; m.querySelectorAll('[data-p]').forEach(function (i) { values[i.getAttribute('data-p')] = i.value === '' ? null : +i.value; });
+                cbConfirm(W.ask.replace('{0}', cur.name).replace('{1}', cur.version)).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                        body: JSON.stringify({ code: cur.code, version: cur.version, values: values, note: m.querySelector('[data-rule-note]').value || null }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toast('success', W.saved); swap(); });
+                });
+            });
+        })();
+    </script>
+}

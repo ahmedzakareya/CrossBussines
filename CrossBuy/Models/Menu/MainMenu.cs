@@ -535,6 +535,7 @@
 				new() { LabelAr = "بلاغات الحوادث", LabelEn = "Incident reports", Action = "Incidents", Controller = "Hospital" },
 				new() { LabelAr = "الوصول الطارئ للملفات", LabelEn = "Emergency file access", Action = "BreakGlassLog", Controller = "Hospital" },
 				new() { LabelAr = "استبيانات رضا المرضى", LabelEn = "Satisfaction surveys", Action = "Surveys", Controller = "Hospital" },
+				new() { LabelAr = "القواعد السريرية المعتمدة", LabelEn = "Clinical rules", Action = "ClinicalRules", Controller = "Hospital" },   // H171
 			}},
 			new() { LabelAr = "الأطباء والعاملون", LabelEn = "Doctors & staff", Icon = "ki-outline ki-people", Items = new()
 			{

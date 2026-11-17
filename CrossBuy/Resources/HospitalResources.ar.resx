@@ -8012,4 +8012,60 @@
   <data name="This cycle is still running" xml:space="preserve"><value>هذه الدورة ما زالت قيد التشغيل</value></data>
   <data name="cssd:Cycle ended" xml:space="preserve"><value>انتهت الدورة</value></data>
   <data name="set:Quarantine" xml:space="preserve"><value>في الحجر بانتظار الإفراج</value></data>
+  <data name="A value is outside what the rule allows" xml:space="preserve"><value>إحدى القيم خارج ما تسمح به القاعدة</value></data>
+  <data name="Approve again" xml:space="preserve"><value>إعادة الاعتماد</value></data>
+  <data name="Approve this version" xml:space="preserve"><value>اعتماد هذا الإصدار</value></data>
+  <data name="Approve {0}, version {1}, for this clinic?" xml:space="preserve"><value>هل تعتمد «{0}» بالإصدار {1} لهذه المنشأة؟</value></data>
+  <data name="Clinical rules" xml:space="preserve"><value>القواعد السريرية المعتمدة</value></data>
+  <data name="Each rule the system applies to a patient, with its source" xml:space="preserve"><value>كل قاعدة يطبقها النظام على المريض، ومصدرها</value></data>
+  <data name="Enter every value of the rule" xml:space="preserve"><value>أدخل كل قيم القاعدة</value></data>
+  <data name="Limits" xml:space="preserve"><value>حدودها</value></data>
+  <data name="The clinic's values" xml:space="preserve"><value>قيم العيادة</value></data>
+  <data name="The clinical lead approves the version shown. When the system changes a rule, its version changes and it waits for approval again. An unapproved rule still runs on its published values." xml:space="preserve"><value>يعتمد المسؤول السريري الإصدار المعروض. وإذا تغيّرت القاعدة في النظام تغيّر إصدارها وعادت تنتظر الاعتماد. والقاعدة غير المعتمدة تعمل بقيمها المنشورة.</value></data>
+  <data name="The register's table is not created yet (hospital_h171_clinical_rules.sql): the rules run on their published defaults." xml:space="preserve"><value>جدول السجل غير منشأ بعد (hospital_h171_clinical_rules.sql): تعمل القواعد بقيمها الافتراضية المنشورة.</value></data>
+  <data name="This rule changed since the page was opened: approve the version shown now" xml:space="preserve"><value>تغيّرت هذه القاعدة بعد فتح الصفحة: اعتمد الإصدار المعروض الآن</value></data>
+  <data name="What it does" xml:space="preserve"><value>ما تفعله</value></data>
+  <data name="area:Allergy" xml:space="preserve"><value>الحساسية</value></data>
+  <data name="area:Cardiology" xml:space="preserve"><value>القلب</value></data>
+  <data name="area:Emergency" xml:space="preserve"><value>الطوارئ</value></data>
+  <data name="area:Nephrology" xml:space="preserve"><value>الكُلى</value></data>
+  <data name="area:Obstetrics" xml:space="preserve"><value>التوليد</value></data>
+  <data name="area:Oncology" xml:space="preserve"><value>الأورام</value></data>
+  <data name="area:Pharmacy" xml:space="preserve"><value>الصيدلة</value></data>
+  <data name="param:fluidsAdultPct" xml:space="preserve"><value>السوائل الوريدية للبالغ من</value></data>
+  <data name="param:fluidsChildPct" xml:space="preserve"><value>السوائل الوريدية للطفل من</value></data>
+  <data name="param:gfrCap" xml:space="preserve"><value>الحد الأعلى لتصفية الكرياتينين</value></data>
+  <data name="param:largeLocalMm" xml:space="preserve"><value>التفاعل الموضعي الكبير من</value></data>
+  <data name="param:recencyDays" xml:space="preserve"><value>أقصى عمر لقيمة eGFR</value></data>
+  <data name="param:referPartialPct" xml:space="preserve"><value>التحويل عند حرق جزئي السماكة يتجاوز</value></data>
+  <data name="param:restartStepsDown" xml:space="preserve"><value>درجات النزول عند الاستئناف</value></data>
+  <data name="rule:Approved" xml:space="preserve"><value>معتمدة</value></data>
+  <data name="rule:Awaiting" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="rule:Changed" xml:space="preserve"><value>تغيّرت بعد الاعتماد</value></data>
+  <data name="rule:af-stroke:covers" xml:space="preserve"><value>يحسب الدرجة من العمر والتشخيصات المرمّزة دون احتساب الجنس، كما في إرشادات الجمعية الأوروبية لأمراض القلب 2024: صفر بلا مضاد تخثر، وواحد يُنظر فيه، واثنان فأكثر يُوصى به.</value></data>
+  <data name="rule:af-stroke:limits" xml:space="preserve"><value>لا يُحسب إلا بوجود تشخيص رجفان أذيني (I48) في الملف، ولا يقيّم خطر النزف؛ ولا يشمل الرجفان مع تضيق الصمام التاجي أو الصمامات الصناعية.</value></data>
+  <data name="rule:af-stroke:name" xml:space="preserve"><value>خطر السكتة في الرجفان الأذيني (CHA₂DS₂-VA)</value></data>
+  <data name="rule:burns:covers" xml:space="preserve"><value>يحسب نسبة المساحة المحروقة (قاعدة التسعات للبالغ، ولوند وبراودر للطفل)، وسوائل باركلاند، ويقترح التحويل إلى مركز حروق وفق معايير الجمعية الأمريكية للحروق: حرق جزئي السماكة فوق النسبة المعتمدة، أو أي حرق كامل السماكة، أو حروق الوجه واليدين والقدمين والأعضاء التناسلية والعجان والمفاصل الكبرى.</value></data>
+  <data name="rule:burns:limits" xml:space="preserve"><value>لا يقيّم الحروق الكهربائية أو الكيميائية أو الاستنشاقية ولا الإصابات المصاحبة؛ تُضاف هذه بقرار الطبيب. السوائل نقطة بداية تُعدَّل حسب إدرار البول.</value></data>
+  <data name="rule:burns:name" xml:space="preserve"><value>مساحة الحروق والسوائل والتحويل</value></data>
+  <data name="rule:carboplatin:covers" xml:space="preserve"><value>الجرعة = AUC × (GFR + 25)، وGFR من تصفية كوكروفت وجولت (× 0.85 للمرأة) بحد أعلى معتمد.</value></data>
+  <data name="rule:carboplatin:limits" xml:space="preserve"><value>يعتمد على الكرياتينين ووزن الجسم الفعلي؛ لا يصلح عند عدم استقرار وظائف الكلى، ويحتاج تعديلًا يقرره الطبيب في السمنة الشديدة أو الهزال.</value></data>
+  <data name="rule:carboplatin:name" xml:space="preserve"><value>جرعة الكاربوبلاتين (معادلة كالفيرت)</value></data>
+  <data name="rule:egfr-dosing:covers" xml:space="preserve"><value>يقارن آخر eGFR مسجل بحدّي المراجعة والإيقاف في حدود جرعة كل دواء، وينبه عند انخفاض متسارع.</value></data>
+  <data name="rule:egfr-dosing:limits" xml:space="preserve"><value>لا تُستخدم إلا قيمة eGFR مسجلة خلال المدة المعتمدة؛ والأقدم منها لا يُعتد به. لا تصلح في القصور الكلوي الحاد ولا في غسيل الكلى، والحدود نفسها من مسؤولية الصيدلية.</value></data>
+  <data name="rule:egfr-dosing:name" xml:space="preserve"><value>ضبط جرعات الأدوية حسب وظائف الكلى</value></data>
+  <data name="rule:immunotherapy:covers" xml:space="preserve"><value>جدول التصعيد (القوارير 1:1000 إلى 1:1، من 0.05 إلى 0.50 مل)، وتكرار الجرعة بعد تفاعل موضعي كبير، وإيقاف الكورس بعد تفاعل جهازي ثم استئنافه بعدد الدرجات المعتمد أقل.</value></data>
+  <data name="rule:immunotherapy:limits" xml:space="preserve"><value>لا يعدّل الجرعة حسب الفاصل الزمني بين الجرعات المتأخرة، ولا حسب الربو غير المنضبط؛ يقرر الطبيب ذلك قبل كل جرعة.</value></data>
+  <data name="rule:immunotherapy:name" xml:space="preserve"><value>جدول العلاج المناعي للحساسية</value></data>
+  <data name="rule:kdigo:covers" xml:space="preserve"><value>يضع قيمة eGFR في فئة G1–G5 ونسبة الألبومين إلى الكرياتينين في A1–A3، ويحدد خانة الخطورة في جدول KDIGO.</value></data>
+  <data name="rule:kdigo:limits" xml:space="preserve"><value>القيمة الواحدة تُعرض مبدئية: لا يُثبت المرض المزمن إلا إذا استمر eGFR أقل من 60 أو وجود الألبومين في البول أكثر من ثلاثة أشهر. لا تصلح في القصور الكلوي الحاد، ولا في الحمل، ولا لمن هم دون 18 عامًا.</value></data>
+  <data name="rule:kdigo:name" xml:space="preserve"><value>تصنيف أمراض الكلى المزمنة (KDIGO)</value></data>
+  <data name="rule:labour:covers" xml:space="preserve"><value>يرسم تقدم المخاض على البارتوجراف (خطا الإنذار والفعل) مع العلامات الحيوية للأم والجنين.</value></data>
+  <data name="rule:labour:limits" xml:space="preserve"><value>هذا هو البارتوجراف الذي حلّ محله دليل رعاية المخاض الصادر عن منظمة الصحة العالمية عام 2020؛ والانتقال إليه لم يتم بعد. لا يُعتمد عليه وحده في المخاض المبكر قبل 5 سم.</value></data>
+  <data name="rule:labour:name" xml:space="preserve"><value>متابعة المخاض</value></data>
+  <data name="unit:%" xml:space="preserve"><value>٪</value></data>
+  <data name="unit:days" xml:space="preserve"><value>يوم</value></data>
+  <data name="unit:mL/min" xml:space="preserve"><value>مل/دقيقة</value></data>
+  <data name="unit:mm" xml:space="preserve"><value>مم</value></data>
+  <data name="unit:steps" xml:space="preserve"><value>درجة</value></data>
 </root>
