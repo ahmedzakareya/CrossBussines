@@ -32,6 +32,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H162
 		[HttpPost("FrontDesk/Coverage/{id:int}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskVerifyCoverage(int id, [FromBody] HospitalVisitCoverageInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

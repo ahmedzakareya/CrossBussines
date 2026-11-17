@@ -35,6 +35,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H159
 		[HttpPost("FrontDesk/Gaps"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskOpenGap([FromBody] HospitalCheckinGapInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

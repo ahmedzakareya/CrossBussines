@@ -25,6 +25,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Patient/{id:int}/Deposit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskTakeDeposit(int id, [FromBody] HospitalDepositTakeInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
@@ -35,6 +36,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H157: the counter's collect — the identity check first, then the billing service
 		[HttpPost("FrontDesk/Bill/{id:int}/Collect"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskCollect(int id, [FromBody] HospitalDeskCollectInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
@@ -45,6 +47,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Bill/{id:int}/UseDeposit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskUseDeposit(int id, [FromBody] HospitalDepositUseInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
@@ -54,6 +57,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Deposits/{id:int}/Refund"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskRefundDeposit(int id, [FromBody] HospitalDepositRefundInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

@@ -7863,4 +7863,44 @@
   <data name="Someone took it a moment ago: refresh the list" xml:space="preserve"><value>تسلّمه زميل قبل لحظات: حدّث القائمة</value></data>
   <data name="This item is yours already" xml:space="preserve"><value>هذا البند مسند إليك بالفعل</value></data>
   <data name="Give back" xml:space="preserve"><value>إعادته إلى الجميع</value></data>
+  <data name="Acknowledge" xml:space="preserve"><value>تأكيد الاستلام</value></data>
+  <data name="Cash difference" xml:space="preserve"><value>فرق النقدية</value></data>
+  <data name="Check-in gaps I own" xml:space="preserve"><value>نواقص التسجيل المسندة إليّ</value></data>
+  <data name="Choose the colleague who takes over" xml:space="preserve"><value>اختر الزميل الذي يتسلّم الوردية</value></data>
+  <data name="Close your cash shift at the cashier first: count the drawer, then hand over" xml:space="preserve"><value>أغلق وردية النقدية لدى الخزينة أولًا: عُدّ الدرج ثم سلّم الوردية</value></data>
+  <data name="Hand over my shift" xml:space="preserve"><value>تسليم ورديتي</value></data>
+  <data name="Hand over to a colleague, not to yourself" xml:space="preserve"><value>سلّم الوردية إلى زميل لا إلى نفسك</value></data>
+  <data name="Hand your shift over to {0}? Your queue items and check-in gaps become theirs." xml:space="preserve"><value>هل تريد تسليم ورديتك إلى {0}؟ ستنتقل إليه بنود القوائم ونواقص التسجيل المسندة إليك.</value></data>
+  <data name="Handed to {0}" xml:space="preserve"><value>سُلِّمت إلى {0}</value></data>
+  <data name="Handoffs I sent, still open" xml:space="preserve"><value>تسليمات أرسلتها ولم تُغلق بعد</value></data>
+  <data name="Latest handovers" xml:space="preserve"><value>آخر عمليات التسليم</value></data>
+  <data name="No cash shift today." xml:space="preserve"><value>لا توجد وردية نقدية اليوم.</value></data>
+  <data name="Not acknowledged yet" xml:space="preserve"><value>لم يُؤكَّد الاستلام بعد</value></data>
+  <data name="Note for the colleague" xml:space="preserve"><value>ملاحظة للزميل</value></data>
+  <data name="Nothing to hand over: write a note if there is something to say" xml:space="preserve"><value>لا يوجد ما يُسلَّم: اكتب ملاحظة إن كان هناك ما يُقال</value></data>
+  <data name="Only the colleague who takes over acknowledges" xml:space="preserve"><value>لا يؤكد الاستلام إلا الزميل المتسلِّم</value></data>
+  <data name="Queue items" xml:space="preserve"><value>بنود القوائم</value></data>
+  <data name="Queue items I took" xml:space="preserve"><value>بنود القوائم التي تسلّمتها</value></data>
+  <data name="Received from {0}" xml:space="preserve"><value>استُلمت من {0}</value></data>
+  <data name="The cash" xml:space="preserve"><value>النقدية</value></data>
+  <data name="The shift is handed over" xml:space="preserve"><value>سُلِّمت الوردية</value></data>
+  <data name="This handover is acknowledged already" xml:space="preserve"><value>أُكِّد استلام هذه الوردية بالفعل</value></data>
+  <data name="What is waiting, who is expected back, what was promised…" xml:space="preserve"><value>ما الذي ينتظر، ومن يُتوقع عودته، وما الذي وُعد به…</value></data>
+  <data name="Who takes over" xml:space="preserve"><value>الزميل المتسلِّم</value></data>
+  <data name="Your cash shift is still open: count the drawer and close it at the cashier, then hand over." xml:space="preserve"><value>وردية النقدية لديك ما زالت مفتوحة: عُدّ الدرج وأغلقها لدى الخزينة، ثم سلّم الوردية.</value></data>
+  <data name="{0} handed their shift to you" xml:space="preserve"><value>سلّمك {0} ورديته</value></data>
+  <data name="Connected" xml:space="preserve"><value>متصل</value></data>
+  <data name="Connected again; the board is up to date" xml:space="preserve"><value>عاد الاتصال، وحُدِّثت اللوحة</value></data>
+  <data name="Connected · updated {0}" xml:space="preserve"><value>متصل · آخر تحديث {0}</value></data>
+  <data name="Connection lost — retrying" xml:space="preserve"><value>انقطع الاتصال — جارٍ إعادة المحاولة</value></data>
+  <data name="No answer from the server: nothing is lost — press again, it will not be done twice" xml:space="preserve"><value>لم يصل رد من الخادم: لم يضع شيء — اضغط مجددًا، ولن يُنفَّذ الإجراء مرتين</value></data>
+  <data name="Open the patient again and print from the card" xml:space="preserve"><value>افتح المريض مجددًا واطبع من البطاقة</value></data>
+  <data name="Paper" xml:space="preserve"><value>مستند</value></data>
+  <data name="Print again" xml:space="preserve"><value>إعادة الطباعة</value></data>
+  <data name="Saved, but not printed" xml:space="preserve"><value>حُفظ العمل ولم يُطبع</value></data>
+  <data name="Saved, but the paper could not be printed: try again from the strip at the top" xml:space="preserve"><value>حُفظ العمل لكن تعذّرت طباعة المستند: أعد المحاولة من الشريط أعلى الصفحة</value></data>
+  <data name="The desk asks the server every half minute" xml:space="preserve"><value>يتحقق الاستقبال من الخادم كل نصف دقيقة</value></data>
+  <data name="The request key is too long" xml:space="preserve"><value>مفتاح الطلب طويل جدًا</value></data>
+  <data name="This request is still being handled" xml:space="preserve"><value>ما زال هذا الطلب قيد التنفيذ</value></data>
+  <data name="This request key belongs to another request" xml:space="preserve"><value>مفتاح الطلب هذا يخص طلبًا آخر</value></data>
 </root>

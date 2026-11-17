@@ -1,0 +1,75 @@
+{
+ "unit": "H166 - the desk's continuity: connection state, an action sent twice done once, saved but not printed",
+ "strings": {
+  "Connected": {
+   "ar": "متصل",
+   "en": "Connected",
+   "fr": "Connecté"
+  },
+  "Connected again; the board is up to date": {
+   "ar": "عاد الاتصال، وحُدِّثت اللوحة",
+   "en": "Connected again; the board is up to date",
+   "fr": "Connexion rétablie ; le tableau est à jour"
+  },
+  "Connected · updated {0}": {
+   "ar": "متصل · آخر تحديث {0}",
+   "en": "Connected · updated {0}",
+   "fr": "Connecté · mis à jour {0}"
+  },
+  "Connection lost — retrying": {
+   "ar": "انقطع الاتصال — جارٍ إعادة المحاولة",
+   "en": "Connection lost — retrying",
+   "fr": "Connexion perdue — nouvel essai"
+  },
+  "No answer from the server: nothing is lost — press again, it will not be done twice": {
+   "ar": "لم يصل رد من الخادم: لم يضع شيء — اضغط مجددًا، ولن يُنفَّذ الإجراء مرتين",
+   "en": "No answer from the server: nothing is lost — press again, it will not be done twice",
+   "fr": "Pas de réponse du serveur : rien n'est perdu — appuyez à nouveau, l'action ne sera pas faite deux fois"
+  },
+  "Open the patient again and print from the card": {
+   "ar": "افتح المريض مجددًا واطبع من البطاقة",
+   "en": "Open the patient again and print from the card",
+   "fr": "Rouvrez le patient et imprimez depuis la fiche"
+  },
+  "Paper": {
+   "ar": "مستند",
+   "en": "Paper",
+   "fr": "Document"
+  },
+  "Print again": {
+   "ar": "إعادة الطباعة",
+   "en": "Print again",
+   "fr": "Réimprimer"
+  },
+  "Saved, but not printed": {
+   "ar": "حُفظ العمل ولم يُطبع",
+   "en": "Saved, but not printed",
+   "fr": "Enregistré, mais non imprimé"
+  },
+  "Saved, but the paper could not be printed: try again from the strip at the top": {
+   "ar": "حُفظ العمل لكن تعذّرت طباعة المستند: أعد المحاولة من الشريط أعلى الصفحة",
+   "en": "Saved, but the paper could not be printed: try again from the strip at the top",
+   "fr": "Enregistré, mais le document n'a pas pu être imprimé : réessayez depuis le bandeau en haut"
+  },
+  "The desk asks the server every half minute": {
+   "ar": "يتحقق الاستقبال من الخادم كل نصف دقيقة",
+   "en": "The desk asks the server every half minute",
+   "fr": "L'accueil interroge le serveur toutes les trente secondes"
+  },
+  "The request key is too long": {
+   "ar": "مفتاح الطلب طويل جدًا",
+   "en": "The request key is too long",
+   "fr": "La clé de requête est trop longue"
+  },
+  "This request is still being handled": {
+   "ar": "ما زال هذا الطلب قيد التنفيذ",
+   "en": "This request is still being handled",
+   "fr": "Cette requête est encore en cours"
+  },
+  "This request key belongs to another request": {
+   "ar": "مفتاح الطلب هذا يخص طلبًا آخر",
+   "en": "This request key belongs to another request",
+   "fr": "Cette clé appartient à une autre requête"
+  }
+ }
+}

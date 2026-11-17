@@ -1,0 +1,135 @@
+{
+ "unit": "H165 - the desk's shift handover: work and cash passed to a named colleague, acknowledged",
+ "strings": {
+  "Acknowledge": {
+   "ar": "تأكيد الاستلام",
+   "en": "Acknowledge",
+   "fr": "Accuser réception"
+  },
+  "Cash difference": {
+   "ar": "فرق النقدية",
+   "en": "Cash difference",
+   "fr": "Écart de caisse"
+  },
+  "Check-in gaps I own": {
+   "ar": "نواقص التسجيل المسندة إليّ",
+   "en": "Check-in gaps I own",
+   "fr": "Formalités qui me sont attribuées"
+  },
+  "Choose the colleague who takes over": {
+   "ar": "اختر الزميل الذي يتسلّم الوردية",
+   "en": "Choose the colleague who takes over",
+   "fr": "Choisissez le collègue qui prend le relais"
+  },
+  "Close your cash shift at the cashier first: count the drawer, then hand over": {
+   "ar": "أغلق وردية النقدية لدى الخزينة أولًا: عُدّ الدرج ثم سلّم الوردية",
+   "en": "Close your cash shift at the cashier first: count the drawer, then hand over",
+   "fr": "Clôturez d'abord votre caisse : comptez le tiroir, puis passez le relais"
+  },
+  "Hand over my shift": {
+   "ar": "تسليم ورديتي",
+   "en": "Hand over my shift",
+   "fr": "Passer le relais"
+  },
+  "Hand over to a colleague, not to yourself": {
+   "ar": "سلّم الوردية إلى زميل لا إلى نفسك",
+   "en": "Hand over to a colleague, not to yourself",
+   "fr": "Passez le relais à un collègue, pas à vous-même"
+  },
+  "Hand your shift over to {0}? Your queue items and check-in gaps become theirs.": {
+   "ar": "هل تريد تسليم ورديتك إلى {0}؟ ستنتقل إليه بنود القوائم ونواقص التسجيل المسندة إليك.",
+   "en": "Hand your shift over to {0}? Your queue items and check-in gaps become theirs.",
+   "fr": "Passer le relais à {0} ? Vos éléments de file et formalités lui seront attribués."
+  },
+  "Handoffs I sent, still open": {
+   "ar": "تسليمات أرسلتها ولم تُغلق بعد",
+   "en": "Handoffs I sent, still open",
+   "fr": "Transferts envoyés encore ouverts"
+  },
+  "Latest handovers": {
+   "ar": "آخر عمليات التسليم",
+   "en": "Latest handovers",
+   "fr": "Derniers relais"
+  },
+  "No cash shift today.": {
+   "ar": "لا توجد وردية نقدية اليوم.",
+   "en": "No cash shift today.",
+   "fr": "Aucune caisse aujourd'hui."
+  },
+  "Not acknowledged yet": {
+   "ar": "لم يُؤكَّد الاستلام بعد",
+   "en": "Not acknowledged yet",
+   "fr": "Réception non encore accusée"
+  },
+  "Note for the colleague": {
+   "ar": "ملاحظة للزميل",
+   "en": "Note for the colleague",
+   "fr": "Note pour le collègue"
+  },
+  "Nothing to hand over: write a note if there is something to say": {
+   "ar": "لا يوجد ما يُسلَّم: اكتب ملاحظة إن كان هناك ما يُقال",
+   "en": "Nothing to hand over: write a note if there is something to say",
+   "fr": "Rien à transmettre : écrivez une note s'il y a quelque chose à dire"
+  },
+  "Only the colleague who takes over acknowledges": {
+   "ar": "لا يؤكد الاستلام إلا الزميل المتسلِّم",
+   "en": "Only the colleague who takes over acknowledges",
+   "fr": "Seul le collègue qui prend le relais accuse réception"
+  },
+  "Queue items": {
+   "ar": "بنود القوائم",
+   "en": "Queue items",
+   "fr": "Éléments de file"
+  },
+  "Queue items I took": {
+   "ar": "بنود القوائم التي تسلّمتها",
+   "en": "Queue items I took",
+   "fr": "Éléments de file que j'ai pris"
+  },
+  "The cash": {
+   "ar": "النقدية",
+   "en": "The cash",
+   "fr": "La caisse"
+  },
+  "The shift is handed over": {
+   "ar": "سُلِّمت الوردية",
+   "en": "The shift is handed over",
+   "fr": "Le relais est passé"
+  },
+  "This handover is acknowledged already": {
+   "ar": "أُكِّد استلام هذه الوردية بالفعل",
+   "en": "This handover is acknowledged already",
+   "fr": "Ce relais est déjà accusé"
+  },
+  "What is waiting, who is expected back, what was promised…": {
+   "ar": "ما الذي ينتظر، ومن يُتوقع عودته، وما الذي وُعد به…",
+   "en": "What is waiting, who is expected back, what was promised…",
+   "fr": "Ce qui attend, qui doit revenir, ce qui a été promis…"
+  },
+  "Who takes over": {
+   "ar": "الزميل المتسلِّم",
+   "en": "Who takes over",
+   "fr": "Qui prend le relais"
+  },
+  "Your cash shift is still open: count the drawer and close it at the cashier, then hand over.": {
+   "ar": "وردية النقدية لديك ما زالت مفتوحة: عُدّ الدرج وأغلقها لدى الخزينة، ثم سلّم الوردية.",
+   "en": "Your cash shift is still open: count the drawer and close it at the cashier, then hand over.",
+   "fr": "Votre caisse est encore ouverte : comptez le tiroir et clôturez-la, puis passez le relais."
+  },
+  "Handed to {0}": {
+   "ar": "سُلِّمت إلى {0}",
+   "en": "Handed to {0}",
+   "fr": "Passé à {0}"
+  },
+  "Received from {0}": {
+   "ar": "استُلمت من {0}",
+   "en": "Received from {0}",
+   "fr": "Reçu de {0}"
+  },
+  "{0} handed their shift to you": {
+   "ar": "سلّمك {0} ورديته",
+   "en": "{0} handed their shift to you",
+   "fr": "{0} vous a passé le relais"
+  }
+ }
+}

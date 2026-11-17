@@ -52,6 +52,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Gaps = await GapSvc.CountsAsync(ctx, ctx.EmployeeId, today, ct);
 			ViewBag.Checkouts = (await CheckoutSvc.AwaitingAsync(ctx, today, ct)).Count;   // H160
 			ViewBag.ToCall = (await DisruptionSvc.ToCallAsync(ctx, ct)).Count;   // H161
+			ViewBag.HandoversPending = ctx.EmployeeId is int me0 ? (await HandoverSvc.ForMeAsync(ctx, me0, ct)).Pending : Array.Empty<HospitalHandoverRow>();   // H165
 			ViewBag.StageCounts = board.GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count());
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.Doctors = await _outpatient.PractitionersAsync(ctx, ct);
@@ -202,6 +203,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/WalkIn"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskWalkIn([FromBody] HospitalDeskWalkInInput input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

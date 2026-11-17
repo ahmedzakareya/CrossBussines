@@ -1,0 +1,65 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H165 — hand over my shift: what I hold (queue items taken, check-in gaps, the overdue among them, the handoffs I sent
+   still open), the cash (an open shift must be counted at the cashier first; the closed one is copied in), the colleague
+   who takes over (select2) and a note; the last handovers I gave or received. *@
+@{
+    var h = (HospitalHoldings)ViewBag.Holdings; var people = ViewBag.People as IReadOnlyList<HospitalDeskPerson> ?? Array.Empty<HospitalDeskPerson>();
+    var recent = ViewBag.Recent as IReadOnlyList<HospitalHandoverRow> ?? Array.Empty<HospitalHandoverRow>(); int me = ViewBag.Me;
+    var inv = System.Globalization.CultureInfo.InvariantCulture; int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
+    string Money(decimal? v) => (v ?? 0).ToString("N" + dp, inv);
+    var tiles = new[] { (T["Queue items I took"].Value, h.QueueItems, "ki-questionnaire-tablet", false), (T["Check-in gaps I own"].Value, h.Gaps, "ki-notepad-edit", false),
+        (T["Overdue"].Value, h.Overdue, "ki-time", h.Overdue > 0), (T["Handoffs I sent, still open"].Value, h.OpenHandoffs, "ki-send", false) };
+}
+<div data-handover>
+    <div class="row g-4 mb-6">
+        @foreach (var (label, n, icon, alert) in tiles)
+        {
+            <div class="col-6 col-md-3"><div class="border border-dashed border-gray-300 rounded p-4 h-100">
+                <i class="ki-outline @icon fs-2 text-@(alert ? "danger" : "primary") mb-2 d-block"></i>
+                <div class="fs-2 fw-bold hp-num text-@(alert ? "danger" : "gray-900")">@n</div><div class="fs-8 text-gray-600 fw-semibold">@label</div></div></div>
+        }
+    </div>
+    <div class="fw-bold fs-7 text-gray-800 mb-3">@T["The cash"]</div>
+    @if (h.OpenShift != null)
+    {
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-5 mb-6">
+            <i class="ki-outline ki-wallet fs-2tx text-danger me-4"></i>
+            <div class="flex-grow-1 fs-7 text-gray-800 fw-semibold">@T["Your cash shift is still open: count the drawer and close it at the cashier, then hand over."]</div>
+            <a href="@Url.Action("Cashier", "Hospital")" class="btn btn-sm btn-danger">@T["Cashier"]</a>
+        </div>
+    }
+    else if (h.ClosedShift is HospitalCashierShift s)
+    {
+        <div class="d-flex flex-wrap gap-6 bg-light rounded p-4 mb-6 fs-7">
+            <div><div class="text-muted fs-8">@T["Expected"]</div><div class="fw-bold"><span class="hp-num">@Money(s.ExpectedCash)</span> <span class="text-muted fs-8">@cur</span></div></div>
+            <div><div class="text-muted fs-8">@T["Counted"]</div><div class="fw-bold"><span class="hp-num">@Money(s.CountedCash)</span> <span class="text-muted fs-8">@cur</span></div></div>
+            <div><div class="text-muted fs-8">@T["Difference"]</div><div class="fw-bold @((s.Variance ?? 0) != 0 ? "text-danger" : "")"><span class="hp-num" dir="ltr">@Money(s.Variance)</span> <span class="text-muted fs-8">@cur</span></div></div>
+            <div><div class="text-muted fs-8">@T["Closed at"]</div><div class="fw-bold hp-num" dir="ltr">@s.ClosedAt?.ToLocalTime().ToString("HH:mm")</div></div>
+        </div>
+    }
+    else {<div class="text-muted fs-7 mb-6">@T["No cash shift today."]</div>}
+
+    <div class="row g-4">
+        <div class="col-md-6"><label class="required fs-7 fw-semibold mb-2">@T["Who takes over"]</label>
+            <select class="form-select form-select-solid" data-hv="to"><option value=""></option>@foreach (var p in people) { <option value="@p.Id">@p.Name</option> }</select></div>
+        <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Note for the colleague"]</label>
+            <textarea class="form-control form-control-solid" rows="3" maxlength="500" data-hv="note" placeholder="@T["What is waiting, who is expected back, what was promised…"]"></textarea></div>
+    </div>
+    <div class="text-end mt-6"><button type="button" class="btn btn-primary" data-hv-go @(h.OpenShift != null ? "disabled" : "")><i class="ki-outline ki-arrow-right-left fs-4"></i>@T["Hand over my shift"]</button></div>
+
+    @if (recent.Count > 0)
+    {
+        <div class="separator separator-dashed my-6"></div>
+        <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Latest handovers"]</div>
+        @foreach (var r in recent)
+        {
+            <div class="d-flex flex-stack py-2 border-bottom border-gray-200 border-bottom-dashed fs-8">
+                <span><span class="hp-num">@r.H.HandoverNo</span> · @(r.H.FromEmployeeId == me ? string.Format(T["Handed to {0}"].Value, r.To) : string.Format(T["Received from {0}"].Value, r.From)) · <span class="hp-num" dir="ltr">@r.H.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
+                <span class="badge badge-light-@(r.H.AcknowledgedAt != null ? "primary" : "danger") fs-8">@(r.H.AcknowledgedAt != null ? T["Acknowledged"] : T["Not acknowledged yet"])</span>
+            </div>
+        }
+    }
+</div>

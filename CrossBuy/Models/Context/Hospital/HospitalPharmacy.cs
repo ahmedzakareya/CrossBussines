@@ -122,6 +122,8 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalVisitCoverageModel.Configure(b);     // H162: insurance verified for each visit
 			HospitalPatientContactModel.Configure(b);    // H163: contact preferences, help needed, representatives
 			HospitalDeskClaimModel.Configure(b);         // H164: who owns an item of the desk's queues
+			HospitalDeskHandoverModel.Configure(b);      // H165: the desk's shift handover
+			HospitalRequestKeyModel.Configure(b);        // H166: a desk action sent twice is done once
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

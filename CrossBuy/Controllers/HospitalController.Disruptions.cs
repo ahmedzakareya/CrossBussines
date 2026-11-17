@@ -59,6 +59,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H161
 		[HttpPost("ClinicDisruptions"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> ClinicDisruptionDeclare([FromBody] HospitalDisruptionInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
@@ -94,6 +95,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H161
 		[HttpPost("ClinicDisruptions/{id:int}/Apply"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> ClinicDisruptionApply(int id, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

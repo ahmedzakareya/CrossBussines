@@ -44,6 +44,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H160
 		[HttpPost("FrontDesk/Checkout/{id:int}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskCloseCheckout(int id, [FromBody] HospitalCheckoutInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);

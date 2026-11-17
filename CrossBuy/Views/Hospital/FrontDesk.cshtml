@@ -78,6 +78,7 @@
             </ul>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge badge-light-primary fs-8 fw-semibold py-2 px-3" data-conn title="@T["The desk asks the server every half minute"]" data-bs-toggle="tooltip"><i class="ki-outline ki-wifi fs-6 me-1" data-conn-icon></i><span data-conn-text>@T["Connected"]</span></span>   @* H166 *@
             <button type="button" class="btn btn-sm btn-danger" data-desk-arrival=""><i class="ki-outline ki-heart-circle fs-4"></i>@T["Urgent help"]</button>
             <a href="@Url.Action("ClinicDisruptions", new { declare = 1 })" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-information-2 fs-4"></i>@T["Clinic disruption"]</a>
             <a href="@Url.Action("Emergency")" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-truck fs-4"></i>@T["Emergency arrival"]</a>
@@ -87,6 +88,22 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* H166: a paper the desk could not produce after the work was saved — tried again from here *@
+        <div class="notice d-none align-items-center bg-light-danger rounded border-danger border border-dashed p-5 mb-5" data-print-fail>
+            <i class="ki-outline ki-printer fs-2tx text-danger me-4"></i>
+            <div class="flex-grow-1"><div class="fw-bold fs-6 text-gray-900">@T["Saved, but not printed"]</div><div class="fs-7 text-gray-700" data-print-fail-list></div></div>
+        </div>
+        @* H165: a colleague handed their shift to me — what came with it, until I acknowledge *@
+        @foreach (var hv in ViewBag.HandoversPending as IReadOnlyList<HospitalHandoverRow> ?? Array.Empty<HospitalHandoverRow>())
+        {
+            <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-5 mb-5" data-hv-pending="@hv.H.ID">
+                <i class="ki-outline ki-arrow-right-left fs-2tx text-primary me-4"></i>
+                <div class="flex-grow-1"><div class="fw-bold fs-6 text-gray-900">@string.Format(T["{0} handed their shift to you"].Value, hv.From) <span class="text-muted fs-8 hp-num">@hv.H.HandoverNo</span></div>
+                    <div class="fs-7 text-gray-700">@T["Queue items"] <span class="hp-num">@hv.H.QueueItems</span> · @T["Check-in gaps"] <span class="hp-num">@hv.H.Gaps</span>@if (hv.H.Overdue > 0) {<text> · </text><span class="text-danger fw-bold">@T["Overdue"] <span class="hp-num">@hv.H.Overdue</span></span>}@if (hv.H.CashVariance is decimal cv && cv != 0) {<text> · </text><span class="text-danger">@T["Cash difference"] <span class="hp-num" dir="ltr">@cv.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)</span></span>}</div>
+                    @if (hv.H.Note != null) {<div class="fs-7 text-gray-800 mt-1"><bdi>@hv.H.Note</bdi></div>}</div>
+                <button type="button" class="btn btn-sm btn-primary" data-hv-ack="@hv.H.ID">@T["Acknowledge"]</button>
+            </div>
+        }
 
         @* ---------------- the desk strip ---------------- *@
         <div class="card mb-5 bg-light-primary border-0"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-6">
@@ -315,7 +332,8 @@
                         {
                             <div class="d-flex flex-stack py-2 fs-7"><span class="min-w-0 text-truncate"><span class="hp-num text-gray-800 fw-bold">@r.ReceiptNo</span> · <bdi>@DisplayName.Of(r.Patient, r.PatientEn)</bdi></span><span class="fw-bold text-nowrap ms-2"><span class="hp-num">@Money(r.Amount)</span> <span class="text-muted fs-8">@T["pm:" + r.Method]</span></span></div>
                         }
-                        <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-sm btn-light-primary w-100 mt-4" data-desk-handover><i class="ki-outline ki-arrow-right-left fs-5"></i>@T["Hand over my shift"]</button>   @* H165 *@
+                        <div class="d-flex gap-2 mt-2">
                             <a href="@Url.Action("Cashier")" class="btn btn-sm btn-light flex-grow-1"><i class="ki-outline ki-wallet fs-5"></i>@T["Cashier"]</a>
                             <a href="@Url.Action("Bills")" class="btn btn-sm btn-light flex-grow-1"><i class="ki-outline ki-bill fs-5"></i>@T["Bills"]</a>
                         </div>
@@ -342,6 +360,10 @@
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W0 = { updated: @Json.Serialize(T["Connected · updated {0}"].Value), lost: @Json.Serialize(T["Connection lost — retrying"].Value), back: @Json.Serialize(T["Connected again; the board is up to date"].Value),
+                notSent: @Json.Serialize(T["No answer from the server: nothing is lost — press again, it will not be done twice"].Value), printFailed: @Json.Serialize(T["Saved, but the paper could not be printed: try again from the strip at the top"].Value),
+                retry: @Json.Serialize(T["Print again"].Value), paper: @Json.Serialize(T["Paper"].Value), reopen: @Json.Serialize(T["Open the patient again and print from the card"].Value) };   // H166
+            var U0 = { ping: @Json.Serialize(Url.Action("FrontDeskPing")) };
             var W = { idFirst: @Json.Serialize(T["Confirm the patient's name and date of birth (or file number) first"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), loading: @Json.Serialize(T["Loading…"].Value),
                 pickFirst: @Json.Serialize(T["Open the patient at the counter first."].Value), scan: @Json.Serialize(T["Scan the card now: the reader types into the search."].Value),
                 walkin: @Json.Serialize(T["Walk-in"].Value), pay: @Json.Serialize(T["Collect at the counter"].Value), done: @Json.Serialize(T["Booked and checked in"].Value),
@@ -352,7 +374,7 @@
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")),
                 arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")),
                 gapWin: @Json.Serialize(Url.Action("FrontDeskGap")), gaps: @Json.Serialize(Url.Action("FrontDeskGaps")), gapsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Gaps")), gapAct: @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/")),
-                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), deskPatient: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), workAct: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Work/")), reps: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Representatives/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), deskPatient: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), workAct: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Work/")), handover: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handover")), reps: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Representatives/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
             var W9 = { title: @Json.Serialize(T["Documents and contact"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Why is {0} no longer the patient's representative?"].Value),
                 optout: @Json.Serialize(T["Why does the patient want no messages?"].Value), optin: @Json.Serialize(T["Allow messages to the patient again?"].Value), sent: @Json.Serialize(T["The message is queued"].Value),
                 uploaded: @Json.Serialize(T["The scan is saved on the patient's file"].Value), body: @Json.Serialize(T["Write the message"].Value) };   // H163
@@ -380,8 +402,43 @@
             var payPatient = null;
             function reloadPay() { if (payPatient) windowOf(W.pay, U.card + payPatient + '/Pay'); refresh(); }
             var U3 = { win: @Json.Serialize(Url.Action("FrontDeskRegister")), similar: @Json.Serialize(Url.Action("SimilarPatients")), save: @Json.Serialize(Url.Action("SavePatient")), photo: @Json.Serialize(Url.Content("~/Hospital/Patient/")) };
-            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-            function get(u) { return fetch(u, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }); }
+            // H166: every action carries a key, kept until an answer comes back — a retry after a lost connection is the same
+            // request and the server answers it once; the connection's state and the last answer's time show on the chip
+            var keys = {}, lastOk = new Date(), offline = false;
+            function newKey() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)); }
+            function connOk() { lastOk = new Date(); var was = offline; offline = false; connShow(); if (was) { refresh(); toastr.success(W0.back); } }
+            function connLost() { if (!offline) { offline = true; connShow(); } }
+            function connShow() { var c = document.querySelector('[data-conn]'); if (!c) return;
+                c.classList.toggle('badge-light-primary', !offline); c.classList.toggle('badge-light-danger', offline);
+                c.querySelector('[data-conn-text]').textContent = offline ? W0.lost : W0.updated.replace('{0}', lastOk.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })); }
+            function post(u, b) {
+                var sig = u + '|' + JSON.stringify(b || {}), k = keys[sig] || (keys[sig] = newKey());
+                return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token, 'X-Idempotency-Key': k }, body: JSON.stringify(b || {}) })
+                    .then(function (r) { delete keys[sig]; connOk(); return r.json().catch(function () { return { ok: false }; }); },
+                          function () { connLost(); return { ok: false, error: W0.notSent }; });   // no answer: the key stays for the retry
+            }
+            function get(u) { return fetch(u, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { connOk(); return r.text(); }, function () { connLost(); return '<div class="text-danger fs-7 py-5 text-center">' + W0.lost + '</div>'; }); }
+            setInterval(function () { if (document.hidden) return; fetch(U0.ping, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then(function (r) { if (r.ok) connOk(); else connLost(); }, connLost); }, 30000);
+            window.addEventListener('offline', connLost); window.addEventListener('online', function () { fetch(U0.ping, { cache: 'no-store' }).then(function (r) { if (r.ok) connOk(); }, connLost); });
+
+            // H166: a desk paper is checked before its preview opens; one the server cannot produce leaves the work saved and
+            // goes on the "saved, but not printed" strip, to try again — never a blank or broken preview
+            var failed = [];
+            function printFailShow() { var box = document.querySelector('[data-print-fail]'), list = document.querySelector('[data-print-fail-list]');
+                box.classList.toggle('d-none', failed.length === 0); box.classList.toggle('d-flex', failed.length > 0);
+                list.innerHTML = failed.map(function (f, i) { var d = document.createElement('div'); d.textContent = f.label; return '<div class="d-flex flex-stack py-1"><span>' + d.innerHTML + '</span><a href="#" class="fw-bold" data-print-retry="' + i + '">' + W0.retry + '</a></div>'; }).join(''); }
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest && e.target.closest('[data-report-view]'); if (!b || b.hasAttribute('data-print-checked')) return;
+                e.preventDefault(); e.stopImmediatePropagation();
+                var label = (b.getAttribute('data-report-label') ? b.getAttribute('data-report-label') + ' · ' : '') + (b.textContent || '').replace(/\s+/g, ' ').trim() || W0.paper;
+                fetch(b.getAttribute('data-report-view'), { cache: 'no-store' }).then(function (r) {
+                    var type = r.headers.get('content-type') || '';
+                    if (r.ok && type.indexOf('text/html') < 0) { b.setAttribute('data-print-checked', '1'); b.click(); b.removeAttribute('data-print-checked'); failed = failed.filter(function (f) { return f.btn !== b; }); printFailShow(); return; }
+                    if (!failed.some(function (f) { return f.btn === b; })) failed.push({ btn: b, label: label }); printFailShow(); toastr.error(W0.printFailed);
+                }, function () { connLost(); if (!failed.some(function (f) { return f.btn === b; })) failed.push({ btn: b, label: label }); printFailShow(); toastr.error(W0.printFailed); });
+            }, true);
+            document.addEventListener('click', function (e) { var r = e.target.closest && e.target.closest('[data-print-retry]'); if (!r) return; e.preventDefault();
+                var f = failed[Number(r.getAttribute('data-print-retry'))]; if (f && document.body.contains(f.btn)) f.btn.click(); else { failed.splice(Number(r.getAttribute('data-print-retry')), 1); printFailShow(); toastr.info(W0.reopen); } });
             function tips(root) { if (window.bootstrap) root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) { bootstrap.Tooltip.getOrCreateInstance(el); }); }
             function menus() { if (window.KTMenu) KTMenu.createInstances(); }
             function s2(root, parent) { if (!window.jQuery || !jQuery.fn.select2) return; root.querySelectorAll('select').forEach(function (el) { if (jQuery(el).hasClass('select2-hidden-accessible')) return;
@@ -714,6 +771,16 @@
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }
                 // ---- H163: documents and contact ----
+                // ---- H165: the shift handover ----
+                if ((t = e.target.closest('[data-desk-handover]'))) { e.preventDefault(); windowOf(@Json.Serialize(T["Hand over my shift"].Value), U.handover, 'mw-750px'); return; }
+                if ((t = e.target.closest('[data-hv-go]'))) { e.preventDefault(); var hb = mBody.querySelector('[data-handover]'), hto = hb.querySelector('[data-hv="to"]').value;
+                    if (!hto) { toastr.warning(@Json.Serialize(T["Choose the colleague who takes over"].Value)); return; }
+                    var hn = hb.querySelector('[data-hv="note"]').value.trim(), hname = hb.querySelector('[data-hv="to"]').selectedOptions[0].text, hbtn = t;
+                    cbConfirm(@(Json.Serialize(T["Hand your shift over to {0}? Your queue items and check-in gaps become theirs."].Value)).replace('{0}', hname), { kind: 'primary' }).then(function (ok) { if (!ok) return; hbtn.disabled = true;
+                        post(U.handover, { to: Number(hto), note: hn || null }).then(function (r) { hbtn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; }
+                            toastr.success(@Json.Serialize(T["The shift is handed over"].Value)); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); setTimeout(function () { location.reload(); }, 600); }); }); return; }
+                if ((t = e.target.closest('[data-hv-ack]'))) { e.preventDefault(); var hid = t.getAttribute('data-hv-ack'), ab = t; ab.disabled = true;
+                    post(U.handover + '/' + hid + '/Acknowledge').then(function (r) { ab.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } var n = document.querySelector('[data-hv-pending="' + hid + '"]'); if (n) n.remove(); toastr.success(W.saved); }); return; }
                 // ---- H164: whose work it is ----
                 if ((t = e.target.closest('[data-queue-whose]'))) { e.preventDefault(); var qk = t.closest('[data-queue]').getAttribute('data-queue'); whoseOf[qk] = t.getAttribute('data-queue-whose'); loadWork(qk); return; }
                 if ((t = e.target.closest('[data-queue-take], [data-queue-release]'))) { e.preventDefault(); var qkind = t.getAttribute('data-kind'), take = t.hasAttribute('data-queue-take'), qb = t; qb.disabled = true;

@@ -89,6 +89,7 @@ namespace CrossBuy.Controllers
 
 		[HospitalReceptionAllowed]   // H163
 		[HttpPost("FrontDesk/Patient/{id:int}/Message"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		[HospitalIdempotent]   // H166: sent twice, done once
 		public async Task<IActionResult> FrontDeskMessage(int id, [FromBody] HospitalDeskMessageInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
