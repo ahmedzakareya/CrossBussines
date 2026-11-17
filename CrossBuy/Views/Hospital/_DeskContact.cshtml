@@ -1,0 +1,144 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalContactView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H163 — documents and communication: five tabs (theme line tabs) — contact and help, representatives, scans, consents,
+   messages. Administrative only: a consent shows its form, version, decision and signer, never its clinical text. *@
+@{
+    var p = Model.Patient; var pref = Model.Pref; int? appt = ViewBag.Appointment as int?; DateTime today = ViewBag.Today; string tab = ViewBag.Tab as string ?? "contact";
+    var needs = HospitalPatientContactRules.NeedsOf(pref?.Needs);
+    var tabs = new (string Key, string Label, int? N)[] { ("contact", T["Contact and help"].Value, null), ("reps", T["Representatives"].Value, Model.Representatives.Count(r => HospitalPatientContactRules.Current(r, today))),
+        ("scans", T["Scans"].Value, Model.Scans.Count), ("consents", T["Consents"].Value, Model.Consents.Count), ("messages", T["Messages"].Value, Model.Messages.Count) };
+}
+<div data-contact="@p.ID" data-appointment="@appt">
+    <div class="d-flex align-items-center mb-5">
+        <div class="symbol symbol-40px symbol-circle me-3">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+        <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7"><span class="hp-num">@p.Mrn</span>@if (p.Phone != null) {<text> · </text><span class="hp-num" dir="ltr">@p.Phone</span>}</div></div>
+    </div>
+    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-7 fw-bold mb-6">
+        @foreach (var t in tabs)
+        {
+            <li class="nav-item"><a class="nav-link text-active-primary py-3 me-5 @(t.Key == tab ? "active" : "")" data-bs-toggle="tab" href="#ct_@t.Key">@t.Label@if (t.N is int n) {<span class="badge badge-light-primary ms-1 hp-num">@n</span>}</a></li>
+        }
+    </ul>
+    <div class="tab-content">
+        @* ---- contact and help ---- *@
+        <div class="tab-pane fade @(tab == "contact" ? "show active" : "")" id="ct_contact">
+            <div class="row g-4">
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Reach the patient by"]</label>
+                    <select class="form-select form-select-solid" data-ct="channel">@foreach (var c in HospitalContactChannel.All) { <option value="@c" selected="@(c == (pref?.Channel ?? HospitalContactChannel.Sms))">@T["ch:" + c]</option> }</select></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Language"]</label>
+                    <select class="form-select form-select-solid" data-ct="language"><option value="ar" selected="@((pref?.Language ?? "ar") == "ar")">@T["Arabic"]</option><option value="en" selected="@(pref?.Language == "en")">@T["English"]</option></select></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Best time"]</label>
+                    <select class="form-select form-select-solid" data-ct="besttime">@foreach (var b in HospitalBestTime.All) { <option value="@b" selected="@(b == (pref?.BestTime ?? HospitalBestTime.Any))">@T["bt:" + b]</option> }</select></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-3">@T["Help needed on arrival"]</label>
+                    <div class="d-flex flex-wrap gap-5">
+                        @foreach (var n in HospitalAssistanceNeed.All)
+                        {
+                            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" value="@n" data-ct-need @(needs.Contains(n) ? "checked" : "") /><span class="form-check-label fs-7">@T["help:" + n]</span></label>
+                        }
+                    </div></div>
+                <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Interpreter's language"]</label><input class="form-control form-control-solid" data-ct="interpreter" maxlength="40" value="@pref?.InterpreterLanguage" /></div>
+                <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" data-ct="needsnote" maxlength="200" value="@pref?.NeedsNote" /></div>
+            </div>
+            <div class="d-flex flex-stack flex-wrap gap-3 mt-6">
+                <div class="fs-7">@if (Model.OptedOut) {<span class="badge badge-light-danger fs-7 me-2">@T["No messages at all"]</span><a href="#" class="fw-bold" data-ct-optin>@T["Allow messages again"]</a>}
+                    else {<a href="#" class="text-danger fw-bold" data-ct-optout>@T["The patient wants no messages at all"]</a>}</div>
+                <button type="button" class="btn btn-primary" data-ct-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button>
+            </div>
+        </div>
+
+        @* ---- representatives ---- *@
+        <div class="tab-pane fade @(tab == "reps" ? "show active" : "")" id="ct_reps">
+            @foreach (var r in Model.Representatives)
+            {
+                bool cur = HospitalPatientContactRules.Current(r, today);
+                <div class="d-flex align-items-center border border-dashed @(cur ? "border-gray-300" : "border-gray-200 opacity-50") rounded p-4 mb-3">
+                    <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-security-user fs-2 text-primary"></i></span></span>
+                    <div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900"><bdi>@r.Name</bdi> · @T["rep:" + r.Authority]@if (r.Relation != null) {<text> · </text><bdi>@r.Relation</bdi>}</div>
+                        <div class="fs-8 text-muted">@if (r.Phone != null) {<span class="hp-num" dir="ltr">@r.Phone</span>}@if (r.NationalId != null) {<text> · @T["ID"] </text><span class="hp-num">@r.NationalId</span>}@if (r.ValidTo is DateTime vt) {<text> · @T["until"] </text><span class="hp-num" dir="ltr">@vt.ToString("yyyy-MM-dd")</span>}</div>
+                        @if (!r.IsActive) {<div class="fs-8 text-danger">@T["Stopped"]@if (r.StopReason != null) {<text>: </text><bdi>@r.StopReason</bdi>}</div>}
+                        else if (!cur) {<div class="fs-8 text-danger">@T["Past the end date"]</div>}</div>
+                    @if (r.IsActive) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-ct-stop="@r.ID" data-who="@r.Name">@T["Stop"]</button>}
+                </div>
+            }
+            @if (Model.Representatives.Count == 0) {<div class="text-muted fs-7 mb-5">@T["Nobody speaks for the patient on file."]</div>}
+            <div class="separator separator-dashed my-5"></div>
+            <div class="fw-bold fs-7 text-gray-800 mb-3">@T["Add a representative"]</div>
+            <div class="row g-4">
+                <div class="col-md-4"><label class="required fs-7 fw-semibold mb-2">@T["As"]</label>
+                    <select class="form-select form-select-solid" data-rep="authority">@foreach (var a in HospitalRepresentativeAuthority.All) { <option value="@a">@T["rep:" + a]</option> }</select></div>
+                <div class="col-md-8"><label class="required fs-7 fw-semibold mb-2">@T["Name"]</label><input class="form-control form-control-solid" data-rep="name" maxlength="120" /></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Relation to the patient"]</label><input class="form-control form-control-solid" data-rep="relation" maxlength="60" /></div>
+                <div class="col-md-4"><label class="required fs-7 fw-semibold mb-2">@T["Phone"]</label><input class="form-control form-control-solid" data-rep="phone" maxlength="30" dir="ltr" /></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["ID number"]</label><input class="form-control form-control-solid" data-rep="nationalId" maxlength="30" /></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Valid until"]</label><input class="form-control form-control-solid" data-rep="validTo" data-fp-date data-min="@today.ToString("yyyy-MM-dd")" readonly /></div>
+            </div>
+            <div class="text-end mt-5"><button type="button" class="btn btn-primary" data-ct-rep><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button></div>
+        </div>
+
+        @* ---- scans ---- *@
+        <div class="tab-pane fade @(tab == "scans" ? "show active" : "")" id="ct_scans">
+            <div class="row g-4 mb-5">
+                @foreach (var k in HospitalScanKind.All)
+                {
+                    var last = Model.Scans.FirstOrDefault(s => s.Kind == k);
+                    <div class="col-md-4"><div class="border border-dashed border-gray-300 rounded p-4 h-100 d-flex flex-column">
+                        <div class="fw-bold fs-7 text-gray-900 mb-1">@T["scan:" + k]</div>
+                        @if (last != null) {<a href="@Url.Content("~/Hospital/FrontDesk/Patient/" + p.ID + "/Scans/" + last.DocumentId)" target="_blank" class="fs-8 fw-semibold mb-1"><i class="ki-outline ki-document fs-6 me-1"></i>@T["Open the last scan"]</a>
+                            <div class="fs-8 text-muted mb-3"><span class="hp-num" dir="ltr">@last.At.ToLocalTime().ToString("yyyy-MM-dd")</span></div>}
+                        else {<div class="fs-8 text-danger mb-3">@T["Not scanned yet"]</div>}
+                        <button type="button" class="btn btn-sm btn-light-primary mt-auto" data-ct-scan="@k"><i class="ki-outline ki-scan-barcode fs-5"></i>@T["Scan or upload"]</button>
+                    </div></div>
+                }
+            </div>
+            <input type="file" class="d-none" accept="image/jpeg,image/png,application/pdf" data-ct-file />
+            @if (Model.Scans.Count > 0)
+            {
+                <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Every scan"]</div>
+                @foreach (var s in Model.Scans)
+                {
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200 border-bottom-dashed fs-7"><span>@T["scan:" + s.Kind] · <span class="hp-num" dir="ltr">@s.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
+                        <a href="@Url.Content("~/Hospital/FrontDesk/Patient/" + p.ID + "/Scans/" + s.DocumentId)" target="_blank" class="fw-semibold">@T["Open"]</a></div>
+                }
+            }
+        </div>
+
+        @* ---- consents ---- *@
+        <div class="tab-pane fade @(tab == "consents" ? "show active" : "")" id="ct_consents">
+            @if (Model.Consents.Count == 0) {<div class="text-muted fs-7">@T["No consent on file yet."]</div>}
+            @foreach (var c in Model.Consents)
+            {
+                <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
+                    <div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900"><bdi>@c.Title</bdi> <span class="text-muted fs-8">@T["version"] <span class="hp-num">@c.Version</span></span></div>
+                        <div class="fs-8 text-gray-700">@T["Signed by"] <bdi>@c.SignerName</bdi> · @T["csig:" + c.SignerKind]@if (c.SignerRelation != null) {<text> (</text><bdi>@c.SignerRelation</bdi><text>)</text>} · <span class="hp-num" dir="ltr">@c.SignedAt.ToLocalTime().ToString("yyyy-MM-dd")</span> · <span class="hp-num">@c.ConsentNo</span></div></div>
+                    <span class="badge badge-light-@(c.WithdrawnAt != null || c.Decision != HospitalConsentDecision.Given ? "danger" : "primary") fs-8">@(c.WithdrawnAt != null ? T["Withdrawn"] : T["cns:" + c.Decision])</span>
+                </div>
+            }
+        </div>
+
+        @* ---- messages ---- *@
+        <div class="tab-pane fade @(tab == "messages" ? "show active" : "")" id="ct_messages">
+            @if (Model.OptedOut) {<div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-5 fs-7">@T["The patient asked for no messages"]</div>}
+            else
+            {
+                @if (pref?.Channel == HospitalContactChannel.Call) {<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-4 fs-7">@T["The patient prefers a call."]</div>}
+                <label class="fs-7 fw-semibold mb-2">@T["Message to the patient"]@if (appt != null) {<span class="text-muted fs-8 ms-2">@T["about today's visit"]</span>}</label>
+                <textarea class="form-control form-control-solid mb-3" rows="3" maxlength="640" data-ct-body></textarea>
+                <div class="text-end mb-6"><button type="button" class="btn btn-primary" data-ct-send><i class="ki-outline ki-send fs-4"></i>@T["Send"]</button></div>
+            }
+            <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Messages sent to the patient"]</div>
+            @if (Model.Messages.Count == 0) {<div class="text-muted fs-7">@T["No message yet."]</div>}
+            @foreach (var m in Model.Messages)
+            {
+                <div class="py-3 border-bottom border-gray-200 border-bottom-dashed">
+                    <div class="d-flex flex-stack mb-1"><span class="fs-8 text-muted"><span class="hp-num">@m.MessageNo</span> · <span class="hp-num" dir="ltr">@m.QueuedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
+                        <span class="badge badge-light-@(m.Status == HospitalSmsStatus.Sent ? "primary" : "danger") fs-8">@T["sms:" + m.Status]</span></div>
+                    <div class="fs-7 text-gray-800"><bdi>@m.Body</bdi></div>
+                    @if (m.Error != null) {<div class="fs-8 text-muted">@T[m.Error]</div>}
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,355 @@
+{
+ "unit": "H163 - documents and communication at the desk: contact and help, representatives, scans, consents, messages",
+ "strings": {
+  "ch:Sms": {
+   "ar": "رسالة نصية",
+   "en": "Text message",
+   "fr": "SMS"
+  },
+  "ch:Call": {
+   "ar": "اتصال هاتفي",
+   "en": "Phone call",
+   "fr": "Appel"
+  },
+  "bt:Any": {
+   "ar": "أي وقت",
+   "en": "Any time",
+   "fr": "N'importe quand"
+  },
+  "bt:Morning": {
+   "ar": "صباحًا",
+   "en": "Morning",
+   "fr": "Le matin"
+  },
+  "bt:Afternoon": {
+   "ar": "بعد الظهر",
+   "en": "Afternoon",
+   "fr": "L'après-midi"
+  },
+  "bt:Evening": {
+   "ar": "مساءً",
+   "en": "Evening",
+   "fr": "Le soir"
+  },
+  "help:Wheelchair": {
+   "ar": "كرسي متحرك",
+   "en": "Wheelchair",
+   "fr": "Fauteuil roulant"
+  },
+  "help:Hearing": {
+   "ar": "ضعف السمع",
+   "en": "Hearing",
+   "fr": "Audition"
+  },
+  "help:Sight": {
+   "ar": "ضعف البصر",
+   "en": "Sight",
+   "fr": "Vue"
+  },
+  "help:Interpreter": {
+   "ar": "مترجم",
+   "en": "Interpreter",
+   "fr": "Interprète"
+  },
+  "help:Mobility": {
+   "ar": "صعوبة الحركة",
+   "en": "Help moving about",
+   "fr": "Mobilité réduite"
+  },
+  "help:Other": {
+   "ar": "مساعدة أخرى",
+   "en": "Other help",
+   "fr": "Autre aide"
+  },
+  "rep:Parent": {
+   "ar": "وليّ الأمر",
+   "en": "Parent",
+   "fr": "Parent"
+  },
+  "rep:Guardian": {
+   "ar": "الوصي",
+   "en": "Guardian",
+   "fr": "Tuteur"
+  },
+  "rep:Attorney": {
+   "ar": "الوكيل القانوني",
+   "en": "Legal attorney",
+   "fr": "Mandataire légal"
+  },
+  "rep:NextOfKin": {
+   "ar": "أقرب الأقارب",
+   "en": "Next of kin",
+   "fr": "Proche parent"
+  },
+  "scan:id-card": {
+   "ar": "بطاقة الهوية",
+   "en": "ID card",
+   "fr": "Pièce d'identité"
+  },
+  "scan:insurance-card": {
+   "ar": "بطاقة التأمين",
+   "en": "Insurance card",
+   "fr": "Carte d'assurance"
+  },
+  "scan:other": {
+   "ar": "مستند آخر",
+   "en": "Other document",
+   "fr": "Autre document"
+  },
+  "csig:Patient": {
+   "ar": "المريض نفسه",
+   "en": "the patient",
+   "fr": "le patient"
+  },
+  "csig:Representative": {
+   "ar": "نائب عن المريض",
+   "en": "a representative",
+   "fr": "un représentant"
+  },
+  "A guardian or an attorney needs an ID number": {
+   "ar": "يلزم رقم الهوية للوصي أو الوكيل القانوني",
+   "en": "A guardian or an attorney needs an ID number",
+   "fr": "Un tuteur ou un mandataire doit avoir un numéro d'identité"
+  },
+  "Add a representative": {
+   "ar": "إضافة نائب عن المريض",
+   "en": "Add a representative",
+   "fr": "Ajouter un représentant"
+  },
+  "Allow messages again": {
+   "ar": "السماح بالرسائل مجددًا",
+   "en": "Allow messages again",
+   "fr": "Autoriser à nouveau les messages"
+  },
+  "Allow messages to the patient again?": {
+   "ar": "هل تريد السماح بإرسال الرسائل إلى المريض مجددًا؟",
+   "en": "Allow messages to the patient again?",
+   "fr": "Autoriser à nouveau les messages au patient ?"
+  },
+  "As": {
+   "ar": "بصفته",
+   "en": "As",
+   "fr": "En tant que"
+  },
+  "Best time": {
+   "ar": "أنسب وقت",
+   "en": "Best time",
+   "fr": "Meilleur moment"
+  },
+  "Choose how to reach the patient": {
+   "ar": "اختر وسيلة التواصل مع المريض",
+   "en": "Choose how to reach the patient",
+   "fr": "Choisissez comment joindre le patient"
+  },
+  "Choose the best time to reach the patient": {
+   "ar": "اختر أنسب وقت للتواصل مع المريض",
+   "en": "Choose the best time to reach the patient",
+   "fr": "Choisissez le meilleur moment pour joindre le patient"
+  },
+  "Choose the help the patient needs from the list": {
+   "ar": "اختر المساعدة المطلوبة من القائمة",
+   "en": "Choose the help the patient needs from the list",
+   "fr": "Choisissez l'aide nécessaire dans la liste"
+  },
+  "Choose the patient's language": {
+   "ar": "اختر لغة المريض",
+   "en": "Choose the patient's language",
+   "fr": "Choisissez la langue du patient"
+  },
+  "Choose what the representative is to the patient": {
+   "ar": "اختر صفة النائب عن المريض",
+   "en": "Choose what the representative is to the patient",
+   "fr": "Choisissez la qualité du représentant"
+  },
+  "Choose what the scan is": {
+   "ar": "اختر نوع المستند الممسوح",
+   "en": "Choose what the scan is",
+   "fr": "Choisissez le type de document"
+  },
+  "Contact and help": {
+   "ar": "التواصل والمساعدة",
+   "en": "Contact and help",
+   "fr": "Contact et aide"
+  },
+  "Documents and contact": {
+   "ar": "المستندات والتواصل",
+   "en": "Documents and contact",
+   "fr": "Documents et contact"
+  },
+  "Every scan": {
+   "ar": "جميع المستندات الممسوحة",
+   "en": "Every scan",
+   "fr": "Tous les documents numérisés"
+  },
+  "Help needed on arrival": {
+   "ar": "المساعدة المطلوبة عند الوصول",
+   "en": "Help needed on arrival",
+   "fr": "Aide nécessaire à l'arrivée"
+  },
+  "ID": {
+   "ar": "الهوية",
+   "en": "ID",
+   "fr": "Pièce d'identité"
+  },
+  "Interpreter's language": {
+   "ar": "لغة المترجم",
+   "en": "Interpreter's language",
+   "fr": "Langue de l'interprète"
+  },
+  "Language": {
+   "ar": "اللغة",
+   "en": "Language",
+   "fr": "Langue"
+  },
+  "Message to the patient": {
+   "ar": "رسالة إلى المريض",
+   "en": "Message to the patient",
+   "fr": "Message au patient"
+  },
+  "Messages sent to the patient": {
+   "ar": "الرسائل المرسلة إلى المريض",
+   "en": "Messages sent to the patient",
+   "fr": "Messages envoyés au patient"
+  },
+  "No consent on file yet.": {
+   "ar": "لا توجد إقرارات في الملف بعد.",
+   "en": "No consent on file yet.",
+   "fr": "Aucun consentement au dossier."
+  },
+  "No message yet.": {
+   "ar": "لا توجد رسائل بعد.",
+   "en": "No message yet.",
+   "fr": "Aucun message."
+  },
+  "No messages at all": {
+   "ar": "لا يرغب في أي رسائل",
+   "en": "No messages at all",
+   "fr": "Aucun message"
+  },
+  "Nobody speaks for the patient on file.": {
+   "ar": "لا يوجد في الملف من ينوب عن المريض.",
+   "en": "Nobody speaks for the patient on file.",
+   "fr": "Aucun représentant au dossier."
+  },
+  "Not scanned yet": {
+   "ar": "لم يُمسح بعد",
+   "en": "Not scanned yet",
+   "fr": "Pas encore numérisé"
+  },
+  "Open the last scan": {
+   "ar": "فتح آخر نسخة ممسوحة",
+   "en": "Open the last scan",
+   "fr": "Ouvrir la dernière numérisation"
+  },
+  "Past the end date": {
+   "ar": "انتهت صلاحيته",
+   "en": "Past the end date",
+   "fr": "Échéance dépassée"
+  },
+  "Reach the patient by": {
+   "ar": "وسيلة التواصل",
+   "en": "Reach the patient by",
+   "fr": "Joindre le patient par"
+  },
+  "Representatives": {
+   "ar": "النواب عن المريض",
+   "en": "Representatives",
+   "fr": "Représentants"
+  },
+  "Scan or upload": {
+   "ar": "مسح أو رفع",
+   "en": "Scan or upload",
+   "fr": "Numériser ou téléverser"
+  },
+  "Scans": {
+   "ar": "المستندات الممسوحة",
+   "en": "Scans",
+   "fr": "Numérisations"
+  },
+  "The message is queued": {
+   "ar": "أُدرجت الرسالة في قائمة الإرسال",
+   "en": "The message is queued",
+   "fr": "Le message est en file d'attente"
+  },
+  "The message is too long": {
+   "ar": "الرسالة طويلة جدًا",
+   "en": "The message is too long",
+   "fr": "Le message est trop long"
+  },
+  "The patient prefers a call.": {
+   "ar": "يفضّل المريض الاتصال الهاتفي.",
+   "en": "The patient prefers a call.",
+   "fr": "Le patient préfère un appel."
+  },
+  "The patient wants no messages at all": {
+   "ar": "المريض لا يرغب في أي رسائل",
+   "en": "The patient wants no messages at all",
+   "fr": "Le patient ne veut aucun message"
+  },
+  "The scan is saved on the patient's file": {
+   "ar": "حُفظ المستند الممسوح في ملف المريض",
+   "en": "The scan is saved on the patient's file",
+   "fr": "Le document est enregistré au dossier du patient"
+  },
+  "The scan must be an image or a PDF of up to 10 MB": {
+   "ar": "يجب أن يكون المستند صورة أو ملف PDF بحجم لا يتجاوز 10 ميغابايت",
+   "en": "The scan must be an image or a PDF of up to 10 MB",
+   "fr": "Le document doit être une image ou un PDF de 10 Mo au plus"
+  },
+  "This representative is stopped already": {
+   "ar": "أُوقف هذا النائب بالفعل",
+   "en": "This representative is stopped already",
+   "fr": "Ce représentant est déjà arrêté"
+  },
+  "Valid until": {
+   "ar": "صالح حتى",
+   "en": "Valid until",
+   "fr": "Valable jusqu'au"
+  },
+  "Why does the patient want no messages?": {
+   "ar": "لماذا لا يرغب المريض في الرسائل؟",
+   "en": "Why does the patient want no messages?",
+   "fr": "Pourquoi le patient ne veut-il aucun message ?"
+  },
+  "Why is {0} no longer the patient's representative?": {
+   "ar": "لماذا لم يعد {0} نائبًا عن المريض؟",
+   "en": "Why is {0} no longer the patient's representative?",
+   "fr": "Pourquoi {0} n'est-il plus représentant du patient ?"
+  },
+  "Withdrawn": {
+   "ar": "مسحوب",
+   "en": "Withdrawn",
+   "fr": "Retiré"
+  },
+  "Write the language the interpreter must speak": {
+   "ar": "اكتب اللغة التي يجب أن يتحدثها المترجم",
+   "en": "Write the language the interpreter must speak",
+   "fr": "Indiquez la langue de l'interprète"
+  },
+  "Write the representative's name": {
+   "ar": "اكتب اسم النائب",
+   "en": "Write the representative's name",
+   "fr": "Indiquez le nom du représentant"
+  },
+  "Write the representative's phone": {
+   "ar": "اكتب هاتف النائب",
+   "en": "Write the representative's phone",
+   "fr": "Indiquez le téléphone du représentant"
+  },
+  "Write what other help the patient needs": {
+   "ar": "اكتب المساعدة الأخرى التي يحتاجها المريض",
+   "en": "Write what other help the patient needs",
+   "fr": "Indiquez l'autre aide nécessaire"
+  },
+  "Write why the representative is stopped": {
+   "ar": "اكتب سبب إيقاف النائب",
+   "en": "Write why the representative is stopped",
+   "fr": "Indiquez pourquoi le représentant est arrêté"
+  },
+  "about today's visit": {
+   "ar": "بخصوص زيارة اليوم",
+   "en": "about today's visit",
+   "fr": "à propos de la visite du jour"
+  }
+ }
+}

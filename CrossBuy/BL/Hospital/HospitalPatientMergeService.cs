@@ -63,6 +63,8 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalDeskCheckout), "HospitalDeskCheckouts"),   // H160: how the desk closed a visit follows the patient
 			(typeof(HospitalDisruptionPatient), "HospitalDisruptionPatients"),   // H161: a disruption's message and calls follow the patient
 			(typeof(HospitalVisitCoverage), "HospitalVisitCoverages"),   // H162: a visit's verified cover follows the patient
+			(typeof(HospitalPatientRepresentative), "HospitalPatientRepresentatives"),   // H163: who speaks for the patient follows the patient
+			(typeof(HospitalContactPreference), "HospitalContactPreferences"),   // H163: one per patient — the survivor's is kept (MergeAsync)
 			(typeof(HospitalConsent), "HospitalConsents"),   // H60: the signature stays on the consent, which moves whole
 			(typeof(HospitalCharityGrant), "HospitalCharityGrants"),   // H63: a waiver follows its patient (its bill moves too)
 			(typeof(HospitalRestrictedFile), "HospitalRestrictedFiles"),   // H64: a restriction (live: one per patient — see the conflict)
@@ -294,6 +296,10 @@ namespace CrossBuy.BL.Hospital
 				await _db.Database.ExecuteSqlInterpolatedAsync($@"IF OBJECT_ID('dbo.HospitalSmsOptOuts','U') IS NOT NULL
 					DELETE o FROM dbo.HospitalSmsOptOuts o WHERE o.CompanyId = {c} AND o.PatientId = {d.ID}
 					AND EXISTS (SELECT 1 FROM dbo.HospitalSmsOptOuts x WHERE x.CompanyId = {c} AND x.PatientId = {s.ID})", ct);
+				// H163: one set of contact preferences per patient — the survivor's stays, the duplicate's goes
+				await _db.Database.ExecuteSqlInterpolatedAsync($@"IF OBJECT_ID('dbo.HospitalContactPreferences','U') IS NOT NULL
+					DELETE o FROM dbo.HospitalContactPreferences o WHERE o.CompanyId = {c} AND o.PatientId = {d.ID}
+					AND EXISTS (SELECT 1 FROM dbo.HospitalContactPreferences x WHERE x.CompanyId = {c} AND x.PatientId = {s.ID})", ct);
 				foreach (var (_, table) in HospitalPatientMergeRules.PatientTables)
 				{
 					// the table name is from the constant list above, never from a request

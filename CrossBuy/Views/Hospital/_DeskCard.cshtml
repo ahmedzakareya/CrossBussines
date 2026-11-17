@@ -21,6 +21,8 @@
     bool active = Model.Today.Any(r => r.Stage is HospitalDeskStage.Expected or HospitalDeskStage.Waiting or HospitalDeskStage.WithDoctor);
     var where = ViewBag.Where as IReadOnlyList<HospitalWhere> ?? Array.Empty<HospitalWhere>(); bool restricted = ViewBag.Restricted == true;
     var hist = ViewBag.History as HospitalDeskHistory;
+    var assistNeeds = ViewBag.AssistNeeds as IReadOnlyList<string> ?? Array.Empty<string>(); string? assistLang = ViewBag.AssistInterpreter as string;
+    var assistReps = ViewBag.AssistReps as IReadOnlyList<HospitalPatientRepresentative> ?? Array.Empty<HospitalPatientRepresentative>();   // H163
     var gaps = ViewBag.Gaps as IReadOnlyList<HospitalCheckinGap> ?? Array.Empty<HospitalCheckinGap>(); DateTime todayD = ViewBag.Today is DateTime td ? td : DateTime.Today;   // H159
     string WhereIcon(string k) => k switch { HospitalWhereKind.Theatre => "ki-pulse", HospitalWhereKind.Emergency => "ki-heart-circle", HospitalWhereKind.Imaging => "ki-scan-barcode",
         HospitalWhereKind.Ward => "ki-home-2", _ => "ki-hospital" };
@@ -38,6 +40,9 @@
         <div class="d-flex flex-wrap gap-1 mt-2">
             @if (!string.IsNullOrWhiteSpace(p.Allergies)) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span>}
             @if (Model.Insured) {<span class="badge badge-light-primary fs-8 fw-bold"><bdi>@Model.Payer</bdi></span>} else if (Model.Ineligible) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Not covered today"]</span>} else {<span class="badge badge-light fs-8 fw-bold">@T["Self-pay"]</span>}
+            @* H163: the help the patient needs on arrival, and who speaks for them *@
+            @foreach (var nd in assistNeeds) {<span class="badge badge-light-primary fs-8 fw-bold"><i class="ki-outline ki-information-5 fs-8 text-primary me-1"></i>@T["help:" + nd]@if (nd == HospitalAssistanceNeed.Interpreter && assistLang != null) {<text> · </text><bdi>@assistLang</bdi>}</span>}
+            @foreach (var rp in assistReps) {<span class="badge badge-light fs-8 fw-bold"><i class="ki-outline ki-security-user fs-8 me-1"></i>@T["rep:" + rp.Authority]: <bdi class="ms-1">@rp.Name</bdi></span>}
         </div>
     </div>
 </div>
@@ -236,6 +241,7 @@ else
     {
         <button type="button" class="btn btn-primary flex-grow-1" data-desk-walkin="@p.ID"><i class="ki-outline ki-entrance-right fs-3"></i>@T["Walk-in"]</button>
     }
+    <button type="button" class="btn btn-icon btn-light btn-active-light-primary" data-desk-contact="@p.ID" data-appt="@(visit?.A.Id)" title="@T["Documents and contact"]" data-bs-toggle="tooltip"><i class="ki-outline ki-address-book fs-3"></i></button>   @* H163 *@
     <button type="button" class="btn btn-light-primary" data-desk-arrival="@p.ID"><i class="ki-outline ki-send fs-3"></i>@T["Send on"]</button>   @* H158 *@
     <a href="@Url.Action("Patient", "Hospital", new { id = p.ID })" class="btn btn-light btn-active-light-primary"><i class="ki-outline ki-document fs-3"></i>@T["File"]</a>
 </div>

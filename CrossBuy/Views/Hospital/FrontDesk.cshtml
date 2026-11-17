@@ -352,7 +352,10 @@
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")),
                 arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")),
                 gapWin: @Json.Serialize(Url.Action("FrontDeskGap")), gaps: @Json.Serialize(Url.Action("FrontDeskGaps")), gapsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Gaps")), gapAct: @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/")),
-                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), deskPatient: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), reps: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Representatives/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+            var W9 = { title: @Json.Serialize(T["Documents and contact"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Why is {0} no longer the patient's representative?"].Value),
+                optout: @Json.Serialize(T["Why does the patient want no messages?"].Value), optin: @Json.Serialize(T["Allow messages to the patient again?"].Value), sent: @Json.Serialize(T["The message is queued"].Value),
+                uploaded: @Json.Serialize(T["The scan is saved on the patient's file"].Value), body: @Json.Serialize(T["Write the message"].Value) };   // H163
             var W8 = { title: @Json.Serialize(T["Insurance for this visit"].Value), saved: @Json.Serialize(T["The verification is recorded"].Value), asked: @Json.Serialize(T["The approval is requested"].Value) };   // H162
             var W7 = { title: @Json.Serialize(T["Check out"].Value), why: @Json.Serialize(T["Something is still open: write why the visit is closed anyway"].Value), done: @Json.Serialize(T["Checked out"].Value) };
             var W6 = { gap: @Json.Serialize(T["Follow up a check-in step"].Value), reason: @Json.Serialize(T["Write why it could not be finished at the counter"].Value), opened: @Json.Serialize(T["Followed up; it is on the check-in gaps list."].Value),
@@ -424,7 +427,9 @@
             function idChecked() { var c = mBody.querySelector('[data-id-check]'); return !!(c && c.checked); }
             function idRow() { var r = mBody.querySelector('[data-id-check-row]'); if (r) { r.classList.add('border-danger'); r.scrollIntoView({ block: 'center' }); } }
             function windowOf(title, url, size) { mTitle.textContent = title; modalEl.querySelector('.modal-dialog').className = 'modal-dialog modal-dialog-centered ' + (size || 'mw-850px'); mBody.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
-                bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); menus(); }); }
+                bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); menus();
+                    if (window.flatpickr) mBody.querySelectorAll('[data-fp-date]').forEach(function (el) { flatpickr(el, { dateFormat: 'Y-m-d', minDate: el.getAttribute('data-min') || null, disableMobile: true, static: true,
+                        locale: @(isAr ? "true" : "false") && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default' }); }); }); }
             function walkIn(patient, doctor) { if (!patient) { toastr.warning(W.pickFirst); return; } windowOf(W.walkin, U.slots + '?patient=' + patient + (doctor ? '&doctor=' + doctor : '')); }
             function book(patient, doctor, minute, btn) {
                 if (btn) btn.disabled = true;
@@ -471,6 +476,20 @@
                 post(U.gapsPost, { patientId: pid, item: f('item'), reason: f('reason'), ownerEmployeeId: f('owner') ? Number(f('owner')) : null, dueDate: f('due') })
                     .then(function (r) { btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W6.opened); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); if (current === pid) openCard(pid, false); loadWork('gaps'); });
             }
+            // H163: the documents-and-contact window; every act reloads it on its own tab
+            var ctPatient = null, ctAppt = null;
+            function ctBox() { return mBody.querySelector('[data-contact]'); }
+            function contactWindow(pid, appt, tab) { ctPatient = pid; ctAppt = appt || null; windowOf(W9.title, U.deskPatient + pid + '/Contact?' + new URLSearchParams(Object.assign({}, appt ? { appointment: appt } : {}, tab ? { tab: tab } : {})), 'mw-900px'); }
+            function ctReload(tab) { if (ctPatient) contactWindow(ctPatient, ctAppt, tab); if (current) openCard(current, false); }
+            function ctPost(path, body, btn, tab, okText) { if (btn) btn.disabled = true;
+                post(U.deskPatient + ctPatient + path, body).then(function (r) { if (btn) btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(okText || W9.saved); ctReload(tab); }); }
+            mBody.addEventListener('change', function (e) {
+                var fi = e.target.closest && e.target.closest('[data-ct-file]'); if (!fi || !fi.files || !fi.files.length) return;
+                var fd = new FormData(); fd.append('file', fi.files[0]);
+                fetch(U.deskPatient + ctPatient + '/Scans?kind=' + encodeURIComponent(fi.getAttribute('data-kind')), { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: fd })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W9.uploaded); ctReload('scans'); });
+            });
             function arrSend(btn) {
                 var box = mBody.querySelector('[data-arrival]'), v = function (k) { var el = box.querySelector('[data-arr="' + k + '"]'); return el ? el.value.trim() : ''; };
                 var r = (box.querySelector('input[name="arrReason"]:checked') || {}).value; if (!r) { toastr.warning(W5.pick); return; }
@@ -693,6 +712,22 @@
                     return;
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }
+                // ---- H163: documents and contact ----
+                if ((t = e.target.closest('[data-desk-contact]'))) { e.preventDefault(); contactWindow(t.getAttribute('data-desk-contact'), t.getAttribute('data-appt'), null); return; }
+                if ((t = e.target.closest('[data-ct-save]'))) { e.preventDefault(); var cb0 = ctBox(), g = function (k) { return cb0.querySelector('[data-ct="' + k + '"]').value.trim(); };
+                    ctPost('/Contact', { channel: g('channel'), language: g('language'), bestTime: g('besttime'), needs: [].slice.call(cb0.querySelectorAll('[data-ct-need]:checked')).map(function (x) { return x.value; }),
+                        interpreterLanguage: g('interpreter') || null, needsNote: g('needsnote') || null }, t, 'contact'); return; }
+                if ((t = e.target.closest('[data-ct-rep]'))) { e.preventDefault(); var cb1 = ctBox(), rv = function (k) { return cb1.querySelector('[data-rep="' + k + '"]').value.trim(); };
+                    ctPost('/Representatives', { authority: rv('authority'), name: rv('name'), relation: rv('relation') || null, phone: rv('phone'), nationalId: rv('nationalId') || null, validTo: rv('validTo') || null }, t, 'reps'); return; }
+                if ((t = e.target.closest('[data-ct-stop]'))) { e.preventDefault(); var rid = t.getAttribute('data-ct-stop');
+                    cbPrompt(W9.stop.replace('{0}', t.getAttribute('data-who')), { textarea: true }).then(function (why) { if (why == null) return;
+                        post(U.reps + rid + '/Stop', { reason: why }).then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W9.saved); ctReload('reps'); }); }); return; }
+                if ((t = e.target.closest('[data-ct-optout]'))) { e.preventDefault();
+                    cbPrompt(W9.optout, { textarea: true }).then(function (why) { if (why == null) return; ctPost('/OptOut', { reason: why }, null, 'contact'); }); return; }
+                if ((t = e.target.closest('[data-ct-optin]'))) { e.preventDefault(); cbConfirm(W9.optin, { kind: 'primary' }).then(function (ok) { if (ok) ctPost('/OptIn', {}, null, 'contact'); }); return; }
+                if ((t = e.target.closest('[data-ct-send]'))) { e.preventDefault(); var cb2 = ctBox(), bd = cb2.querySelector('[data-ct-body]').value.trim(); if (!bd) { toastr.warning(W9.body); return; }
+                    var ap = cb2.getAttribute('data-appointment'); ctPost('/Message', { appointmentId: ap ? Number(ap) : null, body: bd }, t, 'messages', W9.sent); return; }
+                if ((t = e.target.closest('[data-ct-scan]'))) { e.preventDefault(); var fi = ctBox().querySelector('[data-ct-file]'); fi.setAttribute('data-kind', t.getAttribute('data-ct-scan')); fi.value = ''; fi.click(); return; }
                 if ((t = e.target.closest('[data-desk-coverage]'))) { e.preventDefault(); windowOf(W8.title, U.coverage + t.getAttribute('data-desk-coverage'), 'mw-850px'); return; }   // H162
                 if ((t = e.target.closest('[data-cov-save]'))) { e.preventDefault();
                     var vb = mBody.querySelector('[data-coverage]'), sel = vb.querySelector('[data-cov="decision"]'), opt = sel.options[sel.selectedIndex], f = function (k) { return vb.querySelector('[data-cov="' + k + '"]').value.trim(); };

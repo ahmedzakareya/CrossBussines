@@ -155,6 +155,8 @@ namespace CrossBuy.Controllers
 			ViewBag.Lookalikes = await ActivatorUtilities.CreateInstance<HospitalDeskIdentityService>(HttpContext.RequestServices).LookalikesAsync(ctx, id, 3, ct);   // H157
 			await GapSvc.SettleAsync(ctx, new[] { id }, now, ct);   // H159: a step done on the file closes its follow-up
 			ViewBag.Gaps = await GapSvc.ForPatientAsync(ctx, id, ct); ViewBag.Today = today;
+			var (needs, interp, reps) = await ContactSvc.CardAsync(ctx, id, today, ct);   // H163
+			ViewBag.AssistNeeds = needs; ViewBag.AssistInterpreter = interp; ViewBag.AssistReps = reps;
 			return PartialView("_DeskCard", card);
 		}
 
