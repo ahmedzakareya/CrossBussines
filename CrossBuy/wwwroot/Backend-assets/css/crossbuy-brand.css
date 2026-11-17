@@ -110,6 +110,16 @@
     border-style: solid !important;
 }
 .btn-check:checked + .btn.btn-outline.btn-active-light-primary i { color: #3A5795 !important; }
+/* A CHOSEN light toggle must look chosen (2026-11-16): the Morse/Braden answers on /Hospital/Nursing are
+   `btn btn-light btn-active-light-primary border border-gray-300` labels that gain .active when picked. The theme
+   left .active at #F5F7FB against #F9F9F9 unpicked, with the same grey border, so a nurse saw nothing happen and
+   read the scale as broken. Picked = brand surface, brand border, ink text; its score badge turns brand blue. */
+.btn.btn-light.btn-active-light-primary.active {
+    color: #1F2D4D !important;
+    background-color: #E7F0FF !important;
+    border-color: #3A5795 !important;
+}
+.btn.btn-light.btn-active-light-primary.active .badge { background-color: #3A5795 !important; color: #fff !important; }
 .bg-light-primary { background-color: #E7F0FF !important; }
 .badge-light-primary { color: #1F2D4D; background-color: #E7F0FF; }
 .badge-primary { background-color: #3A5795; color: #fff; }
