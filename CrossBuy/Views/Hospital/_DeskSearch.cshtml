@@ -5,7 +5,8 @@
 @* H139/H140: the one search's candidates, ranked, as the prototype lays them out: face, name, file, age and sex,
    mobile; the ID; what matched; today's visit; and the acts (check in today's visit, or a walk-in; open at the counter).
    Registering a new patient is offered only after a search, as the desk should. *@
-@{ bool canBook = ViewBag.CanBook == true; }
+@{ bool canBook = ViewBag.CanBook == true;
+   var whereOf = ViewBag.Where as Dictionary<int, IReadOnlyList<HospitalWhere>> ?? new(); var hidden = ViewBag.Restricted as HashSet<int> ?? new(); }
 @if (Model.Count == 0)
 {
     <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
@@ -27,6 +28,9 @@ else
                     <div class="d-flex flex-column min-w-0">
                         <span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(c.Name, c.NameEn)</bdi></span>
                         <span class="text-muted fs-7"><span class="hp-num">@c.Mrn</span> · @T["sex:" + c.Sex]@if (c.Age is int ag) {<text> · @string.Format(T["{0} years"].Value, ag)</text>}@if (c.Phone != null) {<text> · </text><span class="hp-num" dir="ltr">@c.Phone</span>}</span>
+                        @* H154: where they are now — the answer a visitor asks for *@
+                        @if (hidden.Contains(c.PatientId)) {<span class="fs-8 text-gray-600 mt-1" data-where><i class="ki-outline ki-lock-2 fs-8 me-1"></i>@T["Confidential file"]</span>}
+                        else if (whereOf.GetValueOrDefault(c.PatientId) is { Count: > 0 } here) {<span class="fs-7 fw-bold text-primary mt-1" data-where><i class="ki-outline ki-geolocation fs-7 text-primary me-1"></i><bdi>@DisplayName.Of(here[0].Place, here[0].PlaceEn)</bdi>@if (here[0].Detail != null) {<span class="text-gray-600 fw-semibold"> · <bdi>@DisplayName.Of(here[0].Detail, here[0].DetailEn)</bdi></span>}</span>}
                     </div>
                 </a>
                 <div class="min-w-150px"><div class="text-muted fs-8">@T["match:id"]</div><div class="fw-bold hp-num fs-7">@(c.NationalId ?? "—")</div></div>

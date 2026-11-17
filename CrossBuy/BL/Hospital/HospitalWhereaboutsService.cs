@@ -79,6 +79,15 @@ namespace CrossBuy.BL.Hospital
 				.OrderByDescending(r => r.Now.Count > 0).ToList();
 		}
 
+		/// H154: where these patients are, as the reception desk may be told — a confidential file is in `Restricted` and its
+		/// place is never read.
+		public async Task<(Dictionary<int, IReadOnlyList<HospitalWhere>> Where, HashSet<int> Restricted)> ForDeskAsync(BusinessContext ctx, IReadOnlyCollection<int> ids, DateTime nowLocal, CancellationToken ct = default)
+		{
+			var restricted = ids.Count == 0 ? new HashSet<int>() : (await _db.Set<HospitalRestrictedFile>().AsNoTracking()
+				.Where(r => r.CompanyId == ctx.CompanyId && r.LiftedAt == null && ids.Contains(r.PatientId)).Select(r => r.PatientId).ToListAsync(ct)).ToHashSet();
+			return (await WhereAsync(ctx, ids.Where(i => !restricted.Contains(i)).ToList(), nowLocal, ct), restricted);
+		}
+
 		/// Where each of these patients is now (an empty list = not in the hospital as far as the system knows).
 		public async Task<Dictionary<int, IReadOnlyList<HospitalWhere>>> WhereAsync(BusinessContext ctx, IReadOnlyCollection<int> ids, DateTime nowLocal, CancellationToken ct = default)
 		{

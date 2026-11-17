@@ -8,7 +8,8 @@
      · today's visit (time, doctor, room, queue number);
      · the check-in steps: identity and the payer decision need attention, the rest is owed; nothing refuses care;
      · the money at the counter (owed, open bills, the insurer) with "collect";
-     · the next visits; then check in (or walk-in), no-show, the file, a consent. *@
+     · the next visits; then check in (or walk-in), no-show, the file, a consent.
+   H154: where the patient is now (under the banner), and their history as the desk needs it — administrative only. *@
 @{
     var p = Model.Patient; var inv = System.Globalization.CultureInfo.InvariantCulture;
     bool canBook = ViewBag.CanBook == true, canBill = ViewBag.CanBill == true;
@@ -18,6 +19,11 @@
     string name = DisplayName.Of(p.Name, p.NameEn);
     var visit = Model.Today.FirstOrDefault(r => r.Stage is HospitalDeskStage.Expected or HospitalDeskStage.Waiting or HospitalDeskStage.WithDoctor) ?? Model.Today.FirstOrDefault(r => r.Stage != HospitalDeskStage.Cancelled);
     bool active = Model.Today.Any(r => r.Stage is HospitalDeskStage.Expected or HospitalDeskStage.Waiting or HospitalDeskStage.WithDoctor);
+    var where = ViewBag.Where as IReadOnlyList<HospitalWhere> ?? Array.Empty<HospitalWhere>(); bool restricted = ViewBag.Restricted == true;
+    var hist = ViewBag.History as HospitalDeskHistory;
+    string WhereIcon(string k) => k switch { HospitalWhereKind.Theatre => "ki-pulse", HospitalWhereKind.Emergency => "ki-heart-circle", HospitalWhereKind.Imaging => "ki-scan-barcode",
+        HospitalWhereKind.Ward => "ki-home-2", _ => "ki-hospital" };
+    string EventIcon(string k) => k switch { HospitalDeskEventKind.Admission => "ki-home-2", HospitalDeskEventKind.Emergency => "ki-heart-circle", HospitalDeskEventKind.Operation => "ki-pulse", _ => "ki-calendar-tick" };
     var steps = new (string Key, string Icon, string Label)[] {
         ("identity", "ki-profile-circle", T["Identity"].Value), ("payer", "ki-shield-tick", T["Insurance"].Value), ("phone", "ki-notepad-edit", T["Contact details"].Value),
         ("consent", "ki-notepad-edit", T["Consents"].Value), ("photo", "ki-picture", T["Photo"].Value), ("balance", "ki-wallet", T["Payment"].Value) };
@@ -30,10 +36,39 @@
         <span class="text-muted fw-semibold fs-7"><span class="hp-num">@p.Mrn</span> · @T["sex:" + p.Sex]@if (Model.Age is int ag) {<text> · @string.Format(T["{0} years"].Value, ag)</text>}@if (!string.IsNullOrWhiteSpace(p.BloodGroup)) {<text> · @T["Blood"] </text><span class="hp-num">@p.BloodGroup</span>}</span>
         <div class="d-flex flex-wrap gap-1 mt-2">
             @if (!string.IsNullOrWhiteSpace(p.Allergies)) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span>}
-            @if (Model.Admitted) {<span class="badge badge-light-info fs-8 fw-bold">@T["In hospital now"]</span>}
             @if (Model.Insured) {<span class="badge badge-light-primary fs-8 fw-bold"><bdi>@Model.Payer</bdi></span>} else if (Model.Ineligible) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Not covered today"]</span>} else {<span class="badge badge-light fs-8 fw-bold">@T["Self-pay"]</span>}
         </div>
     </div>
+</div>
+
+@* H154: where the patient is now — what the desk answers a visitor *@
+<div class="mb-5" data-desk-where>
+    @if (restricted)
+    {
+        <div class="d-flex align-items-center gap-3 bg-light rounded p-4"><i class="ki-outline ki-lock-2 fs-2 text-gray-600"></i><div class="fs-7 text-gray-700">@T["Confidential file: the desk does not give where this patient is."]</div></div>
+    }
+    else if (where.Count > 0)
+    {
+        <div class="rounded border border-dashed border-primary bg-light-primary p-4">
+            <div class="fw-bold fs-8 text-primary text-uppercase mb-2">@T["Where now"]</div>
+            @foreach (var w in where)
+            {
+                <div class="d-flex align-items-start gap-3 mb-2">
+                    <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-primary"><i class="ki-outline @WhereIcon(w.Kind) fs-3 text-white"></i></span></span>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold fs-6 text-gray-900"><bdi>@DisplayName.Of(w.Place, w.PlaceEn)</bdi>@if (w.Live) {<span class="bullet bullet-dot bg-danger h-8px w-8px ms-2 animation-blink"></span>}</div>
+                        @if (w.Detail != null) {<div class="fs-7 text-gray-700"><bdi>@DisplayName.Of(w.Detail, w.DetailEn)</bdi></div>}
+                        <div class="fs-8 text-muted">@T["where:" + w.Kind]@if (w.Since is DateTime since) {<text> · @T["Since"] </text><span class="hp-num" dir="ltr">@since.ToLocalTime().ToString("HH:mm")</span>}
+                            @if (w.FloorId is int fl) {<text> · </text><a href="@Url.Action("Map", "Hospital", new { floor = fl })" class="fw-bold">@T["On the map"]</a>}</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="d-flex align-items-center gap-3 bg-light rounded p-4"><i class="ki-outline ki-exit-right fs-2 text-gray-500"></i><div class="fs-7 text-gray-700">@T["Not in the hospital now, as far as the system knows."]</div></div>
+    }
 </div>
 
 @* today's visit *@
@@ -117,6 +152,43 @@ else
                 @if (canBook) {<button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-25px h-25px" data-desk-resched="@a.Id" title="@T["Move the appointment"]" data-bs-toggle="tooltip"><i class="ki-outline ki-calendar-edit fs-5"></i></button>}</span></div>
     }
     <div class="separator separator-dashed my-4"></div>
+}
+
+@* H154: the history the desk needs — visits, stays, emergency visits, operations; never a diagnosis or a result *@
+@if (hist != null)
+{
+    <div class="mb-5" data-desk-history>
+        <div class="d-flex flex-stack mb-3"><span class="fw-bold fs-7 text-gray-800">@T["Previous history"]</span>
+            @if (!hist.Restricted && hist.FirstSeen is DateTime fs) {<span class="text-muted fs-8">@T["Known since"] <span class="hp-num" dir="ltr">@fs.ToString("yyyy-MM-dd")</span></span>}</div>
+        @if (hist.Restricted)
+        {
+            <div class="d-flex align-items-center gap-3 bg-light rounded p-4"><i class="ki-outline ki-lock-2 fs-2 text-gray-600"></i><div class="fs-7 text-gray-700">@T["Confidential file: its history opens only for the care team."]</div></div>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <span class="badge badge-light-primary fs-8 fw-bold">@T["Clinic visits"] <span class="hp-num ms-1">@hist.Visits</span></span>
+                @if (hist.NoShows > 0) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Did not come"] <span class="hp-num ms-1">@hist.NoShows</span></span>}
+                <span class="badge badge-light-primary fs-8 fw-bold">@T["Stays"] <span class="hp-num ms-1">@hist.Admissions</span></span>
+                <span class="badge badge-light-primary fs-8 fw-bold">@T["Emergency visits"] <span class="hp-num ms-1">@hist.EmergencyVisits</span></span>
+                <span class="badge badge-light-primary fs-8 fw-bold">@T["Operations"] <span class="hp-num ms-1">@hist.Operations</span></span>
+            </div>
+            @if (hist.Recent.Count == 0) {<div class="text-muted fs-7 mb-2">@T["A new patient: nothing before today."]</div>}
+            @foreach (var e in hist.Recent)
+            {
+                bool bad = e.State is HospitalAppointmentStatus.NoShow or HospitalAppointmentStatus.Cancelled or HospitalSurgeryStatus.Cancelled or HospitalErOutcome.LeftWithoutBeingSeen or HospitalErOutcome.Deceased;
+                <div class="d-flex align-items-start gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
+                    <span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label bg-light"><i class="ki-outline @EventIcon(e.Kind) fs-4 text-gray-700"></i></span></span>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fs-7 fw-bold text-gray-800">@T["hk:" + e.Kind]@if (!string.IsNullOrWhiteSpace(e.Title)) {<text> · </text><bdi>@DisplayName.Of(e.Title, e.TitleEn)</bdi>}</div>
+                        <div class="fs-8 text-muted"><span class="hp-num" dir="ltr">@e.At.ToString("yyyy-MM-dd")</span>@if (e.Until is DateTime u) {<text> → </text><span class="hp-num" dir="ltr">@u.ToLocalTime().ToString("yyyy-MM-dd")</span>}@if (e.Detail != null) {<text> · </text><bdi>@DisplayName.Of(e.Detail, e.DetailEn)</bdi>}</div>
+                    </div>
+                    <span class="badge badge-light@(bad ? "-danger" : "") fs-8 fw-bold text-nowrap">@T["hst:" + e.Kind + ":" + e.State]</span>
+                </div>
+            }
+            <a href="@Url.Action("Patient", "Hospital", new { id = p.ID })" class="d-inline-block fs-7 fw-bold mt-3"><i class="ki-outline ki-document fs-6 me-1"></i>@T["The full file"]</a>
+        }
+    </div>
 }
 
 @* the acts *@

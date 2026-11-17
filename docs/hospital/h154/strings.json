@@ -1,0 +1,205 @@
+{
+ "unit": "H154 - the front desk: where the patient is now, and their administrative history",
+ "strings": {
+  "Where now": {
+   "ar": "مكانه الآن",
+   "en": "Where now",
+   "fr": "Où maintenant"
+  },
+  "Confidential file: the desk does not give where this patient is.": {
+   "ar": "ملف سري: لا يُخبر الاستقبال بمكان هذا المريض.",
+   "en": "Confidential file: the desk does not give where this patient is.",
+   "fr": "Dossier confidentiel : l'accueil ne communique pas où se trouve ce patient."
+  },
+  "Not in the hospital now, as far as the system knows.": {
+   "ar": "ليس في المستشفى الآن حسب ما يعرفه النظام.",
+   "en": "Not in the hospital now, as far as the system knows.",
+   "fr": "Pas à l'hôpital actuellement, à la connaissance du système."
+  },
+  "Previous history": {
+   "ar": "التاريخ السابق",
+   "en": "Previous history",
+   "fr": "Historique"
+  },
+  "Known since": {
+   "ar": "معروف منذ",
+   "en": "Known since",
+   "fr": "Connu depuis"
+  },
+  "Confidential file: its history opens only for the care team.": {
+   "ar": "ملف سري: تاريخه يُفتح لفريق العلاج فقط.",
+   "en": "Confidential file: its history opens only for the care team.",
+   "fr": "Dossier confidentiel : son historique n'est ouvert qu'à l'équipe soignante."
+  },
+  "Clinic visits": {
+   "ar": "زيارات العيادة",
+   "en": "Clinic visits",
+   "fr": "Consultations"
+  },
+  "Stays": {
+   "ar": "مرات التنويم",
+   "en": "Stays",
+   "fr": "Hospitalisations"
+  },
+  "Emergency visits": {
+   "ar": "زيارات الطوارئ",
+   "en": "Emergency visits",
+   "fr": "Passages aux urgences"
+  },
+  "Operations": {
+   "ar": "العمليات",
+   "en": "Operations",
+   "fr": "Opérations"
+  },
+  "A new patient: nothing before today.": {
+   "ar": "مريض جديد: لا شيء قبل اليوم.",
+   "en": "A new patient: nothing before today.",
+   "fr": "Nouveau patient : rien avant aujourd'hui."
+  },
+  "The full file": {
+   "ar": "الملف الكامل",
+   "en": "The full file",
+   "fr": "Le dossier complet"
+  },
+  "Confidential file": {
+   "ar": "ملف سري",
+   "en": "Confidential file",
+   "fr": "Dossier confidentiel"
+  },
+  "hk:Visit": {
+   "ar": "زيارة عيادة",
+   "en": "Clinic visit",
+   "fr": "Consultation"
+  },
+  "hk:Admission": {
+   "ar": "تنويم",
+   "en": "Stay",
+   "fr": "Hospitalisation"
+  },
+  "hk:Emergency": {
+   "ar": "طوارئ",
+   "en": "Emergency",
+   "fr": "Urgences"
+  },
+  "hk:Operation": {
+   "ar": "عملية",
+   "en": "Operation",
+   "fr": "Opération"
+  },
+  "hst:Visit:Done": {
+   "ar": "كشف",
+   "en": "Seen",
+   "fr": "Vu"
+  },
+  "hst:Visit:NoShow": {
+   "ar": "لم يحضر",
+   "en": "Did not come",
+   "fr": "Absent"
+  },
+  "hst:Visit:Cancelled": {
+   "ar": "ملغى",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  },
+  "hst:Visit:Arrived": {
+   "ar": "حضر",
+   "en": "Arrived",
+   "fr": "Arrivé"
+  },
+  "hst:Visit:InRoom": {
+   "ar": "عند الطبيب",
+   "en": "With the doctor",
+   "fr": "Avec le médecin"
+  },
+  "hst:Visit:Booked": {
+   "ar": "محجوز",
+   "en": "Booked",
+   "fr": "Réservé"
+  },
+  "hst:Admission:Active": {
+   "ar": "منوَّم الآن",
+   "en": "Still admitted",
+   "fr": "Toujours hospitalisé"
+  },
+  "hst:Admission:Discharged": {
+   "ar": "خرج",
+   "en": "Discharged",
+   "fr": "Sorti"
+  },
+  "hst:Emergency:Triage": {
+   "ar": "في الفرز",
+   "en": "In triage",
+   "fr": "Au tri"
+  },
+  "hst:Emergency:Waiting": {
+   "ar": "ينتظر",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "hst:Emergency:Treatment": {
+   "ar": "تحت العلاج",
+   "en": "In treatment",
+   "fr": "En soins"
+  },
+  "hst:Emergency:Observation": {
+   "ar": "تحت الملاحظة",
+   "en": "Under observation",
+   "fr": "En observation"
+  },
+  "hst:Emergency:Disposition": {
+   "ar": "قرار الخروج أو التنويم",
+   "en": "Being decided",
+   "fr": "Décision en cours"
+  },
+  "hst:Emergency:Closed": {
+   "ar": "أُغلقت",
+   "en": "Closed",
+   "fr": "Clôturé"
+  },
+  "hst:Emergency:Discharged": {
+   "ar": "خرج",
+   "en": "Went home",
+   "fr": "Rentré"
+  },
+  "hst:Emergency:Admitted": {
+   "ar": "نُوِّم",
+   "en": "Admitted",
+   "fr": "Hospitalisé"
+  },
+  "hst:Emergency:Transferred": {
+   "ar": "حُوِّل",
+   "en": "Transferred",
+   "fr": "Transféré"
+  },
+  "hst:Emergency:LeftWithoutBeingSeen": {
+   "ar": "غادر قبل الكشف",
+   "en": "Left before being seen",
+   "fr": "Parti sans être vu"
+  },
+  "hst:Emergency:Deceased": {
+   "ar": "توفي",
+   "en": "Deceased",
+   "fr": "Décédé"
+  },
+  "hst:Operation:Planned": {
+   "ar": "مجدولة",
+   "en": "Planned",
+   "fr": "Programmée"
+  },
+  "hst:Operation:InProgress": {
+   "ar": "جارية",
+   "en": "In progress",
+   "fr": "En cours"
+  },
+  "hst:Operation:Done": {
+   "ar": "تمت",
+   "en": "Done",
+   "fr": "Réalisée"
+  },
+  "hst:Operation:Cancelled": {
+   "ar": "ملغاة",
+   "en": "Cancelled",
+   "fr": "Annulée"
+  }
+ }
+}

@@ -7490,4 +7490,44 @@
   <data name="{0} must be compounded and checked before it leaves" xml:space="preserve"><value>{0} must be compounded and checked before it leaves</value></data>
   <data name="Prepare as an IV admixture or TPN" xml:space="preserve"><value>Prepare as an IV admixture or TPN</value></data>
   <data name="mL" xml:space="preserve"><value>mL</value></data>
+  <data name="A new patient: nothing before today." xml:space="preserve"><value>A new patient: nothing before today.</value></data>
+  <data name="Clinic visits" xml:space="preserve"><value>Clinic visits</value></data>
+  <data name="Confidential file" xml:space="preserve"><value>Confidential file</value></data>
+  <data name="Confidential file: its history opens only for the care team." xml:space="preserve"><value>Confidential file: its history opens only for the care team.</value></data>
+  <data name="Confidential file: the desk does not give where this patient is." xml:space="preserve"><value>Confidential file: the desk does not give where this patient is.</value></data>
+  <data name="Emergency visits" xml:space="preserve"><value>Emergency visits</value></data>
+  <data name="Known since" xml:space="preserve"><value>Known since</value></data>
+  <data name="Not in the hospital now, as far as the system knows." xml:space="preserve"><value>Not in the hospital now, as far as the system knows.</value></data>
+  <data name="Operations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Previous history" xml:space="preserve"><value>Previous history</value></data>
+  <data name="Stays" xml:space="preserve"><value>Stays</value></data>
+  <data name="The full file" xml:space="preserve"><value>The full file</value></data>
+  <data name="Where now" xml:space="preserve"><value>Where now</value></data>
+  <data name="hk:Admission" xml:space="preserve"><value>Stay</value></data>
+  <data name="hk:Emergency" xml:space="preserve"><value>Emergency</value></data>
+  <data name="hk:Operation" xml:space="preserve"><value>Operation</value></data>
+  <data name="hk:Visit" xml:space="preserve"><value>Clinic visit</value></data>
+  <data name="hst:Admission:Active" xml:space="preserve"><value>Still admitted</value></data>
+  <data name="hst:Admission:Discharged" xml:space="preserve"><value>Discharged</value></data>
+  <data name="hst:Emergency:Admitted" xml:space="preserve"><value>Admitted</value></data>
+  <data name="hst:Emergency:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="hst:Emergency:Deceased" xml:space="preserve"><value>Deceased</value></data>
+  <data name="hst:Emergency:Discharged" xml:space="preserve"><value>Went home</value></data>
+  <data name="hst:Emergency:Disposition" xml:space="preserve"><value>Being decided</value></data>
+  <data name="hst:Emergency:LeftWithoutBeingSeen" xml:space="preserve"><value>Left before being seen</value></data>
+  <data name="hst:Emergency:Observation" xml:space="preserve"><value>Under observation</value></data>
+  <data name="hst:Emergency:Transferred" xml:space="preserve"><value>Transferred</value></data>
+  <data name="hst:Emergency:Treatment" xml:space="preserve"><value>In treatment</value></data>
+  <data name="hst:Emergency:Triage" xml:space="preserve"><value>In triage</value></data>
+  <data name="hst:Emergency:Waiting" xml:space="preserve"><value>Waiting</value></data>
+  <data name="hst:Operation:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="hst:Operation:Done" xml:space="preserve"><value>Done</value></data>
+  <data name="hst:Operation:InProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="hst:Operation:Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="hst:Visit:Arrived" xml:space="preserve"><value>Arrived</value></data>
+  <data name="hst:Visit:Booked" xml:space="preserve"><value>Booked</value></data>
+  <data name="hst:Visit:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="hst:Visit:Done" xml:space="preserve"><value>Seen</value></data>
+  <data name="hst:Visit:InRoom" xml:space="preserve"><value>With the doctor</value></data>
+  <data name="hst:Visit:NoShow" xml:space="preserve"><value>Did not come</value></data>
 </root>

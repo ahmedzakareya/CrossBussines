@@ -118,7 +118,11 @@ namespace CrossBuy.Controllers
 			IEnumerable<HospitalDeskCandidate> hits = await FrontDeskSvc.SearchAsync(ctx, q, DeskClock(DateTime.UtcNow).Today, 12, ct);
 			if (kind is "name" or "mrn" or "id" or "phone" or "queue") hits = hits.Where(h => h.Reason == kind);
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
-			return PartialView("_DeskSearch", hits.ToList());
+			var list = hits.ToList();
+			// H154: "where is the patient?" — each candidate with where they are now (a confidential file's place stays unsaid)
+			var (where, restricted) = await WhereSvc.ForDeskAsync(ctx, list.Select(h => h.PatientId).ToList(), DateTime.Now, ct);
+			ViewBag.Where = where; ViewBag.Restricted = restricted;
+			return PartialView("_DeskSearch", list);
 		}
 
 		[HttpGet("FrontDesk/Patient/{id:int}")]
@@ -133,6 +137,10 @@ namespace CrossBuy.Controllers
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
 			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
 			await MoneyFormatAsync(ctx, ct);
+			// H154: where the patient is now, and their history as the desk needs it (administrative only)
+			var (where, restricted) = await WhereSvc.ForDeskAsync(ctx, new[] { id }, DateTime.Now, ct);
+			ViewBag.Where = where.GetValueOrDefault(id) ?? Array.Empty<HospitalWhere>(); ViewBag.Restricted = restricted.Contains(id);
+			ViewBag.History = await ActivatorUtilities.CreateInstance<HospitalDeskHistoryService>(HttpContext.RequestServices).HistoryAsync(ctx, id, 8, today, ct);
 			return PartialView("_DeskCard", card);
 		}
 
