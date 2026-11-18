@@ -35,6 +35,18 @@ namespace CrossBuy.BL.Reporting
             var marks = await _db.Set<HospitalCanvasMark>().AsNoTracking().Where(m => m.SheetId == s.ID && m.CompanyId == ctx.CompanyId).OrderBy(m => m.LesionNo).ToListAsync(cancellationToken);
             h["Findings"] = HospitalCanvasPaper.Findings(s.Kind, marks, ar);
             h["Results"] = HospitalCanvasPaper.Results(s.Kind, s.StateJson, patient, enc.StartedAt, ar);
+            // H177: the paper of a signed drawing prints its addenda and corrections under its results
+            var addenda = await (from a in _db.Set<HospitalClinicalAddendum>().AsNoTracking()
+                                 join e in _db.Employee.AsNoTracking() on a.CreatedByEmployeeId equals e.ID
+                                 where a.CompanyId == ctx.CompanyId && a.Subject == HospitalAddendumSubject.Canvas && a.SubjectId == s.ID
+                                 orderby a.CreatedAt
+                                 select new { a, e.FullName, e.FullNameEn }).ToListAsync(cancellationToken);
+            if (addenda.Count > 0)
+            {
+                var addLines = addenda.Select(x => HospitalAddendumRules.PaperLine(new HospitalAddendumRow(x.a, ar ? (x.FullName ?? "") : (x.FullNameEn ?? x.FullName ?? ""), null), ar,
+                    t => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)));
+                h["Results"] = string.Join("\n", new[] { h["Results"] as string }.Where(x => !string.IsNullOrEmpty(x)).Concat(addLines));
+            }
             h["SignedAt"] = s.SignedAt?.ToLocalTime();
             // H113: one row per mark (the header repeats), so a long list paginates instead of being cut off
             var lines = HospitalCanvasPaper.MarkLines(s.Kind, marks, ar);

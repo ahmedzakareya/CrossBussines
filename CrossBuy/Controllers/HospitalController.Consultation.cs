@@ -70,6 +70,7 @@ namespace CrossBuy.Controllers
 			// At a glance: the patient's earlier visits, newest first, without this one.
 			ViewBag.History = (await _consult.PatientEncountersAsync(ctx, patient.ID, ct)).Where(e => e.Id != id).Take(5).ToList();
 			ViewBag.Doctors = (await _outpatient.PractitionersAsync(ctx, ct)).ToDictionary(d => d.Row.ID);
+			ViewBag.Addenda = await AddendaSvc.BlockAsync(ctx, CrossBuy.Models.Context.Hospital.HospitalAddendumSubject.Encounter, id, ct);   // H177
 			return View(enc);
 		}
 

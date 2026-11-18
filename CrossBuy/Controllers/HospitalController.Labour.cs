@@ -42,10 +42,11 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
-			var page = await LabourSvc.PageAsync(ctx, id, ct);
+			var page = await LabourSvc.PageAsync(ctx, id, DateTime.UtcNow, ct);
 			if (page == null) return NotFound();
 			Chrome();
 			ViewBag.CanWard = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct) || await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			ViewBag.Addenda = await AddendaSvc.BlockAsync(ctx, CrossBuy.Models.Context.Hospital.HospitalAddendumSubject.Labour, id, ct);   // H177
 			return View(page);
 		}
 
@@ -65,6 +66,15 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await LabourSvc.ObserveAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		// H175: the labour's characteristics (the Labour Care Guide's first section)
+		[HttpPost("Labour/{id:int}/Info"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> LabourInfo(int id, [FromBody] HospitalLabourInfoInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await LabourSvc.SaveInfoAsync(ctx, id, input, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Labour/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]

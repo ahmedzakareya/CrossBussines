@@ -43,8 +43,8 @@ namespace CrossBuy.BL.Hospital
 				"rule:egfr-dosing:covers", "rule:egfr-dosing:limits", new[] { new HospitalRuleParam("recencyDays", 90, 1, 365, "days") }),
 			new(Burns, "rule:burns:name", "Emergency", "American Burn Association burn-centre referral criteria (2022); Parkland formula", "2",
 				"rule:burns:covers", "rule:burns:limits", new[] { new HospitalRuleParam("referPartialPct", 10, 5, 20, "%"), new HospitalRuleParam("fluidsAdultPct", 20, 10, 30, "%"), new HospitalRuleParam("fluidsChildPct", 10, 5, 20, "%") }),
-			new(Labour, "rule:labour:name", "Obstetrics", "WHO partograph (2000)", "1",
-				"rule:labour:covers", "rule:labour:limits", Array.Empty<HospitalRuleParam>()),
+			new(Labour, "rule:labour:name", "Obstetrics", "WHO Labour Care Guide (2020)", "2",   // H175: was the WHO partograph (2000), version 1
+				"rule:labour:covers:lcg", "rule:labour:limits:lcg", Array.Empty<HospitalRuleParam>()),
 			new(AfStroke, "rule:af-stroke:name", "Cardiology", "ESC 2024 Guidelines for the management of atrial fibrillation — CHA₂DS₂-VA", "2024",
 				"rule:af-stroke:covers", "rule:af-stroke:limits", Array.Empty<HospitalRuleParam>()),
 			new(Carboplatin, "rule:carboplatin:name", "Oncology", "Calvert formula (1989); Cockcroft-Gault clearance (1976); FDA cap of GFR at 125 mL/min (2010)", "1",

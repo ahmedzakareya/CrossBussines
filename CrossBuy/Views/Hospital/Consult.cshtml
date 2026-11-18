@@ -230,6 +230,8 @@
             </div>
         </div>
         </form>
+        @* H177: addenda and corrections on the locked record *@
+        @if (ViewBag.Addenda is CrossBuy.BL.Hospital.HospitalAddendaBlock adb) { <partial name="_Addenda" model="adb" /> }
     </div></div>
 </div>
 

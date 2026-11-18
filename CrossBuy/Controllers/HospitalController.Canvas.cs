@@ -40,6 +40,7 @@ namespace CrossBuy.Controllers
 			var (m, ready) = await CanvasSvc.SheetAsync(ctx, _consult, id, kind, ct);
 			if (m == null) return NotFound();
 			ViewBag.Ready = ready;
+			if (m.Sheet != null) ViewBag.Addenda = await AddendaSvc.BlockAsync(ctx, HospitalAddendumSubject.Canvas, m.Sheet.ID, ct);   // H177
 			if (kind == HospitalCanvasKind.Burn) ViewBag.BurnLimits = await HospitalBurnRules.ThresholdsAsync(_db, ctx.CompanyId, ct);   // H172: the clinic's approved thresholds
 			Chrome();
 			return View(m);

@@ -5,29 +5,46 @@
 @model HospitalLabourPage
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @*
-    H86 — one labour's partograph: the cervicograph (dilatation over time against the alert and action lines), the fetal
-    heart against its 110–160 band, every observation with its warnings, recording an observation and closing the labour.
+    H86 / H175 — one labour on the WHO Labour Care Guide (2020): the labour's characteristics, the cervix over time with
+    the guide's time limit at each centimetre (no alert or action lines), the fetal heart against 110–159, and every
+    assessment by the guide's sections — supportive care, the baby, the woman, labour progress, medication, shared
+    decision-making — each item marked when it meets its alert.
 *@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
-    ViewData["Title"] = T["Partograph"].Value;
+    ViewData["Title"] = T["Labour care guide"].Value;
     bool canWard = ViewBag.CanWard == true;
     var L = Model.Labour; bool active = L.Status == HospitalLabourStatus.Active;
     var inv = CultureInfo.InvariantCulture;
     string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
-    // the chart: hours from the labour's start across, 0–10 cm up
     double maxH = Math.Max(12, Math.Ceiling((Model.Points.Count == 0 ? 0 : Model.Points.Max(p => p.Hours)) + 1));
     const double W = 760, H = 300, PL = 40, PR = 12, PT = 12, PB = 30;
     double X(double h) => PL + (W - PL - PR) * h / maxH;
     double Y(double cm) => PT + (H - PT - PB) * (1 - cm / 10.0);
     string F(double v) => v.ToString("0.#", inv);
+    int step = Math.Max(2, (int)Math.Ceiling(maxH / 12 / 2) * 2);   // at most ~12 time labels, however long the labour
     double? sH = Model.ActiveStart == null ? null : (Model.ActiveStart.Value - L.StartedAt).TotalHours;
-    double sCm = (double)(Model.ActiveCervix ?? 0);
     const double FH = 140, FT = 10, FB = 24;
     double FY(int bpm) => FT + (FH - FT - FB) * (1 - (Math.Clamp(bpm, 80, 200) - 80) / 120.0);
     string Local(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("HH:mm");
+    string LocalFull(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("yyyy-MM-dd HH:mm");
     Microsoft.AspNetCore.Html.IHtmlContent Svg(double x, double y, string anchor, string fill, string content) =>
         new Microsoft.AspNetCore.Html.HtmlString("<" + "text x=\"" + F(x) + "\" y=\"" + F(y) + "\" font-size=\"11\" text-anchor=\"" + anchor + "\" fill=\"" + fill + "\">" + System.Net.WebUtility.HtmlEncode(content) + "</" + "text>");
+    string Plus(int? n) => n == null ? "—" : n == 0 ? "0" : new string('+', n.Value);
+    string Yn(bool? b) => b == null ? "—" : b.Value ? T["Yes"].Value : T["No"].Value;
+    // one item of an assessment: its label and value, red when it is one of this assessment's alerts
+    Microsoft.AspNetCore.Html.IHtmlContent Item(string label, string value, bool alert) => new Microsoft.AspNetCore.Html.HtmlString(
+        "<div class=\"d-flex justify-content-between gap-2 fs-8\"><span class=\"text-gray-500\">" + System.Net.WebUtility.HtmlEncode(label) + "</span><span class=\"fw-bold hp-num " + (alert ? "text-danger" : "text-gray-800") + "\" dir=\"auto\">" + System.Net.WebUtility.HtmlEncode(value) + "</span></div>");
+    var selYn = new[] { ("", "—"), ("true", T["Yes"].Value), ("false", T["No"].Value) };
+    var selPlus = new[] { ("", "—"), ("0", "0"), ("1", "+"), ("2", "++"), ("3", "+++") };
+    var selUrine = new[] { ("", "—"), ("0", "0"), ("1", "+"), ("2", "++"), ("3", "+++"), ("4", "++++") };
+    // the assessment window's fields as markup (a local function holding <option> would be taken for a tag helper)
+    string E(string v) => System.Net.WebUtility.HtmlEncode(v);
+    Microsoft.AspNetCore.Html.IHtmlContent Sel(string key, string label, IEnumerable<(string V, string L)> opts, string cls = "col-md-3") => new Microsoft.AspNetCore.Html.HtmlString(
+        "<div class=\"" + cls + "\"><label class=\"fs-7 fw-semibold mb-2\">" + E(label) + "</label><select class=\"form-select form-select-solid\" data-control=\"select2\" data-hide-search=\"true\" data-dropdown-parent=\"#obsModal2\" data-o=\"" + key + "\">"
+        + string.Concat(opts.Select(o => "<" + "option value=\"" + E(o.V) + "\">" + E(o.L) + "</" + "option>")) + "</select></div>");
+    Microsoft.AspNetCore.Html.IHtmlContent Num(string key, string label, string attrs = "", string cls = "col-md-3") => new Microsoft.AspNetCore.Html.HtmlString(
+        "<div class=\"" + cls + "\"><label class=\"fs-7 fw-semibold mb-2\">" + E(label) + "</label><input type=\"number\" class=\"form-control form-control-solid\" dir=\"ltr\" data-o=\"" + key + "\" " + attrs + " /></div>");
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -35,30 +52,32 @@
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
-            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Partograph"] — @DisplayName.Of(Model.Name, Model.NameEn)</h1>
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Labour care guide"] — @DisplayName.Of(Model.Name, Model.NameEn)</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("LabourWard")" class="text-muted text-hover-primary">@T["Labour ward"]</a></li>
                 <li class="breadcrumb-item text-muted"><bdi class="hp-num">@Model.Mrn</bdi> · @T["Started {0}", HospitalNursingService.UtcToWard(L.StartedAt).ToString("yyyy-MM-dd HH:mm")]</li></ul>
         </div>
         <div class="d-flex gap-2">
-            @if (active && canWard) {<button type="button" class="btn btn-sm btn-primary" data-o-new><i class="ki-outline ki-plus fs-4"></i>@T["Record an observation"]</button>
+            @if (active && canWard) {<button type="button" class="btn btn-sm btn-primary" data-o-new><i class="ki-outline ki-plus fs-4"></i>@T["Record an assessment"]</button>
+                <button type="button" class="btn btn-sm btn-light" data-info><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Labour characteristics"]</button>
                 <button type="button" class="btn btn-sm btn-light" data-close><i class="ki-outline ki-check-square fs-4"></i>@T["Close the labour"]</button>}
-            @if (!active) {<span class="badge badge-light-success fs-6 py-3">@T["lbo:" + L.Outcome]</span>}
+            @if (!active) {<span class="badge badge-light-primary fs-6 py-3">@T["lbo:" + L.Outcome]</span>}
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (Model.Current.Count > 0) {<div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
-            <div class="d-flex flex-wrap align-items-center gap-2">@foreach (var w in Model.Current) {<span class="badge badge-danger fs-7 fw-bold">@T["lbw:" + w]</span>}</div></div>}
-        @* H128: the latest figures as the theme's stat tiles (demo39 dashboards/logistics) *@
+            <div class="d-flex flex-column gap-2"><div class="fw-bold text-gray-900 fs-6">@T["Alerts by the Labour Care Guide: assess, and record the decision"]</div>
+                <div class="d-flex flex-wrap align-items-center gap-2">@foreach (var w in Model.Current) {<span class="badge badge-danger fs-7 fw-bold">@T["lbw:" + w]</span>}</div></div></div>}
         @{
             var lastCx = Model.Points.LastOrDefault(q => q.Obs.CervixCm != null)?.Obs.CervixCm;
             var lastFh = Model.Points.LastOrDefault(q => q.Obs.FetalHeartRate != null)?.Obs.FetalHeartRate;
-            var lastCt = Model.Points.LastOrDefault(q => q.Obs.ContractionsPer10 != null)?.Obs.ContractionsPer10;
-            bool fhBad = lastFh is < 110 or > 160;
+            bool fhBad = lastFh is < 110 or >= 160;
+            string left = Model.HoursLeft is double hl ? (hl > 0 ? hl.ToString("0.#", inv) : "0") : "—";
+            bool leftBad = Model.HoursLeft is <= 0;
             var ptiles = new (string Label, string Value, string Unit, string Tone, string Icon, bool Bad)[] {
                 ("Cervix", lastCx?.ToString("0.#", inv) ?? "—", lastCx == null ? "" : "cm", "primary", "abstract-26", false),
-                ("Fetal heart", lastFh?.ToString() ?? "—", "", fhBad ? "danger" : "success", "heart", fhBad),
-                ("Contractions", lastCt?.ToString() ?? "—", lastCt == null ? "" : "/10", "info", "pulse", false),
-                ("Observations", Model.Points.Count.ToString(), "", "primary", "notepad", false) };
+                (Model.SecondStageAt != null ? "Hours left in the second stage" : "Hours left at this centimetre", left, Model.HoursLeft == null ? "" : "h", leftBad ? "danger" : "info", "time", leftBad),
+                ("Fetal heart", lastFh?.ToString() ?? "—", "", fhBad ? "danger" : "primary", "heart", fhBad),
+                ("Assessments", Model.Points.Count.ToString(), "", "primary", "notepad", false) };
         }
         <div class="row g-4 mb-5">
             @foreach (var t in ptiles)
@@ -72,72 +91,105 @@
                 </div></div>
             }
         </div>
+
+        @* H175: section 1 — the labour's characteristics *@
         <div class="card card-flush mb-5">
-            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Cervicograph"]</span>
-                <span class="text-gray-500 mt-1 fw-semibold fs-7">@(sH == null ? T["The active phase starts at 4 cm: the lines appear from then."].Value : string.Format(T["Alert line from {0} cm at 1 cm an hour; action line four hours to its right."].Value, F(sCm)))</span></h3>
-                <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
-                    <span class="d-flex align-items-center"><span class="bullet h-2px w-20px me-2" style="background:#3A5795"></span>@T["Alert line"]</span>
-                    <span class="d-flex align-items-center"><span class="bullet h-2px w-20px me-2" style="background:#DC2626"></span>@T["Action line"]</span>
-                </div></div>
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Labour characteristics"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["WHO Labour Care Guide (2020)"]</span></h3></div>
+            <div class="card-body pt-2"><div class="row g-5">
+                <div class="col-6 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Parity"]</div><div class="fw-bold text-gray-900 fs-6 hp-num">@(L.Parity?.ToString() ?? "—")</div></div>
+                <div class="col-6 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Labour onset"]</div><div class="fw-bold text-gray-900 fs-6">@(L.Onset == null ? "—" : T["onset:" + L.Onset].Value)</div></div>
+                <div class="col-6 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Membranes ruptured"]</div><div class="fw-bold text-gray-900 fs-6 hp-num" dir="ltr">@LocalFull(L.MembranesRupturedAt)</div></div>
+                <div class="col-6 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Active labour since"]</div><div class="fw-bold text-gray-900 fs-6 hp-num" dir="ltr">@LocalFull(Model.ActiveStart)</div>@if (L.ActiveLabourAt == null && Model.ActiveStart != null) {<div class="text-muted fs-8">@T["from the first 5 cm"]</div>}</div>
+                <div class="col-6 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Second stage since"]</div><div class="fw-bold text-gray-900 fs-6 hp-num" dir="ltr">@LocalFull(Model.SecondStageAt)</div></div>
+                <div class="col-12 col-lg-2"><div class="text-gray-500 fw-semibold fs-8 mb-1">@T["Risk factors"]</div><div class="fw-semibold text-gray-800 fs-7" dir="auto">@(L.RiskFactors ?? "—")</div></div>
+            </div></div>
+        </div>
+
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Cervix over time"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Active labour from 5 cm. An alert when the cervix stays at 5 cm for 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2.5 h, 9 cm 2 h; the second stage at 3 h for a first birth, otherwise 2 h."]</span></h3></div>
             <div class="card-body pt-2" dir="ltr">
-                <svg viewBox="0 0 @F(W) @F(H)" width="100%" style="max-width:100%;height:auto" role="img" aria-label="@T["Cervicograph"]">
-                    @for (int cm = 0; cm <= 10; cm += 2) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(cm))" y2="@F(Y(cm))" stroke="#eef0f6" />@Svg(PL - 8, Y(cm) + 4, "end", "#6b7280", cm.ToString())}
-                    @for (int h = 0; h <= maxH; h += 2) {<line x1="@F(X(h))" x2="@F(X(h))" y1="@F(PT)" y2="@F(H - PB)" stroke="#f4f5f9" />@Svg(X(h), H - 10, "middle", "#6b7280", h + " h")}
-                    @if (sH is double s0)
-                    {
-                        double toTen = 10 - sCm;
-                        <line x1="@F(X(s0))" y1="@F(Y(sCm))" x2="@F(X(Math.Min(maxH, s0 + toTen)))" y2="@F(Y(Math.Min(10, sCm + (Math.Min(maxH, s0 + toTen) - s0))))" stroke="#3A5795" stroke-width="2" stroke-dasharray="6 4" />
-                        <line x1="@F(X(Math.Min(maxH, s0 + 4)))" y1="@F(Y(sCm))" x2="@F(X(Math.Min(maxH, s0 + 4 + toTen)))" y2="@F(Y(Math.Min(10, sCm + (Math.Min(maxH, s0 + 4 + toTen) - s0 - 4))))" stroke="#DC2626" stroke-width="2" stroke-dasharray="6 4" />
-                        double lab = Math.Min(Math.Min(5, toTen - 0.5), maxH - s0 - 4.5);
-                        @Svg(X(s0 + lab) + 10, Y(sCm + lab) + 4, "start", "#3A5795", T["Alert line"].Value)
-                        @Svg(X(s0 + 4 + lab) + 10, Y(sCm + lab) + 4, "start", "#DC2626", T["Action line"].Value)
-                    }
+                <svg viewBox="0 0 @F(W) @F(H)" width="100%" style="max-width:100%;height:auto" role="img" aria-label="@T["Cervix over time"]">
+                    @for (int cm = 0; cm <= 10; cm += 1) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(cm))" y2="@F(Y(cm))" stroke="@(cm == 5 ? "#c7d2ea" : "#eef0f6")" />@if (cm % 2 == 0 || cm == 5) {@Svg(PL - 8, Y(cm) + 4, "end", "#6b7280", cm.ToString())}}
+                    @for (int h = 0; h <= maxH; h += step) {<line x1="@F(X(h))" x2="@F(X(h))" y1="@F(PT)" y2="@F(H - PB)" stroke="#f4f5f9" />@Svg(X(h), H - 10, "middle", "#6b7280", h + " h")}
+                    @if (sH is double s0 && s0 >= 0 && s0 <= maxH) {<line x1="@F(X(s0))" x2="@F(X(s0))" y1="@F(PT)" y2="@F(H - PB)" stroke="#3A5795" stroke-dasharray="4 4" />@Svg(X(s0) + 4, PT + 12, "start", "#3A5795", T["Active labour"].Value)}
                     @{ var cx = Model.Points.Where(p => p.Obs.CervixCm != null).ToList(); }
                     @if (cx.Count > 1) {<polyline fill="none" stroke="#1e2f5a" stroke-width="2" points="@string.Join(" ", cx.Select(p => F(X(p.Hours)) + "," + F(Y((double)p.Obs.CervixCm!.Value))))" />}
                     @foreach (var p in cx)
                     {
-                        bool bad = p.Warnings.Contains(HospitalLabourWarning.ActionLine) || p.Warnings.Contains(HospitalLabourWarning.AlertLine);
+                        bool bad = p.Warnings.Contains(HospitalLabourWarning.CervixDelay) || p.Warnings.Contains(HospitalLabourWarning.SecondStageDelay);
                         double x = X(p.Hours), y = Y((double)p.Obs.CervixCm!.Value);
                         <g stroke="@(bad ? "#DC2626" : "#1e2f5a")" stroke-width="2.5"><line x1="@F(x - 5)" y1="@F(y - 5)" x2="@F(x + 5)" y2="@F(y + 5)" /><line x1="@F(x - 5)" y1="@F(y + 5)" x2="@F(x + 5)" y2="@F(y - 5)" /></g>
                     }
                 </svg>
                 <div class="separator separator-dashed my-5"></div>
-                <div class="d-flex flex-stack mb-2" dir="auto"><span class="fw-bold text-gray-800 fs-6">@T["Fetal heart"]</span><span class="badge badge-light-success fs-8 fw-bold hp-num" dir="ltr">110–160</span></div>
+                <div class="d-flex flex-stack mb-2" dir="auto"><span class="fw-bold text-gray-800 fs-6">@T["Fetal heart"]</span><span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">110–159</span></div>
                 <svg viewBox="0 0 @F(W) @F(FH)" width="100%" style="max-width:100%;height:auto" role="img" aria-label="@T["Fetal heart"]">
-                    <rect x="@F(PL)" width="@F(W - PL - PR)" y="@F(FY(160))" height="@F(FY(110) - FY(160))" fill="#e8f5ee" />
+                    <rect x="@F(PL)" width="@F(W - PL - PR)" y="@F(FY(160))" height="@F(FY(110) - FY(160))" fill="#e9eef8" />
                     @foreach (var b in new[] { 80, 110, 160, 200 }) {@Svg(PL - 8, FY(b) + 4, "end", "#6b7280", b.ToString())}
                     @{ var fh = Model.Points.Where(p => p.Obs.FetalHeartRate != null).ToList(); }
                     @if (fh.Count > 1) {<polyline fill="none" stroke="#1e2f5a" stroke-width="2" points="@string.Join(" ", fh.Select(p => F(X(p.Hours)) + "," + F(FY(p.Obs.FetalHeartRate!.Value))))" />}
-                    @foreach (var p in fh) {<circle cx="@F(X(p.Hours))" cy="@F(FY(p.Obs.FetalHeartRate!.Value))" r="4" fill="@(p.Obs.FetalHeartRate is < 110 or > 160 ? "#DC2626" : "#1e2f5a")" />}
+                    @foreach (var p in fh) {<circle cx="@F(X(p.Hours))" cy="@F(FY(p.Obs.FetalHeartRate!.Value))" r="4" fill="@(p.Obs.FetalHeartRate is < 110 or >= 160 ? "#DC2626" : "#1e2f5a")" />}
                 </svg>
             </div>
         </div>
-        @* H128: the observations as the theme's table widget (demo39 widgets/tables) *@
+
         <div class="card card-flush">
-            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Observations"]</span>
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Assessments"]</span>
                 <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Points.Count</span></h3>
-                @if (active && canWard) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-o-new><i class="ki-outline ki-plus fs-4"></i>@T["Record an observation"]</button></div>}</div>
+                @if (active && canWard) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-o-new><i class="ki-outline ki-plus fs-4"></i>@T["Record an assessment"]</button></div>}</div>
             <div class="card-body pt-2">
-                @if (Model.Points.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-notepad fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No observation yet."]</div></div> }
+                @if (Model.Points.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-notepad fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No assessment yet."]</div></div> }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
-                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Time"]</th><th>@T["Cervix"]</th><th>@T["Descent"]</th><th>@T["Contractions"]</th><th>@T["Fetal heart"]</th><th>@T["Liquor"]</th><th>@T["BP"]</th><th>@T["Pulse"]</th><th>@T["Temp"]</th><th class="pe-4 rounded-end">@T["Warnings"]</th></tr></thead>
+                    <div class="table-responsive"><table class="table align-top gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start min-w-90px">@T["Time"]</th><th class="min-w-140px">@T["lcg:Care"]</th><th class="min-w-150px">@T["lcg:Baby"]</th><th class="min-w-150px">@T["lcg:Woman"]</th><th class="min-w-140px">@T["lcg:Progress"]</th><th class="min-w-140px">@T["lcg:Medication"]</th><th class="pe-4 rounded-end min-w-180px">@T["lcg:Decision"]</th></tr></thead>
                         <tbody>
                         @foreach (var p in Model.Points.AsEnumerable().Reverse())
                         {
-                            var o = p.Obs;
+                            var o = p.Obs; var w = p.Warnings;
                             <tr>
-                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block">@Local(o.At)</span><span class="text-gray-500 fw-semibold fs-7">@Who(o.CreatedByEmployeeId)</span></td>
-                                <td>@if (o.CervixCm != null) {<span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@o.CervixCm.Value.ToString("0.#", inv)&nbsp;cm</span>} else {<span class="text-gray-400">—</span>}</td>
-                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.DescentFifths == null ? "—" : o.DescentFifths + "/5")</span></td>
-                                <td><span class="text-gray-800 fw-bold hp-num d-block" dir="ltr">@(o.ContractionsPer10 == null ? "—" : o.ContractionsPer10 + "/10")</span>@if (o.ContractionSeconds != null) {<span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">@o.ContractionSeconds&nbsp;s</span>}</td>
-                                <td>@if (o.FetalHeartRate != null) {<span class="badge badge-light-@(o.FetalHeartRate is < 110 or > 160 ? "danger" : "success") fs-7 fw-bold hp-num">@o.FetalHeartRate</span>} else {<span class="text-gray-400">—</span>}</td>
-                                <td><span class="text-gray-800 fw-semibold fs-7">@(o.Liquor == null ? "—" : T["liq:" + o.Liquor].Value)</span></td>
-                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.BpSystolic == null ? "—" : o.BpSystolic + "/" + o.BpDiastolic)</span></td>
-                                <td><span class="text-gray-800 fw-bold hp-num">@(o.Pulse?.ToString() ?? "—")</span></td>
-                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.TemperatureC?.ToString("0.0", inv) ?? "—")</span></td>
-                                <td class="pe-4">@if (p.Warnings.Count > 0) {<div class="d-flex flex-wrap gap-1">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["lbw:" + w]</span>}</div>}@if (o.Note != null) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi>@o.Note</bdi></span>}@if (p.Warnings.Count == 0 && o.Note == null) {<span class="text-gray-400">—</span>}</td>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block">@Local(o.At)</span><span class="text-gray-500 fw-semibold fs-8">@Who(o.CreatedByEmployeeId)</span>
+                                    @if (w.Count > 0) {<div class="d-flex flex-wrap gap-1 mt-2">@foreach (var x in w) {<span class="badge badge-light-danger fs-9 fw-bold">@T["lbw:" + x]</span>}</div>}</td>
+                                <td><div class="d-flex flex-column gap-1">
+                                    @Item(T["Companion"].Value, Yn(o.Companion), w.Contains(HospitalLabourWarning.NoCompanion))
+                                    @Item(T["Pain relief"].Value, Yn(o.PainRelief), w.Contains(HospitalLabourWarning.NoPainRelief))
+                                    @Item(T["Oral fluid"].Value, Yn(o.OralFluid), w.Contains(HospitalLabourWarning.NoOralFluid))
+                                    @Item(T["Posture"].Value, o.Posture == null ? "—" : T["posture:" + o.Posture].Value, w.Contains(HospitalLabourWarning.Supine))
+                                </div></td>
+                                <td><div class="d-flex flex-column gap-1">
+                                    @Item(T["Fetal heart"].Value, o.FetalHeartRate?.ToString() ?? "—", w.Contains(HospitalLabourWarning.FetalHeart))
+                                    @Item(T["Deceleration"].Value, o.Deceleration == null ? "—" : T["decel:" + o.Deceleration].Value, w.Contains(HospitalLabourWarning.LateDecelerations))
+                                    @Item(T["Liquor"].Value, o.Liquor == null ? "—" : T["liq:" + o.Liquor].Value, w.Contains(HospitalLabourWarning.Meconium) || w.Contains(HospitalLabourWarning.Bleeding))
+                                    @Item(T["Fetal position"].Value, o.FetalPosition ?? "—", w.Contains(HospitalLabourWarning.Malposition))
+                                    @Item(T["Caput"].Value, Plus(o.Caput), w.Contains(HospitalLabourWarning.Caput))
+                                    @Item(T["Moulding"].Value, Plus(o.Moulding), w.Contains(HospitalLabourWarning.Moulding))
+                                </div></td>
+                                <td><div class="d-flex flex-column gap-1">
+                                    @Item(T["Pulse"].Value, o.Pulse?.ToString() ?? "—", w.Contains(HospitalLabourWarning.Pulse))
+                                    @Item(T["BP"].Value, o.BpSystolic == null ? "—" : o.BpSystolic + "/" + o.BpDiastolic, w.Contains(HospitalLabourWarning.Hypertension) || w.Contains(HospitalLabourWarning.Hypotension))
+                                    @Item(T["Temp"].Value, o.TemperatureC?.ToString("0.0", inv) ?? "—", w.Contains(HospitalLabourWarning.Temperature))
+                                    @Item(T["Urine protein"].Value, Plus(o.UrineProtein), w.Contains(HospitalLabourWarning.Proteinuria))
+                                    @Item(T["Urine acetone"].Value, Plus(o.UrineAcetone), w.Contains(HospitalLabourWarning.Ketonuria))
+                                </div></td>
+                                <td><div class="d-flex flex-column gap-1">
+                                    @Item(T["Contractions in 10 min"].Value, o.ContractionsPer10?.ToString() ?? "—", w.Contains(HospitalLabourWarning.Tachysystole) || w.Contains(HospitalLabourWarning.FewContractions))
+                                    @Item(T["Each lasts (s)"].Value, o.ContractionSeconds?.ToString() ?? "—", w.Contains(HospitalLabourWarning.ContractionLength))
+                                    @Item(T["Cervix (cm)"].Value, o.CervixCm?.ToString("0.#", inv) ?? "—", w.Contains(HospitalLabourWarning.CervixDelay) || w.Contains(HospitalLabourWarning.SecondStageDelay))
+                                    @Item(T["Descent (fifths)"].Value, o.DescentFifths == null ? "—" : o.DescentFifths + "/5", false)
+                                </div></td>
+                                <td><div class="d-flex flex-column gap-1">
+                                    @Item(T["Oxytocin"].Value, o.Oxytocin ?? "—", false)
+                                    @Item(T["Medicine"].Value, o.Medicine ?? "—", false)
+                                    @Item(T["IV fluids"].Value, Yn(o.IvFluids), false)
+                                </div></td>
+                                <td class="pe-4"><div class="d-flex flex-column gap-2 fs-8">
+                                    @if (o.Assessment != null) {<div><span class="text-gray-500">@T["Assessment"]:</span> <span class="text-gray-800 fw-semibold" dir="auto">@o.Assessment</span></div>}
+                                    @if (o.Plan != null) {<div><span class="text-gray-500">@T["Plan"]:</span> <span class="text-gray-800 fw-semibold" dir="auto">@o.Plan</span></div>}
+                                    @if (o.Note != null) {<div class="text-gray-600" dir="auto">@o.Note</div>}
+                                    @if (o.Assessment == null && o.Plan == null && o.Note == null) {<span class="text-gray-400">—</span>}
+                                </div></td>
                             </tr>
                         }
                         </tbody>
@@ -145,31 +197,57 @@
                 }
             </div>
         </div>
+        <div class="mt-5"></div>
+        @* H177: addenda and corrections on the locked record *@
+        @if (ViewBag.Addenda is CrossBuy.BL.Hospital.HospitalAddendaBlock adb) { <partial name="_Addenda" model="adb" /> }
     </div></div>
 </div>
 
 @if (active && canWard)
 {
-    @* H128: both forms as the theme's form modal (demo39 utilities/modals/forms/new-target) *@
-    <div class="modal fade" id="obsModal2" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    @* the guide's assessment, by its sections — the theme's form modal *@
+    <div class="modal fade" id="obsModal2" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-900px"><div class="modal-content rounded">
         <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
-            <div class="mb-10 text-center"><h1 class="mb-3">@T["Labour observation"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(Model.Name, Model.NameEn) · <bdi class="hp-num">@Model.Mrn</bdi></div></div>
-            <div class="row g-6">
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-o="at" /><div class="text-muted fs-7 mt-1">@T["Empty means now."]</div></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Cervix (cm)"]</label><input type="number" min="0" max="10" step="0.5" class="form-control form-control-solid" dir="ltr" data-o="cervixCm" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Descent (fifths)"]</label><input type="number" min="0" max="5" class="form-control form-control-solid" dir="ltr" data-o="descentFifths" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Contractions in 10 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-o="contractionsPer10" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Each lasts (s)"]</label><input type="number" min="0" max="180" class="form-control form-control-solid" dir="ltr" data-o="contractionSeconds" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Fetal heart (bpm)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="fetalHeartRate" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Liquor"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#obsModal2" data-o="liquor"><option value="">—</option>@foreach (var l in HospitalLiquor.All) {<option value="@l">@T["liq:" + l]</option>}</select></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["BP (systolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpSystolic" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["BP (diastolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpDiastolic" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Pulse"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="pulse" /></div>
-            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Temperature (°C)"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-o="temperatureC" /></div>
-            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Notes"]</label><input class="form-control form-control-solid" maxlength="300" data-o="note" /></div>
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Labour assessment"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(Model.Name, Model.NameEn) · <bdi class="hp-num">@Model.Mrn</bdi></div></div>
+            <div class="row g-5">
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-o="at" /><div class="text-muted fs-8 mt-1">@T["Empty means now."]</div></div>
+            </div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Care"]</h4>
+            <div class="row g-5">@Sel("companion", T["Companion"].Value, selYn)@Sel("painRelief", T["Pain relief"].Value, selYn)@Sel("oralFluid", T["Oral fluid"].Value, selYn)@Sel("posture", T["Posture"].Value, new[] { ("", "—") }.Concat(HospitalLcg.Postures.Select(x => (x, T["posture:" + x].Value))))</div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Baby"]</h4>
+            <div class="row g-5">@Num("fetalHeartRate", T["Fetal heart (bpm)"].Value, "min=\"50\" max=\"240\"")@Sel("deceleration", T["Deceleration"].Value, new[] { ("", "—") }.Concat(HospitalLcg.Decelerations.Select(x => (x, T["decel:" + x].Value))))@Sel("liquor", T["Liquor"].Value, new[] { ("", "—") }.Concat(HospitalLiquor.All.Select(x => (x, T["liq:" + x].Value))))@Sel("fetalPosition", T["Fetal position"].Value, new[] { ("", "—") }.Concat(HospitalLcg.Positions.Select(x => (x, x))))@Sel("caput", T["Caput"].Value, selPlus)@Sel("moulding", T["Moulding"].Value, selPlus)</div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Woman"]</h4>
+            <div class="row g-5">@Num("pulse", T["Pulse"].Value)@Num("bpSystolic", T["BP (systolic)"].Value)@Num("bpDiastolic", T["BP (diastolic)"].Value)@Num("temperatureC", T["Temperature (°C)"].Value, "step=\"0.1\"")@Sel("urineProtein", T["Urine protein"].Value, selUrine)@Sel("urineAcetone", T["Urine acetone"].Value, selUrine)</div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Progress"]</h4>
+            <div class="row g-5">@Num("contractionsPer10", T["Contractions in 10 min"].Value, "min=\"0\" max=\"10\"")@Num("contractionSeconds", T["Each lasts (s)"].Value, "min=\"0\" max=\"180\"")@Num("cervixCm", T["Cervix (cm)"].Value, "min=\"0\" max=\"10\" step=\"0.5\"")@Num("descentFifths", T["Descent (fifths)"].Value, "min=\"0\" max=\"5\"")</div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Medication"]</h4>
+            <div class="row g-5">
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Oxytocin (U/L, drops/min)"]</label><input class="form-control form-control-solid" maxlength="40" dir="auto" data-o="oxytocin" /></div>
+                <div class="col-md-5"><label class="fs-7 fw-semibold mb-2">@T["Medicine"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" data-o="medicine" /></div>
+                @Sel("ivFluids", T["IV fluids"].Value, selYn)
+            </div>
+            <div class="separator separator-dashed my-6"></div><h4 class="fs-6 fw-bold text-gray-800 mb-4">@T["lcg:Decision"]</h4>
+            <div class="row g-5">
+                <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Assessment"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-o="assessment"></textarea></div>
+                <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Plan"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-o="plan"></textarea></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Notes"]</label><input class="form-control form-control-solid" maxlength="300" data-o="note" /></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-o-save>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Labour characteristics"]</h1><div class="text-muted fw-semibold fs-6">@T["WHO Labour Care Guide (2020)"]</div></div>
+            <div class="row g-6">
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Parity"]</label><input type="number" min="0" max="20" class="form-control form-control-solid" dir="ltr" data-i="parity" value="@L.Parity" /></div>
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Labour onset"]</label><select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#infoModal" data-i="onset"><option value="">—</option>@foreach (var x in HospitalLcg.Onsets) {<option value="@x" selected="@(L.Onset == x)">@T["onset:" + x]</option>}</select></div>
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Membranes ruptured"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-i="membranesRupturedAt" value="@(L.MembranesRupturedAt == null ? "" : HospitalNursingService.UtcToWard(L.MembranesRupturedAt.Value).ToString("yyyy-MM-ddTHH:mm"))" /></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Active labour diagnosed at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-i="activeLabourAt" value="@(L.ActiveLabourAt == null ? "" : HospitalNursingService.UtcToWard(L.ActiveLabourAt.Value).ToString("yyyy-MM-ddTHH:mm"))" /><div class="text-muted fs-8 mt-1">@T["Empty: the first assessment at 5 cm or more."]</div></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Risk factors"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-i="riskFactors">@L.RiskFactors</textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-i-save>@T["Save"]</button></div>
         </div>
     </div></div></div>
     <div class="modal fade" id="closeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
@@ -188,20 +266,24 @@
 @section Scripts {
     <script>
         (function () {
-            var oEl = document.getElementById('obsModal2'), cEl = document.getElementById('closeModal'); if (!oEl) return;
+            var oEl = document.getElementById('obsModal2'), cEl = document.getElementById('closeModal'), iEl = document.getElementById('infoModal'); if (!oEl) return;
             var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), obs: @Json.Serialize(T["Save this observation?"].Value), close: @Json.Serialize(T["Close this labour?"].Value) };
-            var nums = ['cervixCm', 'descentFifths', 'contractionsPer10', 'contractionSeconds', 'fetalHeartRate', 'bpSystolic', 'bpDiastolic', 'pulse', 'temperatureC'];
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), obs: @Json.Serialize(T["Save this assessment?"].Value),
+                close: @Json.Serialize(T["Close this labour?"].Value), info: @Json.Serialize(T["Save the labour's characteristics?"].Value) };
+            var nums = ['cervixCm', 'descentFifths', 'contractionsPer10', 'contractionSeconds', 'fetalHeartRate', 'bpSystolic', 'bpDiastolic', 'pulse', 'temperatureC', 'caput', 'moulding', 'urineProtein', 'urineAcetone', 'parity'];
+            var bools = ['companion', 'painRelief', 'oralFluid', 'ivFluids'];
+            function val(k, v) { if (v === '') return null; if (nums.indexOf(k) >= 0) return Number(v); if (bools.indexOf(k) >= 0) return v === 'true'; return v; }
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
             function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
             document.addEventListener('click', function (e) {
                 if (e.target.closest('[data-o-new]')) { oEl.querySelectorAll('[data-o]').forEach(function (i) { i.value = ''; if (i._flatpickr) i._flatpickr.clear(); }); if (window.jQuery) jQuery(oEl).find('select').trigger('change.select2'); bootstrap.Modal.getOrCreateInstance(oEl).show(); return; }
+                if (e.target.closest('[data-info]')) { bootstrap.Modal.getOrCreateInstance(iEl).show(); return; }
                 if (e.target.closest('[data-close]')) { bootstrap.Modal.getOrCreateInstance(cEl).show(); return; }
-                var s = e.target.closest('[data-o-save]');
-                if (s) { var b = { labourId: @L.ID }; oEl.querySelectorAll('[data-o]').forEach(function (i) { var k = i.getAttribute('data-o'), v = i.value.trim(); b[k] = v === '' ? null : (nums.indexOf(k) >= 0 ? Number(v) : v); });
+                if (e.target.closest('[data-o-save]')) { var b = { labourId: @L.ID }; oEl.querySelectorAll('[data-o]').forEach(function (i) { var k = i.getAttribute('data-o'); b[k] = val(k, i.value.trim()); });
                     cbConfirm(W.obs).then(function (ok) { if (ok) post(@Json.Serialize(Url.Action("ObserveLabour")), b).then(done); }); return; }
-                var c = e.target.closest('[data-c-save]');
-                if (c) { var x = {}; cEl.querySelectorAll('[data-c]').forEach(function (i) { x[i.getAttribute('data-c')] = i.value.trim() || null; });
+                if (e.target.closest('[data-i-save]')) { var n = {}; iEl.querySelectorAll('[data-i]').forEach(function (i) { var k = i.getAttribute('data-i'); n[k] = val(k, i.value.trim()); });
+                    cbConfirm(W.info).then(function (ok) { if (ok) post(@Json.Serialize(Url.Content("~/Hospital/Labour/" + L.ID + "/Info")), n).then(done); }); return; }
+                if (e.target.closest('[data-c-save]')) { var x = {}; cEl.querySelectorAll('[data-c]').forEach(function (i) { x[i.getAttribute('data-c')] = i.value.trim() || null; });
                     cbConfirm(W.close).then(function (ok) { if (ok) post(@Json.Serialize(Url.Content("~/Hospital/Labour/" + L.ID + "/Close")), x).then(done); }); }
             });
         })();

@@ -1,0 +1,88 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalAddendaBlock
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H177 — the addenda and corrections of a locked record, oldest first, under the record; and (with `consult`) the
+    window to add one. Never edited or deleted. One block per page: its ids carry the subject.
+*@
+@{
+    var id = "add" + Model.Subject + Model.SubjectId;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Initials(string n) => string.Concat(n.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0]));
+}
+@if (Model.Locked || Model.Rows.Count > 0)
+{
+    <div class="card card-flush mb-5" id="@id">
+        <div class="card-header pt-5">
+            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Addenda and corrections"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A signed record is never edited: what is learned or found wrong afterwards is added here, dated and signed."]</span></h3>
+            @if (Model.CanAdd) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-add-open="@id"><i class="ki-outline ki-plus fs-4"></i>@T["Add an addendum or a correction"]</button></div> }
+        </div>
+        <div class="card-body pt-2">
+            @if (Model.Rows.Count == 0) { <div class="text-muted fs-7 fw-semibold py-3">@T["No addendum yet."]</div> }
+            else
+            {
+                <div>
+                    @foreach (var r in Model.Rows)
+                    {
+                        var a = r.Addendum; bool corr = a.Kind == HospitalAddendumKind.Correction;
+                        <div class="d-flex align-items-start gap-4 py-4 border-bottom border-gray-200 border-bottom-dashed">
+                            @if (r.AuthorPhoto != null) { <div class="symbol symbol-35px symbol-circle flex-shrink-0"><img src="@r.AuthorPhoto" alt="" style="object-fit:cover" /></div> }
+                            else { <div class="symbol symbol-35px symbol-circle flex-shrink-0"><span class="symbol-label fw-bold fs-8 hp-initials">@Initials(r.Author)</span></div> }
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span class="badge badge-light-@(corr ? "danger" : "primary") fs-8 fw-bold">@T["add:" + a.Kind]</span>
+                                    @if (a.Section != null) { <span class="badge badge-light fs-8 fw-bold">@T["sec:" + a.Section]</span> }
+                                    <span class="text-gray-800 fw-bold fs-7">@r.Author</span>
+                                    <span class="text-muted fw-semibold fs-8 hp-num" dir="ltr" data-utc="@a.CreatedAt.ToString("o", inv)">@a.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv)</span>
+                                </div>
+                                <div class="text-gray-800 fs-6" dir="auto" style="white-space:pre-wrap">@a.Text</div>
+                                @if (a.Reason != null) { <div class="text-gray-600 fs-7 mt-1"><span class="fw-semibold">@T["Correction reason"]:</span> <span dir="auto">@a.Reason</span></div> }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    @if (Model.CanAdd)
+    {
+        <div class="modal fade" id="@(id)Modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+            <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+                <div class="mb-10 text-center"><h1 class="mb-3">@T["Add an addendum or a correction"]</h1><div class="text-muted fw-semibold fs-6">@T["It is kept beside the signed record, with your name and the time; it cannot be edited or deleted."]</div></div>
+                <div class="row g-6">
+                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Kind"]</label>
+                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#@(id)Modal" data-ad="kind">@foreach (var k in HospitalAddendumKind.All) {<option value="@k">@T["add:" + k]</option>}</select></div>
+                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Part of the record"]</label>
+                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#@(id)Modal" data-ad="section"><option value="">—</option>@foreach (var s in HospitalAddendumSection.All) {<option value="@s">@T["sec:" + s]</option>}</select></div>
+                    <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Text"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="2000" dir="auto" data-ad="text"></textarea></div>
+                    <div class="col-12" data-ad-reason-row><label class="fs-6 fw-semibold mb-2">@T["Why was the record wrong?"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-ad="reason" /><div class="text-muted fs-8 mt-1">@T["Required for a correction."]</div></div>
+                </div>
+                <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-add-save="@id">@T["Sign and add"]</button></div>
+            </div>
+        </div></div></div>
+        <script>
+            (function () {
+                var box = @Json.Serialize(id), m = document.getElementById(box + 'Modal'), url = @Json.Serialize(Url.Content("~/Hospital/Addenda/" + Model.Subject + "/" + Model.SubjectId)), key = null;
+                var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Sign and add this to the record? It cannot be edited or deleted afterwards."].Value) };
+                function newKey() { return 'add-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10); }
+                document.addEventListener('click', function (e) {
+                    var o = e.target.closest('[data-add-open="' + box + '"]');
+                    if (o) { m.querySelectorAll('[data-ad]').forEach(function (i) { if (i.tagName !== 'SELECT') i.value = ''; }); key = newKey(); bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                    var s = e.target.closest('[data-add-save="' + box + '"]'); if (!s) return;
+                    var b = {}; m.querySelectorAll('[data-ad]').forEach(function (i) { b[i.getAttribute('data-ad')] = i.value.trim() || null; });
+                    cbConfirm(W.ask).then(function (ok) {
+                        if (!ok) return; s.disabled = true;
+                        var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok, 'X-Idempotency-Key': key }, body: JSON.stringify(b) })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                            .then(function (res) { s.disabled = false; if (!res.ok) { if (window.toastr) toastr.error(res.error || W.failed); return; } if (window.toastr) toastr.success(W.saved); location.reload(); });
+                    });
+                });
+            })();
+        </script>
+    }
+}

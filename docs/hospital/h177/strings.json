@@ -1,0 +1,140 @@
+{
+ "unit": "H177 - addenda and corrections on locked clinical records",
+ "strings": {
+  "Addenda and corrections": {
+   "ar": "الإضافات والتصحيحات",
+   "en": "Addenda and corrections",
+   "fr": "Addenda et corrections"
+  },
+  "A signed record is never edited: what is learned or found wrong afterwards is added here, dated and signed.": {
+   "ar": "السجل الموقّع لا يُعدَّل: ما يُعرف لاحقًا أو يتبيّن خطؤه يُضاف هنا مؤرخًا وموقّعًا.",
+   "en": "A signed record is never edited: what is learned or found wrong afterwards is added here, dated and signed.",
+   "fr": "Un dossier signé n'est jamais modifié : ce qui est appris ou corrigé ensuite est ajouté ici, daté et signé."
+  },
+  "Add an addendum or a correction": {
+   "ar": "إضافة أو تصحيح",
+   "en": "Add an addendum or a correction",
+   "fr": "Ajouter un addendum ou une correction"
+  },
+  "No addendum yet.": {
+   "ar": "لا توجد إضافات بعد.",
+   "en": "No addendum yet.",
+   "fr": "Aucun addendum pour l'instant."
+  },
+  "It is kept beside the signed record, with your name and the time; it cannot be edited or deleted.": {
+   "ar": "تُحفظ بجانب السجل الموقّع باسمك ووقتها، ولا يمكن تعديلها أو حذفها.",
+   "en": "It is kept beside the signed record, with your name and the time; it cannot be edited or deleted.",
+   "fr": "Il est conservé à côté du dossier signé, avec votre nom et l'heure ; il ne peut être ni modifié ni supprimé."
+  },
+  "Part of the record": {
+   "ar": "الجزء المعني من السجل",
+   "en": "Part of the record",
+   "fr": "Partie du dossier"
+  },
+  "Text": {
+   "ar": "النص",
+   "en": "Text",
+   "fr": "Texte"
+  },
+  "Why was the record wrong?": {
+   "ar": "لماذا كان السجل خاطئًا؟",
+   "en": "Why was the record wrong?",
+   "fr": "Pourquoi le dossier était-il erroné ?"
+  },
+  "Required for a correction.": {
+   "ar": "مطلوب في حالة التصحيح.",
+   "en": "Required for a correction.",
+   "fr": "Obligatoire pour une correction."
+  },
+  "Sign and add": {
+   "ar": "توقيع وإضافة",
+   "en": "Sign and add",
+   "fr": "Signer et ajouter"
+  },
+  "Sign and add this to the record? It cannot be edited or deleted afterwards.": {
+   "ar": "هل توقّع وتضيف هذا إلى السجل؟ لا يمكن تعديله أو حذفه بعد ذلك.",
+   "en": "Sign and add this to the record? It cannot be edited or deleted afterwards.",
+   "fr": "Signer et ajouter au dossier ? Il ne pourra plus être modifié ni supprimé."
+  },
+  "add:Addendum": {
+   "ar": "إضافة",
+   "en": "Addendum",
+   "fr": "Addendum"
+  },
+  "add:Correction": {
+   "ar": "تصحيح",
+   "en": "Correction",
+   "fr": "Correction"
+  },
+  "sec:ChiefComplaint": {
+   "ar": "الشكوى الرئيسية",
+   "en": "Chief complaint",
+   "fr": "Motif"
+  },
+  "sec:History": {
+   "ar": "التاريخ المرضي",
+   "en": "History",
+   "fr": "Anamnèse"
+  },
+  "sec:Examination": {
+   "ar": "الفحص",
+   "en": "Examination",
+   "fr": "Examen"
+  },
+  "sec:Assessment": {
+   "ar": "التقييم",
+   "en": "Assessment",
+   "fr": "Évaluation"
+  },
+  "sec:Plan": {
+   "ar": "الخطة",
+   "en": "Plan",
+   "fr": "Plan"
+  },
+  "sec:Results": {
+   "ar": "النتائج والقراءات",
+   "en": "Results and readings",
+   "fr": "Résultats et mesures"
+  },
+  "sec:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "Correction reason": {
+   "ar": "سبب التصحيح",
+   "en": "Reason",
+   "fr": "Motif"
+  },
+  "This record is not signed yet: edit it itself": {
+   "ar": "هذا السجل غير موقّع بعد: عدّله نفسه",
+   "en": "This record is not signed yet: edit it itself",
+   "fr": "Ce dossier n'est pas encore signé : modifiez-le directement"
+  },
+  "Choose an addendum or a correction": {
+   "ar": "اختر إضافة أو تصحيحًا",
+   "en": "Choose an addendum or a correction",
+   "fr": "Choisissez addendum ou correction"
+  },
+  "Choose the part of the record": {
+   "ar": "اختر الجزء المعني من السجل",
+   "en": "Choose the part of the record",
+   "fr": "Choisissez la partie du dossier"
+  },
+  "Write the addendum": {
+   "ar": "اكتب نص الإضافة",
+   "en": "Write the addendum",
+   "fr": "Rédigez l'addendum"
+  },
+  "An addendum is 2000 characters at most": {
+   "ar": "لا تتجاوز الإضافة 2000 حرف",
+   "en": "An addendum is 2000 characters at most",
+   "fr": "Un addendum fait au plus 2000 caractères"
+  },
+  "A correction says why the record was wrong": {
+   "ar": "يجب أن يذكر التصحيح سبب خطأ السجل",
+   "en": "A correction says why the record was wrong",
+   "fr": "Une correction indique pourquoi le dossier était erroné"
+  }
+ }
+}

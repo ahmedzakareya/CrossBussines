@@ -8083,4 +8083,112 @@
   <data name="kdigo:Provisional" xml:space="preserve"><value>Provisoire</value></data>
   <data name="Resume the course {0} steps lower?" xml:space="preserve"><value>Reprendre la cure {0} paliers plus bas ?</value></data>
   <data name="Resume {0} steps lower" xml:space="preserve"><value>Reprendre {0} paliers plus bas</value></data>
+  <data name="A contraction lasts up to 180 seconds" xml:space="preserve"><value>Une contraction dure au plus 180 secondes</value></data>
+  <data name="Active labour" xml:space="preserve"><value>Travail actif</value></data>
+  <data name="Active labour cannot begin before the labour started" xml:space="preserve"><value>Le travail actif ne peut précéder le début du travail</value></data>
+  <data name="Active labour diagnosed at" xml:space="preserve"><value>Travail actif diagnostiqué à</value></data>
+  <data name="Active labour from 5 cm. An alert when the cervix stays at 5 cm for 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2.5 h, 9 cm 2 h; the second stage at 3 h for a first birth, otherwise 2 h." xml:space="preserve"><value>Travail actif dès 5 cm. Alerte si le col reste à 5 cm 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2,5 h, 9 cm 2 h ; deuxième stade à 3 h pour un premier accouchement, sinon 2 h.</value></data>
+  <data name="Active labour since" xml:space="preserve"><value>Travail actif depuis</value></data>
+  <data name="Alerts by the Labour Care Guide: assess, and record the decision" xml:space="preserve"><value>Alertes du guide : évaluez et consignez la décision</value></data>
+  <data name="Assessments" xml:space="preserve"><value>Évaluations</value></data>
+  <data name="Caput" xml:space="preserve"><value>Bosse séro-sanguine</value></data>
+  <data name="Caput and moulding are 0 to +++" xml:space="preserve"><value>Bosse et chevauchement de 0 à +++</value></data>
+  <data name="Cervix over time" xml:space="preserve"><value>Dilatation au fil du temps</value></data>
+  <data name="Choose how labour began" xml:space="preserve"><value>Choisissez le début du travail</value></data>
+  <data name="Choose the deceleration" xml:space="preserve"><value>Choisissez la décélération</value></data>
+  <data name="Choose the fetal position" xml:space="preserve"><value>Choisissez la position fœtale</value></data>
+  <data name="Choose the posture" xml:space="preserve"><value>Choisissez la position</value></data>
+  <data name="Deceleration" xml:space="preserve"><value>Décélération</value></data>
+  <data name="Empty: the first assessment at 5 cm or more." xml:space="preserve"><value>Vide : la première évaluation à 5 cm ou plus.</value></data>
+  <data name="Fetal position" xml:space="preserve"><value>Position fœtale</value></data>
+  <data name="Hours left at this centimetre" xml:space="preserve"><value>Heures restantes à ce centimètre</value></data>
+  <data name="Hours left in the second stage" xml:space="preserve"><value>Heures restantes au deuxième stade</value></data>
+  <data name="IV fluids" xml:space="preserve"><value>Perfusion</value></data>
+  <data name="Labour assessment" xml:space="preserve"><value>Évaluation du travail</value></data>
+  <data name="Labour care guide" xml:space="preserve"><value>Guide de soins du travail</value></data>
+  <data name="Labour characteristics" xml:space="preserve"><value>Caractéristiques du travail</value></data>
+  <data name="Labour onset" xml:space="preserve"><value>Début du travail</value></data>
+  <data name="Membranes ruptured" xml:space="preserve"><value>Rupture des membranes</value></data>
+  <data name="Moulding" xml:space="preserve"><value>Chevauchement</value></data>
+  <data name="No assessment yet." xml:space="preserve"><value>Aucune évaluation pour l'instant.</value></data>
+  <data name="Oral fluid" xml:space="preserve"><value>Liquides oraux</value></data>
+  <data name="Oxytocin" xml:space="preserve"><value>Ocytocine</value></data>
+  <data name="Oxytocin (U/L, drops/min)" xml:space="preserve"><value>Ocytocine (U/L, gouttes/min)</value></data>
+  <data name="Pain relief" xml:space="preserve"><value>Soulagement de la douleur</value></data>
+  <data name="Parity" xml:space="preserve"><value>Parité</value></data>
+  <data name="Posture" xml:space="preserve"><value>Position</value></data>
+  <data name="Record an assessment" xml:space="preserve"><value>Enregistrer une évaluation</value></data>
+  <data name="Risk factors" xml:space="preserve"><value>Facteurs de risque</value></data>
+  <data name="Save the labour's characteristics?" xml:space="preserve"><value>Enregistrer les caractéristiques du travail ?</value></data>
+  <data name="Save this assessment?" xml:space="preserve"><value>Enregistrer cette évaluation ?</value></data>
+  <data name="Second stage since" xml:space="preserve"><value>Deuxième stade depuis</value></data>
+  <data name="The labour care guide is not installed yet (hospital_h86_labour.sql, hospital_h175_labour_care_guide.sql)." xml:space="preserve"><value>Le guide de soins du travail n'est pas encore installé (hospital_h86_labour.sql, hospital_h175_labour_care_guide.sql).</value></data>
+  <data name="The membranes' rupture can be written back a week at most" xml:space="preserve"><value>La rupture des membranes remonte au plus à une semaine</value></data>
+  <data name="The parity is between 0 and 20" xml:space="preserve"><value>La parité est entre 0 et 20</value></data>
+  <data name="Urine acetone" xml:space="preserve"><value>Cétonurie</value></data>
+  <data name="Urine protein and acetone are 0 to ++++" xml:space="preserve"><value>Protéines et acétone de 0 à ++++</value></data>
+  <data name="WHO Labour Care Guide (2020)" xml:space="preserve"><value>Guide de soins du travail de l'OMS (2020)</value></data>
+  <data name="decel:E" xml:space="preserve"><value>Précoce</value></data>
+  <data name="decel:L" xml:space="preserve"><value>Tardive</value></data>
+  <data name="decel:N" xml:space="preserve"><value>Aucune</value></data>
+  <data name="decel:V" xml:space="preserve"><value>Variable</value></data>
+  <data name="from the first 5 cm" xml:space="preserve"><value>depuis le premier 5 cm</value></data>
+  <data name="lbw:Bleeding" xml:space="preserve"><value>Liquide sanglant</value></data>
+  <data name="lbw:Caput" xml:space="preserve"><value>Bosse marquée</value></data>
+  <data name="lbw:CervixDelay" xml:space="preserve"><value>Retard de dilatation</value></data>
+  <data name="lbw:ContractionLength" xml:space="preserve"><value>Durée de contraction anormale</value></data>
+  <data name="lbw:FewContractions" xml:space="preserve"><value>Contractions insuffisantes</value></data>
+  <data name="lbw:Hypotension" xml:space="preserve"><value>Hypotension</value></data>
+  <data name="lbw:Ketonuria" xml:space="preserve"><value>Cétonurie</value></data>
+  <data name="lbw:LateDecelerations" xml:space="preserve"><value>Décélérations tardives</value></data>
+  <data name="lbw:Malposition" xml:space="preserve"><value>Position non antérieure</value></data>
+  <data name="lbw:Moulding" xml:space="preserve"><value>Chevauchement marqué</value></data>
+  <data name="lbw:NoCompanion" xml:space="preserve"><value>Sans accompagnant</value></data>
+  <data name="lbw:NoOralFluid" xml:space="preserve"><value>Sans liquides oraux</value></data>
+  <data name="lbw:NoPainRelief" xml:space="preserve"><value>Sans antalgie</value></data>
+  <data name="lbw:Proteinuria" xml:space="preserve"><value>Protéinurie</value></data>
+  <data name="lbw:Pulse" xml:space="preserve"><value>Pouls maternel anormal</value></data>
+  <data name="lbw:SecondStageDelay" xml:space="preserve"><value>Deuxième stade prolongé</value></data>
+  <data name="lbw:Supine" xml:space="preserve"><value>Décubitus dorsal</value></data>
+  <data name="lbw:Temperature" xml:space="preserve"><value>Température maternelle anormale</value></data>
+  <data name="lcg:Baby" xml:space="preserve"><value>Le bébé</value></data>
+  <data name="lcg:Care" xml:space="preserve"><value>Soins de soutien</value></data>
+  <data name="lcg:Decision" xml:space="preserve"><value>Décision partagée</value></data>
+  <data name="lcg:Medication" xml:space="preserve"><value>Médicaments</value></data>
+  <data name="lcg:Progress" xml:space="preserve"><value>Progression du travail</value></data>
+  <data name="lcg:Woman" xml:space="preserve"><value>La femme</value></data>
+  <data name="liq:T" xml:space="preserve"><value>Méconium épais (M+++)</value></data>
+  <data name="onset:Induced" xml:space="preserve"><value>Déclenché</value></data>
+  <data name="onset:Spontaneous" xml:space="preserve"><value>Spontané</value></data>
+  <data name="posture:MO" xml:space="preserve"><value>Mobile</value></data>
+  <data name="posture:SP" xml:space="preserve"><value>Décubitus dorsal</value></data>
+  <data name="rule:labour:covers:lcg" xml:space="preserve"><value>Suit le travail selon les sections du guide de l'OMS ; travail actif dès 5 cm, un délai à chaque centimètre et au deuxième stade, et un seuil d'alerte par élément.</value></data>
+  <data name="rule:labour:limits:lcg" xml:space="preserve"><value>Pas pour les accouchements à haut risque nécessitant une surveillance spécialisée, ni avant 37 semaines ou après césarienne sans décision médicale ; une alerte appelle une évaluation, pas une action imposée.</value></data>
+  <data name="A correction says why the record was wrong" xml:space="preserve"><value>Une correction indique pourquoi le dossier était erroné</value></data>
+  <data name="A signed record is never edited: what is learned or found wrong afterwards is added here, dated and signed." xml:space="preserve"><value>Un dossier signé n'est jamais modifié : ce qui est appris ou corrigé ensuite est ajouté ici, daté et signé.</value></data>
+  <data name="Add an addendum or a correction" xml:space="preserve"><value>Ajouter un addendum ou une correction</value></data>
+  <data name="Addenda and corrections" xml:space="preserve"><value>Addenda et corrections</value></data>
+  <data name="An addendum is 2000 characters at most" xml:space="preserve"><value>Un addendum fait au plus 2000 caractères</value></data>
+  <data name="Choose an addendum or a correction" xml:space="preserve"><value>Choisissez addendum ou correction</value></data>
+  <data name="Choose the part of the record" xml:space="preserve"><value>Choisissez la partie du dossier</value></data>
+  <data name="Correction reason" xml:space="preserve"><value>Motif</value></data>
+  <data name="It is kept beside the signed record, with your name and the time; it cannot be edited or deleted." xml:space="preserve"><value>Il est conservé à côté du dossier signé, avec votre nom et l'heure ; il ne peut être ni modifié ni supprimé.</value></data>
+  <data name="No addendum yet." xml:space="preserve"><value>Aucun addendum pour l'instant.</value></data>
+  <data name="Part of the record" xml:space="preserve"><value>Partie du dossier</value></data>
+  <data name="Required for a correction." xml:space="preserve"><value>Obligatoire pour une correction.</value></data>
+  <data name="Sign and add" xml:space="preserve"><value>Signer et ajouter</value></data>
+  <data name="Sign and add this to the record? It cannot be edited or deleted afterwards." xml:space="preserve"><value>Signer et ajouter au dossier ? Il ne pourra plus être modifié ni supprimé.</value></data>
+  <data name="Text" xml:space="preserve"><value>Texte</value></data>
+  <data name="This record is not signed yet: edit it itself" xml:space="preserve"><value>Ce dossier n'est pas encore signé : modifiez-le directement</value></data>
+  <data name="Why was the record wrong?" xml:space="preserve"><value>Pourquoi le dossier était-il erroné ?</value></data>
+  <data name="Write the addendum" xml:space="preserve"><value>Rédigez l'addendum</value></data>
+  <data name="add:Addendum" xml:space="preserve"><value>Addendum</value></data>
+  <data name="add:Correction" xml:space="preserve"><value>Correction</value></data>
+  <data name="sec:Assessment" xml:space="preserve"><value>Évaluation</value></data>
+  <data name="sec:ChiefComplaint" xml:space="preserve"><value>Motif</value></data>
+  <data name="sec:Examination" xml:space="preserve"><value>Examen</value></data>
+  <data name="sec:History" xml:space="preserve"><value>Anamnèse</value></data>
+  <data name="sec:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="sec:Plan" xml:space="preserve"><value>Plan</value></data>
+  <data name="sec:Results" xml:space="preserve"><value>Résultats et mesures</value></data>
 </root>

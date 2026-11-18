@@ -1,0 +1,410 @@
+{
+ "unit": "H175 - the WHO Labour Care Guide (2020) replaces the partograph",
+ "strings": {
+  "Labour care guide": {
+   "ar": "دليل رعاية المخاض",
+   "en": "Labour care guide",
+   "fr": "Guide de soins du travail"
+  },
+  "Record an assessment": {
+   "ar": "تسجيل تقييم",
+   "en": "Record an assessment",
+   "fr": "Enregistrer une évaluation"
+  },
+  "Labour characteristics": {
+   "ar": "خصائص المخاض",
+   "en": "Labour characteristics",
+   "fr": "Caractéristiques du travail"
+  },
+  "Alerts by the Labour Care Guide: assess, and record the decision": {
+   "ar": "تنبيهات دليل رعاية المخاض: قيّم الحالة وسجّل القرار",
+   "en": "Alerts by the Labour Care Guide: assess, and record the decision",
+   "fr": "Alertes du guide : évaluez et consignez la décision"
+  },
+  "Hours left in the second stage": {
+   "ar": "الساعات المتبقية في المرحلة الثانية",
+   "en": "Hours left in the second stage",
+   "fr": "Heures restantes au deuxième stade"
+  },
+  "Hours left at this centimetre": {
+   "ar": "الساعات المتبقية عند هذا السنتيمتر",
+   "en": "Hours left at this centimetre",
+   "fr": "Heures restantes à ce centimètre"
+  },
+  "Assessments": {
+   "ar": "التقييمات",
+   "en": "Assessments",
+   "fr": "Évaluations"
+  },
+  "WHO Labour Care Guide (2020)": {
+   "ar": "دليل رعاية المخاض لمنظمة الصحة العالمية (2020)",
+   "en": "WHO Labour Care Guide (2020)",
+   "fr": "Guide de soins du travail de l'OMS (2020)"
+  },
+  "Parity": {
+   "ar": "عدد الولادات السابقة",
+   "en": "Parity",
+   "fr": "Parité"
+  },
+  "Labour onset": {
+   "ar": "بداية المخاض",
+   "en": "Labour onset",
+   "fr": "Début du travail"
+  },
+  "Membranes ruptured": {
+   "ar": "تمزق الأغشية",
+   "en": "Membranes ruptured",
+   "fr": "Rupture des membranes"
+  },
+  "Active labour since": {
+   "ar": "المخاض النشط منذ",
+   "en": "Active labour since",
+   "fr": "Travail actif depuis"
+  },
+  "from the first 5 cm": {
+   "ar": "من أول قياس 5 سم",
+   "en": "from the first 5 cm",
+   "fr": "depuis le premier 5 cm"
+  },
+  "Second stage since": {
+   "ar": "المرحلة الثانية منذ",
+   "en": "Second stage since",
+   "fr": "Deuxième stade depuis"
+  },
+  "Risk factors": {
+   "ar": "عوامل الخطورة",
+   "en": "Risk factors",
+   "fr": "Facteurs de risque"
+  },
+  "Cervix over time": {
+   "ar": "اتساع عنق الرحم مع الوقت",
+   "en": "Cervix over time",
+   "fr": "Dilatation au fil du temps"
+  },
+  "Active labour from 5 cm. An alert when the cervix stays at 5 cm for 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2.5 h, 9 cm 2 h; the second stage at 3 h for a first birth, otherwise 2 h.": {
+   "ar": "المخاض النشط يبدأ من 5 سم. ينبّه الدليل إذا بقي عنق الرحم عند 5 سم 6 ساعات، و6 سم 5 ساعات، و7 سم 3 ساعات، و8 سم ساعتين ونصفًا، و9 سم ساعتين؛ والمرحلة الثانية عند 3 ساعات في الولادة الأولى، وإلا فساعتان.",
+   "en": "Active labour from 5 cm. An alert when the cervix stays at 5 cm for 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2.5 h, 9 cm 2 h; the second stage at 3 h for a first birth, otherwise 2 h.",
+   "fr": "Travail actif dès 5 cm. Alerte si le col reste à 5 cm 6 h, 6 cm 5 h, 7 cm 3 h, 8 cm 2,5 h, 9 cm 2 h ; deuxième stade à 3 h pour un premier accouchement, sinon 2 h."
+  },
+  "Active labour": {
+   "ar": "المخاض النشط",
+   "en": "Active labour",
+   "fr": "Travail actif"
+  },
+  "No assessment yet.": {
+   "ar": "لا يوجد تقييم بعد.",
+   "en": "No assessment yet.",
+   "fr": "Aucune évaluation pour l'instant."
+  },
+  "lcg:Care": {
+   "ar": "الرعاية الداعمة",
+   "en": "Supportive care",
+   "fr": "Soins de soutien"
+  },
+  "lcg:Baby": {
+   "ar": "الجنين",
+   "en": "The baby",
+   "fr": "Le bébé"
+  },
+  "lcg:Woman": {
+   "ar": "الأم",
+   "en": "The woman",
+   "fr": "La femme"
+  },
+  "lcg:Progress": {
+   "ar": "تقدم المخاض",
+   "en": "Labour progress",
+   "fr": "Progression du travail"
+  },
+  "lcg:Medication": {
+   "ar": "الأدوية",
+   "en": "Medication",
+   "fr": "Médicaments"
+  },
+  "lcg:Decision": {
+   "ar": "القرار المشترك",
+   "en": "Shared decision-making",
+   "fr": "Décision partagée"
+  },
+  "Pain relief": {
+   "ar": "تسكين الألم",
+   "en": "Pain relief",
+   "fr": "Soulagement de la douleur"
+  },
+  "Oral fluid": {
+   "ar": "سوائل بالفم",
+   "en": "Oral fluid",
+   "fr": "Liquides oraux"
+  },
+  "Posture": {
+   "ar": "الوضعية",
+   "en": "Posture",
+   "fr": "Position"
+  },
+  "posture:SP": {
+   "ar": "مستلقية على الظهر",
+   "en": "Supine",
+   "fr": "Décubitus dorsal"
+  },
+  "posture:MO": {
+   "ar": "متحركة",
+   "en": "Mobile",
+   "fr": "Mobile"
+  },
+  "Deceleration": {
+   "ar": "تباطؤ نبض الجنين",
+   "en": "Deceleration",
+   "fr": "Décélération"
+  },
+  "decel:N": {
+   "ar": "لا يوجد",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "decel:E": {
+   "ar": "مبكر",
+   "en": "Early",
+   "fr": "Précoce"
+  },
+  "decel:L": {
+   "ar": "متأخر",
+   "en": "Late",
+   "fr": "Tardive"
+  },
+  "decel:V": {
+   "ar": "متغيّر",
+   "en": "Variable",
+   "fr": "Variable"
+  },
+  "Fetal position": {
+   "ar": "وضع الجنين",
+   "en": "Fetal position",
+   "fr": "Position fœtale"
+  },
+  "Caput": {
+   "ar": "تورّم فروة الرأس",
+   "en": "Caput",
+   "fr": "Bosse séro-sanguine"
+  },
+  "Moulding": {
+   "ar": "تراكب عظام الجمجمة",
+   "en": "Moulding",
+   "fr": "Chevauchement"
+  },
+  "Urine acetone": {
+   "ar": "الأسيتون في البول",
+   "en": "Urine acetone",
+   "fr": "Cétonurie"
+  },
+  "Oxytocin": {
+   "ar": "الأوكسيتوسين",
+   "en": "Oxytocin",
+   "fr": "Ocytocine"
+  },
+  "IV fluids": {
+   "ar": "سوائل وريدية",
+   "en": "IV fluids",
+   "fr": "Perfusion"
+  },
+  "Labour assessment": {
+   "ar": "تقييم المخاض",
+   "en": "Labour assessment",
+   "fr": "Évaluation du travail"
+  },
+  "Oxytocin (U/L, drops/min)": {
+   "ar": "الأوكسيتوسين (وحدة/لتر، نقطة/دقيقة)",
+   "en": "Oxytocin (U/L, drops/min)",
+   "fr": "Ocytocine (U/L, gouttes/min)"
+  },
+  "Active labour diagnosed at": {
+   "ar": "وقت تشخيص المخاض النشط",
+   "en": "Active labour diagnosed at",
+   "fr": "Travail actif diagnostiqué à"
+  },
+  "Empty: the first assessment at 5 cm or more.": {
+   "ar": "إذا تُرك فارغًا: أول تقييم عند 5 سم أو أكثر.",
+   "en": "Empty: the first assessment at 5 cm or more.",
+   "fr": "Vide : la première évaluation à 5 cm ou plus."
+  },
+  "Save this assessment?": {
+   "ar": "هل تحفظ هذا التقييم؟",
+   "en": "Save this assessment?",
+   "fr": "Enregistrer cette évaluation ?"
+  },
+  "Save the labour's characteristics?": {
+   "ar": "هل تحفظ خصائص المخاض؟",
+   "en": "Save the labour's characteristics?",
+   "fr": "Enregistrer les caractéristiques du travail ?"
+  },
+  "onset:Spontaneous": {
+   "ar": "تلقائي",
+   "en": "Spontaneous",
+   "fr": "Spontané"
+  },
+  "onset:Induced": {
+   "ar": "مُحرَّض",
+   "en": "Induced",
+   "fr": "Déclenché"
+  },
+  "liq:T": {
+   "ar": "عِقي كثيف (+++)",
+   "en": "Thick meconium (M+++)",
+   "fr": "Méconium épais (M+++)"
+  },
+  "lbw:CervixDelay": {
+   "ar": "تأخر اتساع عنق الرحم",
+   "en": "Cervix delayed at this centimetre",
+   "fr": "Retard de dilatation"
+  },
+  "lbw:SecondStageDelay": {
+   "ar": "إطالة المرحلة الثانية",
+   "en": "Second stage prolonged",
+   "fr": "Deuxième stade prolongé"
+  },
+  "lbw:FewContractions": {
+   "ar": "انقباضات قليلة",
+   "en": "Too few contractions",
+   "fr": "Contractions insuffisantes"
+  },
+  "lbw:ContractionLength": {
+   "ar": "مدة الانقباض خارج المعدل",
+   "en": "Contraction length out of range",
+   "fr": "Durée de contraction anormale"
+  },
+  "lbw:LateDecelerations": {
+   "ar": "تباطؤ متأخر لنبض الجنين",
+   "en": "Late decelerations",
+   "fr": "Décélérations tardives"
+  },
+  "lbw:Bleeding": {
+   "ar": "سائل مدمم",
+   "en": "Blood-stained liquor",
+   "fr": "Liquide sanglant"
+  },
+  "lbw:Malposition": {
+   "ar": "وضع غير أمامي للجنين",
+   "en": "Non-anterior position",
+   "fr": "Position non antérieure"
+  },
+  "lbw:Caput": {
+   "ar": "تورّم شديد في فروة الرأس",
+   "en": "Marked caput",
+   "fr": "Bosse marquée"
+  },
+  "lbw:Moulding": {
+   "ar": "تراكب شديد لعظام الجمجمة",
+   "en": "Marked moulding",
+   "fr": "Chevauchement marqué"
+  },
+  "lbw:Pulse": {
+   "ar": "نبض الأم خارج المعدل",
+   "en": "Maternal pulse out of range",
+   "fr": "Pouls maternel anormal"
+  },
+  "lbw:Hypotension": {
+   "ar": "انخفاض الضغط",
+   "en": "Low blood pressure",
+   "fr": "Hypotension"
+  },
+  "lbw:Temperature": {
+   "ar": "حرارة الأم خارج المعدل",
+   "en": "Maternal temperature out of range",
+   "fr": "Température maternelle anormale"
+  },
+  "lbw:Proteinuria": {
+   "ar": "بروتين في البول",
+   "en": "Proteinuria",
+   "fr": "Protéinurie"
+  },
+  "lbw:Ketonuria": {
+   "ar": "أسيتون في البول",
+   "en": "Ketonuria",
+   "fr": "Cétonurie"
+  },
+  "lbw:NoCompanion": {
+   "ar": "بلا مرافق",
+   "en": "No companion",
+   "fr": "Sans accompagnant"
+  },
+  "lbw:NoPainRelief": {
+   "ar": "بلا تسكين للألم",
+   "en": "No pain relief",
+   "fr": "Sans antalgie"
+  },
+  "lbw:NoOralFluid": {
+   "ar": "بلا سوائل بالفم",
+   "en": "No oral fluid",
+   "fr": "Sans liquides oraux"
+  },
+  "lbw:Supine": {
+   "ar": "مستلقية على الظهر",
+   "en": "Supine position",
+   "fr": "Décubitus dorsal"
+  },
+  "A contraction lasts up to 180 seconds": {
+   "ar": "مدة الانقباض لا تتجاوز 180 ثانية",
+   "en": "A contraction lasts up to 180 seconds",
+   "fr": "Une contraction dure au plus 180 secondes"
+  },
+  "Choose the posture": {
+   "ar": "اختر الوضعية",
+   "en": "Choose the posture",
+   "fr": "Choisissez la position"
+  },
+  "Choose the deceleration": {
+   "ar": "اختر نوع التباطؤ",
+   "en": "Choose the deceleration",
+   "fr": "Choisissez la décélération"
+  },
+  "Choose the fetal position": {
+   "ar": "اختر وضع الجنين",
+   "en": "Choose the fetal position",
+   "fr": "Choisissez la position fœtale"
+  },
+  "Caput and moulding are 0 to +++": {
+   "ar": "تورّم الفروة وتراكب العظام من 0 إلى +++",
+   "en": "Caput and moulding are 0 to +++",
+   "fr": "Bosse et chevauchement de 0 à +++"
+  },
+  "Urine protein and acetone are 0 to ++++": {
+   "ar": "البروتين والأسيتون في البول من 0 إلى ++++",
+   "en": "Urine protein and acetone are 0 to ++++",
+   "fr": "Protéines et acétone de 0 à ++++"
+  },
+  "The parity is between 0 and 20": {
+   "ar": "عدد الولادات السابقة بين 0 و20",
+   "en": "The parity is between 0 and 20",
+   "fr": "La parité est entre 0 et 20"
+  },
+  "Choose how labour began": {
+   "ar": "اختر كيف بدأ المخاض",
+   "en": "Choose how labour began",
+   "fr": "Choisissez le début du travail"
+  },
+  "The membranes' rupture can be written back a week at most": {
+   "ar": "لا يُسجَّل تمزق الأغشية بأثر رجعي لأكثر من أسبوع",
+   "en": "The membranes' rupture can be written back a week at most",
+   "fr": "La rupture des membranes remonte au plus à une semaine"
+  },
+  "Active labour cannot begin before the labour started": {
+   "ar": "لا يبدأ المخاض النشط قبل بدء المخاض",
+   "en": "Active labour cannot begin before the labour started",
+   "fr": "Le travail actif ne peut précéder le début du travail"
+  },
+  "The labour care guide is not installed yet (hospital_h86_labour.sql, hospital_h175_labour_care_guide.sql).": {
+   "ar": "دليل رعاية المخاض غير مثبت بعد (hospital_h86_labour.sql وhospital_h175_labour_care_guide.sql).",
+   "en": "The labour care guide is not installed yet (hospital_h86_labour.sql, hospital_h175_labour_care_guide.sql).",
+   "fr": "Le guide de soins du travail n'est pas encore installé (hospital_h86_labour.sql, hospital_h175_labour_care_guide.sql)."
+  },
+  "rule:labour:covers:lcg": {
+   "ar": "يتابع المخاض بأقسام دليل منظمة الصحة العالمية: خصائص المخاض، والرعاية الداعمة، والجنين، والأم، وتقدم المخاض، والأدوية، والقرار المشترك؛ المخاض النشط من 5 سم، وحد زمني عند كل سنتيمتر، وحد للمرحلة الثانية، ولكل بند حد تنبيه.",
+   "en": "Follows labour by the WHO guide's sections — characteristics, supportive care, the baby, the woman, labour progress, medication, shared decision-making; active labour from 5 cm, a time limit at each centimetre and for the second stage, and an alert threshold for each item.",
+   "fr": "Suit le travail selon les sections du guide de l'OMS ; travail actif dès 5 cm, un délai à chaque centimètre et au deuxième stade, et un seuil d'alerte par élément."
+  },
+  "rule:labour:limits:lcg": {
+   "ar": "لا يصلح للولادات عالية الخطورة التي تحتاج مراقبة خاصة، ولا للمخاض قبل الأسبوع 37 أو بعد عملية قيصرية دون قرار الطبيب؛ والتنبيه يستدعي التقييم ولا يحدد الإجراء.",
+   "en": "Not for high-risk births needing specialist monitoring, nor labour before 37 weeks or after a caesarean without the doctor's decision; an alert calls for assessment and does not decide the action.",
+   "fr": "Pas pour les accouchements à haut risque nécessitant une surveillance spécialisée, ni avant 37 semaines ou après césarienne sans décision médicale ; une alerte appelle une évaluation, pas une action imposée."
+  }
+ }
+}

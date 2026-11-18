@@ -126,6 +126,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalRequestKeyModel.Configure(b);        // H166: a desk action sent twice is done once
 			HospitalImplantStabilityModel.Configure(b);  // H168: implant stability by protocol
 			HospitalClinicalRulesModel.Configure(b);     // H171: the clinical rule register and its approvals
+			HospitalClinicalAddendaModel.Configure(b);   // H177: addenda and corrections on locked records
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();
