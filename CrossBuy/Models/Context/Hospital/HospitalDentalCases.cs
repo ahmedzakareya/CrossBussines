@@ -19,6 +19,25 @@ namespace CrossBuy.Models.Context.Hospital
 		public static bool Staged(string? a) => a == "ClearAligners";
 	}
 
+	/// H185: the orthodontic diagnosis and its follow-through (Angle's classification of the molar relation; the IOTN dental
+	/// health component, grade 1 none to 5 very great need; the retainer each arch wears after the appliance comes off).
+	public static class HospitalOrthoAngle
+	{
+		public static readonly IReadOnlyList<string> All = new[] { "I", "II1", "II2", "III" };
+	}
+
+	public static class HospitalOrthoRetainer
+	{
+		public const string None = "None";
+		public static readonly IReadOnlyList<string> All = new[] { "Hawley", "Essix", "Bonded", None };
+	}
+
+	public static class HospitalOrthoHygiene
+	{
+		public const string Poor = "Poor";
+		public static readonly IReadOnlyList<string> All = new[] { "Good", "Fair", Poor };
+	}
+
 	public static class HospitalOrthoStatus
 	{
 		public const string Active = "Active";
@@ -47,6 +66,17 @@ namespace CrossBuy.Models.Context.Hospital
 		public decimal MonthlyInstalment { get; set; }
 		public DateTime? NextVisit { get; set; }
 		public string Status { get; set; } = HospitalOrthoStatus.Active;
+		/// H185: the diagnosis the treatment rests on (millimetres; a negative crowding is spacing).
+		public string? AngleClass { get; set; }
+		public decimal? OverjetMm { get; set; }
+		public decimal? OverbiteMm { get; set; }
+		public decimal? CrowdingUpperMm { get; set; }
+		public decimal? CrowdingLowerMm { get; set; }
+		public int? Iotn { get; set; }
+		/// H185: the day the appliance came off, and the retainer each arch wears from then.
+		public DateTime? DebondedOn { get; set; }
+		public string? RetainerUpper { get; set; }
+		public string? RetainerLower { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
 	}
@@ -60,6 +90,12 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime VisitDate { get; set; }
 		public int? AlignerStage { get; set; }
 		public string? Note { get; set; }
+		/// H185: what was fitted and seen at the adjustment.
+		public string? ArchwireUpper { get; set; }
+		public string? ArchwireLower { get; set; }
+		public string? Elastics { get; set; }
+		public string? Hygiene { get; set; }
+		public int? Breakages { get; set; }
 		public int? PractitionerId { get; set; }
 		public DateTime CreatedAt { get; set; }
 	}
@@ -136,6 +172,15 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.PlannedMonths).HasColumnType("tinyint").HasConversion<byte>();
 				e.Property(x => x.Stages).HasColumnType("tinyint").HasConversion<byte?>();
 				e.Property(x => x.CurrentStage).HasColumnType("tinyint").HasConversion<byte?>();
+				e.Property(x => x.AngleClass).HasMaxLength(4);   // H185
+				e.Property(x => x.OverjetMm).HasPrecision(4, 1);
+				e.Property(x => x.OverbiteMm).HasPrecision(4, 1);
+				e.Property(x => x.CrowdingUpperMm).HasPrecision(4, 1);
+				e.Property(x => x.CrowdingLowerMm).HasPrecision(4, 1);
+				e.Property(x => x.Iotn).HasColumnType("tinyint").HasConversion<byte?>();
+				e.Property(x => x.DebondedOn).HasColumnType("date");
+				e.Property(x => x.RetainerUpper).HasMaxLength(10);
+				e.Property(x => x.RetainerLower).HasMaxLength(10);
 				e.HasIndex(x => new { x.CompanyId, x.CaseNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});
@@ -144,6 +189,11 @@ namespace CrossBuy.Models.Context.Hospital
 				e.ToTable("HospitalOrthoVisits");
 				e.Property(x => x.VisitDate).HasColumnType("date");
 				e.Property(x => x.AlignerStage).HasColumnType("tinyint").HasConversion<byte?>();
+				e.Property(x => x.ArchwireUpper).HasMaxLength(40);   // H185
+				e.Property(x => x.ArchwireLower).HasMaxLength(40);
+				e.Property(x => x.Elastics).HasMaxLength(60);
+				e.Property(x => x.Hygiene).HasMaxLength(6);
+				e.Property(x => x.Breakages).HasColumnType("tinyint").HasConversion<byte?>();
 				e.HasIndex(x => new { x.CompanyId, x.CaseId });
 			});
 			b.Entity<HospitalOrthoPayment>(e =>

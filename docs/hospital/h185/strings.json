@@ -1,0 +1,215 @@
+{
+ "unit": "H185 - the orthodontic record",
+ "strings": {
+  "Choose the Angle class": {
+   "ar": "اختر صنف أنغل",
+   "en": "Choose the Angle class",
+   "fr": "Choisissez la classe d'Angle"
+  },
+  "Choose the IOTN grade (1 to 5)": {
+   "ar": "اختر درجة IOTN (من 1 إلى 5)",
+   "en": "Choose the IOTN grade (1 to 5)",
+   "fr": "Choisissez le grade IOTN (1 à 5)"
+  },
+  "The overjet is −10 to 20 mm": {
+   "ar": "البروز الأفقي من −10 إلى 20 مم",
+   "en": "The overjet is −10 to 20 mm",
+   "fr": "Le surplomb est de −10 à 20 mm"
+  },
+  "The overbite is −10 to 15 mm": {
+   "ar": "التغطية العمودية من −10 إلى 15 مم",
+   "en": "The overbite is −10 to 15 mm",
+   "fr": "Le recouvrement est de −10 à 15 mm"
+  },
+  "Crowding is −15 (spacing) to 20 mm": {
+   "ar": "التزاحم من −15 (تباعد) إلى 20 مم",
+   "en": "Crowding is −15 (spacing) to 20 mm",
+   "fr": "L'encombrement est de −15 (diastèmes) à 20 mm"
+  },
+  "Choose the oral hygiene": {
+   "ar": "اختر حالة نظافة الفم",
+   "en": "Choose the oral hygiene",
+   "fr": "Choisissez l'hygiène bucco-dentaire"
+  },
+  "Breakages are 0 to 20": {
+   "ar": "عدد الكسور من 0 إلى 20",
+   "en": "Breakages are 0 to 20",
+   "fr": "Les décollements vont de 0 à 20"
+  },
+  "Choose the retainer of each arch": {
+   "ar": "اختر المثبّت لكل فك",
+   "en": "Choose the retainer of each arch",
+   "fr": "Choisissez la contention de chaque arcade"
+  },
+  "A case in retention wears a retainer on at least one arch": {
+   "ar": "الحالة في مرحلة التثبيت تلبس مثبّتًا على فك واحد على الأقل",
+   "en": "A case in retention wears a retainer on at least one arch",
+   "fr": "Un cas en contention porte une contention sur au moins une arcade"
+  },
+  "Millimetres; a negative crowding is spacing.": {
+   "ar": "بالمليمتر؛ والتزاحم السالب يعني تباعدًا.",
+   "en": "Millimetres; a negative crowding is spacing.",
+   "fr": "En millimètres ; un encombrement négatif est un diastème."
+  },
+  "Angle class": {
+   "ar": "صنف أنغل",
+   "en": "Angle class",
+   "fr": "Classe d'Angle"
+  },
+  "IOTN grade": {
+   "ar": "درجة IOTN",
+   "en": "IOTN grade",
+   "fr": "Grade IOTN"
+  },
+  "Overjet": {
+   "ar": "البروز الأفقي (مم)",
+   "en": "Overjet (mm)",
+   "fr": "Surplomb (mm)"
+  },
+  "Overbite": {
+   "ar": "التغطية العمودية (مم)",
+   "en": "Overbite (mm)",
+   "fr": "Recouvrement (mm)"
+  },
+  "Crowding upper": {
+   "ar": "تزاحم الفك العلوي (مم)",
+   "en": "Upper crowding (mm)",
+   "fr": "Encombrement supérieur (mm)"
+  },
+  "Crowding lower": {
+   "ar": "تزاحم الفك السفلي (مم)",
+   "en": "Lower crowding (mm)",
+   "fr": "Encombrement inférieur (mm)"
+  },
+  "angle:I": {
+   "ar": "الصنف الأول",
+   "en": "Class I",
+   "fr": "Classe I"
+  },
+  "angle:II1": {
+   "ar": "الصنف الثاني/1",
+   "en": "Class II/1",
+   "fr": "Classe II/1"
+  },
+  "angle:II2": {
+   "ar": "الصنف الثاني/2",
+   "en": "Class II/2",
+   "fr": "Classe II/2"
+  },
+  "angle:III": {
+   "ar": "الصنف الثالث",
+   "en": "Class III",
+   "fr": "Classe III"
+  },
+  "iotn:Little": {
+   "ar": "حاجة قليلة أو معدومة",
+   "en": "Little or no need",
+   "fr": "Besoin faible ou nul"
+  },
+  "iotn:Borderline": {
+   "ar": "حاجة حدّية",
+   "en": "Borderline need",
+   "fr": "Besoin limite"
+  },
+  "iotn:Great": {
+   "ar": "حاجة كبيرة",
+   "en": "Great need",
+   "fr": "Besoin important"
+  },
+  "Upper archwire": {
+   "ar": "السلك العلوي",
+   "en": "Upper archwire",
+   "fr": "Arc supérieur"
+  },
+  "Lower archwire": {
+   "ar": "السلك السفلي",
+   "en": "Lower archwire",
+   "fr": "Arc inférieur"
+  },
+  "Elastics": {
+   "ar": "المطاط التقويمي",
+   "en": "Elastics",
+   "fr": "Élastiques"
+  },
+  "e.g. Class II, 3/16 in, both sides": {
+   "ar": "مثال: صنف ثانٍ، 3/16 بوصة، الجانبان",
+   "en": "e.g. Class II, 3/16 in, both sides",
+   "fr": "ex. classe II, 3/16 po, des deux côtés"
+  },
+  "Oral hygiene": {
+   "ar": "نظافة الفم",
+   "en": "Oral hygiene",
+   "fr": "Hygiène bucco-dentaire"
+  },
+  "hyg:Good": {
+   "ar": "جيدة",
+   "en": "Good",
+   "fr": "Bonne"
+  },
+  "hyg:Fair": {
+   "ar": "مقبولة",
+   "en": "Fair",
+   "fr": "Moyenne"
+  },
+  "hyg:Poor": {
+   "ar": "ضعيفة",
+   "en": "Poor",
+   "fr": "Mauvaise"
+  },
+  "Breakages": {
+   "ar": "الحاصرات المنفصلة",
+   "en": "Brackets off",
+   "fr": "Décollements"
+  },
+  "Upper retainer": {
+   "ar": "المثبّت العلوي",
+   "en": "Upper retainer",
+   "fr": "Contention supérieure"
+  },
+  "Lower retainer": {
+   "ar": "المثبّت السفلي",
+   "en": "Lower retainer",
+   "fr": "Contention inférieure"
+  },
+  "ret:Hawley": {
+   "ar": "مثبّت هاولي",
+   "en": "Hawley",
+   "fr": "Hawley"
+  },
+  "ret:Essix": {
+   "ar": "مثبّت شفاف (إيسكس)",
+   "en": "Essix (clear)",
+   "fr": "Essix (transparente)"
+  },
+  "ret:Bonded": {
+   "ar": "مثبّت ملصق ثابت",
+   "en": "Bonded (fixed)",
+   "fr": "Collée (fixe)"
+  },
+  "ret:None": {
+   "ar": "بلا مثبّت",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "Retention review": {
+   "ar": "مراجعة التثبيت",
+   "en": "Retention review",
+   "fr": "Contrôle de contention"
+  },
+  "orw:Hygiene": {
+   "ar": "نظافة ضعيفة في زيارتين متتاليتين",
+   "en": "Poor hygiene at two visits running",
+   "fr": "Hygiène mauvaise deux visites de suite"
+  },
+  "orw:Breakages": {
+   "ar": "حاصرات منفصلة متكررة",
+   "en": "Repeated brackets off",
+   "fr": "Décollements répétés"
+  },
+  "orw:Review": {
+   "ar": "مراجعة التثبيت متأخرة",
+   "en": "Retention review overdue",
+   "fr": "Contrôle de contention en retard"
+  }
+ }
+}

@@ -26,6 +26,13 @@ namespace CrossBuy.BL.Hospital
 		public decimal ContractTotal { get; set; }
 		public decimal MonthlyInstalment { get; set; }
 		public DateTime? NextVisit { get; set; }
+		/// H185: the diagnosis (required, except for a retention-only case).
+		public string? AngleClass { get; set; }
+		public decimal? OverjetMm { get; set; }
+		public decimal? OverbiteMm { get; set; }
+		public decimal? CrowdingUpperMm { get; set; }
+		public decimal? CrowdingLowerMm { get; set; }
+		public int? Iotn { get; set; }
 	}
 
 	public sealed class HospitalOrthoVisitInput
@@ -35,6 +42,14 @@ namespace CrossBuy.BL.Hospital
 		public DateTime? NextVisit { get; set; }
 		public string? Note { get; set; }
 		public string? Status { get; set; }
+		/// H185: the adjustment's detail, and the retainers when the appliance comes off.
+		public string? ArchwireUpper { get; set; }
+		public string? ArchwireLower { get; set; }
+		public string? Elastics { get; set; }
+		public string? Hygiene { get; set; }
+		public int? Breakages { get; set; }
+		public string? RetainerUpper { get; set; }
+		public string? RetainerLower { get; set; }
 	}
 
 	public sealed class HospitalImplantInput
@@ -80,7 +95,7 @@ namespace CrossBuy.BL.Hospital
 	}
 
 	public sealed record HospitalOrthoRow(HospitalOrthoCase Case, string PatientName, string PatientNameEn, string Mrn, string? Photo, string Sex, DateTime? BirthDate,
-		int Visits, decimal Paid, decimal Due, int Progress, bool Missed);
+		int Visits, decimal Paid, decimal Due, int Progress, bool Missed, IReadOnlyList<string>? Warnings = null, DateTime? NextReview = null);
 
 	public sealed record HospitalOrthoStats(int Active, int AdjustmentsThisWeek, decimal InstalmentsDue, int Missed);
 
@@ -120,16 +135,19 @@ namespace CrossBuy.BL.Hospital
 					select new { c, p.Name, p.NameEn, p.Mrn, p.PhotoPath, p.Sex, p.BirthDate };
 			var rows = await q.OrderBy(x => x.c.Status == HospitalOrthoStatus.Active ? 0 : x.c.Status == HospitalOrthoStatus.Retention ? 1 : 2).ThenBy(x => x.c.NextVisit).Take(300).ToListAsync(ct);
 			var ids = rows.Select(r => r.c.ID).ToList();
-			var visits = await _db.Set<HospitalOrthoVisit>().AsNoTracking().Where(v => v.CompanyId == ctx.CompanyId && ids.Contains(v.CaseId)).Select(v => new { v.CaseId, v.VisitDate }).ToListAsync(ct);
+			var visits = await _db.Set<HospitalOrthoVisit>().AsNoTracking().Where(v => v.CompanyId == ctx.CompanyId && ids.Contains(v.CaseId)).Select(v => new { v.CaseId, v.VisitDate, v.ID, v.Hygiene, v.Breakages }).ToListAsync(ct);
 			var paid = await _db.Set<HospitalOrthoPayment>().AsNoTracking().Where(v => v.CompanyId == ctx.CompanyId && ids.Contains(v.CaseId)).GroupBy(v => v.CaseId).Select(g => new { g.Key, Sum = g.Sum(x => x.Amount) }).ToListAsync(ct);
 			var list = rows.Select(r =>
 			{
 				var c = r.c; decimal p = paid.FirstOrDefault(x => x.Key == c.ID)?.Sum ?? 0;
 				bool open = HospitalOrthoStatus.Open(c.Status);
+				// H185: the case's warnings and, in retention, its next review
+				var mine = visits.Where(v => v.CaseId == c.ID).OrderByDescending(v => v.VisitDate).ThenByDescending(v => v.ID).Select(v => (v.VisitDate, v.Hygiene, v.Breakages)).ToList();
+				DateTime? review = c.Status == HospitalOrthoStatus.Retention && c.DebondedOn is DateTime off ? HospitalOrthoClinicalRules.NextReview(off, HospitalOrthoClinicalRules.LastSeen(off, mine)) : null;
 				return new HospitalOrthoRow(c, r.Name, r.NameEn, r.Mrn, r.PhotoPath, r.Sex, r.BirthDate, visits.Count(v => v.CaseId == c.ID), p,
 					open ? HospitalDentalCasesRules.Due(c.ContractTotal, c.MonthlyInstalment, c.StartDate, today, p) : Math.Max(0, c.ContractTotal - p),
 					c.Status == HospitalOrthoStatus.Completed ? 100 : HospitalDentalCasesRules.Progress(c.StartDate, c.PlannedMonths, today),
-					HospitalDentalCasesRules.Missed(c.Status, c.NextVisit, today));
+					HospitalDentalCasesRules.Missed(c.Status, c.NextVisit, today), HospitalOrthoClinicalRules.Warnings(c, mine, today), review);
 			}).ToList();
 			return (list, new HospitalOrthoStats(list.Count(r => HospitalOrthoStatus.Open(r.Case.Status)), visits.Count(v => v.VisitDate >= today.AddDays(-6)),
 				list.Where(r => HospitalOrthoStatus.Open(r.Case.Status)).Sum(r => r.Due), list.Count(r => r.Missed)));
@@ -142,6 +160,8 @@ namespace CrossBuy.BL.Hospital
 			if (input.PractitionerId is int d && !await _db.HospitalPractitioners.AnyAsync(x => x.ID == d && x.CompanyId == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
 			var why = HospitalDentalCasesRules.CaseRefusal(input.Appliance, input.PlannedMonths, input.Stages, input.ContractTotal, input.MonthlyInstalment);
 			if (why != null) return HospitalResult.Fail(why);
+			bool retentionOnly = input.Appliance == "Retention";
+			if (!retentionOnly && HospitalOrthoClinicalRules.DiagnosisRefusal(input.AngleClass, input.OverjetMm, input.OverbiteMm, input.CrowdingUpperMm, input.CrowdingLowerMm, input.Iotn) is string dx) return HospitalResult.Fail(dx);
 			if (await Cases(ctx).AnyAsync(c => c.PatientId == input.PatientId && (c.Status == HospitalOrthoStatus.Active || c.Status == HospitalOrthoStatus.Retention), ct))
 				return HospitalResult.Fail("This patient already has an open orthodontic case");
 			var nos = await Cases(ctx).Where(c => c.CaseNo.StartsWith("OR-")).Select(c => c.CaseNo).ToListAsync(ct);
@@ -151,6 +171,8 @@ namespace CrossBuy.BL.Hospital
 				Appliance = input.Appliance, StartDate = input.StartDate.Date, PlannedMonths = input.PlannedMonths, Stages = input.Stages, CurrentStage = input.Stages == null ? null : 1,
 				ContractTotal = input.ContractTotal, MonthlyInstalment = input.MonthlyInstalment, NextVisit = input.NextVisit?.Date,
 				Status = input.Appliance == "Retention" ? HospitalOrthoStatus.Retention : HospitalOrthoStatus.Active, CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
+				AngleClass = retentionOnly ? null : input.AngleClass, OverjetMm = retentionOnly ? null : input.OverjetMm, OverbiteMm = retentionOnly ? null : input.OverbiteMm,
+				CrowdingUpperMm = retentionOnly ? null : input.CrowdingUpperMm, CrowdingLowerMm = retentionOnly ? null : input.CrowdingLowerMm, Iotn = retentionOnly ? null : input.Iotn,
 			};
 			_db.Add(c);
 			var r = await SaveAsync(ct);
@@ -169,7 +191,16 @@ namespace CrossBuy.BL.Hospital
 			if (input.AlignerStage != null && (c.Stages == null || input.AlignerStage < 1 || input.AlignerStage > c.Stages)) return HospitalResult.Fail("The aligner stage is one of the case's stages");
 			if (input.NextVisit is DateTime nv && nv.Date <= day) return HospitalResult.Fail("The next visit comes after this one");
 			if (input.Status != null && !HospitalOrthoStatus.All.Contains(input.Status)) return HospitalResult.Fail("not_found");
-			_db.Add(new HospitalOrthoVisit { CompanyId = ctx.CompanyId, CaseId = caseId, VisitDate = day, AlignerStage = input.AlignerStage, Note = Clip(input.Note, 300), PractitionerId = practitionerId, CreatedAt = nowUtc });
+			if (HospitalOrthoClinicalRules.VisitRefusal(input.Hygiene, input.Breakages) is string vw) return HospitalResult.Fail(vw);
+			// H185: the appliance comes off — the retainers are chosen, and the retention reviews start from today
+			bool debond = input.Status == HospitalOrthoStatus.Retention && c.Status == HospitalOrthoStatus.Active;
+			if (debond && HospitalOrthoClinicalRules.RetentionRefusal(input.RetainerUpper, input.RetainerLower) is string rw) return HospitalResult.Fail(rw);
+			_db.Add(new HospitalOrthoVisit
+			{
+				CompanyId = ctx.CompanyId, CaseId = caseId, VisitDate = day, AlignerStage = input.AlignerStage, Note = Clip(input.Note, 300), PractitionerId = practitionerId, CreatedAt = nowUtc,
+				ArchwireUpper = Clip(input.ArchwireUpper, 40), ArchwireLower = Clip(input.ArchwireLower, 40), Elastics = Clip(input.Elastics, 60), Hygiene = input.Hygiene, Breakages = input.Breakages,
+			});
+			if (debond) { c.DebondedOn = day; c.RetainerUpper = input.RetainerUpper; c.RetainerLower = input.RetainerLower; }
 			if (input.AlignerStage != null) c.CurrentStage = input.AlignerStage;
 			c.NextVisit = input.NextVisit?.Date;
 			if (input.Status != null) c.Status = input.Status;

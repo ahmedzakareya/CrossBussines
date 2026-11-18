@@ -89,16 +89,19 @@
                                         <div class="symbol symbol-40px symbol-circle flex-shrink-0 me-3">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><span class="text-muted fw-semibold d-block fs-7">@if (age != null) {<span class="hp-num">@age</span><text>&nbsp;@T["y"] · </text>}@(r.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span></div></a></td>
                                     <td><div class="d-flex align-items-center gap-2"><bdi class="text-gray-900 fw-bold fs-6 hp-num">@c.CaseNo</bdi>@if (c.Status != HospitalOrthoStatus.Active) {<span class="badge badge-light-@St(c.Status) fs-8 fw-bold">@T["ortho:" + c.Status]</span>}</div>
-                                        <span class="text-muted fw-semibold d-block fs-7">@T["appl:" + c.Appliance]@if (c.Stages != null) {<text> · </text>@T["Stage"]<text> </text>@T["{0} of {1}", c.CurrentStage, c.Stages]}</span></td>
+                                        <span class="text-muted fw-semibold d-block fs-7">@T["appl:" + c.Appliance]@if (c.Stages != null) {<text> · </text>@T["Stage"]<text> </text>@T["{0} of {1}", c.CurrentStage, c.Stages]}</span>
+                                        @if (c.AngleClass != null) {<div class="d-flex flex-wrap gap-1 mt-1"><span class="badge badge-light-primary fs-8 fw-bold">@T["angle:" + c.AngleClass]</span>@if (c.Iotn != null) {<span class="badge badge-light-@(c.Iotn >= 4 ? "danger" : c.Iotn == 3 ? "info" : "secondary") fs-8 fw-bold" title="@T["iotn:" + HospitalOrthoClinicalRules.Need(c.Iotn)]" data-bs-toggle="tooltip">IOTN <span class="hp-num ms-1">@c.Iotn</span></span>}</div>}</td>
                                     <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@c.StartDate.ToString("yyyy-MM-dd")</span><span class="text-muted fw-semibold d-block fs-7">@T["Visits"] <span class="hp-num">@r.Visits</span></span></td>
                                     <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1 bg-light-@(r.Progress >= 100 ? "success" : "primary")"><div class="progress-bar @(r.Progress >= 100 ? "bg-success" : "bg-primary")" role="progressbar" style="width:@Math.Clamp(r.Progress, 0, 100)%"></div></div><span class="text-gray-800 fw-bold fs-7 hp-num">@r.Progress%</span></div>
                                         <div class="text-muted fw-semibold fs-8 mt-1">@T["{0} of {1}", HospitalDentalCasesRules.MonthsElapsed(c.StartDate, today), c.PlannedMonths] @T["months"]</div></td>
-                                    <td class="text-nowrap">@if (c.NextVisit != null) {<span class="badge badge-light-@(r.Missed ? "danger" : "primary") fs-7 fw-bold hp-num">@c.NextVisit.Value.ToString("yyyy-MM-dd")</span>@if (r.Missed) {<div class="text-danger fw-semibold fs-8 mt-1">@T["missed"]</div>}} else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-nowrap">@if (c.NextVisit != null) {<span class="badge badge-light-@(r.Missed ? "danger" : "primary") fs-7 fw-bold hp-num">@c.NextVisit.Value.ToString("yyyy-MM-dd")</span>@if (r.Missed) {<div class="text-danger fw-semibold fs-8 mt-1">@T["missed"]</div>}} else {<span class="text-muted">—</span>}
+                                        @if (r.NextReview != null) {<div class="text-muted fw-semibold fs-8 mt-1">@T["Retention review"] <span class="hp-num">@r.NextReview.Value.ToString("yyyy-MM-dd")</span></div>}
+                                        @if (r.Warnings is { Count: > 0 } ws) {<div class="d-flex flex-wrap gap-1 mt-1">@foreach (var w in ws) {<span class="badge badge-light-danger fs-8 fw-bold">@T["orw:" + w]</span>}</div>}</td>
                                     <td class="text-nowrap"><div class="text-gray-900 fw-bold fs-7">@T["{0} of {1}", fac.Format(r.Paid), fac.Format(c.ContractTotal)]</div>
                                         @if (c.MonthlyInstalment > 0) {<div class="text-muted fw-semibold fs-8">@T["monthly"] <span class="hp-num">@fac.Format(c.MonthlyInstalment)</span></div>}
                                         @if (r.Due > 0) {<div class="text-danger fw-semibold fs-8">@T["Due"] <span class="hp-num">@fac.Format(r.Due)</span></div>}</td>
                                     <td class="text-end pe-4 text-nowrap">
-                                        @if (canConsult && HospitalOrthoStatus.Open(c.Status)) { <button type="button" class="btn btn-sm btn-light-primary" data-visit="@System.Text.Json.JsonSerializer.Serialize(new { id = c.ID, no = c.CaseNo, stages = c.Stages, stage = c.CurrentStage })"><i class="ki-outline ki-plus fs-4"></i>@T["Adjustment"]</button> }
+                                        @if (canConsult && HospitalOrthoStatus.Open(c.Status)) { <button type="button" class="btn btn-sm btn-light-primary" data-visit="@System.Text.Json.JsonSerializer.Serialize(new { id = c.ID, no = c.CaseNo, stages = c.Stages, stage = c.CurrentStage, status = c.Status })"><i class="ki-outline ki-plus fs-4"></i>@T["Adjustment"]</button> }
                                         @if (canPay && r.Paid < c.ContractTotal) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary ms-1" title="@T["Payment"]" data-bs-toggle="tooltip" data-pay="@c.ID" data-what="@c.CaseNo" data-due="@(r.Due > 0 ? r.Due : c.MonthlyInstalment)"><i class="ki-outline ki-wallet fs-3"></i></button> }
                                     </td>
                                 </tr>
@@ -130,6 +133,14 @@
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Contract total"] <span class="text-muted fs-8">@fac.Code</span></label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-oc="total" /></div>
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Monthly instalment"]</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-oc="instalment" value="0" /></div>
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Next visit"]</label><input type="date" class="form-control form-control-solid hp-num" data-oc="next" /></div>
+                @* H185: the diagnosis the treatment rests on *@
+                <div class="col-12" data-oc-dx><div class="separator separator-dashed my-2"></div><div class="fs-5 fw-bold text-gray-800 mb-1">@T["Diagnosis"]</div><div class="text-muted fs-7">@T["Millimetres; a negative crowding is spacing."]</div></div>
+                <div class="col-md-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2 required">@T["Angle class"]</label><select class="form-select form-select-solid" data-oc="angle" data-placeholder="@T["Choose"]"><option></option>@foreach (var a in HospitalOrthoAngle.All) { <option value="@a">@T["angle:" + a]</option> }</select></div>
+                <div class="col-md-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2 required">@T["IOTN grade"]</label><select class="form-select form-select-solid" data-oc="iotn" data-placeholder="@T["Choose"]"><option></option>@for (int g = 1; g <= 5; g++) { <option value="@g">@g — @T["iotn:" + HospitalOrthoClinicalRules.Need(g)]</option> }</select></div>
+                <div class="col-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2">@T["Overjet"]</label><input type="number" step="0.5" min="-10" max="20" class="form-control form-control-solid hp-num" dir="ltr" data-oc="overjet" /></div>
+                <div class="col-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2">@T["Overbite"]</label><input type="number" step="0.5" min="-10" max="15" class="form-control form-control-solid hp-num" dir="ltr" data-oc="overbite" /></div>
+                <div class="col-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2">@T["Crowding upper"]</label><input type="number" step="0.5" min="-15" max="20" class="form-control form-control-solid hp-num" dir="ltr" data-oc="crowdU" /></div>
+                <div class="col-6" data-oc-dx><label class="d-block fs-6 fw-semibold mb-2">@T["Crowding lower"]</label><input type="number" step="0.5" min="-15" max="20" class="form-control form-control-solid hp-num" dir="ltr" data-oc="crowdL" /></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-oc-save>@T["Open the case"]</button></div>
         </div>
@@ -143,6 +154,13 @@
                 <div class="col-md-6" data-v-stage-wrap><label class="d-block fs-6 fw-semibold mb-2">@T["Aligner stage reached"] <span class="text-muted fs-8" data-v-of></span></label><input type="number" min="1" class="form-control form-control-solid hp-num" dir="ltr" data-v="stage" /></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Next visit"]</label><input type="date" class="form-control form-control-solid hp-num" data-v="next" /></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["The case"]</label><select class="form-select form-select-solid" data-v="status"><option value="">@T["Continues"]</option>@foreach (var st in new[] { HospitalOrthoStatus.Retention, HospitalOrthoStatus.Completed, HospitalOrthoStatus.Discontinued }) { <option value="@st">@T["ortho:" + st]</option> }</select></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Upper archwire"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" data-v="wireU" placeholder="0.014 NiTi" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Lower archwire"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" data-v="wireL" placeholder="0.016 NiTi" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Elastics"]</label><input class="form-control form-control-solid" maxlength="60" data-v="elastics" placeholder="@T["e.g. Class II, 3/16 in, both sides"]" /></div>
+                <div class="col-md-3 col-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Oral hygiene"]</label><select class="form-select form-select-solid" data-v="hygiene" data-placeholder="—"><option></option>@foreach (var h in HospitalOrthoHygiene.All) { <option value="@h">@T["hyg:" + h]</option> }</select></div>
+                <div class="col-md-3 col-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Breakages"]</label><input type="number" min="0" max="20" class="form-control form-control-solid hp-num" dir="ltr" data-v="breakages" /></div>
+                <div class="col-md-6 d-none" data-v-ret><label class="d-block fs-6 fw-semibold mb-2 required">@T["Upper retainer"]</label><select class="form-select form-select-solid" data-v="retU" data-placeholder="@T["Choose"]"><option></option>@foreach (var rt in HospitalOrthoRetainer.All) { <option value="@rt">@T["ret:" + rt]</option> }</select></div>
+                <div class="col-md-6 d-none" data-v-ret><label class="d-block fs-6 fw-semibold mb-2 required">@T["Lower retainer"]</label><select class="form-select form-select-solid" data-v="retL" data-placeholder="@T["Choose"]"><option></option>@foreach (var rt in HospitalOrthoRetainer.All) { <option value="@rt">@T["ret:" + rt]</option> }</select></div>
                 <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" data-v="note" placeholder="@T["e.g. wire changed to 0.018 NiTi"]" /></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-v-save>@T["Log the adjustment"]</button></div>
@@ -192,13 +210,19 @@
             var cm = document.getElementById('caseModal'), vm = document.getElementById('visitModal'), visiting = null, pm = document.getElementById('payModal'), paying = null;   // H167
             // clear aligners are planned in stages; nothing else is
             if (cm) cm.querySelector('[data-oc=appliance]').addEventListener('change', function (e) { cm.querySelector('[data-oc-stages]').classList.toggle('d-none', e.target.value !== 'ClearAligners'); });
+            // H185: a retention-only case needs no diagnosis; the retainers are asked only when the appliance comes off (select2: jQuery's change)
+            function onSel(el, f) { if (!el) return; if (window.$) $(el).on('change', f); else el.addEventListener('change', f); }
+            if (cm) onSel(cm.querySelector('[data-oc=appliance]'), function () { var ret = this.value === 'Retention'; cm.querySelectorAll('[data-oc-dx]').forEach(function (x) { x.classList.toggle('d-none', ret); }); cm.querySelector('[data-oc-stages]').classList.toggle('d-none', this.value !== 'ClearAligners'); });
+            if (vm) onSel(vm.querySelector('[data-v=status]'), function () { var off = this.value === 'Retention' && visiting && visiting.status === 'Active'; vm.querySelectorAll('[data-v-ret]').forEach(function (x) { x.classList.toggle('d-none', !off); }); });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-case-open],[data-oc-save],[data-visit],[data-v-save],[data-pay],[data-pay-save]'); if (!t) return;
                 if (t.hasAttribute('data-case-open')) { bootstrap.Modal.getOrCreateInstance(cm).show(); return; }
                 if (t.hasAttribute('data-oc-save')) {
                     var g = function (k) { return cm.querySelector('[data-oc=' + k + ']').value.trim(); }, aligners = g('appliance') === 'ClearAligners';
                     var body = { patientId: +g('patient') || 0, practitionerId: g('dentist') ? +g('dentist') : null, appliance: g('appliance'), startDate: g('start'), plannedMonths: +g('months') || 0,
-                        stages: aligners ? (+g('stages') || 0) : null, contractTotal: +g('total') || 0, monthlyInstalment: +g('instalment') || 0, nextVisit: g('next') || null };
+                        stages: aligners ? (+g('stages') || 0) : null, contractTotal: +g('total') || 0, monthlyInstalment: +g('instalment') || 0, nextVisit: g('next') || null,
+                        angleClass: g('angle') || null, iotn: g('iotn') ? +g('iotn') : null, overjetMm: g('overjet') === '' ? null : +g('overjet'), overbiteMm: g('overbite') === '' ? null : +g('overbite'),
+                        crowdingUpperMm: g('crowdU') === '' ? null : +g('crowdU'), crowdingLowerMm: g('crowdL') === '' ? null : +g('crowdL') };
                     cbConfirm(W.open).then(function (ok) { if (!ok) return; t.disabled = true; post(root, body).then(done(t, cm)); });
                     return;
                 }
@@ -209,6 +233,9 @@
                     vm.querySelector('[data-v-of]').textContent = visiting.stages ? W.of + ' ' + visiting.stages : '';
                     vm.querySelector('[data-v=stage]').value = visiting.stages ? Math.min(visiting.stages, (visiting.stage || 0) + 1) : '';
                     vm.querySelector('[data-v=next]').value = ''; vm.querySelector('[data-v=note]').value = ''; vm.querySelector('[data-v=status]').value = '';
+                    ['wireU', 'wireL', 'elastics', 'breakages', 'hygiene', 'retU', 'retL'].forEach(function (k) { vm.querySelector('[data-v=' + k + ']').value = ''; });
+                    vm.querySelectorAll('[data-v-ret]').forEach(function (x) { x.classList.add('d-none'); });
+                    if (window.$) ['hygiene', 'retU', 'retL'].forEach(function (k) { $(vm.querySelector('[data-v=' + k + ']')).trigger('change.select2'); });
                     // the dates are the theme's pickers and the case's state a select2: their shown values follow the reset
                     var nx = vm.querySelector('[data-v=next]'); if (nx._flatpickr) nx._flatpickr.clear();
                     if (window.$) $(vm.querySelector('[data-v=status]')).trigger('change.select2');
@@ -216,7 +243,9 @@
                 }
                 if (t.hasAttribute('data-v-save')) {
                     var v = function (k) { return vm.querySelector('[data-v=' + k + ']').value.trim(); };
-                    var b = { visitDate: v('date') || null, alignerStage: visiting.stages && v('stage') ? +v('stage') : null, nextVisit: v('next') || null, note: v('note') || null, status: v('status') || null };
+                    var b = { visitDate: v('date') || null, alignerStage: visiting.stages && v('stage') ? +v('stage') : null, nextVisit: v('next') || null, note: v('note') || null, status: v('status') || null,
+                        archwireUpper: v('wireU') || null, archwireLower: v('wireL') || null, elastics: v('elastics') || null, hygiene: v('hygiene') || null, breakages: v('breakages') === '' ? null : +v('breakages'),
+                        retainerUpper: v('retU') || null, retainerLower: v('retL') || null };
                     cbConfirm(W.visit.replace('{0}', iso(visiting.no))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + visiting.id + '/Visit', b).then(done(t, vm)); });
                     return;
                 }
