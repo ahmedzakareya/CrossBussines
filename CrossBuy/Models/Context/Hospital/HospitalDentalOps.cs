@@ -132,6 +132,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public static readonly IReadOnlyList<string> All = new[] { Pending, Pass, Fail };
 	}
 
+	/// H193: ARCHIVE — the dental unit's own cycle register before the merge. Its rows were moved into the one register
+	/// (HospitalSterilisationCycles, LegacyDentalCycleId) with their kits and recalls; nothing writes here any more.
 	public class HospitalSterilCycle
 	{
 		public int ID { get; set; }

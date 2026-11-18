@@ -70,7 +70,7 @@ namespace CrossBuy.Tests
 		}
 
 		private static string H42() => HospitalSliceParity.Slice("hospital_h42_cssd.sql");
-		private static string Slice() => H42() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h170_cssd_release.sql");   // H170: release, indicators, recall
+		private static string Slice() => H42() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h170_cssd_release.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h193_one_steril_register.sql");   // H170: release, indicators, recall; H193: the one register
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalCssdModel.Configure);
 
 		[Fact]

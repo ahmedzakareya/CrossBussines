@@ -79,12 +79,12 @@ namespace CrossBuy.Tests
 		public void A_kit_is_never_used_from_a_failed_cycle()
 		{
 			// H169: usable means RELEASED; a released cycle whose biological is still incubating stays usable (not an implant load)
-			HospitalSterilCycle C(string chem, string bio) => new() { Chemical = chem, Biological = bio, PhysicalOk = true, ReleasedAt = new DateTime(2026, 11, 3) };
+			HospitalSterilisationCycle C(string chem, string bio) => new() { Chemical = chem, Biological = bio, PhysicalOk = true, ReleasedAt = new DateTime(2026, 11, 3) };
 			Assert.Null(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Pass)));
 			Assert.Null(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Pending)));   // parametric release
 			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Fail)));
 			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Fail, HospitalIndicator.Pending)));
-			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(new HospitalSterilCycle { Chemical = HospitalIndicator.Pending, Biological = HospitalIndicator.Pending }));   // never released
+			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(new HospitalSterilisationCycle { Chemical = HospitalIndicator.Pending, Biological = HospitalIndicator.Pending }));   // never released
 		}
 
 		[Fact]

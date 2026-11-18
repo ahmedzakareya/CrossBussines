@@ -179,7 +179,7 @@
                                     <tr>
                                         <td class="ps-4"><div class="d-flex align-items-center">
                                             <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(bad ? "danger" : "primary")"><i class="ki-outline ki-shield-tick fs-3 text-@(bad ? "danger" : "primary")"></i></span></div>
-                                            <div class="d-flex flex-column"><bdi class="text-gray-900 fw-bold fs-7 hp-num">@c.Cycle.CycleNo</bdi><span class="text-muted fw-semibold fs-8"><bdi>@c.Cycle.Unit</bdi> · <span class="hp-num">@c.Cycle.RunAt.ToString("yyyy-MM-dd HH:mm")</span></span>
+                                            <div class="d-flex flex-column"><bdi class="text-gray-900 fw-bold fs-7 hp-num">@c.Cycle.CycleNo</bdi><span class="text-muted fw-semibold fs-8"><bdi>@c.Cycle.Autoclave</bdi> · <span class="hp-num">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm")</span></span>
                                                 @if (c.Cycle.PhysicalOk != null)
                                                 {
                                                     <span class="fs-8 fw-semibold @(c.Cycle.PhysicalOk == true ? "text-gray-700" : "text-danger")"><bdi class="hp-num" dir="ltr">@c.Cycle.TemperatureC?.ToString("0.#") °C · @c.Cycle.ExposureMinutes <bdi>@T["min"]</bdi>@if (c.Cycle.PressureKpa != null) { <text> · @c.Cycle.PressureKpa.Value.ToString("0.#") kPa</text> }</bdi>@if (c.Cycle.PhysicalOk == false) { <text> · @T["programme not met"]</text> }</span>

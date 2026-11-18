@@ -23,7 +23,7 @@ namespace CrossBuy.Tests
 		private static BusinessContext Ctx(int employeeId = 7) => new() { CompanyId = 1, EmployeeId = employeeId, UserId = "u" + employeeId, Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid() };
 		private static readonly DateTime Now = new(2026, 11, 17, 9, 0, 0);
 
-		private static HospitalSterilCycle C(bool? physical = true, string chem = HospitalIndicator.Pass, string bio = HospitalIndicator.Pending, bool implant = false) =>
+		private static HospitalSterilisationCycle C(bool? physical = true, string chem = HospitalIndicator.Pass, string bio = HospitalIndicator.Pending, bool implant = false) =>
 			new() { PhysicalOk = physical, Chemical = chem, Biological = bio, ImplantLoad = implant };
 
 		[Fact]
@@ -35,7 +35,7 @@ namespace CrossBuy.Tests
 			Assert.Null(HospitalDentalPracticeRules.ReleaseRefusal(C()));   // parametric release of an ordinary load
 			Assert.Equal("A load with implantable items waits for its biological indicator", HospitalDentalPracticeRules.ReleaseRefusal(C(implant: true)));
 			Assert.Null(HospitalDentalPracticeRules.ReleaseRefusal(C(implant: true, bio: HospitalIndicator.Pass)));
-			Assert.Equal("This cycle is already released", HospitalDentalPracticeRules.ReleaseRefusal(new HospitalSterilCycle { PhysicalOk = true, Chemical = HospitalIndicator.Pass, ReleasedAt = Now }));
+			Assert.Equal("This cycle is already released", HospitalDentalPracticeRules.ReleaseRefusal(new HospitalSterilisationCycle { PhysicalOk = true, Chemical = HospitalIndicator.Pass, ReleasedAt = Now }));
 		}
 
 		[Theory]
@@ -45,7 +45,7 @@ namespace CrossBuy.Tests
 		[InlineData(4, 134, 900, true, "The pressure is out of range")]
 		[InlineData(4, 134, null, null, "Say whether the run met its programme")]
 		public void The_physical_record_is_bounded(int? minutes, int? temp, int? kpa, bool? ok, string? why) =>
-			Assert.Equal(why, HospitalDentalPracticeRules.PhysicalRefusal(new HospitalSterilCycle(), minutes, temp, kpa, ok));
+			Assert.Equal(why, HospitalDentalPracticeRules.PhysicalRefusal(new HospitalSterilisationCycle(), minutes, temp, kpa, ok));
 
 		[Fact]
 		public void A_kit_needs_a_released_cycle_and_an_intact_pack()
@@ -83,7 +83,7 @@ namespace CrossBuy.Tests
 			Assert.True((await svc.ReleaseAsync(Ctx(), id, 9, Now)).Ok);
 			Assert.Equal("A pack that is not intact is not used: send it back to be re-sterilised", (await svc.UseKitAsync(Ctx(), id, p, null, false, 7, Now)).Error);
 			Assert.True((await svc.UseKitAsync(Ctx(), id, p, null, true, 7, Now)).Ok);
-			var c = await host.Db.Set<HospitalSterilCycle>().AsNoTracking().SingleAsync();
+			var c = await host.Db.Set<HospitalSterilisationCycle>().AsNoTracking().SingleAsync();
 			Assert.Equal((9, true, 134m), (c.ReleasedByEmployeeId!.Value, c.ImplantLoad, c.TemperatureC!.Value));
 			Assert.True((await host.Db.Set<HospitalSterilUse>().AsNoTracking().SingleAsync()).PackIntact);
 		}
@@ -101,7 +101,7 @@ namespace CrossBuy.Tests
 			Assert.True((await svc.UseKitAsync(Ctx(), id, p, null, true, 7, Now.AddHours(1))).Ok);
 
 			Assert.True((await svc.RecordIndicatorAsync(Ctx(), id, "Biological", HospitalIndicator.Fail, Now.AddDays(1))).Ok);
-			var c = await host.Db.Set<HospitalSterilCycle>().AsNoTracking().SingleAsync();
+			var c = await host.Db.Set<HospitalSterilisationCycle>().AsNoTracking().SingleAsync();
 			Assert.Equal("Biological indicator failed after release", c.RecallReason);
 			Assert.NotNull(c.RecalledAt);
 			Assert.Equal("This cycle failed its checks or was recalled: its kits are held", (await svc.UseKitAsync(Ctx(), id, p, null, true, 7, Now.AddDays(1))).Error);
@@ -123,7 +123,7 @@ namespace CrossBuy.Tests
 			using var _ = host;
 			int id = (await svc.CreateCycleAsync(Ctx(), new HospitalSterilCycleInput { Unit = "Autoclave 1", Load = "Exam kits" }, 7, Now, Now)).Id!.Value;
 			Assert.True((await svc.RecordIndicatorAsync(Ctx(), id, "Chemical", HospitalIndicator.Fail, Now)).Ok);
-			Assert.Null((await host.Db.Set<HospitalSterilCycle>().AsNoTracking().SingleAsync()).RecalledAt);
+			Assert.Null((await host.Db.Set<HospitalSterilisationCycle>().AsNoTracking().SingleAsync()).RecalledAt);
 			Assert.Empty(await host.Db.Set<HospitalSterilRecall>().AsNoTracking().ToListAsync());
 			Assert.Equal("Enter the reason for the recall", (await svc.RecallCycleAsync(Ctx(), id, "", Now)).Error);
 			Assert.True((await svc.RecallCycleAsync(Ctx(), id, "Wet packs found", Now)).Ok);   // by hand: held, with its reason

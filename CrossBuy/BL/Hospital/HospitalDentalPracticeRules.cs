@@ -68,12 +68,12 @@ namespace CrossBuy.BL.Hospital
 		// implant load). A failure found after release recalls the cycle; a recalled cycle is never used again.
 		public const int MaxExposureMinutes = 240;
 
-		public static bool Held(HospitalSterilCycle c) =>
+		public static bool Held(HospitalSterilisationCycle c) =>
 			c.RecalledAt != null || c.PhysicalOk == false || c.Chemical == HospitalIndicator.Fail || c.Biological == HospitalIndicator.Fail;
 
 		/// The physical record of a run: exposure 1–240 min, temperature 100–150 °C, pressure (optional) 0–400 kPa, and
 		/// the operator's verdict. Recorded once, before release.
-		public static string? PhysicalRefusal(HospitalSterilCycle c, int? minutes, decimal? temperature, decimal? pressure, bool? ok) =>
+		public static string? PhysicalRefusal(HospitalSterilisationCycle c, int? minutes, decimal? temperature, decimal? pressure, bool? ok) =>
 			c.PhysicalOk != null ? "The physical readings of this cycle are already recorded"
 			: c.ReleasedAt != null || c.RecalledAt != null ? "This cycle is already released or recalled"
 			: minutes is not (>= 1 and <= MaxExposureMinutes) ? "Enter the exposure time in minutes"
@@ -83,7 +83,7 @@ namespace CrossBuy.BL.Hospital
 
 		/// Released by a person once the run is proven: physical readings met, chemical passed, biological passed when the
 		/// load holds implantable items; never a held or recalled cycle, never twice.
-		public static string? ReleaseRefusal(HospitalSterilCycle c) =>
+		public static string? ReleaseRefusal(HospitalSterilisationCycle c) =>
 			c.RecalledAt != null ? "This cycle was recalled"
 			: c.ReleasedAt != null ? "This cycle is already released"
 			: Held(c) ? "This cycle failed its checks: its kits are held"
@@ -93,13 +93,13 @@ namespace CrossBuy.BL.Hospital
 
 		/// A kit is used only from a released cycle that is not held or recalled, and only from a pack checked intact
 		/// (wrap, seal, dry, its own indicator turned) just before it is opened.
-		public static string? UseRefusal(HospitalSterilCycle c, bool packIntact = true) =>
+		public static string? UseRefusal(HospitalSterilisationCycle c, bool packIntact = true) =>
 			Held(c) ? "This cycle failed its checks or was recalled: its kits are held"
 			: c.ReleasedAt == null ? "This cycle is not released yet"
 			: !packIntact ? "A pack that is not intact is not used: send it back to be re-sterilised" : null;
 
 		/// A failure recorded after release recalls the cycle: its kits already reached patients.
-		public static bool RecallsOnFail(HospitalSterilCycle c) => c.ReleasedAt != null && c.RecalledAt == null;
+		public static bool RecallsOnFail(HospitalSterilisationCycle c) => c.ReleasedAt != null && c.RecalledAt == null;
 
 		/// "LC-0418", "AC-2026-1102-01": the next number after the highest one with this prefix.
 		public static string NextNo(IEnumerable<string> existing, string prefix, int width)

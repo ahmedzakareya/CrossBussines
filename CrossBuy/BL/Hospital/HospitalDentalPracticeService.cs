@@ -105,7 +105,7 @@ namespace CrossBuy.BL.Hospital
 
 	public sealed record HospitalRecallRow(HospitalDentalRecall Recall, string PatientName, string PatientNameEn, string Mrn, string? Phone, string? Photo, DateTime? NextVisit, string State);
 
-	public sealed record HospitalSterilRow(HospitalSterilCycle Cycle, int Used, string? Operator, string? OperatorEn, string? OperatorPhoto, IReadOnlyList<string> UsedOn, string? ReleasedBy = null);
+	public sealed record HospitalSterilRow(HospitalSterilisationCycle Cycle, int Used, string? Operator, string? OperatorEn, string? OperatorPhoto, IReadOnlyList<string> UsedOn, string? ReleasedBy = null);
 
 	public sealed record HospitalRecallStats(int? PreBookedRate, int DueThisMonth, int Overdue, int FailedCycles);
 
@@ -126,7 +126,8 @@ namespace CrossBuy.BL.Hospital
 		private IQueryable<HospitalDentalVisit> Visits(BusinessContext ctx) => _db.Set<HospitalDentalVisit>().Where(x => x.CompanyId == ctx.CompanyId);
 		private IQueryable<HospitalDentalLabCase> Cases(BusinessContext ctx) => _db.Set<HospitalDentalLabCase>().Where(x => x.CompanyId == ctx.CompanyId);
 		private IQueryable<HospitalDentalRecall> Recalls(BusinessContext ctx) => _db.Set<HospitalDentalRecall>().Where(x => x.CompanyId == ctx.CompanyId);
-		private IQueryable<HospitalSterilCycle> Cycles(BusinessContext ctx) => _db.Set<HospitalSterilCycle>().Where(x => x.CompanyId == ctx.CompanyId);
+		/// H193: the one sterilisation register (the central unit's), not a dental copy.
+		private IQueryable<HospitalSterilisationCycle> Cycles(BusinessContext ctx) => _db.Set<HospitalSterilisationCycle>().Where(x => x.CompanyId == ctx.CompanyId);
 		private IQueryable<HospitalAppointment> Appts(BusinessContext ctx) => _db.HospitalAppointments.Where(a => a.CompanyId == ctx.CompanyId);
 
 		private async Task<HospitalResult> SaveAsync(CancellationToken ct, int? id = null)
@@ -392,16 +393,17 @@ namespace CrossBuy.BL.Hospital
 
 		public async Task<IReadOnlyList<HospitalSterilRow>> CyclesAsync(BusinessContext ctx, CancellationToken ct = default)
 		{
-			var cycles = await Cycles(ctx).AsNoTracking().OrderByDescending(c => c.RunAt).Take(60).ToListAsync(ct);
+			// H193: the dental unit's cycles — those that run kits (a load), not the central unit's tracked sets
+			var cycles = await Cycles(ctx).AsNoTracking().Where(c => c.Load != null).OrderByDescending(c => c.StartedAt).Take(60).ToListAsync(ct);
 			var ids = cycles.Select(c => c.ID).ToList();
 			var uses = await (from u in _db.Set<HospitalSterilUse>().AsNoTracking() join p in _db.HospitalPatients.AsNoTracking() on u.PatientId equals p.ID
 							  where ids.Contains(u.CycleId) select new { u.CycleId, p.Name, p.NameEn, p.Mrn }).ToListAsync(ct);
-			var emps = cycles.Where(c => c.OperatorEmployeeId != null).Select(c => c.OperatorEmployeeId!.Value)
+			var emps = cycles.Where(c => c.StartedByEmployeeId != null).Select(c => c.StartedByEmployeeId!.Value)
 				.Concat(cycles.Where(c => c.ReleasedByEmployeeId != null).Select(c => c.ReleasedByEmployeeId!.Value)).Distinct().ToList();
 			var names = await _db.Employee.AsNoTracking().Where(e => emps.Contains(e.ID)).Select(e => new { e.ID, Name = e.FullName, NameEn = e.FullNameEn }).ToListAsync(ct);
 			var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, emps, ct);
-			return cycles.Select(c => new HospitalSterilRow(c, uses.Count(u => u.CycleId == c.ID), names.FirstOrDefault(n => n.ID == c.OperatorEmployeeId) is { } op ? DisplayName.Of(op.Name, op.NameEn ?? op.Name) : null, names.FirstOrDefault(n => n.ID == c.OperatorEmployeeId)?.NameEn,
-				c.OperatorEmployeeId is int e ? photos.GetValueOrDefault(e) : null,
+			return cycles.Select(c => new HospitalSterilRow(c, uses.Count(u => u.CycleId == c.ID), names.FirstOrDefault(n => n.ID == c.StartedByEmployeeId) is { } op ? DisplayName.Of(op.Name, op.NameEn ?? op.Name) : null, names.FirstOrDefault(n => n.ID == c.StartedByEmployeeId)?.NameEn,
+				c.StartedByEmployeeId is int e ? photos.GetValueOrDefault(e) : null,
 				uses.Where(u => u.CycleId == c.ID).Select(u => DisplayName.Of(u.Name, u.NameEn) + " — " + u.Mrn).ToList(),
 				names.FirstOrDefault(n => n.ID == c.ReleasedByEmployeeId) is { } rb ? DisplayName.Of(rb.Name, rb.NameEn ?? rb.Name) : null)).ToList();
 		}
@@ -415,7 +417,7 @@ namespace CrossBuy.BL.Hospital
 			if (run > nowLocal.AddMinutes(5)) return HospitalResult.Fail("A cycle cannot be recorded before it runs");
 			string prefix = "AC-" + run.ToString("yyyy-MMdd") + "-";
 			var nos = await Cycles(ctx).Where(c => c.CycleNo.StartsWith(prefix)).Select(c => c.CycleNo).ToListAsync(ct);
-			var c = new HospitalSterilCycle { CompanyId = ctx.CompanyId, CycleNo = HospitalDentalPracticeRules.NextNo(nos, prefix, 2), Unit = unit, Load = load, RunAt = run, OperatorEmployeeId = employeeId, CreatedAt = nowUtc, ImplantLoad = input.ImplantLoad };
+			var c = new HospitalSterilisationCycle { CompanyId = ctx.CompanyId, CycleNo = HospitalDentalPracticeRules.NextNo(nos, prefix, 2), Autoclave = unit, Load = load, StartedAt = run, StartedByEmployeeId = employeeId, ImplantLoad = input.ImplantLoad, Result = HospitalCycleResult.Running };
 			_db.Add(c);
 			return await SaveAsync(ct, null) is { Ok: true } ? HospitalResult.Success(c.ID) : HospitalResult.Fail(ConcurrentChange);
 		}
@@ -436,6 +438,7 @@ namespace CrossBuy.BL.Hospital
 			if (n != 1) return n == -1 ? HospitalResult.Fail("not_found") : HospitalResult.Fail("This indicator is already recorded");
 			if (result == HospitalIndicator.Fail)
 			{
+				await Cycles(ctx).Where(c => c.ID == id && c.Result == HospitalCycleResult.Running).ExecuteUpdateAsync(u => u.SetProperty(c => c.Result, HospitalCycleResult.Failed), ct);   // H193
 				var c = await Cycles(ctx).AsNoTracking().FirstAsync(x => x.ID == id, ct);
 				if (HospitalDentalPracticeRules.RecallsOnFail(c))
 				{
@@ -456,7 +459,8 @@ namespace CrossBuy.BL.Hospital
 			if (HospitalDentalPracticeRules.PhysicalRefusal(c, input.ExposureMinutes, input.TemperatureC, input.PressureKpa, input.Ok) is string why) return HospitalResult.Fail(why);
 			int n = await Cycles(ctx).Where(x => x.ID == id && x.PhysicalOk == null && x.ReleasedAt == null)
 				.ExecuteUpdateAsync(u => u.SetProperty(x => x.ExposureMinutes, input.ExposureMinutes).SetProperty(x => x.TemperatureC, input.TemperatureC)
-					.SetProperty(x => x.PressureKpa, input.PressureKpa).SetProperty(x => x.PhysicalOk, input.Ok), ct);
+					.SetProperty(x => x.PressureKpa, input.PressureKpa).SetProperty(x => x.PhysicalOk, input.Ok)
+					.SetProperty(x => x.Result, x => input.Ok == false && x.Result == HospitalCycleResult.Running ? HospitalCycleResult.Failed : x.Result), ct);   // H193
 			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
 		}
 
@@ -470,7 +474,8 @@ namespace CrossBuy.BL.Hospital
 			// the same conditions again in the write: a result recorded meanwhile wins
 			int n = await Cycles(ctx).Where(x => x.ID == id && x.ReleasedAt == null && x.RecalledAt == null && x.PhysicalOk == true && x.Chemical == HospitalIndicator.Pass
 					&& x.Biological != HospitalIndicator.Fail && (!x.ImplantLoad || x.Biological == HospitalIndicator.Pass))
-				.ExecuteUpdateAsync(u => u.SetProperty(x => x.ReleasedAt, nowUtc).SetProperty(x => x.ReleasedByEmployeeId, employeeId), ct);
+				.ExecuteUpdateAsync(u => u.SetProperty(x => x.ReleasedAt, nowUtc).SetProperty(x => x.ReleasedByEmployeeId, employeeId)
+					.SetProperty(x => x.Result, HospitalCycleResult.Passed).SetProperty(x => x.EndedAt, x => x.EndedAt ?? nowUtc).SetProperty(x => x.EndedByEmployeeId, x => x.EndedByEmployeeId ?? employeeId), ct);   // H193: the register's result
 			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
 		}
 
@@ -490,7 +495,7 @@ namespace CrossBuy.BL.Hospital
 			return r.Ok ? HospitalResult.Success(id) : r;
 		}
 
-		private async Task<HospitalResult> RecallInTxAsync(BusinessContext ctx, HospitalSterilCycle c, string reason, DateTime nowUtc, CancellationToken ct)
+		private async Task<HospitalResult> RecallInTxAsync(BusinessContext ctx, HospitalSterilisationCycle c, string reason, DateTime nowUtc, CancellationToken ct)
 		{
 			int n = await Cycles(ctx).Where(x => x.ID == c.ID && x.RecalledAt == null)
 				.ExecuteUpdateAsync(u => u.SetProperty(x => x.RecalledAt, nowUtc).SetProperty(x => x.RecallReason, reason), ct);

@@ -90,6 +90,12 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? ReleasedByEmployeeId { get; set; }
 		public DateTime? RecalledAt { get; set; }
 		public string? RecallReason { get; set; }
+		// H193: ONE register of sterilisation cycles. The dental unit's cycles live here too: what the load holds (a dental
+		// cycle runs kits, not tracked sets), the operator's word that the run met its programme, and — for a cycle moved
+		// from the dental register — the old row it came from (HospitalSterilCycles is kept as a read-only archive).
+		public string? Load { get; set; }
+		public bool? PhysicalOk { get; set; }
+		public int? LegacyDentalCycleId { get; set; }
 	}
 
 	public class HospitalSetEvent
@@ -142,6 +148,7 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalSterilisationCycle>(e =>
 			{
 				e.ToTable("HospitalSterilisationCycles");
+				e.Property(x => x.Load).HasMaxLength(300);   // H193
 				e.Property(x => x.CycleNo).HasMaxLength(20);
 				e.Property(x => x.Autoclave).HasMaxLength(60);
 				e.Property(x => x.Result).HasMaxLength(10);
