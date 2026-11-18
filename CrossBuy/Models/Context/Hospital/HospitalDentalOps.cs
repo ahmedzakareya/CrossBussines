@@ -102,6 +102,13 @@ namespace CrossBuy.Models.Context.Hospital
 		public decimal Cost { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
+		/// H187: the impression (digital scan / conventional), its disinfection before it last left, and the check of the
+		/// work when it arrived (who and when; cleared by a remake).
+		public string? ImpressionKind { get; set; }
+		public string? Disinfectant { get; set; }
+		public DateTime? DisinfectedAt { get; set; }
+		public DateTime? QcAt { get; set; }
+		public int? QcByEmployeeId { get; set; }
 	}
 
 	public class HospitalDentalRecall
@@ -205,6 +212,8 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.ToTable("HospitalDentalLabCases");
 				e.Property(x => x.DueDate).HasColumnType("date");
+				e.Property(x => x.ImpressionKind).HasMaxLength(12);   // H187
+				e.Property(x => x.Disinfectant).HasMaxLength(60);
 				e.Property(x => x.Cost).HasPrecision(18, 3);
 				e.HasIndex(x => new { x.CompanyId, x.CaseNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.Stage });

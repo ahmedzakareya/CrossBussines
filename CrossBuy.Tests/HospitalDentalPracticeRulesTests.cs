@@ -96,7 +96,7 @@ namespace CrossBuy.Tests
 
 		// ---------------- model and slice ----------------
 
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h16_dental_practice.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h169_steril_release.sql");   // H169 release columns and the recall table
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h16_dental_practice.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h169_steril_release.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h187_lab_checks.sql");   // H169 release columns and the recall table, H187 the lab checks
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDentalOpsModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

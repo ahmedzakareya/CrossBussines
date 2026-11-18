@@ -10,6 +10,7 @@
     var labs = (ViewBag.Labs as IReadOnlyList<HospitalDentalLab>) ?? Array.Empty<HospitalDentalLab>();
     var fac = (HospitalPriceCurrency)ViewBag.Facility;
     bool canConsult = ViewBag.CanConsult == true, canMove = ViewBag.CanMove == true, canManage = ViewBag.CanManage == true;
+    var perf = (ViewBag.Performance as IReadOnlyList<HospitalLabPerformance>) ?? Array.Empty<HospitalLabPerformance>();   // H187
     string Pct(decimal? v) => v == null ? "—" : v.Value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%";
     // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
     void Stat(string label, string value, string? unit, object? sub, string icon, string tone)
@@ -108,15 +109,17 @@
                                         <div class="symbol symbol-40px symbol-circle flex-shrink-0 me-3">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></a></td>
                                     <td class="text-nowrap"><bdi class="text-gray-900 fw-bold fs-7 hp-num d-block">@c.CaseNo</bdi><span class="text-muted fw-semibold fs-7">@T["Tooth"]&nbsp;<bdi class="hp-num">@(c.Teeth ?? "—")</bdi></span></td>
-                                    <td><span class="text-gray-900 fw-bold d-block fs-7">@T["ltype:" + c.CaseType]</span><span class="text-muted fw-semibold fs-7"><bdi>@c.Material</bdi>@if (c.Shade != null) {<text> · </text>@T["Shade"]<text>&nbsp;</text><bdi class="hp-num">@c.Shade</bdi>}</span></td>
+                                    <td><span class="text-gray-900 fw-bold d-block fs-7">@T["ltype:" + c.CaseType]</span><span class="text-muted fw-semibold fs-7"><bdi>@c.Material</bdi>@if (c.Shade != null) {<text> · </text>@T["Shade"]<text>&nbsp;</text><bdi class="hp-num">@c.Shade</bdi>}</span>
+                                        @if (c.ImpressionKind != null) {<div class="mt-1"><span class="badge badge-light-primary fs-8 fw-bold" title="@(c.Disinfectant == null ? "" : T["Disinfected with {0}", c.Disinfectant].Value)" data-bs-toggle="tooltip">@T["imp:" + c.ImpressionKind]@if (c.Disinfectant != null) {<i class="ki-outline ki-shield-tick fs-7 ms-1 text-primary"></i>}</span></div>}</td>
                                     <td class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(r.Lab, r.LabEn)</td>
                                     <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@c.DueDate.ToString("yyyy-MM-dd")</span></td>
                                     <td class="text-nowrap">@if (r.FitAt != null) {<span class="badge badge-light-@(r.AtRisk ? "danger" : "primary") fs-7 fw-bold hp-num">@r.FitAt.Value.ToString("yyyy-MM-dd HH:mm")</span>} else {<span class="text-muted">—</span>}</td>
                                     <td>@if (c.Stage == HospitalLabCaseStage.Remake) {<span class="badge badge-light-danger fs-7 fw-bold">@T["dlab:Remake"]</span>} else if (c.Stage == HospitalLabCaseStage.Fitted) {<span class="badge badge-light-success fs-7 fw-bold">@T["dlab:Fitted"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["dlab:" + c.Stage]</span>}
-                                        @if (c.RemakeReason != null) { <div class="text-danger fw-semibold fs-8 mt-1">@c.RemakeReason — @(c.RemakeFault == "Lab" ? T["lab's fault"] : T["clinic's fault"])</div> }</td>
+                                        @if (c.RemakeReason != null) { <div class="text-danger fw-semibold fs-8 mt-1">@c.RemakeReason — @(c.RemakeFault == "Lab" ? T["lab's fault"] : T["clinic's fault"])</div> }
+                                        @if (c.QcAt != null) { <div class="fs-8 text-gray-700 mt-1"><i class="ki-outline ki-check-square fs-7 text-primary me-1"></i>@T["Checked on receipt"]</div> }</td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@fac.Format(c.Cost)</span></td>
                                     <td class="text-end pe-4 text-nowrap">
-                                        @if (canMove && next != null) { <button type="button" class="btn btn-sm btn-light-primary" data-case-move="@c.ID" data-to="@next" data-what="@c.CaseNo" data-label="@T["dlab:" + next]"><i class="ki-outline ki-arrow-left fs-4"></i>@T["dlab:" + next]</button> }
+                                        @if (canMove && next != null) { <button type="button" class="btn btn-sm btn-light-primary" data-case-move="@c.ID" data-to="@next" data-what="@c.CaseNo" data-label="@T["dlab:" + next]" data-imp="@c.ImpressionKind" data-qc="@((next == HospitalLabCaseStage.Received || (next == HospitalLabCaseStage.Fitted && c.QcAt == null)) ? "1" : "")"><i class="ki-outline ki-arrow-left fs-4"></i>@T["dlab:" + next]</button> }
                                         @if (canMove && HospitalDentalPracticeRules.CanMove(c.Stage, HospitalLabCaseStage.Remake)) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["dlab:Remake"]" data-bs-toggle="tooltip" data-case-remake="@c.ID" data-what="@c.CaseNo"><i class="ki-outline ki-arrows-circle fs-3"></i></button> }
                                     </td>
                                 </tr>
@@ -126,6 +129,23 @@
                 }
             </div>
         </div>
+        @* H187: each lab's record *@
+        @if (perf.Count > 0)
+        {
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Each lab's record"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["On time over the last 90 days; remakes and turnaround over every case sent."]</span></h3></div>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0">
+                    <thead><tr class="fs-7 fw-bold text-gray-500 border-bottom-0"><th>@T["Lab"]</th><th class="text-end">@T["Cases"]</th><th class="text-end">@T["On time"]</th><th class="text-end">@T["Remake rate"]</th><th class="text-end">@T["The lab's fault"]</th><th class="text-end">@T["Days to return"]</th></tr></thead>
+                    <tbody>@foreach (var p in perf)
+                    {
+                        <tr><td class="text-gray-800 fw-bold">@DisplayName.Of(p.Name, p.NameEn)</td><td class="text-end hp-num">@p.Cases</td>
+                            <td class="text-end"><span class="badge badge-light-@(p.OnTimeRate is decimal ot && ot < 80 ? "danger" : "primary") fs-7 fw-bold hp-num">@Pct(p.OnTimeRate)</span></td>
+                            <td class="text-end"><span class="badge badge-light-@(p.RemakeRate is decimal rr && rr >= 10 ? "danger" : "primary") fs-7 fw-bold hp-num">@Pct(p.RemakeRate)</span></td>
+                            <td class="text-end hp-num">@p.LabFaultRemakes</td><td class="text-end hp-num">@(p.AvgTurnaroundDays?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</td></tr>
+                    }</tbody></table></div></div>
+            </div>
+        }
         <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
             <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
             <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Alert two days before, not on the due day"]</h4><div class="fs-6 text-gray-700">@T["If a case has not arrived two days before the fit, the desk is told to call the lab or move the appointment before the patient comes."]</div></div>
@@ -145,6 +165,8 @@
                     <select class="form-select form-select-solid" data-lc="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Lab"]</label><select class="form-select form-select-solid" data-lc="lab">@foreach (var l in labs.Where(l => l.IsActive)) { <option value="@l.ID">@DisplayName.Of(l.Name, l.NameEn)</option> }</select></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Type of work"]</label><select class="form-select form-select-solid" data-lc="type">@foreach (var t in HospitalLabCaseType.All) { <option value="@t">@T["ltype:" + t]</option> }</select></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Impression"]</label><select class="form-select form-select-solid" data-lc="impression" data-placeholder="@T["Choose"]"><option></option>@foreach (var k in HospitalLabImpression.All) { <option value="@k">@T["imp:" + k]</option> }</select></div>
+                <div class="col-md-6 d-flex align-items-end"><div class="text-muted fs-7">@T["A conventional impression leaves for the lab only disinfected; the disinfectant is recorded when it is sent."]</div></div>
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Tooth"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-lc="teeth" placeholder="26 · 11–21" /></div>
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Material"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-lc="material" placeholder="Zirconia" /></div>
                 <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Shade"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="10" data-lc="shade" placeholder="A2" /></div>
@@ -182,6 +204,22 @@
     </div></div></div>
 }
 
+@* H187: the check of the work on receipt *@
+@if (canMove)
+{
+    <div class="modal fade" id="qcModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Check the work"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-qc-what></bdi></div></div>
+            <div class="d-flex flex-column gap-4">@foreach (var q in HospitalDentalLabQcRules.QcItems)
+            {
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" value="@q" data-qc-item /><span class="form-check-label fw-semibold text-gray-800">@T["qc:" + q]</span></label>
+            }</div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-6 fs-7 text-gray-700">@T["Work that fails any check is not received: send it back as a remake."]</div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-qc-save>@T["Passed: record"]</button></div>
+        </div>
+    </div></div></div>
+}
 @section Scripts {
     <partial name="_PersonSelect" />
     <partial name="_HospitalPrompt" />
@@ -190,7 +228,8 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental"));
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                 move: @Json.Serialize(T["{1}: {0}?"].Value), why: @Json.Serialize(T["Why is {0} remade?"].Value), whose: @Json.Serialize(T["Whose fault is the remake?"].Value), lab_: @Json.Serialize(T["The lab's"].Value), clinic: @Json.Serialize(T["The clinic's"].Value), cancel: @Json.Serialize(T["Cancel"].Value),
-                send: @Json.Serialize(T["Send this prescription to the lab?"].Value), lab: @Json.Serialize(T["Save this lab?"].Value) };
+                send: @Json.Serialize(T["Send this prescription to the lab?"].Value),
+                disinfect: @Json.Serialize(T["Which disinfectant was the impression of {0} treated with?"].Value), disinfectant: @Json.Serialize(T["e.g. sodium hypochlorite 1%, 10 minutes"].Value), qcFail: @Json.Serialize(T["The work passes every check to be received: send what fails back as a remake"].Value), lab: @Json.Serialize(T["Save this lab?"].Value) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             // a code inside an Arabic sentence keeps its own direction (first-strong isolate … pop)
             function iso(x) { return '⁨' + x + '⁩'; }
@@ -198,7 +237,7 @@
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
             }
-            var cm = document.getElementById('caseModal'), lm = document.getElementById('labsModal'), labEditing = null;
+            var cm = document.getElementById('caseModal'), lm = document.getElementById('labsModal'), labEditing = null, qm = document.getElementById('qcModal'), moving = null;
             function swap() {
                 return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content'), tb = d.getElementById('kt_app_toolbar');
@@ -217,7 +256,21 @@
                 });
             });
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-case-move],[data-case-remake],[data-case-open],[data-lc-save],[data-labs-open],[data-lab-edit],[data-lb-save]'); if (!t) return;
+                var t = e.target.closest('[data-case-move],[data-case-remake],[data-case-open],[data-lc-save],[data-labs-open],[data-lab-edit],[data-lb-save],[data-qc-save]'); if (!t) return;
+                if (t.hasAttribute('data-case-move') && t.getAttribute('data-qc') === '1') {   // H187: the check of the work before it is received (or fitted)
+                    moving = t; qm.querySelector('[data-qc-what]').textContent = t.getAttribute('data-what');
+                    qm.querySelectorAll('[data-qc-item]').forEach(function (i) { i.checked = false; }); bootstrap.Modal.getOrCreateInstance(qm).show(); return;
+                }
+                if (t.hasAttribute('data-qc-save')) {
+                    var passed = []; qm.querySelectorAll('[data-qc-item]').forEach(function (i) { if (i.checked) passed.push(i.value); });
+                    if (passed.length < qm.querySelectorAll('[data-qc-item]').length) { toast('warning', W.qcFail); return; }
+                    t.disabled = true; post(root + '/LabCase/' + moving.getAttribute('data-case-move') + '/Move', { to: moving.getAttribute('data-to'), qc: passed }).then(done(t, qm)); return;
+                }
+                if (t.hasAttribute('data-case-move') && t.getAttribute('data-to') === 'Sent' && t.getAttribute('data-imp') === 'Conventional') {   // H187: disinfected before it leaves
+                    cbPrompt(W.disinfect.replace('{0}', iso(t.getAttribute('data-what'))), { placeholder: W.disinfectant }).then(function (d) {
+                        if (!d) return; t.disabled = true; post(root + '/LabCase/' + t.getAttribute('data-case-move') + '/Move', { to: 'Sent', disinfectant: d }).then(done(t)); });
+                    return;
+                }
                 if (t.hasAttribute('data-case-move')) {
                     cbConfirm(W.move.replace('{0}', iso(t.getAttribute('data-what'))).replace('{1}', t.getAttribute('data-label'))).then(function (ok) {
                         if (!ok) return; t.disabled = true; post(root + '/LabCase/' + t.getAttribute('data-case-move') + '/Move', { to: t.getAttribute('data-to') }).then(done(t));
@@ -241,7 +294,7 @@
                 if (t.hasAttribute('data-lc-save')) {
                     var g = function (k) { return cm.querySelector('[data-lc=' + k + ']').value.trim(); };
                     var body = { patientId: +g('patient') || 0, labId: +g('lab') || 0, caseType: g('type'), teeth: g('teeth') || null, material: g('material'), shade: g('shade') || null,
-                        dueDate: g('due') || null, cost: +g('cost') || 0, fitAppointmentId: g('fit') ? +g('fit') : null };
+                        dueDate: g('due') || null, cost: +g('cost') || 0, fitAppointmentId: g('fit') ? +g('fit') : null, impressionKind: g('impression') || null };
                     cbConfirm(W.send).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/LabCase', body).then(done(t, cm)); });
                     return;
                 }

@@ -67,6 +67,8 @@ namespace CrossBuy.BL.Hospital
 		public int? FitAppointmentId { get; set; }
 		public int? PlanLineId { get; set; }
 		public decimal Cost { get; set; }
+		/// H187: Digital or Conventional.
+		public string? ImpressionKind { get; set; }
 	}
 
 	public sealed class HospitalSterilCycleInput
@@ -302,13 +304,14 @@ namespace CrossBuy.BL.Hospital
 			if (string.IsNullOrWhiteSpace(input.Material)) return HospitalResult.Fail("Enter the material");
 			if (input.DueDate.Date < nowUtc.Date) return HospitalResult.Fail("The due date cannot be in the past");
 			if (input.Cost < 0) return HospitalResult.Fail("A cost cannot be negative");
+			if (HospitalDentalLabQcRules.ImpressionRefusal(input.ImpressionKind) is string imp) return HospitalResult.Fail(imp);   // H187
 			if (input.FitAppointmentId is int fa && !await Appts(ctx).AnyAsync(a => a.ID == fa && a.PatientId == input.PatientId && a.Status != HospitalAppointmentStatus.Cancelled, ct)) return HospitalResult.Fail("not_found");
 			var nos = await Cases(ctx).Where(c => c.CaseNo.StartsWith("LC-")).Select(c => c.CaseNo).ToListAsync(ct);
 			var c = new HospitalDentalLabCase
 			{
 				CompanyId = ctx.CompanyId, CaseNo = HospitalDentalPracticeRules.NextNo(nos, "LC-", 4), PatientId = input.PatientId, PlanLineId = input.PlanLineId, Teeth = Clip(input.Teeth, 20),
 				CaseType = input.CaseType, Material = input.Material.Trim()[..Math.Min(60, input.Material.Trim().Length)], Shade = Clip(input.Shade, 10), LabId = input.LabId, DueDate = input.DueDate.Date,
-				FitAppointmentId = input.FitAppointmentId, Cost = input.Cost, CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
+				FitAppointmentId = input.FitAppointmentId, Cost = input.Cost, CreatedAt = nowUtc, CreatedByEmployeeId = employeeId, ImpressionKind = input.ImpressionKind,
 			};
 			_db.Add(c);
 			var r = await SaveAsync(ct, null);
@@ -318,7 +321,16 @@ namespace CrossBuy.BL.Hospital
 			return HospitalResult.Success(c.ID);
 		}
 
-		public async Task<HospitalResult> MoveCaseAsync(BusinessContext ctx, int id, string to, string? fault, string? reason, DateTime nowUtc, CancellationToken ct = default)
+		/// H187: each lab's record over every case it was sent.
+		public async Task<IReadOnlyList<HospitalLabPerformance>> LabPerformanceAsync(BusinessContext ctx, DateTime today, CancellationToken ct = default)
+		{
+			var labs = await LabsAsync(ctx, ct);
+			var rows = await Cases(ctx).AsNoTracking().Select(c => new { c.LabId, c.DueDate, c.SentAt, c.ReceivedAt, c.Remakes, c.RemakeFault }).ToListAsync(ct);
+			return HospitalDentalLabQcRules.Performance(labs, rows.Select(c => (c.LabId, c.DueDate, c.SentAt, c.ReceivedAt, (int)c.Remakes, c.RemakeFault)).ToList(), today);
+		}
+
+		public async Task<HospitalResult> MoveCaseAsync(BusinessContext ctx, int id, string to, string? fault, string? reason, DateTime nowUtc, CancellationToken ct = default,
+			string? disinfectant = null, IReadOnlyList<string>? qcPassed = null, int? employeeId = null)
 		{
 			if (!await Can(ctx, HospitalActions.Consult, ct) && !await Can(ctx, HospitalActions.Book, ct)) return HospitalResult.Fail("forbidden");
 			var c = await Cases(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
@@ -326,6 +338,11 @@ namespace CrossBuy.BL.Hospital
 			if (!HospitalDentalPracticeRules.CanMove(c.Stage, to)) return HospitalResult.Fail("This case cannot make that move");
 			var why = Clip(reason, 300);
 			if (to == HospitalLabCaseStage.Remake && (fault is not ("Lab" or "Clinic") || why == null)) return HospitalResult.Fail("Say whose fault the remake is, and why");
+			// H187: a conventional impression leaves disinfected; the work is checked before it is received or fitted
+			var disinfect = to == HospitalLabCaseStage.Sent ? Clip(disinfectant, 60) : null;
+			if (to == HospitalLabCaseStage.Sent && HospitalDentalLabQcRules.SendRefusal(c.ImpressionKind, disinfect) is string sw) return HospitalResult.Fail(sw);
+			if (HospitalDentalLabQcRules.QcRefusal(to, c.QcAt, qcPassed) is string qw) return HospitalResult.Fail(qw);
+			bool checkedNow = (to == HospitalLabCaseStage.Received || (to == HospitalLabCaseStage.Fitted && c.QcAt == null)) && HospitalDentalLabQcRules.QcPassed(qcPassed);
 			int n = await Cases(ctx).Where(x => x.ID == id && x.Stage == c.Stage).ExecuteUpdateAsync(u => u
 				.SetProperty(x => x.Stage, to)
 				.SetProperty(x => x.SentAt, x => to == HospitalLabCaseStage.Sent ? nowUtc : x.SentAt)
@@ -333,7 +350,11 @@ namespace CrossBuy.BL.Hospital
 				.SetProperty(x => x.FittedAt, x => to == HospitalLabCaseStage.Fitted ? nowUtc : x.FittedAt)
 				.SetProperty(x => x.RemakeFault, x => to == HospitalLabCaseStage.Remake ? fault : x.RemakeFault)
 				.SetProperty(x => x.RemakeReason, x => to == HospitalLabCaseStage.Remake ? why : x.RemakeReason)
-				.SetProperty(x => x.Remakes, x => to == HospitalLabCaseStage.Remake ? (byte)(x.Remakes + 1) : x.Remakes), ct);
+				.SetProperty(x => x.Remakes, x => to == HospitalLabCaseStage.Remake ? (byte)(x.Remakes + 1) : x.Remakes)
+				.SetProperty(x => x.Disinfectant, x => to == HospitalLabCaseStage.Sent ? disinfect : x.Disinfectant)
+				.SetProperty(x => x.DisinfectedAt, x => to == HospitalLabCaseStage.Sent ? (disinfect == null ? null : nowUtc) : x.DisinfectedAt)
+				.SetProperty(x => x.QcAt, x => to == HospitalLabCaseStage.Remake ? null : checkedNow ? nowUtc : x.QcAt)
+				.SetProperty(x => x.QcByEmployeeId, x => to == HospitalLabCaseStage.Remake ? null : checkedNow ? employeeId : x.QcByEmployeeId), ct);
 			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
 		}
 

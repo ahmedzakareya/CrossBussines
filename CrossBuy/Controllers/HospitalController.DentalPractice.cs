@@ -16,7 +16,9 @@ namespace CrossBuy.Controllers
 	public partial class HospitalController
 	{
 		public sealed class HospitalVisitMoveInput { public string To { get; set; } = ""; }
-		public sealed class HospitalLabCaseMoveInput { public string To { get; set; } = ""; public string? Fault { get; set; } public string? Reason { get; set; } }
+		public sealed class HospitalLabCaseMoveInput { public string To { get; set; } = ""; public string? Fault { get; set; } public string? Reason { get; set; }
+			/// H187: the disinfectant when a conventional impression is sent; the checks the work passed on receipt.
+			public string? Disinfectant { get; set; } public List<string>? Qc { get; set; } }
 		public sealed class HospitalIndicatorInput { public string Kind { get; set; } = ""; public string Result { get; set; } = ""; }
 		public sealed class HospitalKitUseInput { public int PatientId { get; set; } public int? AppointmentId { get; set; } public bool PackIntact { get; set; } }
 		public sealed class HospitalSterilReasonInput { public string? Reason { get; set; } }
@@ -110,6 +112,7 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			Chrome();
 			ViewBag.Stats = await PracticeSvc.LabStatsAsync(ctx, DateTime.Now.Date, ct);
+			ViewBag.Performance = await PracticeSvc.LabPerformanceAsync(ctx, DateTime.Now.Date, ct);   // H187
 			ViewBag.Labs = await PracticeSvc.LabsAsync(ctx, ct);
 			ViewBag.Facility = await _pricing.FacilityCurrencyAsync(ctx, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
@@ -140,7 +143,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await PracticeSvc.MoveCaseAsync(ctx, id, input.To, input.Fault, input.Reason, DateTime.UtcNow, ct));
+			return Result(await PracticeSvc.MoveCaseAsync(ctx, id, input.To, input.Fault, input.Reason, DateTime.UtcNow, ct, input.Disinfectant, input.Qc, ctx.EmployeeId));
 		}
 
 		// ---------------- recall & sterilisation ----------------

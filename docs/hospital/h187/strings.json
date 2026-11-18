@@ -1,0 +1,115 @@
+{
+ "unit": "H187 - the dental lab checks",
+ "strings": {
+  "Choose the impression: digital scan or conventional": {
+   "ar": "اختر نوع الطبعة: مسح رقمي أو طبعة تقليدية",
+   "en": "Choose the impression: digital scan or conventional",
+   "fr": "Choisissez l'empreinte : numérique ou conventionnelle"
+  },
+  "Record the disinfectant the impression was treated with before it leaves": {
+   "ar": "سجّل المطهّر الذي عولجت به الطبعة قبل إرسالها",
+   "en": "Record the disinfectant the impression was treated with before it leaves",
+   "fr": "Indiquez le désinfectant appliqué à l'empreinte avant son envoi"
+  },
+  "The work passes every check to be received: send what fails back as a remake": {
+   "ar": "لا يُستلم العمل إلا إذا اجتاز كل الفحوص: ما يفشل يُعاد إلى المعمل لإعادة التصنيع",
+   "en": "The work passes every check to be received: send what fails back as a remake",
+   "fr": "Le travail doit passer chaque contrôle pour être reçu : ce qui échoue repart en refabrication"
+  },
+  "Disinfected with {0}": {
+   "ar": "طُهّرت بـ {0}",
+   "en": "Disinfected with {0}",
+   "fr": "Désinfectée avec {0}"
+  },
+  "imp:Digital": {
+   "ar": "مسح رقمي",
+   "en": "Digital scan",
+   "fr": "Empreinte numérique"
+  },
+  "imp:Conventional": {
+   "ar": "طبعة تقليدية",
+   "en": "Conventional impression",
+   "fr": "Empreinte conventionnelle"
+  },
+  "Checked on receipt": {
+   "ar": "فُحص عند الاستلام",
+   "en": "Checked on receipt",
+   "fr": "Contrôlé à la réception"
+  },
+  "Each lab's record": {
+   "ar": "سجل كل معمل",
+   "en": "Each lab's record",
+   "fr": "Bilan de chaque laboratoire"
+  },
+  "On time over the last 90 days; remakes and turnaround over every case sent.": {
+   "ar": "الالتزام بالموعد خلال آخر 90 يومًا؛ وإعادة التصنيع ومدة الإنجاز على كل الحالات المرسلة.",
+   "en": "On time over the last 90 days; remakes and turnaround over every case sent.",
+   "fr": "Ponctualité sur les 90 derniers jours ; refabrications et délais sur tous les cas envoyés."
+  },
+  "The lab's fault": {
+   "ar": "بخطأ المعمل",
+   "en": "The lab's fault",
+   "fr": "Faute du laboratoire"
+  },
+  "Days to return": {
+   "ar": "أيام الإنجاز",
+   "en": "Days to return",
+   "fr": "Jours de retour"
+  },
+  "A conventional impression leaves for the lab only disinfected; the disinfectant is recorded when it is sent.": {
+   "ar": "لا تُرسل الطبعة التقليدية إلى المعمل إلا بعد تطهيرها، ويُسجَّل المطهّر عند الإرسال.",
+   "en": "A conventional impression leaves for the lab only disinfected; the disinfectant is recorded when it is sent.",
+   "fr": "Une empreinte conventionnelle ne part au laboratoire que désinfectée ; le désinfectant est noté à l'envoi."
+  },
+  "Which disinfectant was the impression of {0} treated with?": {
+   "ar": "ما المطهّر الذي عولجت به طبعة {0}؟",
+   "en": "Which disinfectant was the impression of {0} treated with?",
+   "fr": "Avec quel désinfectant l'empreinte de {0} a-t-elle été traitée ?"
+  },
+  "e.g. sodium hypochlorite 1%, 10 minutes": {
+   "ar": "مثال: هيبوكلوريت الصوديوم 1٪، 10 دقائق",
+   "en": "e.g. sodium hypochlorite 1%, 10 minutes",
+   "fr": "ex. hypochlorite de sodium 1 %, 10 minutes"
+  },
+  "Check the work": {
+   "ar": "فحص العمل",
+   "en": "Check the work",
+   "fr": "Contrôler le travail"
+  },
+  "qc:Fit": {
+   "ar": "الانطباق على النموذج",
+   "en": "Fit on the model",
+   "fr": "Adaptation sur le modèle"
+  },
+  "qc:Margins": {
+   "ar": "الحواف",
+   "en": "Margins",
+   "fr": "Limites"
+  },
+  "qc:Contacts": {
+   "ar": "نقاط التماس",
+   "en": "Contacts",
+   "fr": "Points de contact"
+  },
+  "qc:Occlusion": {
+   "ar": "الإطباق",
+   "en": "Occlusion",
+   "fr": "Occlusion"
+  },
+  "qc:Shade": {
+   "ar": "اللون",
+   "en": "Shade",
+   "fr": "Teinte"
+  },
+  "Work that fails any check is not received: send it back as a remake.": {
+   "ar": "العمل الذي يفشل في أي فحص لا يُستلم: أعِده لإعادة التصنيع.",
+   "en": "Work that fails any check is not received: send it back as a remake.",
+   "fr": "Un travail qui échoue à un contrôle n'est pas reçu : renvoyez-le en refabrication."
+  },
+  "Passed: record": {
+   "ar": "اجتاز الفحص: تسجيل",
+   "en": "Passed: record",
+   "fr": "Conforme : enregistrer"
+  }
+ }
+}
