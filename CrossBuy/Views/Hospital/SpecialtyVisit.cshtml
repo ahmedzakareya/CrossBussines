@@ -153,6 +153,34 @@
             </div>
         }
 
+        @* H190: anticoagulation control (INR time in therapeutic range) and the thyroid in pregnancy *@
+        @if (W?.Ttr is { } tt)
+        {
+            string tone = tt.Poor ? "danger" : "primary";
+            <div class="notice d-flex bg-light-@tone rounded border-@tone border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-drop fs-2tx text-@tone me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-4">
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["INR time in therapeutic range"]</h4>
+                        <div class="fs-6 text-gray-700">@if (tt.Pct == null) {@T["Two INR readings no more than 56 days apart are needed to measure the time in range."]}
+                            else {@T["{0} days followed, {1} readings; the last INR {2} on {3}.", tt.Days, tt.Readings, HospitalConceptRules.Num(tt.LastInr, 1), tt.LastAt.ToString("yyyy-MM-dd")]
+                                @if (tt.Poor) {<text> </text>@T["Under 65%: poor control — review adherence, interactions and diet, or consider a direct oral anticoagulant."]}}</div></div>
+                    <span class="badge badge-@tone fs-7 fw-bold px-4 py-2 flex-shrink-0 hp-num" dir="ltr">TTR @(tt.Pct is decimal tp ? tp.ToString("0") + "%" : "—") · @HospitalConceptRules.Num(tt.Low, 1)–@HospitalConceptRules.Num(tt.High, 1)</span>
+                </div>
+            </div>
+        }
+        @if (W?.PregnancyTsh is { } pt)
+        {
+            string tone = pt.Verdict == "InRange" ? "primary" : "danger";
+            <div class="notice d-flex bg-light-@tone rounded border-@tone border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-heart-circle fs-2tx text-@tone me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-4">
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["TSH in pregnancy"] — @T["Trimester {0}", pt.Trimester] · @T["{0} weeks", pt.GaWeeks]</h4>
+                        <div class="fs-6 text-gray-700">@T["ptsh:" + pt.Verdict]</div></div>
+                    <span class="badge badge-@tone fs-7 fw-bold px-4 py-2 flex-shrink-0 hp-num" dir="ltr">TSH @HospitalConceptRules.Num(pt.Tsh, 2) · 0.1–4.0</span>
+                </div>
+            </div>
+        }
+
         @* the figures on top: the fields marked to head the visit, and the care gaps *@
         @if (Model.Headlines.Count > 0)
         {

@@ -8760,4 +8760,18 @@
   <data name="calc:TScoreClass" xml:space="preserve"><value>Classe de densité osseuse selon le T-score</value></data>
   <data name="calc:TiRads" xml:space="preserve"><value>TI-RADS du nodule thyroïdien (ACR 2017)</value></data>
   <data name="For a calculator, the names of its result codes (TI-RADS: TR4-FNA|…|…; bone density: Osteopenia|…|…)." xml:space="preserve"><value>Pour un calcul : les noms de ses codes de résultat (TI-RADS : TR4-FNA|…|… ; densité osseuse : Osteopenia|…|…).</value></data>
+  <data name="A sensorineural loss of 30 dB over three frequencies on the {0}: if it came on within 72 hours, it is sudden hearing loss" xml:space="preserve"><value>Une perte de perception de 30 dB sur trois fréquences à l'{0} : survenue en moins de 72 heures, c'est une surdité brusque</value></data>
+  <data name="INR time in therapeutic range" xml:space="preserve"><value>Temps dans la zone thérapeutique de l'INR</value></data>
+  <data name="Sudden sensorineural hearing loss on the {0}: an emergency — steroids without delay, and an MRI to exclude a retrocochlear cause" xml:space="preserve"><value>Surdité brusque de perception de l'{0} : une urgence — corticoïdes sans délai, IRM pour exclure une cause rétrocochléaire</value></data>
+  <data name="TSH in pregnancy" xml:space="preserve"><value>TSH pendant la grossesse</value></data>
+  <data name="The loss came on suddenly, within 72 hours" xml:space="preserve"><value>La perte est survenue brutalement, en moins de 72 heures</value></data>
+  <data name="Two INR readings no more than 56 days apart are needed to measure the time in range." xml:space="preserve"><value>Deux INR à 56 jours d'intervalle au plus sont nécessaires pour mesurer le temps dans la zone.</value></data>
+  <data name="Under 65%: poor control — review adherence, interactions and diet, or consider a direct oral anticoagulant." xml:space="preserve"><value>Sous 65 % : contrôle insuffisant — revoir l'observance, les interactions et l'alimentation, ou envisager un anticoagulant oral direct.</value></data>
+  <data name="ptsh:High" xml:space="preserve"><value>Au-dessus de la zone de grossesse (4,0) : hypothyroïdie à traiter — anticorps anti-TPO et lévothyroxine selon l'évaluation.</value></data>
+  <data name="ptsh:InRange" xml:space="preserve"><value>Dans la zone de grossesse (0,1–4,0).</value></data>
+  <data name="ptsh:Low" xml:space="preserve"><value>Sous la zone de grossesse (0,1) : rechercher une hyperthyroïdie (T4L, TRAb), la distinguer du changement normal de la grossesse.</value></data>
+  <data name="{0} days followed, {1} readings; the last INR {2} on {3}." xml:space="preserve"><value>{0} jours suivis, {1} mesures ; dernier INR {2} le {3}.</value></data>
+  <data name="{0} weeks" xml:space="preserve"><value>{0} semaines</value></data>
+  <data name="the left ear" xml:space="preserve"><value>oreille gauche</value></data>
+  <data name="the right ear" xml:space="preserve"><value>oreille droite</value></data>
 </root>

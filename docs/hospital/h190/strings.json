@@ -1,0 +1,75 @@
+{
+ "unit": "H190 - anticoagulation, thyroid in pregnancy, sudden hearing loss",
+ "strings": {
+  "INR time in therapeutic range": {
+   "ar": "نسبة وقت INR في المدى العلاجي",
+   "en": "INR time in therapeutic range",
+   "fr": "Temps dans la zone thérapeutique de l'INR"
+  },
+  "Two INR readings no more than 56 days apart are needed to measure the time in range.": {
+   "ar": "يلزم قياسان لـ INR لا يفصل بينهما أكثر من 56 يومًا لحساب الوقت في المدى.",
+   "en": "Two INR readings no more than 56 days apart are needed to measure the time in range.",
+   "fr": "Deux INR à 56 jours d'intervalle au plus sont nécessaires pour mesurer le temps dans la zone."
+  },
+  "{0} days followed, {1} readings; the last INR {2} on {3}.": {
+   "ar": "{0} يومًا من المتابعة، و{1} قياسات؛ آخر INR ‏{2} بتاريخ {3}.",
+   "en": "{0} days followed, {1} readings; the last INR {2} on {3}.",
+   "fr": "{0} jours suivis, {1} mesures ; dernier INR {2} le {3}."
+  },
+  "Under 65%: poor control — review adherence, interactions and diet, or consider a direct oral anticoagulant.": {
+   "ar": "أقل من 65٪: ضبط ضعيف — راجع الالتزام والتداخلات الدوائية والغذاء، أو فكّر في مضاد تخثر فموي مباشر.",
+   "en": "Under 65%: poor control — review adherence, interactions and diet, or consider a direct oral anticoagulant.",
+   "fr": "Sous 65 % : contrôle insuffisant — revoir l'observance, les interactions et l'alimentation, ou envisager un anticoagulant oral direct."
+  },
+  "TSH in pregnancy": {
+   "ar": "TSH أثناء الحمل",
+   "en": "TSH in pregnancy",
+   "fr": "TSH pendant la grossesse"
+  },
+  "{0} weeks": {
+   "ar": "{0} أسبوعًا",
+   "en": "{0} weeks",
+   "fr": "{0} semaines"
+  },
+  "ptsh:High": {
+   "ar": "أعلى من مدى الحمل (4.0): قصور درقي يستلزم التصرف — افحص أجسام TPO المضادة وابدأ الليفوثيروكسين حسب التقييم.",
+   "en": "Above the pregnancy range (4.0): hypothyroidism to act on — check TPO antibodies and start levothyroxine as assessed.",
+   "fr": "Au-dessus de la zone de grossesse (4,0) : hypothyroïdie à traiter — anticorps anti-TPO et lévothyroxine selon l'évaluation."
+  },
+  "ptsh:Low": {
+   "ar": "أقل من مدى الحمل (0.1): قيّم فرط نشاط الغدة (FT4 وأجسام TRAb) وفرّقه عن تغيّر الحمل الطبيعي.",
+   "en": "Below the pregnancy range (0.1): assess for hyperthyroidism (FT4, TRAb) and tell it from the normal change of pregnancy.",
+   "fr": "Sous la zone de grossesse (0,1) : rechercher une hyperthyroïdie (T4L, TRAb), la distinguer du changement normal de la grossesse."
+  },
+  "ptsh:InRange": {
+   "ar": "ضمن مدى الحمل (0.1–4.0).",
+   "en": "Within the pregnancy range (0.1–4.0).",
+   "fr": "Dans la zone de grossesse (0,1–4,0)."
+  },
+  "The loss came on suddenly, within 72 hours": {
+   "ar": "حدث فقدان السمع فجأة خلال 72 ساعة",
+   "en": "The loss came on suddenly, within 72 hours",
+   "fr": "La perte est survenue brutalement, en moins de 72 heures"
+  },
+  "Sudden sensorineural hearing loss on the {0}: an emergency — steroids without delay, and an MRI to exclude a retrocochlear cause": {
+   "ar": "فقدان سمع حسي عصبي مفاجئ في {0}: حالة طارئة — الستيرويدات دون تأخير، ورنين مغناطيسي لاستبعاد سبب خلف القوقعة",
+   "en": "Sudden sensorineural hearing loss on the {0}: an emergency — steroids without delay, and an MRI to exclude a retrocochlear cause",
+   "fr": "Surdité brusque de perception de l'{0} : une urgence — corticoïdes sans délai, IRM pour exclure une cause rétrocochléaire"
+  },
+  "A sensorineural loss of 30 dB over three frequencies on the {0}: if it came on within 72 hours, it is sudden hearing loss": {
+   "ar": "فقدان حسي عصبي 30 ديسيبل على ثلاثة ترددات في {0}: إن حدث خلال 72 ساعة فهو فقدان سمع مفاجئ",
+   "en": "A sensorineural loss of 30 dB over three frequencies on the {0}: if it came on within 72 hours, it is sudden hearing loss",
+   "fr": "Une perte de perception de 30 dB sur trois fréquences à l'{0} : survenue en moins de 72 heures, c'est une surdité brusque"
+  },
+  "the right ear": {
+   "ar": "الأذن اليمنى",
+   "en": "right ear",
+   "fr": "oreille droite"
+  },
+  "the left ear": {
+   "ar": "الأذن اليسرى",
+   "en": "left ear",
+   "fr": "oreille gauche"
+  }
+ }
+}

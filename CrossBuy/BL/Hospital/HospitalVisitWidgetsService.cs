@@ -35,6 +35,8 @@ namespace CrossBuy.BL.Hospital
 		, HospitalAdrenaline? Adrenaline = null
 		, HospitalChadsVasc? Chads = null
 		, HospitalEyeOutputs? EyeOutputs = null
+		, HospitalVisitTtr? Ttr = null
+		, HospitalVisitPregnancyTsh? PregnancyTsh = null
 		);
 
 	/// H108: the eye visit's outputs — the OCT and visual-field services of the price list (codes OCT, VF), null when missing.
@@ -244,7 +246,27 @@ namespace CrossBuy.BL.Hospital
 				}
 				eye = new HospitalEyeOutputs(await Chosen(HospitalKitUnits.EyeOct, "OCT"), await Chosen(HospitalKitUnits.EyeVf, "VF"));
 			}
-			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal, adrenaline, chads, eye);
+			// H190: anticoagulation — the INR's time in therapeutic range over the last year, when the patient has INR readings
+			HospitalVisitTtr? ttr = null;
+			var inrC = await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => c.Code == "INR" || c.Code == "6301-6").OrderBy(c => c.Code == "INR" ? 0 : 1).FirstOrDefaultAsync(ct);
+			if (inrC != null)
+			{
+				var year = nowUtc.AddDays(-365);
+				var inr = await Q<HospitalClinicalObservation>(ctx).Where(o => o.PatientId == p.ID && o.ConceptId == inrC.ID && o.Value != null && o.ObservedAt >= year)
+					.Select(o => new { o.ObservedAt, o.Value }).ToListAsync(ct);
+				ttr = HospitalSpecialtyWidgetRules.Card(inr.Select(x => (x.ObservedAt, x.Value!.Value)).ToList(), inrC.NormalLow, inrC.NormalHigh);
+			}
+			// H190: the thyroid in pregnancy — the latest TSH taken during the active pregnancy
+			HospitalVisitPregnancyTsh? ptsh = null;
+			var preg = await Q<HospitalPregnancy>(ctx).AsNoTracking().Where(x => x.PatientId == p.ID && x.Status == HospitalPregnancyStatus.Active).OrderByDescending(x => x.ID).FirstOrDefaultAsync(ct);
+			if (preg != null && (preg.Lmp ?? preg.UltrasoundEdd?.AddDays(-280)) is DateTime start)
+			{
+				var tshC = await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => c.Code == "3016-3").Select(c => (int?)c.ID).FirstOrDefaultAsync(ct);
+				var t = tshC is int tid ? await Q<HospitalClinicalObservation>(ctx).Where(o => o.PatientId == p.ID && o.ConceptId == tid && o.Value != null && o.ObservedAt >= start)
+					.OrderByDescending(o => o.ObservedAt).Select(o => new { o.ObservedAt, o.Value }).FirstOrDefaultAsync(ct) : null;
+				ptsh = HospitalSpecialtyWidgetRules.PregnancyTsh(t?.Value, t?.ObservedAt, preg.Lmp, preg.UltrasoundEdd);
+			}
+			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal, adrenaline, chads, eye, ttr, ptsh);
 		}
 	}
 }

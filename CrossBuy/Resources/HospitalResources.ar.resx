@@ -8760,4 +8760,18 @@
   <data name="calc:TScoreClass" xml:space="preserve"><value>تصنيف كثافة العظام من T-score</value></data>
   <data name="calc:TiRads" xml:space="preserve"><value>TI-RADS للعقيدة الدرقية (ACR 2017)</value></data>
   <data name="For a calculator, the names of its result codes (TI-RADS: TR4-FNA|…|…; bone density: Osteopenia|…|…)." xml:space="preserve"><value>للحاسبة: أسماء رموز نتائجها (TI-RADS: TR4-FNA|…|…؛ كثافة العظام: Osteopenia|…|…).</value></data>
+  <data name="A sensorineural loss of 30 dB over three frequencies on the {0}: if it came on within 72 hours, it is sudden hearing loss" xml:space="preserve"><value>فقدان حسي عصبي 30 ديسيبل على ثلاثة ترددات في {0}: إن حدث خلال 72 ساعة فهو فقدان سمع مفاجئ</value></data>
+  <data name="INR time in therapeutic range" xml:space="preserve"><value>نسبة وقت INR في المدى العلاجي</value></data>
+  <data name="Sudden sensorineural hearing loss on the {0}: an emergency — steroids without delay, and an MRI to exclude a retrocochlear cause" xml:space="preserve"><value>فقدان سمع حسي عصبي مفاجئ في {0}: حالة طارئة — الستيرويدات دون تأخير، ورنين مغناطيسي لاستبعاد سبب خلف القوقعة</value></data>
+  <data name="TSH in pregnancy" xml:space="preserve"><value>TSH أثناء الحمل</value></data>
+  <data name="The loss came on suddenly, within 72 hours" xml:space="preserve"><value>حدث فقدان السمع فجأة خلال 72 ساعة</value></data>
+  <data name="Two INR readings no more than 56 days apart are needed to measure the time in range." xml:space="preserve"><value>يلزم قياسان لـ INR لا يفصل بينهما أكثر من 56 يومًا لحساب الوقت في المدى.</value></data>
+  <data name="Under 65%: poor control — review adherence, interactions and diet, or consider a direct oral anticoagulant." xml:space="preserve"><value>أقل من 65٪: ضبط ضعيف — راجع الالتزام والتداخلات الدوائية والغذاء، أو فكّر في مضاد تخثر فموي مباشر.</value></data>
+  <data name="ptsh:High" xml:space="preserve"><value>أعلى من مدى الحمل (4.0): قصور درقي يستلزم التصرف — افحص أجسام TPO المضادة وابدأ الليفوثيروكسين حسب التقييم.</value></data>
+  <data name="ptsh:InRange" xml:space="preserve"><value>ضمن مدى الحمل (0.1–4.0).</value></data>
+  <data name="ptsh:Low" xml:space="preserve"><value>أقل من مدى الحمل (0.1): قيّم فرط نشاط الغدة (FT4 وأجسام TRAb) وفرّقه عن تغيّر الحمل الطبيعي.</value></data>
+  <data name="{0} days followed, {1} readings; the last INR {2} on {3}." xml:space="preserve"><value>{0} يومًا من المتابعة، و{1} قياسات؛ آخر INR ‏{2} بتاريخ {3}.</value></data>
+  <data name="{0} weeks" xml:space="preserve"><value>{0} أسبوعًا</value></data>
+  <data name="the left ear" xml:space="preserve"><value>الأذن اليسرى</value></data>
+  <data name="the right ear" xml:space="preserve"><value>الأذن اليمنى</value></data>
 </root>

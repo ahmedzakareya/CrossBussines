@@ -343,6 +343,8 @@
                                 </div>
                             }
                             <div class="cv-wrap"><svg id="au" viewBox="0 0 520 420"></svg></div>
+                            @* H190: the onset makes a 30 dB / three-frequency sensorineural loss an emergency *@
+                            <label class="form-check form-check-custom form-check-solid mt-4"><input class="form-check-input" type="checkbox" id="au_sudden" @(audioNow?.Sudden == true ? "checked" : "") @(canEdit ? "" : "disabled") /><span class="form-check-label fw-semibold text-gray-800">@T["The loss came on suddenly, within 72 hours"]</span></label>
                         </div></div>
                 </div>
                 <div class="col-xl-4">
@@ -690,8 +692,16 @@
                 var AT = { right: @Json.Serialize(T["right ear"].Value), left: @Json.Serialize(T["left ear"].Value), avg: @Json.Serialize(T["Average of 500–4000 Hz; grade per WHO 2021"].Value),
                            gapR: @Json.Serialize(T["Right air-bone gap ≥ 15 — conductive loss"].Value), gapL: @Json.Serialize(T["Left air-bone gap ≥ 15 — conductive loss"].Value),
                            asym: @Json.Serialize(T["Ear difference ≥ 15 — rule out a retrocochlear cause"].Value),
+                           earR: @Json.Serialize(T["the right ear"].Value), earL: @Json.Serialize(T["the left ear"].Value),
+                           ssnhl: @Json.Serialize(T["Sudden sensorineural hearing loss on the {0}: an emergency — steroids without delay, and an MRI to exclude a retrocochlear cause"].Value),
+                           snhl: @Json.Serialize(T["A sensorineural loss of 30 dB over three frequencies on the {0}: if it came on within 72 hours, it is sudden hearing loss"].Value),
                            g: @Json.Serialize(new[] { "Normal", "Mild", "Moderate", "Moderately severe", "Severe", "Profound", "Complete" }.ToDictionary(k => k, k => T["hl:" + k].Value)) };
-                audioState = function () { return { p: pts }; };
+                audioState = function () { return { p: pts, sudden: document.getElementById('au_sudden').checked }; };
+                // H190: 30 dB or more worse than the other ear at three consecutive frequencies, no air-bone gap there
+                function snhl(ear) { var o = ear === 'AR' ? 'AL' : 'AR', b = ear === 'AR' ? 'BR' : 'BL', run = 0;
+                    for (var i = 0; i < FREQ.length; i++) { var f = FREQ[i], a = pts[ear + f], ot = pts[o + f], bn = pts[b + f];
+                        run = (a != null && ot != null && a - ot >= 30 && !(bn != null && a - bn >= 15)) ? run + 1 : 0; if (run >= 3) return true; } return false; }
+                document.getElementById('au_sudden').addEventListener('change', function () { draw(); });
                 function X(i) { return PL + (WW - PL - PR) * i / (FREQ.length - 1); } function Y(db) { return PT + (HH - PT - PB) * (db + 10) / 130; }
                 function pta(k) { var v = [500, 1000, 2000, 4000].map(function (f) { return pts[k + f]; }); if (v.some(function (x) { return x == null; })) return null; return Math.round(v.reduce(function (a, b) { return a + b; }, 0) / 4 * 10) / 10; }
                 function grade(v) { return v == null ? '—' : AT.g[v < 20 ? 'Normal' : v < 35 ? 'Mild' : v < 50 ? 'Moderate' : v < 65 ? 'Moderately severe' : v < 80 ? 'Severe' : v < 95 ? 'Profound' : 'Complete']; }
@@ -712,7 +722,9 @@
                         '<div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-gray-500 fw-semibold fs-7 mb-1"><span dir="ltr">PTA</span> ' + AT.left + '</div><div class="fs-2hx fw-bold lh-1 hp-num" style="color:#2563EB">' + (l == null ? '—' : Math.round(l)) + '</div><div class="text-gray-700 fw-semibold fs-7 mt-1">' + grade(l) + '</div></div></div></div>' +
                         '<div class="fs-7 text-muted mb-3">' + AT.avg + '</div>' +
                         (gap('AR', 'BR') ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.gapR + '</span></div>' : '') + (gap('AL', 'BL') ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.gapL + '</span></div>' : '') +
-                        (r != null && l != null && Math.abs(r - l) >= 15 ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.asym + '</span></div>' : '');
+                        (r != null && l != null && Math.abs(r - l) >= 15 ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.asym + '</span></div>' : '') +
+                        ['AR', 'AL'].filter(snhl).map(function (e) { var side = e === 'AR' ? AT.earR : AT.earL, sud = document.getElementById('au_sudden').checked;
+                            return '<div class="mb-2"><span class="badge ' + (sud ? 'badge-danger' : 'badge-light-danger') + ' fs-7 fw-bold text-wrap text-start lh-base">' + (sud ? AT.ssnhl : AT.snhl).replace('{0}', side) + '</span></div>'; }).join('');
                 }
                 if (canEdit) {
                     s.addEventListener('click', function (ev) { var q = pt(s, ev), i = Math.round((q[0] - PL) / ((WW - PL - PR) / (FREQ.length - 1))); if (i < 0 || i >= FREQ.length) return;

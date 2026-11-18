@@ -149,9 +149,17 @@ namespace CrossBuy.BL.Hospital
 	// bone < right / > left (stored as AR, AL, BR, BL), 250–8000 Hz, -10 to 120 dB HL in 5 dB steps.
 	//   * pure-tone average = air at 500, 1000, 2000, 4000 Hz; graded by WHO 2021 (World report on hearing);
 	//   * an air–bone gap of 15 dB or more at any of those frequencies → a conductive loss on that ear;
-	//   * the two ears' averages 15 dB or more apart → rule out a retrocochlear cause.
+	//   * the two ears' averages 15 dB or more apart → rule out a retrocochlear cause;
+	//   * H190: a sensorineural loss of 30 dB or more against the other ear at three consecutive frequencies (no air–bone
+	//     gap there) is sudden sensorineural hearing loss when the clinician marks an onset within 72 hours (AAO-HNS 2019):
+	//     an emergency — steroids without delay, an MRI to exclude a retrocochlear cause.
 	// ==========================================================================================
-	public sealed record HospitalAudioResult(IReadOnlyDictionary<string, int> Points, decimal? PtaR, decimal? PtaL, string? GradeR, string? GradeL, bool GapR, bool GapL, bool Asymmetry);
+	public sealed record HospitalAudioResult(IReadOnlyDictionary<string, int> Points, decimal? PtaR, decimal? PtaL, string? GradeR, string? GradeL, bool GapR, bool GapL, bool Asymmetry,
+		bool SnhlR = false, bool SnhlL = false, bool Sudden = false)
+	{
+		/// H190: sudden sensorineural hearing loss — the 30 dB / three-frequency loss with an onset within 72 hours.
+		public bool SuddenLoss => Sudden && (SnhlR || SnhlL);
+	}
 
 	public static class HospitalAudioRules
 	{
@@ -174,16 +182,37 @@ namespace CrossBuy.BL.Hospital
 		private static bool Gap(IReadOnlyDictionary<string, int> p, string air, string bone) =>
 			PtaFreq.Any(f => p.TryGetValue(air + f, out var a) && p.TryGetValue(bone + f, out var b) && a - b >= 15);
 
-		/// Reads {"p":{"AR500":30,…}}; a point off the chart, off the 5 dB steps or at another frequency is refused.
+		public const int SnhlDb = 30;
+		public const int SnhlRun = 3;
+
+		/// H190: this ear (AR/AL) is 30 dB or more worse than the other at three consecutive frequencies, with no air–bone
+		/// gap of 15 dB there (when bone was measured).
+		public static bool Snhl(IReadOnlyDictionary<string, int> p, string ear)
+		{
+			string other = ear == "AR" ? "AL" : "AR", bone = ear == "AR" ? "BR" : "BL";
+			int run = 0;
+			foreach (var f in Freq)
+			{
+				bool hit = p.TryGetValue(ear + f, out var a) && p.TryGetValue(other + f, out var o) && a - o >= SnhlDb
+					&& !(p.TryGetValue(bone + f, out var b) && a - b >= 15);
+				run = hit ? run + 1 : 0;
+				if (run >= SnhlRun) return true;
+			}
+			return false;
+		}
+
+		/// Reads {"p":{"AR500":30,…},"sudden":true}; a point off the chart, off the 5 dB steps or at another frequency is refused.
 		public static (HospitalAudioResult? Result, string? Error) Read(string? state)
 		{
 			var pts = new Dictionary<string, int>();
+			bool sudden = false;
 			if (!string.IsNullOrEmpty(state))
 			{
 				try
 				{
 					using var doc = JsonDocument.Parse(state);
 					if (doc.RootElement.ValueKind != JsonValueKind.Object) return (null, "The drawing's data could not be read");
+					if (doc.RootElement.TryGetProperty("sudden", out var sd) && sd.ValueKind == JsonValueKind.True) sudden = true;   // H190
 					if (doc.RootElement.TryGetProperty("p", out var p))
 					{
 						if (p.ValueKind != JsonValueKind.Object) return (null, "The drawing's data could not be read");
@@ -200,10 +229,10 @@ namespace CrossBuy.BL.Hospital
 			}
 			decimal? r = Pta(pts, "AR"), l = Pta(pts, "AL");
 			return (new HospitalAudioResult(pts, r, l, r is decimal a ? Grade(a) : null, l is decimal b ? Grade(b) : null,
-				Gap(pts, "AR", "BR"), Gap(pts, "AL", "BL"), r is decimal ra && l is decimal la && Math.Abs(ra - la) >= 15), null);
+				Gap(pts, "AR", "BR"), Gap(pts, "AL", "BL"), r is decimal ra && l is decimal la && Math.Abs(ra - la) >= 15, Snhl(pts, "AR"), Snhl(pts, "AL"), sudden), null);
 		}
 
-		public static string Store(HospitalAudioResult r) => JsonSerializer.Serialize(new { p = r.Points, ptaR = r.PtaR, ptaL = r.PtaL, gradeR = r.GradeR, gradeL = r.GradeL, gapR = r.GapR, gapL = r.GapL, asym = r.Asymmetry });
+		public static string Store(HospitalAudioResult r) => JsonSerializer.Serialize(new { p = r.Points, ptaR = r.PtaR, ptaL = r.PtaL, gradeR = r.GradeR, gradeL = r.GradeL, gapR = r.GapR, gapL = r.GapL, asym = r.Asymmetry, snhlR = r.SnhlR, snhlL = r.SnhlL, sudden = r.Sudden });
 	}
 
 	// ==========================================================================================
