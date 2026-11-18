@@ -132,7 +132,11 @@ namespace CrossBuy.BL.Hospital
 			try
 			{
 				var call = await _db.Set<HospitalCall>().AsNoTracking().FirstOrDefaultAsync(c => c.ID == callId && c.CompanyId == companyId, ct);
-				if (call == null || (call.CallerEmployeeId != employeeId && call.CalleeEmployeeId != employeeId)) return (null, "not_found");
+				if (call == null) return (null, "not_found");
+				bool inIt = call.IsGroup
+					? await _db.Set<HospitalCallParticipant>().AnyAsync(p => p.CallId == callId && p.EmployeeId == employeeId && (p.State == HospitalCallParticipantState.Host || p.State == HospitalCallParticipantState.Joined), ct)
+					: call.CallerEmployeeId == employeeId || call.CalleeEmployeeId == employeeId;
+				if (!inIt) return (null, "not_found");
 				if (call.Status != HospitalCallStatus.Answered) return (null, "Recording starts only once the call is answered");
 				var me = (await _calls.PeopleAsync(companyId, nowUtc, new[] { employeeId }, ct)).FirstOrDefault();
 				var s = await _calls.SettingsAsync(companyId, ct);
@@ -167,6 +171,18 @@ namespace CrossBuy.BL.Hospital
 				row.AgreedByEmployeeId = employeeId; row.AgreedAt = nowUtc; row.StartedAt = nowUtc;
 				row.TempName = Guid.NewGuid().ToString("N");
 			}
+			await _db.SaveChangesAsync(ct);
+			return row;
+		}
+
+		/// A GROUP recording starts once every person in the call has agreed (the hub counts the consents), or is refused
+		/// the moment anyone says no. Null when the recording is not waiting for that answer.
+		public async Task<HospitalCallRecording?> SettleGroupAsync(int companyId, int recId, bool start, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var row = await Recs(companyId).FirstOrDefaultAsync(r => r.ID == recId && r.Status == HospitalCallRecordingStatus.Asked, ct);
+			if (row == null) return null;
+			if (start) { row.Status = HospitalCallRecordingStatus.Recording; row.StartedAt = nowUtc; row.AgreedAt = nowUtc; row.TempName = Guid.NewGuid().ToString("N"); }
+			else row.Status = HospitalCallRecordingStatus.Refused;
 			await _db.SaveChangesAsync(ct);
 			return row;
 		}
@@ -246,7 +262,9 @@ namespace CrossBuy.BL.Hospital
 		private async Task<bool> MaySeeAsync(int companyId, HospitalCallRecording row, int employeeId, bool isManager, CancellationToken ct)
 		{
 			if (isManager) return true;
-			return await _db.Set<HospitalCall>().AsNoTracking().AnyAsync(c => c.ID == row.CallId && c.CompanyId == companyId && (c.CallerEmployeeId == employeeId || c.CalleeEmployeeId == employeeId), ct);
+			if (await _db.Set<HospitalCall>().AsNoTracking().AnyAsync(c => c.ID == row.CallId && c.CompanyId == companyId && (c.CallerEmployeeId == employeeId || c.CalleeEmployeeId == employeeId), ct)) return true;
+			// a group call's recording is theirs too who took part in the call (joined at some point)
+			return await new HospitalCallGroupService(_db).TookPartAsync(companyId, row.CallId, employeeId, ct);
 		}
 
 		/// The file, for a participant or an administrator — and the opening is logged. Null when missing or refused alike.
@@ -277,7 +295,10 @@ namespace CrossBuy.BL.Hospital
 			var call = await _db.Set<HospitalCall>().AsNoTracking().FirstAsync(c => c.ID == row.CallId && c.CompanyId == companyId, ct);
 			var views = await _db.Set<HospitalCallRecordingView>().AsNoTracking().Where(v => v.CompanyId == companyId && v.RecordingId == recId)
 				.OrderByDescending(v => v.At).Take(20).ToListAsync(ct);
-			var ids = new[] { call.CallerEmployeeId, call.CalleeEmployeeId, row.RequestedByEmployeeId }.Concat(views.Select(v => v.EmployeeId)).Concat(row.AgreedByEmployeeId is int a ? new[] { a } : Array.Empty<int>()).Distinct();
+			var consents = new List<HospitalCallRecordingConsent>();
+			try { consents = await _db.Set<HospitalCallRecordingConsent>().AsNoTracking().Where(c => c.CompanyId == companyId && c.RecordingId == recId).OrderBy(c => c.At).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { }
+			var ids = new[] { call.CallerEmployeeId, call.CalleeEmployeeId, row.RequestedByEmployeeId }.Concat(views.Select(v => v.EmployeeId)).Concat(consents.Select(c => c.EmployeeId)).Concat(row.AgreedByEmployeeId is int a ? new[] { a } : Array.Empty<int>()).Distinct();
 			var people = (await _calls.PeopleAsync(companyId, nowUtc, ids, ct)).ToDictionary(p => p.EmployeeId);
 			object? P(int id) => people.TryGetValue(id, out var p) ? new { id, name = DisplayName.Of(p.Name, p.NameEn), photo = p.Photo, initials = HospitalUi.Initials(p.NameEn) } : null;
 			var patient = call.PatientId is int pid ? await _calls.PatientCardAsync(companyId, pid, ct) : null;
@@ -289,6 +310,8 @@ namespace CrossBuy.BL.Hospital
 				seconds = row.DurationSeconds, size = row.SizeBytes, deleteAfter = row.DeleteAfter, deletedAt = row.DeletedAt,
 				file = HospitalCallRecordingRules.FileName(row.CallId, row.ID), folder = "CALL-" + call.ID.ToString("000000"), patient,
 				views = views.Select(v => new { who = P(v.EmployeeId), at = v.At }),
+				group = call.IsGroup,
+				consents = consents.Select(c => new { who = P(c.EmployeeId), at = c.At, via = c.Via }),
 			};
 		}
 

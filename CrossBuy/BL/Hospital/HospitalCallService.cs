@@ -140,6 +140,8 @@ namespace CrossBuy.BL.Hospital
 		public string? RecordingMode { get; set; }
 		public int RecordingDays { get; set; } = 90;
 		public List<string>? RecordingGroups { get; set; }
+		public bool GroupEnabled { get; set; } = true;
+		public int GroupMax { get; set; } = 4;
 	}
 
 	public sealed class HospitalCallService
@@ -182,7 +184,8 @@ namespace CrossBuy.BL.Hospital
 				var policy = HospitalCallRules.FormatPolicy(pairs);
 				row.Policy = policy.Length == 0 ? "-" : policy;
 				row.RecordingEnabled = i.RecordingEnabled; row.RecordingMode = i.RecordingMode!; row.RecordingDays = i.RecordingDays;
-				row.RecordingGroups = HospitalCallRecordingRules.FormatGroups(i.RecordingGroups);   // nobody may call: stored explicitly, an empty value would mean the default
+				row.RecordingGroups = HospitalCallRecordingRules.FormatGroups(i.RecordingGroups);
+				row.GroupEnabled = i.GroupEnabled; row.GroupMax = HospitalCallGroupRules.Cap(i.GroupMax);   // nobody may call: stored explicitly, an empty value would mean the default
 				row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success();
@@ -317,7 +320,9 @@ namespace CrossBuy.BL.Hospital
 			page = Math.Max(1, page);
 			try
 			{
-				var mine = _db.Set<HospitalCall>().AsNoTracking().Where(c => c.CompanyId == companyId && (c.CallerEmployeeId == employeeId || c.CalleeEmployeeId == employeeId));
+				// mine: I called or was called, or I was invited to a group call (H176 group calls)
+				var partOf = _db.Set<HospitalCallParticipant>().AsNoTracking().Where(p => p.CompanyId == companyId && p.EmployeeId == employeeId).Select(p => p.CallId);
+				var mine = _db.Set<HospitalCall>().AsNoTracking().Where(c => c.CompanyId == companyId && (c.CallerEmployeeId == employeeId || c.CalleeEmployeeId == employeeId || (c.IsGroup && partOf.Contains(c.ID))));
 				var term = q?.Trim();
 				if (!string.IsNullOrEmpty(term))
 				{

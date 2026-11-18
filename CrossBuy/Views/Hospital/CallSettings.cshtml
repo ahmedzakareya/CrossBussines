@@ -99,7 +99,7 @@
                         @foreach (var (id, title, sub, on, locked) in new[] {
                             ("hcVideo", "Video calls", "On with voice; can be limited to voice on weak networks", Model.VideoEnabled, false),
                             ("hcShare", "Screen sharing", "To show an image or a result during a consult", Model.ScreenShareEnabled, false),
-                            ("hcGroup", "Group calls (up to 8 people)", "Needs an internal media server — phase two", false, true),
+                            ("hcGroup", "Group calls", "Up to four people, each device connected to the others; more once the internal media server is installed", Model.GroupEnabled, false),
                             ("hcRec", "Recording calls", "Only with every side's consent — see the recording card", Model.RecordingEnabled, false) })
                         {
                             <div class="d-flex flex-stack py-4 border-bottom border-gray-200"><div class="me-5"><div class="fw-bold text-gray-900">@T[title]</div><div class="text-muted fs-7">@T[sub]</div></div>
@@ -108,6 +108,9 @@
                         <div class="row g-5 mt-1">
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ring time before it counts as missed"]</label>
                                 <select class="form-select form-select-solid" id="hcRing" data-control="select2" data-hide-search="true">@foreach (var s in new[] { 20, 30, 45, 60 }) { <option value="@s" selected="@(Model.RingSeconds == s)">@T["{0} seconds", s]</option> }</select></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Most people in a group call"]</label>
+                                <select class="form-select form-select-solid" id="hcGroupMax" data-control="select2" data-hide-search="true">@foreach (var gm in new[] { 3, 4 }) { <option value="@gm" selected="@(HospitalCallGroupRules.Cap(Model.GroupMax) == gm)">@gm</option> }</select>
+                                <div class="text-muted fs-8 mt-1">@T["Four at most until the internal media server (LiveKit) is installed; then eight or twelve."]</div></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Highest video quality"]</label>
                                 <select class="form-select form-select-solid" id="hcHeight" data-control="select2" data-hide-search="true">@foreach (var h in new[] { 480, 720, 1080 }) { <option value="@h" selected="@(Model.MaxVideoHeight == h)">@(h)p</option> }</select></div>
                         </div>
@@ -219,6 +222,7 @@
                 policy: Array.prototype.filter.call(document.querySelectorAll('[data-pair]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-pair'); }),
                 recordingEnabled: document.getElementById('hcRec').checked, recordingMode: document.getElementById('hcRecMode').value,
                 recordingDays: +document.getElementById('hcRecDays').value,
+                groupEnabled: document.getElementById('hcGroup').checked, groupMax: +document.getElementById('hcGroupMax').value,
                 recordingGroups: Array.prototype.filter.call(document.querySelectorAll('[data-recgroup]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-recgroup'); })
             };
             btn.disabled = true;

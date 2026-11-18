@@ -8562,4 +8562,62 @@
   <data name="vxs:None" xml:space="preserve"><value>No contraindication</value></data>
   <data name="vxs:Pregnant" xml:space="preserve"><value>Pregnancy</value></data>
   <data name="vxs:PriorSevere" xml:space="preserve"><value>Prior severe reaction (anaphylaxis)</value></data>
+  <data name="Invitation to a group call" xml:space="preserve"><value>Invitation to a group call</value></data>
+  <data name="{0} invites you" xml:space="preserve"><value>{0} invites you</value></data>
+  <data name="This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time." xml:space="preserve"><value>This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time.</value></data>
+  <data name="Decline (group)" xml:space="preserve"><value>Decline</value></data>
+  <data name="Join by voice" xml:space="preserve"><value>Join by voice</value></data>
+  <data name="Join" xml:space="preserve"><value>Join</value></data>
+  <data name="Not reached now (recorded as missed): {0}" xml:space="preserve"><value>Not reached now (recorded as missed): {0}</value></data>
+  <data name="The call is now a group call" xml:space="preserve"><value>The call is now a group call</value></data>
+  <data name="Group call" xml:space="preserve"><value>Group call</value></data>
+  <data name="Started by {0}" xml:space="preserve"><value>Started by {0}</value></data>
+  <data name="Ringing…" xml:space="preserve"><value>Ringing…</value></data>
+  <data name="Record — with every participant’s consent" xml:space="preserve"><value>Record — with every participant’s consent</value></data>
+  <data name="Add people" xml:space="preserve"><value>Add people</value></data>
+  <data name="Leave the call" xml:space="preserve"><value>Leave the call</value></data>
+  <data name="Did not answer" xml:space="preserve"><value>Did not answer</value></data>
+  <data name="Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Remove from the call" xml:space="preserve"><value>Remove from the call</value></data>
+  <data name="People" xml:space="preserve"><value>People</value></data>
+  <data name="up to {0}" xml:space="preserve"><value>up to {0}</value></data>
+  <data name="The host adds and removes; the call stays for whoever is in it" xml:space="preserve"><value>The host adds and removes; the call stays for whoever is in it</value></data>
+  <data name="End the call for everyone" xml:space="preserve"><value>End the call for everyone</value></data>
+  <data name="A group call is up to {0} people" xml:space="preserve"><value>A group call is up to {0} people</value></data>
+  <data name="You left — the call goes on for the others" xml:space="preserve"><value>You left — the call goes on for the others</value></data>
+  <data name="{0} was removed from the call" xml:space="preserve"><value>{0} was removed from the call</value></data>
+  <data name="{0} left the call" xml:space="preserve"><value>{0} left the call</value></data>
+  <data name="You are now the host of the call" xml:space="preserve"><value>You are now the host of the call</value></data>
+  <data name="The host removed you from the call" xml:space="preserve"><value>The host removed you from the call</value></data>
+  <data name="The group call ended — saved in the log" xml:space="preserve"><value>The group call ended — saved in the log</value></data>
+  <data name="{0} joined, agreeing to the recording" xml:space="preserve"><value>{0} joined, agreeing to the recording</value></data>
+  <data name="You joined agreeing to the recording" xml:space="preserve"><value>You joined agreeing to the recording</value></data>
+  <data name="Waiting for {0} people to agree…" xml:space="preserve"><value>Waiting for {0} people to agree…</value></data>
+  <data name="You asked to record — every participant must agree" xml:space="preserve"><value>You asked to record — every participant must agree</value></data>
+  <data name="Everyone’s voice and picture, from everyone’s consent until someone stops it" xml:space="preserve"><value>Everyone’s voice and picture, from everyone’s consent until someone stops it</value></data>
+  <data name="Everyone’s voice, from everyone’s consent until someone stops it" xml:space="preserve"><value>Everyone’s voice, from everyone’s consent until someone stops it</value></data>
+  <data name="The people in the call and the hospital’s administrators; every opening is logged" xml:space="preserve"><value>The people in the call and the hospital’s administrators; every opening is logged</value></data>
+  <data name="It starts only when everyone in the call agrees" xml:space="preserve"><value>It starts only when everyone in the call agrees</value></data>
+  <data name="Everyone agreed — recording, shown to every participant" xml:space="preserve"><value>Everyone agreed — recording, shown to every participant</value></data>
+  <data name="Available people first; you can add {0} more" xml:space="preserve"><value>Available people first; you can add {0} more</value></data>
+  <data name="Search by name…" xml:space="preserve"><value>Search by name…</value></data>
+  <data name="Add to the call" xml:space="preserve"><value>Add to the call</value></data>
+  <data name="Group calls are switched off (call settings)" xml:space="preserve"><value>Group calls are switched off (call settings)</value></data>
+  <data name="A group call is up to {0} people with you" xml:space="preserve"><value>A group call is up to {0} people with you</value></data>
+  <data name="Choose at least two people for a group call" xml:space="preserve"><value>Choose at least two people for a group call</value></data>
+  <data name="Group calls are not installed yet (hospital_h176_group_calls.sql)." xml:space="preserve"><value>Group calls are not installed yet (hospital_h176_group_calls.sql).</value></data>
+  <data name="Tick two or three available people" xml:space="preserve"><value>Tick two or three available people</value></data>
+  <data name="Pick for a group call" xml:space="preserve"><value>Pick for a group call</value></data>
+  <data name="Started by you" xml:space="preserve"><value>Started by you</value></data>
+  <data name="Invited" xml:space="preserve"><value>Invited</value></data>
+  <data name="Call the group again" xml:space="preserve"><value>Call the group again</value></data>
+  <data name="Most people in a group call" xml:space="preserve"><value>Most people in a group call</value></data>
+  <data name="Four at most until the internal media server (LiveKit) is installed; then eight or twelve." xml:space="preserve"><value>Four at most until the internal media server (LiveKit) is installed; then eight or twelve.</value></data>
+  <data name="Group calls" xml:space="preserve"><value>Group calls</value></data>
+  <data name="Up to four people, each device connected to the others; more once the internal media server is installed" xml:space="preserve"><value>Up to four people, each device connected to the others; more once the internal media server is installed</value></data>
+  <data name="In the call (state)" xml:space="preserve"><value>In the call</value></data>
+  <data name="Declined (state)" xml:space="preserve"><value>Declined</value></data>
+  <data name="Left the call (state)" xml:space="preserve"><value>Left</value></data>
+  <data name="Removed (state)" xml:space="preserve"><value>Removed</value></data>
+  <data name="{0} people — {1} joined" xml:space="preserve"><value>{0} people — {1} joined</value></data>
 </root>

@@ -24,7 +24,7 @@ namespace CrossBuy.Hubs
 	// their records.
 	// ==========================================================================================
 	[Authorize(AuthenticationSchemes = "Identity.Application," + JwtBearerDefaults.AuthenticationScheme)]
-	public sealed class HospitalCallHub : Hub
+	public sealed partial class HospitalCallHub : Hub
 	{
 		private sealed class Live
 		{
@@ -40,7 +40,7 @@ namespace CrossBuy.Hubs
 		private static readonly ConcurrentDictionary<int, int> _busy = new();            // employee → call id
 
 		/// "busy" also while someone's screen is ringing: a second caller is told at once instead of waiting out the ring.
-		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : "off";
+		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) || RingingInGroup(employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : "off";
 		public static int BusyCount(int companyId) => _busy.Keys.Count(e => _company.TryGetValue(e, out var c) && c == companyId);
 
 		private static string Emp(int id) => "hcall-e-" + id;
@@ -86,6 +86,7 @@ namespace CrossBuy.Hubs
 				// a call this tab was carrying ends with it
 				foreach (var live in _calls.Values.Where(l => l.CallerConn == Context.ConnectionId || l.CalleeConn == Context.ConnectionId).ToList())
 					await CloseAsync(live, emp, "drop", null);
+				await DropFromGroupsAsync();   // H176 group calls
 				if (_online.AddOrUpdate(emp, 0, (_, n) => Math.Max(0, n - 1)) == 0) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
 			}
 			await base.OnDisconnectedAsync(exception);

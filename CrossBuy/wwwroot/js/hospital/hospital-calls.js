@@ -76,6 +76,7 @@
 		conn.on('recstop', onRecStop);
 		conn.on('presence', function (m) { presenceFns.forEach(function (f) { try { f(m); } catch (e) { } }); });
 		conn.onreconnected(function () { presenceFns.forEach(function (f) { try { f({ refresh: true }); } catch (e) { } }); });
+		(window.cbCallsHooks || []).forEach(function (f) { try { f(conn); } catch (e) { } });   // H176 group calls
 		conn.start().then(function () { document.dispatchEvent(new CustomEvent('cbcalls:ready')); }).catch(function () { });
 	}
 	function connected() { return conn && conn.state === 'Connected'; }
@@ -91,7 +92,7 @@
 
 	/* ---------------- incoming ---------------- */
 	function onIncoming(m) {
-		if (current || ring) { return; }   // the server already refuses a second call to someone busy; a second tab still answers only once
+		if (current || ring || (window.cbCallsGroup && window.cbCallsGroup.busy())) { return; }   // the server already refuses a second call to someone busy; a second tab still answers only once
 		var left = m.ringSeconds || 30, video = !!m.video;
 		var el = document.createElement('div'); el.className = 'cbc-overlay'; el.setAttribute('role', 'alertdialog');
 		var p = m.patient;
@@ -328,7 +329,7 @@
 			'<button type="button" class="cbc-ctl' + (c.cam ? '' : ' off') + '" data-k="cam" title="' + esc(t('camera')) + '">' + ico(c.cam ? 'cam' : 'camOff', 22) + '</button>' +
 			(c.share !== false && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (c.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '"><i class="ki-outline ki-screen fs-2 ' + (c.sharing ? '' : 'text-white') + '"></i></button>' : '') +
 			(c.canRecord && window.MediaRecorder ? '<button type="button" class="cbc-ctl' + (c.rec && c.rec.state === 'on' ? ' rec-on' : '') + '" data-k="rec" title="' + esc(c.rec && c.rec.state === 'on' ? t('recStop') : t('recAsk')) + '"' + (c.answered ? '' : ' disabled') + '>' + ico('rec', 22) + '</button>' : '') +
-			'<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPhase2')) + '" disabled><i class="ki-outline ki-user-tick fs-2 text-white"></i></button>' +
+			'<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPeople')) + '"' + (c.answered && window.cbCallsGroup ? '' : ' disabled') + '><i class="ki-outline ki-user-tick fs-2 text-white"></i></button>' +
 			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('end')) + '"><span style="display:inline-flex;transform:rotate(135deg)">' + ico('phone', 24) + '</span></button>';
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(c, b.getAttribute('data-k')); }; });
 	}
@@ -336,6 +337,7 @@
 	function control(c, k) {
 		if (k === 'end') { hangup(c); return; }
 		if (k === 'rec') { recControl(c); return; }
+		if (k === 'add') { if (window.cbCallsGroup) window.cbCallsGroup.fromCall(c); return; }
 		if (k === 'mic') { var a = c.local && c.local.getAudioTracks()[0]; if (!a) { toast(t('noMic'), 'error'); return; } c.mic = !c.mic; a.enabled = c.mic; }
 		if (k === 'cam') {
 			var v = c.local && c.local.getVideoTracks()[0];
@@ -579,6 +581,15 @@
 	}
 
 	function refreshLog() { document.dispatchEvent(new CustomEvent('cbcalls:changed')); }
+
+	// for hospital-calls-group.js: the same helpers, the same connection, and a quiet close of a two-person call that
+	// became a group call
+	window.cbCallsKit = {
+		t: t, esc: esc, ico: ico, face: face, toast: toast, post: post, get: get, token: token, num: num, mmss: mmss, tone: tone, RING: RING,
+		iceServers: iceServers, conn: function () { return conn; }, connected: connected, refreshLog: refreshLog, U: U, W: W,
+		current: function () { return current; }, ringing: function () { return !!ring; },
+		closeQuietly: function (c) { if (c) { c.quiet = true; teardown(c); } }
+	};
 
 	window.cbCalls = {
 		start: start,

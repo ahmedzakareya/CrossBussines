@@ -24,6 +24,9 @@
     int pages = Math.Max(1, (int)Math.Ceiling(log.Total / (double)log.PageSize));
     string Utc(DateTime d) => d.ToString("yyyy-MM-ddTHH:mm:ss", inv);
     var recs = ViewBag.Recordings as Dictionary<int, HospitalCallRecording> ?? new Dictionary<int, HospitalCallRecording>();
+    var gparts = ViewBag.GroupParts as Dictionary<int, List<HospitalCallParticipantRow>> ?? new Dictionary<int, List<HospitalCallParticipantRow>>();
+    var gpeople = ViewBag.GroupPeople as Dictionary<int, HospitalCallPerson> ?? new Dictionary<int, HospitalCallPerson>();
+    bool groupOn = ViewBag.GroupOn == true;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -35,6 +38,7 @@
     .hc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
     .hc-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .hc-scroll{max-height:640px;overflow-y:auto}
+    .hc-stack{display:inline-flex;flex-shrink:0}.hc-stack .hc-face{border:2px solid var(--bs-body-bg,#fff)}.hc-stack .hc-face + .hc-face{margin-inline-start:-10px}
     .hc-recbadge{display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:#B91C1C;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700}
     .hc-recbadge i{width:7px;height:7px;border-radius:50%;background:#DC2626;display:inline-block}
     .hc-recbadge.gone{background:var(--bs-gray-100);color:var(--bs-gray-600)}.hc-recbadge.gone i{background:var(--bs-gray-400)}
@@ -112,7 +116,9 @@
                 <div class="card mb-5 mb-xl-8">
                     <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
                         <span class="card-label fw-bold text-gray-900 fs-4">@T["Staff directory"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Status is live from each person's connection"]</span></div></div>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Status is live from each person's connection"]</span></div>
+                        @if (groupOn) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" id="hcGroupGo" disabled title="@T["Tick two or three available people"]"><i class="ki-outline ki-people fs-4"></i>@T["Group call"] <span class="badge badge-circle badge-light ms-1"><bdi class="hp-num" dir="ltr" id="hcGroupN">0</bdi></span></button></div> }
+                    </div>
                     <div class="card-body pt-4">
                         <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
                             <input class="form-control form-control-solid ps-12" id="hcDirQ" placeholder="@T["Search by name or department…"]" autocomplete="off" /></div>
@@ -123,6 +129,7 @@
                             @foreach (var p in Model.People)
                             {
                                 <div class="hc-row d-flex align-items-center gap-4 p-3 mb-1" data-emp="@p.EmployeeId" data-dept="@Dept(p)">
+                                    @if (groupOn) { <label class="form-check form-check-custom form-check-solid form-check-sm flex-shrink-0" title="@T["Pick for a group call"]"><input class="form-check-input" type="checkbox" data-gpick="@p.EmployeeId" disabled /></label> }
                                     <div class="position-relative flex-shrink-0">@Face(p, 45)<span class="hc-pres" data-pres></span></div>
                                     <div class="flex-grow-1 min-w-0">
                                         <div class="d-flex align-items-center gap-2 min-w-0"><span class="fw-bold text-gray-900 fs-6 text-truncate">@Name(p)</span>@if (p.OnCall) { <span class="badge badge-light-primary fw-bold fs-8">@T["On call"]</span> }</div>
@@ -184,6 +191,16 @@
                                     var dirIcon = missed || (failed && !r.Outgoing) ? "ki-cross-circle" : r.Outgoing ? "ki-arrow-up-right" : "ki-arrow-down-left";
                                     recs.TryGetValue(c.ID, out var rec);
                                     <tr>
+                                        @if (c.IsGroup && gparts.TryGetValue(c.ID, out var gp))
+                                        {
+                                            var others = gp.Where(x => x.EmployeeId != Model.MeId && gpeople.ContainsKey(x.EmployeeId)).Select(x => gpeople[x.EmployeeId]).ToList();
+                                            <td><div class="d-flex align-items-center gap-3">
+                                                <span class="hc-stack">@foreach (var o in others.Take(3)) { @Face(o, 30) }</span>
+                                                <div class="d-flex flex-column min-w-0"><span class="text-gray-900 fw-bold fs-6 text-truncate">@T["Group call"] · <bdi class="hp-num" dir="ltr">@gp.Count</bdi></span><span class="text-muted fw-semibold fs-7 text-truncate">@string.Join("، ", others.Select(Name))</span></div>
+                                            </div></td>
+                                        }
+                                        else
+                                        {
                                         <td><div class="d-flex align-items-center gap-3">
                                             <span class="hc-dir" style="background:@(missed ? "#FEE2E2" : "#E7F0FF")"><i class="ki-outline @dirIcon fs-3" style="color:@(missed ? "#DC2626" : "var(--cb-brand,#3A5795)")"></i></span>
                                             @if (r.Other != null)
@@ -193,11 +210,13 @@
                                             }
                                             else { <span class="text-muted">—</span> }
                                         </div></td>
+                                        }
                                         <td class="text-nowrap">
                                             @if (missed) { <span class="text-danger fw-bold">@T["Missed (calls)"]</span> }
                                             else if (c.Status == HospitalCallStatus.Declined) { <span class="text-danger fw-semibold">@T["Declined (call)"]</span> }
                                             else if (c.Status is HospitalCallStatus.Cancelled or HospitalCallStatus.Missed) { <span class="text-gray-600 fw-semibold">@T["Not answered"]</span> }
                                             else if (c.Status == HospitalCallStatus.Answered) { <span class="text-primary fw-bold">@T["In progress"]</span> }
+                                            else if (c.IsGroup) { <span class="text-gray-800">@(r.Outgoing ? T["Started by you"] : T["Invited"])</span> }
                                             else { <span class="text-gray-800">@(r.Outgoing ? T["Outgoing"] : T["Incoming"])</span> }
                                             @if (rec?.Status == HospitalCallRecordingStatus.Saved) { <span class="hc-recbadge ms-1"><i></i>@T["Recorded"]</span> }
                                             else if (rec?.Status == HospitalCallRecordingStatus.Deleted) { <span class="hc-recbadge gone ms-1" title="@T["Its retention ended; the record of it stays"]"><i></i>@T["Recording deleted"]</span> }
@@ -212,7 +231,8 @@
                                         </td>
                                         <td class="text-nowrap"><bdi class="hp-num fw-semibold" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("HH:mm", inv)</bdi>@if (c.StartedAt < DateTime.UtcNow.AddHours(-18)) { <div class="text-muted fs-8"><bdi class="hp-num" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("yyyy-MM-dd", inv)</bdi></div> }</td>
                                         <td>@if (c.DurationSeconds is int s) { <bdi class="hp-num" dir="ltr">@HospitalCallRules.Duration(s)</bdi> } else { <span class="text-muted">—</span> }</td>
-                                        <td class="text-end text-nowrap">@if (rec?.Status == HospitalCallRecordingStatus.Saved) { <button type="button" class="btn btn-sm btn-icon btn-light-primary me-2" title="@T["Play the recording"]" data-rec="@rec.ID">@Html.Raw(Svg("play", 14))</button> }@if (r.Other != null) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-call="@r.Other.EmployeeId" data-video="@(c.IsVideo ? 1 : 0)" data-patient="@c.PatientId" disabled>@Html.Raw(Svg("phone", 15)) @T["Call back"]</button> }</td>
+                                        <td class="text-end text-nowrap">@if (rec?.Status == HospitalCallRecordingStatus.Saved) { <button type="button" class="btn btn-sm btn-icon btn-light-primary me-2" title="@T["Play the recording"]" data-rec="@rec.ID">@Html.Raw(Svg("play", 14))</button> }@if (c.IsGroup && gparts.TryGetValue(c.ID, out var gp2)) { <button type="button" class="btn btn-sm btn-icon btn-light-primary" title="@T["Call the group again"]" data-regroup="@string.Join(",", gp2.Where(x => x.EmployeeId != Model.MeId).Select(x => x.EmployeeId))" data-video="@(c.IsVideo ? 1 : 0)"><i class="ki-outline ki-people fs-3"></i></button> }
+                                        else if (r.Other != null) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-call="@r.Other.EmployeeId" data-video="@(c.IsVideo ? 1 : 0)" data-patient="@c.PatientId" disabled>@Html.Raw(Svg("phone", 15)) @T["Call back"]</button> }</td>
                                     </tr>
                                 }
                             </tbody></table></div>
@@ -284,6 +304,8 @@
             if (lbl) { lbl.textContent = W[s]; lbl.className = s === 'on' ? 'text-primary fw-semibold' : s === 'busy' ? 'text-danger fw-semibold' : 'text-muted'; }
         });
         document.querySelectorAll('[data-call="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on'; });
+        document.querySelectorAll('[data-gpick="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on'; if (s !== 'on') b.checked = false; });
+        groupCount();
         // only the people this directory lists (my own connection is announced too, and I am not in it)
         var dirIds = Array.prototype.map.call(document.querySelectorAll('#hcDir [data-emp]'), function (r) { return r.getAttribute('data-emp'); });
         document.getElementById('hcAvail').textContent = dirIds.filter(function (k) { return state[k] === 'on'; }).length;
@@ -367,7 +389,26 @@
     }
     document.getElementById('hcPlayer').addEventListener('hidden.bs.modal', function () { var m = this.querySelector('video,audio'); if (m) { m.pause(); m.removeAttribute('src'); m.load(); } });
 
+    // a group call: two or three available people ticked (the host makes four)
+    function groupCount() {
+        var go = document.getElementById('hcGroupGo'); if (!go) return;
+        var n = document.querySelectorAll('[data-gpick]:checked').length;
+        document.getElementById('hcGroupN').textContent = n; go.disabled = n < 2;
+    }
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-gpick]')) return;
+        if (document.querySelectorAll('[data-gpick]:checked').length > 3) { e.target.checked = false; toastr.info(@Json.Serialize(T["A group call is up to {0} people with you", 4].Value)); }
+        groupCount();
+    });
+    var goBtn = document.getElementById('hcGroupGo');
+    if (goBtn) goBtn.addEventListener('click', function () {
+        var ids = Array.prototype.map.call(document.querySelectorAll('[data-gpick]:checked'), function (c) { return +c.getAttribute('data-gpick'); });
+        if (window.cbCallsGroup) window.cbCallsGroup.start(ids, true);
+        document.querySelectorAll('[data-gpick]:checked').forEach(function (c) { c.checked = false; }); groupCount();
+    });
+
     document.addEventListener('click', function (e) {
+        var rg = e.target.closest('[data-regroup]'); if (rg) { if (window.cbCallsGroup) window.cbCallsGroup.start(rg.getAttribute('data-regroup').split(',').map(Number), rg.getAttribute('data-video') === '1'); return; }
         var pr = e.target.closest('[data-rec]'); if (pr) { openPlayer(pr.getAttribute('data-rec')); return; }
         var b = e.target.closest('[data-call]'); if (!b || b.disabled) return;
         var pid = b.getAttribute('data-patient');

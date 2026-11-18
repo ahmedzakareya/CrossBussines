@@ -612,9 +612,9 @@
    "fr": "La note rejoint le journal de l'appel avec votre nom et l'heure ; ni son ni image ne sont enregistrés."
   },
   "In the call": {
-   "ar": "المشاركون",
+   "ar": "في المكالمة",
    "en": "In the call",
-   "fr": "Dans l'appel"
+   "fr": "Dans l’appel"
   },
   "Hospital network only · encrypted": {
    "ar": "داخل شبكة المستشفى · مشفّرة",
@@ -1155,6 +1155,316 @@
    "ar": "طلبه {0}",
    "en": "Asked by {0}",
    "fr": "Demandé par {0}"
+  },
+  "Invitation to a group call": {
+   "ar": "دعوة إلى مكالمة جماعية",
+   "en": "Invitation to a group call",
+   "fr": "Invitation à un appel de groupe"
+  },
+  "{0} invites you": {
+   "ar": "{0} يدعوك",
+   "en": "{0} invites you",
+   "fr": "{0} vous invite"
+  },
+  "This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time.": {
+   "ar": "هذه المكالمة تُسجَّل بموافقة المشاركين. انضمامك يعني موافقتك على التسجيل، ويُحفظ ذلك باسمك ووقتك.",
+   "en": "This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time.",
+   "fr": "Cet appel est enregistré avec le consentement des participants. Rejoindre vaut accord ; il est conservé avec votre nom et l’heure."
+  },
+  "Decline (group)": {
+   "ar": "اعتذار",
+   "en": "Decline",
+   "fr": "Décliner"
+  },
+  "Join by voice": {
+   "ar": "انضمام بالصوت",
+   "en": "Join by voice",
+   "fr": "Rejoindre en audio"
+  },
+  "Join": {
+   "ar": "انضمام",
+   "en": "Join",
+   "fr": "Rejoindre"
+  },
+  "Not reached now (recorded as missed): {0}": {
+   "ar": "لم يُتح الوصول إليهم الآن (سُجّلت لهم مكالمة فائتة): {0}",
+   "en": "Not reached now (recorded as missed): {0}",
+   "fr": "Non joignables (appel manqué enregistré) : {0}"
+  },
+  "The call is now a group call": {
+   "ar": "تحولت المكالمة إلى جماعية",
+   "en": "The call is now a group call",
+   "fr": "L’appel est devenu un appel de groupe"
+  },
+  "Group call": {
+   "ar": "مكالمة جماعية",
+   "en": "Group call",
+   "fr": "Appel de groupe"
+  },
+  "Started by {0}": {
+   "ar": "بدأها {0}",
+   "en": "Started by {0}",
+   "fr": "Lancé par {0}"
+  },
+  "Ringing…": {
+   "ar": "يرن…",
+   "en": "Ringing…",
+   "fr": "Sonne…"
+  },
+  "Record — with every participant’s consent": {
+   "ar": "تسجيل — بموافقة كل المشاركين",
+   "en": "Record — with every participant’s consent",
+   "fr": "Enregistrer — avec le consentement de chacun"
+  },
+  "Add people": {
+   "ar": "إضافة مشاركين",
+   "en": "Add people",
+   "fr": "Ajouter des personnes"
+  },
+  "Leave the call": {
+   "ar": "مغادرة المكالمة",
+   "en": "Leave the call",
+   "fr": "Quitter l’appel"
+  },
+  "Declined": {
+   "ar": "اعتذر",
+   "en": "Declined",
+   "fr": "A décliné"
+  },
+  "Did not answer": {
+   "ar": "لم يرد",
+   "en": "Did not answer",
+   "fr": "N’a pas répondu"
+  },
+  "Not reached": {
+   "ar": "لم يُتح الوصول",
+   "en": "Not reached",
+   "fr": "Non joignable"
+  },
+  "Left": {
+   "ar": "غادر",
+   "en": "Left",
+   "fr": "Parti"
+  },
+  "Removed": {
+   "ar": "أُخرج",
+   "en": "Removed",
+   "fr": "Retiré"
+  },
+  "Host": {
+   "ar": "المضيف",
+   "en": "Host",
+   "fr": "Hôte"
+  },
+  "Remove from the call": {
+   "ar": "إخراج من المكالمة",
+   "en": "Remove from the call",
+   "fr": "Retirer de l’appel"
+  },
+  "People": {
+   "ar": "المشاركون",
+   "en": "People",
+   "fr": "Participants"
+  },
+  "up to {0}": {
+   "ar": "حتى {0}",
+   "en": "up to {0}",
+   "fr": "jusqu’à {0}"
+  },
+  "The host adds and removes; the call stays for whoever is in it": {
+   "ar": "المضيف يضيف ويُخرج، والمكالمة تبقى لمن بقي فيها",
+   "en": "The host adds and removes; the call stays for whoever is in it",
+   "fr": "L’hôte ajoute et retire ; l’appel reste pour ceux qui y sont"
+  },
+  "End the call for everyone": {
+   "ar": "إنهاء المكالمة للجميع",
+   "en": "End the call for everyone",
+   "fr": "Terminer l’appel pour tous"
+  },
+  "A group call is up to {0} people": {
+   "ar": "المكالمة الجماعية حتى {0} أشخاص",
+   "en": "A group call is up to {0} people",
+   "fr": "Un appel de groupe compte au plus {0} personnes"
+  },
+  "You left — the call goes on for the others": {
+   "ar": "غادرتَ المكالمة — تستمر لمن بقي فيها",
+   "en": "You left — the call goes on for the others",
+   "fr": "Vous êtes parti — l’appel continue pour les autres"
+  },
+  "{0} was removed from the call": {
+   "ar": "أُخرج {0} من المكالمة",
+   "en": "{0} was removed from the call",
+   "fr": "{0} a été retiré de l’appel"
+  },
+  "{0} left the call": {
+   "ar": "غادر {0} المكالمة",
+   "en": "{0} left the call",
+   "fr": "{0} a quitté l’appel"
+  },
+  "You are now the host of the call": {
+   "ar": "أصبحتَ مضيف المكالمة",
+   "en": "You are now the host of the call",
+   "fr": "Vous êtes maintenant l’hôte"
+  },
+  "The host removed you from the call": {
+   "ar": "أخرجك المضيف من المكالمة",
+   "en": "The host removed you from the call",
+   "fr": "L’hôte vous a retiré de l’appel"
+  },
+  "The group call ended — saved in the log": {
+   "ar": "انتهت المكالمة الجماعية — حُفظت في السجل",
+   "en": "The group call ended — saved in the log",
+   "fr": "L’appel de groupe est terminé — enregistré au journal"
+  },
+  "{0} joined, agreeing to the recording": {
+   "ar": "انضم {0} موافقًا على التسجيل",
+   "en": "{0} joined, agreeing to the recording",
+   "fr": "{0} a rejoint en acceptant l’enregistrement"
+  },
+  "You joined agreeing to the recording": {
+   "ar": "انضممتَ موافقًا على التسجيل",
+   "en": "You joined agreeing to the recording",
+   "fr": "Vous avez rejoint en acceptant l’enregistrement"
+  },
+  "Waiting for {0} people to agree…": {
+   "ar": "بانتظار موافقة {0} مشاركين…",
+   "en": "Waiting for {0} people to agree…",
+   "fr": "En attente de l’accord de {0} personnes…"
+  },
+  "You asked to record — every participant must agree": {
+   "ar": "طلبتَ التسجيل — يلزم موافقة كل المشاركين",
+   "en": "You asked to record — every participant must agree",
+   "fr": "Vous avez demandé l’enregistrement — chacun doit accepter"
+  },
+  "Everyone’s voice and picture, from everyone’s consent until someone stops it": {
+   "ar": "صوت وصورة كل المشاركين، من لحظة موافقة الجميع حتى يوقفه أحدكم",
+   "en": "Everyone’s voice and picture, from everyone’s consent until someone stops it",
+   "fr": "La voix et l’image de chacun, de l’accord de tous jusqu’à l’arrêt"
+  },
+  "Everyone’s voice, from everyone’s consent until someone stops it": {
+   "ar": "صوت كل المشاركين، من لحظة موافقة الجميع حتى يوقفه أحدكم",
+   "en": "Everyone’s voice, from everyone’s consent until someone stops it",
+   "fr": "La voix de chacun, de l’accord de tous jusqu’à l’arrêt"
+  },
+  "The people in the call and the hospital’s administrators; every opening is logged": {
+   "ar": "المشاركون في المكالمة ومسؤولو المستشفى، ويُسجَّل كل من يفتحه",
+   "en": "The people in the call and the hospital’s administrators; every opening is logged",
+   "fr": "Les participants et les administrateurs de l’hôpital ; chaque ouverture est consignée"
+  },
+  "It starts only when everyone in the call agrees": {
+   "ar": "لا يبدأ إلا إذا وافق كل من في المكالمة",
+   "en": "It starts only when everyone in the call agrees",
+   "fr": "Il ne démarre que si tous les participants acceptent"
+  },
+  "Everyone agreed — recording, shown to every participant": {
+   "ar": "وافق الجميع — بدأ التسجيل ويظهر لكل المشاركين",
+   "en": "Everyone agreed — recording, shown to every participant",
+   "fr": "Tous ont accepté — enregistrement visible de tous"
+  },
+  "Available people first; you can add {0} more": {
+   "ar": "المتاحون أولًا؛ يمكنك إضافة {0} بعد",
+   "en": "Available people first; you can add {0} more",
+   "fr": "Les disponibles en premier ; vous pouvez en ajouter {0}"
+  },
+  "Search by name…": {
+   "ar": "ابحث بالاسم…",
+   "en": "Search by name…",
+   "fr": "Rechercher par nom…"
+  },
+  "Add to the call": {
+   "ar": "إضافة إلى المكالمة",
+   "en": "Add to the call",
+   "fr": "Ajouter à l’appel"
+  },
+  "Group calls are switched off (call settings)": {
+   "ar": "المكالمات الجماعية متوقفة في إعدادات الاتصال",
+   "en": "Group calls are switched off (call settings)",
+   "fr": "Les appels de groupe sont désactivés (paramètres des appels)"
+  },
+  "A group call is up to {0} people with you": {
+   "ar": "المكالمة الجماعية حتى {0} أشخاص معك",
+   "en": "A group call is up to {0} people with you",
+   "fr": "Un appel de groupe compte au plus {0} personnes avec vous"
+  },
+  "Choose at least two people for a group call": {
+   "ar": "اختر شخصين على الأقل للمكالمة الجماعية",
+   "en": "Choose at least two people for a group call",
+   "fr": "Choisissez au moins deux personnes pour un appel de groupe"
+  },
+  "Group calls are not installed yet (hospital_h176_group_calls.sql).": {
+   "ar": "المكالمات الجماعية غير مُثبّتة بعد (hospital_h176_group_calls.sql).",
+   "en": "Group calls are not installed yet (hospital_h176_group_calls.sql).",
+   "fr": "Les appels de groupe ne sont pas encore installés (hospital_h176_group_calls.sql)."
+  },
+  "Tick two or three available people": {
+   "ar": "اختر شخصين أو ثلاثة من المتاحين",
+   "en": "Tick two or three available people",
+   "fr": "Cochez deux ou trois personnes disponibles"
+  },
+  "Pick for a group call": {
+   "ar": "اختيار للمكالمة الجماعية",
+   "en": "Pick for a group call",
+   "fr": "Choisir pour un appel de groupe"
+  },
+  "Started by you": {
+   "ar": "بدأتَها",
+   "en": "Started by you",
+   "fr": "Lancé par vous"
+  },
+  "Invited": {
+   "ar": "دُعيتَ إليها",
+   "en": "Invited",
+   "fr": "Invité"
+  },
+  "Call the group again": {
+   "ar": "إعادة المكالمة الجماعية",
+   "en": "Call the group again",
+   "fr": "Rappeler le groupe"
+  },
+  "Most people in a group call": {
+   "ar": "أقصى عدد في المكالمة الجماعية",
+   "en": "Most people in a group call",
+   "fr": "Nombre maximal dans un appel de groupe"
+  },
+  "Four at most until the internal media server (LiveKit) is installed; then eight or twelve.": {
+   "ar": "أربعة على الأكثر حتى يُثبَّت خادم الوسائط الداخلي (LiveKit)، ثم ثمانية أو اثنا عشر.",
+   "en": "Four at most until the internal media server (LiveKit) is installed; then eight or twelve.",
+   "fr": "Quatre au plus tant que le serveur média interne (LiveKit) n’est pas installé ; ensuite huit ou douze."
+  },
+  "Group calls": {
+   "ar": "المكالمات الجماعية",
+   "en": "Group calls",
+   "fr": "Appels de groupe"
+  },
+  "Up to four people, each device connected to the others; more once the internal media server is installed": {
+   "ar": "حتى أربعة أشخاص، كل جهاز متصل بالأجهزة الأخرى مباشرة؛ ويزيد العدد بعد تثبيت خادم الوسائط الداخلي",
+   "en": "Up to four people, each device connected to the others; more once the internal media server is installed",
+   "fr": "Jusqu’à quatre personnes, chaque appareil relié aux autres ; davantage une fois le serveur média interne installé"
+  },
+  "In the call (state)": {
+   "ar": "في المكالمة",
+   "en": "In the call",
+   "fr": "Dans l’appel"
+  },
+  "Declined (state)": {
+   "ar": "اعتذر",
+   "en": "Declined",
+   "fr": "A décliné"
+  },
+  "Left the call (state)": {
+   "ar": "غادر",
+   "en": "Left",
+   "fr": "Parti"
+  },
+  "Removed (state)": {
+   "ar": "أُخرج",
+   "en": "Removed",
+   "fr": "Retiré"
+  },
+  "{0} people — {1} joined": {
+   "ar": "{0} مشاركين — انضم {1}",
+   "en": "{0} people — {1} joined",
+   "fr": "{0} personnes — {1} ont rejoint"
   }
  }
 }

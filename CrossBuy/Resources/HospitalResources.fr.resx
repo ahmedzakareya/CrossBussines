@@ -8564,4 +8564,62 @@
   <data name="vxs:None" xml:space="preserve"><value>Aucune contre-indication</value></data>
   <data name="vxs:Pregnant" xml:space="preserve"><value>Grossesse</value></data>
   <data name="vxs:PriorSevere" xml:space="preserve"><value>Réaction grave antérieure (anaphylaxie)</value></data>
+  <data name="Invitation to a group call" xml:space="preserve"><value>Invitation à un appel de groupe</value></data>
+  <data name="{0} invites you" xml:space="preserve"><value>{0} vous invite</value></data>
+  <data name="This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time." xml:space="preserve"><value>Cet appel est enregistré avec le consentement des participants. Rejoindre vaut accord ; il est conservé avec votre nom et l’heure.</value></data>
+  <data name="Decline (group)" xml:space="preserve"><value>Décliner</value></data>
+  <data name="Join by voice" xml:space="preserve"><value>Rejoindre en audio</value></data>
+  <data name="Join" xml:space="preserve"><value>Rejoindre</value></data>
+  <data name="Not reached now (recorded as missed): {0}" xml:space="preserve"><value>Non joignables (appel manqué enregistré) : {0}</value></data>
+  <data name="The call is now a group call" xml:space="preserve"><value>L’appel est devenu un appel de groupe</value></data>
+  <data name="Group call" xml:space="preserve"><value>Appel de groupe</value></data>
+  <data name="Started by {0}" xml:space="preserve"><value>Lancé par {0}</value></data>
+  <data name="Ringing…" xml:space="preserve"><value>Sonne…</value></data>
+  <data name="Record — with every participant’s consent" xml:space="preserve"><value>Enregistrer — avec le consentement de chacun</value></data>
+  <data name="Add people" xml:space="preserve"><value>Ajouter des personnes</value></data>
+  <data name="Leave the call" xml:space="preserve"><value>Quitter l’appel</value></data>
+  <data name="Did not answer" xml:space="preserve"><value>N’a pas répondu</value></data>
+  <data name="Host" xml:space="preserve"><value>Hôte</value></data>
+  <data name="Remove from the call" xml:space="preserve"><value>Retirer de l’appel</value></data>
+  <data name="People" xml:space="preserve"><value>Participants</value></data>
+  <data name="up to {0}" xml:space="preserve"><value>jusqu’à {0}</value></data>
+  <data name="The host adds and removes; the call stays for whoever is in it" xml:space="preserve"><value>L’hôte ajoute et retire ; l’appel reste pour ceux qui y sont</value></data>
+  <data name="End the call for everyone" xml:space="preserve"><value>Terminer l’appel pour tous</value></data>
+  <data name="A group call is up to {0} people" xml:space="preserve"><value>Un appel de groupe compte au plus {0} personnes</value></data>
+  <data name="You left — the call goes on for the others" xml:space="preserve"><value>Vous êtes parti — l’appel continue pour les autres</value></data>
+  <data name="{0} was removed from the call" xml:space="preserve"><value>{0} a été retiré de l’appel</value></data>
+  <data name="{0} left the call" xml:space="preserve"><value>{0} a quitté l’appel</value></data>
+  <data name="You are now the host of the call" xml:space="preserve"><value>Vous êtes maintenant l’hôte</value></data>
+  <data name="The host removed you from the call" xml:space="preserve"><value>L’hôte vous a retiré de l’appel</value></data>
+  <data name="The group call ended — saved in the log" xml:space="preserve"><value>L’appel de groupe est terminé — enregistré au journal</value></data>
+  <data name="{0} joined, agreeing to the recording" xml:space="preserve"><value>{0} a rejoint en acceptant l’enregistrement</value></data>
+  <data name="You joined agreeing to the recording" xml:space="preserve"><value>Vous avez rejoint en acceptant l’enregistrement</value></data>
+  <data name="Waiting for {0} people to agree…" xml:space="preserve"><value>En attente de l’accord de {0} personnes…</value></data>
+  <data name="You asked to record — every participant must agree" xml:space="preserve"><value>Vous avez demandé l’enregistrement — chacun doit accepter</value></data>
+  <data name="Everyone’s voice and picture, from everyone’s consent until someone stops it" xml:space="preserve"><value>La voix et l’image de chacun, de l’accord de tous jusqu’à l’arrêt</value></data>
+  <data name="Everyone’s voice, from everyone’s consent until someone stops it" xml:space="preserve"><value>La voix de chacun, de l’accord de tous jusqu’à l’arrêt</value></data>
+  <data name="The people in the call and the hospital’s administrators; every opening is logged" xml:space="preserve"><value>Les participants et les administrateurs de l’hôpital ; chaque ouverture est consignée</value></data>
+  <data name="It starts only when everyone in the call agrees" xml:space="preserve"><value>Il ne démarre que si tous les participants acceptent</value></data>
+  <data name="Everyone agreed — recording, shown to every participant" xml:space="preserve"><value>Tous ont accepté — enregistrement visible de tous</value></data>
+  <data name="Available people first; you can add {0} more" xml:space="preserve"><value>Les disponibles en premier ; vous pouvez en ajouter {0}</value></data>
+  <data name="Search by name…" xml:space="preserve"><value>Rechercher par nom…</value></data>
+  <data name="Add to the call" xml:space="preserve"><value>Ajouter à l’appel</value></data>
+  <data name="Group calls are switched off (call settings)" xml:space="preserve"><value>Les appels de groupe sont désactivés (paramètres des appels)</value></data>
+  <data name="A group call is up to {0} people with you" xml:space="preserve"><value>Un appel de groupe compte au plus {0} personnes avec vous</value></data>
+  <data name="Choose at least two people for a group call" xml:space="preserve"><value>Choisissez au moins deux personnes pour un appel de groupe</value></data>
+  <data name="Group calls are not installed yet (hospital_h176_group_calls.sql)." xml:space="preserve"><value>Les appels de groupe ne sont pas encore installés (hospital_h176_group_calls.sql).</value></data>
+  <data name="Tick two or three available people" xml:space="preserve"><value>Cochez deux ou trois personnes disponibles</value></data>
+  <data name="Pick for a group call" xml:space="preserve"><value>Choisir pour un appel de groupe</value></data>
+  <data name="Started by you" xml:space="preserve"><value>Lancé par vous</value></data>
+  <data name="Invited" xml:space="preserve"><value>Invité</value></data>
+  <data name="Call the group again" xml:space="preserve"><value>Rappeler le groupe</value></data>
+  <data name="Most people in a group call" xml:space="preserve"><value>Nombre maximal dans un appel de groupe</value></data>
+  <data name="Four at most until the internal media server (LiveKit) is installed; then eight or twelve." xml:space="preserve"><value>Quatre au plus tant que le serveur média interne (LiveKit) n’est pas installé ; ensuite huit ou douze.</value></data>
+  <data name="Group calls" xml:space="preserve"><value>Appels de groupe</value></data>
+  <data name="Up to four people, each device connected to the others; more once the internal media server is installed" xml:space="preserve"><value>Jusqu’à quatre personnes, chaque appareil relié aux autres ; davantage une fois le serveur média interne installé</value></data>
+  <data name="In the call (state)" xml:space="preserve"><value>Dans l’appel</value></data>
+  <data name="Declined (state)" xml:space="preserve"><value>A décliné</value></data>
+  <data name="Left the call (state)" xml:space="preserve"><value>Parti</value></data>
+  <data name="Removed (state)" xml:space="preserve"><value>Retiré</value></data>
+  <data name="{0} people — {1} joined" xml:space="preserve"><value>{0} personnes — {1} ont rejoint</value></data>
 </root>

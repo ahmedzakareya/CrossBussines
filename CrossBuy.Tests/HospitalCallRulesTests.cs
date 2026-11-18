@@ -183,6 +183,49 @@ namespace CrossBuy.Tests
 			};
 		}
 
+		// ---- group calls ------------------------------------------------------------------------------------------
+
+		[Fact]
+		public void A_group_is_three_to_four_people_until_a_media_server_exists()
+		{
+			Assert.Equal(4, HospitalCallGroupRules.Cap(8));    // settings may say 8; a mesh carries four
+			Assert.Equal(3, HospitalCallGroupRules.Cap(2));
+			Assert.Equal(4, HospitalCallGroupRules.Cap(4));
+			Assert.Equal(1, HospitalCallGroupRules.Room(4, 2, 1));   // two in it and one ringing: room for one more
+			Assert.Equal(0, HospitalCallGroupRules.Room(4, 3, 2));
+		}
+
+		[Theory]
+		[InlineData(1, 0, true)]     // only one person left
+		[InlineData(1, 1, false)]    // someone is still being rung
+		[InlineData(2, 0, false)]
+		[InlineData(0, 0, true)]
+		public void A_group_call_ends_when_one_person_or_fewer_is_left_and_nobody_is_ringing(int joined, int ringing, bool ends)
+			=> Assert.Equal(ends, HospitalCallGroupRules.Ends(joined, ringing));
+
+		[Theory]
+		[InlineData(HospitalCallParticipantState.Invited, "join", HospitalCallParticipantState.Joined)]
+		[InlineData(HospitalCallParticipantState.Invited, "decline", HospitalCallParticipantState.Declined)]
+		[InlineData(HospitalCallParticipantState.Invited, "timeout", HospitalCallParticipantState.Missed)]
+		[InlineData(HospitalCallParticipantState.Joined, "leave", HospitalCallParticipantState.Left)]
+		[InlineData(HospitalCallParticipantState.Joined, "remove", HospitalCallParticipantState.Removed)]
+		[InlineData(HospitalCallParticipantState.Left, "invite", HospitalCallParticipantState.Invited)]      // invited again
+		[InlineData(HospitalCallParticipantState.Declined, "invite", HospitalCallParticipantState.Invited)]
+		[InlineData(HospitalCallParticipantState.Joined, "invite", null)]                                    // already in it
+		[InlineData(HospitalCallParticipantState.Removed, "join", null)]                                     // removed cannot rejoin by themselves
+		[InlineData(HospitalCallParticipantState.Declined, "join", null)]
+		public void A_participant_moves_only_along_their_states(string from, string action, string? to)
+			=> Assert.Equal(to, HospitalCallGroupRules.Next(from, action));
+
+		[Fact]
+		public void A_group_recording_starts_only_when_everyone_else_agreed()
+		{
+			var inCall = new[] { 1, 2, 3 };   // 1 asked
+			Assert.False(HospitalCallGroupRules.AllAgreed(inCall, 1, new[] { 2 }));
+			Assert.True(HospitalCallGroupRules.AllAgreed(inCall, 1, new[] { 2, 3 }));
+			Assert.True(HospitalCallGroupRules.AllAgreed(new[] { 1, 2 }, 1, new[] { 2 }));
+		}
+
 		[Fact]
 		public void Length_reads_as_minutes_and_seconds()
 		{

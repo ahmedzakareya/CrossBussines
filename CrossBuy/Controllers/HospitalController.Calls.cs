@@ -39,6 +39,13 @@ namespace CrossBuy.Controllers
 			if (installed) await RecSvc.SweepAsync(ctx, RecTempDir, now, ct);
 			var log = await CallSvc.LogAsync(ctx.CompanyId, me, q, page, 10, now, ct);
 			ViewBag.Recordings = await RecSvc.ForCallsAsync(ctx.CompanyId, log.Rows.Select(r => r.Call.ID), ct);
+			// group calls: who was in each, by face (H176 group calls)
+			var groupIds = log.Rows.Where(r => r.Call.IsGroup).Select(r => r.Call.ID).ToList();
+			var parts = groupIds.Count == 0 ? new Dictionary<int, List<HospitalCallParticipantRow>>() : await ActivatorUtilities.CreateInstance<HospitalCallGroupService>(HttpContext.RequestServices).ForCallsAsync(ctx.CompanyId, groupIds, ct);
+			ViewBag.GroupParts = parts;
+			ViewBag.GroupPeople = parts.Count == 0 ? new Dictionary<int, HospitalCallPerson>()
+				: (await CallSvc.PeopleAsync(ctx.CompanyId, now, parts.Values.SelectMany(v => v.Select(x => x.EmployeeId)).Distinct(), ct)).ToDictionary(x => x.EmployeeId);
+			ViewBag.GroupOn = installed && (await CallSvc.SettingsAsync(ctx.CompanyId, ct)).GroupEnabled;
 			var stats = await CallSvc.StatsAsync(ctx.CompanyId, me, now, ct);
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.BusyNow = HospitalCallHub.BusyCount(ctx.CompanyId);
@@ -87,6 +94,26 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			var card = await CallSvc.PatientCardAsync(ctx.CompanyId, id, ct);
 			return card == null ? NotFound(new { ok = false, code = "not_found" }) : Json(new { ok = true, patient = card });
+		}
+
+		/// The people a call can be made to, with their live state — the "add people" window of a call reads it.
+		[HospitalReceptionAllowed]
+		[HttpGet("Calls/People")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> CallPeople(CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || ctx.EmployeeId is not int me) return NotFound(new { ok = false, code = "not_found" });
+			var people = await CallSvc.PeopleAsync(ctx.CompanyId, DateTime.UtcNow, null, ct);
+			return Json(new
+			{
+				ok = true,
+				people = people.Where(p => p.EmployeeId != me).Select(p => new
+				{
+					id = p.EmployeeId, name = DisplayName.Of(p.Name, p.NameEn), photo = p.Photo, initials = HospitalUi.Initials(p.NameEn),
+					title = p.Title == null && p.TitleEn == null ? null : DisplayName.Of(p.Title ?? p.TitleEn!, p.TitleEn ?? p.Title!), state = HospitalCallHub.Presence(p.EmployeeId),
+				}),
+			});
 		}
 
 		/// The next piece of a recording, from the requester's browser (raw WebM bytes, in order).

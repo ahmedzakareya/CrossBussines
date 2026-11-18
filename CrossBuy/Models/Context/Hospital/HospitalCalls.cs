@@ -34,6 +34,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int CallerEmployeeId { get; set; }
 		public int CalleeEmployeeId { get; set; }
 		public bool IsVideo { get; set; }
+		/// A group call: the caller is its host and HospitalCallParticipants holds everyone in it.
+		public bool IsGroup { get; set; }
 		/// The patient the call is about, when it was started from a record or linked during it.
 		public int? PatientId { get; set; }
 		public string? Reason { get; set; }
@@ -75,6 +77,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public string RecordingMode { get; set; } = HospitalCallRecordingMode.Both;
 		/// Days a recording is kept before it is deleted automatically; 0 = never deleted automatically.
 		public int RecordingDays { get; set; } = 90;
+		/// Group calls (each device connected to each other one): on, and how many people at most, the host included.
+		public bool GroupEnabled { get; set; } = true;
+		public int GroupMax { get; set; } = 4;
 		/// The staff groups that may ASK to record, comma separated. Null = doctors and administration.
 		public string? RecordingGroups { get; set; }
 		public DateTime? UpdatedAt { get; set; }
@@ -141,6 +146,46 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime At { get; set; }
 	}
 
+	public static class HospitalCallParticipantState
+	{
+		public const string Host = "Host";
+		public const string Invited = "Invited";
+		public const string Joined = "Joined";
+		public const string Declined = "Declined";
+		/// Not answered in the ring time.
+		public const string Missed = "Missed";
+		/// Offline or in another call when invited.
+		public const string Busy = "Busy";
+		public const string Left = "Left";
+		public const string Removed = "Removed";
+	}
+
+	/// H176 — everyone in a group call: who was invited, who joined and when, who left or was removed.
+	public class HospitalCallParticipant
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CallId { get; set; }
+		public int EmployeeId { get; set; }
+		public string State { get; set; } = HospitalCallParticipantState.Invited;
+		public DateTime InvitedAt { get; set; }
+		public DateTime? JoinedAt { get; set; }
+		public DateTime? LeftAt { get; set; }
+		public int? RemovedByEmployeeId { get; set; }
+	}
+
+	/// H176 — each participant's consent to a group recording: pressed "I agree", or joined a call already being recorded.
+	public class HospitalCallRecordingConsent
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int RecordingId { get; set; }
+		public int EmployeeId { get; set; }
+		public DateTime At { get; set; }
+		/// "agreed" or "joined".
+		public string Via { get; set; } = "agreed";
+	}
+
 	public static class HospitalCallModel
 	{
 		public static void Configure(ModelBuilder b)
@@ -176,6 +221,19 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.TempName).HasMaxLength(40);
 				e.HasIndex(x => new { x.CompanyId, x.CallId });
 				e.HasIndex(x => new { x.CompanyId, x.Status, x.DeleteAfter });
+			});
+			b.Entity<HospitalCallParticipant>(e =>
+			{
+				e.ToTable("HospitalCallParticipants");
+				e.Property(x => x.State).HasMaxLength(10);
+				e.HasIndex(x => new { x.CallId, x.EmployeeId }).IsUnique();
+				e.HasIndex(x => new { x.CompanyId, x.EmployeeId });
+			});
+			b.Entity<HospitalCallRecordingConsent>(e =>
+			{
+				e.ToTable("HospitalCallRecordingConsents");
+				e.Property(x => x.Via).HasMaxLength(8);
+				e.HasIndex(x => new { x.RecordingId, x.EmployeeId }).IsUnique();
 			});
 			b.Entity<HospitalCallRecordingView>(e =>
 			{

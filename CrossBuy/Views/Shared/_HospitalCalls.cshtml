@@ -63,6 +63,17 @@
     .cbc-band-rec{background:linear-gradient(160deg,#B91C1C,#7F1D1D);padding:26px 24px 22px}
     .cbc-step{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:#E7F0FF;color:var(--cb-brand,#3A5795)}
     .cbc-step i{color:inherit}.cbc-step.red{background:#FEE2E2;color:#DC2626}
+    /* group calls: the grid of tiles; the one speaking is framed in the brand's light tone */
+    .cbc-grid{flex:1;display:grid;gap:10px;padding:78px 18px 100px;grid-template-columns:repeat(var(--cols,2),1fr);grid-auto-rows:1fr;min-height:0}
+    .cbc-tile{position:relative;border-radius:.9rem;overflow:hidden;background:#1F2D4D;display:flex;align-items:center;justify-content:center;min-height:0;transition:box-shadow .2s}
+    .cbc-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0F172A}
+    .cbc-tile video.cbc-contain{object-fit:contain}.cbc-tile video.cbc-mirror{transform:scaleX(-1)}
+    .cbc-tile.speaking{box-shadow:0 0 0 3px #7FA2E8}.cbc-tile.ringing{opacity:.75}
+    .cbc-tname{position:absolute;bottom:8px;inset-inline-start:10px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.5);color:#fff;padding:2px 10px;border-radius:20px;font-size:.8rem;z-index:1}
+    .cbc-tstate{position:absolute;top:8px;inset-inline-end:10px;font-size:.72rem;padding:2px 9px;border-radius:20px;background:rgba(0,0,0,.45);color:#fff;z-index:1}
+    .cbc-tmute{color:#FCA5A5;display:inline-flex}
+    .cbc-stack{display:inline-flex}.cbc-stack .cbc-face{border:2px solid #fff}.cbc-stack .cbc-face + .cbc-face{margin-inline-start:-10px}
+    .cbc-recnote{display:flex;align-items:center;gap:.75rem;border-radius:.75rem;padding:1rem;margin-bottom:1.5rem;background:#FEF2F2}
     @@media (max-width:991px){.cbc-side{display:none}.cbc-self{width:130px;bottom:96px}}
 </style>
 <script>
@@ -74,6 +85,7 @@
         patient: @Json.Serialize(Url.Content("~/Hospital/Patient/__id__")),
         patientCard: @Json.Serialize(Url.Content("~/Hospital/Calls/Patient/__id__")),
         patientSearch: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")),
+        people: @Json.Serialize(Url.Content("~/Hospital/Calls/People")),
         recChunk: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Chunk")),
         recFinish: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Finish"))
     };
@@ -111,7 +123,7 @@
         unmute: @Json.Serialize(S("Unmute")),
         camera: @Json.Serialize(S("Camera")),
         share: @Json.Serialize(S("Share screen — an image or a result")),
-        addPhase2: @Json.Serialize(S("Add someone — group calls come in phase two")),
+
         end: @Json.Serialize(S("End call")),
         theirCamOff: @Json.Serialize(S("Their camera is off")),
         theyMuted: @Json.Serialize(S("their microphone is muted")),
@@ -128,6 +140,60 @@
         noMedia: @Json.Serialize(S("The camera or microphone could not be opened ({0})")),
         noMic: @Json.Serialize(S("No microphone was found on this device")),
         lost: @Json.Serialize(S("The connection was lost")),
+        grpInvite: @Json.Serialize(S("Invitation to a group call")),
+        grpInvites: @Json.Serialize(S("{0} invites you")),
+        grpWithJoined: @Json.Serialize(S("{0} people — {1} joined")),
+        grpRecNotice: @Json.Serialize(S("This call is being recorded with its participants’ consent. Joining means you agree to the recording; it is kept with your name and time.")),
+        grpDecline: @Json.Serialize(S("Decline (group)")),
+        grpJoinVoice: @Json.Serialize(S("Join by voice")),
+        grpJoin: @Json.Serialize(S("Join")),
+        grpBusy: @Json.Serialize(S("Not reached now (recorded as missed): {0}")),
+        grpBecame: @Json.Serialize(S("The call is now a group call")),
+        grpCall: @Json.Serialize(S("Group call")),
+        grpHostIs: @Json.Serialize(S("Started by {0}")),
+        grpRinging: @Json.Serialize(S("Ringing…")),
+        grpRecAsk: @Json.Serialize(S("Record — with every participant’s consent")),
+        addPeople: @Json.Serialize(S("Add people")),
+        grpLeave: @Json.Serialize(S("Leave the call")),
+        grpStJoined: @Json.Serialize(S("In the call (state)")),
+        grpStDeclined: @Json.Serialize(S("Declined (state)")),
+        grpStMissed: @Json.Serialize(S("Did not answer")),
+        grpStBusy: @Json.Serialize(S("Not reached")),
+        grpStLeft: @Json.Serialize(S("Left the call (state)")),
+        grpStRemoved: @Json.Serialize(S("Removed (state)")),
+        grpHost: @Json.Serialize(S("Host")),
+        grpRemove: @Json.Serialize(S("Remove from the call")),
+        grpPeople: @Json.Serialize(S("People")),
+        grpUpTo: @Json.Serialize(S("up to {0}")),
+        grpPeopleSub: @Json.Serialize(S("The host adds and removes; the call stays for whoever is in it")),
+        grpEndAll: @Json.Serialize(S("End the call for everyone")),
+        grpFull: @Json.Serialize(S("A group call is up to {0} people")),
+        grpYouLeft: @Json.Serialize(S("You left — the call goes on for the others")),
+        grpWasRemoved: @Json.Serialize(S("{0} was removed from the call")),
+        grpHasLeft: @Json.Serialize(S("{0} left the call")),
+        grpYouHost: @Json.Serialize(S("You are now the host of the call")),
+        grpYouRemoved: @Json.Serialize(S("The host removed you from the call")),
+        grpEnded: @Json.Serialize(S("The group call ended — saved in the log")),
+        grpJoinedAgreeing: @Json.Serialize(S("{0} joined, agreeing to the recording")),
+        grpJoinedConsent: @Json.Serialize(S("You joined agreeing to the recording")),
+        grpRecWaiting: @Json.Serialize(S("Waiting for {0} people to agree…")),
+        grpRecAsked: @Json.Serialize(S("You asked to record — every participant must agree")),
+        grpRecWhatVideo: @Json.Serialize(S("Everyone’s voice and picture, from everyone’s consent until someone stops it")),
+        grpRecWhatVoice: @Json.Serialize(S("Everyone’s voice, from everyone’s consent until someone stops it")),
+        grpRecWho: @Json.Serialize(S("The people in the call and the hospital’s administrators; every opening is logged")),
+        grpRecOnlyIfAll: @Json.Serialize(S("It starts only when everyone in the call agrees")),
+        grpRecStarted: @Json.Serialize(S("Everyone agreed — recording, shown to every participant")),
+        grpPickSub: @Json.Serialize(S("Available people first; you can add {0} more")),
+        grpSearch: @Json.Serialize(S("Search by name…")),
+        grpAddTo: @Json.Serialize(S("Add to the call")),
+        stOn: @Json.Serialize(S("Available")),
+        stBusy: @Json.Serialize(S("In a call")),
+        stOff: @Json.Serialize(S("Offline")),
+        cancel: @Json.Serialize(S("Cancel")),
+        "Group calls are switched off (call settings)": @Json.Serialize(S("Group calls are switched off (call settings)")),
+        "A group call is up to {0} people with you": @Json.Serialize(S("A group call is up to {0} people with you")),
+        "Choose at least two people for a group call": @Json.Serialize(S("Choose at least two people for a group call")),
+        "Group calls are not installed yet (hospital_h176_group_calls.sql).": @Json.Serialize(S("Group calls are not installed yet (hospital_h176_group_calls.sql).")),
         recAsk: @Json.Serialize(S("Record the call — with the other side's consent")),
         recStop: @Json.Serialize(S("Stop recording")),
         recTitle: @Json.Serialize(S("Recording the call")),
@@ -175,4 +241,5 @@
     };
 </script>
 <script src="~/js/hospital/hospital-calls.js" asp-append-version="true"></script>
+<script src="~/js/hospital/hospital-calls-group.js" asp-append-version="true"></script>
 }
