@@ -8889,4 +8889,31 @@
   <data name="kitwhen:Chemo" xml:space="preserve"><value>Leaves the store when the cycle is given</value></data>
   <data name="kitwhen:Dialysis" xml:space="preserve"><value>Leaves the store when the session is finished</value></data>
   <data name="kitwhen:Physio" xml:space="preserve"><value>Leaves the store when the session is attended</value></data>
+  <data name="Claims file (FHIR)" xml:space="preserve"><value>Claims file (FHIR)</value></data>
+  <data name="Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Each file is kept as it went or came; an answer is recorded line by line as if typed" xml:space="preserve"><value>Each file is kept as it went or came; an answer is recorded line by line as if typed</value></data>
+  <data name="Electronic files" xml:space="preserve"><value>Electronic files</value></data>
+  <data name="Handled by" xml:space="preserve"><value>Handled by</value></data>
+  <data name="Left as they were" xml:space="preserve"><value>Left as they were</value></data>
+  <data name="Lines recorded" xml:space="preserve"><value>Lines recorded</value></data>
+  <data name="Load the payer's answer" xml:space="preserve"><value>Load the payer's answer</value></data>
+  <data name="Payer's answer" xml:space="preserve"><value>Payer's answer</value></data>
+  <data name="Record the answer" xml:space="preserve"><value>Record the answer</value></data>
+  <data name="Sent to the payer" xml:space="preserve"><value>Sent to the payer</value></data>
+  <data name="Submit the batch before sending its file" xml:space="preserve"><value>Submit the batch before sending its file</value></data>
+  <data name="The file holds no claim responses (ClaimResponse)" xml:space="preserve"><value>The file holds no claim responses (ClaimResponse)</value></data>
+  <data name="The file is empty" xml:space="preserve"><value>The file is empty</value></data>
+  <data name="The file is too large" xml:space="preserve"><value>The file is too large</value></data>
+  <data name="The payer's FHIR ClaimResponse file. Each item is recorded on its claim line through the same checks and postings as an answer typed by hand; anything unclear is left as it was and named." xml:space="preserve"><value>The payer's FHIR ClaimResponse file. Each item is recorded on its claim line through the same checks and postings as an answer typed by hand; anything unclear is left as it was and named.</value></data>
+  <data name="This is not a FHIR JSON file" xml:space="preserve"><value>This is not a FHIR JSON file</value></data>
+  <data name="already answered" xml:space="preserve"><value>already answered</value></data>
+  <data name="no amount and no reason" xml:space="preserve"><value>no amount and no reason</value></data>
+  <data name="no such item" xml:space="preserve"><value>no such item</value></data>
+  <data name="not a claim of this batch" xml:space="preserve"><value>not a claim of this batch</value></data>
+  <data name="pays more than was claimed" xml:space="preserve"><value>pays more than was claimed</value></data>
+  <data name="rejected without a reason" xml:space="preserve"><value>rejected without a reason</value></data>
+  <data name="the payer could not process it" xml:space="preserve"><value>the payer could not process it</value></data>
+  <data name="{0} lines" xml:space="preserve"><value>{0} lines</value></data>
+  <data name="{0} lines recorded, {1} left as they were" xml:space="preserve"><value>{0} lines recorded, {1} left as they were</value></data>
 </root>

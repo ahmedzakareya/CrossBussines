@@ -58,6 +58,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
 			ViewBag.Ledger = await ClaimAccountingSvc.BatchLedgerAsync(ctx, id, ct);
 			ViewBag.Scrub = await ActivatorUtilities.CreateInstance<HospitalClaimScrubService>(HttpContext.RequestServices).ScrubAsync(ctx, id, DateTime.UtcNow, ct);   // H62
+			ViewBag.Exchanges = ViewBag.CanBill == true ? await EClaimSvc.ExchangesAsync(ctx, id, ct) : null;   // H200
 			return View(batch);
 		}
 

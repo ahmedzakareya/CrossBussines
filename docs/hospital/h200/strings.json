@@ -1,0 +1,140 @@
+{
+ "unit": "H200 - electronic claims (FHIR R4)",
+ "strings": {
+  "Claims file (FHIR)": {
+   "ar": "ملف المطالبات (FHIR)",
+   "en": "Claims file (FHIR)",
+   "fr": "Fichier des demandes (FHIR)"
+  },
+  "Load the payer's answer": {
+   "ar": "تحميل رد الجهة الضامنة",
+   "en": "Load the payer's answer",
+   "fr": "Charger la réponse du payeur"
+  },
+  "Electronic files": {
+   "ar": "الملفات الإلكترونية",
+   "en": "Electronic files",
+   "fr": "Fichiers électroniques"
+  },
+  "Each file is kept as it went or came; an answer is recorded line by line as if typed": {
+   "ar": "يُحفظ كل ملف كما أُرسل أو ورد، ويُسجَّل الرد بندًا بندًا كأنه أُدخل يدويًا",
+   "en": "Each file is kept as it went or came; an answer is recorded line by line as if typed",
+   "fr": "Chaque fichier est conservé tel qu'envoyé ou reçu ; une réponse est enregistrée ligne par ligne comme saisie à la main"
+  },
+  "Handled by": {
+   "ar": "بواسطة",
+   "en": "Handled by",
+   "fr": "Traité par"
+  },
+  "Lines recorded": {
+   "ar": "بنود سُجّلت",
+   "en": "Lines recorded",
+   "fr": "Lignes enregistrées"
+  },
+  "Left as they were": {
+   "ar": "بنود لم تتغير",
+   "en": "Left as they were",
+   "fr": "Laissées telles quelles"
+  },
+  "Detail": {
+   "ar": "التفاصيل",
+   "en": "Detail",
+   "fr": "Détail"
+  },
+  "Sent to the payer": {
+   "ar": "مُرسل إلى الجهة الضامنة",
+   "en": "Sent to the payer",
+   "fr": "Envoyé au payeur"
+  },
+  "Payer's answer": {
+   "ar": "رد الجهة الضامنة",
+   "en": "Payer's answer",
+   "fr": "Réponse du payeur"
+  },
+  "{0} lines": {
+   "ar": "{0} بند",
+   "en": "{0} lines",
+   "fr": "{0} lignes"
+  },
+  "Download": {
+   "ar": "تنزيل",
+   "en": "Download",
+   "fr": "Télécharger"
+  },
+  "The payer's FHIR ClaimResponse file. Each item is recorded on its claim line through the same checks and postings as an answer typed by hand; anything unclear is left as it was and named.": {
+   "ar": "ملف رد الجهة الضامنة بصيغة FHIR ‏(ClaimResponse). يُسجَّل كل بند على بند المطالبة الخاص به بنفس الضوابط والقيود المحاسبية التي يمر بها الرد المُدخل يدويًا، وما لم يكن واضحًا يُترك كما هو ويُذكر.",
+   "en": "The payer's FHIR ClaimResponse file. Each item is recorded on its claim line through the same checks and postings as an answer typed by hand; anything unclear is left as it was and named.",
+   "fr": "Le fichier FHIR ClaimResponse du payeur. Chaque élément est enregistré sur sa ligne de demande avec les mêmes contrôles et écritures qu'une réponse saisie à la main ; ce qui n'est pas clair est laissé tel quel et signalé."
+  },
+  "Record the answer": {
+   "ar": "تسجيل الرد",
+   "en": "Record the answer",
+   "fr": "Enregistrer la réponse"
+  },
+  "{0} lines recorded, {1} left as they were": {
+   "ar": "سُجّل {0} بند، وبقي {1} بند دون تغيير",
+   "en": "{0} lines recorded, {1} left as they were",
+   "fr": "{0} lignes enregistrées, {1} laissées telles quelles"
+  },
+  "Submit the batch before sending its file": {
+   "ar": "أرسل الدفعة أولًا قبل إخراج ملفها",
+   "en": "Submit the batch before sending its file",
+   "fr": "Soumettez le lot avant d'envoyer son fichier"
+  },
+  "The file is empty": {
+   "ar": "الملف فارغ",
+   "en": "The file is empty",
+   "fr": "Le fichier est vide"
+  },
+  "This is not a FHIR JSON file": {
+   "ar": "هذا ليس ملف FHIR بصيغة JSON",
+   "en": "This is not a FHIR JSON file",
+   "fr": "Ce n'est pas un fichier FHIR JSON"
+  },
+  "The file holds no claim responses (ClaimResponse)": {
+   "ar": "لا يحتوي الملف على ردود مطالبات (ClaimResponse)",
+   "en": "The file holds no claim responses (ClaimResponse)",
+   "fr": "Le fichier ne contient aucune réponse de demande (ClaimResponse)"
+  },
+  "The file is too large": {
+   "ar": "الملف كبير جدًا",
+   "en": "The file is too large",
+   "fr": "Le fichier est trop volumineux"
+  },
+  "not a claim of this batch": {
+   "ar": "ليست مطالبة من هذه الدفعة",
+   "en": "not a claim of this batch",
+   "fr": "pas une demande de ce lot"
+  },
+  "no such item": {
+   "ar": "لا يوجد بند بهذا الرقم",
+   "en": "no such item",
+   "fr": "élément inexistant"
+  },
+  "no amount and no reason": {
+   "ar": "لا مبلغ ولا سبب",
+   "en": "no amount and no reason",
+   "fr": "ni montant ni motif"
+  },
+  "pays more than was claimed": {
+   "ar": "يدفع أكثر مما طُولب به",
+   "en": "pays more than was claimed",
+   "fr": "paie plus que le montant demandé"
+  },
+  "rejected without a reason": {
+   "ar": "مرفوض دون ذكر سبب",
+   "en": "rejected without a reason",
+   "fr": "rejeté sans motif"
+  },
+  "already answered": {
+   "ar": "سبق تسجيل الرد عليه",
+   "en": "already answered",
+   "fr": "déjà répondu"
+  },
+  "the payer could not process it": {
+   "ar": "تعذّر على الجهة الضامنة معالجتها",
+   "en": "the payer could not process it",
+   "fr": "le payeur n'a pas pu la traiter"
+  }
+ }
+}

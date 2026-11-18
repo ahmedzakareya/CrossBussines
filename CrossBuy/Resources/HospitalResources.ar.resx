@@ -8889,4 +8889,31 @@
   <data name="kitwhen:Chemo" xml:space="preserve"><value>تخرج من المخزن عند إعطاء الدورة</value></data>
   <data name="kitwhen:Dialysis" xml:space="preserve"><value>تخرج من المخزن عند إنهاء الجلسة</value></data>
   <data name="kitwhen:Physio" xml:space="preserve"><value>تخرج من المخزن عند حضور الجلسة</value></data>
+  <data name="Claims file (FHIR)" xml:space="preserve"><value>ملف المطالبات (FHIR)</value></data>
+  <data name="Detail" xml:space="preserve"><value>التفاصيل</value></data>
+  <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
+  <data name="Each file is kept as it went or came; an answer is recorded line by line as if typed" xml:space="preserve"><value>يُحفظ كل ملف كما أُرسل أو ورد، ويُسجَّل الرد بندًا بندًا كأنه أُدخل يدويًا</value></data>
+  <data name="Electronic files" xml:space="preserve"><value>الملفات الإلكترونية</value></data>
+  <data name="Handled by" xml:space="preserve"><value>بواسطة</value></data>
+  <data name="Left as they were" xml:space="preserve"><value>بنود لم تتغير</value></data>
+  <data name="Lines recorded" xml:space="preserve"><value>بنود سُجّلت</value></data>
+  <data name="Load the payer's answer" xml:space="preserve"><value>تحميل رد الجهة الضامنة</value></data>
+  <data name="Payer's answer" xml:space="preserve"><value>رد الجهة الضامنة</value></data>
+  <data name="Record the answer" xml:space="preserve"><value>تسجيل الرد</value></data>
+  <data name="Sent to the payer" xml:space="preserve"><value>مُرسل إلى الجهة الضامنة</value></data>
+  <data name="Submit the batch before sending its file" xml:space="preserve"><value>أرسل الدفعة أولًا قبل إخراج ملفها</value></data>
+  <data name="The file holds no claim responses (ClaimResponse)" xml:space="preserve"><value>لا يحتوي الملف على ردود مطالبات (ClaimResponse)</value></data>
+  <data name="The file is empty" xml:space="preserve"><value>الملف فارغ</value></data>
+  <data name="The file is too large" xml:space="preserve"><value>الملف كبير جدًا</value></data>
+  <data name="The payer's FHIR ClaimResponse file. Each item is recorded on its claim line through the same checks and postings as an answer typed by hand; anything unclear is left as it was and named." xml:space="preserve"><value>ملف رد الجهة الضامنة بصيغة FHIR ‏(ClaimResponse). يُسجَّل كل بند على بند المطالبة الخاص به بنفس الضوابط والقيود المحاسبية التي يمر بها الرد المُدخل يدويًا، وما لم يكن واضحًا يُترك كما هو ويُذكر.</value></data>
+  <data name="This is not a FHIR JSON file" xml:space="preserve"><value>هذا ليس ملف FHIR بصيغة JSON</value></data>
+  <data name="already answered" xml:space="preserve"><value>سبق تسجيل الرد عليه</value></data>
+  <data name="no amount and no reason" xml:space="preserve"><value>لا مبلغ ولا سبب</value></data>
+  <data name="no such item" xml:space="preserve"><value>لا يوجد بند بهذا الرقم</value></data>
+  <data name="not a claim of this batch" xml:space="preserve"><value>ليست مطالبة من هذه الدفعة</value></data>
+  <data name="pays more than was claimed" xml:space="preserve"><value>يدفع أكثر مما طُولب به</value></data>
+  <data name="rejected without a reason" xml:space="preserve"><value>مرفوض دون ذكر سبب</value></data>
+  <data name="the payer could not process it" xml:space="preserve"><value>تعذّر على الجهة الضامنة معالجتها</value></data>
+  <data name="{0} lines" xml:space="preserve"><value>{0} بند</value></data>
+  <data name="{0} lines recorded, {1} left as they were" xml:space="preserve"><value>سُجّل {0} بند، وبقي {1} بند دون تغيير</value></data>
 </root>
