@@ -8353,4 +8353,108 @@
   <data name="callgroup:pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
   <data name="callgroup:reception" xml:space="preserve"><value>Accueil</value></data>
   <data name="callgroup:admin" xml:space="preserve"><value>Administration</value></data>
+  <data name="A critical result needs more than &quot;no action&quot;: say what was done" xml:space="preserve"><value>Un résultat critique demande plus que « aucune action » : précisez</value></data>
+  <data name="Awaiting a result" xml:space="preserve"><value>En attente de résultat</value></data>
+  <data name="Choose a doctor of this hospital" xml:space="preserve"><value>Choisissez un médecin de l'établissement</value></data>
+  <data name="Choose what was done about the result" xml:space="preserve"><value>Choisissez la suite donnée</value></data>
+  <data name="Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on." xml:space="preserve"><value>Chaque résultat reste au médecin prescripteur jusqu'à ce qu'il consigne la suite donnée : critique sous 24 h, anormal sous 72 h, normal sous 7 jours. Transmettez-le s'il ne vous revient pas.</value></data>
+  <data name="Expected by" xml:space="preserve"><value>Attendu avant</value></data>
+  <data name="Hand over" xml:space="preserve"><value>Transmettre</value></data>
+  <data name="Hand over the result" xml:space="preserve"><value>Transmettre le résultat</value></data>
+  <data name="Hand this result over? It leaves your inbox." xml:space="preserve"><value>Transmettre ce résultat ? Il quitte votre boîte.</value></data>
+  <data name="Handed over" xml:space="preserve"><value>Transmis</value></data>
+  <data name="It is already theirs" xml:space="preserve"><value>Il en est déjà responsable</value></data>
+  <data name="Mark reviewed" xml:space="preserve"><value>Revu</value></data>
+  <data name="My orders awaiting a result" xml:space="preserve"><value>Mes demandes en attente de résultat</value></data>
+  <data name="My results to review" xml:space="preserve"><value>Mes résultats à revoir</value></data>
+  <data name="No order of yours is late." xml:space="preserve"><value>Aucune de vos demandes n'est en retard.</value></data>
+  <data name="No owner" xml:space="preserve"><value>Sans responsable</value></data>
+  <data name="Nothing waits for review." xml:space="preserve"><value>Rien n'attend de revue.</value></data>
+  <data name="Only the result's owner or the clinical lead hands it over" xml:space="preserve"><value>Seul le responsable du résultat ou le chef clinique le transmet</value></data>
+  <data name="Only the result's owner or the clinical lead reviews it" xml:space="preserve"><value>Seul le responsable du résultat ou le chef clinique le revoit</value></data>
+  <data name="Overdue — every owner" xml:space="preserve"><value>En retard — tous les responsables</value></data>
+  <data name="Owner" xml:space="preserve"><value>Responsable</value></data>
+  <data name="Record the review" xml:space="preserve"><value>Enregistrer la revue</value></data>
+  <data name="Record this review? It closes the result in your inbox." xml:space="preserve"><value>Enregistrer cette revue ? Le résultat quitte votre boîte.</value></data>
+  <data name="Required unless no action was needed." xml:space="preserve"><value>Obligatoire sauf si aucune action n'était nécessaire.</value></data>
+  <data name="Result follow-up" xml:space="preserve"><value>Suivi des résultats</value></data>
+  <data name="Result reviewed" xml:space="preserve"><value>Résultat revu</value></data>
+  <data name="Say why it is handed over" xml:space="preserve"><value>Indiquez pourquoi il est transmis</value></data>
+  <data name="Search patient, MRN or test" xml:space="preserve"><value>Rechercher patient, dossier ou examen</value></data>
+  <data name="The follow-up table is not created yet (hospital_h178_result_reviews.sql)." xml:space="preserve"><value>La table de suivi n'est pas encore créée (hospital_h178_result_reviews.sql).</value></data>
+  <data name="This result is already reviewed" xml:space="preserve"><value>Ce résultat est déjà revu</value></data>
+  <data name="To review" xml:space="preserve"><value>À revoir</value></data>
+  <data name="Where it is" xml:space="preserve"><value>Où il en est</value></data>
+  <data name="Write a note on what was done" xml:space="preserve"><value>Rédigez une note sur la suite donnée</value></data>
+  <data name="act:ChangedTreatment" xml:space="preserve"><value>Traitement modifié</value></data>
+  <data name="act:FollowUpBooked" xml:space="preserve"><value>Suivi programmé</value></data>
+  <data name="act:InformedPatient" xml:space="preserve"><value>Patient informé</value></data>
+  <data name="act:NoAction" xml:space="preserve"><value>Aucune action</value></data>
+  <data name="act:Referred" xml:space="preserve"><value>Patient orienté</value></data>
+  <data name="act:Repeated" xml:space="preserve"><value>Examen refait</value></data>
+  <data name="pri:Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="pri:Stat" xml:space="preserve"><value>Immédiat</value></data>
+  <data name="pri:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="res:Order" xml:space="preserve"><value>Demande</value></data>
+  <data name="rk:Lab" xml:space="preserve"><value>Labo</value></data>
+  <data name="rk:Rad" xml:space="preserve"><value>Imagerie</value></data>
+  <data name="rst:Arrived" xml:space="preserve"><value>Patient arrivé</value></data>
+  <data name="rst:Collected" xml:space="preserve"><value>Prélevé</value></data>
+  <data name="rst:Ordered" xml:space="preserve"><value>Demandé</value></data>
+  <data name="rst:Received" xml:space="preserve"><value>Au labo</value></data>
+  <data name="rst:Reporting" xml:space="preserve"><value>Compte rendu en cours</value></data>
+  <data name="rst:Resulted" xml:space="preserve"><value>En attente de validation</value></data>
+  <data name="rst:Scanning" xml:space="preserve"><value>En cours</value></data>
+  <data name="rst:Scheduled" xml:space="preserve"><value>Planifié</value></data>
+  <data name="sev:Abnormal" xml:space="preserve"><value>Anormal</value></data>
+  <data name="sev:Critical" xml:space="preserve"><value>Critique</value></data>
+  <data name="sev:Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="A treatment consent uses a procedure consent form" xml:space="preserve"><value>Un consentement aux soins utilise un formulaire de procédure</value></data>
+  <data name="Anaesthetic" xml:space="preserve"><value>Anesthésique</value></data>
+  <data name="Choose the work done in this session" xml:space="preserve"><value>Choisissez les soins de cette séance</value></data>
+  <data name="Consent needed" xml:space="preserve"><value>Consentement éclairé requis</value></data>
+  <data name="Consent signed" xml:space="preserve"><value>Consentement signé</value></data>
+  <data name="Dose amount" xml:space="preserve"><value>Quantité</value></data>
+  <data name="Instructions given" xml:space="preserve"><value>Consignes données</value></data>
+  <data name="Materials and lots" xml:space="preserve"><value>Matériaux et lots</value></data>
+  <data name="No session recorded yet." xml:space="preserve"><value>Aucune séance consignée.</value></data>
+  <data name="Only this patient's completed work not yet in a session is recorded" xml:space="preserve"><value>Seuls les soins faits de ce patient non encore consignés sont enregistrés</value></data>
+  <data name="Sign the session record" xml:space="preserve"><value>Signer le compte rendu de séance</value></data>
+  <data name="Sign this session record? It cannot be edited afterwards; an addendum corrects it." xml:space="preserve"><value>Signer ce compte rendu ? Il ne pourra plus être modifié ; un addendum le corrige.</value></data>
+  <data name="Take the patient's signed consent for this phase's treatment first" xml:space="preserve"><value>Recueillez d'abord le consentement signé pour les soins de cette phase</value></data>
+  <data name="Treatment session record" xml:space="preserve"><value>Compte rendu de séance</value></data>
+  <data name="Treatment sessions" xml:space="preserve"><value>Séances de soins</value></data>
+  <data name="What was done at each sitting, signed by the dentist; corrected only by an addendum." xml:space="preserve"><value>Ce qui a été fait à chaque séance, signé par le dentiste ; corrigé seulement par un addendum.</value></data>
+  <data name="Work done" xml:space="preserve"><value>Soins faits</value></data>
+  <data name="Work done and not yet in a signed session:" xml:space="preserve"><value>Soins faits non encore consignés dans une séance signée :</value></data>
+  <data name="Work done in this session" xml:space="preserve"><value>Soins de cette séance</value></data>
+  <data name="Write the anaesthetic given, or &quot;none&quot;" xml:space="preserve"><value>Indiquez l'anesthésique, ou « aucun »</value></data>
+  <data name="Write the instructions given to the patient" xml:space="preserve"><value>Indiquez les consignes données au patient</value></data>
+  <data name="e.g. lidocaine 2% with adrenaline, or none" xml:space="preserve"><value>ex. lidocaïne 2 % adrénalinée, ou aucun</value></data>
+  <data name="sec:Session" xml:space="preserve"><value>Compte rendu</value></data>
+  <data name="signed by you when saved" xml:space="preserve"><value>signé par vous à l'enregistrement</value></data>
+  <data name="All teeth" xml:space="preserve"><value>Toutes les dents</value></data>
+  <data name="An image shows up to 16 teeth" xml:space="preserve"><value>Une image montre au plus 16 dents</value></data>
+  <data name="Chart as of…" xml:space="preserve"><value>Schéma au…</value></data>
+  <data name="Read-only: the marks recorded by the end of that day, each in the state it had then." xml:space="preserve"><value>Lecture seule : les marques enregistrées jusqu'à la fin de ce jour, chacune dans son état d'alors.</value></data>
+  <data name="The chart as it stood on {0}" xml:space="preserve"><value>Le schéma tel qu'il était le {0}</value></data>
+  <data name="The teeth it shows" xml:space="preserve"><value>Dents visibles</value></data>
+  <data name="The teeth this image shows (FDI numbers, e.g. 16, 17)" xml:space="preserve"><value>Les dents visibles sur cette image (numéros FDI, ex. 16, 17)</value></data>
+  <data name="Write the teeth as FDI numbers, e.g. 16, 17" xml:space="preserve"><value>Écrivez les dents en numéros FDI, ex. 16, 17</value></data>
+  <data name="A frequency is 1 to 120 months" xml:space="preserve"><value>Une fréquence va de 1 à 120 mois</value></data>
+  <data name="A waiting period is 0 to 60 months" xml:space="preserve"><value>Un délai de carence va de 0 à 60 mois</value></data>
+  <data name="A yearly count is 1 to 52" xml:space="preserve"><value>Un nombre annuel va de 1 à 52</value></data>
+  <data name="Add a rule" xml:space="preserve"><value>Ajouter une règle</value></data>
+  <data name="At most a year" xml:space="preserve"><value>Au plus par an</value></data>
+  <data name="Choose a dental procedure" xml:space="preserve"><value>Choisissez un acte dentaire</value></data>
+  <data name="Endodontics, prosthetics and implants, from the policy's start. 0 = none." xml:space="preserve"><value>Endodontie, prothèses et implants, dès le début du contrat. 0 = aucun.</value></data>
+  <data name="Excluded" xml:space="preserve"><value>Exclu</value></data>
+  <data name="Once every (months)" xml:space="preserve"><value>Une fois tous les (mois)</value></data>
+  <data name="One rule per procedure" xml:space="preserve"><value>Une règle par acte</value></data>
+  <data name="Procedure rules" xml:space="preserve"><value>Règles par acte</value></data>
+  <data name="Waiting period for major work (months)" xml:space="preserve"><value>Délai de carence des soins lourds (mois)</value></data>
+  <data name="unc:Excluded" xml:space="preserve"><value>Exclu du contrat</value></data>
+  <data name="unc:Frequency" xml:space="preserve"><value>Fréquence du contrat</value></data>
+  <data name="unc:PerYear" xml:space="preserve"><value>Plafond annuel atteint</value></data>
+  <data name="unc:Waiting" xml:space="preserve"><value>Période d'attente</value></data>
 </root>

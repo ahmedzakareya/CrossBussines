@@ -16,6 +16,8 @@
     var cases = (ViewBag.Cases as List<HospitalConsentCase>) ?? new();
     var staff = (ViewBag.Staff as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
     int? surgeryId = ViewBag.SurgeryId as int?;
+    int? dentalPhaseId = ViewBag.DentalPhaseId as int?, dentalPlanId = ViewBag.DentalPlanId as int?;   // H179: a dental phase's informed consent
+    string? dentalProcedure = ViewBag.DentalProcedure as string;
     int? age = ViewBag.Age as int?;
     bool minor = age is < HospitalConsentRules.AdultAge;
     bool en = !System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
@@ -82,7 +84,7 @@
                                     <div class="col-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cLang" value="en" @(en ? "checked" : "") data-c-lang /></span><span class="fw-bold text-gray-800 fs-6">English</span></label></div>
                                 </div></div>
                             <div class="col-12 fv-row" data-c-proc-wrap><label class="fs-6 fw-semibold mb-2" data-c-proc-label>@T["The procedure"]</label>
-                                <input type="text" class="form-control form-control-solid" maxlength="300" dir="auto" data-c="procedureName" /></div>
+                                <input type="text" class="form-control form-control-solid" maxlength="300" dir="auto" data-c="procedureName" value="@dentalProcedure" /></div>
                             <div class="col-12 d-none" data-c-scope-wrap><label class="required fs-6 fw-semibold mb-2">@T["What the photographs may be used for"]</label>
                                 <div class="d-flex flex-column gap-3">
                                     @foreach (var sc in HospitalConsentPhotoScope.All)
@@ -219,7 +221,7 @@
                 cbConfirm(decision === 'Given' ? W.given : W.refused).then(function (ok) {
                     if (!ok) return; btn.disabled = true;
                     var body = { formId: +q('formId').value, language: lang(), procedureName: q('procedureName').value || null, risks: q('risks').value || null,
-                        surgeryId: sc && sc.value ? +sc.value : null, decision: decision, signerKind: signer() || null, signerName: q('signerName').value || null,
+                        surgeryId: sc && sc.value ? +sc.value : null, dentalPhaseId: @Json.Serialize(dentalPhaseId), decision: decision, signerKind: signer() || null, signerName: q('signerName').value || null,
                         signerRelation: q('signerRelation').value || null, proxyReason: signer() === 'Representative' ? q('proxyReason').value : null,
                         interpreter: q('interpreter').value || null, witnessEmployeeId: q('witnessEmployeeId').value ? +q('witnessEmployeeId').value : null, signature: pad.toDataURL('image/png'),
                         photoScope: form().kind === 'Photography' && decision === 'Given' ? scope() : null };
@@ -228,7 +230,7 @@
                         .then(function (res) {
                             if (!res.ok) { btn.disabled = false; if (window.toastr) toastr.error(res.error || W.failed); return; }
                             if (window.toastr) toastr.success(W.done);
-                            location.href = @Json.Serialize(Url.Action("Patient", new { id = Model.ID })) + '#pfConsents';
+                            location.href = @Json.Serialize(dentalPlanId is int dpl ? Url.Action("DentalPlan", new { id = dpl }) : Url.Action("Patient", new { id = Model.ID }) + "#pfConsents");
                         });
                 });
             });

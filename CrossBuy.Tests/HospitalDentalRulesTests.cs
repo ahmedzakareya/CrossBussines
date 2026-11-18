@@ -205,7 +205,7 @@ namespace CrossBuy.Tests
 		// ---------------- model and slice ----------------
 
 		// H33 adds the findings' English note (NoteEn)
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h15_dental.sql") + HospitalSliceParity.Slice("hospital_h33_bilingual_text.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h53_dental_line_billing.sql");   // + H53 BillLineId
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h15_dental.sql") + HospitalSliceParity.Slice("hospital_h33_bilingual_text.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h53_dental_line_billing.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h179_dental_sessions.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h182_dental_contract_rules.sql");   // + H53 BillLineId, H179 SessionId, H182 contract rules
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDentalModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

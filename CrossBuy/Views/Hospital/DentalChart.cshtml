@@ -67,11 +67,20 @@
                 }
                 @if (m.LatestPlanId is int lp) { <a href="@Url.Action("DentalPlan", new { id = lp })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@T["Treatment plan"]</a> }
                 @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-mark-open><i class="ki-outline ki-plus fs-4"></i>@T["Procedure on a tooth"]</button> }
+                @* H180: the chart as it stood on a past day (read-only) *@
+                <div class="d-flex align-items-center gap-2"><input class="form-control form-control-sm form-control-solid hp-num w-150px" data-asof data-fp readonly placeholder="@T["Chart as of…"]" value="@((ViewBag.AsOf as DateTime?)?.ToString("yyyy-MM-dd"))" />
+                    @if (ViewBag.AsOf is DateTime) { <a class="btn btn-sm btn-light" href="@Url.Action("DentalChart", new { patientId = m.Patient.ID })">@T["Today"]</a> }</div>
             </div>
         }
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (m != null && ViewBag.AsOf is DateTime asOfDay)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-time fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The chart as it stood on {0}", asOfDay.ToString("yyyy-MM-dd")]</h4>
+                    <div class="fs-6 text-gray-700">@T["Read-only: the marks recorded by the end of that day, each in the state it had then."]</div></div></div>
+        }
         @if (m == null)
         {
             @* H127: the empty state of the theme — an icon in a light symbol, a title over a muted line, then the picker *@
@@ -195,6 +204,29 @@
     <partial name="_PersonSelect" />
     <partial name="_HospitalPrompt" />
     <script src="~/js/hospital/hospital-dental.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            // H180: the chart as of a past day — the theme's flatpickr; the image's teeth
+            var a = document.querySelector('[data-asof]');
+            if (a && window.flatpickr) {
+                var loc = (document.documentElement.lang || '').indexOf('ar') === 0 && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default';
+                flatpickr(a, { dateFormat: 'Y-m-d', maxDate: new Date(Date.now() - 864e5), locale: loc, onChange: function (d, s) { if (s) location.href = @Json.Serialize(Url.Action("DentalChart", new { patientId = m?.Patient.ID })) + '?asOf=' + s; } });
+            }
+            var W = { ask: @Json.Serialize(T["The teeth this image shows (FDI numbers, e.g. 16, 17)"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-img-teeth]'); if (!t) return;
+                cbPrompt(W.ask, { value: t.getAttribute('data-teeth') || '' }).then(function (v) {
+                    if (v == null) return;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Dental/Images/")) + t.getAttribute('data-img-teeth') + '/Teeth', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: JSON.stringify({ teeth: v }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); });
+                });
+            });
+            // a tooth's radiographs: the filter over the X-rays tab
+            var f = document.querySelector('[data-img-filter]');
+            if (f) f.addEventListener('change', function () { var v = f.value; document.querySelectorAll('[data-img-row]').forEach(function (r) { var tt = (r.getAttribute('data-img-row') || '').split(','); r.style.display = !v || tt.indexOf(v) >= 0 ? '' : 'none'; }); });
+        })();
+    </script>
     <partial name="_HospitalDentalText" />
     <script>
         (function () {

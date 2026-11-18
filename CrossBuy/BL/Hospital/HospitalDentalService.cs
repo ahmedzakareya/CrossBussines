@@ -86,6 +86,17 @@ namespace CrossBuy.BL.Hospital
 		public int PayerId { get; set; }
 		public decimal YearlyLimit { get; set; }
 		public Dictionary<string, decimal> Cover { get; set; } = new();
+		/// H182: the waiting period for major work, and the contract's procedure rules (replacing the payer's rules).
+		public int WaitingMonthsMajor { get; set; }
+		public List<HospitalDentalBenefitRuleInput>? Rules { get; set; }
+	}
+
+	public sealed class HospitalDentalBenefitRuleInput
+	{
+		public int ServiceId { get; set; }
+		public int? FrequencyMonths { get; set; }
+		public int? PerYear { get; set; }
+		public bool Excluded { get; set; }
 	}
 
 	public sealed record HospitalDentist(int Id, string Name, string NameEn, string? Photo);
@@ -96,7 +107,7 @@ namespace CrossBuy.BL.Hospital
 
 	public sealed record HospitalDentalHistoryRow(DateTime At, int? Tooth, string? Surfaces, string What, string WhatEn, string? Note, HospitalDentist? By, bool Elsewhere);
 
-	public sealed record HospitalDentalImageRow(int Id, string AccessionNo, string Name, string NameEn, string Modality, string Status, DateTime At);
+	public sealed record HospitalDentalImageRow(int Id, string AccessionNo, string Name, string NameEn, string Modality, string Status, DateTime At, string? Teeth = null);
 
 	public sealed record HospitalPerioView(HospitalPerioExam Exam, IReadOnlyList<HospitalPerioTooth> Teeth, HospitalPerioStats Stats, HospitalDentist? Examiner);
 
@@ -219,24 +230,51 @@ namespace CrossBuy.BL.Hospital
 			b.EndodonticPct = C(HospitalDentalCategory.Endodontic); b.ProstheticPct = C(HospitalDentalCategory.Prosthetic); b.SurgeryPct = C(HospitalDentalCategory.Surgery);
 			b.ImplantPct = C(HospitalDentalCategory.Implant); b.CosmeticPct = C(HospitalDentalCategory.Cosmetic);
 			b.UpdatedAt = nowUtc; b.UpdatedByEmployeeId = employeeId;
+			// H182: the waiting period and the procedure rules — the rules sent replace the payer's rules
+			if (input.WaitingMonthsMajor is < 0 or > 60) return HospitalResult.Fail("A waiting period is 0 to 60 months");
+			b.WaitingMonthsMajor = input.WaitingMonthsMajor;
+			if (input.Rules != null)
+			{
+				var rules = input.Rules.Where(r => r.Excluded || r.FrequencyMonths != null || r.PerYear != null).ToList();
+				if (rules.Select(r => r.ServiceId).Distinct().Count() != rules.Count) return HospitalResult.Fail("One rule per procedure");
+				foreach (var r in rules) if (HospitalDentalRules.RuleRefusal(r.FrequencyMonths, r.PerYear) is string why) return HospitalResult.Fail(why);
+				var known = await Procedures(ctx).Select(p => p.ServiceId).ToListAsync(ct);
+				if (rules.Any(r => !known.Contains(r.ServiceId))) return HospitalResult.Fail("Choose a dental procedure");
+				var old = await _db.Set<HospitalDentalBenefitRule>().Where(r => r.CompanyId == ctx.CompanyId && r.PayerId == input.PayerId).ToListAsync(ct);
+				_db.RemoveRange(old);
+				foreach (var r in rules)
+					_db.Add(new HospitalDentalBenefitRule { CompanyId = ctx.CompanyId, PayerId = input.PayerId, ServiceId = r.ServiceId, FrequencyMonths = r.FrequencyMonths, PerYear = r.PerYear, Excluded = r.Excluded });
+			}
 			{ var saved = await SaveAsync(ct); return saved.Ok ? HospitalResult.Success(b.ID) : saved; }   // the id exists only after the save
+		}
+
+		/// H182: the payers' contract rules (for the payers screen).
+		public async Task<IReadOnlyList<HospitalDentalBenefitRule>> BenefitRulesAsync(BusinessContext ctx, CancellationToken ct = default)
+		{
+			try { return await _db.Set<HospitalDentalBenefitRule>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { return Array.Empty<HospitalDentalBenefitRule>(); }
 		}
 
 		// ====================================================================================
 		// THE CHART
 		// ====================================================================================
 
-		public async Task<HospitalDentalChartView?> ChartAsync(BusinessContext ctx, int patientId, DateTime nowUtc, CancellationToken ct = default)
+		/// H180: asOfUtc rebuilds the chart as it stood at the end of that moment — the marks recorded by then and not yet
+		/// voided, each in the state it had (work completed later shows as still planned), and the work planned by then.
+		public async Task<HospitalDentalChartView?> ChartAsync(BusinessContext ctx, int patientId, DateTime nowUtc, CancellationToken ct = default, DateTime? asOfUtc = null)
 		{
 			var patient = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(p => p.ID == patientId && p.CompanyId == ctx.CompanyId, ct);
 			if (patient == null) return null;
 			var header = await _db.Set<HospitalDentalChart>().AsNoTracking().FirstOrDefaultAsync(c => c.CompanyId == ctx.CompanyId && c.PatientId == patientId, ct);
-			var marks = await Findings(ctx).AsNoTracking().Where(f => f.PatientId == patientId && f.VoidedAt == null).ToListAsync(ct);
+			var marks = asOfUtc is DateTime asOf
+				? HospitalDentalRules.AsOf(await Findings(ctx).AsNoTracking().Where(f => f.PatientId == patientId && f.RecordedAt <= asOf && (f.VoidedAt == null || f.VoidedAt > asOf)).ToListAsync(ct), asOf)
+				: await Findings(ctx).AsNoTracking().Where(f => f.PatientId == patientId && f.VoidedAt == null).ToListAsync(ct);
 			var procs = await ProceduresAsync(ctx, ct);
 			var plans = await Plans(ctx).AsNoTracking().Where(p => p.PatientId == patientId).OrderByDescending(p => p.CreatedAt).ToListAsync(ct);
 			var planIds = plans.Select(p => p.ID).ToList();
 			var phases = await Phases(ctx).AsNoTracking().Where(p => planIds.Contains(p.PlanId)).ToListAsync(ct);
 			var lines = await Lines(ctx).AsNoTracking().Where(l => planIds.Contains(l.PlanId)).ToListAsync(ct);
+			if (asOfUtc is DateTime asOf2) lines = HospitalDentalRules.LinesAsOf(lines, asOf2);
 			var declined = phases.Where(p => p.Decision == HospitalDentalDecision.Declined).Select(p => p.ID).ToHashSet();
 			string CodeOf(int serviceId) => procs.FirstOrDefault(p => p.Procedure.ServiceId == serviceId)?.Code ?? "";
 			// a tooth's planned work, as "code|line id" (the page links each to its line)
@@ -267,7 +305,7 @@ namespace CrossBuy.BL.Hospital
 
 			var images = await _db.HospitalRadOrders.AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.PatientId == patientId)
 				.OrderByDescending(o => o.OrderedAt).Take(12)
-				.Select(o => new HospitalDentalImageRow(o.ID, o.AccessionNo, o.Name, o.NameEn, o.Modality, o.Status, o.OrderedAt)).ToListAsync(ct);
+				.Select(o => new HospitalDentalImageRow(o.ID, o.AccessionNo, o.Name, o.NameEn, o.Modality, o.Status, o.OrderedAt, o.Teeth)).ToListAsync(ct);
 
 			var (_, payer, why) = await _insurance.EligibilityAsync(ctx, patientId, nowUtc, null, ct);
 			var open = plans.Select(p => new HospitalDentalOpenPlan(p.ID, p.PlanNo, phases.Where(h => h.PlanId == p.ID && h.Decision == HospitalDentalDecision.Pending)
@@ -502,6 +540,11 @@ namespace CrossBuy.BL.Hospital
 			if (line == null) return HospitalResult.Fail("not_found");
 			var decision = await Phases(ctx).Where(p => p.ID == line.PhaseId).Select(p => p.Decision).FirstAsync(ct);
 			if (decision != HospitalDentalDecision.Accepted) return HospitalResult.Fail("Only work the patient accepted is done");
+			// H179: informed consent apart from the price: treatment beyond diagnosis and prevention needs a signed procedure
+			// consent for this phase
+			var category = await Procedures(ctx).Where(p => p.ServiceId == line.ServiceId).Select(p => p.Category).FirstOrDefaultAsync(ct) ?? HospitalDentalCategory.Restorative;
+			if (HospitalDentalSessionRules.NeedsConsent(category) && !await HospitalDentalSessionRules.CoveringPhase(_db.Set<HospitalConsent>(), ctx.CompanyId, line.PhaseId).AnyAsync(ct))
+				return HospitalResult.Fail(HospitalDentalSessionRules.NoPhaseConsent);
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			int n = await Lines(ctx).Where(l => l.ID == lineId && l.Status == HospitalDentalLineStatus.Planned).ExecuteUpdateAsync(u => u
 				.SetProperty(l => l.Status, HospitalDentalLineStatus.Completed).SetProperty(l => l.CompletedAt, nowUtc).SetProperty(l => l.CompletedByEmployeeId, employeeId), ct);
@@ -520,6 +563,16 @@ namespace CrossBuy.BL.Hospital
 			}
 			await tx.CommitAsync();
 			return HospitalResult.Success(line.PlanId);
+		}
+
+		/// H180: the teeth a patient's image shows (the dentist links them; a tooth's radiographs are then found by it).
+		public async Task<HospitalResult> SetImageTeethAsync(BusinessContext ctx, int orderId, string? teeth, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var (value, why) = HospitalDentalRules.ParseTeeth(teeth);
+			if (why != null) return HospitalResult.Fail(why);
+			int n = await _db.HospitalRadOrders.Where(o => o.ID == orderId && o.CompanyId == ctx.CompanyId).ExecuteUpdateAsync(u => u.SetProperty(o => o.Teeth, value), ct);
+			return n == 1 ? HospitalResult.Success(orderId) : HospitalResult.Fail("not_found");
 		}
 
 		/// Work taken out of the plan before the patient decided its phase.
@@ -565,6 +618,10 @@ namespace CrossBuy.BL.Hospital
 					el = why == null && payer != null ? (payer, await BenefitOfAsync(ctx, payer.ID, ct)) : (null, null);
 					eligibility[plan.PatientId] = el;
 				}
+				// H182: the payer's contract rules and the policy's start (the waiting period counts from it)
+				var rules = el.Payer == null ? new List<HospitalDentalBenefitRule>() : await _db.Set<HospitalDentalBenefitRule>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && r.PayerId == el.Payer.ID).ToListAsync(ct);
+				DateTime? policyFrom = el.Payer == null ? null : await _db.Set<HospitalPatientPolicy>().AsNoTracking()
+					.Where(p => p.CompanyId == ctx.CompanyId && p.PatientId == plan.PatientId && p.PayerId == el.Payer.ID && p.IsActive).OrderByDescending(p => p.ValidFrom).Select(p => (DateTime?)p.ValidFrom).FirstOrDefaultAsync(ct);
 				var cur = await _pricing.CurrencyOfAsync(ctx, plan.CurrencyId, ct);
 				int dec = cur?.Decimals ?? DefaultDecimals;
 				// the limit is spent by this year's completed work in the patient's OTHER plans, at the same cover
@@ -577,7 +634,10 @@ namespace CrossBuy.BL.Hospital
 					var pr = P(l.ServiceId);
 					var before = fillings.Where(f => f.PatientId == plan.PatientId && f.PlanLineId != l.ID).Select(f => (f.Tooth, f.Surfaces!, f.At));
 					bool repeat = el.Benefit != null && HospitalDentalRules.RepeatWithinTwoYears(l.Tooth, l.Surfaces, before, l.CompletedAt ?? nowUtc);
-					return new HospitalDentalRules.QuoteInput(l.ID, l.Fee, pr?.Category ?? "", pr?.NotCovered ?? true, declined.Contains(l.PhaseId), repeat);
+					var others = allLines.Where(x => x.PatientId == plan.PatientId && x.ServiceId == l.ServiceId && x.ID != l.ID && x.CompletedAt != null).Select(x => (x.Tooth, x.CompletedAt!.Value));
+					string? uncovered = el.Benefit == null ? null : HospitalDentalRules.Uncovered(rules.FirstOrDefault(r => r.ServiceId == l.ServiceId), el.Benefit.WaitingMonthsMajor, policyFrom,
+						pr?.Category ?? "", l.Tooth, (l.CompletedAt ?? nowUtc).Date, others);
+					return new HospitalDentalRules.QuoteInput(l.ID, l.Fee, pr?.Category ?? "", pr?.NotCovered ?? true, declined.Contains(l.PhaseId), repeat, uncovered);
 				});
 				result[plan.ID] = (HospitalDentalRules.Quote(mine, el.Benefit, used, dec), el.Benefit, used, el.Payer, cur?.Code, dec);
 			}

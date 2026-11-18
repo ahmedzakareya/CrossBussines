@@ -101,6 +101,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? FindingsEn { get; set; }
 		public string? ImpressionEn { get; set; }
 		public string? ImpressionCategory { get; set; }
+		/// H180: the teeth a dental image shows (FDI numbers, comma separated), so a tooth's radiographs are found by it.
+		public string? Teeth { get; set; }
 		public DateTime? ReportedAt { get; set; }
 		public int? ReportedByEmployeeId { get; set; }
 		public DateTime? SignedAt { get; set; }
@@ -122,6 +124,7 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalRadRoom>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalRadOrder>(e =>
 			{
+				e.Property(x => x.Teeth).HasMaxLength(60);   // H180
 				e.HasIndex(x => new { x.CompanyId, x.AccessionNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.EncounterOrderId }).IsUnique().HasFilter("[EncounterOrderId] IS NOT NULL");
 				e.HasIndex(x => new { x.CompanyId, x.Status });

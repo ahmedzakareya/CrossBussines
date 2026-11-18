@@ -76,6 +76,8 @@ namespace CrossBuy.Controllers
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.CanRegister = await _access.CanAsync(ctx, HospitalActions.Register, null, ct);
 			ViewBag.DentalBenefits = (await DentalSvc.BenefitsAsync(ctx, ct)).ToDictionary(b => b.PayerId);   // H15
+			ViewBag.DentalRules = await DentalSvc.BenefitRulesAsync(ctx, ct);   // H182: the contracts' procedure rules
+			ViewBag.DentalProcedures = await DentalSvc.ProceduresAsync(ctx, ct);
 			return View(await InsuranceSvc.PayersAsync(ctx, DateTime.UtcNow, ct));
 		}
 

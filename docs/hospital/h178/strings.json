@@ -1,0 +1,285 @@
+{
+ "unit": "H178 - the result follow-up inbox: an owner for every result until reviewed",
+ "strings": {
+  "Result follow-up": {
+   "ar": "متابعة النتائج",
+   "en": "Result follow-up",
+   "fr": "Suivi des résultats"
+  },
+  "The follow-up table is not created yet (hospital_h178_result_reviews.sql).": {
+   "ar": "جدول المتابعة غير منشأ بعد (hospital_h178_result_reviews.sql).",
+   "en": "The follow-up table is not created yet (hospital_h178_result_reviews.sql).",
+   "fr": "La table de suivi n'est pas encore créée (hospital_h178_result_reviews.sql)."
+  },
+  "Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on.": {
+   "ar": "تبقى كل نتيجة مع الطبيب الذي طلبها حتى يسجّل ما تم بشأنها: الحرجة خلال 24 ساعة، وغير الطبيعية خلال 72 ساعة، والطبيعية خلال 7 أيام. سلّمها لغيرك إن لم تكن مسؤوليتك.",
+   "en": "Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on.",
+   "fr": "Chaque résultat reste au médecin prescripteur jusqu'à ce qu'il consigne la suite donnée : critique sous 24 h, anormal sous 72 h, normal sous 7 jours. Transmettez-le s'il ne vous revient pas."
+  },
+  "To review": {
+   "ar": "للمراجعة",
+   "en": "To review",
+   "fr": "À revoir"
+  },
+  "Awaiting a result": {
+   "ar": "بانتظار النتيجة",
+   "en": "Awaiting a result",
+   "fr": "En attente de résultat"
+  },
+  "My results to review": {
+   "ar": "نتائجي للمراجعة",
+   "en": "My results to review",
+   "fr": "Mes résultats à revoir"
+  },
+  "My orders awaiting a result": {
+   "ar": "طلباتي بانتظار النتيجة",
+   "en": "My orders awaiting a result",
+   "fr": "Mes demandes en attente de résultat"
+  },
+  "Overdue — every owner": {
+   "ar": "المتأخرة لدى الجميع",
+   "en": "Overdue — every owner",
+   "fr": "En retard — tous les responsables"
+  },
+  "Nothing waits for review.": {
+   "ar": "لا شيء ينتظر المراجعة.",
+   "en": "Nothing waits for review.",
+   "fr": "Rien n'attend de revue."
+  },
+  "No order of yours is late.": {
+   "ar": "لا يوجد طلب متأخر لك.",
+   "en": "No order of yours is late.",
+   "fr": "Aucune de vos demandes n'est en retard."
+  },
+  "Search patient, MRN or test": {
+   "ar": "ابحث بالمريض أو رقم الملف أو الفحص",
+   "en": "Search patient, MRN or test",
+   "fr": "Rechercher patient, dossier ou examen"
+  },
+  "Owner": {
+   "ar": "المسؤول",
+   "en": "Owner",
+   "fr": "Responsable"
+  },
+  "No owner": {
+   "ar": "بلا مسؤول",
+   "en": "No owner",
+   "fr": "Sans responsable"
+  },
+  "Mark reviewed": {
+   "ar": "تمت المراجعة",
+   "en": "Reviewed",
+   "fr": "Revu"
+  },
+  "Hand over": {
+   "ar": "تسليم",
+   "en": "Hand over",
+   "fr": "Transmettre"
+  },
+  "Handed over": {
+   "ar": "سُلّمت",
+   "en": "Handed over",
+   "fr": "Transmis"
+  },
+  "res:Order": {
+   "ar": "الطلب",
+   "en": "Order",
+   "fr": "Demande"
+  },
+  "Where it is": {
+   "ar": "مرحلته الحالية",
+   "en": "Where it is",
+   "fr": "Où il en est"
+  },
+  "Expected by": {
+   "ar": "المتوقع قبل",
+   "en": "Expected by",
+   "fr": "Attendu avant"
+  },
+  "Result reviewed": {
+   "ar": "مراجعة النتيجة",
+   "en": "Result reviewed",
+   "fr": "Résultat revu"
+  },
+  "Required unless no action was needed.": {
+   "ar": "مطلوبة ما لم يكن الإجراء «لا شيء».",
+   "en": "Required unless no action was needed.",
+   "fr": "Obligatoire sauf si aucune action n'était nécessaire."
+  },
+  "Record the review": {
+   "ar": "تسجيل المراجعة",
+   "en": "Record the review",
+   "fr": "Enregistrer la revue"
+  },
+  "Hand over the result": {
+   "ar": "تسليم النتيجة",
+   "en": "Hand over the result",
+   "fr": "Transmettre le résultat"
+  },
+  "Record this review? It closes the result in your inbox.": {
+   "ar": "هل تسجّل هذه المراجعة؟ تُغلق النتيجة في قائمتك.",
+   "en": "Record this review? It closes the result in your inbox.",
+   "fr": "Enregistrer cette revue ? Le résultat quitte votre boîte."
+  },
+  "Hand this result over? It leaves your inbox.": {
+   "ar": "هل تسلّم هذه النتيجة؟ تخرج من قائمتك.",
+   "en": "Hand this result over? It leaves your inbox.",
+   "fr": "Transmettre ce résultat ? Il quitte votre boîte."
+  },
+  "rk:Lab": {
+   "ar": "مختبر",
+   "en": "Lab",
+   "fr": "Labo"
+  },
+  "rk:Rad": {
+   "ar": "أشعة",
+   "en": "Imaging",
+   "fr": "Imagerie"
+  },
+  "sev:Critical": {
+   "ar": "حرجة",
+   "en": "Critical",
+   "fr": "Critique"
+  },
+  "sev:Abnormal": {
+   "ar": "غير طبيعية",
+   "en": "Abnormal",
+   "fr": "Anormal"
+  },
+  "sev:Normal": {
+   "ar": "طبيعية",
+   "en": "Normal",
+   "fr": "Normal"
+  },
+  "act:NoAction": {
+   "ar": "لا يلزم إجراء",
+   "en": "No action needed",
+   "fr": "Aucune action"
+  },
+  "act:InformedPatient": {
+   "ar": "أُبلغ المريض",
+   "en": "Patient informed",
+   "fr": "Patient informé"
+  },
+  "act:ChangedTreatment": {
+   "ar": "عُدّل العلاج",
+   "en": "Treatment changed",
+   "fr": "Traitement modifié"
+  },
+  "act:FollowUpBooked": {
+   "ar": "حُجزت متابعة",
+   "en": "Follow-up booked",
+   "fr": "Suivi programmé"
+  },
+  "act:Repeated": {
+   "ar": "طُلب إعادة الفحص",
+   "en": "Test repeated",
+   "fr": "Examen refait"
+  },
+  "act:Referred": {
+   "ar": "حُوّل المريض",
+   "en": "Referred",
+   "fr": "Patient orienté"
+  },
+  "pri:Routine": {
+   "ar": "روتيني",
+   "en": "Routine",
+   "fr": "Routine"
+  },
+  "pri:Urgent": {
+   "ar": "عاجل",
+   "en": "Urgent",
+   "fr": "Urgent"
+  },
+  "pri:Stat": {
+   "ar": "فوري",
+   "en": "STAT",
+   "fr": "Immédiat"
+  },
+  "rst:Ordered": {
+   "ar": "مطلوب",
+   "en": "Ordered",
+   "fr": "Demandé"
+  },
+  "rst:Collected": {
+   "ar": "سُحبت العينة",
+   "en": "Collected",
+   "fr": "Prélevé"
+  },
+  "rst:Received": {
+   "ar": "وصلت المختبر",
+   "en": "In the lab",
+   "fr": "Au labo"
+  },
+  "rst:Resulted": {
+   "ar": "بانتظار الاعتماد",
+   "en": "Awaiting verification",
+   "fr": "En attente de validation"
+  },
+  "rst:Scheduled": {
+   "ar": "مجدول",
+   "en": "Scheduled",
+   "fr": "Planifié"
+  },
+  "rst:Arrived": {
+   "ar": "وصل المريض",
+   "en": "Patient arrived",
+   "fr": "Patient arrivé"
+  },
+  "rst:Scanning": {
+   "ar": "قيد التصوير",
+   "en": "Scanning",
+   "fr": "En cours"
+  },
+  "rst:Reporting": {
+   "ar": "قيد كتابة التقرير",
+   "en": "Being reported",
+   "fr": "Compte rendu en cours"
+  },
+  "Choose what was done about the result": {
+   "ar": "اختر ما تم بشأن النتيجة",
+   "en": "Choose what was done about the result",
+   "fr": "Choisissez la suite donnée"
+  },
+  "A critical result needs more than \"no action\": say what was done": {
+   "ar": "النتيجة الحرجة تتطلب أكثر من «لا يلزم إجراء»: اذكر ما تم",
+   "en": "A critical result needs more than \"no action\": say what was done",
+   "fr": "Un résultat critique demande plus que « aucune action » : précisez"
+  },
+  "Write a note on what was done": {
+   "ar": "اكتب ملاحظة بما تم",
+   "en": "Write a note on what was done",
+   "fr": "Rédigez une note sur la suite donnée"
+  },
+  "Only the result's owner or the clinical lead reviews it": {
+   "ar": "لا يراجع النتيجة إلا المسؤول عنها أو المسؤول السريري",
+   "en": "Only the result's owner or the clinical lead reviews it",
+   "fr": "Seul le responsable du résultat ou le chef clinique le revoit"
+  },
+  "Only the result's owner or the clinical lead hands it over": {
+   "ar": "لا يسلّم النتيجة إلا المسؤول عنها أو المسؤول السريري",
+   "en": "Only the result's owner or the clinical lead hands it over",
+   "fr": "Seul le responsable du résultat ou le chef clinique le transmet"
+  },
+  "Say why it is handed over": {
+   "ar": "اذكر سبب التسليم",
+   "en": "Say why it is handed over",
+   "fr": "Indiquez pourquoi il est transmis"
+  },
+  "It is already theirs": {
+   "ar": "هي مسؤوليته بالفعل",
+   "en": "It is already theirs",
+   "fr": "Il en est déjà responsable"
+  },
+  "Choose a doctor of this hospital": {
+   "ar": "اختر طبيبًا من هذه المنشأة",
+   "en": "Choose a doctor of this hospital",
+   "fr": "Choisissez un médecin de l'établissement"
+  },
+  "This result is already reviewed": {
+   "ar": "رُوجعت هذه النتيجة من قبل",
+   "en": "This result is already reviewed",
+   "fr": "Ce résultat est déjà revu"
+  }
+ }
+}

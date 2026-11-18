@@ -13,7 +13,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Encounter = "Encounter";
 		public const string Canvas = "Canvas";
 		public const string Labour = "Labour";
-		public static readonly IReadOnlyList<string> All = new[] { Encounter, Canvas, Labour };
+		/// H179: a signed dental treatment session.
+		public const string DentalSession = "DentalSession";
+		public static readonly IReadOnlyList<string> All = new[] { Encounter, Canvas, Labour, DentalSession };
 	}
 
 	public static class HospitalAddendumKind

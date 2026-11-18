@@ -119,11 +119,26 @@ namespace CrossBuy.Models.Context.Hospital
 		public decimal SurgeryPct { get; set; }
 		public decimal ImplantPct { get; set; }
 		public decimal CosmeticPct { get; set; }
+		/// H182: months from the policy's start before major work (endodontic, prosthetic, implant) is covered; 0 = none.
+		public int WaitingMonthsMajor { get; set; }
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
 	}
 
 	/// The patient's chart header: the dentition the chart is drawn in (null = by age).
+	/// H182: a payer's contract rule for one procedure — covered at most once every N months (on the same tooth when the
+	/// procedure is on a tooth), at most N times a year, or not at all.
+	public class HospitalDentalBenefitRule
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int PayerId { get; set; }
+		public int ServiceId { get; set; }
+		public int? FrequencyMonths { get; set; }
+		public int? PerYear { get; set; }
+		public bool Excluded { get; set; }
+	}
+
 	public class HospitalDentalChart
 	{
 		public int ID { get; set; }
@@ -205,6 +220,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime CreatedAt { get; set; }
 		public DateTime? CompletedAt { get; set; }
 		public int? CompletedByEmployeeId { get; set; }
+		/// H179: the signed session record this work was done in.
+		public int? SessionId { get; set; }
 		/// H53: the bill line the completed work was charged as (its accepted fee).
 		public int? BillLineId { get; set; }
 	}
@@ -258,6 +275,11 @@ namespace CrossBuy.Models.Context.Hospital
 					nameof(HospitalDentalBenefit.ImplantPct), nameof(HospitalDentalBenefit.CosmeticPct) })
 					e.Property<decimal>(p).HasPrecision(5, 2);
 				e.HasIndex(x => new { x.CompanyId, x.PayerId }).IsUnique();
+			});
+			b.Entity<HospitalDentalBenefitRule>(e =>   // H182
+			{
+				e.ToTable("HospitalDentalBenefitRules");
+				e.HasIndex(x => new { x.CompanyId, x.PayerId, x.ServiceId }).IsUnique();
 			});
 			b.Entity<HospitalDentalChart>(e =>
 			{

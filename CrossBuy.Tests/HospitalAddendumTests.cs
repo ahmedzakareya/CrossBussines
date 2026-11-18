@@ -61,7 +61,7 @@ namespace CrossBuy.Tests
 			var s = HospitalSliceParity.Slice("hospital_h177_clinical_addenda.sql");
 			HospitalSliceParity.NamesItsTable(model, s, typeof(HospitalClinicalAddendum), "HospitalClinicalAddenda");
 			HospitalSliceParity.ColumnsMatch(model, s, typeof(HospitalClinicalAddendum), "HospitalClinicalAddenda");
-			foreach (var x in HospitalAddendumSubject.All.Concat(HospitalAddendumKind.All)) Assert.Contains("'" + x + "'", s);
+			foreach (var x in HospitalAddendumSubject.All.Concat(HospitalAddendumKind.All)) Assert.Contains("'" + x + "'", s + HospitalSliceParity.Slice("hospital_h179_dental_sessions.sql"));   // H179 widened the subjects
 			Assert.Contains(HospitalPatientMergeRules.PatientTables, x => x.Entity == typeof(HospitalClinicalAddendum));
 		}
 	}

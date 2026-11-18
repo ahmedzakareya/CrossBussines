@@ -11,6 +11,11 @@
     string N(decimal v) => v.ToString("N" + r.Decimals, System.Globalization.CultureInfo.InvariantCulture);
     string St(string state) => state switch { "Accepted" => "success", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
     var firstPending = Model.Phases.FirstOrDefault(p => p.Phase.Decision == HospitalDentalDecision.Pending && p.Lines.Any());
+    // H179
+    var consents = (ViewBag.PhaseConsents as IReadOnlyDictionary<int, HospitalConsent>) ?? new Dictionary<int, HospitalConsent>();
+    var sessions = (ViewBag.Sessions as IReadOnlyList<HospitalDentalSessionRow>) ?? Array.Empty<HospitalDentalSessionRow>();
+    var unrecorded = (ViewBag.Unrecorded as IReadOnlyList<HospitalSessionLine>) ?? Array.Empty<HospitalSessionLine>();
+    var sessionAddenda = (ViewBag.SessionAddenda as Dictionary<int, HospitalAddendaBlock>) ?? new Dictionary<int, HospitalAddendaBlock>();
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -86,6 +91,16 @@
                                 @if (ph.Phase.Signatory != null) { <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Signed by"] <bdi>@ph.Phase.Signatory</bdi> · <span class="hp-num">@ph.Phase.DecidedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span></span> }
                             </h3>
                             <div class="card-toolbar gap-2">
+                                @* H179: the phase's informed consent, apart from the patient's acceptance of its price *@
+                                @if (dec != HospitalDentalDecision.Declined && ph.Lines.Any(l => HospitalDentalSessionRules.NeedsConsent(l.Procedure.Procedure.Category)))
+                                {
+                                    if (consents.TryGetValue(ph.Phase.ID, out var cf)) { <span class="badge badge-light-primary fs-7 fw-bold">@T["Consent signed"] <bdi class="hp-num ms-1">@cf.ConsentNo</bdi></span> }
+                                    else
+                                    {
+                                        <span class="badge badge-light-danger fs-7 fw-bold">@T["Consent needed"]</span>
+                                        @if (canConsult) { <a class="btn btn-sm btn-light-primary" href="@Url.Action("NewConsent", new { id = r.Plan.PatientId, dentalPhaseId = ph.Phase.ID })"><i class="ki-outline ki-pencil fs-4"></i>@T["Take the consent"]</a> }
+                                    }
+                                }
                                 @if (dec == HospitalDentalDecision.Accepted) { <span class="badge badge-light-success fs-7 fw-bold">@T["Accepted"]</span> }
                                 else if (dec == HospitalDentalDecision.Declined) { <span class="badge badge-light-secondary fs-7 fw-bold">@T["Declined"]</span> }
                                 else
@@ -122,13 +137,14 @@
                                                     <div class="d-flex flex-column">
                                                         <span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)</span>
                                                         <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@l.Procedure.Code</bdi> · @T["dcat:" + pr.Category]</span>
-                                                        @if (pr.NeedsPreauth || pr.NeedsLab || pr.NotCovered || q?.Repeat == true)
+                                                        @if (pr.NeedsPreauth || pr.NeedsLab || pr.NotCovered || q?.Repeat == true || q?.Uncovered != null)
                                                         {
                                                             <div class="d-flex flex-wrap gap-1 mt-1">
                                                                 @if (pr.NeedsPreauth) { <span class="badge badge-light-primary fs-8 fw-bold">@T["Pre-auth"]</span> }
                                                                 @if (pr.NeedsLab) { <span class="badge badge-light-info fs-8 fw-bold">@T["Lab"]</span> }
                                                                 @if (pr.NotCovered) { <span class="badge badge-light fs-8 fw-bold">@T["Not covered"]</span> }
                                                                 @if (q?.Repeat == true) { <span class="badge badge-light-danger fs-8 fw-bold">@T["Repeated within two years"]</span> }
+                                                                @if (q?.Uncovered is string unc) { <span class="badge badge-light-danger fs-8 fw-bold">@T["unc:" + unc]</span> }   @* H182: the contract's rule *@
                                                             </div>
                                                         }
                                                     </div>
@@ -154,6 +170,40 @@
                         </div>
                     </div>
                 }
+                @* H179: the signed treatment sessions of this patient, and the work done not yet in one *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Treatment sessions"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["What was done at each sitting, signed by the dentist; corrected only by an addendum."]</span></h3>
+                        @if (canConsult && unrecorded.Count > 0) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-session-open><i class="ki-outline ki-pencil fs-4"></i>@T["Sign the session record"]</button></div> }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (unrecorded.Count > 0)
+                        {
+                            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i>
+                                <div class="fs-7 fw-semibold text-gray-800">@T["Work done and not yet in a signed session:"] <span class="fw-bold">@string.Join(" · ", unrecorded.Select(u => DisplayName.Of(u.Procedure, u.ProcedureEn) + (u.Tooth is int t ? " (" + t + ")" : "")))</span></div></div>
+                        }
+                        @if (sessions.Count == 0) { <div class="text-muted fs-7 fw-semibold py-3">@T["No session recorded yet."]</div> }
+                        @foreach (var se in sessions)
+                        {
+                            var x = se.Session;
+                            <div class="border border-gray-300 border-dashed rounded p-5 mb-4">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-3"><bdi class="badge badge-light-primary fs-7 fw-bold hp-num">@x.SessionNo</bdi>
+                                    <span class="text-gray-800 fw-bold fs-7">@se.Dentist</span><span class="text-muted fs-8 hp-num" dir="ltr">@x.SessionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                                    <span class="badge badge-light-success fs-8 fw-bold">@T["Signed"]</span></div>
+                                <div class="fs-7 text-gray-800 mb-2"><span class="text-gray-500">@T["Work done"]:</span> @string.Join(" · ", se.Lines.Select(u => DisplayName.Of(u.Procedure, u.ProcedureEn) + (u.Tooth is int t ? " (" + t + ")" : "")))</div>
+                                <div class="row g-3 fs-7">
+                                    <div class="col-md-6"><span class="text-gray-500">@T["Anaesthetic"]:</span> <span dir="auto">@x.Anaesthetic @x.AnaestheticAmount @x.AnaestheticSite</span></div>
+                                    @if (x.Materials != null) {<div class="col-md-6"><span class="text-gray-500">@T["Materials and lots"]:</span> <span dir="auto">@x.Materials</span></div>}
+                                    @if (x.Complications != null) {<div class="col-md-6"><span class="text-gray-500">@T["Complications"]:</span> <span dir="auto" class="text-danger">@x.Complications</span></div>}
+                                    <div class="col-md-6"><span class="text-gray-500">@T["Instructions given"]:</span> <span dir="auto">@x.PostOpInstructions</span></div>
+                                    @if (x.Note != null) {<div class="col-12"><span class="text-gray-500">@T["Notes"]:</span> <span dir="auto">@x.Note</span></div>}
+                                </div>
+                                @if (sessionAddenda.TryGetValue(x.ID, out var sab)) { <div class="mt-4"><partial name="_Addenda" model="sab" /></div> }
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
             <div class="col-xl-4">
                 @* H127: the quotation — demo39 list widget *@
@@ -212,8 +262,49 @@
 
 @await Html.PartialAsync("_ReportPreviewModal", (object)(T["Treatment plan"].Value + " " + r.Plan.PlanNo))
 
+@if (canConsult && unrecorded.Count > 0)
+{
+    <div class="modal fade" id="sessionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-700px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Treatment session record"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn) — @T["signed by you when saved"]</div></div>
+            <label class="required fs-6 fw-semibold mb-3">@T["Work done in this session"]</label>
+            <div class="d-flex flex-column gap-2 mb-6">@foreach (var u in unrecorded) {<label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" value="@u.LineId" data-ss-line checked /><span class="form-check-label fw-semibold text-gray-800">@DisplayName.Of(u.Procedure, u.ProcedureEn)@(u.Tooth is int t ? " (" + t + ")" : "") <span class="text-muted fs-8 hp-num" dir="ltr">@u.CompletedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span></label>}</div>
+            <div class="row g-5">
+                <div class="col-md-4"><label class="required fs-7 fw-semibold mb-2">@T["Anaesthetic"]</label><input class="form-control form-control-solid" maxlength="100" dir="auto" data-ss="anaesthetic" placeholder="@T["e.g. lidocaine 2% with adrenaline, or none"]" /></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Dose amount"]</label><input class="form-control form-control-solid" maxlength="40" dir="auto" data-ss="anaestheticAmount" /></div>
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Site"]</label><input class="form-control form-control-solid" maxlength="100" dir="auto" data-ss="anaestheticSite" /></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Materials and lots"]</label><input class="form-control form-control-solid" maxlength="500" dir="auto" data-ss="materials" /></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Complications"]</label><input class="form-control form-control-solid" maxlength="500" dir="auto" data-ss="complications" /></div>
+                <div class="col-12"><label class="required fs-7 fw-semibold mb-2">@T["Instructions given"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-ss="postOpInstructions"></textarea></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" dir="auto" data-ss="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ss-save>@T["Sign the session record"]</button></div>
+        </div>
+    </div></div></div>
+}
+
 @section Scripts {
     <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var sm = document.getElementById('sessionModal'); if (!sm) return;
+            var url = @Json.Serialize(Url.Content("~/Hospital/Dental/Patient/" + r.Plan.PatientId + "/Session")), key = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Sign this session record? It cannot be edited afterwards; an addendum corrects it."].Value) };
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-session-open]')) { key = 'ses-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); bootstrap.Modal.getOrCreateInstance(sm).show(); return; }
+                var s = e.target.closest('[data-ss-save]'); if (!s) return;
+                var b = { lineIds: Array.prototype.slice.call(sm.querySelectorAll('[data-ss-line]:checked')).map(function (c) { return +c.value; }) };
+                sm.querySelectorAll('[data-ss]').forEach(function (i) { b[i.getAttribute('data-ss')] = i.value.trim() || null; });
+                cbConfirm(W.ask).then(function (ok) {
+                    if (!ok) return; s.disabled = true;
+                    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value, 'X-Idempotency-Key': key }, body: JSON.stringify(b) })
+                        .then(function (x) { return x.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { s.disabled = false; if (!res.ok) { if (window.toastr) toastr.error(res.error || W.failed); return; } if (window.toastr) toastr.success(W.saved); location.reload(); });
+                });
+            });
+        })();
+    </script>
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental")), planId = @r.Plan.ID;

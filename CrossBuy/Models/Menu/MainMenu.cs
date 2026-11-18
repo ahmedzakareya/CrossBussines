@@ -503,6 +503,7 @@
 				new() { LabelAr = "الأشعة", LabelEn = "Radiology", Action = "Radiology", Controller = "Hospital" },
 				new() { LabelAr = "الفحوصات والأجهزة", LabelEn = "Exams & rooms", Action = "RadiologySetup", Controller = "Hospital" },
 				new() { LabelAr = "بنك الدم", LabelEn = "Blood bank", Action = "BloodBank", Controller = "Hospital" },
+				new() { LabelAr = "متابعة النتائج", LabelEn = "Result follow-up", Action = "Results", Controller = "Hospital" },   // H178
 			}},
 			new() { LabelAr = "الصيدلية", LabelEn = "Pharmacy", Icon = "ki-outline ki-capsule", Items = new()
 			{

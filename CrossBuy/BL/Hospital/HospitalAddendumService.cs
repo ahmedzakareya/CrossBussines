@@ -77,6 +77,11 @@ namespace CrossBuy.BL.Hospital
 					var l = await _db.Set<HospitalLabour>().AsNoTracking().Where(x => x.ID == id && x.CompanyId == ctx.CompanyId).Select(x => new { x.PatientId, x.Status }).FirstOrDefaultAsync(ct);
 					return l == null ? null : (l.PatientId, l.Status == HospitalLabourStatus.Closed);
 				}
+				case HospitalAddendumSubject.DentalSession:
+				{
+					var s = await _db.Set<HospitalDentalSession>().AsNoTracking().Where(x => x.ID == id && x.CompanyId == ctx.CompanyId).Select(x => new { x.PatientId }).FirstOrDefaultAsync(ct);
+					return s == null ? null : (s.PatientId, true);   // a session record is signed when written
+				}
 				default: return null;
 			}
 		}

@@ -69,6 +69,8 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalSterilRecall), "HospitalSterilRecalls"),   // H169: a sterilisation recall follow-up follows its patient
 			(typeof(HospitalCssdRecall), "HospitalCssdRecalls"),   // H170: a CSSD recall follow-up too
 			(typeof(HospitalClinicalAddendum), "HospitalClinicalAddenda"),   // H177: an addendum follows its patient
+			(typeof(HospitalResultReview), "HospitalResultReviews"),   // H178: a result review follows its patient
+			(typeof(HospitalDentalSession), "HospitalDentalSessions"),   // H179: a dental session record follows its patient
 			(typeof(HospitalConsent), "HospitalConsents"),   // H60: the signature stays on the consent, which moves whole
 			(typeof(HospitalCharityGrant), "HospitalCharityGrants"),   // H63: a waiver follows its patient (its bill moves too)
 			(typeof(HospitalRestrictedFile), "HospitalRestrictedFiles"),   // H64: a restriction (live: one per patient — see the conflict)

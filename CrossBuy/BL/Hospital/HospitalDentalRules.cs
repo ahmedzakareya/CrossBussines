@@ -19,7 +19,7 @@ namespace CrossBuy.BL.Hospital
 
 	public sealed record HospitalToothChart(Dictionary<string, string> Surfaces, List<(string Work, string Mark)> Work, bool Missing, bool Impacted, List<string> Planned);
 
-	public sealed record HospitalDentalQuoteLine(int LineId, decimal Fee, decimal CoverPct, decimal PayerShare, bool Repeat);
+	public sealed record HospitalDentalQuoteLine(int LineId, decimal Fee, decimal CoverPct, decimal PayerShare, bool Repeat, string? Uncovered = null);
 
 	public sealed record HospitalDentalQuote(IReadOnlyList<HospitalDentalQuoteLine> Lines, decimal Gross, decimal PayerShare, decimal PatientShare, bool Capped);
 
@@ -27,6 +27,39 @@ namespace CrossBuy.BL.Hospital
 
 	public static class HospitalDentalRules
 	{
+		// ---------------- H180: the chart on a past date, and the teeth an image shows ----------------
+
+		/// The marks as they stood at asOf: work completed afterwards shows as still planned (from a plan) or as a
+		/// condition; the caller passes the marks recorded by then and not yet voided.
+		public static List<HospitalDentalFinding> AsOf(IEnumerable<HospitalDentalFinding> marks, DateTime asOf) => marks.Select(f =>
+		{
+			if (f.Status != HospitalDentalMark.Completed || f.CompletedAt == null || f.CompletedAt <= asOf) return f;
+			return new HospitalDentalFinding { ID = f.ID, CompanyId = f.CompanyId, PatientId = f.PatientId, Tooth = f.Tooth, Surfaces = f.Surfaces, Work = f.Work,
+				Status = f.PlanLineId != null ? HospitalDentalMark.Planned : HospitalDentalMark.Condition, ServiceId = f.ServiceId, PlanLineId = f.PlanLineId,
+				PractitionerId = f.PractitionerId, Note = f.Note, NoteEn = f.NoteEn, RecordedAt = f.RecordedAt, RecordedByEmployeeId = f.RecordedByEmployeeId };
+		}).ToList();
+
+		/// The plan lines as they stood at asOf: created by then; completed later → still planned then.
+		public static List<HospitalDentalPlanLine> LinesAsOf(IEnumerable<HospitalDentalPlanLine> lines, DateTime asOf) => lines.Where(l => l.CreatedAt <= asOf).Select(l =>
+			l.Status == HospitalDentalLineStatus.Completed && l.CompletedAt > asOf
+				? new HospitalDentalPlanLine { ID = l.ID, CompanyId = l.CompanyId, PlanId = l.PlanId, PhaseId = l.PhaseId, Tooth = l.Tooth, Surfaces = l.Surfaces, ServiceId = l.ServiceId,
+					ProviderId = l.ProviderId, Fee = l.Fee, Status = HospitalDentalLineStatus.Planned, CreatedAt = l.CreatedAt }
+				: l).ToList();
+
+		/// "16, 17,26" → "16,17,26": FDI numbers only, each once, in order; null for none; an unknown number refuses.
+		public static (string? Teeth, string? Error) ParseTeeth(string? text)
+		{
+			if (string.IsNullOrWhiteSpace(text)) return (null, null);
+			var list = new List<int>();
+			foreach (var part in text.Split(new[] { ',', '،', ' ', ';' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (!int.TryParse(part, out var n) || !IsTooth(n)) return (null, "Write the teeth as FDI numbers, e.g. 16, 17");
+				if (!list.Contains(n)) list.Add(n);
+			}
+			if (list.Count > 16) return (null, "An image shows up to 16 teeth");
+			return (string.Join(",", list.OrderBy(x => x)), null);
+		}
+
 		public static readonly IReadOnlyList<int> Upper = new[] { 18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28 };
 		public static readonly IReadOnlyList<int> Lower = new[] { 48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38 };
 		public static readonly IReadOnlyList<int> PrimaryUpper = new[] { 55, 54, 53, 52, 51, 61, 62, 63, 64, 65 };
@@ -157,7 +190,29 @@ namespace CrossBuy.BL.Hospital
 		public static bool RepeatWithinTwoYears(int? tooth, string? surfaces, IEnumerable<(int Tooth, string Surfaces, DateTime At)> completed, DateTime day) =>
 			tooth is int t && !string.IsNullOrEmpty(surfaces) && completed.Any(c => c.Tooth == t && c.At > day.AddYears(-2) && c.Surfaces.Intersect(surfaces).Any());
 
-		public sealed record QuoteInput(int LineId, decimal Fee, string Category, bool NotCovered, bool Declined, bool Repeat);
+		public sealed record QuoteInput(int LineId, decimal Fee, string Category, bool NotCovered, bool Declined, bool Repeat, string? Uncovered = null);
+
+		// ---------------- H182: the payer's contract rules ----------------
+		public const string Waiting = "Waiting", Frequency = "Frequency", PerYear = "PerYear", Excluded = "Excluded";
+
+		public static bool IsMajor(string category) => category is HospitalDentalCategory.Endodontic or HospitalDentalCategory.Prosthetic or HospitalDentalCategory.Implant;
+
+		/// Why the contract does not pay a line, or null: excluded; in the waiting period for major work; done again within
+		/// the procedure's frequency (on the same tooth when it is on a tooth); over the year's count.
+		/// `others` = the patient's OTHER completed lines of the same procedure (their tooth and when).
+		public static string? Uncovered(HospitalDentalBenefitRule? rule, int waitingMonthsMajor, DateTime? policyFrom, string category, int? tooth,
+			DateTime day, IEnumerable<(int? Tooth, DateTime At)> others)
+		{
+			if (rule?.Excluded == true) return Excluded;
+			if (waitingMonthsMajor > 0 && IsMajor(category) && policyFrom is DateTime from && day.Date < from.Date.AddMonths(waitingMonthsMajor)) return Waiting;
+			var list = others.ToList();
+			if (rule?.FrequencyMonths is int fm && fm > 0 && list.Any(o => (tooth == null || o.Tooth == tooth) && o.At <= day && o.At > day.AddMonths(-fm))) return Frequency;
+			if (rule?.PerYear is int py && py > 0 && list.Count(o => o.At.Year == day.Year && o.At <= day) >= py) return PerYear;
+			return null;
+		}
+
+		public static string? RuleRefusal(int? frequencyMonths, int? perYear) =>
+			frequencyMonths is < 1 or > 120 ? "A frequency is 1 to 120 months" : perYear is < 1 or > 52 ? "A yearly count is 1 to 52" : null;
 
 		/// The quotation of a plan. `usedThisYear` is the payer share already spent from the yearly limit; null
 		/// benefit = self-pay.
@@ -167,9 +222,9 @@ namespace CrossBuy.BL.Hospital
 			decimal gross = 0, payer = 0;
 			foreach (var l in lines.Where(x => !x.Declined))
 			{
-				decimal pct = l.NotCovered || l.Repeat ? 0 : CoverFor(benefit, l.Category);
+				decimal pct = l.NotCovered || l.Repeat || l.Uncovered != null ? 0 : CoverFor(benefit, l.Category);
 				decimal share = Math.Round(l.Fee * pct / 100m, decimals, MidpointRounding.AwayFromZero);
-				rows.Add(new(l.LineId, l.Fee, pct, share, l.Repeat));
+				rows.Add(new(l.LineId, l.Fee, pct, share, l.Repeat, l.Uncovered));
 				gross += l.Fee; payer += share;
 			}
 			bool capped = false;

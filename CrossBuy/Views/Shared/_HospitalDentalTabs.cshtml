@@ -124,15 +124,29 @@
     <div class="tab-pane fade" id="dch_i"><div class="card mb-5"><div class="card-body pt-6">
         @{ var orders = m.Images.Where(x => Model.ShowOrder?.Invoke(x) ?? true).ToList(); }
         @if (orders.Count == 0) { <div class="text-center text-muted py-10">@T["No imaging for this patient yet."]</div> }
+        @* H180 (staff only): a tooth's radiographs *@
+        @if (Model.Staff && orders.Any(o => o.Teeth != null))
+        {
+            var allTeeth = orders.Where(o => o.Teeth != null).SelectMany(o => o.Teeth!.Split(',')).Distinct().OrderBy(x => int.Parse(x)).ToList();
+            <div class="d-flex align-items-center gap-3 mb-6 mw-300px"><label class="fs-7 fw-semibold text-gray-700 text-nowrap">@T["Tooth"]</label>
+                <select class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true" data-img-filter><option value="">@T["All teeth"]</option>@foreach (var t in allTeeth) {<option value="@t">@t</option>}</select></div>
+        }
         @foreach (var x in orders)
         {
             var pics = Model.Pictures?.GetValueOrDefault(x.Id) ?? Array.Empty<HospitalRadImageRow>();
             var link = Model.ImageLink(x);
-            <div class="mb-7">
+            <div class="mb-7" data-img-row="@x.Teeth">
                 <div class="d-flex flex-stack mb-3">
                     <div>@if (link != null) {<a href="@link" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(x.Name, x.NameEn)</a>} else {<span class="fw-bold text-gray-900">@DisplayName.Of(x.Name, x.NameEn)</span>}
                         <span class="text-muted fs-8 ms-2"><span class="hp-num">@x.At.ToLocalTime().ToString("yyyy-MM-dd")</span> · <span class="hp-num">@x.AccessionNo</span></span></div>
-                    <span class="badge badge-light fs-8"><span class="hp-num me-1">@pics.Count</span>@T["attached images"]</span>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (Model.Staff)
+                        {
+                            if (x.Teeth != null) { foreach (var t in x.Teeth.Split(',')) {<span class="badge badge-light-primary fs-8 fw-bold hp-num">@t</span>} }
+                            if (Model.Edit) { <button type="button" class="btn btn-sm btn-icon btn-light-primary w-25px h-25px" title="@T["The teeth it shows"]" data-bs-toggle="tooltip" data-img-teeth="@x.Id" data-teeth="@x.Teeth"><i class="ki-outline ki-tag fs-5"></i></button> }
+                        }
+                        <span class="badge badge-light fs-8"><span class="hp-num me-1">@pics.Count</span>@T["attached images"]</span>
+                    </div>
                 </div>
                 <div class="row g-4">
                     @if (pics.Count == 0)

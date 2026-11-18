@@ -24,8 +24,11 @@
         ? $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0 me-3\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0 me-3\"><span class=\"symbol-label fw-bold fs-7 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
     var dental = (ViewBag.DentalBenefits as Dictionary<int, HospitalDentalBenefit>) ?? new();
+    var dRules = (ViewBag.DentalRules as IReadOnlyList<HospitalDentalBenefitRule>) ?? Array.Empty<HospitalDentalBenefitRule>();   // H182
+    var dProcs = (ViewBag.DentalProcedures as IReadOnlyList<HospitalDentalProcedureRow>) ?? Array.Empty<HospitalDentalProcedureRow>();
     object DentalData(HospitalPayer p) { var b = dental.GetValueOrDefault(p.ID); return new { payerId = p.ID, who = DisplayName.Of(p.Name, p.NameEn), limit = b?.YearlyLimit ?? 0,
-        cover = HospitalDentalCategory.All.ToDictionary(c => c, c => HospitalDentalRules.CoverFor(b, c)) }; }
+        cover = HospitalDentalCategory.All.ToDictionary(c => c, c => HospitalDentalRules.CoverFor(b, c)), waiting = b?.WaitingMonthsMajor ?? 0,
+        rules = dRules.Where(r => r.PayerId == p.ID).Select(r => new { serviceId = r.ServiceId, freq = r.FrequencyMonths, perYear = r.PerYear, excluded = r.Excluded }) }; }
     object PayerData(HospitalPayer p) => new { id = p.ID, code = p.Code, name = p.Name, nameEn = p.NameEn, kind = p.Kind, classes = p.Classes, discountPct = p.DiscountPct, copayPct = p.CopayPct, copayCap = p.CopayCap,
         priceListId = p.PriceListId, preauthCategories = HospitalInsuranceRules.PreauthCategories(p.PreauthCategories).ToArray(), validFrom = Day(p.ValidFrom), validTo = Day(p.ValidTo), isActive = p.IsActive };
     int active = Model.Count(r => r.Payer.IsActive && !r.Expired), expired = Model.Count(r => r.Expired);
@@ -226,6 +229,16 @@
                     <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-2">@T["dcat:" + c]</label><div class="input-group input-group-sm input-group-solid"><input type="number" min="0" max="100" step="1" class="form-control hp-num" dir="ltr" data-db-cat="@c" /><span class="input-group-text">%</span></div></div>
                 }
             </div>
+            @* H182: the contract's terms — the waiting period for major work, and per-procedure rules *@
+            <div class="separator separator-dashed my-8"></div>
+            <div class="d-flex flex-column mb-6 fv-row mw-250px"><label class="fs-6 fw-semibold mb-2">@T["Waiting period for major work (months)"]</label><input type="number" min="0" max="60" class="form-control form-control-solid hp-num" dir="ltr" data-db="waiting" /><div class="text-muted fs-8 mt-1">@T["Endodontics, prosthetics and implants, from the policy's start. 0 = none."]</div></div>
+            <div class="d-flex flex-stack mb-3"><label class="fs-6 fw-semibold">@T["Procedure rules"]</label><button type="button" class="btn btn-sm btn-light-primary" data-db-addrule><i class="ki-outline ki-plus fs-5"></i>@T["Add a rule"]</button></div>
+            <div class="table-responsive"><table class="table align-middle gs-0 gy-2 mb-0"><thead><tr class="fw-bold text-muted bg-light fs-8"><th class="ps-3 rounded-start">@T["Procedure"]</th><th>@T["Once every (months)"]</th><th>@T["At most a year"]</th><th>@T["Excluded"]</th><th class="rounded-end"></th></tr></thead><tbody data-db-rules></tbody></table></div>
+            <template data-db-rule-tpl><tr data-db-rule><td class="ps-3 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-r="service">@foreach (var pr in dProcs) {<option value="@pr.Procedure.ServiceId">@pr.Code · @DisplayName.Of(pr.Name, pr.NameEn)</option>}</select></td>
+                <td><input type="number" min="1" max="120" class="form-control form-control-sm form-control-solid hp-num w-90px" dir="ltr" data-r="freq" /></td>
+                <td><input type="number" min="1" max="52" class="form-control form-control-sm form-control-solid hp-num w-80px" dir="ltr" data-r="perYear" /></td>
+                <td><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-r="excluded" /></label></td>
+                <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger w-30px h-30px" data-db-delrule><i class="ki-outline ki-trash fs-5"></i></button></td></tr></template>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-dental>@T["Save"]</button></div>
         </div>
     </div></div></div>
@@ -322,16 +335,30 @@
             // the dental benefit (H15)
             var dEl = document.getElementById('dentalModal'), dentalFor = null;
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-edit-dental],[data-save-dental]'); if (!t || !dEl) return;
+                var t = e.target.closest('[data-edit-dental],[data-save-dental],[data-db-addrule],[data-db-delrule]'); if (!t || !dEl) return;
+                // H182: the contract's procedure rules — one row each, the theme's select2 on the procedure
+                var body = dEl.querySelector('[data-db-rules]'), tpl = dEl.querySelector('[data-db-rule-tpl]');
+                function addRule(r) {
+                    body.appendChild(tpl.content.cloneNode(true)); var row = body.lastElementChild, sel = row.querySelector('[data-r=service]');
+                    if (r) { sel.value = r.serviceId; row.querySelector('[data-r=freq]').value = r.freq || ''; row.querySelector('[data-r=perYear]').value = r.perYear || ''; row.querySelector('[data-r=excluded]').checked = !!r.excluded; }
+                    if (window.jQuery && jQuery.fn.select2) jQuery(sel).select2({ dropdownParent: jQuery(dEl), minimumResultsForSearch: 5, width: '100%' });
+                }
+                if (t.hasAttribute('data-db-addrule')) { addRule(null); return; }
+                if (t.hasAttribute('data-db-delrule')) { t.closest('[data-db-rule]').remove(); return; }
                 if (t.hasAttribute('data-edit-dental')) {
                     var d = JSON.parse(t.getAttribute('data-edit-dental')); dentalFor = d.payerId;
                     dEl.querySelector('[data-db-who]').textContent = d.who; dEl.querySelector('[data-db=limit]').value = d.limit;
                     dEl.querySelectorAll('[data-db-cat]').forEach(function (i) { i.value = d.cover[i.getAttribute('data-db-cat')]; });
+                    dEl.querySelector('[data-db=waiting]').value = d.waiting || 0;
+                    body.innerHTML = ''; (d.rules || []).forEach(addRule);
                     bootstrap.Modal.getOrCreateInstance(dEl).show(); return;
                 }
                 var cover = {}; dEl.querySelectorAll('[data-db-cat]').forEach(function (i) { cover[i.getAttribute('data-db-cat')] = Number(i.value || 0); });
+                var rules = Array.prototype.slice.call(body.querySelectorAll('[data-db-rule]')).map(function (row) { var f = row.querySelector('[data-r=freq]').value, y = row.querySelector('[data-r=perYear]').value;
+                    return { serviceId: +row.querySelector('[data-r=service]').value, frequencyMonths: f ? +f : null, perYear: y ? +y : null, excluded: row.querySelector('[data-r=excluded]').checked }; });
                 t.disabled = true;
-                post(@Json.Serialize(Url.Action("DentalSaveBenefit")), { payerId: dentalFor, yearlyLimit: Number(dEl.querySelector('[data-db=limit]').value || 0), cover: cover }).then(function (res) {
+                post(@Json.Serialize(Url.Action("DentalSaveBenefit")), { payerId: dentalFor, yearlyLimit: Number(dEl.querySelector('[data-db=limit]').value || 0), cover: cover,
+                    waitingMonthsMajor: Number(dEl.querySelector('[data-db=waiting]').value || 0), rules: rules }).then(function (res) {
                     t.disabled = false;
                     if (!res.ok) { toast('error', res.error || W.failed); return; }
                     toast('success', W.saved); bootstrap.Modal.getOrCreateInstance(dEl).hide(); swap();

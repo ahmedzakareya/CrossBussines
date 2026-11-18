@@ -100,6 +100,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? Risks { get; set; }
 		public int? SurgeryId { get; set; }
 		public int? AdmissionId { get; set; }
+		/// H179: the dental plan phase a procedure consent covers (informed consent, apart from the phase's price acceptance).
+		public int? DentalPhaseId { get; set; }
 		public string Decision { get; set; } = HospitalConsentDecision.Given;
 		public string SignerKind { get; set; } = HospitalConsentSigner.Patient;
 		public string SignerName { get; set; } = "";

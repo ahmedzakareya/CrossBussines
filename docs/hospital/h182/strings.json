@@ -1,0 +1,85 @@
+{
+ "unit": "H182 - the payer's dental contract terms: waiting period, frequency, yearly count, exclusion",
+ "strings": {
+  "unc:Waiting": {
+   "ar": "ضمن فترة الانتظار",
+   "en": "In the waiting period",
+   "fr": "Période d'attente"
+  },
+  "unc:Frequency": {
+   "ar": "قبل مرور المدة المسموحة",
+   "en": "Within the contract's frequency",
+   "fr": "Fréquence du contrat"
+  },
+  "unc:PerYear": {
+   "ar": "تجاوز العدد السنوي",
+   "en": "Over the yearly count",
+   "fr": "Plafond annuel atteint"
+  },
+  "unc:Excluded": {
+   "ar": "مستثنى من العقد",
+   "en": "Excluded by the contract",
+   "fr": "Exclu du contrat"
+  },
+  "Waiting period for major work (months)": {
+   "ar": "فترة الانتظار للأعمال الكبرى (بالأشهر)",
+   "en": "Waiting period for major work (months)",
+   "fr": "Délai de carence des soins lourds (mois)"
+  },
+  "Endodontics, prosthetics and implants, from the policy's start. 0 = none.": {
+   "ar": "علاج العصب والتركيبات والزراعة، من بداية الوثيقة. 0 = لا يوجد.",
+   "en": "Endodontics, prosthetics and implants, from the policy's start. 0 = none.",
+   "fr": "Endodontie, prothèses et implants, dès le début du contrat. 0 = aucun."
+  },
+  "Procedure rules": {
+   "ar": "قواعد الإجراءات",
+   "en": "Procedure rules",
+   "fr": "Règles par acte"
+  },
+  "Add a rule": {
+   "ar": "إضافة قاعدة",
+   "en": "Add a rule",
+   "fr": "Ajouter une règle"
+  },
+  "Once every (months)": {
+   "ar": "مرة كل (شهر)",
+   "en": "Once every (months)",
+   "fr": "Une fois tous les (mois)"
+  },
+  "At most a year": {
+   "ar": "الحد الأقصى سنويًا",
+   "en": "At most a year",
+   "fr": "Au plus par an"
+  },
+  "Excluded": {
+   "ar": "مستثنى",
+   "en": "Excluded",
+   "fr": "Exclu"
+  },
+  "A waiting period is 0 to 60 months": {
+   "ar": "فترة الانتظار من 0 إلى 60 شهرًا",
+   "en": "A waiting period is 0 to 60 months",
+   "fr": "Un délai de carence va de 0 à 60 mois"
+  },
+  "One rule per procedure": {
+   "ar": "قاعدة واحدة لكل إجراء",
+   "en": "One rule per procedure",
+   "fr": "Une règle par acte"
+  },
+  "A frequency is 1 to 120 months": {
+   "ar": "المدة من 1 إلى 120 شهرًا",
+   "en": "A frequency is 1 to 120 months",
+   "fr": "Une fréquence va de 1 à 120 mois"
+  },
+  "A yearly count is 1 to 52": {
+   "ar": "العدد السنوي من 1 إلى 52",
+   "en": "A yearly count is 1 to 52",
+   "fr": "Un nombre annuel va de 1 à 52"
+  },
+  "Choose a dental procedure": {
+   "ar": "اختر إجراءً من إجراءات الأسنان",
+   "en": "Choose a dental procedure",
+   "fr": "Choisissez un acte dentaire"
+  }
+ }
+}

@@ -8353,4 +8353,108 @@
   <data name="callgroup:pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
   <data name="callgroup:reception" xml:space="preserve"><value>Front desk</value></data>
   <data name="callgroup:admin" xml:space="preserve"><value>Administration</value></data>
+  <data name="A critical result needs more than &quot;no action&quot;: say what was done" xml:space="preserve"><value>A critical result needs more than "no action": say what was done</value></data>
+  <data name="Awaiting a result" xml:space="preserve"><value>Awaiting a result</value></data>
+  <data name="Choose a doctor of this hospital" xml:space="preserve"><value>Choose a doctor of this hospital</value></data>
+  <data name="Choose what was done about the result" xml:space="preserve"><value>Choose what was done about the result</value></data>
+  <data name="Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on." xml:space="preserve"><value>Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on.</value></data>
+  <data name="Expected by" xml:space="preserve"><value>Expected by</value></data>
+  <data name="Hand over" xml:space="preserve"><value>Hand over</value></data>
+  <data name="Hand over the result" xml:space="preserve"><value>Hand over the result</value></data>
+  <data name="Hand this result over? It leaves your inbox." xml:space="preserve"><value>Hand this result over? It leaves your inbox.</value></data>
+  <data name="Handed over" xml:space="preserve"><value>Handed over</value></data>
+  <data name="It is already theirs" xml:space="preserve"><value>It is already theirs</value></data>
+  <data name="Mark reviewed" xml:space="preserve"><value>Reviewed</value></data>
+  <data name="My orders awaiting a result" xml:space="preserve"><value>My orders awaiting a result</value></data>
+  <data name="My results to review" xml:space="preserve"><value>My results to review</value></data>
+  <data name="No order of yours is late." xml:space="preserve"><value>No order of yours is late.</value></data>
+  <data name="No owner" xml:space="preserve"><value>No owner</value></data>
+  <data name="Nothing waits for review." xml:space="preserve"><value>Nothing waits for review.</value></data>
+  <data name="Only the result's owner or the clinical lead hands it over" xml:space="preserve"><value>Only the result's owner or the clinical lead hands it over</value></data>
+  <data name="Only the result's owner or the clinical lead reviews it" xml:space="preserve"><value>Only the result's owner or the clinical lead reviews it</value></data>
+  <data name="Overdue — every owner" xml:space="preserve"><value>Overdue — every owner</value></data>
+  <data name="Owner" xml:space="preserve"><value>Owner</value></data>
+  <data name="Record the review" xml:space="preserve"><value>Record the review</value></data>
+  <data name="Record this review? It closes the result in your inbox." xml:space="preserve"><value>Record this review? It closes the result in your inbox.</value></data>
+  <data name="Required unless no action was needed." xml:space="preserve"><value>Required unless no action was needed.</value></data>
+  <data name="Result follow-up" xml:space="preserve"><value>Result follow-up</value></data>
+  <data name="Result reviewed" xml:space="preserve"><value>Result reviewed</value></data>
+  <data name="Say why it is handed over" xml:space="preserve"><value>Say why it is handed over</value></data>
+  <data name="Search patient, MRN or test" xml:space="preserve"><value>Search patient, MRN or test</value></data>
+  <data name="The follow-up table is not created yet (hospital_h178_result_reviews.sql)." xml:space="preserve"><value>The follow-up table is not created yet (hospital_h178_result_reviews.sql).</value></data>
+  <data name="This result is already reviewed" xml:space="preserve"><value>This result is already reviewed</value></data>
+  <data name="To review" xml:space="preserve"><value>To review</value></data>
+  <data name="Where it is" xml:space="preserve"><value>Where it is</value></data>
+  <data name="Write a note on what was done" xml:space="preserve"><value>Write a note on what was done</value></data>
+  <data name="act:ChangedTreatment" xml:space="preserve"><value>Treatment changed</value></data>
+  <data name="act:FollowUpBooked" xml:space="preserve"><value>Follow-up booked</value></data>
+  <data name="act:InformedPatient" xml:space="preserve"><value>Patient informed</value></data>
+  <data name="act:NoAction" xml:space="preserve"><value>No action needed</value></data>
+  <data name="act:Referred" xml:space="preserve"><value>Referred</value></data>
+  <data name="act:Repeated" xml:space="preserve"><value>Test repeated</value></data>
+  <data name="pri:Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="pri:Stat" xml:space="preserve"><value>STAT</value></data>
+  <data name="pri:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="res:Order" xml:space="preserve"><value>Order</value></data>
+  <data name="rk:Lab" xml:space="preserve"><value>Lab</value></data>
+  <data name="rk:Rad" xml:space="preserve"><value>Imaging</value></data>
+  <data name="rst:Arrived" xml:space="preserve"><value>Patient arrived</value></data>
+  <data name="rst:Collected" xml:space="preserve"><value>Collected</value></data>
+  <data name="rst:Ordered" xml:space="preserve"><value>Ordered</value></data>
+  <data name="rst:Received" xml:space="preserve"><value>In the lab</value></data>
+  <data name="rst:Reporting" xml:space="preserve"><value>Being reported</value></data>
+  <data name="rst:Resulted" xml:space="preserve"><value>Awaiting verification</value></data>
+  <data name="rst:Scanning" xml:space="preserve"><value>Scanning</value></data>
+  <data name="rst:Scheduled" xml:space="preserve"><value>Scheduled</value></data>
+  <data name="sev:Abnormal" xml:space="preserve"><value>Abnormal</value></data>
+  <data name="sev:Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="sev:Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="A treatment consent uses a procedure consent form" xml:space="preserve"><value>A treatment consent uses a procedure consent form</value></data>
+  <data name="Anaesthetic" xml:space="preserve"><value>Anaesthetic</value></data>
+  <data name="Choose the work done in this session" xml:space="preserve"><value>Choose the work done in this session</value></data>
+  <data name="Consent needed" xml:space="preserve"><value>Informed consent needed</value></data>
+  <data name="Consent signed" xml:space="preserve"><value>Consent signed</value></data>
+  <data name="Dose amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Instructions given" xml:space="preserve"><value>Instructions given</value></data>
+  <data name="Materials and lots" xml:space="preserve"><value>Materials and lots</value></data>
+  <data name="No session recorded yet." xml:space="preserve"><value>No session recorded yet.</value></data>
+  <data name="Only this patient's completed work not yet in a session is recorded" xml:space="preserve"><value>Only this patient's completed work not yet in a session is recorded</value></data>
+  <data name="Sign the session record" xml:space="preserve"><value>Sign the session record</value></data>
+  <data name="Sign this session record? It cannot be edited afterwards; an addendum corrects it." xml:space="preserve"><value>Sign this session record? It cannot be edited afterwards; an addendum corrects it.</value></data>
+  <data name="Take the patient's signed consent for this phase's treatment first" xml:space="preserve"><value>Take the patient's signed consent for this phase's treatment first</value></data>
+  <data name="Treatment session record" xml:space="preserve"><value>Treatment session record</value></data>
+  <data name="Treatment sessions" xml:space="preserve"><value>Treatment sessions</value></data>
+  <data name="What was done at each sitting, signed by the dentist; corrected only by an addendum." xml:space="preserve"><value>What was done at each sitting, signed by the dentist; corrected only by an addendum.</value></data>
+  <data name="Work done" xml:space="preserve"><value>Work done</value></data>
+  <data name="Work done and not yet in a signed session:" xml:space="preserve"><value>Work done and not yet in a signed session:</value></data>
+  <data name="Work done in this session" xml:space="preserve"><value>Work done in this session</value></data>
+  <data name="Write the anaesthetic given, or &quot;none&quot;" xml:space="preserve"><value>Write the anaesthetic given, or "none"</value></data>
+  <data name="Write the instructions given to the patient" xml:space="preserve"><value>Write the instructions given to the patient</value></data>
+  <data name="e.g. lidocaine 2% with adrenaline, or none" xml:space="preserve"><value>e.g. lidocaine 2% with adrenaline, or none</value></data>
+  <data name="sec:Session" xml:space="preserve"><value>Session record</value></data>
+  <data name="signed by you when saved" xml:space="preserve"><value>signed by you when saved</value></data>
+  <data name="All teeth" xml:space="preserve"><value>All teeth</value></data>
+  <data name="An image shows up to 16 teeth" xml:space="preserve"><value>An image shows up to 16 teeth</value></data>
+  <data name="Chart as of…" xml:space="preserve"><value>Chart as of…</value></data>
+  <data name="Read-only: the marks recorded by the end of that day, each in the state it had then." xml:space="preserve"><value>Read-only: the marks recorded by the end of that day, each in the state it had then.</value></data>
+  <data name="The chart as it stood on {0}" xml:space="preserve"><value>The chart as it stood on {0}</value></data>
+  <data name="The teeth it shows" xml:space="preserve"><value>The teeth it shows</value></data>
+  <data name="The teeth this image shows (FDI numbers, e.g. 16, 17)" xml:space="preserve"><value>The teeth this image shows (FDI numbers, e.g. 16, 17)</value></data>
+  <data name="Write the teeth as FDI numbers, e.g. 16, 17" xml:space="preserve"><value>Write the teeth as FDI numbers, e.g. 16, 17</value></data>
+  <data name="A frequency is 1 to 120 months" xml:space="preserve"><value>A frequency is 1 to 120 months</value></data>
+  <data name="A waiting period is 0 to 60 months" xml:space="preserve"><value>A waiting period is 0 to 60 months</value></data>
+  <data name="A yearly count is 1 to 52" xml:space="preserve"><value>A yearly count is 1 to 52</value></data>
+  <data name="Add a rule" xml:space="preserve"><value>Add a rule</value></data>
+  <data name="At most a year" xml:space="preserve"><value>At most a year</value></data>
+  <data name="Choose a dental procedure" xml:space="preserve"><value>Choose a dental procedure</value></data>
+  <data name="Endodontics, prosthetics and implants, from the policy's start. 0 = none." xml:space="preserve"><value>Endodontics, prosthetics and implants, from the policy's start. 0 = none.</value></data>
+  <data name="Excluded" xml:space="preserve"><value>Excluded</value></data>
+  <data name="Once every (months)" xml:space="preserve"><value>Once every (months)</value></data>
+  <data name="One rule per procedure" xml:space="preserve"><value>One rule per procedure</value></data>
+  <data name="Procedure rules" xml:space="preserve"><value>Procedure rules</value></data>
+  <data name="Waiting period for major work (months)" xml:space="preserve"><value>Waiting period for major work (months)</value></data>
+  <data name="unc:Excluded" xml:space="preserve"><value>Excluded by the contract</value></data>
+  <data name="unc:Frequency" xml:space="preserve"><value>Within the contract's frequency</value></data>
+  <data name="unc:PerYear" xml:space="preserve"><value>Over the yearly count</value></data>
+  <data name="unc:Waiting" xml:space="preserve"><value>In the waiting period</value></data>
 </root>

@@ -1,0 +1,125 @@
+{
+ "unit": "H179 - the signed dental treatment session and the plan phase's informed consent",
+ "strings": {
+  "Consent signed": {
+   "ar": "الموافقة موقّعة",
+   "en": "Consent signed",
+   "fr": "Consentement signé"
+  },
+  "Consent needed": {
+   "ar": "تلزم موافقة مستنيرة",
+   "en": "Informed consent needed",
+   "fr": "Consentement éclairé requis"
+  },
+  "Treatment sessions": {
+   "ar": "جلسات العلاج",
+   "en": "Treatment sessions",
+   "fr": "Séances de soins"
+  },
+  "What was done at each sitting, signed by the dentist; corrected only by an addendum.": {
+   "ar": "ما تم في كل جلسة موقّعًا من الطبيب، ولا يُصحَّح إلا بإضافة.",
+   "en": "What was done at each sitting, signed by the dentist; corrected only by an addendum.",
+   "fr": "Ce qui a été fait à chaque séance, signé par le dentiste ; corrigé seulement par un addendum."
+  },
+  "Sign the session record": {
+   "ar": "توقيع سجل الجلسة",
+   "en": "Sign the session record",
+   "fr": "Signer le compte rendu de séance"
+  },
+  "Work done and not yet in a signed session:": {
+   "ar": "أعمال منجزة لم تُسجَّل بعد في جلسة موقّعة:",
+   "en": "Work done and not yet in a signed session:",
+   "fr": "Soins faits non encore consignés dans une séance signée :"
+  },
+  "No session recorded yet.": {
+   "ar": "لا توجد جلسة مسجلة بعد.",
+   "en": "No session recorded yet.",
+   "fr": "Aucune séance consignée."
+  },
+  "Work done": {
+   "ar": "الأعمال المنجزة",
+   "en": "Work done",
+   "fr": "Soins faits"
+  },
+  "Anaesthetic": {
+   "ar": "التخدير الموضعي",
+   "en": "Anaesthetic",
+   "fr": "Anesthésique"
+  },
+  "Materials and lots": {
+   "ar": "المواد وأرقام تشغيلاتها",
+   "en": "Materials and lots",
+   "fr": "Matériaux et lots"
+  },
+  "Instructions given": {
+   "ar": "التعليمات المقدمة للمريض",
+   "en": "Instructions given",
+   "fr": "Consignes données"
+  },
+  "Treatment session record": {
+   "ar": "سجل جلسة العلاج",
+   "en": "Treatment session record",
+   "fr": "Compte rendu de séance"
+  },
+  "signed by you when saved": {
+   "ar": "يُوقَّع باسمك عند الحفظ",
+   "en": "signed by you when saved",
+   "fr": "signé par vous à l'enregistrement"
+  },
+  "Work done in this session": {
+   "ar": "الأعمال المنجزة في هذه الجلسة",
+   "en": "Work done in this session",
+   "fr": "Soins de cette séance"
+  },
+  "e.g. lidocaine 2% with adrenaline, or none": {
+   "ar": "مثل ليدوكايين 2% مع أدرينالين، أو «لا شيء»",
+   "en": "e.g. lidocaine 2% with adrenaline, or none",
+   "fr": "ex. lidocaïne 2 % adrénalinée, ou aucun"
+  },
+  "Dose amount": {
+   "ar": "الكمية",
+   "en": "Amount",
+   "fr": "Quantité"
+  },
+  "Sign this session record? It cannot be edited afterwards; an addendum corrects it.": {
+   "ar": "هل توقّع سجل الجلسة؟ لا يمكن تعديله بعد ذلك، ويُصحَّح بإضافة.",
+   "en": "Sign this session record? It cannot be edited afterwards; an addendum corrects it.",
+   "fr": "Signer ce compte rendu ? Il ne pourra plus être modifié ; un addendum le corrige."
+  },
+  "Take the patient's signed consent for this phase's treatment first": {
+   "ar": "خذ موافقة المريض الموقّعة على علاج هذه المرحلة أولًا",
+   "en": "Take the patient's signed consent for this phase's treatment first",
+   "fr": "Recueillez d'abord le consentement signé pour les soins de cette phase"
+  },
+  "A treatment consent uses a procedure consent form": {
+   "ar": "موافقة العلاج تُؤخذ على نموذج موافقة إجراء",
+   "en": "A treatment consent uses a procedure consent form",
+   "fr": "Un consentement aux soins utilise un formulaire de procédure"
+  },
+  "Choose the work done in this session": {
+   "ar": "اختر الأعمال المنجزة في هذه الجلسة",
+   "en": "Choose the work done in this session",
+   "fr": "Choisissez les soins de cette séance"
+  },
+  "Only this patient's completed work not yet in a session is recorded": {
+   "ar": "لا يُسجَّل إلا عمل منجز لهذا المريض لم يُسجَّل في جلسة بعد",
+   "en": "Only this patient's completed work not yet in a session is recorded",
+   "fr": "Seuls les soins faits de ce patient non encore consignés sont enregistrés"
+  },
+  "Write the anaesthetic given, or \"none\"": {
+   "ar": "اكتب التخدير المعطى، أو «لا شيء»",
+   "en": "Write the anaesthetic given, or \"none\"",
+   "fr": "Indiquez l'anesthésique, ou « aucun »"
+  },
+  "Write the instructions given to the patient": {
+   "ar": "اكتب التعليمات المقدمة للمريض",
+   "en": "Write the instructions given to the patient",
+   "fr": "Indiquez les consignes données au patient"
+  },
+  "sec:Session": {
+   "ar": "سجل الجلسة",
+   "en": "Session record",
+   "fr": "Compte rendu"
+  }
+ }
+}

@@ -78,7 +78,7 @@ namespace CrossBuy.Controllers
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}/Consents/New")]
 		[HospitalPerm(HospitalActions.Consult)]
-		public async Task<IActionResult> NewConsent(int id, int? surgeryId, CancellationToken ct = default)
+		public async Task<IActionResult> NewConsent(int id, int? surgeryId, int? dentalPhaseId, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
@@ -90,6 +90,20 @@ namespace CrossBuy.Controllers
 			ViewBag.Forms = forms;
 			ViewBag.Cases = ready ? await ConsentSvc.CasesAsync(ctx, id, ct) : new List<HospitalConsentCase>();
 			ViewBag.SurgeryId = surgeryId;
+			// H179: a dental plan phase's informed consent — the procedure named from the phase and its work
+			if (dentalPhaseId is int dph)
+			{
+				var ph = await (from x in _db.Set<HospitalDentalPlanPhase>().AsNoTracking() join pl in _db.Set<HospitalDentalPlan>().AsNoTracking() on x.PlanId equals pl.ID
+								where x.ID == dph && x.CompanyId == ctx.CompanyId && pl.PatientId == id select new { x.ID, x.Title, x.TitleEn, pl.PlanNo, PlanId = pl.ID }).FirstOrDefaultAsync(ct);
+				if (ph != null)
+				{
+					var work = await (from l in _db.Set<HospitalDentalPlanLine>().AsNoTracking() join s in _db.Set<HospitalService>().AsNoTracking() on l.ServiceId equals s.ID
+									  where l.PhaseId == ph.ID && l.Status != HospitalDentalLineStatus.Cancelled select new { s.Name, s.NameEn, l.Tooth }).ToListAsync(ct);
+					ViewBag.DentalPhaseId = ph.ID;
+					ViewBag.DentalPlanId = ph.PlanId;
+					ViewBag.DentalProcedure = ph.PlanNo + " · " + DisplayName.Of(ph.Title, ph.TitleEn) + ": " + string.Join("، ", work.Select(w => DisplayName.Of(w.Name, w.NameEn) + (w.Tooth is int t ? " (" + t + ")" : "")));
+				}
+			}
 			ViewBag.Age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
 			// the clinician who explains is the signed-in employee: their practitioner name when they have one (the text's {doctor})
 			var doc = await _db.HospitalPractitioners.AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && x.EmployeeId == ctx.EmployeeId && x.IsActive).Select(x => new { x.Name, x.NameEn }).FirstOrDefaultAsync(ct);

@@ -1,0 +1,169 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H178 — the result follow-up inbox: the doctor's results to review (critical, abnormal, normal; overdue marked),
+    their orders still awaiting a result past the expected turnaround, and — for the clinical lead — every overdue
+    result and the ones nobody owns. Each list searches and pages; reviewing and handing over open in windows.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Result follow-up"].Value;
+    var mine = (IReadOnlyList<HospitalResultItem>)ViewBag.Mine;
+    var awaiting = (IReadOnlyList<HospitalAwaitingItem>)ViewBag.Awaiting;
+    var all = (IReadOnlyList<HospitalResultItem>)ViewBag.All;
+    var doctors = (IReadOnlyList<(int EmployeeId, string Name)>)ViewBag.Doctors;
+    bool lead = ViewBag.Lead == true, ready = ViewBag.Ready == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Local(DateTime utc) => utc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv);
+    string Tone(string sev) => sev switch { HospitalResultReviewRules.Critical => "danger", HospitalResultReviewRules.Abnormal => "info", _ => "secondary" };
+    void Rows(IReadOnlyList<HospitalResultItem> items, bool showOwner, string tableId)
+    {
+        if (items.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-check-circle fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Nothing waits for review."]</div></div>; return; }
+        <div class="d-flex align-items-center position-relative mb-5 mw-350px"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid ps-12" placeholder="@T["Search patient, MRN or test"]" data-search="@tableId" /></div>
+        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0" id="@tableId">
+            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Result"]</th><th>@T["Severity"]</th><th>@T["Review by"]</th>@if (showOwner) {<th>@T["Owner"]</th>}<th class="pe-4 rounded-end text-end"></th></tr></thead>
+            <tbody>
+                @foreach (var i in items)
+                {
+                    <tr data-row>
+                        <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 d-block">@DisplayName.Of(i.Patient, i.PatientEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num">@i.Mrn</bdi></td>
+                        <td><span class="badge badge-light fs-8 fw-bold me-1">@T["rk:" + i.Kind]</span><span class="text-gray-800 fw-bold fs-7">@DisplayName.Of(i.Test, i.TestEn)</span>
+                            <div class="text-muted fs-8 hp-num" dir="ltr" style="text-align:start">@Local(i.ResultedAt)</div>
+                            @if (i.Summary != null) {<div class="text-gray-700 fs-8 mt-1" dir="auto">@i.Summary</div>}
+                            @if (i.HandReason != null) {<div class="text-gray-500 fs-8 mt-1">@T["Handed over"]: <span dir="auto">@i.HandReason</span></div>}</td>
+                        <td><span class="badge badge-light-@Tone(i.Severity) fs-7 fw-bold">@T["sev:" + i.Severity]</span></td>
+                        <td><span class="fw-bold fs-7 hp-num @(i.Overdue ? "text-danger" : "text-gray-800")" dir="ltr">@Local(i.DueAt)</span>@if (i.Overdue) {<div><span class="badge badge-danger fs-8 fw-bold mt-1">@T["Overdue"]</span></div>}</td>
+                        @if (showOwner) {<td><span class="fw-semibold fs-7 @(i.Owner == null ? "text-danger" : "text-gray-800")">@(i.Owner ?? T["No owner"].Value)</span></td>}
+                        <td class="pe-4 text-end text-nowrap">
+                            <button type="button" class="btn btn-sm btn-primary" data-review="@i.OrderId" data-kind="@i.Kind" data-sev="@i.Severity" data-what="@DisplayName.Of(i.Test, i.TestEn) — @DisplayName.Of(i.Patient, i.PatientEn)">@T["Mark reviewed"]</button>
+                            <button type="button" class="btn btn-sm btn-light ms-1" data-hand="@i.OrderId" data-kind="@i.Kind" data-what="@DisplayName.Of(i.Test, i.TestEn) — @DisplayName.Of(i.Patient, i.PatientEn)">@T["Hand over"]</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table></div>
+        <div class="d-flex flex-stack flex-wrap pt-5" data-pager="@tableId"></div>
+    }
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Result follow-up"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Diagnostics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Result follow-up"]</li></ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) {<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i><div class="fs-6 text-gray-700 fw-semibold">@T["The follow-up table is not created yet (hospital_h178_result_reviews.sql)."]</div></div>}
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
+            <div class="fs-6 text-gray-700 fw-semibold">@T["Every result stays with the doctor who ordered it until they record what was done: critical within 24 hours, abnormal within 72, normal within 7 days. Hand it over if it is not yours to act on."]</div>
+        </div>
+        <div class="row g-5 mb-5">
+            @foreach (var (label, val, tone, icon) in new[] { (T["To review"].Value, mine.Count, "primary", "notepad"), (T["Overdue"].Value, mine.Count(x => x.Overdue), "danger", "time"),
+                (T["Critical"].Value, mine.Count(x => x.Severity == HospitalResultReviewRules.Critical), "danger", "information-5"), (T["Awaiting a result"].Value, awaiting.Count, "info", "flask") })
+            {
+                <div class="col-6 col-xl-3"><div class="card card-flush h-100"><div class="card-header pt-5 flex-nowrap gap-3">
+                    <div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold lh-1 hp-num @(tone == "danger" && val > 0 ? "text-danger" : "text-gray-900")">@val</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span></div>
+                    <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2 text-@tone"></i></span></div></div>
+                </div><div class="card-body pt-0"></div></div></div>
+            }
+        </div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tMine">@T["My results to review"] <span class="badge badge-light-primary ms-2 hp-num">@mine.Count</span></a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tWait">@T["My orders awaiting a result"] <span class="badge badge-light-info ms-2 hp-num">@awaiting.Count</span></a></li>
+                    @if (lead) {<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tAll">@T["Overdue — every owner"] <span class="badge badge-light-danger ms-2 hp-num">@all.Count</span></a></li>}
+                </ul>
+            </div>
+            <div class="card-body pt-5"><div class="tab-content">
+                <div class="tab-pane fade show active" id="tMine">@{ Rows(mine, false, "rMine"); }</div>
+                <div class="tab-pane fade" id="tWait">
+                    @if (awaiting.Count == 0) {<div class="text-center py-10"><i class="ki-outline ki-check-circle fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No order of yours is late."]</div></div>}
+                    else
+                    {
+                        <div class="d-flex align-items-center position-relative mb-5 mw-350px"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid ps-12" placeholder="@T["Search patient, MRN or test"]" data-search="rWait" /></div>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0" id="rWait">
+                            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["res:Order"]</th><th>@T["Priority"]</th><th>@T["Where it is"]</th><th class="pe-4 rounded-end">@T["Expected by"]</th></tr></thead>
+                            <tbody>@foreach (var a in awaiting)
+                            {
+                                <tr data-row><td class="ps-4"><span class="text-gray-900 fw-bold fs-6 d-block">@DisplayName.Of(a.Patient, a.PatientEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num">@a.Mrn</bdi></td>
+                                    <td><span class="badge badge-light fs-8 fw-bold me-1">@T["rk:" + a.Kind]</span><span class="text-gray-800 fw-bold fs-7">@DisplayName.Of(a.Test, a.TestEn)</span><div class="text-muted fs-8 hp-num" dir="ltr" style="text-align:start">@Local(a.OrderedAt)</div></td>
+                                    <td><span class="badge badge-light-@(a.Priority == HospitalLabPriority.Routine ? "secondary" : "danger") fs-8 fw-bold">@T["pri:" + a.Priority]</span></td>
+                                    <td><span class="text-gray-700 fw-semibold fs-7">@T["rst:" + a.Status]</span></td>
+                                    <td class="pe-4"><span class="text-danger fw-bold fs-7 hp-num" dir="ltr">@Local(a.ExpectedBy)</span></td></tr>
+                            }</tbody>
+                        </table></div>
+                        <div class="d-flex flex-stack flex-wrap pt-5" data-pager="rWait"></div>
+                    }
+                </div>
+                @if (lead) {<div class="tab-pane fade" id="tAll">@{ Rows(all, true, "rAll"); }</div>}
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-10 text-center"><h1 class="mb-3">@T["Result reviewed"]</h1><div class="text-muted fw-semibold fs-6" data-rv-what></div></div>
+        <div class="row g-6">
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["What was done"]</label><select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#reviewModal" data-rv="action"><option value=""></option>@foreach (var a in HospitalResultAction.All) {<option value="@a">@T["act:" + a]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="500" dir="auto" data-rv="note"></textarea><div class="text-muted fs-8 mt-1">@T["Required unless no action was needed."]</div></div>
+        </div>
+        <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rv-save>@T["Record the review"]</button></div>
+    </div>
+</div></div></div>
+<div class="modal fade" id="handModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-10 text-center"><h1 class="mb-3">@T["Hand over the result"]</h1><div class="text-muted fw-semibold fs-6" data-hd-what></div></div>
+        <div class="row g-6">
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["To"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#handModal" data-hd="to"><option value=""></option>@foreach (var d in doctors) {<option value="@d.EmployeeId">@d.Name</option>}</select></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Why"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-hd="reason" /></div>
+        </div>
+        <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-hd-save>@T["Hand over"]</button></div>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, base = @Json.Serialize(Url.Content("~/Hospital/Results/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), review: @Json.Serialize(T["Record this review? It closes the result in your inbox."].Value),
+                hand: @Json.Serialize(T["Hand this result over? It leaves your inbox."].Value), prev: @Json.Serialize(T["Previous"].Value), next: @Json.Serialize(T["Next"].Value) };
+            var rm = document.getElementById('reviewModal'), hm = document.getElementById('handModal'), cur = null, key = null;
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok, 'X-Idempotency-Key': key || '' }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
+            // each list: search, and 20 rows a page
+            document.querySelectorAll('[data-pager]').forEach(function (p) {
+                var id = p.getAttribute('data-pager'), t = document.getElementById(id), q = document.querySelector('[data-search="' + id + '"]'), page = 0, size = 20;
+                function draw() {
+                    var term = (q && q.value || '').trim().toLowerCase(), rows = Array.prototype.slice.call(t.querySelectorAll('tbody [data-row]'));
+                    var hit = rows.filter(function (r) { return !term || r.innerText.toLowerCase().indexOf(term) >= 0; });
+                    var pages = Math.max(1, Math.ceil(hit.length / size)); if (page >= pages) page = pages - 1;
+                    rows.forEach(function (r) { r.style.display = 'none'; }); hit.slice(page * size, page * size + size).forEach(function (r) { r.style.display = ''; });
+                    p.innerHTML = '<span class="text-muted fs-7 hp-num">' + hit.length + '</span><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-light" ' + (page === 0 ? 'disabled' : '') + ' data-pg="-1">' + W.prev + '</button><span class="btn btn-sm btn-light-primary hp-num">' + (page + 1) + ' / ' + pages + '</span><button type="button" class="btn btn-sm btn-light" ' + (page >= pages - 1 ? 'disabled' : '') + ' data-pg="1">' + W.next + '</button></div>';
+                }
+                p.addEventListener('click', function (e) { var b = e.target.closest('[data-pg]'); if (!b) return; page += +b.getAttribute('data-pg'); draw(); });
+                if (q) q.addEventListener('input', function () { page = 0; draw(); });
+                draw();
+            });
+            function newKey() { return 'res-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-review],[data-hand],[data-rv-save],[data-hd-save]'); if (!t) return;
+                if (t.hasAttribute('data-review')) { cur = { id: t.getAttribute('data-review'), kind: t.getAttribute('data-kind') }; key = newKey(); rm.querySelector('[data-rv-what]').textContent = t.getAttribute('data-what'); jQuery(rm.querySelector('[data-rv=action]')).val('').trigger('change'); rm.querySelector('[data-rv=note]').value = ''; bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
+                if (t.hasAttribute('data-hand')) { cur = { id: t.getAttribute('data-hand'), kind: t.getAttribute('data-kind') }; key = null; hm.querySelector('[data-hd-what]').textContent = t.getAttribute('data-what'); jQuery(hm.querySelector('[data-hd=to]')).val('').trigger('change'); hm.querySelector('[data-hd=reason]').value = ''; bootstrap.Modal.getOrCreateInstance(hm).show(); return; }
+                if (t.hasAttribute('data-rv-save')) { var b = { kind: cur.kind, action: rm.querySelector('[data-rv=action]').value || null, note: rm.querySelector('[data-rv=note]').value.trim() || null };
+                    cbConfirm(W.review).then(function (ok) { if (ok) post(base + cur.id + '/Review', b).then(done); }); return; }
+                var h = { kind: cur.kind, toEmployeeId: +hm.querySelector('[data-hd=to]').value || 0, reason: hm.querySelector('[data-hd=reason]').value.trim() || null };
+                cbConfirm(W.hand).then(function (ok) { if (ok) post(base + cur.id + '/Hand', h).then(done); });
+            });
+        })();
+    </script>
+}

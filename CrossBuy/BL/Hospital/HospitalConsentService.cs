@@ -44,7 +44,7 @@ namespace CrossBuy.BL.Hospital
 	public sealed class HospitalConsentInput
 	{
 		public int? FormId { get; set; } public string? Language { get; set; } public string? ProcedureName { get; set; } public string? Risks { get; set; }
-		public int? SurgeryId { get; set; } public string? Decision { get; set; } public string? SignerKind { get; set; } public string? SignerName { get; set; }
+		public int? SurgeryId { get; set; } public int? DentalPhaseId { get; set; } public string? Decision { get; set; } public string? SignerKind { get; set; } public string? SignerName { get; set; }
 		public string? SignerRelation { get; set; } public string? ProxyReason { get; set; } public string? Interpreter { get; set; } public int? WitnessEmployeeId { get; set; }
 		/// The signature as the pad drew it: a PNG data URL.
 		public string? Signature { get; set; }
@@ -273,6 +273,10 @@ namespace CrossBuy.BL.Hospital
 			if (!await _db.Employee.AnyAsync(e => e.ID == input.WitnessEmployeeId && e.EmpCompanyID == ctx.CompanyId && e.IsActive, ct)) return HospitalResult.Fail("Choose the witness");
 			if (input.SurgeryId is int sid && !await _db.Set<HospitalSurgery>().AnyAsync(s => s.ID == sid && s.CompanyId == ctx.CompanyId && s.PatientId == patientId
 				&& (s.Status == HospitalSurgeryStatus.Planned || s.Status == HospitalSurgeryStatus.InProgress), ct)) return HospitalResult.Fail("not_found");
+			if (input.DentalPhaseId != null && form!.Kind != HospitalConsentKind.Procedure) return HospitalResult.Fail("A treatment consent uses a procedure consent form");
+			// H179: a dental phase of one of this patient's plans
+			if (input.DentalPhaseId is int dph && !await (from ph in _db.Set<HospitalDentalPlanPhase>() join pl in _db.Set<HospitalDentalPlan>() on ph.PlanId equals pl.ID
+					where ph.ID == dph && ph.CompanyId == ctx.CompanyId && pl.PatientId == patientId select ph.ID).AnyAsync(ct)) return HospitalResult.Fail("not_found");
 
 			var doctor = await _db.HospitalPractitioners.AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && x.EmployeeId == me && x.IsActive).Select(x => new { x.ID, x.Name, x.NameEn }).FirstOrDefaultAsync(ct);
 			var meName = await _db.Employee.AsNoTracking().Where(e => e.ID == me).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
@@ -292,7 +296,7 @@ namespace CrossBuy.BL.Hospital
 					{
 						CompanyId = ctx.CompanyId, ConsentNo = HospitalDentalPracticeRules.NextNo(nos, "CF-", 6), PatientId = patientId, FormId = form.ID, FormVersion = form.Version, Kind = form.Kind,
 						Title = en ? form.TitleEn : form.Title, Text = text, Language = input.Language!, ProcedureName = Clip(input.ProcedureName, 300), Risks = Clip(input.Risks, 1000),
-						SurgeryId = input.SurgeryId, AdmissionId = admission, Decision = input.Decision!, SignerKind = input.SignerKind!,
+						SurgeryId = input.SurgeryId, DentalPhaseId = input.DentalPhaseId, AdmissionId = admission, Decision = input.Decision!, SignerKind = input.SignerKind!,
 						SignerName = proxy ? Clip(input.SignerName, 200)! : (en ? PatientEn(p) : p.Name), SignerRelation = proxy ? Clip(input.SignerRelation, 60) : null,
 						ProxyReason = proxy ? input.ProxyReason : null, Interpreter = Clip(input.Interpreter, 200), ExplainedByEmployeeId = me, PractitionerId = doctor?.ID,
 						WitnessEmployeeId = input.WitnessEmployeeId!.Value, SignedAt = nowUtc,

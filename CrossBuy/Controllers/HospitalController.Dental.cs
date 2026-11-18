@@ -33,14 +33,17 @@ namespace CrossBuy.Controllers
 		[HttpGet("Dental/Chart")]
 		[HttpGet("Dental/Chart/{patientId:int}")]
 		[HospitalPerm(HospitalActions.Read)]
-		public async Task<IActionResult> DentalChart(int? patientId, CancellationToken ct = default)
+		public async Task<IActionResult> DentalChart(int? patientId, DateTime? asOf, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			Chrome();
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
 			if (patientId is not int id) return View(null);
-			var view = await DentalSvc.ChartAsync(ctx, id, DateTime.UtcNow, ct);
+			// H180: the chart as it stood at the end of a past day — read-only
+			DateTime? asOfUtc = asOf is DateTime d && d.Date < HospitalNursingService.UtcToWard(DateTime.UtcNow).Date ? HospitalNursingService.WardToUtc(d.Date.AddDays(1)).AddTicks(-1) : null;
+			if (asOfUtc != null) { ViewBag.AsOf = asOf!.Value.Date; ViewBag.CanConsult = false; }
+			var view = await DentalSvc.ChartAsync(ctx, id, DateTime.UtcNow, ct, asOfUtc);
 			if (view == null) return NotFound();
 			ViewBag.Procedures = await DentalSvc.ProceduresAsync(ctx, ct);
 			ViewBag.Dentists = await DentalSvc.DentistsAsync(ctx, ct);
@@ -125,7 +128,35 @@ namespace CrossBuy.Controllers
 			if (view == null) return NotFound();
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
 			ViewBag.CanDecide = ViewBag.CanConsult == true || await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
+			// H179: each phase's informed consent, the patient's signed sessions, and the work done but not yet in a session
+			var sessions = ActivatorUtilities.CreateInstance<HospitalDentalSessionService>(HttpContext.RequestServices);
+			ViewBag.PhaseConsents = await sessions.PhaseConsentsAsync(ctx, view.Phases.Select(p => p.Phase.ID).ToList(), ct);
+			ViewBag.Sessions = await sessions.SessionsAsync(ctx, view.Row.Plan.PatientId, ct);
+			ViewBag.Unrecorded = await sessions.UnrecordedAsync(ctx, view.Row.Plan.PatientId, ct);
+			ViewBag.SessionAddenda = new Dictionary<int, HospitalAddendaBlock>();
+			foreach (var srow in (IReadOnlyList<HospitalDentalSessionRow>)ViewBag.Sessions)
+				((Dictionary<int, HospitalAddendaBlock>)ViewBag.SessionAddenda)[srow.Session.ID] = await AddendaSvc.BlockAsync(ctx, CrossBuy.Models.Context.Hospital.HospitalAddendumSubject.DentalSession, srow.Session.ID, ct);
 			return View(view);
+		}
+
+		// H180: the teeth an image shows
+		public sealed class HospitalImageTeethInput { public string? Teeth { get; set; } }
+
+		[HttpPost("Dental/Images/{id:int}/Teeth"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalImageTeeth(int id, [FromBody] HospitalImageTeethInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await DentalSvc.SetImageTeethAsync(ctx, id, input.Teeth, ct));
+		}
+
+		// H179: the dentist signs the session record of the work done
+		[HttpPost("Dental/Patient/{patientId:int}/Session"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult), HospitalIdempotent]
+		public async Task<IActionResult> DentalSignSession(int patientId, [FromBody] HospitalDentalSessionInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ActivatorUtilities.CreateInstance<HospitalDentalSessionService>(HttpContext.RequestServices).SignAsync(ctx, patientId, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dental/Plan"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
