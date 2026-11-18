@@ -1,0 +1,70 @@
+{
+ "unit": "H184 - dental work taken back",
+ "strings": {
+  "Only work marked done is taken back": {
+   "ar": "لا يُسترجع إلا عمل مُسجَّل منجزًا",
+   "en": "Only work marked done is taken back",
+   "fr": "Seul un acte marqué fait peut être annulé"
+  },
+  "The patient has already paid this bill: the cashier settles the amount first, then take the work back": {
+   "ar": "سدّد المريض هذه الفاتورة: يسوّي أمين الصندوق المبلغ أولًا، ثم يُسترجع العمل",
+   "en": "The patient has already paid this bill: the cashier settles the amount first, then take the work back",
+   "fr": "Le patient a déjà réglé cette facture : la caisse régularise d'abord le montant, puis annulez l'acte"
+  },
+  "Write why the work is taken back": {
+   "ar": "اكتب سبب استرجاع العمل",
+   "en": "Write why the work is taken back",
+   "fr": "Indiquez pourquoi l'acte est annulé"
+  },
+  "The bill was closed in a foreign currency: correct it at billing": {
+   "ar": "أُغلقت الفاتورة بعملة أجنبية: يُصحَّح ذلك في الفوترة",
+   "en": "The bill was closed in a foreign currency: correct it at billing",
+   "fr": "La facture a été clôturée en devise étrangère : corrigez-la à la facturation"
+  },
+  "The insurer paid part of this work: correct it through the insurance claim": {
+   "ar": "دفعت شركة التأمين جزءًا من هذا العمل: يُصحَّح عبر مطالبة التأمين",
+   "en": "The insurer paid part of this work: correct it through the insurance claim",
+   "fr": "L'assureur a payé une partie de cet acte : corrigez-le par la demande de remboursement"
+  },
+  "Not done: take it back": {
+   "ar": "لم يُنجز: استرجاعه",
+   "en": "Not done: take it back",
+   "fr": "Non fait : annuler"
+  },
+  "Work taken back": {
+   "ar": "أعمال مُسترجَعة",
+   "en": "Work taken back",
+   "fr": "Actes annulés"
+  },
+  "Marked done by mistake: returned to the plan, and the charge reversed.": {
+   "ar": "سُجّلت منجزة خطأً: أُعيدت إلى الخطة وعُكست قيمتها.",
+   "en": "Marked done by mistake: returned to the plan, and the charge reversed.",
+   "fr": "Marqués faits par erreur : remis au plan, et la facturation annulée."
+  },
+  "Reason taken back": {
+   "ar": "سبب الاسترجاع",
+   "en": "Reason taken back",
+   "fr": "Motif de l'annulation"
+  },
+  "Credit note": {
+   "ar": "إشعار دائن",
+   "en": "Credit note",
+   "fr": "Avoir"
+  },
+  "Charge removed": {
+   "ar": "حُذف البند",
+   "en": "Charge removed",
+   "fr": "Ligne retirée"
+  },
+  "Taken back by": {
+   "ar": "استرجعه",
+   "en": "Taken back by",
+   "fr": "Annulé par"
+  },
+  "\"{0}\" was not done? It returns to the plan and its charge is reversed. Why?": {
+   "ar": "هل لم يُنجز «{0}»؟ سيعود إلى الخطة وتُعكس قيمته. ما السبب؟",
+   "en": "\"{0}\" was not done? It returns to the plan and its charge is reversed. Why?",
+   "fr": "« {0} » n'a pas été fait ? Il revient au plan et sa facturation est annulée. Pourquoi ?"
+  }
+ }
+}

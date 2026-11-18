@@ -16,6 +16,7 @@
     var sessions = (ViewBag.Sessions as IReadOnlyList<HospitalDentalSessionRow>) ?? Array.Empty<HospitalDentalSessionRow>();
     var unrecorded = (ViewBag.Unrecorded as IReadOnlyList<HospitalSessionLine>) ?? Array.Empty<HospitalSessionLine>();
     var sessionAddenda = (ViewBag.SessionAddenda as Dictionary<int, HospitalAddendaBlock>) ?? new Dictionary<int, HospitalAddendaBlock>();
+    var corrections = (ViewBag.Corrections as IReadOnlyList<HospitalDentalCorrectionRow>) ?? Array.Empty<HospitalDentalCorrectionRow>();   // H184
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -158,7 +159,8 @@
                                                 <td class="text-end">@if (q != null && q.CoverPct > 0) {<span class="badge badge-light-info fs-7 fw-bold hp-num">@q.CoverPct.ToString("0.##")%</span>} else {<span class="text-muted">—</span>}</td>
                                                 <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@(q == null ? "—" : N(q.Fee - q.PayerShare))</span></td>
                                                 <td class="text-end pe-4 text-nowrap">
-                                                    @if (l.Line.Status == HospitalDentalLineStatus.Completed) { <span class="badge badge-light-success fs-7 fw-bold">@T["Done"]</span> }
+                                                    @if (l.Line.Status == HospitalDentalLineStatus.Completed) { <span class="badge badge-light-success fs-7 fw-bold">@T["Done"]</span>
+                                                        if (canConsult) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Not done: take it back"]" data-bs-toggle="tooltip" data-line-undo="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-arrow-circle-left fs-3"></i></button>} }
                                                     else if (canConsult && dec == HospitalDentalDecision.Accepted) { <button type="button" class="btn btn-sm btn-light-primary" data-line-done="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-check fs-4"></i>@T["Mark done"]</button> }
                                                     else if (canConsult && dec == HospitalDentalDecision.Pending) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["Take out of the plan"]" data-bs-toggle="tooltip" data-line-cancel="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-cross fs-3"></i></button> }
                                                 </td>
@@ -168,6 +170,26 @@
                                 </table></div>
                             }
                         </div>
+                    </div>
+                }
+                @* H184: work taken back after it was marked done by mistake, with the bill's reversal *@
+                @if (corrections.Count > 0)
+                {
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Work taken back"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Marked done by mistake: returned to the plan, and the charge reversed."]</span></h3></div>
+                        <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0">
+                            <thead><tr class="fs-7 fw-bold text-gray-500 border-bottom-0"><th class="min-w-150px">@T["Procedure"]</th><th>@T["Reason taken back"]</th><th>@T["Bill"]</th><th>@T["Taken back by"]</th><th class="text-end">@T["Date"]</th></tr></thead>
+                            <tbody>@foreach (var c in corrections)
+                            {
+                                <tr><td><span class="text-gray-800 fw-bold">@DisplayName.Of(c.Procedure, c.ProcedureEn)</span>@if (c.Row.Tooth is int ct2) {<span class="badge badge-light-primary fs-8 ms-2 hp-num">@ct2</span>}</td>
+                                    <td class="text-gray-700 fs-7">@c.Row.Reason</td>
+                                    <td>@if (c.Row.CreditNoteId != null) {<span class="badge badge-light-info fs-8">@T["Credit note"] <span class="hp-num ms-1">@N(c.Row.Reversed ?? 0)</span></span>}
+                                        else if (c.Row.Reversed != null) {<span class="badge badge-light-primary fs-8">@T["Charge removed"] <span class="hp-num ms-1">@N(c.Row.Reversed.Value)</span></span>}
+                                        else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-gray-700 fs-7">@c.By</td>
+                                    <td class="text-end text-gray-600 fs-7 hp-num" dir="ltr">@c.Row.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td></tr>
+                            }</tbody></table></div></div>
                     </div>
                 }
                 @* H179: the signed treatment sessions of this patient, and the work done not yet in one *@
@@ -310,6 +332,7 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental")), planId = @r.Plan.ID;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                 accept: @Json.Serialize(T["Who signs for the patient to accept \"{0}\"?"].Value), decline: @Json.Serialize(T["Who signs for the patient to decline \"{0}\"?"].Value),
+                undo: @Json.Serialize(T["\"{0}\" was not done? It returns to the plan and its charge is reversed. Why?"].Value),
                 done: @Json.Serialize(T["Mark \"{0}\" done?"].Value), cancel: @Json.Serialize(T["Take \"{0}\" out of the plan?"].Value),
                 phase: @Json.Serialize(T["The new phase's name in Arabic"].Value), phaseEn: @Json.Serialize(T["The new phase's name in English"].Value),
                 name: @Json.Serialize(DisplayName.Of(r.PatientName, r.PatientNameEn)) };
@@ -327,7 +350,12 @@
             }
             function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-decide],[data-line-done],[data-line-cancel],[data-add-phase]'); if (!t) return;
+                var t = e.target.closest('[data-decide],[data-line-done],[data-line-cancel],[data-line-undo],[data-add-phase]'); if (!t) return;
+                if (t.hasAttribute('data-line-undo')) {   // H184
+                    cbPrompt(W.undo.replace('{0}', t.getAttribute('data-what')), { kind: 'danger', textarea: true }).then(function (why) {
+                        if (!why) return; t.disabled = true; post(root + '/Line/' + t.getAttribute('data-line-undo') + '/Undo', { reason: why }).then(done(t)); });
+                    return;
+                }
                 if (t.hasAttribute('data-decide')) {
                     var accept = t.getAttribute('data-accept') === '1';
                     cbPrompt((accept ? W.accept : W.decline).replace('{0}', t.getAttribute('data-what')), { kind: accept ? 'primary' : 'danger', value: W.name }).then(function (who) {

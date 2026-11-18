@@ -17,6 +17,8 @@ namespace CrossBuy.Models.Context.Hospital
 	public static class HospitalCreditNoteSource
 	{
 		public const string DispenseReturn = "HospitalDispenseReturn";
+		/// H184: dental work marked done by mistake, taken back (the source is the HospitalDentalCorrections row).
+		public const string DentalCorrection = "HospitalDentalCorrection";
 	}
 
 	public class HospitalCreditNote

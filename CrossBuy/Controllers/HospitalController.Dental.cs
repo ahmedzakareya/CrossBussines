@@ -132,6 +132,7 @@ namespace CrossBuy.Controllers
 			var sessions = ActivatorUtilities.CreateInstance<HospitalDentalSessionService>(HttpContext.RequestServices);
 			ViewBag.PhaseConsents = await sessions.PhaseConsentsAsync(ctx, view.Phases.Select(p => p.Phase.ID).ToList(), ct);
 			ViewBag.Sessions = await sessions.SessionsAsync(ctx, view.Row.Plan.PatientId, ct);
+			ViewBag.Corrections = await ActivatorUtilities.CreateInstance<HospitalDentalCorrectionService>(HttpContext.RequestServices).ListAsync(ctx, id, ct);   // H184
 			ViewBag.Unrecorded = await sessions.UnrecordedAsync(ctx, view.Row.Plan.PatientId, ct);
 			ViewBag.SessionAddenda = new Dictionary<int, HospitalAddendaBlock>();
 			foreach (var srow in (IReadOnlyList<HospitalDentalSessionRow>)ViewBag.Sessions)
@@ -198,6 +199,16 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await DentalSvc.CompleteLineAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		public sealed class DentalUndoInput { public string? Reason { get; set; } }
+
+		[HttpPost("Dental/Line/{id:int}/Undo"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]   // H184
+		public async Task<IActionResult> DentalLineUndo(int id, [FromBody] DentalUndoInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ActivatorUtilities.CreateInstance<HospitalDentalCorrectionService>(HttpContext.RequestServices).UndoAsync(ctx, id, input?.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dental/Line/{id:int}/Cancel"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

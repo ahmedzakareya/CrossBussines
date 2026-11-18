@@ -28,6 +28,31 @@ namespace CrossBuy.Models.Context.Hospital
 		public int SignedByEmployeeId { get; set; }
 	}
 
+	/// H184: work marked done by mistake, taken back. The line returns to planned; this row keeps what it was (when and by
+	/// whom it was marked done, its session and its bill line), why it was taken back, and the bill's reversal — the
+	/// open bill's line removed, or a credit note on a closed bill.
+	public class HospitalDentalCorrection
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int PatientId { get; set; }
+		public int PlanId { get; set; }
+		public int LineId { get; set; }
+		public int ServiceId { get; set; }
+		public int? Tooth { get; set; }
+		public decimal Fee { get; set; }
+		public DateTime? CompletedAt { get; set; }
+		public int? CompletedByEmployeeId { get; set; }
+		public int? SessionId { get; set; }
+		public int? BillLineId { get; set; }
+		/// What the bill gave back: the open bill's line removed (its amount), or the credit note issued on the closed bill.
+		public decimal? Reversed { get; set; }
+		public int? CreditNoteId { get; set; }
+		public string Reason { get; set; } = "";
+		public DateTime At { get; set; }
+		public int ByEmployeeId { get; set; }
+	}
+
 	public static class HospitalDentalSessionModel
 	{
 		public static void Configure(ModelBuilder b)
@@ -45,6 +70,14 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Note).HasMaxLength(1000);
 				e.HasIndex(x => new { x.CompanyId, x.SessionNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.SessionAt });
+			});
+			b.Entity<HospitalDentalCorrection>(e =>
+			{
+				e.ToTable("HospitalDentalCorrections");   // H184
+				e.Property(x => x.Fee).HasColumnType("decimal(18,4)");
+				e.Property(x => x.Reversed).HasColumnType("decimal(18,4)");
+				e.Property(x => x.Reason).HasMaxLength(300);
+				e.HasIndex(x => new { x.CompanyId, x.PlanId });
 			});
 		}
 	}

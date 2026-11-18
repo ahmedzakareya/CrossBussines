@@ -8622,4 +8622,17 @@
   <data name="Left the call (state)" xml:space="preserve"><value>Parti</value></data>
   <data name="Removed (state)" xml:space="preserve"><value>Retiré</value></data>
   <data name="{0} people — {1} joined" xml:space="preserve"><value>{0} personnes — {1} ont rejoint</value></data>
+  <data name="&quot;{0}&quot; was not done? It returns to the plan and its charge is reversed. Why?" xml:space="preserve"><value>« {0} » n'a pas été fait ? Il revient au plan et sa facturation est annulée. Pourquoi ?</value></data>
+  <data name="Charge removed" xml:space="preserve"><value>Ligne retirée</value></data>
+  <data name="Credit note" xml:space="preserve"><value>Avoir</value></data>
+  <data name="Marked done by mistake: returned to the plan, and the charge reversed." xml:space="preserve"><value>Marqués faits par erreur : remis au plan, et la facturation annulée.</value></data>
+  <data name="Not done: take it back" xml:space="preserve"><value>Non fait : annuler</value></data>
+  <data name="Only work marked done is taken back" xml:space="preserve"><value>Seul un acte marqué fait peut être annulé</value></data>
+  <data name="Reason taken back" xml:space="preserve"><value>Motif de l'annulation</value></data>
+  <data name="Taken back by" xml:space="preserve"><value>Annulé par</value></data>
+  <data name="The bill was closed in a foreign currency: correct it at billing" xml:space="preserve"><value>La facture a été clôturée en devise étrangère : corrigez-la à la facturation</value></data>
+  <data name="The insurer paid part of this work: correct it through the insurance claim" xml:space="preserve"><value>L'assureur a payé une partie de cet acte : corrigez-le par la demande de remboursement</value></data>
+  <data name="The patient has already paid this bill: the cashier settles the amount first, then take the work back" xml:space="preserve"><value>Le patient a déjà réglé cette facture : la caisse régularise d'abord le montant, puis annulez l'acte</value></data>
+  <data name="Work taken back" xml:space="preserve"><value>Actes annulés</value></data>
+  <data name="Write why the work is taken back" xml:space="preserve"><value>Indiquez pourquoi l'acte est annulé</value></data>
 </root>

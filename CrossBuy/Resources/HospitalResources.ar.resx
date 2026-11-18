@@ -8622,4 +8622,17 @@
   <data name="Left the call (state)" xml:space="preserve"><value>غادر</value></data>
   <data name="Removed (state)" xml:space="preserve"><value>أُخرج</value></data>
   <data name="{0} people — {1} joined" xml:space="preserve"><value>{0} مشاركين — انضم {1}</value></data>
+  <data name="&quot;{0}&quot; was not done? It returns to the plan and its charge is reversed. Why?" xml:space="preserve"><value>هل لم يُنجز «{0}»؟ سيعود إلى الخطة وتُعكس قيمته. ما السبب؟</value></data>
+  <data name="Charge removed" xml:space="preserve"><value>حُذف البند</value></data>
+  <data name="Credit note" xml:space="preserve"><value>إشعار دائن</value></data>
+  <data name="Marked done by mistake: returned to the plan, and the charge reversed." xml:space="preserve"><value>سُجّلت منجزة خطأً: أُعيدت إلى الخطة وعُكست قيمتها.</value></data>
+  <data name="Not done: take it back" xml:space="preserve"><value>لم يُنجز: استرجاعه</value></data>
+  <data name="Only work marked done is taken back" xml:space="preserve"><value>لا يُسترجع إلا عمل مُسجَّل منجزًا</value></data>
+  <data name="Reason taken back" xml:space="preserve"><value>سبب الاسترجاع</value></data>
+  <data name="Taken back by" xml:space="preserve"><value>استرجعه</value></data>
+  <data name="The bill was closed in a foreign currency: correct it at billing" xml:space="preserve"><value>أُغلقت الفاتورة بعملة أجنبية: يُصحَّح ذلك في الفوترة</value></data>
+  <data name="The insurer paid part of this work: correct it through the insurance claim" xml:space="preserve"><value>دفعت شركة التأمين جزءًا من هذا العمل: يُصحَّح عبر مطالبة التأمين</value></data>
+  <data name="The patient has already paid this bill: the cashier settles the amount first, then take the work back" xml:space="preserve"><value>سدّد المريض هذه الفاتورة: يسوّي أمين الصندوق المبلغ أولًا، ثم يُسترجع العمل</value></data>
+  <data name="Work taken back" xml:space="preserve"><value>أعمال مُسترجَعة</value></data>
+  <data name="Write why the work is taken back" xml:space="preserve"><value>اكتب سبب استرجاع العمل</value></data>
 </root>
