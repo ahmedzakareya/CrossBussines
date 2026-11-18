@@ -543,6 +543,11 @@
 				new() { LabelAr = "كشوف الأتعاب", LabelEn = "Fee statements", Action = "Fees", Controller = "Hospital" },
 				new() { LabelAr = "المناوبات عند الطلب", LabelEn = "On-call", Action = "OnCall", Controller = "Hospital" },
 			}},
+			new() { LabelAr = "التواصل", LabelEn = "Communication", Icon = "ki-outline ki-call", Items = new()   // H176
+			{
+				new() { LabelAr = "الاتصال الداخلي", LabelEn = "Internal calls", Action = "Calls", Controller = "Hospital" },
+				new() { LabelAr = "إعدادات الاتصال", LabelEn = "Call settings", Action = "CallSettings", Controller = "Hospital" },
+			}},
 			new() { LabelAr = "المالية والتأمين", LabelEn = "Finance & insurance", Icon = "ki-outline ki-bill", Items = new()
 			{
 				new() { LabelAr = "الفوترة والخزينة", LabelEn = "Billing & cashier", Action = "Bills", Controller = "Hospital" },

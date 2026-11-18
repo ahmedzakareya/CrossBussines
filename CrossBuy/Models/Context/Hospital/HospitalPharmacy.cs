@@ -127,6 +127,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalImplantStabilityModel.Configure(b);  // H168: implant stability by protocol
 			HospitalClinicalRulesModel.Configure(b);     // H171: the clinical rule register and its approvals
 			HospitalClinicalAddendaModel.Configure(b);   // H177: addenda and corrections on locked records
+			HospitalCallModel.Configure(b);              // H176: internal calls (the record, never the audio) and their settings
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

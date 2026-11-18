@@ -1304,6 +1304,7 @@ app.MapControllers();
 app.MapHub<NotificationsHub>("/hubs/notifications");
 app.MapHub<CrossBuy.Hubs.PosHub>("/hubs/pos");
 app.MapHub<CrossBuy.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<CrossBuy.Hubs.HospitalCallHub>("/hubs/calls");   // H176: hospital internal calls (ringing + WebRTC signalling only)
 app.UseMiddleware<SessionValidationMiddleware>();
 
 app.UseAuthentication();

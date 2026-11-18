@@ -7,6 +7,7 @@
     Design: the approved prototype, #/lab-critical.
 *@
 @await Html.PartialAsync("_CbConfirm")
+@await Html.PartialAsync("_HospitalCalls")   @* H176: an internal call rings on every screen, like this alert *@
 <div id="cbLabAlertRoot" class="d-none">@Html.AntiForgeryToken()</div>
 <style>
     .cbla-overlay{position:fixed;inset:0;z-index:2000;background:rgba(127,29,29,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}

@@ -1,0 +1,133 @@
+@using System.Security.Claims
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using Microsoft.EntityFrameworkCore
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> HT
+@inject CrossBuy.Models.Context.CrossDbContext CallDb
+@*
+    H176 — internal calls on EVERY screen of the system (rendered by _LabCriticalAlerts, which every layout renders): a
+    call rings wherever the person is working, like a critical value does. Only an employee connects; a portal patient
+    renders nothing. Design: the approved prototype (#/calls) — the ringing card, the dark stage, the context panel.
+*@
+@{
+    var uid = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var me = string.IsNullOrEmpty(uid) ? null : await CallDb.Employee.AsNoTracking().Where(e => e.UserId == uid && e.IsActive)
+        .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.EmpCompanyID }).FirstOrDefaultAsync();
+    string? mePhoto = null;
+    if (me != null)
+    {
+        var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(CallDb, new CrossBuy.Models.Platform.BusinessContext { CompanyId = me.EmpCompanyID }, new[] { me.ID });
+        mePhoto = photos.GetValueOrDefault(me.ID);
+    }
+    string S(string k) => HT[k].Value;
+}
+@if (me != null)
+{
+<style>
+    .cbc-num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+    .cbc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
+    .cbc-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .cbc-overlay{position:fixed;inset:0;z-index:2050;background:rgba(15,23,42,.62);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
+    .cbc-card{background:#fff;border-radius:1.25rem;max-width:420px;width:100%;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);text-align:center}
+    .cbc-band{background:linear-gradient(160deg,var(--cb-brand,#3A5795),var(--cb-brand-ink,#1F2D4D));color:#fff;padding:34px 24px 26px}
+    .cbc-kind{font-size:.85rem;font-weight:600;opacity:.75;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
+    .cbc-ring{position:relative;display:inline-block;border-radius:50%}
+    .cbc-ring:before,.cbc-ring:after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(255,255,255,.55);animation:cbcRing 1.8s ease-out infinite}
+    .cbc-ring:after{animation-delay:.9s}
+    .cbc-ring .cbc-face{border:3px solid #fff}
+    @@keyframes cbcRing{0%{transform:scale(.92);opacity:1}100%{transform:scale(1.35);opacity:0}}
+    .cbc-about{display:flex;align-items:center;gap:.75rem;border-radius:.75rem;padding:1rem;margin-bottom:1.5rem;text-align:start;background:#E7F0FF}
+    .cbc-round{width:58px;height:58px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:0;color:#fff;transition:transform .12s}
+    .cbc-round:hover{transform:scale(1.07)}.cbc-round.accept{background:var(--cb-brand,#3A5795)}.cbc-round.decline{background:#DC2626}.cbc-round.ghost{background:#F1F3F8;color:#1F2D4D}
+    .cbc-stage{position:fixed;inset:0;z-index:2040;background:#0F172A;display:flex;color:#fff}
+    .cbc-main{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
+    .cbc-top{display:flex;align-items:center;gap:12px;padding:16px 22px;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent);position:absolute;inset-inline:0;top:0;z-index:2}
+    .cbc-remote{flex:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#2A3B63 0%,#0F172A 70%);overflow:hidden;position:relative}
+    .cbc-remote video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0F172A}
+    .cbc-remote video.cbc-contain{object-fit:contain}
+    .cbc-self{position:absolute;bottom:104px;inset-inline-end:22px;width:220px;aspect-ratio:4/3;border-radius:.9rem;overflow:hidden;background:#1F2D4D;border:2px solid rgba(255,255,255,.25);box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:2}
+    .cbc-self video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    .cbc-self .tag{position:absolute;bottom:6px;inset-inline-start:8px;font-size:.75rem;background:rgba(0,0,0,.45);padding:1px 8px;border-radius:20px}
+    .cbc-bar{position:absolute;bottom:22px;inset-inline:0;display:flex;justify-content:center;gap:12px;z-index:2}
+    .cbc-ctl{width:54px;height:54px;border-radius:50%;border:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);color:#fff;transition:background .15s}
+    .cbc-ctl:hover{background:rgba(255,255,255,.24)}.cbc-ctl:disabled{opacity:.45}.cbc-ctl.off{background:#fff;color:#1F2D4D}.cbc-ctl.end{background:#DC2626;width:70px;border-radius:28px}
+    .cbc-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);padding:4px 12px;border-radius:20px;font-size:.8rem;color:#fff;white-space:nowrap}
+    .cbc-bars{display:flex;gap:2px;align-items:flex-end;height:14px}.cbc-bars i{width:3px;background:#fff;border-radius:2px;display:block}
+    .cbc-side{width:340px;background:var(--bs-body-bg,#fff);color:var(--bs-gray-900);overflow-y:auto;flex-shrink:0}
+    .cbc-hit:hover{background:#F5F8FF}
+    @@media (max-width:991px){.cbc-side{display:none}.cbc-self{width:130px;bottom:96px}}
+</style>
+<script>
+    window.cbCallsUrl = {
+        hub: @Json.Serialize(Url.Content("~/hubs/calls")),
+        signalr: @Json.Serialize(Url.Content("~/Backend-assets/plugins/signalr.min.js")),
+        ice: @Json.Serialize(Url.Content("~/Hospital/Calls/Ice")),
+        note: @Json.Serialize(Url.Content("~/Hospital/Calls/__id__/Note")),
+        patient: @Json.Serialize(Url.Content("~/Hospital/Patient/__id__")),
+        patientCard: @Json.Serialize(Url.Content("~/Hospital/Calls/Patient/__id__")),
+        patientSearch: @Json.Serialize(Url.Content("~/Hospital/Patients/Search"))
+    };
+    window.cbCallsT = {
+        me: { id: @me.ID, name: @Json.Serialize(DisplayName.Of(me.FullName ?? "", me.FullNameEn ?? me.FullName ?? "")), photo: @Json.Serialize(mePhoto), initials: @Json.Serialize(HospitalUi.Initials(me.FullNameEn ?? me.FullName)) },
+        incomingVideo: @Json.Serialize(S("Incoming internal video call")),
+        incomingVoice: @Json.Serialize(S("Incoming internal voice call")),
+        aboutPatient: @Json.Serialize(S("About the patient")),
+        reason: @Json.Serialize(S("Reason (call)")),
+        decline: @Json.Serialize(S("Decline")),
+        voiceOnly: @Json.Serialize(S("Voice only")),
+        answer: @Json.Serialize(S("Answer")),
+        quick1: @Json.Serialize(S("One minute, I will call you back")),
+        quick2: @Json.Serialize(S("I am in a procedure, send a message")),
+        ringLeft: @Json.Serialize(S("{0} seconds, then it is recorded as a missed call")),
+        replySent: @Json.Serialize(S("Your reply was sent to {0}")),
+        calling: @Json.Serialize(S("Calling…")),
+        you: @Json.Serialize(S("You")),
+        context: @Json.Serialize(S("Call context")),
+        contextSub: @Json.Serialize(S("Kept in the call log and the patient file")),
+        openFile: @Json.Serialize(S("Open patient file")),
+        notLinked: @Json.Serialize(S("Not linked to a patient")),
+        searchPatient: @Json.Serialize(S("Link to a patient: name or file number…")),
+        noMatch: @Json.Serialize(S("No matching patient")),
+        quickNote: @Json.Serialize(S("Quick note")),
+        notePh: @Json.Serialize(S("e.g. agreed to move the patient to the cardiac unit")),
+        noteHelp: @Json.Serialize(S("The note joins the call record with your name and time; no audio or video is recorded.")),
+        inCall: @Json.Serialize(S("In the call")),
+        hospitalOnly: @Json.Serialize(S("Hospital network only · encrypted")),
+        qExcellent: @Json.Serialize(S("Excellent")),
+        qGood: @Json.Serialize(S("Good")),
+        qWeak: @Json.Serialize(S("Weak")),
+        reconnecting: @Json.Serialize(S("Reconnecting…")),
+        mute: @Json.Serialize(S("Mute")),
+        unmute: @Json.Serialize(S("Unmute")),
+        camera: @Json.Serialize(S("Camera")),
+        share: @Json.Serialize(S("Share screen — an image or a result")),
+        addPhase2: @Json.Serialize(S("Add someone — group calls come in phase two")),
+        end: @Json.Serialize(S("End call")),
+        theirCamOff: @Json.Serialize(S("Their camera is off")),
+        theyMuted: @Json.Serialize(S("their microphone is muted")),
+        voiceCall: @Json.Serialize(S("Voice call")),
+        sharing: @Json.Serialize(S("You are sharing your screen")),
+        ended: @Json.Serialize(S("Call ended — saved in the log")),
+        declined: @Json.Serialize(S("{0} declined the call")),
+        noAnswer: @Json.Serialize(S("No answer — recorded as a missed call")),
+        missedFrom: @Json.Serialize(S("Missed call from {0}")),
+        missedGeneric: @Json.Serialize(S("You have a missed call — see the call log")),
+        alreadyInCall: @Json.Serialize(S("You are already in a call")),
+        insecure: @Json.Serialize(S("Calls need the system to be opened on a secure (HTTPS) address")),
+        notConnected: @Json.Serialize(S("The call service is not connected yet — try again in a moment")),
+        noMedia: @Json.Serialize(S("The camera or microphone could not be opened ({0})")),
+        noMic: @Json.Serialize(S("No microphone was found on this device")),
+        lost: @Json.Serialize(S("The connection was lost")),
+        failed: @Json.Serialize(S("The call could not be made")),
+        forbidden: @Json.Serialize(S("The call could not be made")),
+        not_found: @Json.Serialize(S("The call could not be made")),
+        "You cannot call yourself": @Json.Serialize(S("You cannot call yourself")),
+        "You are already in a call": @Json.Serialize(S("You are already in a call")),
+        "Your group may not call this person's group (call settings)": @Json.Serialize(S("Your group may not call this person's group (call settings)")),
+        "{0} is in another call — it is recorded as a missed call so they call you back": @Json.Serialize(S("{0} is in another call — it is recorded as a missed call so they call you back")),
+        "{0} is not connected — it is recorded as a missed call so they call you back": @Json.Serialize(S("{0} is not connected — it is recorded as a missed call so they call you back")),
+        @Html.Raw(Json.Serialize(HospitalCallService.NoTables)): @Json.Serialize(S(HospitalCallService.NoTables))
+    };
+</script>
+<script src="~/js/hospital/hospital-calls.js" asp-append-version="true"></script>
+}

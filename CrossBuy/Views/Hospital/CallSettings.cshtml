@@ -1,0 +1,210 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCallSettings
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H176 — internal call settings. Design: the approved prototype, #/calls-setup. What must be ready (a secure address,
+    the live connection, the hospital's relay, this device's camera and microphone) is TESTED here, from this browser,
+    not ticked by hand; what calls may do; who may call whom; and what is recorded — never audio or video.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Internal call settings"].Value;
+    bool installed = ViewBag.Installed == true;
+    var policy = HospitalCallRules.ParsePolicy(Model.Policy);
+    var groups = HospitalCallGroups.All;
+    string G(string g) => T["callgroup:" + g].Value;
+    bool hasSecret = !string.IsNullOrEmpty(Model.TurnSecret);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+<style>
+    .hc-check{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:#F1F1F4}
+    .hc-check.ok{background:#E7F0FF}.hc-check.ok i{color:var(--cb-brand,#3A5795)}
+    .hc-check.bad{background:#FEE2E2}.hc-check.bad i{color:#DC2626}
+</style>
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Internal call settings"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Communication"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Calls")" class="text-muted text-hover-primary">@T["Internal calls"]</a></li></ul>
+        </div>
+        <div class="d-flex align-items-center gap-2"><button type="button" class="btn btn-sm btn-primary" id="hcSave" @(installed ? "" : "disabled")><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!installed)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold">@T["Internal calls are not installed yet"]</h4><div class="fs-6 text-gray-700">@T[HospitalCallService.NoTables]</div></div>
+            </div>
+        }
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hms-notice bg-light-primary border-primary">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-primary"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap"><div class="mb-3 mb-md-0 fw-semibold pe-5">
+                <h4 class="text-gray-900 fw-bold mb-1">@T["Calls never leave the hospital network"]</h4>
+                <div class="fs-6 text-gray-700">@T["Audio and video go straight between the two devices, encrypted, or through the internal relay when the networks differ. There is no outside server."]</div></div>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0" id="hcReady">…</span></div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-6">
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Infrastructure readiness"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Tested from the server and from this browser"]</span></div>
+                        <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="hcTest"><i class="ki-outline ki-arrows-circle fs-4"></i>@T["Test again"]</button></div></div>
+                    <div class="card-body pt-0" id="hcChecks">
+                        @foreach (var (k, title, sub) in new[] {
+                            ("https", "Trusted internal HTTPS address", "The browser opens the camera and microphone only on a secure connection"),
+                            ("hub", "Signalling channel (live connection)", "The same real-time channel the system uses for notices and chat"),
+                            ("turn", "Internal relay server (TURN)", "Carries the call between separate department networks — inside the hospital only"),
+                            ("relay", "The relay answers from this device", "UDP 3478 and 49152–65535 must be open between the department networks"),
+                            ("media", "Camera and microphone on this device", "A local test from the browser") })
+                        {
+                            <div class="d-flex align-items-center gap-4 py-4 border-bottom border-gray-200" data-check="@k">
+                                <span class="hc-check"><span class="spinner-border spinner-border-sm text-gray-400"></span></span>
+                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-900">@T[title]</div><div class="text-muted fs-7">@T[sub]</div></div>
+                                <span class="badge badge-light fw-bold fs-8" dir="ltr" data-val>…</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["The hospital's relay"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["IT's coturn server: its addresses and its shared secret (static-auth-secret)"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Relay addresses"]</label>
+                            <input class="form-control form-control-solid hp-num" dir="ltr" id="hcUrls" value="@Model.TurnUrls" placeholder="turn:10.0.5.20:3478, turns:turn.hospital.local:5349" />
+                            <div class="text-muted fs-8 mt-1">@T["Comma separated. Empty: calls work only between devices on the same network."]</div></div>
+                        <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Shared secret"]</label>
+                            <input type="password" class="form-control form-control-solid" dir="ltr" id="hcSecret" autocomplete="new-password" placeholder="@(hasSecret ? T["Saved — type to replace it"].Value : T["Not set (relay)"].Value)" />
+                            <div class="text-muted fs-8 mt-1">@T["It never reaches a browser: each call gets its own password, valid for 12 hours."]</div>
+                            @if (hasSecret) { <label class="form-check form-check-custom form-check-solid mt-3"><input class="form-check-input" type="checkbox" id="hcClear" /><span class="form-check-label text-gray-700 fs-7">@T["Remove the saved secret"]</span></label> }</div>
+                    </div>
+                </div>
+
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Call options"]</span></div></div>
+                    <div class="card-body pt-0">
+                        @foreach (var (id, title, sub, on, locked) in new[] {
+                            ("hcVideo", "Video calls", "On with voice; can be limited to voice on weak networks", Model.VideoEnabled, false),
+                            ("hcShare", "Screen sharing", "To show an image or a result during a consult", Model.ScreenShareEnabled, false),
+                            ("hcGroup", "Group calls (up to 8 people)", "Needs an internal media server — phase two", false, true),
+                            ("hcRec", "Recording calls", "Off: no audio or video is kept; only the log and the note", false, true) })
+                        {
+                            <div class="d-flex flex-stack py-4 border-bottom border-gray-200"><div class="me-5"><div class="fw-bold text-gray-900">@T[title]</div><div class="text-muted fs-7">@T[sub]</div></div>
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="@id" @(on ? "checked" : "") @(locked ? "disabled" : "") /></label></div>
+                        }
+                        <div class="row g-5 mt-1">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ring time before it counts as missed"]</label>
+                                <select class="form-select form-select-solid" id="hcRing" data-control="select2" data-hide-search="true">@foreach (var s in new[] { 20, 30, 45, 60 }) { <option value="@s" selected="@(Model.RingSeconds == s)">@T["{0} seconds", s]</option> }</select></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Highest video quality"]</label>
+                                <select class="form-select form-select-solid" id="hcHeight" data-control="select2" data-hide-search="true">@foreach (var h in new[] { 480, 720, 1080 }) { <option value="@h" selected="@(Model.MaxVideoHeight == h)">@(h)p</option> }</select></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Who may call whom"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Row = caller, column = the person called. Patients never reach internal calls."]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0"><th>@T["Caller"]</th>@foreach (var g in groups) { <th class="text-center">@G(g)</th> }</tr></thead>
+                            <tbody>
+                                @foreach (var a in groups)
+                                {
+                                    <tr><td class="fw-bold text-gray-900">@G(a)</td>
+                                        @foreach (var bb in groups) { <td><div class="form-check form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-pair="@(a + ">" + bb)" @(policy.Contains((a, bb)) ? "checked" : "") /></div></td> }</tr>
+                                }
+                            </tbody></table></div>
+                        <div class="text-muted fs-8 mt-4">@T["A person's group comes from their hospital roles; a linked practitioner is a doctor; someone with no hospital role is administration."]</div>
+                    </div>
+                </div>
+
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What is recorded"]</span></div></div>
+                    <div class="card-body pt-4">
+                        @foreach (var (icon, text) in new[] { ("ki-time", "Start, end and length"), ("ki-people", "Caller, the person called"), ("ki-profile-user", "The linked patient and the reason"), ("ki-notepad", "The note written during the call"), ("ki-eye-slash", "No audio or video is kept") })
+                        {
+                            <div class="d-flex align-items-center gap-4 mb-4"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#E7F0FF"><i class="ki-outline @icon fs-3 text-primary"></i></span></span><span class="fw-semibold text-gray-800">@T[text]</span></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var W = { saved: @Json.Serialize(T["Settings saved"].Value), failed: @Json.Serialize(T["Could not save"].Value), ready: @Json.Serialize(T["{0} of {1} ready"].Value),
+              connected: @Json.Serialize(T["Connected"].Value), notConnected: @Json.Serialize(T["Not connected"].Value), notSet: @Json.Serialize(T["Not set (relay)"].Value),
+              noAnswer: @Json.Serialize(T["No answer"].Value), answers: @Json.Serialize(T["Answers"].Value), denied: @Json.Serialize(T["Not allowed"].Value), notSecure: @Json.Serialize(T["Not secure"].Value), save: @Json.Serialize(T["Save the settings?"].Value) };
+    var saveUrl = @Json.Serialize(Url.Action("SaveCallSettings"));
+    var serverRelay = @Json.Serialize(!string.IsNullOrEmpty(Model.TurnUrls) && !string.IsNullOrEmpty(Model.TurnSecret));
+    var turnShown = @Json.Serialize(string.IsNullOrEmpty(Model.TurnUrls) ? null : Model.TurnUrls.Split(',')[0]);
+    var results = {};
+
+    function mark(k, ok, val) {
+        var row = document.querySelector('[data-check="' + k + '"]'); if (!row) return;
+        results[k] = ok;
+        row.querySelector('.hc-check').className = 'hc-check ' + (ok ? 'ok' : 'bad');
+        row.querySelector('.hc-check').innerHTML = '<i class="ki-outline ' + (ok ? 'ki-check' : 'ki-cross') + ' fs-4"></i>';
+        var b = row.querySelector('[data-val]'); b.textContent = val || ''; b.className = 'badge fw-bold fs-8 ' + (ok ? 'badge-light-primary' : 'badge-light-danger');
+        var n = Object.keys(results).length, good = Object.keys(results).filter(function (x) { return results[x]; }).length;
+        if (n === 5) document.getElementById('hcReady').textContent = W.ready.replace('{0}', good).replace('{1}', 5);
+    }
+    function test() {
+        results = {}; document.getElementById('hcReady').textContent = '…';
+        mark('https', window.isSecureContext, window.isSecureContext ? location.host : W.notSecure);
+        function hub() { var ok = window.cbCalls && window.cbCalls.connected(); mark('hub', !!ok, ok ? W.connected : W.notConnected); }
+        if (window.cbCalls && window.cbCalls.connected()) hub(); else { document.addEventListener('cbcalls:ready', hub); setTimeout(hub, 5000); }
+        mark('turn', serverRelay, serverRelay ? turnShown : W.notSet);
+        if (window.cbCalls) window.cbCalls.testRelay(6000).then(function (ok) { mark('relay', ok, ok ? W.answers : (serverRelay ? W.noAnswer : W.notSet)); });
+        else mark('relay', false, W.notSet);
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function (s) {
+                var v = s.getVideoTracks()[0], set = v && v.getSettings ? v.getSettings() : {};
+                mark('media', true, set.height ? set.height + 'p' : 'OK'); s.getTracks().forEach(function (t) { t.stop(); });
+            }).catch(function (e) { mark('media', false, e && e.name === 'NotAllowedError' ? W.denied : (e && e.name) || '—'); });
+        } else mark('media', false, W.notSecure);
+    }
+    document.getElementById('hcTest').addEventListener('click', test);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', test); else test();
+
+    document.getElementById('hcSave').addEventListener('click', function () {
+        var btn = this;
+        window.cbConfirm(W.save, { kind: 'primary' }).then(function (yes) {
+            if (!yes) return;
+            var secret = document.getElementById('hcSecret').value, clear = document.getElementById('hcClear');
+            var body = {
+                videoEnabled: document.getElementById('hcVideo').checked, screenShareEnabled: document.getElementById('hcShare').checked,
+                ringSeconds: +document.getElementById('hcRing').value, maxVideoHeight: +document.getElementById('hcHeight').value,
+                turnUrls: document.getElementById('hcUrls').value, turnSecret: clear && clear.checked ? '' : (secret ? secret : null),
+                policy: Array.prototype.filter.call(document.querySelectorAll('[data-pair]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-pair'); })
+            };
+            btn.disabled = true;
+            fetch(saveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: JSON.stringify(body) })
+                .then(function (r) { return r.json(); }).then(function (res) {
+                    btn.disabled = false;
+                    if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                    toastr.success(W.saved); setTimeout(function () { location.reload(); }, 700);
+                }).catch(function () { btn.disabled = false; toastr.error(W.failed); });
+        });
+    });
+})();
+</script>
+}

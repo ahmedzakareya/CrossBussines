@@ -115,6 +115,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalImmunoDose), "HospitalImmunoDoses"),               // H97: and their doses
 			(typeof(HospitalCanvasSheet), "HospitalCanvasSheets"),             // H99: the visit drawings
 			(typeof(HospitalCanvasMark), "HospitalCanvasMarks"),               // H99: and their marks (a lesion number may repeat after a merge; the place tells them apart)
+			(typeof(HospitalCall), "HospitalCalls"),                           // H176: the internal calls made about the patient
 		};
 
 		/// Patient columns NOT named PatientId (a test holds this list to every such column too). The merge history and the

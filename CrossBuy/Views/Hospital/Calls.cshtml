@@ -1,0 +1,340 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model CrossBuy.Controllers.HospitalController.HospitalCallsPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H176 — internal calls. Design: the approved prototype, #/calls. Four figures, the staff directory with each person's
+    live state (available, in a call, offline) and a voice and a video button, who is on call now, and my call log
+    (who, which way, about which patient, when, how long) with a call-back button. The call itself is
+    js/hospital/hospital-calls.js, loaded on every screen by _HospitalCalls.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Internal calls"].Value;
+    bool canManage = ViewBag.CanManage == true;
+    int busyNow = ViewBag.BusyNow is int b ? b : 0;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Name(HospitalCallPerson p) => DisplayName.Of(p.Name, p.NameEn);
+    string? Title(HospitalCallPerson p) => p.Title == null && p.TitleEn == null ? null : DisplayName.Of(p.Title ?? p.TitleEn!, p.TitleEn ?? p.Title!);
+    string? Dept(HospitalCallPerson p) => p.Department == null && p.DepartmentEn == null ? null : DisplayName.Of(p.Department ?? p.DepartmentEn!, p.DepartmentEn ?? p.Department!);
+    var depts = Model.People.Select(Dept).Where(d => d != null).Distinct().OrderBy(d => d).ToList();
+    var onCall = Model.People.Where(p => p.OnCall).ToList();
+    var log = Model.Log;
+    int pages = Math.Max(1, (int)Math.Ceiling(log.Total / (double)log.PageSize));
+    string Utc(DateTime d) => d.ToString("yyyy-MM-ddTHH:mm:ss", inv);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+<style>
+    .hc-pres{position:absolute;bottom:0;inset-inline-end:0;width:12px;height:12px;border-radius:50%;border:2px solid var(--bs-body-bg,#fff);background:#C4CADA}
+    .hc-pres.on{background:var(--cb-brand,#3A5795)}.hc-pres.busy{background:#DC2626}
+    .hc-row{border-radius:.75rem;transition:background .15s}.hc-row:hover{background:#F5F8FF}
+    .hc-dir{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+    .hc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
+    .hc-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .hc-scroll{max-height:640px;overflow-y:auto}
+    .hc-shrink,.hc-row .min-w-0,.hc-log .min-w-0{min-width:0}
+    .hc-log td{vertical-align:middle}
+    .hc-log td:first-child{max-width:190px}
+</style>
+@functions {
+    static string Svg(string k, int size)
+    {
+        var p = k switch
+        {
+            "cam" => "<rect x=\"3\" y=\"6\" width=\"13\" height=\"12\" rx=\"2\"/><path d=\"M16 10l5-3v10l-5-3z\"/>",
+            _ => "<path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z\"/>",
+        };
+        return $"<svg width=\"{size}\" height=\"{size}\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">{p}</svg>";
+    }
+}
+@{
+    // the person by face: their photo, or initials on the brand tint
+    Func<HospitalCallPerson, int, Microsoft.AspNetCore.Html.IHtmlContent> Face = (p, size) => new Microsoft.AspNetCore.Html.HtmlString(
+        $"<span class=\"hc-face\" style=\"width:{size}px;height:{size}px;font-size:{Math.Round(size * 0.36)}px\">" +
+        (p.Photo != null ? $"<img src=\"{System.Net.WebUtility.HtmlEncode(p.Photo)}\" alt=\"\" onerror=\"this.remove()\" />" : "") +
+        $"<span>{System.Net.WebUtility.HtmlEncode(HospitalUi.Initials(p.NameEn))}</span></span>");
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Internal calls"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Communication"]</li></ul>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            @if (canManage) { <a href="@Url.Action("CallSettings")" class="btn btn-sm btn-light"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Call settings"]</a> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Installed)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold">@T["Internal calls are not installed yet"]</h4><div class="fs-6 text-gray-700">@T[HospitalCallService.NoTables]</div></div>
+            </div>
+        }
+
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Available now (staff)"]</div><i class="ki-outline ki-people fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-primary"><bdi class="hp-num" dir="ltr" id="hcAvail">—</bdi></div>
+                <div class="text-muted fs-8 mt-1">@T["of {0} staff", Model.People.Count]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["In a call now"]</div><i class="ki-outline ki-call fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900"><bdi class="hp-num" dir="ltr" id="hcBusy">@busyNow</bdi></div>
+                <div class="text-muted fs-8 mt-1">@T["Live calls inside the hospital"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["My calls today"]</div><i class="ki-outline ki-time fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900" id="hcToday"><bdi class="hp-num" dir="ltr">@Model.Stats.Today</bdi></div>
+                <div class="text-muted fs-8 mt-1" id="hcAvg">@T["Average length"] <bdi class="hp-num" dir="ltr">@HospitalCallRules.Duration(Model.Stats.AverageSeconds)</bdi></div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Missed (calls)"]</div><i class="ki-outline ki-cross-circle fs-2 text-gray-400"></i></div>
+                <div id="hcMissed" class="fs-2hx fw-bold @(Model.Stats.MissedWaiting > 0 ? "text-danger" : "text-gray-900")"><bdi class="hp-num" dir="ltr">@Model.Stats.MissedWaiting</bdi></div>
+                <div class="text-muted fs-8 mt-1">@T["Waiting for a call back"]</div></div></div></div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-4">
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Staff directory"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Status is live from each person's connection"]</span></div></div>
+                    <div class="card-body pt-4">
+                        <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                            <input class="form-control form-control-solid ps-12" id="hcDirQ" placeholder="@T["Search by name or department…"]" autocomplete="off" /></div>
+                        <div class="mb-4"><select class="form-select form-select-solid" id="hcDirDept" data-control="select2" data-hide-search="true">
+                            <option value="">@T["All departments"]</option>
+                            @foreach (var d in depts) { <option value="@d">@d</option> }</select></div>
+                        <div class="hc-scroll" id="hcDir">
+                            @foreach (var p in Model.People)
+                            {
+                                <div class="hc-row d-flex align-items-center gap-4 p-3 mb-1" data-emp="@p.EmployeeId" data-dept="@Dept(p)">
+                                    <div class="position-relative flex-shrink-0">@Face(p, 45)<span class="hc-pres" data-pres></span></div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-center gap-2 min-w-0"><span class="fw-bold text-gray-900 fs-6 text-truncate">@Name(p)</span>@if (p.OnCall) { <span class="badge badge-light-primary fw-bold fs-8">@T["On call"]</span> }</div>
+                                        @if (Title(p) is string tt) { <div class="text-muted fs-7 text-truncate">@tt</div> }
+                                        <div class="fs-8 text-truncate"><span data-plabel class="text-muted">@T["Offline"]</span>@if (Dept(p) is string dp) { <span class="text-muted"> · @dp</span> }</div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-shrink-0">
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-primary" title="@T["Voice call"]" data-call="@p.EmployeeId" data-video="0" disabled>@Html.Raw(Svg("phone", 16))</button>
+                                        <button type="button" class="btn btn-icon btn-sm btn-primary" title="@T["Video call"]" data-call="@p.EmployeeId" data-video="1" disabled>@Html.Raw(Svg("cam", 17))</button>
+                                    </div>
+                                </div>
+                            }
+                            <div class="text-center text-muted py-10 d-none" id="hcDirNone">@T["No one matches"]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["On call now"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["From the on-call roster — call directly, no number to look up"]</span></div>
+                        <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#hcConsult"><i class="ki-outline ki-profile-user fs-4"></i>@T["Consult about a patient"]</button></div></div>
+                    <div class="card-body pt-4">
+                        @if (onCall.Count == 0) { <div class="text-muted fs-6 py-4">@T["No one is on call at this moment"] — <a href="@Url.Action("OnCall")" class="fw-semibold">@T["On-call"]</a></div> }
+                        @foreach (var p in onCall)
+                        {
+                            <div class="d-flex align-items-center gap-4 mb-5" data-emp="@p.EmployeeId">
+                                <div class="position-relative flex-shrink-0">@Face(p, 45)<span class="hc-pres" data-pres></span></div>
+                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-900 text-truncate">@Name(p)</div>
+                                    <div class="text-muted fs-7 text-truncate">@(Dept(p) ?? Title(p))</div></div>
+                                <div class="d-flex gap-2 flex-shrink-0">
+                                    <button type="button" class="btn btn-icon btn-sm btn-light-primary" title="@T["Voice call"]" data-call="@p.EmployeeId" data-video="0" disabled>@Html.Raw(Svg("phone", 16))</button>
+                                    <button type="button" class="btn btn-icon btn-sm btn-primary" title="@T["Video call"]" data-call="@p.EmployeeId" data-video="1" disabled>@Html.Raw(Svg("cam", 17))</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5 mb-xl-8" id="hcLogCard">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Call log"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Who called whom, when, how long and about which patient — no audio or video is recorded"]</span></div>
+                        <div class="card-toolbar"><form method="get" action="@Url.Action("Calls")" class="d-flex align-items-center position-relative my-1">
+                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" name="q" value="@Model.Q" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search the log…"]" autocomplete="off" /></form></div></div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed gy-4 mb-0 hc-log">
+                            <thead><tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                <th>@T["Person"]</th><th>@T["Type"]</th><th>@T["About"]</th><th>@T["Time"]</th><th>@T["Length"]</th><th class="text-end"></th></tr></thead>
+                            <tbody class="fs-6">
+                                @if (log.Rows.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@(string.IsNullOrEmpty(Model.Q) ? T["No calls yet"] : T["No call matches the search"])</td></tr> }
+                                @foreach (var r in log.Rows)
+                                {
+                                    var c = r.Call; bool missed = c.Status == HospitalCallStatus.Missed && !r.Outgoing;
+                                    bool failed = c.Status is HospitalCallStatus.Missed or HospitalCallStatus.Declined or HospitalCallStatus.Cancelled;
+                                    var dirIcon = missed || (failed && !r.Outgoing) ? "ki-cross-circle" : r.Outgoing ? "ki-arrow-up-right" : "ki-arrow-down-left";
+                                    <tr>
+                                        <td><div class="d-flex align-items-center gap-3">
+                                            <span class="hc-dir" style="background:@(missed ? "#FEE2E2" : "#E7F0FF")"><i class="ki-outline @dirIcon fs-3" style="color:@(missed ? "#DC2626" : "var(--cb-brand,#3A5795)")"></i></span>
+                                            @if (r.Other != null)
+                                            {
+                                                @Face(r.Other, 35)
+                                                <div class="d-flex flex-column min-w-0"><span class="text-gray-900 fw-bold fs-6 text-truncate">@Name(r.Other)</span><span class="text-muted fw-semibold fs-7 text-truncate">@Title(r.Other)</span></div>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </div></td>
+                                        <td class="text-nowrap">
+                                            @if (missed) { <span class="text-danger fw-bold">@T["Missed (calls)"]</span> }
+                                            else if (c.Status == HospitalCallStatus.Declined) { <span class="text-danger fw-semibold">@T["Declined (call)"]</span> }
+                                            else if (c.Status is HospitalCallStatus.Cancelled or HospitalCallStatus.Missed) { <span class="text-gray-600 fw-semibold">@T["Not answered"]</span> }
+                                            else if (c.Status == HospitalCallStatus.Answered) { <span class="text-primary fw-bold">@T["In progress"]</span> }
+                                            else { <span class="text-gray-800">@(r.Outgoing ? T["Outgoing"] : T["Incoming"])</span> }
+                                            <div class="text-muted fs-8 d-flex align-items-center gap-1">@Html.Raw(Svg(c.IsVideo ? "cam" : "phone", 13))@(c.IsVideo ? T["Video"] : T["Voice"])</div>
+                                        </td>
+                                        <td>
+                                            @if (r.Mrn != null && c.PatientId is int pid) { <a href="@Url.Action("Patient", new { id = pid })" class="text-gray-900 text-hover-primary fw-semibold">@DisplayName.Of(r.Patient ?? "", r.PatientEn ?? r.Patient ?? "")</a> <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@r.Mrn</bdi></span> }
+                                            @if (!string.IsNullOrEmpty(c.Reason)) { <div class="text-muted fs-8">@c.Reason</div> }
+                                            @if (!string.IsNullOrEmpty(c.Reply)) { <div class="text-muted fs-8">«@c.Reply»</div> }
+                                            @if (!string.IsNullOrEmpty(c.Note)) { <div class="text-gray-700 fs-8"><i class="ki-outline ki-notepad fs-8"></i> @c.Note</div> }
+                                            @if (r.Mrn == null && string.IsNullOrEmpty(c.Reason) && string.IsNullOrEmpty(c.Note) && string.IsNullOrEmpty(c.Reply)) { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td class="text-nowrap"><bdi class="hp-num fw-semibold" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("HH:mm", inv)</bdi>@if (c.StartedAt < DateTime.UtcNow.AddHours(-18)) { <div class="text-muted fs-8"><bdi class="hp-num" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("yyyy-MM-dd", inv)</bdi></div> }</td>
+                                        <td>@if (c.DurationSeconds is int s) { <bdi class="hp-num" dir="ltr">@HospitalCallRules.Duration(s)</bdi> } else { <span class="text-muted">—</span> }</td>
+                                        <td class="text-end">@if (r.Other != null) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-call="@r.Other.EmployeeId" data-video="@(c.IsVideo ? 1 : 0)" data-patient="@c.PatientId" disabled>@Html.Raw(Svg("phone", 15)) @T["Call back"]</button> }</td>
+                                    </tr>
+                                }
+                            </tbody></table></div>
+                        @if (log.Total > log.PageSize)
+                        {
+                            <div class="d-flex flex-stack flex-wrap pt-5">
+                                <div class="fs-7 text-muted">@T["{0}–{1} of {2}", (log.Page - 1) * log.PageSize + 1, Math.Min(log.Total, log.Page * log.PageSize), log.Total]</div>
+                                <ul class="pagination">
+                                    <li class="page-item previous @(log.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Calls", new { q = Model.Q, page = log.Page - 1 })"><i class="previous"></i></a></li>
+                                    @for (int i = Math.Max(1, log.Page - 2); i <= Math.Min(pages, log.Page + 2); i++) { <li class="page-item @(i == log.Page ? "active" : "")"><a class="page-link" href="@Url.Action("Calls", new { q = Model.Q, page = i })">@i</a></li> }
+                                    <li class="page-item next @(log.Page >= pages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Calls", new { q = Model.Q, page = log.Page + 1 })"><i class="next"></i></a></li>
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="hcConsult" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Consult call about a patient"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="mb-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
+            <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                <input class="form-control form-control-solid ps-12" id="hcPq" placeholder="@T["Name or file number…"]" autocomplete="off" /></div>
+            <div id="hcPres" class="mt-2"></div><input type="hidden" id="hcPid" /></div>
+        <div class="mb-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Whom to call"]</label>
+            <select class="form-select form-select-solid" id="hcTo" data-control="select2" data-dropdown-parent="#hcConsult"><option value="">—</option>
+                @foreach (var p in Model.People.OrderByDescending(p => p.OnCall).ThenBy(Name)) { <option value="@p.EmployeeId">@Name(p)@(Title(p) is string tt2 ? " — " + tt2 : "")@(p.OnCall ? " · " + T["On call"].Value : "")</option> }</select></div>
+        <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Reason (call)"]</label><input class="form-control form-control-solid" id="hcWhy" maxlength="200" placeholder="@T["e.g. cardiology consult — raised troponin"]" /></div>
+        <div class="text-muted fs-8 mt-4">@T["The patient and the reason show to the other side before they answer, and the call is kept in the patient file."]</div>
+    </div>
+    <div class="modal-footer flex-center">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+        <button type="button" class="btn btn-light-primary" data-consult="0">@Html.Raw(Svg("phone", 16)) @T["Voice"]</button>
+        <button type="button" class="btn btn-primary" data-consult="1">@Html.Raw(Svg("cam", 17)) @T["Video"]</button>
+    </div>
+</div></div></div>
+
+@section Scripts {
+<script>
+(function () {
+    var W = { on: @Json.Serialize(T["Available"].Value), busy: @Json.Serialize(T["In a call"].Value), off: @Json.Serialize(T["Offline"].Value),
+              choosePatient: @Json.Serialize(T["Choose the patient"].Value), choosePerson: @Json.Serialize(T["Choose whom to call"].Value), noMatch: @Json.Serialize(T["No matching patient"].Value) };
+    var searchUrl = @Json.Serialize(Url.Action("SearchPatients"));
+    var state = {};
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+    function paint(id) {
+        var s = state[id] || 'off';
+        document.querySelectorAll('[data-emp="' + id + '"]').forEach(function (row) {
+            var dot = row.querySelector('[data-pres]'); if (dot) dot.className = 'hc-pres ' + s;
+            var lbl = row.querySelector('[data-plabel]');
+            if (lbl) { lbl.textContent = W[s]; lbl.className = s === 'on' ? 'text-primary fw-semibold' : s === 'busy' ? 'text-danger fw-semibold' : 'text-muted'; }
+        });
+        document.querySelectorAll('[data-call="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on'; });
+        // only the people this directory lists (my own connection is announced too, and I am not in it)
+        var dirIds = Array.prototype.map.call(document.querySelectorAll('#hcDir [data-emp]'), function (r) { return r.getAttribute('data-emp'); });
+        document.getElementById('hcAvail').textContent = dirIds.filter(function (k) { return state[k] === 'on'; }).length;
+        document.getElementById('hcBusy').textContent = Object.keys(state).filter(function (k) { return state[k] === 'busy'; }).length;
+    }
+    function load() {
+        var ids = Array.prototype.map.call(document.querySelectorAll('#hcDir [data-emp]'), function (r) { return +r.getAttribute('data-emp'); });
+        window.cbCalls.presenceOf(ids).then(function (list) { (list || []).forEach(function (x) { state[x.employeeId] = x.state; }); ids.forEach(paint); });
+    }
+    function wire() {
+        if (!window.cbCalls) return;
+        window.cbCalls.onPresence(function (m) { if (m.refresh) { load(); return; } state[m.employeeId] = m.state; paint(m.employeeId); });
+        if (window.cbCalls.connected()) load(); else document.addEventListener('cbcalls:ready', load);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+    // a call ended: the log and my figures refresh in place (a reload would wipe the message that says how it ended)
+    document.addEventListener('cbcalls:changed', function () {
+        setTimeout(function () {
+            fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
+                if (!html) return;
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                ['hcLogCard', 'hcToday', 'hcAvg', 'hcMissed'].forEach(function (id) {
+                    var now = document.getElementById(id), next = doc.getElementById(id);
+                    if (now && next) { now.innerHTML = next.innerHTML; if (id === 'hcMissed') now.className = next.className; }
+                });
+                load();   // the call-back buttons are new: give them their presence
+            });
+        }, 800);
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-call]'); if (!b || b.disabled) return;
+        var pid = b.getAttribute('data-patient');
+        window.cbCalls.start(+b.getAttribute('data-call'), b.getAttribute('data-video') === '1', pid ? +pid : null, null);
+    });
+
+    // the directory's own filter: name or department as typed, and the department list
+    var q = document.getElementById('hcDirQ'), dept = document.getElementById('hcDirDept');
+    function filter() {
+        var t = q.value.trim().toLowerCase(), d = dept.value, shown = 0;
+        document.querySelectorAll('#hcDir [data-emp]').forEach(function (r) {
+            var ok = (!t || r.textContent.toLowerCase().indexOf(t) >= 0) && (!d || r.getAttribute('data-dept') === d);
+            r.classList.toggle('d-none', !ok); r.classList.toggle('d-flex', ok); if (ok) shown++;
+        });
+        document.getElementById('hcDirNone').classList.toggle('d-none', shown > 0);
+    }
+    q.addEventListener('input', filter);
+    dept.addEventListener('change', filter);
+    if (window.jQuery) jQuery(dept).on('change', filter);   // select2 changes do not reach addEventListener
+
+    // the consult window: a patient picked by name or file number, the person, the reason
+    var pq = document.getElementById('hcPq'), pres = document.getElementById('hcPres'), pid = document.getElementById('hcPid'), tm;
+    pq.addEventListener('input', function () {
+        clearTimeout(tm); pid.value = ''; var v = pq.value.trim();
+        if (v.length < 2) { pres.innerHTML = ''; return; }
+        tm = setTimeout(function () {
+            fetch(searchUrl + '?q=' + encodeURIComponent(v), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (r) {
+                var rows = (r && r.results) || [];
+                pres.innerHTML = rows.slice(0, 6).map(function (x) {
+                    return '<a href="#" class="d-flex align-items-center gap-3 p-2 rounded hc-row" data-pid="' + x.id + '" data-name="' + esc(x.name) + '"><span class="hc-face" style="width:30px;height:30px;font-size:11px">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="" onerror="this.remove()" />' : '') + '<span>' + esc(x.initials) + '</span></span>' +
+                        '<span><span class="d-block fw-semibold text-gray-900 fs-7">' + esc(x.name) + '</span><span class="d-block text-muted fs-8"><bdi class="hp-num" dir="ltr">' + esc(x.mrn) + '</bdi></span></span></a>';
+                }).join('') || '<div class="text-muted fs-8 p-2">' + esc(W.noMatch) + '</div>';
+            });
+        }, 250);
+    });
+    pres.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-pid]'); if (!a) return; e.preventDefault();
+        pid.value = a.getAttribute('data-pid'); pq.value = a.getAttribute('data-name'); pres.innerHTML = '';
+    });
+    document.querySelectorAll('[data-consult]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var to = document.getElementById('hcTo').value;
+            if (!pid.value) { toastr.error(W.choosePatient); return; }
+            if (!to) { toastr.error(W.choosePerson); return; }
+            bootstrap.Modal.getInstance(document.getElementById('hcConsult')).hide();
+            window.cbCalls.start(+to, b.getAttribute('data-consult') === '1', +pid.value, document.getElementById('hcWhy').value.trim() || null);
+        });
+    });
+})();
+</script>
+}

@@ -1,0 +1,200 @@
+using System.Collections.Concurrent;
+using System.Security.Claims;
+using CrossBuy.BL;
+using CrossBuy.BL.Hospital;
+using CrossBuy.Models.Context.Hospital;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+
+namespace CrossBuy.Hubs
+{
+	// ==========================================================================================
+	// HOSPITAL H176 — the internal-calls hub (/hubs/calls). It rings, answers, refuses and hangs up, and passes each
+	// browser's connection offer and network candidates to the OTHER party of the call only. The media never comes here.
+	//
+	// IDENTITY AND COMPANY come from the authenticated connection (NameIdentifier → Employee row), never from the client,
+	// as ChatHub does: a hub invocation has no HTTP request for the business-context factory to read. Every call id a
+	// client sends is checked against the live call it belongs to — a connection that is not one of its two ends gets
+	// nothing relayed and learns nothing.
+	//
+	// PRESENCE is per employee and per company: "on" while any of their tabs is connected, "busy" while they are in a
+	// call. One server process holds it (the app runs as one instance); a restart drops live calls and the sweep closes
+	// their records.
+	// ==========================================================================================
+	[Authorize(AuthenticationSchemes = "Identity.Application," + JwtBearerDefaults.AuthenticationScheme)]
+	public sealed class HospitalCallHub : Hub
+	{
+		private sealed class Live
+		{
+			public int CallId, CompanyId, CallerId, CalleeId;
+			public string CallerConn = "";
+			public string? CalleeConn;
+			public bool Video;
+		}
+
+		private static readonly ConcurrentDictionary<int, int> _online = new();          // employee → connections
+		private static readonly ConcurrentDictionary<int, int> _company = new();         // employee → company
+		private static readonly ConcurrentDictionary<int, Live> _calls = new();          // call id → live call
+		private static readonly ConcurrentDictionary<int, int> _busy = new();            // employee → call id
+
+		/// "busy" also while someone's screen is ringing: a second caller is told at once instead of waiting out the ring.
+		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : "off";
+		public static int BusyCount(int companyId) => _busy.Keys.Count(e => _company.TryGetValue(e, out var c) && c == companyId);
+
+		private static string Emp(int id) => "hcall-e-" + id;
+		private static string Co(int id) => "hcall-c-" + id;
+
+		private readonly IServiceProvider _sp;
+		private readonly IEmployeeService _employees;
+		private readonly CrossBuy.Models.Context.CrossDbContext _db;
+		public HospitalCallHub(IServiceProvider sp, IEmployeeService employees, CrossBuy.Models.Context.CrossDbContext db) { _sp = sp; _employees = employees; _db = db; }
+
+		private HospitalCallService Svc => ActivatorUtilities.CreateInstance<HospitalCallService>(_sp);
+
+		private async Task<(int Emp, int Company)?> MeAsync()
+		{
+			if (Context.Items.TryGetValue("emp", out var e) && e is int emp && Context.Items.TryGetValue("co", out var c) && c is int co) return (emp, co);
+			var uid = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(uid)) return null;
+			var row = await _employees.GetEmployeeByUserIdAsync(uid);
+			if (row == null) return null;
+			var company = await _db.Employee.AsNoTracking().Where(x => x.ID == row.ID && x.IsActive).Select(x => x.EmpCompanyID).FirstOrDefaultAsync();
+			if (company <= 0) return null;
+			Context.Items["emp"] = row.ID; Context.Items["co"] = company;
+			return (row.ID, company);
+		}
+
+		public override async Task OnConnectedAsync()
+		{
+			if (await MeAsync() is var (emp, co))
+			{
+				await Groups.AddToGroupAsync(Context.ConnectionId, Emp(emp));
+				await Groups.AddToGroupAsync(Context.ConnectionId, Co(co));
+				_company[emp] = co;
+				if (_online.AddOrUpdate(emp, 1, (_, n) => n + 1) == 1) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
+			}
+			await base.OnConnectedAsync();
+		}
+
+		public override async Task OnDisconnectedAsync(Exception? exception)
+		{
+			if (Context.Items.TryGetValue("emp", out var e) && e is int emp && Context.Items.TryGetValue("co", out var c) && c is int co)
+			{
+				// a call this tab was carrying ends with it
+				foreach (var live in _calls.Values.Where(l => l.CallerConn == Context.ConnectionId || l.CalleeConn == Context.ConnectionId).ToList())
+					await CloseAsync(live, emp, "drop", null);
+				if (_online.AddOrUpdate(emp, 0, (_, n) => Math.Max(0, n - 1)) == 0) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
+			}
+			await base.OnDisconnectedAsync(exception);
+		}
+
+		/// The caller rings someone. Returns { ok, callId, ringSeconds } or { ok:false, error } where error is a resx key.
+		public async Task<object> Invite(int calleeId, bool video, int? patientId, string? reason)
+		{
+			if (await MeAsync() is not var (me, co)) return new { ok = false, error = "forbidden" };
+			if (calleeId == me) return new { ok = false, error = "You cannot call yourself" };
+			var svc = Svc; var now = DateTime.UtcNow;
+			if (!await svc.InstalledAsync()) return new { ok = false, error = HospitalCallService.NoTables };
+			await svc.SweepAsync(co, now);
+			var settings = await svc.SettingsAsync(co);
+			if (video && !settings.VideoEnabled) video = false;
+			var people = (await svc.PeopleAsync(co, now, new[] { me, calleeId })).ToDictionary(p => p.EmployeeId);
+			if (!people.TryGetValue(me, out var caller) || !people.TryGetValue(calleeId, out var callee)) return new { ok = false, error = "not_found" };
+			if (!await svc.MayCallAsync(co, caller, callee)) return new { ok = false, error = "Your group may not call this person's group (call settings)" };
+			if (_busy.ContainsKey(me)) return new { ok = false, error = "You are already in a call" };
+			if (patientId is int pid && !await _db.HospitalPatients.AnyAsync(p => p.ID == pid && p.CompanyId == co)) patientId = null;
+
+			string state = Presence(calleeId);
+			if (state != "on")
+			{
+				// offline or in another call: recorded as a missed call so it waits for a call back
+				var missed = await svc.OpenAsync(co, me, calleeId, video, patientId, reason, HospitalCallStatus.Missed, state == "busy" ? "busy" : "offline", now);
+				await Clients.Group(Emp(calleeId)).SendAsync("missed", new { callId = missed.ID });
+				return new { ok = false, error = state == "busy" ? "{0} is in another call — it is recorded as a missed call so they call you back" : "{0} is not connected — it is recorded as a missed call so they call you back", name = DisplayName.Of(callee.Name, callee.NameEn) };
+			}
+
+			var row = await svc.OpenAsync(co, me, calleeId, video, patientId, reason, HospitalCallStatus.Ringing, null, now);
+			var live = new Live { CallId = row.ID, CompanyId = co, CallerId = me, CalleeId = calleeId, CallerConn = Context.ConnectionId, Video = video };
+			_calls[row.ID] = live;
+			_busy[me] = row.ID;
+			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = me, state = "busy" });
+			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = calleeId, state = "busy" });   // ringing
+			var patient = patientId is int p2 ? await svc.PatientCardAsync(co, p2) : null;
+			await Clients.Group(Emp(calleeId)).SendAsync("incoming", new
+			{
+				callId = row.ID, video, reason = row.Reason, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight,
+				caller = Card(caller), patient,
+			});
+			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient };
+		}
+
+		private static object Card(HospitalCallPerson p) => new
+		{
+			id = p.EmployeeId, name = DisplayName.Of(p.Name, p.NameEn), nameEn = p.NameEn, photo = p.Photo, initials = HospitalUi.Initials(p.NameEn),
+			title = DisplayName.Of(p.Title ?? "", p.TitleEn ?? p.Title ?? ""), department = DisplayName.Of(p.Department ?? "", p.DepartmentEn ?? p.Department ?? ""),
+		};
+
+		/// The callee answers on THIS tab; the caller's browser then sends its offer.
+		public async Task<object> Answer(int callId, bool video)
+		{
+			if (await MeAsync() is not var (me, co) || !_calls.TryGetValue(callId, out var live) || live.CalleeId != me || live.CalleeConn != null) return new { ok = false };
+			var row = await Svc.MoveAsync(co, callId, me, "answer", null, DateTime.UtcNow);
+			if (row == null) return new { ok = false };
+			live.CalleeConn = Context.ConnectionId;
+			_busy[me] = callId;
+			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = me, state = "busy" });
+			await Clients.Client(live.CallerConn).SendAsync("answered", new { callId, video });
+			await Clients.GroupExcept(Emp(me), Context.ConnectionId).SendAsync("taken", new { callId });   // my other tabs stop ringing
+			return new { ok = true };
+		}
+
+		public async Task Decline(int callId, string? reply)
+		{
+			if (await MeAsync() is not var (me, _) || !_calls.TryGetValue(callId, out var live) || live.CalleeId != me) return;
+			await CloseAsync(live, me, "decline", reply);
+		}
+
+		/// The caller gives up (missed = the ring time ran out), or either side hangs up.
+		public async Task Hangup(int callId, bool timedOut)
+		{
+			if (await MeAsync() is not var (me, _) || !_calls.TryGetValue(callId, out var live) || (live.CallerId != me && live.CalleeId != me)) return;
+			var row = await _db.Set<HospitalCall>().AsNoTracking().Where(c => c.ID == callId).Select(c => c.Status).FirstOrDefaultAsync();
+			string action = row == HospitalCallStatus.Answered ? "hangup" : timedOut ? "timeout" : "cancel";
+			await CloseAsync(live, me, action, null);
+		}
+
+		private async Task CloseAsync(Live live, int by, string action, string? reply)
+		{
+			if (!_calls.TryRemove(live.CallId, out _)) return;
+			var row = await Svc.MoveAsync(live.CompanyId, live.CallId, by, action, reply, DateTime.UtcNow);
+			foreach (var e in new[] { live.CallerId, live.CalleeId })
+			{
+				if (_busy.TryGetValue(e, out var cid) && cid == live.CallId) _busy.TryRemove(e, out _);
+				await Clients.Group(Co(live.CompanyId)).SendAsync("presence", new { employeeId = e, state = Presence(e) });
+			}
+			var msg = new { callId = live.CallId, status = row?.Status ?? HospitalCallStatus.Ended, reply = row?.Reply, seconds = row?.DurationSeconds };
+			await Clients.Client(live.CallerConn).SendAsync("ended", msg);
+			if (live.CalleeConn != null) await Clients.Client(live.CalleeConn).SendAsync("ended", msg);
+			else await Clients.Group(Emp(live.CalleeId)).SendAsync("ended", msg);   // still ringing on every tab
+		}
+
+		/// An SDP offer/answer, an ICE candidate or a state change (mic, camera, sharing), passed to the other end only.
+		public async Task Signal(int callId, string payload)
+		{
+			if (payload == null || payload.Length > 64_000) return;
+			if (!_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return;
+			string? to = Context.ConnectionId == live.CallerConn ? live.CalleeConn : Context.ConnectionId == live.CalleeConn ? live.CallerConn : null;
+			if (to != null) await Clients.Client(to).SendAsync("signal", new { callId, payload });
+		}
+
+		/// Presence of the people a screen shows (the directory asks once, then follows "presence" events).
+		public async Task<object> PresenceOf(int[] employeeIds)
+		{
+			if (await MeAsync() is not var (_, co)) return Array.Empty<object>();
+			return (employeeIds ?? Array.Empty<int>()).Take(500).Where(e => !_company.TryGetValue(e, out var c) || c == co)
+				.Select(e => new { employeeId = e, state = Presence(e) }).ToList();
+		}
+	}
+}

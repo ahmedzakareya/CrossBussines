@@ -8189,4 +8189,166 @@
   <data name="sec:Other" xml:space="preserve"><value>Other</value></data>
   <data name="sec:Plan" xml:space="preserve"><value>Plan</value></data>
   <data name="sec:Results" xml:space="preserve"><value>Results and readings</value></data>
+  <data name="Internal calls" xml:space="preserve"><value>Internal calls</value></data>
+  <data name="Communication" xml:space="preserve"><value>Communication</value></data>
+  <data name="Call settings" xml:space="preserve"><value>Call settings</value></data>
+  <data name="Internal calls are not installed yet" xml:space="preserve"><value>Internal calls are not installed yet</value></data>
+  <data name="Internal calls are not installed yet (hospital_h176_calls.sql)." xml:space="preserve"><value>Internal calls are not installed yet (hospital_h176_calls.sql).</value></data>
+  <data name="Available now (staff)" xml:space="preserve"><value>Available now</value></data>
+  <data name="of {0} staff" xml:space="preserve"><value>of {0} staff</value></data>
+  <data name="In a call now" xml:space="preserve"><value>In a call now</value></data>
+  <data name="Live calls inside the hospital" xml:space="preserve"><value>Live calls inside the hospital</value></data>
+  <data name="My calls today" xml:space="preserve"><value>My calls today</value></data>
+  <data name="Average length" xml:space="preserve"><value>Average length</value></data>
+  <data name="Missed (calls)" xml:space="preserve"><value>Missed</value></data>
+  <data name="Waiting for a call back" xml:space="preserve"><value>Waiting for a call back</value></data>
+  <data name="Staff directory" xml:space="preserve"><value>Staff directory</value></data>
+  <data name="Status is live from each person&#x27;s connection" xml:space="preserve"><value>Status is live from each person&#x27;s connection</value></data>
+  <data name="Search by name or department…" xml:space="preserve"><value>Search by name or department…</value></data>
+  <data name="On call" xml:space="preserve"><value>On call</value></data>
+  <data name="Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Voice call" xml:space="preserve"><value>Voice call</value></data>
+  <data name="Video call" xml:space="preserve"><value>Video call</value></data>
+  <data name="No one matches" xml:space="preserve"><value>No one matches</value></data>
+  <data name="From the on-call roster — call directly, no number to look up" xml:space="preserve"><value>From the on-call roster — call directly, no number to look up</value></data>
+  <data name="Consult about a patient" xml:space="preserve"><value>Consult about a patient</value></data>
+  <data name="No one is on call at this moment" xml:space="preserve"><value>No one is on call at this moment</value></data>
+  <data name="Call log" xml:space="preserve"><value>Call log</value></data>
+  <data name="Who called whom, when, how long and about which patient — no audio or video is recorded" xml:space="preserve"><value>Who called whom, when, how long and about which patient — no audio or video is recorded</value></data>
+  <data name="Search the log…" xml:space="preserve"><value>Search the log…</value></data>
+  <data name="Person" xml:space="preserve"><value>Person</value></data>
+  <data name="Length" xml:space="preserve"><value>Length</value></data>
+  <data name="No calls yet" xml:space="preserve"><value>No calls yet</value></data>
+  <data name="No call matches the search" xml:space="preserve"><value>No call matches the search</value></data>
+  <data name="Declined (call)" xml:space="preserve"><value>Declined</value></data>
+  <data name="Not answered" xml:space="preserve"><value>Not answered</value></data>
+  <data name="In progress" xml:space="preserve"><value>In progress</value></data>
+  <data name="Outgoing" xml:space="preserve"><value>Outgoing</value></data>
+  <data name="Incoming" xml:space="preserve"><value>Incoming</value></data>
+  <data name="Video" xml:space="preserve"><value>Video</value></data>
+  <data name="Voice" xml:space="preserve"><value>Voice</value></data>
+  <data name="Call back" xml:space="preserve"><value>Call back</value></data>
+  <data name="{0}–{1} of {2}" xml:space="preserve"><value>{0}–{1} of {2}</value></data>
+  <data name="Consult call about a patient" xml:space="preserve"><value>Consult call about a patient</value></data>
+  <data name="Name or file number…" xml:space="preserve"><value>Name or file number…</value></data>
+  <data name="Whom to call" xml:space="preserve"><value>Call</value></data>
+  <data name="Reason (call)" xml:space="preserve"><value>Reason</value></data>
+  <data name="e.g. cardiology consult — raised troponin" xml:space="preserve"><value>e.g. cardiology consult — raised troponin</value></data>
+  <data name="The patient and the reason show to the other side before they answer, and the call is kept in the patient file." xml:space="preserve"><value>The patient and the reason show to the other side before they answer, and the call is kept in the patient file.</value></data>
+  <data name="In a call" xml:space="preserve"><value>In a call</value></data>
+  <data name="Choose whom to call" xml:space="preserve"><value>Choose whom to call</value></data>
+  <data name="No matching patient" xml:space="preserve"><value>No matching patient</value></data>
+  <data name="Internal call settings" xml:space="preserve"><value>Internal call settings</value></data>
+  <data name="Calls never leave the hospital network" xml:space="preserve"><value>Calls never leave the hospital network</value></data>
+  <data name="Audio and video go straight between the two devices, encrypted, or through the internal relay when the networks differ. There is no outside server." xml:space="preserve"><value>Audio and video go straight between the two devices, encrypted, or through the internal relay when the networks differ. There is no outside server.</value></data>
+  <data name="Infrastructure readiness" xml:space="preserve"><value>Infrastructure readiness</value></data>
+  <data name="Tested from the server and from this browser" xml:space="preserve"><value>Tested from the server and from this browser</value></data>
+  <data name="Test again" xml:space="preserve"><value>Test again</value></data>
+  <data name="The hospital&#x27;s relay" xml:space="preserve"><value>The hospital&#x27;s relay</value></data>
+  <data name="IT&#x27;s coturn server: its addresses and its shared secret (static-auth-secret)" xml:space="preserve"><value>IT&#x27;s coturn server: its addresses and its shared secret (static-auth-secret)</value></data>
+  <data name="Relay addresses" xml:space="preserve"><value>Relay addresses</value></data>
+  <data name="Comma separated. Empty: calls work only between devices on the same network." xml:space="preserve"><value>Comma separated. Empty: calls work only between devices on the same network.</value></data>
+  <data name="Shared secret" xml:space="preserve"><value>Shared secret</value></data>
+  <data name="Saved — type to replace it" xml:space="preserve"><value>Saved — type to replace it</value></data>
+  <data name="Not set (relay)" xml:space="preserve"><value>Not set</value></data>
+  <data name="It never reaches a browser: each call gets its own password, valid for 12 hours." xml:space="preserve"><value>It never reaches a browser: each call gets its own password, valid for 12 hours.</value></data>
+  <data name="Remove the saved secret" xml:space="preserve"><value>Remove the saved secret</value></data>
+  <data name="Call options" xml:space="preserve"><value>Call options</value></data>
+  <data name="Ring time before it counts as missed" xml:space="preserve"><value>Ring time before it counts as missed</value></data>
+  <data name="{0} seconds" xml:space="preserve"><value>{0} seconds</value></data>
+  <data name="Highest video quality" xml:space="preserve"><value>Highest video quality</value></data>
+  <data name="Who may call whom" xml:space="preserve"><value>Who may call whom</value></data>
+  <data name="Row = caller, column = the person called. Patients never reach internal calls." xml:space="preserve"><value>Row = caller, column = the person called. Patients never reach internal calls.</value></data>
+  <data name="Caller" xml:space="preserve"><value>Caller</value></data>
+  <data name="A person&#x27;s group comes from their hospital roles; a linked practitioner is a doctor; someone with no hospital role is administration." xml:space="preserve"><value>A person&#x27;s group comes from their hospital roles; a linked practitioner is a doctor; someone with no hospital role is administration.</value></data>
+  <data name="What is recorded" xml:space="preserve"><value>What is recorded</value></data>
+  <data name="Settings saved" xml:space="preserve"><value>Settings saved</value></data>
+  <data name="Could not save" xml:space="preserve"><value>Could not save</value></data>
+  <data name="{0} of {1} ready" xml:space="preserve"><value>{0} of {1} ready</value></data>
+  <data name="Not connected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="No answer" xml:space="preserve"><value>No answer</value></data>
+  <data name="Answers" xml:space="preserve"><value>Answers</value></data>
+  <data name="Not allowed" xml:space="preserve"><value>Not allowed</value></data>
+  <data name="Not secure" xml:space="preserve"><value>Not secure</value></data>
+  <data name="Save the settings?" xml:space="preserve"><value>Save the settings?</value></data>
+  <data name="Trusted internal HTTPS address" xml:space="preserve"><value>Trusted internal HTTPS address</value></data>
+  <data name="The browser opens the camera and microphone only on a secure connection" xml:space="preserve"><value>The browser opens the camera and microphone only on a secure connection</value></data>
+  <data name="Signalling channel (live connection)" xml:space="preserve"><value>Signalling channel (live connection)</value></data>
+  <data name="The same real-time channel the system uses for notices and chat" xml:space="preserve"><value>The same real-time channel the system uses for notices and chat</value></data>
+  <data name="Internal relay server (TURN)" xml:space="preserve"><value>Internal relay server (TURN)</value></data>
+  <data name="Carries the call between separate department networks — inside the hospital only" xml:space="preserve"><value>Carries the call between separate department networks — inside the hospital only</value></data>
+  <data name="The relay answers from this device" xml:space="preserve"><value>The relay answers from this device</value></data>
+  <data name="UDP 3478 and 49152–65535 must be open between the department networks" xml:space="preserve"><value>UDP 3478 and 49152–65535 must be open between the department networks</value></data>
+  <data name="Camera and microphone on this device" xml:space="preserve"><value>Camera and microphone on this device</value></data>
+  <data name="A local test from the browser" xml:space="preserve"><value>A local test from the browser</value></data>
+  <data name="Video calls" xml:space="preserve"><value>Video calls</value></data>
+  <data name="On with voice; can be limited to voice on weak networks" xml:space="preserve"><value>On with voice; can be limited to voice on weak networks</value></data>
+  <data name="Screen sharing" xml:space="preserve"><value>Screen sharing</value></data>
+  <data name="To show an image or a result during a consult" xml:space="preserve"><value>To show an image or a result during a consult</value></data>
+  <data name="Group calls (up to 8 people)" xml:space="preserve"><value>Group calls (up to 8 people)</value></data>
+  <data name="Needs an internal media server — phase two" xml:space="preserve"><value>Needs an internal media server — phase two</value></data>
+  <data name="Recording calls" xml:space="preserve"><value>Recording calls</value></data>
+  <data name="Off: no audio or video is kept; only the log and the note" xml:space="preserve"><value>Off: no audio or video is kept; only the log and the note</value></data>
+  <data name="Start, end and length" xml:space="preserve"><value>Start, end and length</value></data>
+  <data name="Caller, the person called" xml:space="preserve"><value>Caller, the person called</value></data>
+  <data name="The linked patient and the reason" xml:space="preserve"><value>The linked patient and the reason</value></data>
+  <data name="The note written during the call" xml:space="preserve"><value>The note written during the call</value></data>
+  <data name="No audio or video is kept" xml:space="preserve"><value>No audio or video is kept</value></data>
+  <data name="Incoming internal video call" xml:space="preserve"><value>Incoming internal video call</value></data>
+  <data name="Incoming internal voice call" xml:space="preserve"><value>Incoming internal voice call</value></data>
+  <data name="About the patient" xml:space="preserve"><value>About the patient</value></data>
+  <data name="Voice only" xml:space="preserve"><value>Voice only</value></data>
+  <data name="One minute, I will call you back" xml:space="preserve"><value>One minute, I will call you back</value></data>
+  <data name="I am in a procedure, send a message" xml:space="preserve"><value>I am in a procedure, send a message</value></data>
+  <data name="{0} seconds, then it is recorded as a missed call" xml:space="preserve"><value>{0} seconds, then it is recorded as a missed call</value></data>
+  <data name="Your reply was sent to {0}" xml:space="preserve"><value>Your reply was sent to {0}</value></data>
+  <data name="Calling…" xml:space="preserve"><value>Calling…</value></data>
+  <data name="You" xml:space="preserve"><value>You</value></data>
+  <data name="Call context" xml:space="preserve"><value>Call context</value></data>
+  <data name="Kept in the call log and the patient file" xml:space="preserve"><value>Kept in the call log and the patient file</value></data>
+  <data name="Not linked to a patient" xml:space="preserve"><value>Not linked to a patient</value></data>
+  <data name="Link to a patient: name or file number…" xml:space="preserve"><value>Link to a patient: name or file number…</value></data>
+  <data name="Quick note" xml:space="preserve"><value>Quick note</value></data>
+  <data name="e.g. agreed to move the patient to the cardiac unit" xml:space="preserve"><value>e.g. agreed to move the patient to the cardiac unit</value></data>
+  <data name="The note joins the call record with your name and time; no audio or video is recorded." xml:space="preserve"><value>The note joins the call record with your name and time; no audio or video is recorded.</value></data>
+  <data name="In the call" xml:space="preserve"><value>In the call</value></data>
+  <data name="Hospital network only · encrypted" xml:space="preserve"><value>Hospital network only · encrypted</value></data>
+  <data name="Excellent" xml:space="preserve"><value>Excellent</value></data>
+  <data name="Good" xml:space="preserve"><value>Good</value></data>
+  <data name="Weak" xml:space="preserve"><value>Weak</value></data>
+  <data name="Mute" xml:space="preserve"><value>Mute</value></data>
+  <data name="Unmute" xml:space="preserve"><value>Unmute</value></data>
+  <data name="Camera" xml:space="preserve"><value>Camera</value></data>
+  <data name="Share screen — an image or a result" xml:space="preserve"><value>Share screen — an image or a result</value></data>
+  <data name="Add someone — group calls come in phase two" xml:space="preserve"><value>Add someone — group calls come in phase two</value></data>
+  <data name="End call" xml:space="preserve"><value>End call</value></data>
+  <data name="Their camera is off" xml:space="preserve"><value>Their camera is off</value></data>
+  <data name="their microphone is muted" xml:space="preserve"><value>their microphone is muted</value></data>
+  <data name="You are sharing your screen" xml:space="preserve"><value>You are sharing your screen</value></data>
+  <data name="Call ended — saved in the log" xml:space="preserve"><value>Call ended — saved in the log</value></data>
+  <data name="{0} declined the call" xml:space="preserve"><value>{0} declined the call</value></data>
+  <data name="No answer — recorded as a missed call" xml:space="preserve"><value>No answer — recorded as a missed call</value></data>
+  <data name="Missed call from {0}" xml:space="preserve"><value>Missed call from {0}</value></data>
+  <data name="You have a missed call — see the call log" xml:space="preserve"><value>You have a missed call — see the call log</value></data>
+  <data name="You are already in a call" xml:space="preserve"><value>You are already in a call</value></data>
+  <data name="Calls need the system to be opened on a secure (HTTPS) address" xml:space="preserve"><value>Calls need the system to be opened on a secure (HTTPS) address</value></data>
+  <data name="The call service is not connected yet — try again in a moment" xml:space="preserve"><value>The call service is not connected yet — try again in a moment</value></data>
+  <data name="The camera or microphone could not be opened ({0})" xml:space="preserve"><value>The camera or microphone could not be opened ({0})</value></data>
+  <data name="No microphone was found on this device" xml:space="preserve"><value>No microphone was found on this device</value></data>
+  <data name="The connection was lost" xml:space="preserve"><value>The connection was lost</value></data>
+  <data name="The call could not be made" xml:space="preserve"><value>The call could not be made</value></data>
+  <data name="You cannot call yourself" xml:space="preserve"><value>You cannot call yourself</value></data>
+  <data name="Your group may not call this person&#x27;s group (call settings)" xml:space="preserve"><value>Your group may not call this person&#x27;s group (call settings)</value></data>
+  <data name="{0} is in another call — it is recorded as a missed call so they call you back" xml:space="preserve"><value>{0} is in another call — it is recorded as a missed call so they call you back</value></data>
+  <data name="{0} is not connected — it is recorded as a missed call so they call you back" xml:space="preserve"><value>{0} is not connected — it is recorded as a missed call so they call you back</value></data>
+  <data name="The ring time must be between 10 and 120 seconds" xml:space="preserve"><value>The ring time must be between 10 and 120 seconds</value></data>
+  <data name="Choose a video quality from the list" xml:space="preserve"><value>Choose a video quality from the list</value></data>
+  <data name="Write the relay address as turn:host:port or stun:host:port" xml:space="preserve"><value>Write the relay address as turn:host:port or stun:host:port</value></data>
+  <data name="This call is already linked to a patient" xml:space="preserve"><value>This call is already linked to a patient</value></data>
+  <data name="callgroup:doctors" xml:space="preserve"><value>Doctors</value></data>
+  <data name="callgroup:nursing" xml:space="preserve"><value>Nursing</value></data>
+  <data name="callgroup:diagnostics" xml:space="preserve"><value>Lab &amp; imaging</value></data>
+  <data name="callgroup:pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
+  <data name="callgroup:reception" xml:space="preserve"><value>Front desk</value></data>
+  <data name="callgroup:admin" xml:space="preserve"><value>Administration</value></data>
 </root>
