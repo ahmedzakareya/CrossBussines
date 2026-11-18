@@ -459,6 +459,38 @@
             window.cbCalls.start(+to, b.getAttribute('data-consult') === '1', +pid.value, document.getElementById('hcWhy').value.trim() || null);
         });
     });
+
+    // THE LOG PAGES IN PLACE: a page link or a search swaps only the log's body (the directory, the presence and any
+    // call in progress stay as they are), and the address follows so Back, refresh and a shared link still land on it.
+    var logCard = document.getElementById('hcLogCard');
+    function loadLog(url, push) {
+        var body = logCard.querySelector('.card-body');
+        body.style.transition = 'opacity .15s'; body.style.opacity = '.45';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+            var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('#hcLogCard .card-body');
+            if (!fresh) { location.href = url; return; }
+            body.innerHTML = fresh.innerHTML; body.style.opacity = '';
+            // a call-back button follows the person's presence, as on first paint
+            body.querySelectorAll('[data-call]').forEach(function (b) { b.disabled = state[b.getAttribute('data-call')] !== 'on'; });
+            if (push) history.pushState({ hcLog: 1 }, '', url);
+            var top = logCard.getBoundingClientRect().top; if (top < 0) logCard.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }).catch(function () { location.href = url; });
+    }
+    if (logCard) {
+        logCard.addEventListener('click', function (e) {
+            var a = e.target.closest('.pagination a.page-link'); if (!a) return;
+            e.preventDefault(); if (a.closest('.page-item.disabled, .page-item.active')) return;
+            loadLog(a.href, true);
+        });
+        var logForm = logCard.querySelector('.card-toolbar form');
+        if (logForm) logForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var u = new URL(logForm.action, location.href), q = logForm.querySelector('[name=q]').value.trim();
+            if (q) u.searchParams.set('q', q);
+            loadLog(u.pathname + u.search, true);
+        });
+        window.addEventListener('popstate', function () { loadLog(location.pathname + location.search, false); });
+    }
 })();
 </script>
 }
