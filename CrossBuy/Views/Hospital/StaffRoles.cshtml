@@ -1,0 +1,143 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalStaffRolesPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H194 — the hospital team's roles, given together. The team from the hospital's own records (and anyone the
+    administrator adds), each person's work, the suggested roles, and ONE grant for everyone: while no role is granted the
+    module is open to all, and the first grant closes it for anyone left without one.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Staff roles"].Value;
+    string add = ViewBag.Add as string ?? "";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Staff roles"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Doctors & staff"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Staff roles"]</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-primary" data-sr-grant><i class="ki-outline ki-shield-tick fs-4"></i>@T["Grant the chosen roles to everyone"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (Model.Open)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The hospital is open to every employee"]</h4>
+                    <div class="fs-6 text-gray-700">@T["No hospital role is granted yet, so everyone can do everything. The first grant closes the hospital to anyone without a role: give the whole team its roles here, together, in one step."]</div></div>
+            </div>
+        }
+        else
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Roles are on"]</h4>
+                    <div class="fs-6 text-gray-700">@T["{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here.", Model.Granted]</div></div>
+            </div>
+        }
+
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["The hospital team"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["From the hospital's records: the doctors, and whoever did a role's work in the last 180 days. Check each suggestion before granting."]</span>
+                </h3>
+                <div class="card-toolbar gap-2">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Search"]" data-sr-filter /></div>
+                    <div class="w-250px"><select class="form-select form-select-solid" data-sr-add data-person-select data-person-ajax="@Url.Action("StaffRolesSearch")" data-searching="@T["Searching…"]" data-no-results="@T["No employee matches"]" data-placeholder="@T["Add an employee"]"><option value=""></option></select></div>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Rows.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-people fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No one in the hospital's records yet: add the team's employees."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start min-w-200px">@T["Employee"]</th><th class="min-w-200px">@T["Work in the hospital"]</th><th>@T["Granted"]</th><th class="min-w-300px pe-4 rounded-end">@T["Roles to grant"]</th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                <tr data-row="@r.Name @r.NameEn" data-emp="@r.EmployeeId">
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px symbol-circle flex-shrink-0 me-3">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn ?? r.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn ?? r.Name)</span>}</div>
+                                        <span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.Name, r.NameEn)</span></div></td>
+                                    <td>@if (r.Signals.Count == 0) {<span class="text-muted fs-7">@T["Added by hand"]</span>}
+                                        else {<div class="d-flex flex-wrap gap-1">@foreach (var s in r.Signals) {<span class="badge badge-light-primary fs-8 fw-bold">@T["sig:" + s.Role] <span class="hp-num ms-1">@s.Count</span></span>}</div>}</td>
+                                    <td>@if (r.Granted.Count == 0) {<span class="text-muted">—</span>}
+                                        else {<div class="d-flex flex-wrap gap-1">@foreach (var g in r.Granted) {<span class="badge badge-primary fs-8 fw-bold">@T["hrole:" + g]</span>}</div>}</td>
+                                    <td class="pe-4"><select class="form-select form-select-solid form-select-sm" multiple data-control="select2" data-close-on-select="false" data-placeholder="@T["No new role"]" data-sr-roles>
+                                        @foreach (var role in HospitalRoles.All.Where(x => !r.Granted.Contains(x)))
+                                        {
+                                            <option value="@role" selected="@(r.Granted.Count == 0 && r.Suggested.Contains(role))">@T["hrole:" + role]</option>
+                                        }
+                                    </select></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-6">
+                        <div class="fs-7 fw-semibold text-gray-600" data-sr-count></div>
+                        <ul class="pagination" data-sr-pages></ul>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                ask: @Json.Serialize(T["Grant the chosen roles to {0} employees now? Anyone left without a role will no longer reach the hospital."].Value),
+                none: @Json.Serialize(T["Choose at least one role to grant"].Value), shown: @Json.Serialize(T["{0} of {1}"].Value) };
+            var add = @Json.Serialize(add), PAGE = 25, page = 1;
+            function rows() { return Array.from(document.querySelectorAll('tr[data-emp]')); }
+            function view() {
+                var q = (document.querySelector('[data-sr-filter]') || { value: '' }).value.trim().toLowerCase();
+                var match = rows().filter(function (r) { return !q || r.getAttribute('data-row').toLowerCase().indexOf(q) !== -1; });
+                var pages = Math.max(1, Math.ceil(match.length / PAGE)); if (page > pages) page = pages;
+                rows().forEach(function (r) { r.classList.add('d-none'); });
+                match.slice((page - 1) * PAGE, page * PAGE).forEach(function (r) { r.classList.remove('d-none'); });
+                var c = document.querySelector('[data-sr-count]'); if (c) c.textContent = W.shown.replace('{0}', match.length).replace('{1}', rows().length);
+                var ul = document.querySelector('[data-sr-pages]'); if (!ul) return; ul.innerHTML = '';
+                if (pages > 1) for (var i = 1; i <= pages; i++) ul.insertAdjacentHTML('beforeend', '<li class="page-item' + (i === page ? ' active' : '') + '"><a href="#" class="page-link" data-sr-page="' + i + '">' + i + '</a></li>');
+            }
+            document.addEventListener('input', function (e) { if (e.target.matches('[data-sr-filter]')) { page = 1; view(); } });
+            document.addEventListener('click', function (e) {
+                var pg = e.target.closest('[data-sr-page]'); if (pg) { e.preventDefault(); page = +pg.getAttribute('data-sr-page'); view(); return; }
+                var b = e.target.closest('[data-sr-grant]'); if (!b) return;
+                var lines = rows().map(function (r) { var sel = r.querySelector('[data-sr-roles]'); var roles = sel ? Array.from(sel.selectedOptions).map(function (o) { return o.value; }) : [];
+                    return { employeeId: +r.getAttribute('data-emp'), roles: roles }; }).filter(function (l) { return l.roles.length; });
+                if (!lines.length) { if (window.toastr) toastr.warning(W.none); return; }
+                cbConfirm(W.ask.replace('{0}', lines.length), { kind: 'danger' }).then(function (ok) { if (!ok) return; b.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("StaffRolesGrant")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ lines: lines }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { if (window.toastr) toastr.error(res.error || W.failed); return; } if (window.toastr) toastr.success(W.saved); location.reload(); }); });
+            });
+            // an employee the records do not show: added to the list (kept in the address)
+            if (window.$) $('[data-sr-add]').on('select2:select', function (e) { var ids = add ? add.split(',') : []; if (ids.indexOf(String(e.params.data.id)) === -1) ids.push(e.params.data.id);
+                location.href = @Json.Serialize(Url.Action("StaffRoles")) + '?add=' + ids.join(','); });
+            view();
+        })();
+    </script>
+}

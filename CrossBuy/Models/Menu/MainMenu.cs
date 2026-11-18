@@ -543,6 +543,7 @@
 				new() { LabelAr = "الممارسون الصحيون", LabelEn = "Practitioners", Action = "Practitioners", Controller = "Hospital" },
 				new() { LabelAr = "كشوف الأتعاب", LabelEn = "Fee statements", Action = "Fees", Controller = "Hospital" },
 				new() { LabelAr = "المناوبات عند الطلب", LabelEn = "On-call", Action = "OnCall", Controller = "Hospital" },
+				new() { LabelAr = "أدوار العاملين", LabelEn = "Staff roles", Action = "StaffRoles", Controller = "Hospital" },   // H194
 			}},
 			new() { LabelAr = "التواصل", LabelEn = "Communication", Icon = "ki-outline ki-call", Items = new()   // H176
 			{

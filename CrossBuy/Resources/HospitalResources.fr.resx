@@ -8776,4 +8776,45 @@
   <data name="the right ear" xml:space="preserve"><value>oreille droite</value></data>
   <data name="This calculator reads its eleven items" xml:space="preserve"><value>Ce calcul lit ses onze items</value></data>
   <data name="calc:QuickDash" xml:space="preserve"><value>QuickDASH (bras, épaule et main)</value></data>
+  <data name="Add an employee" xml:space="preserve"><value>Ajouter un employé</value></data>
+  <data name="Added by hand" xml:space="preserve"><value>Ajouté manuellement</value></data>
+  <data name="Choose at least one role to grant" xml:space="preserve"><value>Choisissez au moins un rôle à attribuer</value></data>
+  <data name="Choose the roles from the hospital's list" xml:space="preserve"><value>Choisissez les rôles dans la liste de l'hôpital</value></data>
+  <data name="From the hospital's records: the doctors, and whoever did a role's work in the last 180 days. Check each suggestion before granting." xml:space="preserve"><value>D'après les dossiers de l'hôpital : les médecins, et quiconque a accompli le travail d'un rôle ces 180 derniers jours. Vérifiez chaque suggestion avant d'attribuer.</value></data>
+  <data name="Grant the chosen roles to everyone" xml:space="preserve"><value>Attribuer les rôles choisis à tous</value></data>
+  <data name="Grant the chosen roles to {0} employees now? Anyone left without a role will no longer reach the hospital." xml:space="preserve"><value>Attribuer maintenant les rôles choisis à {0} employés ? Quiconque reste sans rôle n'accédera plus à l'hôpital.</value></data>
+  <data name="Granted" xml:space="preserve"><value>Attribué</value></data>
+  <data name="No employee matches" xml:space="preserve"><value>Aucun employé ne correspond</value></data>
+  <data name="No hospital role is granted yet, so everyone can do everything. The first grant closes the hospital to anyone without a role: give the whole team its roles here, together, in one step." xml:space="preserve"><value>Aucun rôle hospitalier n'est encore attribué : chacun peut tout faire. La première attribution ferme l'hôpital à quiconque sans rôle : attribuez ici les rôles de toute l'équipe, ensemble, en une seule étape.</value></data>
+  <data name="No new role" xml:space="preserve"><value>Aucun nouveau rôle</value></data>
+  <data name="No one in the hospital's records yet: add the team's employees." xml:space="preserve"><value>Personne dans les dossiers de l'hôpital pour l'instant : ajoutez les employés de l'équipe.</value></data>
+  <data name="Nothing new to grant" xml:space="preserve"><value>Rien de nouveau à attribuer</value></data>
+  <data name="Nothing was granted: {0}" xml:space="preserve"><value>Rien n'a été attribué : {0}</value></data>
+  <data name="Roles are on" xml:space="preserve"><value>Les rôles sont actifs</value></data>
+  <data name="Roles to grant" xml:space="preserve"><value>Rôles à attribuer</value></data>
+  <data name="Staff roles" xml:space="preserve"><value>Rôles du personnel</value></data>
+  <data name="The hospital is open to every employee" xml:space="preserve"><value>L'hôpital est ouvert à tout le personnel</value></data>
+  <data name="The hospital team" xml:space="preserve"><value>L'équipe de l'hôpital</value></data>
+  <data name="Work in the hospital" xml:space="preserve"><value>Travail à l'hôpital</value></data>
+  <data name="hrole:HospitalAdministrator" xml:space="preserve"><value>Administrateur de l'hôpital</value></data>
+  <data name="hrole:HospitalCashier" xml:space="preserve"><value>Caissier</value></data>
+  <data name="hrole:HospitalDoctor" xml:space="preserve"><value>Médecin</value></data>
+  <data name="hrole:HospitalLabSpecialist" xml:space="preserve"><value>Biologiste</value></data>
+  <data name="hrole:HospitalLabTechnician" xml:space="preserve"><value>Technicien de laboratoire</value></data>
+  <data name="hrole:HospitalNurse" xml:space="preserve"><value>Infirmier</value></data>
+  <data name="hrole:HospitalPharmacist" xml:space="preserve"><value>Pharmacien</value></data>
+  <data name="hrole:HospitalRadiographer" xml:space="preserve"><value>Manipulateur radio</value></data>
+  <data name="hrole:HospitalRadiologist" xml:space="preserve"><value>Radiologue</value></data>
+  <data name="hrole:HospitalReception" xml:space="preserve"><value>Accueil</value></data>
+  <data name="hrole:HospitalStaff" xml:space="preserve"><value>Personnel de l'hôpital (général)</value></data>
+  <data name="sig:HospitalCashier" xml:space="preserve"><value>Postes de caisse</value></data>
+  <data name="sig:HospitalDoctor" xml:space="preserve"><value>Praticien enregistré</value></data>
+  <data name="sig:HospitalLabSpecialist" xml:space="preserve"><value>Résultats validés</value></data>
+  <data name="sig:HospitalLabTechnician" xml:space="preserve"><value>Résultats saisis</value></data>
+  <data name="sig:HospitalNurse" xml:space="preserve"><value>Constantes et doses</value></data>
+  <data name="sig:HospitalPharmacist" xml:space="preserve"><value>Médicaments délivrés</value></data>
+  <data name="sig:HospitalRadiographer" xml:space="preserve"><value>Examens réalisés</value></data>
+  <data name="sig:HospitalRadiologist" xml:space="preserve"><value>Comptes rendus signés</value></data>
+  <data name="sig:HospitalReception" xml:space="preserve"><value>Patients enregistrés</value></data>
+  <data name="{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here." xml:space="preserve"><value>{0} rôles sont attribués. Quiconque sans rôle ne peut utiliser l'hôpital : attribuez ici les rôles des nouveaux venus.</value></data>
 </root>

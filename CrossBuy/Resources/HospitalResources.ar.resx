@@ -8776,4 +8776,45 @@
   <data name="the right ear" xml:space="preserve"><value>الأذن اليمنى</value></data>
   <data name="This calculator reads its eleven items" xml:space="preserve"><value>تقرأ هذه الحاسبة بنودها الأحد عشر</value></data>
   <data name="calc:QuickDash" xml:space="preserve"><value>QuickDASH لوظيفة الطرف العلوي</value></data>
+  <data name="Add an employee" xml:space="preserve"><value>إضافة موظف</value></data>
+  <data name="Added by hand" xml:space="preserve"><value>أُضيف يدويًا</value></data>
+  <data name="Choose at least one role to grant" xml:space="preserve"><value>اختر دورًا واحدًا على الأقل للمنح</value></data>
+  <data name="Choose the roles from the hospital's list" xml:space="preserve"><value>اختر الأدوار من قائمة المستشفى</value></data>
+  <data name="From the hospital's records: the doctors, and whoever did a role's work in the last 180 days. Check each suggestion before granting." xml:space="preserve"><value>من سجلات المستشفى: الأطباء، ومن أدّى عمل دورٍ ما خلال آخر 180 يومًا. راجع كل اقتراح قبل المنح.</value></data>
+  <data name="Grant the chosen roles to everyone" xml:space="preserve"><value>منح الأدوار المختارة للجميع</value></data>
+  <data name="Grant the chosen roles to {0} employees now? Anyone left without a role will no longer reach the hospital." xml:space="preserve"><value>هل تمنح الأدوار المختارة لـ{0} موظفًا الآن؟ من يبقى بلا دور لن يصل إلى المستشفى بعد ذلك.</value></data>
+  <data name="Granted" xml:space="preserve"><value>الممنوح</value></data>
+  <data name="No employee matches" xml:space="preserve"><value>لا يوجد موظف مطابق</value></data>
+  <data name="No hospital role is granted yet, so everyone can do everything. The first grant closes the hospital to anyone without a role: give the whole team its roles here, together, in one step." xml:space="preserve"><value>لم يُمنح أي دور في المستشفى بعد، فكل موظف يستطيع فعل كل شيء. أول منح يغلق المستشفى أمام كل من ليس له دور: امنح الفريق كله أدواره هنا معًا، في خطوة واحدة.</value></data>
+  <data name="No new role" xml:space="preserve"><value>لا دور جديد</value></data>
+  <data name="No one in the hospital's records yet: add the team's employees." xml:space="preserve"><value>لا أحد في سجلات المستشفى بعد: أضف موظفي الفريق.</value></data>
+  <data name="Nothing new to grant" xml:space="preserve"><value>لا شيء جديد للمنح</value></data>
+  <data name="Nothing was granted: {0}" xml:space="preserve"><value>لم يُمنح شيء: {0}</value></data>
+  <data name="Roles are on" xml:space="preserve"><value>الأدوار مفعّلة</value></data>
+  <data name="Roles to grant" xml:space="preserve"><value>الأدوار المراد منحها</value></data>
+  <data name="Staff roles" xml:space="preserve"><value>أدوار العاملين</value></data>
+  <data name="The hospital is open to every employee" xml:space="preserve"><value>المستشفى مفتوح لكل الموظفين</value></data>
+  <data name="The hospital team" xml:space="preserve"><value>فريق المستشفى</value></data>
+  <data name="Work in the hospital" xml:space="preserve"><value>العمل في المستشفى</value></data>
+  <data name="hrole:HospitalAdministrator" xml:space="preserve"><value>مدير المستشفى</value></data>
+  <data name="hrole:HospitalCashier" xml:space="preserve"><value>أمين صندوق</value></data>
+  <data name="hrole:HospitalDoctor" xml:space="preserve"><value>طبيب</value></data>
+  <data name="hrole:HospitalLabSpecialist" xml:space="preserve"><value>أخصائي مختبر</value></data>
+  <data name="hrole:HospitalLabTechnician" xml:space="preserve"><value>فني مختبر</value></data>
+  <data name="hrole:HospitalNurse" xml:space="preserve"><value>ممرض</value></data>
+  <data name="hrole:HospitalPharmacist" xml:space="preserve"><value>صيدلي</value></data>
+  <data name="hrole:HospitalRadiographer" xml:space="preserve"><value>فني أشعة</value></data>
+  <data name="hrole:HospitalRadiologist" xml:space="preserve"><value>طبيب أشعة</value></data>
+  <data name="hrole:HospitalReception" xml:space="preserve"><value>موظف استقبال</value></data>
+  <data name="hrole:HospitalStaff" xml:space="preserve"><value>موظف المستشفى (عام)</value></data>
+  <data name="sig:HospitalCashier" xml:space="preserve"><value>ورديات صندوق</value></data>
+  <data name="sig:HospitalDoctor" xml:space="preserve"><value>ممارس صحي مسجّل</value></data>
+  <data name="sig:HospitalLabSpecialist" xml:space="preserve"><value>نتائج مُعتمدة</value></data>
+  <data name="sig:HospitalLabTechnician" xml:space="preserve"><value>نتائج مُدخلة</value></data>
+  <data name="sig:HospitalNurse" xml:space="preserve"><value>علامات حيوية وجرعات</value></data>
+  <data name="sig:HospitalPharmacist" xml:space="preserve"><value>أدوية مصروفة</value></data>
+  <data name="sig:HospitalRadiographer" xml:space="preserve"><value>فحوص أشعة مُجراة</value></data>
+  <data name="sig:HospitalRadiologist" xml:space="preserve"><value>تقارير أشعة موقّعة</value></data>
+  <data name="sig:HospitalReception" xml:space="preserve"><value>مرضى مسجّلون</value></data>
+  <data name="{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here." xml:space="preserve"><value>مُنح {0} دورًا. من ليس له دور لا يستطيع استخدام المستشفى: امنح المنضمين الجدد أدوارهم من هنا.</value></data>
 </root>

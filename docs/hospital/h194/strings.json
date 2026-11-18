@@ -1,0 +1,210 @@
+{
+ "unit": "H194 - the hospital team's roles",
+ "strings": {
+  "Staff roles": {
+   "ar": "أدوار العاملين",
+   "en": "Staff roles",
+   "fr": "Rôles du personnel"
+  },
+  "Grant the chosen roles to everyone": {
+   "ar": "منح الأدوار المختارة للجميع",
+   "en": "Grant the chosen roles to everyone",
+   "fr": "Attribuer les rôles choisis à tous"
+  },
+  "The hospital is open to every employee": {
+   "ar": "المستشفى مفتوح لكل الموظفين",
+   "en": "The hospital is open to every employee",
+   "fr": "L'hôpital est ouvert à tout le personnel"
+  },
+  "No hospital role is granted yet, so everyone can do everything. The first grant closes the hospital to anyone without a role: give the whole team its roles here, together, in one step.": {
+   "ar": "لم يُمنح أي دور في المستشفى بعد، فكل موظف يستطيع فعل كل شيء. أول منح يغلق المستشفى أمام كل من ليس له دور: امنح الفريق كله أدواره هنا معًا، في خطوة واحدة.",
+   "en": "No hospital role is granted yet, so everyone can do everything. The first grant closes the hospital to anyone without a role: give the whole team its roles here, together, in one step.",
+   "fr": "Aucun rôle hospitalier n'est encore attribué : chacun peut tout faire. La première attribution ferme l'hôpital à quiconque sans rôle : attribuez ici les rôles de toute l'équipe, ensemble, en une seule étape."
+  },
+  "Roles are on": {
+   "ar": "الأدوار مفعّلة",
+   "en": "Roles are on",
+   "fr": "Les rôles sont actifs"
+  },
+  "{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here.": {
+   "ar": "مُنح {0} دورًا. من ليس له دور لا يستطيع استخدام المستشفى: امنح المنضمين الجدد أدوارهم من هنا.",
+   "en": "{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here.",
+   "fr": "{0} rôles sont attribués. Quiconque sans rôle ne peut utiliser l'hôpital : attribuez ici les rôles des nouveaux venus."
+  },
+  "The hospital team": {
+   "ar": "فريق المستشفى",
+   "en": "The hospital team",
+   "fr": "L'équipe de l'hôpital"
+  },
+  "From the hospital's records: the doctors, and whoever did a role's work in the last 180 days. Check each suggestion before granting.": {
+   "ar": "من سجلات المستشفى: الأطباء، ومن أدّى عمل دورٍ ما خلال آخر 180 يومًا. راجع كل اقتراح قبل المنح.",
+   "en": "From the hospital's records: the doctors, and whoever did a role's work in the last 180 days. Check each suggestion before granting.",
+   "fr": "D'après les dossiers de l'hôpital : les médecins, et quiconque a accompli le travail d'un rôle ces 180 derniers jours. Vérifiez chaque suggestion avant d'attribuer."
+  },
+  "Add an employee": {
+   "ar": "إضافة موظف",
+   "en": "Add an employee",
+   "fr": "Ajouter un employé"
+  },
+  "No employee matches": {
+   "ar": "لا يوجد موظف مطابق",
+   "en": "No employee matches",
+   "fr": "Aucun employé ne correspond"
+  },
+  "No one in the hospital's records yet: add the team's employees.": {
+   "ar": "لا أحد في سجلات المستشفى بعد: أضف موظفي الفريق.",
+   "en": "No one in the hospital's records yet: add the team's employees.",
+   "fr": "Personne dans les dossiers de l'hôpital pour l'instant : ajoutez les employés de l'équipe."
+  },
+  "Work in the hospital": {
+   "ar": "العمل في المستشفى",
+   "en": "Work in the hospital",
+   "fr": "Travail à l'hôpital"
+  },
+  "Granted": {
+   "ar": "الممنوح",
+   "en": "Granted",
+   "fr": "Attribué"
+  },
+  "Roles to grant": {
+   "ar": "الأدوار المراد منحها",
+   "en": "Roles to grant",
+   "fr": "Rôles à attribuer"
+  },
+  "Added by hand": {
+   "ar": "أُضيف يدويًا",
+   "en": "Added by hand",
+   "fr": "Ajouté manuellement"
+  },
+  "No new role": {
+   "ar": "لا دور جديد",
+   "en": "No new role",
+   "fr": "Aucun nouveau rôle"
+  },
+  "Grant the chosen roles to {0} employees now? Anyone left without a role will no longer reach the hospital.": {
+   "ar": "هل تمنح الأدوار المختارة لـ{0} موظفًا الآن؟ من يبقى بلا دور لن يصل إلى المستشفى بعد ذلك.",
+   "en": "Grant the chosen roles to {0} employees now? Anyone left without a role will no longer reach the hospital.",
+   "fr": "Attribuer maintenant les rôles choisis à {0} employés ? Quiconque reste sans rôle n'accédera plus à l'hôpital."
+  },
+  "Choose at least one role to grant": {
+   "ar": "اختر دورًا واحدًا على الأقل للمنح",
+   "en": "Choose at least one role to grant",
+   "fr": "Choisissez au moins un rôle à attribuer"
+  },
+  "Choose the roles from the hospital's list": {
+   "ar": "اختر الأدوار من قائمة المستشفى",
+   "en": "Choose the roles from the hospital's list",
+   "fr": "Choisissez les rôles dans la liste de l'hôpital"
+  },
+  "Nothing new to grant": {
+   "ar": "لا شيء جديد للمنح",
+   "en": "Nothing new to grant",
+   "fr": "Rien de nouveau à attribuer"
+  },
+  "Nothing was granted: {0}": {
+   "ar": "لم يُمنح شيء: {0}",
+   "en": "Nothing was granted: {0}",
+   "fr": "Rien n'a été attribué : {0}"
+  },
+  "hrole:HospitalAdministrator": {
+   "ar": "مدير المستشفى",
+   "en": "Hospital administrator",
+   "fr": "Administrateur de l'hôpital"
+  },
+  "hrole:HospitalStaff": {
+   "ar": "موظف المستشفى (عام)",
+   "en": "Hospital staff (general)",
+   "fr": "Personnel de l'hôpital (général)"
+  },
+  "hrole:HospitalDoctor": {
+   "ar": "طبيب",
+   "en": "Doctor",
+   "fr": "Médecin"
+  },
+  "hrole:HospitalLabTechnician": {
+   "ar": "فني مختبر",
+   "en": "Lab technician",
+   "fr": "Technicien de laboratoire"
+  },
+  "hrole:HospitalLabSpecialist": {
+   "ar": "أخصائي مختبر",
+   "en": "Lab specialist",
+   "fr": "Biologiste"
+  },
+  "hrole:HospitalRadiographer": {
+   "ar": "فني أشعة",
+   "en": "Radiographer",
+   "fr": "Manipulateur radio"
+  },
+  "hrole:HospitalRadiologist": {
+   "ar": "طبيب أشعة",
+   "en": "Radiologist",
+   "fr": "Radiologue"
+  },
+  "hrole:HospitalPharmacist": {
+   "ar": "صيدلي",
+   "en": "Pharmacist",
+   "fr": "Pharmacien"
+  },
+  "hrole:HospitalReception": {
+   "ar": "موظف استقبال",
+   "en": "Reception",
+   "fr": "Accueil"
+  },
+  "hrole:HospitalNurse": {
+   "ar": "ممرض",
+   "en": "Nurse",
+   "fr": "Infirmier"
+  },
+  "hrole:HospitalCashier": {
+   "ar": "أمين صندوق",
+   "en": "Cashier",
+   "fr": "Caissier"
+  },
+  "sig:HospitalDoctor": {
+   "ar": "ممارس صحي مسجّل",
+   "en": "Registered practitioner",
+   "fr": "Praticien enregistré"
+  },
+  "sig:HospitalNurse": {
+   "ar": "علامات حيوية وجرعات",
+   "en": "Vital signs and doses",
+   "fr": "Constantes et doses"
+  },
+  "sig:HospitalCashier": {
+   "ar": "ورديات صندوق",
+   "en": "Cash shifts",
+   "fr": "Postes de caisse"
+  },
+  "sig:HospitalLabTechnician": {
+   "ar": "نتائج مُدخلة",
+   "en": "Results entered",
+   "fr": "Résultats saisis"
+  },
+  "sig:HospitalLabSpecialist": {
+   "ar": "نتائج مُعتمدة",
+   "en": "Results verified",
+   "fr": "Résultats validés"
+  },
+  "sig:HospitalRadiographer": {
+   "ar": "فحوص أشعة مُجراة",
+   "en": "Scans performed",
+   "fr": "Examens réalisés"
+  },
+  "sig:HospitalRadiologist": {
+   "ar": "تقارير أشعة موقّعة",
+   "en": "Reports signed",
+   "fr": "Comptes rendus signés"
+  },
+  "sig:HospitalPharmacist": {
+   "ar": "أدوية مصروفة",
+   "en": "Medicines dispensed",
+   "fr": "Médicaments délivrés"
+  },
+  "sig:HospitalReception": {
+   "ar": "مرضى مسجّلون",
+   "en": "Patients registered",
+   "fr": "Patients enregistrés"
+  }
+ }
+}
