@@ -149,8 +149,27 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			// H181: the cycle is prepared; it is given (and draws its kit) when a second clinician checks it
+			return Result(await OncSvc.GiveAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Oncology/Cycle/{id:int}/Verify"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult), HospitalIdempotent]
+		public async Task<IActionResult> VerifyChemoCycle(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			// H130: the cycle given draws the oncology unit's kit
-			return await CompletedWithKitAsync(ctx, HospitalSessionKinds.Chemo, await OncSvc.GiveAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct), ct);
+			return await CompletedWithKitAsync(ctx, HospitalSessionKinds.Chemo, await OncSvc.VerifyAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct), ct);
+		}
+
+		public sealed class HospitalChemoRejectInput { public string? Reason { get; set; } }
+
+		[HttpPost("Oncology/Cycle/{id:int}/Reject"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> RejectChemoCycle(int id, [FromBody] HospitalChemoRejectInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await OncSvc.RejectPreparedAsync(ctx, id, input.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Oncology/Course/{id:int}/Hold"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

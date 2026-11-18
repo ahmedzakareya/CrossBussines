@@ -1,0 +1,75 @@
+{
+ "unit": "H181 - the independent double-check of chemotherapy",
+ "strings": {
+  "Awaiting the independent check": {
+   "ar": "بانتظار التحقق المستقل",
+   "en": "Awaiting the independent check",
+   "fr": "En attente de la double vérification"
+  },
+  "Double-checked": {
+   "ar": "تم التحقق المزدوج",
+   "en": "Double-checked",
+   "fr": "Double vérifié"
+  },
+  "Checked: give it": {
+   "ar": "تم التحقق: إعطاء الجرعة",
+   "en": "Checked: give it",
+   "fr": "Vérifié : administrer"
+  },
+  "Take it back": {
+   "ar": "سحب التحضير",
+   "en": "Take it back",
+   "fr": "Annuler la préparation"
+  },
+  "By a second clinician, not the one who prepared it.": {
+   "ar": "يتحقق منها ممارس ثانٍ غير الذي حضّرها.",
+   "en": "By a second clinician, not the one who prepared it.",
+   "fr": "Par un second soignant, pas celui qui l'a préparée."
+  },
+  "Prepare cycle {0} for the check": {
+   "ar": "تحضير الدورة {0} للتحقق",
+   "en": "Prepare cycle {0} for the check",
+   "fr": "Préparer le cycle {0} pour vérification"
+  },
+  "Record this cycle with these doses? A second clinician checks it before it is given.": {
+   "ar": "هل تسجّل هذه الدورة بهذه الجرعات؟ يتحقق منها ممارس ثانٍ قبل إعطائها.",
+   "en": "Record this cycle with these doses? A second clinician checks it before it is given.",
+   "fr": "Enregistrer ce cycle avec ces doses ? Un second soignant le vérifie avant administration."
+  },
+  "You checked the drugs, doses and patient independently: give this cycle?": {
+   "ar": "تحققت بنفسك من الأدوية والجرعات وهوية المريض: هل تُعطى هذه الدورة؟",
+   "en": "You checked the drugs, doses and patient independently: give this cycle?",
+   "fr": "Vous avez vérifié médicaments, doses et patient de façon indépendante : administrer ce cycle ?"
+  },
+  "What did the check find?": {
+   "ar": "ماذا وجد التحقق؟",
+   "en": "What did the check find?",
+   "fr": "Qu'a révélé la vérification ?"
+  },
+  "A prepared cycle awaits its independent check: check it or take it back first": {
+   "ar": "هناك دورة محضّرة بانتظار التحقق المستقل: تحقق منها أو اسحبها أولًا",
+   "en": "A prepared cycle awaits its independent check: check it or take it back first",
+   "fr": "Un cycle préparé attend sa double vérification : vérifiez-le ou annulez-le d'abord"
+  },
+  "Only a prepared cycle is checked": {
+   "ar": "لا يُتحقق إلا من دورة محضّرة",
+   "en": "Only a prepared cycle is checked",
+   "fr": "Seul un cycle préparé est vérifié"
+  },
+  "The independent check is by a second clinician, not the one who prepared it": {
+   "ar": "التحقق المستقل يجريه ممارس ثانٍ، لا من حضّر الدورة",
+   "en": "The independent check is by a second clinician, not the one who prepared it",
+   "fr": "La double vérification est faite par un second soignant, pas par celui qui a préparé"
+  },
+  "Write what the check found": {
+   "ar": "اكتب ما وجده التحقق",
+   "en": "Write what the check found",
+   "fr": "Indiquez ce que la vérification a révélé"
+  },
+  "Only a prepared cycle is taken back": {
+   "ar": "لا يُسحب إلا تحضير دورة لم تُعطَ",
+   "en": "Only a prepared cycle is taken back",
+   "fr": "Seul un cycle préparé est annulé"
+  }
+ }
+}

@@ -241,6 +241,16 @@ namespace CrossBuy.BL.Hospital
 		}
 	}
 
+	/// H181: the independent double-check of a prepared cycle (high-alert medicines: two clinicians, never one).
+	public static class HospitalChemoCheckRules
+	{
+		public const string PendingCheck = "A prepared cycle awaits its independent check: check it or take it back first";
+
+		public static string? VerifyRefusal(HospitalChemoCycle cy, int checkerEmployeeId) =>
+			cy.Status != HospitalChemoCycleStatus.Prepared ? "Only a prepared cycle is checked"
+			: cy.CreatedByEmployeeId == checkerEmployeeId ? "The independent check is by a second clinician, not the one who prepared it" : null;
+	}
+
 	public sealed class HospitalOncologyService
 	{
 		public const string NoTables = "Oncology is not installed yet (hospital_h88_oncology.sql).";
@@ -445,10 +455,12 @@ namespace CrossBuy.BL.Hospital
 					await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Carboplatin, "gfrCap", ct));   // H174
 				if (pv.Refusal != null) return HospitalResult.Fail(pv.Refusal);
 				if (pv.Checks.Any(HospitalChemoCheck.Blocks) && string.IsNullOrWhiteSpace(input.OverrideReason)) return HospitalResult.Fail("A check stops this cycle: write the reason to give it anyway");
+				// H181: one prepared cycle at a time — it waits for a second clinician's independent check
+				if (y.Any(x => x.Status == HospitalChemoCycleStatus.Prepared)) return HospitalResult.Fail(HospitalChemoCheckRules.PendingCheck);
 				await using var tx = await _db.Database.BeginTransactionAsync(ct);
 				var cy = new HospitalChemoCycle
 				{
-					CompanyId = ctx.CompanyId, CourseId = c.ID, PatientId = c.PatientId, CycleNo = pv.CycleNo, Status = HospitalChemoCycleStatus.Given, CycleDate = day, WeightKg = input.WeightKg, BsaM2 = pv.Bsa,
+					CompanyId = ctx.CompanyId, CourseId = c.ID, PatientId = c.PatientId, CycleNo = pv.CycleNo, Status = HospitalChemoCycleStatus.Prepared, CycleDate = day, WeightKg = input.WeightKg, BsaM2 = pv.Bsa,
 					Anc = input.Anc, Platelets = input.Platelets, Creatinine = input.Creatinine, DoseReductionPct = input.DoseReductionPct, ToxicityGrade = input.ToxicityGrade, ToxicityNote = Clip(input.ToxicityNote, 300),
 					OverrideReason = pv.Checks.Any(HospitalChemoCheck.Blocks) ? Clip(input.OverrideReason, 300) : null, CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
 				};
@@ -457,16 +469,57 @@ namespace CrossBuy.BL.Hospital
 				foreach (var x in pv.Doses)
 					_db.Add(new HospitalChemoDose { CompanyId = ctx.CompanyId, CycleId = cy.ID, PatientId = c.PatientId, DrugName = x.DrugName, Dose = x.Dose, Basis = x.Basis, Route = x.Route, Days = x.Days, DoseMg = x.DoseMg, CumulativeMgM2 = x.CycleMgM2 });
 				await _db.SaveChangesAsync(ct);
+				await tx.CommitAsync(ct);
+				return HospitalResult.Success(cy.ID);   // H181: charged and sent to the pharmacy when it is checked (VerifyAsync)
+			}
+			catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 }) { return HospitalResult.Fail("This cycle was just given by someone else"); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
+		}
+
+		/// H181: a second clinician — never the one who prepared it — checks the prepared cycle independently (drug, dose,
+		/// patient, counts); then it is given: charged, and its drugs requested from the pharmacy, in one transaction.
+		public async Task<HospitalResult> VerifyAsync(BusinessContext ctx, int cycleId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await CanTreatAsync(ctx, ct) || employeeId is not int me) return HospitalResult.Fail("forbidden");
+			try
+			{
+				var cy = await _db.Set<HospitalChemoCycle>().FirstOrDefaultAsync(x => x.ID == cycleId && x.CompanyId == ctx.CompanyId, ct);
+				if (cy == null) return HospitalResult.Fail("not_found");
+				if (HospitalChemoCheckRules.VerifyRefusal(cy, me) is string why) return HospitalResult.Fail(why);
+				var doses = await _db.Set<HospitalChemoDose>().AsNoTracking().Where(d => d.CycleId == cy.ID && d.CompanyId == ctx.CompanyId).ToListAsync(ct);
+				await using var tx = await _db.Database.BeginTransactionAsync(ct);
+				cy.Status = HospitalChemoCycleStatus.Given; cy.CheckedAt = nowUtc; cy.CheckedByEmployeeId = me;
+				await _db.SaveChangesAsync(ct);
 				// H119: the cycle's administration is charged with it (the drugs follow the pharmacy's own dispensing)
-				if (_billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, c.PatientId, HospitalSessionKinds.Chemo, employeeId, nowUtc, ct) is { } line)
+				if (_billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, cy.PatientId, HospitalSessionKinds.Chemo, me, nowUtc, ct) is { } line)
 				{ cy.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
 				// H120: the cycle's drugs go to the pharmacy as one request, line by line — stock and bill follow its dispensing
-				if (await HospitalChemoPharmacyService.OpenRequestAsync(_db, ctx, c.PatientId, employeeId, nowUtc, pv.Doses.Select(x => (x.DrugName, x.DoseMg, x.Route, x.Days)).ToList(), ct) is { } rx)
+				if (await HospitalChemoPharmacyService.OpenRequestAsync(_db, ctx, cy.PatientId, me, nowUtc, doses.Select(x => (x.DrugName, x.DoseMg, x.Route, x.Days)).ToList(), ct) is { } rx)
 				{ cy.DispenseId = rx.ID; await _db.SaveChangesAsync(ct); }
 				await tx.CommitAsync(ct);
 				return HospitalResult.Success(cy.ID);
 			}
 			catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 }) { return HospitalResult.Fail("This cycle was just given by someone else"); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
+		}
+
+		/// H181: the check finds an error: the prepared cycle is taken back (it never reached the patient), with the reason.
+		public async Task<HospitalResult> RejectPreparedAsync(BusinessContext ctx, int cycleId, string? reason, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await CanTreatAsync(ctx, ct) || employeeId is null) return HospitalResult.Fail("forbidden");
+			if (string.IsNullOrWhiteSpace(reason)) return HospitalResult.Fail("Write what the check found");
+			try
+			{
+				var cy = await _db.Set<HospitalChemoCycle>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == cycleId && x.CompanyId == ctx.CompanyId, ct);
+				if (cy == null) return HospitalResult.Fail("not_found");
+				if (cy.Status != HospitalChemoCycleStatus.Prepared) return HospitalResult.Fail("Only a prepared cycle is taken back");
+				await using var tx = await _db.Database.BeginTransactionAsync(ct);
+				await _db.Set<HospitalChemoDose>().Where(d => d.CycleId == cy.ID && d.CompanyId == ctx.CompanyId).ExecuteDeleteAsync(ct);
+				int n = await _db.Set<HospitalChemoCycle>().Where(x => x.ID == cy.ID && x.Status == HospitalChemoCycleStatus.Prepared).ExecuteDeleteAsync(ct);
+				if (n != 1) { await tx.RollbackAsync(ct); return HospitalResult.Fail(HospitalNursingService.ConcurrentChange); }
+				await tx.CommitAsync(ct);
+				return HospitalResult.Success(cy.CourseId);
+			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
 		}
 
@@ -479,6 +532,7 @@ namespace CrossBuy.BL.Hospital
 				var l = await LoadAsync(ctx, courseId, today, ct);
 				if (l == null) return HospitalResult.Fail("not_found");
 				var (c, r, _, y, _, _) = l.Value;
+				if (y.Any(x => x.Status == HospitalChemoCycleStatus.Prepared)) return HospitalResult.Fail(HospitalChemoCheckRules.PendingCheck);   // H181
 				if (HospitalOncologyRules.HoldRefusal(c, input, today) is string why) return HospitalResult.Fail(why);
 				var (given, _, _) = State(y);
 				if (given >= r.MaxCycles) return HospitalResult.Fail("The regimen's cycles are all given");

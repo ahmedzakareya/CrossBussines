@@ -128,7 +128,7 @@
                             <div id="ovBox" class="mb-4 d-none"><label class="form-label fs-8 required text-danger">@T["Why give it anyway"]</label><textarea rows="2" maxlength="300" class="form-control form-control-sm form-control-solid" data-g="overrideReason"></textarea></div>
                             <div class="d-flex gap-2 justify-content-end">
                                 <button type="button" class="btn btn-sm btn-light" data-modal="holdModal"><i class="ki-outline ki-time fs-4"></i>@T["Hold the cycle"]</button>
-                                <button type="button" class="btn btn-sm btn-primary" data-give><i class="ki-outline ki-check fs-4"></i>@T["Give cycle {0}", Model.Given + 1]</button>
+                                <button type="button" class="btn btn-sm btn-primary" data-give><i class="ki-outline ki-check fs-4"></i>@T["Prepare cycle {0} for the check", Model.Given + 1]</button>
                             </div>
                         </div>
                     </div>
@@ -152,10 +152,12 @@
                                 <tbody>
                                 @foreach (var v in Model.Cycles.AsEnumerable().Reverse())
                                 {
-                                    var y = v.Cycle; bool held = y.Status == HospitalChemoCycleStatus.Held;
+                                    var y = v.Cycle; bool held = y.Status == HospitalChemoCycleStatus.Held, prepared = y.Status == HospitalChemoCycleStatus.Prepared;   // H181
                                     <tr>
                                         <td class="ps-4"><div class="symbol symbol-40px"><span class="symbol-label fw-bold fs-5 hp-num @(held ? "bg-light text-gray-600" : "bg-light-primary text-primary")">@y.CycleNo</span></div>
-                                            @if (held) {<span class="badge badge-light fs-8 fw-bold mt-2 d-inline-block">@T["Held"]</span>}</td>
+                                            @if (held) {<span class="badge badge-light fs-8 fw-bold mt-2 d-inline-block">@T["Held"]</span>}
+                                            @if (prepared) {<span class="badge badge-light-danger fs-8 fw-bold mt-2 d-inline-block">@T["Awaiting the independent check"]</span>}
+                                            else if (y.CheckedByEmployeeId != null) {<span class="badge badge-light-primary fs-8 fw-bold mt-2 d-inline-block">@T["Double-checked"]</span>}</td>
                                         <td class="text-nowrap"><span class="text-gray-800 fw-bold d-block fs-7 hp-num">@y.CycleDate.ToString("yyyy-MM-dd")</span>@if (held) {<span class="text-muted fw-semibold d-block fs-8 hp-num">→ @y.HeldUntil?.ToString("yyyy-MM-dd")</span>}<span class="text-gray-500 fw-semibold d-block fs-8">@Who(y.CreatedByEmployeeId)</span></td>
                                         <td class="text-nowrap">@if (!held) {<span class="text-gray-800 fw-bold d-block fs-7 hp-num" dir="ltr">@V(y.WeightKg) kg</span><span class="text-gray-500 fw-semibold d-block fs-8 hp-num" dir="ltr">@y.BsaM2?.ToString("0.00") m²</span>@if (y.DoseReductionPct > 0) {<span class="badge badge-light-danger fs-8 fw-bold mt-1 hp-num" dir="ltr">−@y.DoseReductionPct %</span>}} else {<span class="text-muted">—</span>}</td>
                                         <td class="text-nowrap" dir="ltr"><span class="d-block fs-8 hp-num @(y.Anc < HospitalOncologyRules.MinAnc ? "text-danger fw-bold" : "text-gray-700 fw-semibold")">ANC @(y.Anc?.ToString("0.0#") ?? "—")</span><span class="d-block fs-8 hp-num @(y.Platelets < HospitalOncologyRules.MinPlatelets ? "text-danger fw-bold" : "text-gray-700 fw-semibold")">PLT @(y.Platelets?.ToString() ?? "—")</span>@if (y.Creatinine != null) {<span class="d-block fs-8 hp-num text-gray-500">Cr @y.Creatinine.Value.ToString("0.0#")</span>}</td>
@@ -166,7 +168,15 @@
                                                 foreach (var d in v.Doses) {<div class="d-flex flex-wrap align-items-center gap-2 mb-1"><bdi dir="ltr" class="text-gray-800 fw-bold">@d.DrugName</bdi><span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@d.DoseMg.ToString("0.#") mg @d.Route</span><span class="text-gray-500 fs-8">@T["Day {0}", d.Days]</span></div>}
                                                 if (y.OverrideReason != null) {<span class="text-danger fw-semibold d-block fs-8 mt-1">@T["Overruled"]: <bdi>@y.OverrideReason</bdi></span>}
                                             }</td>
-                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))<div class="mt-2">@await Html.PartialAsync("_SessionKitCell", new HospitalSessionKitCell(HospitalSessionKinds.Chemo, y.ID, y.KitIssuedAt, y.Status == HospitalChemoCycleStatus.Given, (ViewBag.KitCard as HospitalSessionKitCard)?.Kit.KitItemId != null))</div>@if (y.DispenseId is int rxId && rxs.TryGetValue(rxId, out var rx)) {<a href="@Url.Action("Pharmacy")" class="badge badge-light-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary") fs-8 fw-bold mt-2 text-nowrap"><i class="ki-outline ki-capsule fs-7 me-1 text-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary")"></i><bdi class="hp-num">@rx.RxNo</bdi>&nbsp;·&nbsp;@T["rxs:" + rx.Status]</a>}</td>
+                                        <td class="pe-4 min-w-175px">@if (prepared)
+                                            {
+                                                <div class="d-flex flex-column gap-2">
+                                                    <button type="button" class="btn btn-sm btn-primary" data-verify="@y.ID"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Checked: give it"]</button>
+                                                    <button type="button" class="btn btn-sm btn-light-danger" data-reject="@y.ID">@T["Take it back"]</button>
+                                                    <span class="text-muted fs-8">@T["By a second clinician, not the one who prepared it."]</span>
+                                                </div>
+                                            }
+                                            @await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))<div class="mt-2">@await Html.PartialAsync("_SessionKitCell", new HospitalSessionKitCell(HospitalSessionKinds.Chemo, y.ID, y.KitIssuedAt, y.Status == HospitalChemoCycleStatus.Given, (ViewBag.KitCard as HospitalSessionKitCard)?.Kit.KitItemId != null))</div>@if (y.DispenseId is int rxId && rxs.TryGetValue(rxId, out var rx)) {<a href="@Url.Action("Pharmacy")" class="badge badge-light-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary") fs-8 fw-bold mt-2 text-nowrap"><i class="ki-outline ki-capsule fs-7 me-1 text-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary")"></i><bdi class="hp-num">@rx.RxNo</bdi>&nbsp;·&nbsp;@T["rxs:" + rx.Status]</a>}</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -202,7 +212,8 @@
         (function () {
             var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
             var base = @Json.Serialize(Url.Content("~/Hospital/Oncology/Course/" + c.ID));
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), give: @Json.Serialize(T["Give this cycle with these doses?"].Value),
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), give: @Json.Serialize(T["Record this cycle with these doses? A second clinician checks it before it is given."].Value),
+                      verify: @Json.Serialize(T["You checked the drugs, doses and patient independently: give this cycle?"].Value), reject: @Json.Serialize(T["What did the check find?"].Value),
                       hold: @Json.Serialize(T["Hold this cycle?"].Value), complete: @Json.Serialize(T["Mark the course completed?"].Value), stop: @Json.Serialize(T["Why is the course stopped?"].Value),
                       stopTitle: @Json.Serialize(T["Stop the course"].Value), noLimit: '—', ofN: @Json.Serialize(T["{0} of {1}"].Value) };
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
@@ -233,6 +244,10 @@
             if (panel) { panel.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(preview, 300); }); panel.addEventListener('change', function () { clearTimeout(timer); timer = setTimeout(preview, 100); }); preview(); }
             document.addEventListener('click', function (e) {
                 var o = e.target.closest('[data-modal]'); if (o) { bootstrap.Modal.getOrCreateInstance(document.getElementById(o.getAttribute('data-modal'))).show(); return; }
+                var vf = e.target.closest('[data-verify]');   // H181: the independent check
+                if (vf) { cbConfirm(W.verify).then(function (ok) { if (!ok) return; vf.disabled = true; post(@Json.Serialize(Url.Content("~/Hospital/Oncology/Cycle/")) + vf.getAttribute('data-verify') + '/Verify', {}).then(done(vf)); }); return; }
+                var rj = e.target.closest('[data-reject]');
+                if (rj) { cbPrompt(W.reject, { kind: 'danger' }).then(function (why) { if (!why) return; rj.disabled = true; post(@Json.Serialize(Url.Content("~/Hospital/Oncology/Cycle/")) + rj.getAttribute('data-reject') + '/Reject', { reason: why }).then(done(rj)); }); return; }
                 var g = e.target.closest('[data-give]');
                 if (g) { cbConfirm(W.give).then(function (ok) { if (!ok) return; g.disabled = true; post(base + '/Give', form()).then(done(g)); }); return; }
                 var h = e.target.closest('[data-hold-save]');

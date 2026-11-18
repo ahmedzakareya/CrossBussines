@@ -52,6 +52,8 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public const string Given = "Given";
 		public const string Held = "Held";
+		/// H181: the doses computed and recorded, waiting for a second clinician's independent check before it is given.
+		public const string Prepared = "Prepared";
 	}
 
 	public class HospitalChemoRegimen
@@ -137,6 +139,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? ToxicityGrade { get; set; }
 		public string? ToxicityNote { get; set; }
 		public string? OverrideReason { get; set; }
+		/// H181: the second clinician who checked the prepared cycle independently, and when.
+		public DateTime? CheckedAt { get; set; }
+		public int? CheckedByEmployeeId { get; set; }
 		public string? Reason { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
@@ -202,7 +207,7 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalChemoCycle>(e =>
 			{
 				e.ToTable("HospitalChemoCycles");
-				e.Property(x => x.Status).HasMaxLength(5);
+				e.Property(x => x.Status).HasMaxLength(10);   // H181: "Prepared"
 				e.Property(x => x.CycleDate).HasColumnType("date");
 				e.Property(x => x.HeldUntil).HasColumnType("date");
 				e.Property(x => x.WeightKg).HasPrecision(5, 1);
