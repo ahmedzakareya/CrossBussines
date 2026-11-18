@@ -8869,4 +8869,24 @@
   <data name="The viewer address names an unknown placeholder" xml:space="preserve"><value>يحتوي عنوان العارض على متغير غير معروف</value></data>
   <data name="Viewer address" xml:space="preserve"><value>عنوان العارض</value></data>
   <data name="Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect." xml:space="preserve"><value>اكتب {0} في موضع رقم الدراسة، و{1} لرقم ملف المريض. اتركه فارغًا لفصل الربط.</value></data>
+  <data name="Over an hour since the last look" xml:space="preserve"><value>مرّت أكثر من ساعة على آخر فحص</value></data>
+  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>اختر خدمتي فحص OCT والمجال البصري من إعدادات عيادة العيون لتُطلبا من هنا.</value></data>
+  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>الخدمة التي تطلبها زيارة العيون لهذا الفحص.</value></data>
+  <data name="unitset:EyeOct" xml:space="preserve"><value>خدمة فحص OCT</value></data>
+  <data name="unitset:EyeVf" xml:space="preserve"><value>خدمة فحص المجال البصري</value></data>
+  <data name="Test service" xml:space="preserve"><value>خدمة الفحص</value></data>
+  <data name="Choose the store..." xml:space="preserve"><value>اختر المخزن...</value></data>
+  <data name="Choose the unit's store first" xml:space="preserve"><value>اختر مخزن الوحدة أولًا</value></data>
+  <data name="From the unit's store" xml:space="preserve"><value>من مخزن الوحدة</value></data>
+  <data name="In the unit's store" xml:space="preserve"><value>في مخزن الوحدة</value></data>
+  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>صرف مستلزمات هذه الجلسة من مخزن الوحدة الآن؟</value></data>
+  <data name="Kit issued" xml:space="preserve"><value>صُرفت المستلزمات</value></data>
+  <data name="Kit waiting" xml:space="preserve"><value>المستلزمات منتظرة</value></data>
+  <data name="The unit has no kit set" xml:space="preserve"><value>لم تُحدَّد مستلزمات الوحدة بعد</value></data>
+  <data name="kitcard:Chemo" xml:space="preserve"><value>مستلزمات كل دورة علاج كيماوي</value></data>
+  <data name="kitcard:Dialysis" xml:space="preserve"><value>مستلزمات كل جلسة غسيل</value></data>
+  <data name="kitcard:Physio" xml:space="preserve"><value>مستلزمات كل جلسة علاج طبيعي</value></data>
+  <data name="kitwhen:Chemo" xml:space="preserve"><value>تخرج من المخزن عند إعطاء الدورة</value></data>
+  <data name="kitwhen:Dialysis" xml:space="preserve"><value>تخرج من المخزن عند إنهاء الجلسة</value></data>
+  <data name="kitwhen:Physio" xml:space="preserve"><value>تخرج من المخزن عند حضور الجلسة</value></data>
 </root>
