@@ -91,8 +91,14 @@ namespace CrossBuy.BL
 		/// H155: the reception desk — finds, registers and books patients and takes their money; reads the administrative
 		/// file (where they are, visits, stays, bills) but never the clinical content.
 		public const string HospitalReception = "HospitalReception";
+		/// H192: the nurse — reads the clinical file and gives care on the wards and in the units (observations, the
+		/// medication round, vaccines, the session at the machine: the `admit` work), never the cash or the desk's registration,
+		/// and never the doctor's note.
+		public const string HospitalNurse = "HospitalNurse";
+		/// H192: the cashier — bills and payments in their shift only; reads the administrative file, never the clinical content.
+		public const string HospitalCashier = "HospitalCashier";
 
-		public static readonly IReadOnlyList<string> All = new[] { HospitalAdministrator, HospitalStaff, HospitalDoctor, HospitalLabTechnician, HospitalLabSpecialist, HospitalRadiographer, HospitalRadiologist, HospitalPharmacist, HospitalReception };
+		public static readonly IReadOnlyList<string> All = new[] { HospitalAdministrator, HospitalStaff, HospitalDoctor, HospitalLabTechnician, HospitalLabSpecialist, HospitalRadiographer, HospitalRadiologist, HospitalPharmacist, HospitalReception, HospitalNurse, HospitalCashier };
 	}
 
 	public sealed class HospitalAccessService : ModuleAccessServiceBase, IHospitalAccessService
@@ -118,21 +124,23 @@ namespace CrossBuy.BL
 			bool radiographer = radiologist || Holds(grants, HospitalRoles.HospitalRadiographer);
 			bool pharmacist = Holds(grants, HospitalRoles.HospitalPharmacist);
 			bool reception = Holds(grants, HospitalRoles.HospitalReception);
-			bool clinical = admin || staff || doctor || labTech || radiographer || pharmacist;
+			bool nurse = Holds(grants, HospitalRoles.HospitalNurse);       // H192
+			bool cashier = Holds(grants, HospitalRoles.HospitalCashier);   // H192
+			bool clinical = admin || staff || doctor || labTech || radiographer || pharmacist || nurse;
 
 			// Facility rows carry no per-record owner, so every decision is a module-level one; the
 			// company of a named record is enforced by the base gate and by the service's own WHERE.
 			return Task.FromResult(action switch
 			{
-				HospitalActions.Read => clinical || reception,
+				HospitalActions.Read => clinical || reception || cashier,
 				HospitalActions.ClinicalRead => clinical,   // H155: a reception-only person reads the administrative file
 				HospitalActions.ConfidentialView => admin,
 				HospitalActions.Manage => admin,
 				HospitalActions.Register => admin || staff || reception,
-				HospitalActions.Admit => admin || staff,
+				HospitalActions.Admit => admin || staff || nurse,
 				HospitalActions.Book => admin || staff || doctor || reception,
 				HospitalActions.Consult => admin || doctor,
-				HospitalActions.Bill => admin || staff || reception,
+				HospitalActions.Bill => admin || staff || reception || cashier,
 				HospitalActions.Lab => admin || labTech,
 				HospitalActions.LabVerify => admin || labSpecialist,
 				HospitalActions.Rad => admin || radiographer,

@@ -8,9 +8,9 @@ namespace CrossBuy.BL.ModulePermissions
 	// Communication: without it the platform's grants screen cannot assign a hospital role at all, and the module stays
 	// BOOTSTRAP-OPEN (every employee may do everything) for want of a way to configure it.
 	//
-	// It is registered with the others in Program.cs (one AddSingleton<IPlatformPermissionVocabulary, …> line, owned by
-	// the platform). NOTE FOR WHOEVER TURNS IT ON: the first hospital role assigned in a company ends the bootstrap-open
-	// mode for EVERY hospital user of that company — assign the roles of all hospital staff together.
+	// H192: registered with the others in Program.cs (one AddSingleton<IPlatformPermissionVocabulary, …> line; the owner
+	// approved that change on 2026-11-18). The first hospital role assigned in a company ends the bootstrap-open mode for
+	// EVERY hospital user of that company — assign the roles of all hospital staff together.
 	// ==========================================================================================
 	public sealed class HospitalPermissionVocabulary : IPlatformPermissionVocabulary
 	{

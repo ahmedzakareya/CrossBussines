@@ -26,6 +26,7 @@ namespace CrossBuy.Tests
                 new ProjectsPermissionVocabulary(),
                 new TasksPermissionVocabulary(),
                 new CommunicationPermissionVocabulary(),
+                new HospitalPermissionVocabulary(),   // H192
             });
 
         // ---- 1-5: every administrable module still resolves, with its OWN published values ----------
@@ -159,12 +160,13 @@ namespace CrossBuy.Tests
         // ---- 16-17: behaviour preserved -------------------------------------------------------------
 
         [Fact]
-        public void The_administrable_scopes_are_exactly_the_four_the_grant_writer_had_before()
+        public void The_administrable_scopes_are_the_four_the_grant_writer_had_before_and_the_hospital()
         {
             // Before the refactor PlatformGrantWriter.RolesByScope contained exactly Hr, Projects, Tasks
-            // and Communication. Same four, now resolved instead of hard-coded.
+            // and Communication. Same four, now resolved instead of hard-coded — and, from H192 (owner-approved
+            // 2026-11-18), the hospital, whose vocabulary is now registered so its roles can be assigned.
             Assert.Equal(
-                new[] { EntityRegistry.ScopeCommunication, EntityRegistry.ScopeHr, EntityRegistry.ScopeProjects, EntityRegistry.ScopeTasks }.OrderBy(x => x, StringComparer.Ordinal),
+                new[] { EntityRegistry.ScopeCommunication, EntityRegistry.ScopeHospital, EntityRegistry.ScopeHr, EntityRegistry.ScopeProjects, EntityRegistry.ScopeTasks }.OrderBy(x => x, StringComparer.Ordinal),
                 Production().AdministrableScopes.OrderBy(x => x, StringComparer.Ordinal));
         }
 

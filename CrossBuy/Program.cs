@@ -363,6 +363,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBu
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventService, CrossBuy.BL.Platform.BusinessEventService>();           // ADR-001: in-transaction event recording
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformAdminIdentity, CrossBuy.BL.Platform.IdentityPlatformAdminIdentity>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.HospitalPermissionVocabulary>();   // H192: hospital roles become assignable (owner-approved 2026-11-18)
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabularyRegistry, CrossBuy.BL.Platform.PlatformPermissionVocabularyRegistry>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformGrantWriter, CrossBuy.BL.Platform.PlatformGrantWriter>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.ITimelineProjectionService, CrossBuy.BL.Platform.TimelineProjectionService>(); // the ONLY timeline read path
