@@ -86,6 +86,7 @@
         patientCard: @Json.Serialize(Url.Content("~/Hospital/Calls/Patient/__id__")),
         patientSearch: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")),
         people: @Json.Serialize(Url.Content("~/Hospital/Calls/People")),
+        livekit: @Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js")),
         recChunk: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Chunk")),
         recFinish: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Finish"))
     };

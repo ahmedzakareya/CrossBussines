@@ -288,11 +288,12 @@
     var searchUrl = @Json.Serialize(Url.Action("SearchPatients"));
     var recUrl = @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/"));
     var patientUrl = @Json.Serialize(Url.Content("~/Hospital/Patient/"));
+    var docsUrl = @Json.Serialize(Url.Content("~/Documents/workspace/HospitalCall/"));
     var R = { call: @Json.Serialize(T["The call"].Value), recording: @Json.Serialize(T["Recording"].Value), consent: @Json.Serialize(T["Consent"].Value), patient: @Json.Serialize(T["Patient"].Value),
               file: @Json.Serialize(T["File"].Value), deleted: @Json.Serialize(T["Deleted automatically on"].Value), never: @Json.Serialize(T["No automatic deletion"].Value),
               opened: @Json.Serialize(T["Who opened it"].Value), nobody: @Json.Serialize(T["Nobody has opened it yet"].Value), outgoing: @Json.Serialize(T["Outgoing to {0}"].Value), incoming: @Json.Serialize(T["Incoming from {0}"].Value),
               video: @Json.Serialize(T["Voice and video"].Value), voice: @Json.Serialize(T["Voice only (recording)"].Value), mb: @Json.Serialize(T["MB"].Value),
-              asked: @Json.Serialize(T["Recording asked by {0}"].Value), agreed: @Json.Serialize(T["agreed by {0}"].Value), folder: @Json.Serialize(T["Hospital / Calls"].Value), gone: @Json.Serialize(T["This recording was deleted when its retention ended"].Value) };
+              asked: @Json.Serialize(T["Recording asked by {0}"].Value), agreed: @Json.Serialize(T["agreed by {0}"].Value), folder: @Json.Serialize(T["Hospital / Calls"].Value), gone: @Json.Serialize(T["This recording was deleted when its retention ended"].Value), fileManager: @Json.Serialize(T["Open in the File Manager"].Value) };
     var state = {};
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
@@ -376,7 +377,8 @@
                 [R.deleted, x.deleteAfter ? num(when(x.deleteAfter).slice(0, 10)) : esc(R.never)]
             ].map(function (f) { return '<div class="hc-fact"><span>' + esc(f[0]) + '</span><span class="text-gray-900">' + f[1] + '</span></div>'; }).join('');
             var views = (x.views || []).map(function (v) { return '<div class="d-flex align-items-center gap-3 mb-2">' + face(v.who, 28) + '<span class="fs-7 text-gray-800 flex-grow-1">' + esc((v.who || {}).name || '') + '</span><span class="fs-8 text-muted">' + num(when(v.at)) + '</span></div>'; }).join('') || '<div class="text-muted fs-7">' + esc(R.nobody) + '</div>';
-            body.innerHTML = '<div class="hc-player">' + media + '</div><div class="mt-5">' + facts + '</div><div class="fw-bold text-gray-900 mt-5 mb-2 fs-7">' + esc(R.opened) + '</div><div data-views>' + views + '</div>';
+            var fm = res.fileManager ? '<a class="btn btn-sm btn-light-primary mt-5" target="_blank" rel="noopener" href="' + docsUrl + x.callId + '"><i class="ki-outline ki-folder fs-4"></i>' + esc(R.fileManager) + '</a>' : '';
+            body.innerHTML = '<div class="hc-player">' + media + '</div><div class="mt-5">' + facts + '</div><div class="fw-bold text-gray-900 mt-5 mb-2 fs-7">' + esc(R.opened) + '</div><div data-views>' + views + '</div>' + fm;
             if (x.status === 'Saved') fetch(src + '?log=1', { headers: { Range: 'bytes=0-0' } }).catch(function () { });
             // a browser-made WebM carries no duration: seek to the end once so the player can measure it, then back
             var m = body.querySelector('video,audio');

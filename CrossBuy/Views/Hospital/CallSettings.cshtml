@@ -16,6 +16,10 @@
     var groups = HospitalCallGroups.All;
     string G(string g) => T["callgroup:" + g].Value;
     bool hasSecret = !string.IsNullOrEmpty(Model.TurnSecret);
+    bool hasSfuSecret = !string.IsNullOrEmpty(Model.SfuApiSecret);
+    bool sfuReady = HospitalCallGroupRules.SfuReady(Model.SfuUrl, Model.SfuApiKey, Model.SfuApiSecret);
+    var people = ViewBag.People as IReadOnlyList<HospitalCallPerson> ?? Array.Empty<HospitalCallPerson>();
+    var reviewers = HospitalCallRecordingRules.ParseIds(Model.RecordingReviewers);
     var recGroups = HospitalCallRecordingRules.ParseGroups(Model.RecordingGroups);
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -67,7 +71,8 @@
                             ("hub", "Signalling channel (live connection)", "The same real-time channel the system uses for notices and chat"),
                             ("turn", "Internal relay server (TURN)", "Carries the call between separate department networks — inside the hospital only"),
                             ("relay", "The relay answers from this device", "UDP 3478 and 49152–65535 must be open between the department networks"),
-                            ("media", "Camera and microphone on this device", "A local test from the browser") })
+                            ("media", "Camera and microphone on this device", "A local test from the browser"),
+                            ("sfu", "Internal media server (group calls above four)", "Each person sends their picture once and it passes it to the others — inside the hospital only") })
                         {
                             <div class="d-flex align-items-center gap-4 py-4 border-bottom border-gray-200" data-check="@k">
                                 <span class="hc-check"><span class="spinner-border spinner-border-sm text-gray-400"></span></span>
@@ -94,12 +99,30 @@
                 </div>
 
                 <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["The internal media server"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["LiveKit on a server inside the hospital: group calls of more than four go through it"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Media server address"]</label>
+                            <input class="form-control form-control-solid hp-num" dir="ltr" id="hcSfuUrl" value="@Model.SfuUrl" placeholder="wss://livekit.hospital.local:7880" /></div>
+                        <div class="row g-5">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["API key"]</label>
+                                <input class="form-control form-control-solid" dir="ltr" id="hcSfuKey" value="@Model.SfuApiKey" autocomplete="off" /></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["API secret"]</label>
+                                <input type="password" class="form-control form-control-solid" dir="ltr" id="hcSfuSecret" autocomplete="new-password" placeholder="@(hasSfuSecret ? T["Saved — type to replace it"].Value : T["Not set (relay)"].Value)" />
+                                @if (hasSfuSecret) { <label class="form-check form-check-custom form-check-solid mt-3"><input class="form-check-input" type="checkbox" id="hcSfuClear" /><span class="form-check-label text-gray-700 fs-7">@T["Remove the saved secret"]</span></label> }</div>
+                        </div>
+                        <div class="text-muted fs-8 mt-3">@T["Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call."]</div>
+                    </div>
+                </div>
+
+                <div class="card mb-5 mb-xl-8">
                     <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Call options"]</span></div></div>
                     <div class="card-body pt-0">
                         @foreach (var (id, title, sub, on, locked) in new[] {
                             ("hcVideo", "Video calls", "On with voice; can be limited to voice on weak networks", Model.VideoEnabled, false),
                             ("hcShare", "Screen sharing", "To show an image or a result during a consult", Model.ScreenShareEnabled, false),
-                            ("hcGroup", "Group calls", "Up to four people, each device connected to the others; more once the internal media server is installed", Model.GroupEnabled, false),
+                            ("hcGroup", "Group calls", sfuReady ? "Through the internal media server, up to twelve people" : "Up to four people, each device connected to the others; more once the internal media server is installed", Model.GroupEnabled, false),
                             ("hcRec", "Recording calls", "Only with every side's consent — see the recording card", Model.RecordingEnabled, false) })
                         {
                             <div class="d-flex flex-stack py-4 border-bottom border-gray-200"><div class="me-5"><div class="fw-bold text-gray-900">@T[title]</div><div class="text-muted fs-7">@T[sub]</div></div>
@@ -109,7 +132,7 @@
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ring time before it counts as missed"]</label>
                                 <select class="form-select form-select-solid" id="hcRing" data-control="select2" data-hide-search="true">@foreach (var s in new[] { 20, 30, 45, 60 }) { <option value="@s" selected="@(Model.RingSeconds == s)">@T["{0} seconds", s]</option> }</select></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Most people in a group call"]</label>
-                                <select class="form-select form-select-solid" id="hcGroupMax" data-control="select2" data-hide-search="true">@foreach (var gm in new[] { 3, 4 }) { <option value="@gm" selected="@(HospitalCallGroupRules.Cap(Model.GroupMax) == gm)">@gm</option> }</select>
+                                <select class="form-select form-select-solid" id="hcGroupMax" data-control="select2" data-hide-search="true">@foreach (var gm in sfuReady ? new[] { 3, 4, 6, 8, 12 } : new[] { 3, 4 }) { <option value="@gm" selected="@(HospitalCallGroupRules.Cap(Model.GroupMax, sfuReady) == gm)">@gm</option> }</select>
                                 <div class="text-muted fs-8 mt-1">@T["Four at most until the internal media server (LiveKit) is installed; then eight or twelve."]</div></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Highest video quality"]</label>
                                 <select class="form-select form-select-solid" id="hcHeight" data-control="select2" data-hide-search="true">@foreach (var h in new[] { 480, 720, 1080 }) { <option value="@h" selected="@(Model.MaxVideoHeight == h)">@(h)p</option> }</select></div>
@@ -131,9 +154,13 @@
                                     <option value="both" selected="@(Model.RecordingMode != HospitalCallRecordingMode.Voice)">@T["Voice and video"]</option></select></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Kept for"]</label>
                                 <select class="form-select form-select-solid" id="hcRecDays" data-control="select2" data-hide-search="true">
-                                    @foreach (var d in HospitalCallRecordingRules.RetentionChoices) { <option value="@d" selected="@(Model.RecordingDays == d)">@(d == 0 ? T["No automatic deletion"].Value : d == 365 ? T["A year"].Value : T["{0} days", d].Value)</option> }</select></div>
+                                    @foreach (var d in HospitalCallRecordingRules.RetentionChoices) { <option value="@d" selected="@(Model.RecordingDays == d)">@(d == 0 ? T["No automatic deletion"].Value : d == 365 ? T["A year"].Value : string.Format(T["{0} days (retention)"].Value, d))</option> }</select></div>
                             <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-3 d-block">@T["Who may ask to record"]</label>
                                 <div class="d-flex flex-wrap gap-5">@foreach (var g in groups) { <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-recgroup="@g" @(recGroups.Contains(g) ? "checked" : "") /><span class="form-check-label text-gray-800 fs-7">@G(g)</span></label> }</div></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Who reviews every recording"]</label>
+                                <select class="form-select form-select-solid" id="hcReviewers" multiple data-control="select2" data-placeholder="@T["Nobody — only the people in each call"]">
+                                    @foreach (var pp in people) { <option value="@pp.EmployeeId" selected="@reviewers.Contains(pp.EmployeeId)">@DisplayName.Of(pp.Name, pp.NameEn)</option> }</select>
+                                <div class="text-muted fs-8 mt-1">@T["Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged."]</div></div>
                             <div class="col-12"><div class="rounded p-4 d-flex align-items-center gap-4" style="background:#E7F0FF"><i class="ki-outline ki-folder fs-2x text-primary"></i>
                                 <div class="fs-7 text-gray-800">@T["Kept in the File Manager on the call's record and linked to the call log and the patient file. Estimate: voice about 0.5 MB a minute, 720p video about 10 MB a minute."]</div></div></div>
                         </div>
@@ -179,6 +206,8 @@
               connected: @Json.Serialize(T["Connected"].Value), notConnected: @Json.Serialize(T["Not connected"].Value), notSet: @Json.Serialize(T["Not set (relay)"].Value),
               noAnswer: @Json.Serialize(T["No answer"].Value), answers: @Json.Serialize(T["Answers"].Value), denied: @Json.Serialize(T["Not allowed"].Value), notSecure: @Json.Serialize(T["Not secure"].Value), save: @Json.Serialize(T["Save the settings?"].Value) };
     var saveUrl = @Json.Serialize(Url.Action("SaveCallSettings"));
+    var sfuTestUrl = @Json.Serialize(Url.Action("CallSfuTest"));
+    var lkUrl = @Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js"));
     var serverRelay = @Json.Serialize(!string.IsNullOrEmpty(Model.TurnUrls) && !string.IsNullOrEmpty(Model.TurnSecret));
     var turnShown = @Json.Serialize(string.IsNullOrEmpty(Model.TurnUrls) ? null : Model.TurnUrls.Split(',')[0]);
     var results = {};
@@ -190,7 +219,7 @@
         row.querySelector('.hc-check').innerHTML = '<i class="ki-outline ' + (ok ? 'ki-check' : 'ki-cross') + ' fs-4"></i>';
         var b = row.querySelector('[data-val]'); b.textContent = val || ''; b.className = 'badge fw-bold fs-8 ' + (ok ? 'badge-light-primary' : 'badge-light-danger');
         var n = Object.keys(results).length, good = Object.keys(results).filter(function (x) { return results[x]; }).length;
-        if (n === 5) document.getElementById('hcReady').textContent = W.ready.replace('{0}', good).replace('{1}', 5);
+        if (n === 6) document.getElementById('hcReady').textContent = W.ready.replace('{0}', good).replace('{1}', 6);
     }
     function test() {
         results = {}; document.getElementById('hcReady').textContent = '…';
@@ -206,6 +235,20 @@
                 mark('media', true, set.height ? set.height + 'p' : 'OK'); s.getTracks().forEach(function (t) { t.stop(); });
             }).catch(function (e) { mark('media', false, e && e.name === 'NotAllowedError' ? W.denied : (e && e.name) || '—'); });
         } else mark('media', false, W.notSecure);
+        // the media server: a token for a test room, then this browser really connects and leaves
+        fetch(sfuTestUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (t) {
+            if (!t.ok) { mark('sfu', false, W.notSet); return; }
+            loadLk().then(function () {
+                var room = new LivekitClient.Room(), done = false;
+                var timer = setTimeout(function () { if (!done) { done = true; mark('sfu', false, W.noAnswer); try { room.disconnect(); } catch (e) { } } }, 8000);
+                room.connect(t.url, t.token).then(function () { if (done) return; done = true; clearTimeout(timer); mark('sfu', true, W.answers); room.disconnect(); })
+                    .catch(function () { if (done) return; done = true; clearTimeout(timer); mark('sfu', false, W.noAnswer); });
+            }).catch(function () { mark('sfu', false, W.noAnswer); });
+        }).catch(function () { mark('sfu', false, W.notSet); });
+    }
+    function loadLk() {
+        if (window.LivekitClient) return Promise.resolve();
+        return new Promise(function (ok, no) { var sc = document.createElement('script'); sc.src = lkUrl; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
     }
     document.getElementById('hcTest').addEventListener('click', test);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', test); else test();
@@ -223,6 +266,9 @@
                 recordingEnabled: document.getElementById('hcRec').checked, recordingMode: document.getElementById('hcRecMode').value,
                 recordingDays: +document.getElementById('hcRecDays').value,
                 groupEnabled: document.getElementById('hcGroup').checked, groupMax: +document.getElementById('hcGroupMax').value,
+                sfuUrl: document.getElementById('hcSfuUrl').value, sfuApiKey: document.getElementById('hcSfuKey').value,
+                sfuApiSecret: (function () { var c = document.getElementById('hcSfuClear'), v = document.getElementById('hcSfuSecret').value; return c && c.checked ? '' : (v ? v : null); })(),
+                recordingReviewers: Array.prototype.map.call(document.getElementById('hcReviewers').selectedOptions, function (o) { return +o.value; }),
                 recordingGroups: Array.prototype.filter.call(document.querySelectorAll('[data-recgroup]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-recgroup'); })
             };
             btn.disabled = true;

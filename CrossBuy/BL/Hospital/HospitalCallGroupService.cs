@@ -23,8 +23,17 @@ namespace CrossBuy.BL.Hospital
 		/// The most people in a group call while devices connect to each other directly (no media server yet).
 		public const int MeshCap = 4;
 
-		/// The cap actually used: the settings' value, never above what a mesh carries, never below three.
-		public static int Cap(int settingsMax) => Math.Clamp(settingsMax, 3, MeshCap);
+		/// With the internal media server (LiveKit) a group may hold up to twelve.
+		public const int SfuCap = 12;
+
+		/// The cap actually used: the settings' value, never above what the topology carries (four in a mesh, twelve
+		/// through the media server), never below three.
+		public static int Cap(int settingsMax, bool sfu = false) => Math.Clamp(settingsMax, 3, sfu ? SfuCap : MeshCap);
+
+		/// A media server is usable when its address is a ws/wss URL and both its key and secret are set.
+		public static bool SfuReady(string? url, string? key, string? secret) =>
+			!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(secret)
+			&& Uri.TryCreate(url, UriKind.Absolute, out var u) && (u.Scheme == "ws" || u.Scheme == "wss");
 
 		/// How many more may be invited now: the cap less everyone still in the call or still ringing.
 		public static int Room(int cap, int joined, int ringing) => Math.Max(0, cap - joined - ringing);

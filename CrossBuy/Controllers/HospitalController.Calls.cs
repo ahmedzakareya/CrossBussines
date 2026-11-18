@@ -21,6 +21,10 @@ namespace CrossBuy.Controllers
 		private string RecTempDir => Path.Combine(HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().ContentRootPath, "App_Data", "call-recordings-temp");
 		public sealed class HospitalCallFinishInput { public int Seconds { get; set; } }
 
+		/// Named in the call settings to review every recording (an explicit list; never a default).
+		private async Task<bool> IsReviewerAsync(int companyId, int employeeId, CancellationToken ct)
+			=> HospitalCallRecordingRules.ParseIds((await CallSvc.SettingsAsync(companyId, ct)).RecordingReviewers).Contains(employeeId);
+
 		public sealed record HospitalCallsPage(IReadOnlyList<HospitalCallPerson> People, HospitalCallLogPage Log, HospitalCallStats Stats, string? Q, bool Installed, int MeId);
 		public sealed class HospitalCallNoteInput { public string? Note { get; set; } public int? PatientId { get; set; } }
 
@@ -144,9 +148,11 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || ctx.EmployeeId is not int me) return NotFound(new { ok = false, code = "not_found" });
-			bool manager = await _access.CanAsync(ctx, HospitalActions.CallRecordings, null, ct);   // never bootstrap-open
+			bool platform = await _access.CanAsync(ctx, HospitalActions.CallRecordings, null, ct);   // never bootstrap-open
+			bool manager = platform || await IsReviewerAsync(ctx.CompanyId, me, ct);
 			var d = await RecSvc.DetailAsync(ctx.CompanyId, id, me, manager, DateTime.UtcNow, ct);
-			return d == null ? NotFound(new { ok = false, code = "not_found" }) : Json(new { ok = true, recording = d });
+			// the File Manager (document platform) opens it only for the platform action, so the link is offered only then
+			return d == null ? NotFound(new { ok = false, code = "not_found" }) : Json(new { ok = true, recording = d, fileManager = platform });
 		}
 
 		/// The recording itself, seekable. The FIRST request of a playback is logged as an opening; the player's range
@@ -158,7 +164,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || ctx.EmployeeId is not int me) return NotFound();
-			bool manager = await _access.CanAsync(ctx, HospitalActions.CallRecordings, null, ct);   // never bootstrap-open
+			bool manager = await _access.CanAsync(ctx, HospitalActions.CallRecordings, null, ct) || await IsReviewerAsync(ctx.CompanyId, me, ct);   // never bootstrap-open
 			var f = await RecSvc.OpenAsync(ctx.CompanyId, id, me, manager, DateTime.UtcNow, log == 1, ct);
 			if (f == null) return NotFound();
 			Response.Headers.CacheControl = "private, no-store";
@@ -173,7 +179,21 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			Chrome();
 			ViewBag.Installed = await CallSvc.InstalledAsync(ct);
+			// the people who may be named to review every recording (the company's active staff, by face)
+			ViewBag.People = await CallSvc.PeopleAsync(ctx.CompanyId, DateTime.UtcNow, null, ct);
 			return View(await CallSvc.SettingsAsync(ctx.CompanyId, ct));
+		}
+
+		/// The settings' readiness test of the media server: a token for a test room, so this browser can try to connect.
+		[HttpGet("CallSettings/SfuTest")]
+		[HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> CallSfuTest(CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || ctx.EmployeeId is not int me) return NotFound(new { ok = false, code = "not_found" });
+			var s = await CallSvc.SettingsAsync(ctx.CompanyId, ct);
+			if (!HospitalCallGroupRules.SfuReady(s.SfuUrl, s.SfuApiKey, s.SfuApiSecret)) return Json(new { ok = false });
+			return Json(new { ok = true, url = s.SfuUrl, token = HospitalCallSfu.Token(s.SfuApiKey!, s.SfuApiSecret!, me + "-test", null, "hcall-test-" + ctx.CompanyId, DateTime.UtcNow, TimeSpan.FromMinutes(5)) });
 		}
 
 		[HttpPost("CallSettings"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]

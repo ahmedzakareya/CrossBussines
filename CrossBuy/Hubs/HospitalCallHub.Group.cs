@@ -23,7 +23,8 @@ namespace CrossBuy.Hubs
 			public bool Video;
 			public int? PatientId;
 			public string? Reason;
-			public readonly ConcurrentDictionary<int, string> Joined = new();      // employee → connection
+			public readonly ConcurrentDictionary<int, string> Joined = new();      // employee → connection ("" while their tab reconnects)
+			public readonly ConcurrentDictionary<int, DateTime> Away = new();      // employee → when their tab dropped
 			public readonly ConcurrentDictionary<int, DateTime> Ringing = new();   // employee → invited at
 			public int? RecId, RecBy;
 			public readonly ConcurrentDictionary<int, bool> RecYes = new();
@@ -32,7 +33,62 @@ namespace CrossBuy.Hubs
 		private static readonly ConcurrentDictionary<int, GroupLive> _groups = new();
 
 		private static bool RingingInGroup(int employeeId) => _groups.Values.Any(g => g.Ringing.ContainsKey(employeeId));
+		private static IEnumerable<string> Conns(GroupLive g) => g.Joined.Values.Where(c => c.Length > 0);
+
+		/// A member away for more than a minute has really gone: they leave the call.
+		private async Task PruneAwayAsync(GroupLive g)
+		{
+			foreach (var (emp, since) in g.Away.ToList())
+				if (DateTime.UtcNow - since > TimeSpan.FromSeconds(60)) { g.Away.TryRemove(emp, out _); await LeaveAsync(g, emp, "leave", null); }
+		}
+
+		/// Sent every half minute by each tab in a group call: keeps the call tidy (a member away for more than a minute leaves).
+		public async Task GroupPing(int callId)
+		{
+			if (await MeAsync() is not var (me, _) || !_groups.TryGetValue(callId, out var g) || !g.Joined.ContainsKey(me)) return;
+			await PruneAwayAsync(g);
+		}
+
+		/// A tab that was in a group call reconnects (a drop, or the server restarted): the call is rebuilt from its record
+		/// if needed, and this connection takes the member's place. The connections between devices did not stop.
+		public async Task<object> GroupResume(int callId)
+		{
+			if (await MeAsync() is not var (me, co)) return new { ok = false };
+			var call = await _db.Set<HospitalCall>().AsNoTracking().FirstOrDefaultAsync(c => c.ID == callId && c.CompanyId == co && c.IsGroup);
+			if (call == null || call.Status != HospitalCallStatus.Answered) return new { ok = false };
+			var parts = await GroupSvc.ParticipantsAsync(co, callId);
+			if (!parts.Any(p => p.EmployeeId == me && (p.State == HospitalCallParticipantState.Host || p.State == HospitalCallParticipantState.Joined))) return new { ok = false };
+			var g = _groups.GetOrAdd(callId, _ => new GroupLive { CallId = callId, CompanyId = co, HostId = call.CallerEmployeeId, Video = call.IsVideo, PatientId = call.PatientId, Reason = call.Reason });
+			if (g.Joined.IsEmpty)
+			{
+				// rebuilt after a restart: everyone in it is "away" until their tab comes back
+				foreach (var p in parts.Where(p => p.State == HospitalCallParticipantState.Host || p.State == HospitalCallParticipantState.Joined)) { g.Joined[p.EmployeeId] = ""; g.Away[p.EmployeeId] = DateTime.UtcNow; }
+				var rec = await _db.Set<HospitalCallRecording>().AsNoTracking().Where(r => r.CallId == callId && r.CompanyId == co && r.Status == HospitalCallRecordingStatus.Recording).FirstOrDefaultAsync();
+				if (rec != null) { g.RecId = rec.ID; g.RecBy = rec.RequestedByEmployeeId; g.Recording = true; }
+			}
+			g.Joined[me] = Context.ConnectionId; g.Away.TryRemove(me, out _); _busy[me] = callId;
+			await PresenceOfAsync(co, me);
+			foreach (var conn in Conns(g)) if (conn != Context.ConnectionId) await Clients.Client(conn).SendAsync("groupback", new { callId, employeeId = me });
+			await PruneAwayAsync(g);
+			return new { ok = true, hostId = g.HostId };
+		}
 		private HospitalCallGroupService GroupSvc => ActivatorUtilities.CreateInstance<HospitalCallGroupService>(_sp);
+
+		private static bool SfuReady(HospitalCallSettings s) => HospitalCallGroupRules.SfuReady(s.SfuUrl, s.SfuApiKey, s.SfuApiSecret);
+		private static int CapOf(HospitalCallSettings s) => HospitalCallGroupRules.Cap(s.GroupMax, SfuReady(s));
+
+		/// With the internal media server configured, the group call's media goes through it: this person's room token.
+		private async Task<object?> SfuForAsync(HospitalCallSettings s, int companyId, int callId, int employeeId)
+		{
+			if (!SfuReady(s)) return null;
+			var me = (await Svc.PeopleAsync(companyId, DateTime.UtcNow, new[] { employeeId })).FirstOrDefault();
+			return new
+			{
+				url = s.SfuUrl,
+				token = HospitalCallSfu.Token(s.SfuApiKey!, s.SfuApiSecret!, employeeId.ToString(), me == null ? null : DisplayName.Of(me.Name, me.NameEn),
+					HospitalCallSfu.Room(companyId, callId), DateTime.UtcNow, TimeSpan.FromHours(6)),
+			};
+		}
 
 		private async Task<object> MembersAsync(GroupLive g)
 		{
@@ -54,7 +110,7 @@ namespace CrossBuy.Hubs
 				var who = people[id];
 				string state = Presence(id) == "on" ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy;
 				if (!fresh) await GroupSvc.InviteAsync(g.CompanyId, g.CallId, id, state, DateTime.UtcNow);
-				if (state == HospitalCallParticipantState.Busy) { refused.Add(DisplayName.Of(who.Name, who.NameEn)); await Clients.Group(Emp(id)).SendAsync("missed", new { callId = g.CallId }); continue; }
+				if (state == HospitalCallParticipantState.Busy) { refused.Add(DisplayName.Of(who.Name, who.NameEn)); await Clients.Group(Emp(id)).SendAsync("missed", new { callId = g.CallId }); await NotifyMissedAsync(g.CompanyId, g.CallId, id, g.HostId, g.Video, true); continue; }
 				g.Ringing[id] = DateTime.UtcNow;
 				await PresenceOfAsync(g.CompanyId, id);
 			}
@@ -91,7 +147,7 @@ namespace CrossBuy.Hubs
 			}
 			else if (_busy.ContainsKey(me)) return new { ok = false, error = "You are already in a call" };
 			var invite = (ids ?? Array.Empty<int>()).Where(i => i != me && i != peer).Distinct().ToList();
-			int cap = HospitalCallGroupRules.Cap(settings.GroupMax);
+			int cap = CapOf(settings);
 			if (invite.Count == 0 || invite.Count + 1 + (peer != null ? 1 : 0) > cap) return new { ok = false, error = "A group call is up to {0} people with you", name = cap.ToString() };
 			if (peer == null && invite.Count < 2) return new { ok = false, error = "Choose at least two people for a group call" };
 			var people = (await svc.PeopleAsync(co, now, invite.Append(me).Concat(peer is int pp ? new[] { pp } : Array.Empty<int>()))).ToDictionary(p => p.EmployeeId);
@@ -124,7 +180,7 @@ namespace CrossBuy.Hubs
 			var refused = await RingAsync(g, invite, host, svc, people, fresh: true);
 			var (may, kind, _) = await RecSvc.OptionsAsync(co, host, video);
 			var s = settings;
-			return new { ok = true, callId = row.ID, video, ringSeconds = s.RingSeconds, share = s.ScreenShareEnabled, maxHeight = s.MaxVideoHeight, cap,
+			return new { ok = true, callId = row.ID, video, ringSeconds = s.RingSeconds, share = s.ScreenShareEnabled, maxHeight = s.MaxVideoHeight, cap, sfu = await SfuForAsync(s, co, row.ID, me),
 				host = Card(host), members = await MembersAsync(g), patient = patientId is int p2 ? await svc.PatientCardAsync(co, p2) : null, canRecord = may, recKind = kind, busy = refused };
 		}
 
@@ -140,15 +196,15 @@ namespace CrossBuy.Hubs
 			g.Joined[me] = Context.ConnectionId; _busy[me] = callId;
 			if (g.Recording && g.RecId is int rid) await GroupSvc.ConsentAsync(co, rid, me, "joined", now);   // joining a recorded call is consent
 			var meCard = (await Svc.PeopleAsync(co, now, new[] { me })).FirstOrDefault();
-			foreach (var (emp, conn) in g.Joined) if (emp != me) await Clients.Client(conn).SendAsync("groupjoined", new { callId, card = meCard == null ? null : Card(meCard) });
+			foreach (var (emp, conn) in g.Joined) if (emp != me && conn.Length > 0) await Clients.Client(conn).SendAsync("groupjoined", new { callId, card = meCard == null ? null : Card(meCard) });
 			await Clients.GroupExcept(Emp(me), Context.ConnectionId).SendAsync("taken", new { callId });
 			await PresenceOfAsync(co, me);
 			var host = (await Svc.PeopleAsync(co, now, new[] { g.HostId })).First();
 			var (may, kind, _) = await RecSvc.OptionsAsync(co, meCard ?? host, g.Video);
 			var s = await Svc.SettingsAsync(co);
 			return new { ok = true, callId, video = g.Video, host = Card(host), members = await MembersAsync(g), connectTo = existing, patient = g.PatientId is int pid ? await Svc.PatientCardAsync(co, pid) : null,
-				reason = g.Reason, share = s.ScreenShareEnabled, maxHeight = s.MaxVideoHeight, cap = HospitalCallGroupRules.Cap(s.GroupMax), canRecord = may, recKind = kind,
-				recording = g.Recording ? new { recId = g.RecId, requesterId = g.RecBy } : null };
+				reason = g.Reason, share = s.ScreenShareEnabled, maxHeight = s.MaxVideoHeight, cap = CapOf(s), canRecord = may, recKind = kind,
+				recording = g.Recording ? new { recId = g.RecId, requesterId = g.RecBy } : null, sfu = await SfuForAsync(s, co, callId, me) };
 		}
 
 		/// The call as a person already in it sees it — the other person of a two-person call that became this group call
@@ -163,7 +219,7 @@ namespace CrossBuy.Hubs
 			var s = await Svc.SettingsAsync(co);
 			return new { ok = true, callId, video = g.Video, host = Card(host), members = await MembersAsync(g), connectTo = g.Joined.Keys.Where(e => e != me).ToList(),
 				patient = g.PatientId is int pid ? await Svc.PatientCardAsync(co, pid) : null, reason = g.Reason, share = s.ScreenShareEnabled, maxHeight = s.MaxVideoHeight,
-				cap = HospitalCallGroupRules.Cap(s.GroupMax), canRecord = may, recKind = kind, recording = (object?)null };
+				cap = CapOf(s), canRecord = may, recKind = kind, recording = (object?)null, sfu = await SfuForAsync(s, co, callId, me) };
 		}
 
 		/// An invited person declines (or their ring ran out).
@@ -171,8 +227,9 @@ namespace CrossBuy.Hubs
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || !g.Ringing.TryRemove(me, out _)) return;
 			await GroupSvc.MoveAsync(co, callId, me, timedOut ? "timeout" : "decline", null, DateTime.UtcNow);
+			if (timedOut) await NotifyMissedAsync(co, callId, me, g.HostId, g.Video, true);
 			await Clients.Group(Emp(me)).SendAsync("ended", new { callId, status = timedOut ? HospitalCallStatus.Missed : HospitalCallStatus.Declined });
-			foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("groupstate", new { callId, employeeId = me, state = timedOut ? "missed" : "declined" });
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("groupstate", new { callId, employeeId = me, state = timedOut ? "missed" : "declined" });
 			await PresenceOfAsync(co, me);
 			await EndIfEmptyAsync(g);
 		}
@@ -186,16 +243,17 @@ namespace CrossBuy.Hubs
 
 		private async Task LeaveAsync(GroupLive g, int emp, string action, int? by)
 		{
-			if (!g.Joined.TryRemove(emp, out var conn)) { if (g.Ringing.TryRemove(emp, out _)) { await GroupSvc.MoveAsync(g.CompanyId, g.CallId, emp, "remove", by, DateTime.UtcNow); await Clients.Group(Emp(emp)).SendAsync("ended", new { callId = g.CallId, status = "Removed" }); foreach (var c in g.Joined.Values) await Clients.Client(c).SendAsync("groupstate", new { callId = g.CallId, employeeId = emp, state = "removed" }); await PresenceOfAsync(g.CompanyId, emp); } return; }
+			g.Away.TryRemove(emp, out _);
+			if (!g.Joined.TryRemove(emp, out var conn)) { if (g.Ringing.TryRemove(emp, out _)) { await GroupSvc.MoveAsync(g.CompanyId, g.CallId, emp, "remove", by, DateTime.UtcNow); await Clients.Group(Emp(emp)).SendAsync("ended", new { callId = g.CallId, status = "Removed" }); foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("groupstate", new { callId = g.CallId, employeeId = emp, state = "removed" }); await PresenceOfAsync(g.CompanyId, emp); } return; }
 			if (_busy.TryGetValue(emp, out var cid) && cid == g.CallId) _busy.TryRemove(emp, out _);
 			await GroupSvc.MoveAsync(g.CompanyId, g.CallId, emp, action, by, DateTime.UtcNow);
-			if (action == "remove") await Clients.Client(conn).SendAsync("ended", new { callId = g.CallId, status = "Removed" });
-			foreach (var c in g.Joined.Values) await Clients.Client(c).SendAsync("groupleft", new { callId = g.CallId, employeeId = emp, removed = action == "remove" });
+			if (action == "remove" && conn.Length > 0) await Clients.Client(conn).SendAsync("ended", new { callId = g.CallId, status = "Removed" });
+			foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("groupleft", new { callId = g.CallId, employeeId = emp, removed = action == "remove" });
 			await PresenceOfAsync(g.CompanyId, emp);
 			// a group recording made in the leaver's browser stops with them (the file is kept)
 			if (g.Recording && g.RecBy == emp) await StopGroupRecordingAsync(g, emp);
 			// the host role passes to the longest-standing person left
-			if (emp == g.HostId && g.Joined.Count > 0) { g.HostId = g.Joined.Keys.First(); foreach (var c in g.Joined.Values) await Clients.Client(c).SendAsync("grouphost", new { callId = g.CallId, hostId = g.HostId }); }
+			if (emp == g.HostId && g.Joined.Count > 0) { g.HostId = g.Joined.Keys.First(); foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("grouphost", new { callId = g.CallId, hostId = g.HostId }); }
 			await EndIfEmptyAsync(g);
 		}
 
@@ -212,10 +270,10 @@ namespace CrossBuy.Hubs
 			foreach (var (emp, conn) in g.Joined)
 			{
 				if (_busy.TryGetValue(emp, out var cid) && cid == g.CallId) _busy.TryRemove(emp, out _);
-				await Clients.Client(conn).SendAsync("ended", new { callId = g.CallId, status = HospitalCallStatus.Ended });
+				if (conn.Length > 0) await Clients.Client(conn).SendAsync("ended", new { callId = g.CallId, status = HospitalCallStatus.Ended });
 				await PresenceOfAsync(g.CompanyId, emp);
 			}
-			foreach (var emp in g.Ringing.Keys) { await Clients.Group(Emp(emp)).SendAsync("ended", new { callId = g.CallId, status = HospitalCallStatus.Missed }); await PresenceOfAsync(g.CompanyId, emp); }
+			foreach (var emp in g.Ringing.Keys) { await Clients.Group(Emp(emp)).SendAsync("ended", new { callId = g.CallId, status = HospitalCallStatus.Missed }); await PresenceOfAsync(g.CompanyId, emp); await NotifyMissedAsync(g.CompanyId, g.CallId, emp, g.HostId, g.Video, true); }
 		}
 
 		/// The host adds people (up to the cap).
@@ -223,7 +281,7 @@ namespace CrossBuy.Hubs
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || g.HostId != me) return new { ok = false, error = "failed" };
 			var svc = Svc; var s = await svc.SettingsAsync(co);
-			int cap = HospitalCallGroupRules.Cap(s.GroupMax);
+			int cap = CapOf(s);
 			var add = (ids ?? Array.Empty<int>()).Where(i => !g.Joined.ContainsKey(i) && !g.Ringing.ContainsKey(i)).Distinct().ToList();
 			if (add.Count == 0) return new { ok = false, error = "failed" };
 			if (add.Count > HospitalCallGroupRules.Room(cap, g.Joined.Count, g.Ringing.Count)) return new { ok = false, error = "A group call is up to {0} people with you", name = cap.ToString() };
@@ -232,15 +290,17 @@ namespace CrossBuy.Hubs
 			foreach (var i in add) if (!await svc.MayCallAsync(co, people[me], people[i])) return new { ok = false, error = "Your group may not call this person's group (call settings)" };
 			var busy = await RingAsync(g, add, people[me], svc, people, fresh: false);
 			var members = await MembersAsync(g);
-			foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("groupmembers", new { callId, members });
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("groupmembers", new { callId, members });
 			return new { ok = true, busy };
 		}
 
 		/// The host removes someone (in the call, or still ringing).
 		public async Task GroupRemove(int callId, int employeeId)
 		{
-			if (await MeAsync() is not var (me, _) || !_groups.TryGetValue(callId, out var g) || g.HostId != me || employeeId == me) return;
+			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || g.HostId != me || employeeId == me) return;
 			await LeaveAsync(g, employeeId, "remove", me);
+			var s = await Svc.SettingsAsync(co);
+			if (SfuReady(s)) await HospitalCallSfu.RemoveAsync(s.SfuUrl!, s.SfuApiKey!, s.SfuApiSecret!, HospitalCallSfu.Room(co, callId), employeeId.ToString());
 		}
 
 		/// The host ends the call for everyone.
@@ -257,24 +317,24 @@ namespace CrossBuy.Hubs
 			if (payload == null || payload.Length > 64_000) return;
 			if (!_groups.TryGetValue(callId, out var g)) return;
 			var from = g.Joined.FirstOrDefault(kv => kv.Value == Context.ConnectionId);
-			if (from.Value == null || !g.Joined.TryGetValue(toEmployeeId, out var to)) return;
+			if (from.Value == null || !g.Joined.TryGetValue(toEmployeeId, out var to) || to.Length == 0) return;
 			await Clients.Client(to).SendAsync("gsignal", new { callId, fromId = from.Key, payload });
 		}
 
 		// ---- a group recording: EVERY person in the call agrees ----------------------------------------------------
 
-		public async Task<object> GroupRecordRequest(int callId)
+		public async Task<object> GroupRecordRequest(int callId, bool picture)
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || !g.Joined.ContainsKey(me)) return new { ok = false, error = "failed" };
 			if (g.RecId != null) return new { ok = false, error = "This call is already being recorded or asked to be" };
-			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow);
+			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture);
 			if (row == null) return new { ok = false, error };
 			g.RecId = row.ID; g.RecBy = me; g.RecYes.Clear();
 			var s = await Svc.SettingsAsync(co);
 			var by = (await Svc.PeopleAsync(co, DateTime.UtcNow, new[] { me })).FirstOrDefault();
 			var patient = g.PatientId is int pid ? await Svc.PatientCardAsync(co, pid) : null;
 			foreach (var (emp, conn) in g.Joined)
-				if (emp != me) await Clients.Client(conn).SendAsync("recask", new { recId = row.ID, callId, kind = row.Kind, days = s.RecordingDays, by = by == null ? null : Card(by), patient, group = true, waiting = g.Joined.Count - 1 });
+				if (emp != me && conn.Length > 0) await Clients.Client(conn).SendAsync("recask", new { recId = row.ID, callId, kind = row.Kind, days = s.RecordingDays, by = by == null ? null : Card(by), patient, group = true, waiting = g.Joined.Count - 1 });
 			return new { ok = true, recId = row.ID, kind = row.Kind, waiting = g.Joined.Count - 1 };
 		}
 
@@ -289,17 +349,17 @@ namespace CrossBuy.Hubs
 				await RecSvc.SettleGroupAsync(co, recId, false, now);
 				var who = (await Svc.PeopleAsync(co, now, new[] { me })).FirstOrDefault();
 				g.RecId = null; g.RecBy = null; g.RecYes.Clear();
-				foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = true, byName = who == null ? null : DisplayName.Of(who.Name, who.NameEn) });
+				foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = true, byName = who == null ? null : DisplayName.Of(who.Name, who.NameEn) });
 				return;
 			}
 			g.RecYes[me] = true;
 			await GroupSvc.ConsentAsync(co, recId, me, "agreed", now);
-			foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("recagreed", new { recId, employeeId = me });
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recagreed", new { recId, employeeId = me });
 			if (!HospitalCallGroupRules.AllAgreed(g.Joined.Keys, g.RecBy ?? 0, g.RecYes.Keys)) return;
 			var row = await RecSvc.SettleGroupAsync(co, recId, true, now);
 			if (row == null) return;
 			g.Recording = true;
-			foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("recstart", new { recId, callId = g.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, group = true });
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recstart", new { recId, callId = g.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, group = true });
 		}
 
 		public async Task GroupRecordStop(int recId)
@@ -312,7 +372,7 @@ namespace CrossBuy.Hubs
 				// withdrawn (or ended) before everyone answered
 				await RecSvc.SettleGroupAsync(co, recId, false, DateTime.UtcNow);
 				g.RecId = null; g.RecBy = null; g.RecYes.Clear();
-				foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = false });
+				foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = false });
 				return;
 			}
 			await StopGroupRecordingAsync(g, me);
@@ -323,7 +383,7 @@ namespace CrossBuy.Hubs
 			if (g.RecId is not int recId) return;
 			await RecSvc.MarkStoppedAsync(g.CompanyId, recId, by);
 			var msg = new { recId, byId = by };
-			foreach (var conn in g.Joined.Values) await Clients.Client(conn).SendAsync("recstop", msg);
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recstop", msg);
 			g.Recording = false; g.RecId = null; g.RecBy = null; g.RecYes.Clear();
 		}
 
@@ -333,7 +393,10 @@ namespace CrossBuy.Hubs
 			foreach (var g in _groups.Values.ToList())
 			{
 				var mine = g.Joined.FirstOrDefault(kv => kv.Value == Context.ConnectionId);
-				if (mine.Value != null) await LeaveAsync(g, mine.Key, "leave", null);
+				if (mine.Value == null) continue;
+				// kept for a minute: the tab may come back (GroupResume); the others are told meanwhile
+				g.Joined[mine.Key] = ""; g.Away[mine.Key] = DateTime.UtcNow;
+				foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("groupaway", new { callId = g.CallId, employeeId = mine.Key });
 			}
 		}
 	}

@@ -142,6 +142,13 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void A_screen_shown_in_a_voice_call_is_recorded_with_its_picture()
+		{
+			Assert.Equal("video", HospitalCallRecordingRules.KindFor(HospitalCallRecordingMode.Both, false, pictureNow: true));
+			Assert.Equal("voice", HospitalCallRecordingRules.KindFor(HospitalCallRecordingMode.Voice, false, pictureNow: true));   // voice-only settings win
+		}
+
+		[Fact]
 		public void Retention_sets_the_deletion_day_or_none()
 		{
 			var saved = new DateTime(2026, 11, 18, 9, 0, 0, DateTimeKind.Utc);
@@ -224,6 +231,56 @@ namespace CrossBuy.Tests
 			Assert.False(HospitalCallGroupRules.AllAgreed(inCall, 1, new[] { 2 }));
 			Assert.True(HospitalCallGroupRules.AllAgreed(inCall, 1, new[] { 2, 3 }));
 			Assert.True(HospitalCallGroupRules.AllAgreed(new[] { 1, 2 }, 1, new[] { 2 }));
+		}
+
+		// ---- the internal media server, and the named reviewers ---------------------------------------------------
+
+		[Fact]
+		public void A_room_token_is_a_signed_livekit_grant_for_one_room()
+		{
+			var now = new DateTime(2026, 11, 18, 8, 0, 0, DateTimeKind.Utc);
+			var tok = HospitalCallSfu.Token("devkey", "secret", "1044", "Sara", "hcall-1-7", now, TimeSpan.FromHours(6));
+			var parts = tok.Split('.');
+			Assert.Equal(3, parts.Length);
+			string Pad(string x) { x = x.Replace('-', '+').Replace('_', '/'); return x + new string('=', (4 - x.Length % 4) % 4); }
+			var body = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(Pad(parts[1]))).RootElement;
+			Assert.Equal("devkey", body.GetProperty("iss").GetString());
+			Assert.Equal("1044", body.GetProperty("sub").GetString());
+			Assert.Equal(6 * 3600, body.GetProperty("exp").GetInt64() - body.GetProperty("nbf").GetInt64());
+			var video = body.GetProperty("video");
+			Assert.Equal("hcall-1-7", video.GetProperty("room").GetString());
+			Assert.True(video.GetProperty("roomJoin").GetBoolean());
+			Assert.False(video.TryGetProperty("roomAdmin", out _));
+			using var h = new HMACSHA256(Encoding.UTF8.GetBytes("secret"));
+			var sig = Convert.ToBase64String(h.ComputeHash(Encoding.UTF8.GetBytes(parts[0] + "." + parts[1]))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+			Assert.Equal(sig, parts[2]);
+			var admin = HospitalCallSfu.Token("devkey", "secret", "srv", null, "hcall-1-7", now, TimeSpan.FromMinutes(2), admin: true);
+			var av = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(Pad(admin.Split('.')[1]))).RootElement.GetProperty("video");
+			Assert.True(av.GetProperty("roomAdmin").GetBoolean());
+			Assert.False(av.TryGetProperty("roomJoin", out _));   // an admin token does not join
+		}
+
+		[Fact]
+		public void The_media_server_raises_the_cap_only_when_it_is_fully_configured()
+		{
+			Assert.Equal(4, HospitalCallGroupRules.Cap(12));
+			Assert.Equal(12, HospitalCallGroupRules.Cap(12, sfu: true));
+			Assert.Equal(12, HospitalCallGroupRules.Cap(40, sfu: true));
+			Assert.True(HospitalCallGroupRules.SfuReady("wss://lk.local:7880", "k", "s"));
+			Assert.False(HospitalCallGroupRules.SfuReady("https://lk.local", "k", "s"));
+			Assert.False(HospitalCallGroupRules.SfuReady("wss://lk.local", "k", null));
+			Assert.Equal("https://lk.local:7880", HospitalCallSfu.HttpBase("wss://lk.local:7880"));
+			Assert.Equal("http://localhost:7880", HospitalCallSfu.HttpBase("ws://localhost:7880"));
+			Assert.Equal("hcall-3-41", HospitalCallSfu.Room(3, 41));
+		}
+
+		[Fact]
+		public void Reviewers_are_an_explicit_list_of_people()
+		{
+			Assert.Equal(new[] { 5, 17 }, HospitalCallRecordingRules.ParseIds("5, 17,x,-3,5"));
+			Assert.Empty(HospitalCallRecordingRules.ParseIds(null));
+			Assert.Null(HospitalCallRecordingRules.FormatIds(Array.Empty<int>()));
+			Assert.Equal("5,17", HospitalCallRecordingRules.FormatIds(new[] { 5, 17, 5, 0 }));
 		}
 
 		[Fact]

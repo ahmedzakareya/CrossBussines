@@ -50,8 +50,9 @@ namespace CrossBuy.BL.Hospital
 		public static bool MayAsk(bool enabled, string? storedGroups, IEnumerable<string> personGroups)
 			=> enabled && personGroups.Any(g => ParseGroups(storedGroups).Contains(g));
 
-		/// What the file holds: the picture only when the settings allow it AND the call is a video call.
-		public static string KindFor(string? mode, bool callIsVideo) => mode == HospitalCallRecordingMode.Both && callIsVideo ? "video" : "voice";
+		/// What the file holds: the picture only when the settings allow it AND there is a picture — a video call, or a
+		/// camera or shared screen live when recording is asked (a voice call where someone shows their screen).
+		public static string KindFor(string? mode, bool callIsVideo, bool pictureNow = false) => mode == HospitalCallRecordingMode.Both && (callIsVideo || pictureNow) ? "video" : "voice";
 
 		public static DateTime? DeleteAfter(DateTime savedUtc, int days) => days > 0 ? savedUtc.AddDays(days) : null;
 
@@ -82,6 +83,17 @@ namespace CrossBuy.BL.Hospital
 		};
 
 		public static string FileName(int callId, int recId) => $"CALL-{callId:000000}-{recId}.webm";
+
+		/// The named reviewers, as stored (ids, comma separated); anything not a positive number is dropped.
+		public static IReadOnlyList<int> ParseIds(string? stored) =>
+			(stored ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(x => int.TryParse(x, out var i) ? i : 0).Where(i => i > 0).Distinct().ToList();
+
+		public static string? FormatIds(IEnumerable<int>? ids)
+		{
+			var l = (ids ?? Array.Empty<int>()).Where(i => i > 0).Distinct().Take(40).ToList();
+			return l.Count == 0 ? null : string.Join(",", l);
+		}
 	}
 
 	/// The recordings on a call's platform record: only an EXPLICITLY assigned administrator reads them THROUGH THE PLATFORM (the participants
@@ -127,7 +139,7 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// A participant of an ANSWERED call asks to record it. Null + reason when it may not be asked now.
-		public async Task<(HospitalCallRecording? Row, string? Error)> AskAsync(int companyId, int callId, int employeeId, DateTime nowUtc, CancellationToken ct = default)
+		public async Task<(HospitalCallRecording? Row, string? Error)> AskAsync(int companyId, int callId, int employeeId, DateTime nowUtc, bool pictureNow = false, CancellationToken ct = default)
 		{
 			try
 			{
@@ -146,7 +158,7 @@ namespace CrossBuy.BL.Hospital
 				var row = new HospitalCallRecording
 				{
 					CompanyId = companyId, CallId = callId, RequestedByEmployeeId = employeeId, RequestedAt = nowUtc,
-					Status = HospitalCallRecordingStatus.Asked, Kind = HospitalCallRecordingRules.KindFor(s.RecordingMode, call.IsVideo),
+					Status = HospitalCallRecordingStatus.Asked, Kind = HospitalCallRecordingRules.KindFor(s.RecordingMode, call.IsVideo, pictureNow),
 				};
 				_db.Add(row);
 				await _db.SaveChangesAsync(ct);

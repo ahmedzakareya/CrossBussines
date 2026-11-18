@@ -1465,6 +1465,81 @@
    "ar": "{0} مشاركين — انضم {1}",
    "en": "{0} people — {1} joined",
    "fr": "{0} personnes — {1} ont rejoint"
+  },
+  "Open in the File Manager": {
+   "ar": "فتح في مدير الملفات",
+   "en": "Open in the File Manager",
+   "fr": "Ouvrir dans le gestionnaire de fichiers"
+  },
+  "The internal media server": {
+   "ar": "خادم الوسائط الداخلي",
+   "en": "The internal media server",
+   "fr": "Le serveur média interne"
+  },
+  "LiveKit on a server inside the hospital: group calls of more than four go through it": {
+   "ar": "LiveKit على خادم داخل المستشفى: المكالمات الجماعية لأكثر من أربعة أشخاص تمر عبره",
+   "en": "LiveKit on a server inside the hospital: group calls of more than four go through it",
+   "fr": "LiveKit sur un serveur de l’hôpital : les appels de groupe de plus de quatre passent par lui"
+  },
+  "Media server address": {
+   "ar": "عنوان خادم الوسائط",
+   "en": "Media server address",
+   "fr": "Adresse du serveur média"
+  },
+  "API key": {
+   "ar": "مفتاح الواجهة (API key)",
+   "en": "API key",
+   "fr": "Clé API"
+  },
+  "API secret": {
+   "ar": "سر الواجهة (API secret)",
+   "en": "API secret",
+   "fr": "Secret API"
+  },
+  "Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call.": {
+   "ar": "إن تُرك فارغًا تبقى المكالمات الجماعية حتى أربعة أشخاص، كل جهاز متصل بالآخرين مباشرة. ولا يصل السر إلى أي متصفح: يحصل كل شخص على رمز غرفة لمكالمة واحدة.",
+   "en": "Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call.",
+   "fr": "Vide : les appels de groupe restent à quatre, chaque appareil relié aux autres. Le secret n’atteint jamais un navigateur : chacun reçoit un jeton de salle pour un appel."
+  },
+  "Who reviews every recording": {
+   "ar": "من يراجع كل التسجيلات",
+   "en": "Who reviews every recording",
+   "fr": "Qui examine tous les enregistrements"
+  },
+  "Nobody — only the people in each call": {
+   "ar": "لا أحد — فقط من كان في كل مكالمة",
+   "en": "Nobody — only the people in each call",
+   "fr": "Personne — seulement les participants de chaque appel"
+  },
+  "Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged.": {
+   "ar": "أشخاص بأسمائهم فقط. وغيرهم لا يفتح التسجيل إلا من كان في تلك المكالمة، ويُسجَّل كل فتح.",
+   "en": "Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged.",
+   "fr": "Des personnes nommées seulement. Sinon, un enregistrement ne s’ouvre qu’aux participants de l’appel ; chaque ouverture est consignée."
+  },
+  "Write the media server address as wss://host:port": {
+   "ar": "اكتب عنوان خادم الوسائط بالشكل wss://host:port",
+   "en": "Write the media server address as wss://host:port",
+   "fr": "Écrivez l’adresse du serveur média sous la forme wss://hôte:port"
+  },
+  "Through the internal media server, up to twelve people": {
+   "ar": "عبر خادم الوسائط الداخلي، حتى اثني عشر شخصًا",
+   "en": "Through the internal media server, up to twelve people",
+   "fr": "Par le serveur média interne, jusqu’à douze personnes"
+  },
+  "Internal media server (group calls above four)": {
+   "ar": "خادم الوسائط الداخلي (المكالمات الجماعية لأكثر من أربعة)",
+   "en": "Internal media server (group calls above four)",
+   "fr": "Serveur média interne (appels de groupe de plus de quatre)"
+  },
+  "Each person sends their picture once and it passes it to the others — inside the hospital only": {
+   "ar": "يرسل كل شخص صورته مرة واحدة ويوزعها الخادم على الباقين — داخل المستشفى فقط",
+   "en": "Each person sends their picture once and it passes it to the others — inside the hospital only",
+   "fr": "Chacun envoie son image une fois et le serveur la transmet aux autres — dans l’hôpital uniquement"
+  },
+  "{0} days (retention)": {
+   "ar": "{0} يومًا",
+   "en": "{0} days",
+   "fr": "{0} jours"
   }
  }
 }

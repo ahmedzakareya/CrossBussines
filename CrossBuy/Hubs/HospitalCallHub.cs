@@ -20,8 +20,8 @@ namespace CrossBuy.Hubs
 	// nothing relayed and learns nothing.
 	//
 	// PRESENCE is per employee and per company: "on" while any of their tabs is connected, "busy" while they are in a
-	// call. One server process holds it (the app runs as one instance); a restart drops live calls and the sweep closes
-	// their records.
+	// call. One server process holds it (the app runs as one instance); after a restart each tab tells the server which
+	// call it is in (Resume), and the warden closes what nobody came back to (HospitalCallHub.Warden.cs).
 	// ==========================================================================================
 	[Authorize(AuthenticationSchemes = "Identity.Application," + JwtBearerDefaults.AuthenticationScheme)]
 	public sealed partial class HospitalCallHub : Hub
@@ -32,6 +32,7 @@ namespace CrossBuy.Hubs
 			public string CallerConn = "";
 			public string? CalleeConn;
 			public bool Video;
+			public DateTime? CallerAway, CalleeAway;   // when that side's tab dropped (the warden ends the call after 90 s)
 		}
 
 		private static readonly ConcurrentDictionary<int, int> _online = new();          // employee → connections
@@ -74,6 +75,7 @@ namespace CrossBuy.Hubs
 				await Groups.AddToGroupAsync(Context.ConnectionId, Emp(emp));
 				await Groups.AddToGroupAsync(Context.ConnectionId, Co(co));
 				_company[emp] = co;
+				StartWarden();
 				if (_online.AddOrUpdate(emp, 1, (_, n) => n + 1) == 1) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
 			}
 			await base.OnConnectedAsync();
@@ -83,9 +85,17 @@ namespace CrossBuy.Hubs
 		{
 			if (Context.Items.TryGetValue("emp", out var e) && e is int emp && Context.Items.TryGetValue("co", out var c) && c is int co)
 			{
-				// a call this tab was carrying ends with it
+				// A RINGING call this tab was carrying ends with it. An ANSWERED one does not: the audio and picture go device to
+				// device without us, so the tab is given time to reconnect (Resume); the other side is told meanwhile, and its own
+				// connection ends the call if the media really failed.
 				foreach (var live in _calls.Values.Where(l => l.CallerConn == Context.ConnectionId || l.CalleeConn == Context.ConnectionId).ToList())
-					await CloseAsync(live, emp, "drop", null);
+				{
+					if (live.CalleeConn == null) { await CloseAsync(live, emp, "drop", null); continue; }
+					bool caller = live.CallerConn == Context.ConnectionId;
+					if (caller) { live.CallerConn = ""; live.CallerAway = DateTime.UtcNow; } else { live.CalleeConn = ""; live.CalleeAway = DateTime.UtcNow; }
+					string other = caller ? live.CalleeConn! : live.CallerConn;
+					if (other.Length > 0) await Clients.Client(other).SendAsync("peeraway", new { callId = live.CallId });
+				}
 				await DropFromGroupsAsync();   // H176 group calls
 				if (_online.AddOrUpdate(emp, 0, (_, n) => Math.Max(0, n - 1)) == 0) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
 			}
@@ -114,6 +124,7 @@ namespace CrossBuy.Hubs
 				// offline or in another call: recorded as a missed call so it waits for a call back
 				var missed = await svc.OpenAsync(co, me, calleeId, video, patientId, reason, HospitalCallStatus.Missed, state == "busy" ? "busy" : "offline", now);
 				await Clients.Group(Emp(calleeId)).SendAsync("missed", new { callId = missed.ID });
+				await NotifyMissedAsync(co, missed.ID, calleeId, me, video, false);
 				return new { ok = false, error = state == "busy" ? "{0} is in another call — it is recorded as a missed call so they call you back" : "{0} is not connected — it is recorded as a missed call so they call you back", name = DisplayName.Of(callee.Name, callee.NameEn) };
 			}
 
@@ -133,6 +144,27 @@ namespace CrossBuy.Hubs
 				caller = Card(caller), patient, canRecord = calleeMay, recKind = kind,
 			});
 			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient, canRecord = callerMay, recKind = kind };
+		}
+
+		/// A missed call reaches the bell too (the notification centre), once per call and person, with the way back to the
+		/// calls screen — so it is seen even when the calls page is not open.
+		public const string MissedNotificationType = "hospital_missed_call";
+		private async Task NotifyMissedAsync(int companyId, int callId, int calleeId, int callerId, bool video, bool group)
+		{
+			try
+			{
+				var notify = _sp.GetService<INotificationService>();
+				if (notify == null) return;
+				var who = (await Svc.PeopleAsync(companyId, DateTime.UtcNow, new[] { callerId })).FirstOrDefault();
+				string ar = who?.Name ?? "", en = who?.NameEn ?? who?.Name ?? "";
+				string kindAr = group ? "مكالمة جماعية" : video ? "مكالمة فيديو داخلية" : "مكالمة صوتية داخلية";
+				string kindEn = group ? "Group call" : video ? "Internal video call" : "Internal voice call";
+				await notify.NotifyAsync(calleeId, "مكالمة فائتة من " + ar, "Missed call from " + en,
+					kindAr + " — يمكنك معاودة الاتصال من صفحة الاتصال الداخلي", kindEn + " — call back from the Internal calls page",
+					MissedNotificationType, callId, "/Hospital/Calls", companyId, callerId,
+					priority: "High", category: "Hospital", dedupKey: $"hcall-missed-{callId}-{calleeId}", icon: "ki-call");
+			}
+			catch (Exception) { }   // a failed notice never breaks the call flow
 		}
 
 		private static object Card(HospitalCallPerson p) => new
@@ -180,9 +212,10 @@ namespace CrossBuy.Hubs
 				await Clients.Group(Co(live.CompanyId)).SendAsync("presence", new { employeeId = e, state = Presence(e) });
 			}
 			var msg = new { callId = live.CallId, status = row?.Status ?? HospitalCallStatus.Ended, reply = row?.Reply, seconds = row?.DurationSeconds };
-			await Clients.Client(live.CallerConn).SendAsync("ended", msg);
-			if (live.CalleeConn != null) await Clients.Client(live.CalleeConn).SendAsync("ended", msg);
-			else await Clients.Group(Emp(live.CalleeId)).SendAsync("ended", msg);   // still ringing on every tab
+			if (row?.Status == HospitalCallStatus.Missed) await NotifyMissedAsync(live.CompanyId, live.CallId, live.CalleeId, live.CallerId, live.Video, false);
+			if (live.CallerConn.Length > 0) await Clients.Client(live.CallerConn).SendAsync("ended", msg);
+			if (live.CalleeConn == null) await Clients.Group(Emp(live.CalleeId)).SendAsync("ended", msg);   // still ringing on every tab
+			else if (live.CalleeConn.Length > 0) await Clients.Client(live.CalleeConn).SendAsync("ended", msg);
 		}
 
 		/// An SDP offer/answer, an ICE candidate or a state change (mic, camera, sharing), passed to the other end only.
@@ -191,7 +224,7 @@ namespace CrossBuy.Hubs
 			if (payload == null || payload.Length > 64_000) return;
 			if (!_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return;
 			string? to = Context.ConnectionId == live.CallerConn ? live.CalleeConn : Context.ConnectionId == live.CalleeConn ? live.CallerConn : null;
-			if (to != null) await Clients.Client(to).SendAsync("signal", new { callId, payload });
+			if (!string.IsNullOrEmpty(to)) await Clients.Client(to).SendAsync("signal", new { callId, payload });
 		}
 
 		// ---- recording, with the other side's consent -------------------------------------------------------------
@@ -204,12 +237,13 @@ namespace CrossBuy.Hubs
 		private string? Other(Live live) => Context.ConnectionId == live.CallerConn ? live.CalleeConn : Context.ConnectionId == live.CalleeConn ? live.CallerConn : null;
 
 		/// A participant asks to record; the OTHER side gets the consent window. Nothing is recorded until it agrees.
-		public async Task<object> RecordRequest(int callId)
+		/// <paramref name="picture"/>: a camera or a shared screen is live in the call now, so a voice call is recorded with its picture.
+		public async Task<object> RecordRequest(int callId, bool picture)
 		{
 			if (await MeAsync() is not var (me, co) || !_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return new { ok = false, error = "failed" };
 			string? to = Other(live);
 			if (to == null) return new { ok = false, error = "failed" };
-			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow);
+			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture);
 			if (row == null) return new { ok = false, error };
 			var s = await Svc.SettingsAsync(co);
 			var by = (await Svc.PeopleAsync(co, DateTime.UtcNow, new[] { me })).FirstOrDefault();
@@ -251,6 +285,23 @@ namespace CrossBuy.Hubs
 			var msg = new { recId, byId = me };
 			await Clients.Client(live.CallerConn).SendAsync("recstop", msg);
 			await Clients.Client(live.CalleeConn!).SendAsync("recstop", msg);
+		}
+
+		/// A tab that was in an ANSWERED two-person call reconnects (a network drop, or the server restarted and forgot every
+		/// live call): the call is rebuilt from its record and this connection takes its place in it.
+		public async Task<object> Resume(int callId)
+		{
+			if (await MeAsync() is not var (me, co)) return new { ok = false };
+			var call = await _db.Set<HospitalCall>().AsNoTracking().FirstOrDefaultAsync(c => c.ID == callId && c.CompanyId == co && !c.IsGroup);
+			if (call == null || call.Status != HospitalCallStatus.Answered || (call.CallerEmployeeId != me && call.CalleeEmployeeId != me)) return new { ok = false };
+			var live = _calls.GetOrAdd(callId, _ => new Live { CallId = callId, CompanyId = co, CallerId = call.CallerEmployeeId, CalleeId = call.CalleeEmployeeId, CallerConn = "", CalleeConn = "", Video = call.IsVideo, CallerAway = DateTime.UtcNow, CalleeAway = DateTime.UtcNow });
+			if (me == live.CallerId) { live.CallerConn = Context.ConnectionId; live.CallerAway = null; } else { live.CalleeConn = Context.ConnectionId; live.CalleeAway = null; }
+			_busy[me] = callId;
+			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = me, state = "busy" });
+			string other = me == live.CallerId ? live.CalleeConn ?? "" : live.CallerConn;
+			if (other.Length > 0) await Clients.Client(other).SendAsync("peerback", new { callId });
+			// a recording in progress goes on: its pieces arrive over HTTP and its row is in the database
+			return new { ok = true, peerHere = other.Length > 0 };
 		}
 
 		/// Presence of the people a screen shows (the directory asks once, then follows "presence" events).

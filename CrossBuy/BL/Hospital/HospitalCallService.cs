@@ -142,6 +142,11 @@ namespace CrossBuy.BL.Hospital
 		public List<string>? RecordingGroups { get; set; }
 		public bool GroupEnabled { get; set; } = true;
 		public int GroupMax { get; set; } = 4;
+		public List<int>? RecordingReviewers { get; set; }
+		public string? SfuUrl { get; set; }
+		public string? SfuApiKey { get; set; }
+		/// Null = keep the stored secret; "" = remove it.
+		public string? SfuApiSecret { get; set; }
 	}
 
 	public sealed class HospitalCallService
@@ -173,6 +178,8 @@ namespace CrossBuy.BL.Hospital
 			if (i.RecordingMode is not (HospitalCallRecordingMode.Voice or HospitalCallRecordingMode.Both)) i.RecordingMode = HospitalCallRecordingMode.Both;
 			var urls = HospitalCallRules.ParseUrls(i.TurnUrls);
 			if (!string.IsNullOrWhiteSpace(i.TurnUrls) && urls.Count == 0) return HospitalResult.Fail("Write the relay address as turn:host:port or stun:host:port");
+			if (!string.IsNullOrWhiteSpace(i.SfuUrl) && !(Uri.TryCreate(i.SfuUrl.Trim(), UriKind.Absolute, out var su) && (su.Scheme == "ws" || su.Scheme == "wss")))
+				return HospitalResult.Fail("Write the media server address as wss://host:port");
 			var pairs = (i.Policy ?? new()).Select(p => p.Split('>')).Where(a => a.Length == 2).Select(a => (a[0], a[1]));
 			try
 			{
@@ -185,7 +192,11 @@ namespace CrossBuy.BL.Hospital
 				row.Policy = policy.Length == 0 ? "-" : policy;
 				row.RecordingEnabled = i.RecordingEnabled; row.RecordingMode = i.RecordingMode!; row.RecordingDays = i.RecordingDays;
 				row.RecordingGroups = HospitalCallRecordingRules.FormatGroups(i.RecordingGroups);
-				row.GroupEnabled = i.GroupEnabled; row.GroupMax = HospitalCallGroupRules.Cap(i.GroupMax);   // nobody may call: stored explicitly, an empty value would mean the default
+				row.RecordingReviewers = HospitalCallRecordingRules.FormatIds(i.RecordingReviewers);
+				row.SfuUrl = string.IsNullOrWhiteSpace(i.SfuUrl) ? null : i.SfuUrl.Trim();
+				row.SfuApiKey = string.IsNullOrWhiteSpace(i.SfuApiKey) ? null : i.SfuApiKey.Trim();
+				if (i.SfuApiSecret != null) row.SfuApiSecret = string.IsNullOrWhiteSpace(i.SfuApiSecret) ? null : i.SfuApiSecret.Trim();
+				row.GroupEnabled = i.GroupEnabled; row.GroupMax = HospitalCallGroupRules.Cap(i.GroupMax, HospitalCallGroupRules.SfuReady(row.SfuUrl, row.SfuApiKey, row.SfuApiSecret));   // nobody may call: stored explicitly, an empty value would mean the default
 				row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success();

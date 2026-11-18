@@ -63,7 +63,12 @@
 	/* ---------------- hub ---------------- */
 	function connect() {
 		if (!window.signalR || conn) return;
-		conn = new signalR.HubConnectionBuilder().withUrl(U.hub).withAutomaticReconnect().build();
+		// A restart of the server takes minutes: keep trying (1, 2, 3, 4 s, then every 5 s) for a quarter of an hour, and
+		// start over after that. A call in progress does not wait for this — its media goes device to device.
+		conn = new signalR.HubConnectionBuilder().withUrl(U.hub).withAutomaticReconnect({
+			nextRetryDelayInMilliseconds: function (r) { return r.elapsedMilliseconds > 15 * 60 * 1000 ? null : (r.previousRetryCount < 4 ? (r.previousRetryCount + 1) * 1000 : 5000); }
+		}).build();
+		conn.onclose(function () { setTimeout(function () { conn.start().then(resumeAll).catch(function () { }); }, 5000); });
 		conn.on('incoming', onIncoming);
 		conn.on('answered', onAnswered);
 		conn.on('ended', onEnded);
@@ -75,11 +80,25 @@
 		conn.on('recclosed', onRecClosed);
 		conn.on('recstop', onRecStop);
 		conn.on('presence', function (m) { presenceFns.forEach(function (f) { try { f(m); } catch (e) { } }); });
-		conn.onreconnected(function () { presenceFns.forEach(function (f) { try { f({ refresh: true }); } catch (e) { } }); });
+		conn.onreconnected(function () { resumeAll(); presenceFns.forEach(function (f) { try { f({ refresh: true }); } catch (e) { } }); });
+		conn.on('peeraway', function (m) { var c = current; if (c && c.id === m.callId) { c.peerAway = true; netChip(c); } });
+		conn.on('peerback', function (m) { var c = current; if (c && c.id === m.callId) { c.peerAway = false; netChip(c); } });
 		(window.cbCallsHooks || []).forEach(function (f) { try { f(conn); } catch (e) { } });   // H176 group calls
 		conn.start().then(function () { document.dispatchEvent(new CustomEvent('cbcalls:ready')); }).catch(function () { });
 	}
 	function connected() { return conn && conn.state === 'Connected'; }
+	// back after a drop or a server restart: the server is told which call this tab is in, and rebuilds it
+	function resumeAll() {
+		var c = current;
+		if (c && c.answered) conn.invoke('Resume', c.id).then(function (r) { if (r && r.ok) { c.peerAway = !r.peerHere; netChip(c); } }).catch(function () { });
+		document.dispatchEvent(new CustomEvent('cbcalls:resumed'));
+	}
+	function netChip(c) {
+		if (!c || !c.el) return;
+		var chip = c.el.querySelector('[data-net]'); if (!chip) return;
+		var s = c.pc && c.pc.connectionState;
+		chip.classList.toggle('d-none', !(c.peerAway || s === 'disconnected' || s === 'connecting'));
+	}
 	function boot() {
 		if (window.signalR) connect();
 		else { var s = document.createElement('script'); s.src = U.signalr; s.onload = connect; document.head.appendChild(s); }
@@ -212,7 +231,7 @@
 			};
 			pc.onconnectionstatechange = function () {
 				var s = pc.connectionState;
-				c.el.querySelector('[data-net]').classList.toggle('d-none', s !== 'disconnected' && s !== 'connecting');
+				netChip(c);
 				if (s === 'failed') { toast(t('lost'), 'error'); hangup(c); }
 			};
 			if (c.role === 'caller') {
@@ -465,7 +484,8 @@
 		var r = c.rec;
 		if (r && r.state === 'on') { conn.invoke('RecordStop', r.id).catch(function () { }); return; }
 		if (r && r.state === 'asking') { conn.invoke('RecordWithdraw', r.id).catch(function () { }); return; }
-		conn.invoke('RecordRequest', c.id).then(function (res) {
+		var picture = !!(c.cam || c.sharing || (c.remote && (c.remote.cam || c.remote.share)));
+		conn.invoke('RecordRequest', c.id, picture).then(function (res) {
 			if (!res || !res.ok) { toast(t(res && res.error ? res.error : 'failed'), 'error'); return; }
 			c.rec = { id: res.recId, state: 'asking', kind: res.kind, mine: true };
 			trail(c, 'ki-send', t(res.kind === 'video' ? 'recAskedVideo' : 'recAskedVoice'));
@@ -523,7 +543,8 @@
 	}
 
 	// The requester's browser records BOTH sides: the voices mixed into one track, and (for a video recording) the two
-	// pictures drawn together — the other side full, mine in the corner, as the stage shows them.
+	// pictures drawn together — the other side full, mine in the corner, as the stage shows them. A shared screen (mine
+	// or theirs) takes the whole frame, fitted not cropped so nothing on it is lost, with the faces in the corner.
 	function recStream(c) {
 		var ac = new (window.AudioContext || window.webkitAudioContext)(), dest = ac.createMediaStreamDestination();
 		[c.local, c.remoteStream].forEach(function (st) { if (st && st.getAudioTracks().length) ac.createMediaStreamSource(new MediaStream(st.getAudioTracks())).connect(dest); });
@@ -532,17 +553,29 @@
 			var cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720;
 			var g = cv.getContext('2d'), rv = c.el.querySelector('[data-rvideo]'), sv = document.createElement('video');
 			sv.muted = true; sv.playsInline = true; var lv = c.local && c.local.getVideoTracks()[0]; if (lv) { sv.srcObject = new MediaStream([lv]); sv.play().catch(function () { }); }
-			function cover(v, x, y, w, h) {
+			var scr = document.createElement('video'), scrOf = null; scr.muted = true; scr.playsInline = true;   // my own shared screen
+			function fit(v, x, y, w, h, whole) {
 				var vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return false;
-				var s = Math.max(w / vw, h / vh), dw = vw * s, dh = vh * s; g.drawImage(v, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); return true;
+				var s = whole ? Math.min(w / vw, h / vh) : Math.max(w / vw, h / vh), dw = vw * s, dh = vh * s; g.drawImage(v, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); return true;
 			}
+			function corner(v, i) { var x = 1280 - (320 + 24) * (i + 1), y = 720 - 180 - 24; g.save(); g.beginPath(); g.rect(x, y, 320, 180); g.clip(); g.fillStyle = '#1F2D4D'; g.fillRect(x, y, 320, 180); fit(v, x, y, 320, 180); g.restore(); }
+			var theirs = function () { return rv && !rv.classList.contains('d-none') && rv.videoWidth; };
 			// a timer, not requestAnimationFrame: it keeps drawing when the tab is in the background
 			var draw = setInterval(function () {
 				g.fillStyle = '#0F172A'; g.fillRect(0, 0, 1280, 720);
-				if (!(rv && !rv.classList.contains('d-none') && cover(rv, 0, 0, 1280, 720))) { g.fillStyle = '#E7F0FF'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText(c.peer.name || '', 640, 370); }
-				if (c.cam && lv) { g.save(); g.beginPath(); g.rect(1280 - 320 - 24, 720 - 180 - 24, 320, 180); g.clip(); cover(sv, 1280 - 320 - 24, 720 - 180 - 24, 320, 180); g.restore(); }
+				if (c.sharing && c.screen) {
+					if (scrOf !== c.screen) { scrOf = c.screen; scr.srcObject = c.screen; scr.play().catch(function () { }); }
+					fit(scr, 0, 0, 1280, 720, true);
+					var k = 0; if (theirs() && c.remote && c.remote.cam) corner(rv, k++);
+					if (c.cam && lv) corner(sv, k);
+					return;
+				}
+				if (scrOf) { scrOf = null; scr.srcObject = null; }
+				var shared = !!(c.remote && c.remote.share);
+				if (!(theirs() && fit(rv, 0, 0, 1280, 720, shared))) { g.fillStyle = '#E7F0FF'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText(c.peer.name || '', 640, 370); }
+				if (c.cam && lv) corner(sv, 0);
 			}, 1000 / 20);
-			stop.push(function () { clearInterval(draw); sv.srcObject = null; });
+			stop.push(function () { clearInterval(draw); sv.srcObject = null; scr.srcObject = null; });
 			tracks = tracks.concat(cv.captureStream(20).getVideoTracks());
 		}
 		return { stream: new MediaStream(tracks), stop: function () { stop.forEach(function (f) { try { f(); } catch (e) { } }); } };

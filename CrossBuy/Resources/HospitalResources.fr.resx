@@ -8735,4 +8735,19 @@
   <data name="qc:Margins" xml:space="preserve"><value>Limites</value></data>
   <data name="qc:Occlusion" xml:space="preserve"><value>Occlusion</value></data>
   <data name="qc:Shade" xml:space="preserve"><value>Teinte</value></data>
+  <data name="Open in the File Manager" xml:space="preserve"><value>Ouvrir dans le gestionnaire de fichiers</value></data>
+  <data name="The internal media server" xml:space="preserve"><value>Le serveur média interne</value></data>
+  <data name="LiveKit on a server inside the hospital: group calls of more than four go through it" xml:space="preserve"><value>LiveKit sur un serveur de l’hôpital : les appels de groupe de plus de quatre passent par lui</value></data>
+  <data name="Media server address" xml:space="preserve"><value>Adresse du serveur média</value></data>
+  <data name="API key" xml:space="preserve"><value>Clé API</value></data>
+  <data name="API secret" xml:space="preserve"><value>Secret API</value></data>
+  <data name="Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call." xml:space="preserve"><value>Vide : les appels de groupe restent à quatre, chaque appareil relié aux autres. Le secret n’atteint jamais un navigateur : chacun reçoit un jeton de salle pour un appel.</value></data>
+  <data name="Who reviews every recording" xml:space="preserve"><value>Qui examine tous les enregistrements</value></data>
+  <data name="Nobody — only the people in each call" xml:space="preserve"><value>Personne — seulement les participants de chaque appel</value></data>
+  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve"><value>Des personnes nommées seulement. Sinon, un enregistrement ne s’ouvre qu’aux participants de l’appel ; chaque ouverture est consignée.</value></data>
+  <data name="Write the media server address as wss://host:port" xml:space="preserve"><value>Écrivez l’adresse du serveur média sous la forme wss://hôte:port</value></data>
+  <data name="Through the internal media server, up to twelve people" xml:space="preserve"><value>Par le serveur média interne, jusqu’à douze personnes</value></data>
+  <data name="Internal media server (group calls above four)" xml:space="preserve"><value>Serveur média interne (appels de groupe de plus de quatre)</value></data>
+  <data name="Each person sends their picture once and it passes it to the others — inside the hospital only" xml:space="preserve"><value>Chacun envoie son image une fois et le serveur la transmet aux autres — dans l’hôpital uniquement</value></data>
+  <data name="{0} days (retention)" xml:space="preserve"><value>{0} jours</value></data>
 </root>

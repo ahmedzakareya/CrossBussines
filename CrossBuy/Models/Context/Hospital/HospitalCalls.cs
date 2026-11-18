@@ -80,6 +80,14 @@ namespace CrossBuy.Models.Context.Hospital
 		/// Group calls (each device connected to each other one): on, and how many people at most, the host included.
 		public bool GroupEnabled { get; set; } = true;
 		public int GroupMax { get; set; } = 4;
+		/// The people NAMED to open every call recording (employee ids, comma separated) — an explicit list, never a
+		/// default: besides them only the call's own participants open a recording.
+		public string? RecordingReviewers { get; set; }
+		/// The hospital's internal media server (LiveKit) for group calls of more than four: its address (wss://…), API key
+		/// and secret. The secret never reaches a browser: the server mints a short-lived room token per person.
+		public string? SfuUrl { get; set; }
+		public string? SfuApiKey { get; set; }
+		public string? SfuApiSecret { get; set; }
 		/// The staff groups that may ASK to record, comma separated. Null = doctors and administration.
 		public string? RecordingGroups { get; set; }
 		public DateTime? UpdatedAt { get; set; }
@@ -212,6 +220,10 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Policy).HasMaxLength(600);
 				e.Property(x => x.RecordingMode).HasMaxLength(8);
 				e.Property(x => x.RecordingGroups).HasMaxLength(200);
+				e.Property(x => x.RecordingReviewers).HasMaxLength(400);
+				e.Property(x => x.SfuUrl).HasMaxLength(300);
+				e.Property(x => x.SfuApiKey).HasMaxLength(100);
+				e.Property(x => x.SfuApiSecret).HasMaxLength(200);
 			});
 			b.Entity<HospitalCallRecording>(e =>
 			{
