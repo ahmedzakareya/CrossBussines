@@ -54,13 +54,16 @@
         </div>
         <div class="d-flex align-items-center gap-2 mw-450px w-100">
             <label class="fw-semibold fs-7 text-gray-700 text-nowrap">@T["Draw on the visit"]</label>
-            <select class="form-select form-select-sm form-select-solid" id="cv_visit" data-control="select2" data-placeholder="@T["Choose an open visit"]">
+            @* a shrinkable box at full width: select2 otherwise sizes itself to the longest visit and runs off the page *@
+            <div class="flex-grow-1" style="min-width:0">
+            <select class="form-select form-select-sm form-select-solid" id="cv_visit" data-control="select2" data-width="100%" style="width:100%" data-placeholder="@T["Choose an open visit"]">
                 <option></option>
                 @foreach (var v in visits)
                 {
                     <option value="@v.EncounterId">@(isAr ? v.Patient : v.PatientEn) · @v.Mrn · @(isAr ? v.Doctor : (v.DoctorEn ?? v.Doctor)) · @v.StartedAt.ToString("yyyy-MM-dd")</option>
                 }
             </select>
+            </div>
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
