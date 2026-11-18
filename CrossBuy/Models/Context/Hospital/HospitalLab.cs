@@ -178,6 +178,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalLabDeviceModel.Configure(b);   // H198: the analysers' messages and code links
 			b.Entity<HospitalLabTest>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
 			b.Entity<HospitalLabAnalyte>(e =>
 			{

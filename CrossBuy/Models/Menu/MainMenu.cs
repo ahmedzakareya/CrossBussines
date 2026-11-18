@@ -500,6 +500,7 @@
 			{
 				new() { LabelAr = "المختبر", LabelEn = "Laboratory", Action = "Lab", Controller = "Hospital" },
 				new() { LabelAr = "التحاليل ومؤشراتها", LabelEn = "Lab tests & analytes", Action = "LabTests", Controller = "Hospital" },
+				new() { LabelAr = "أدوار العاملين", LabelEn = "Staff roles", Action = "StaffRoles", Controller = "Hospital" },   // H198
 				new() { LabelAr = "الأشعة", LabelEn = "Radiology", Action = "Radiology", Controller = "Hospital" },
 				new() { LabelAr = "الفحوصات والأجهزة", LabelEn = "Exams & rooms", Action = "RadiologySetup", Controller = "Hospital" },
 				new() { LabelAr = "بنك الدم", LabelEn = "Blood bank", Action = "BloodBank", Controller = "Hospital" },

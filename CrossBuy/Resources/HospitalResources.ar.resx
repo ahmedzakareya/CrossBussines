@@ -8817,4 +8817,43 @@
   <data name="sig:HospitalRadiologist" xml:space="preserve"><value>تقارير أشعة موقّعة</value></data>
   <data name="sig:HospitalReception" xml:space="preserve"><value>مرضى مسجّلون</value></data>
   <data name="{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here." xml:space="preserve"><value>مُنح {0} دورًا. من ليس له دور لا يستطيع استخدام المستشفى: امنح المنضمين الجدد أدوارهم من هنا.</value></data>
+  <data name="Already received: nothing changed" xml:space="preserve"><value>مستلمة من قبل: لم يتغير شيء</value></data>
+  <data name="Analyser results" xml:space="preserve"><value>نتائج أجهزة المختبر</value></data>
+  <data name="Apply again" xml:space="preserve"><value>تطبيق مرة أخرى</value></data>
+  <data name="Device, accession, patient" xml:space="preserve"><value>الجهاز أو رقم العيّنة أو المريض</value></data>
+  <data name="Each result message (HL7 ORU^R01) is filed on the order its accession number names and merged with what the bench entered. The specialist verifies as always; nothing reaches the doctor before that. A result not final, with an unknown code or in other units is not filed and is named below." xml:space="preserve"><value>تُسجَّل كل رسالة نتائج (HL7 ORU^R01) على الطلب الذي يحمل رقم العيّنة المذكور فيها، وتُدمج مع ما أدخله المختبر. يعتمدها الأخصائي كالمعتاد، ولا يصل شيء إلى الطبيب قبل ذلك. النتيجة غير النهائية أو ذات الرمز غير المعروف أو بوحدة مختلفة لا تُسجَّل، وتظهر أدناه.</value></data>
+  <data name="From now on this device's code files on that analyte. Apply the message again to file it." xml:space="preserve"><value>من الآن يُسجَّل رمز هذا الجهاز على ذلك المؤشر. طبّق الرسالة مرة أخرى لتسجيله.</value></data>
+  <data name="Lab order" xml:space="preserve"><value>طلب التحليل</value></data>
+  <data name="Link" xml:space="preserve"><value>ربط</value></data>
+  <data name="Link a device code" xml:space="preserve"><value>ربط رمز الجهاز</value></data>
+  <data name="Link {0}" xml:space="preserve"><value>ربط {0}</value></data>
+  <data name="Messages received" xml:space="preserve"><value>الرسائل المستلمة</value></data>
+  <data name="Name the device and its code" xml:space="preserve"><value>اذكر الجهاز ورمزه</value></data>
+  <data name="No message received yet." xml:space="preserve"><value>لم تُستلم أي رسالة بعد.</value></data>
+  <data name="No order has this accession number" xml:space="preserve"><value>لا يوجد طلب بهذا الرقم</value></data>
+  <data name="Not filed" xml:space="preserve"><value>لم يُسجَّل</value></data>
+  <data name="Only result messages (ORU^R01) are read" xml:space="preserve"><value>تُقرأ رسائل النتائج (ORU^R01) فقط</value></data>
+  <data name="Paste the HL7 result message, or open the file the analyser's middleware wrote." xml:space="preserve"><value>الصق رسالة نتائج HL7، أو افتح الملف الذي كتبه برنامج الوسيط الخاص بالجهاز.</value></data>
+  <data name="Receive a message" xml:space="preserve"><value>استلام رسالة</value></data>
+  <data name="Results from the analysers come in as entered, never verified" xml:space="preserve"><value>نتائج الأجهزة تدخل كنتائج مُدخلة، ولا تُعتمد تلقائيًا</value></data>
+  <data name="The acknowledgement sent back" xml:space="preserve"><value>رسالة الإقرار المُعادة للجهاز</value></data>
+  <data name="The analysers' tables are not created yet (hospital_h198_lab_devices.sql)." xml:space="preserve"><value>جداول أجهزة المختبر غير منشأة بعد (hospital_h198_lab_devices.sql).</value></data>
+  <data name="The analyte it means" xml:space="preserve"><value>المؤشر المقصود به</value></data>
+  <data name="The message has no control id (MSH-10)" xml:space="preserve"><value>لا تحمل الرسالة رقمًا تعريفيًا (MSH-10)</value></data>
+  <data name="The message holds no results (OBX)" xml:space="preserve"><value>لا تحتوي الرسالة على نتائج (OBX)</value></data>
+  <data name="The message is empty" xml:space="preserve"><value>الرسالة فارغة</value></data>
+  <data name="The message names no order (OBR-2 or OBR-3)" xml:space="preserve"><value>لا تذكر الرسالة أي طلب (OBR-2 أو OBR-3)</value></data>
+  <data name="The message names no sending device (MSH-3)" xml:space="preserve"><value>لا تذكر الرسالة الجهاز المُرسِل (MSH-3)</value></data>
+  <data name="The specimen was never collected" xml:space="preserve"><value>لم تُسحب العيّنة أصلًا</value></data>
+  <data name="This is not an HL7 message (no MSH segment)" xml:space="preserve"><value>هذه ليست رسالة HL7 (لا يوجد مقطع MSH)</value></data>
+  <data name="This message was applied in full" xml:space="preserve"><value>طُبّقت هذه الرسالة بالكامل</value></data>
+  <data name="dev:Accepted" xml:space="preserve"><value>مقبولة</value></data>
+  <data name="dev:Duplicate" xml:space="preserve"><value>مكررة</value></data>
+  <data name="dev:Partial" xml:space="preserve"><value>مقبولة جزئيًا</value></data>
+  <data name="dev:Refused" xml:space="preserve"><value>مرفوضة</value></data>
+  <data name="{0} messages" xml:space="preserve"><value>{0} رسالة</value></data>
+  <data name="{0} results filed" xml:space="preserve"><value>سُجّلت {0} نتيجة</value></data>
+  <data name="{0}: in {1}, not {2}" xml:space="preserve"><value>{0}: بوحدة {1} لا {2}</value></data>
+  <data name="{0}: not final" xml:space="preserve"><value>{0}: نتيجة غير نهائية</value></data>
+  <data name="{0}: unknown code" xml:space="preserve"><value>{0}: رمز غير معروف</value></data>
 </root>

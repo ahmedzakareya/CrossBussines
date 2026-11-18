@@ -8817,4 +8817,43 @@
   <data name="sig:HospitalRadiologist" xml:space="preserve"><value>Reports signed</value></data>
   <data name="sig:HospitalReception" xml:space="preserve"><value>Patients registered</value></data>
   <data name="{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here." xml:space="preserve"><value>{0} roles are granted. Anyone without a role cannot use the hospital: give newcomers their roles here.</value></data>
+  <data name="Already received: nothing changed" xml:space="preserve"><value>Already received: nothing changed</value></data>
+  <data name="Analyser results" xml:space="preserve"><value>Analyser results</value></data>
+  <data name="Apply again" xml:space="preserve"><value>Apply again</value></data>
+  <data name="Device, accession, patient" xml:space="preserve"><value>Device, accession, patient</value></data>
+  <data name="Each result message (HL7 ORU^R01) is filed on the order its accession number names and merged with what the bench entered. The specialist verifies as always; nothing reaches the doctor before that. A result not final, with an unknown code or in other units is not filed and is named below." xml:space="preserve"><value>Each result message (HL7 ORU^R01) is filed on the order its accession number names and merged with what the bench entered. The specialist verifies as always; nothing reaches the doctor before that. A result not final, with an unknown code or in other units is not filed and is named below.</value></data>
+  <data name="From now on this device's code files on that analyte. Apply the message again to file it." xml:space="preserve"><value>From now on this device's code files on that analyte. Apply the message again to file it.</value></data>
+  <data name="Lab order" xml:space="preserve"><value>Lab order</value></data>
+  <data name="Link" xml:space="preserve"><value>Link</value></data>
+  <data name="Link a device code" xml:space="preserve"><value>Link a device code</value></data>
+  <data name="Link {0}" xml:space="preserve"><value>Link {0}</value></data>
+  <data name="Messages received" xml:space="preserve"><value>Messages received</value></data>
+  <data name="Name the device and its code" xml:space="preserve"><value>Name the device and its code</value></data>
+  <data name="No message received yet." xml:space="preserve"><value>No message received yet.</value></data>
+  <data name="No order has this accession number" xml:space="preserve"><value>No order has this accession number</value></data>
+  <data name="Not filed" xml:space="preserve"><value>Not filed</value></data>
+  <data name="Only result messages (ORU^R01) are read" xml:space="preserve"><value>Only result messages (ORU^R01) are read</value></data>
+  <data name="Paste the HL7 result message, or open the file the analyser's middleware wrote." xml:space="preserve"><value>Paste the HL7 result message, or open the file the analyser's middleware wrote.</value></data>
+  <data name="Receive a message" xml:space="preserve"><value>Receive a message</value></data>
+  <data name="Results from the analysers come in as entered, never verified" xml:space="preserve"><value>Results from the analysers come in as entered, never verified</value></data>
+  <data name="The acknowledgement sent back" xml:space="preserve"><value>The acknowledgement sent back</value></data>
+  <data name="The analysers' tables are not created yet (hospital_h198_lab_devices.sql)." xml:space="preserve"><value>The analysers' tables are not created yet (hospital_h198_lab_devices.sql).</value></data>
+  <data name="The analyte it means" xml:space="preserve"><value>The analyte it means</value></data>
+  <data name="The message has no control id (MSH-10)" xml:space="preserve"><value>The message has no control id (MSH-10)</value></data>
+  <data name="The message holds no results (OBX)" xml:space="preserve"><value>The message holds no results (OBX)</value></data>
+  <data name="The message is empty" xml:space="preserve"><value>The message is empty</value></data>
+  <data name="The message names no order (OBR-2 or OBR-3)" xml:space="preserve"><value>The message names no order (OBR-2 or OBR-3)</value></data>
+  <data name="The message names no sending device (MSH-3)" xml:space="preserve"><value>The message names no sending device (MSH-3)</value></data>
+  <data name="The specimen was never collected" xml:space="preserve"><value>The specimen was never collected</value></data>
+  <data name="This is not an HL7 message (no MSH segment)" xml:space="preserve"><value>This is not an HL7 message (no MSH segment)</value></data>
+  <data name="This message was applied in full" xml:space="preserve"><value>This message was applied in full</value></data>
+  <data name="dev:Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="dev:Duplicate" xml:space="preserve"><value>Duplicate</value></data>
+  <data name="dev:Partial" xml:space="preserve"><value>Partly accepted</value></data>
+  <data name="dev:Refused" xml:space="preserve"><value>Refused</value></data>
+  <data name="{0} messages" xml:space="preserve"><value>{0} messages</value></data>
+  <data name="{0} results filed" xml:space="preserve"><value>{0} results filed</value></data>
+  <data name="{0}: in {1}, not {2}" xml:space="preserve"><value>{0}: in {1}, not {2}</value></data>
+  <data name="{0}: not final" xml:space="preserve"><value>{0}: not final</value></data>
+  <data name="{0}: unknown code" xml:space="preserve"><value>{0}: unknown code</value></data>
 </root>

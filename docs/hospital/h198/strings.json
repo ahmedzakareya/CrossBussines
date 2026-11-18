@@ -1,0 +1,200 @@
+{
+ "unit": "H198 - analyser results (HL7)",
+ "strings": {
+  "Analyser results": {
+   "ar": "نتائج أجهزة المختبر",
+   "en": "Analyser results",
+   "fr": "Résultats des automates"
+  },
+  "Results from the analysers come in as entered, never verified": {
+   "ar": "نتائج الأجهزة تدخل كنتائج مُدخلة، ولا تُعتمد تلقائيًا",
+   "en": "Results from the analysers come in as entered, never verified",
+   "fr": "Les résultats des automates arrivent saisis, jamais validés"
+  },
+  "Each result message (HL7 ORU^R01) is filed on the order its accession number names and merged with what the bench entered. The specialist verifies as always; nothing reaches the doctor before that. A result not final, with an unknown code or in other units is not filed and is named below.": {
+   "ar": "تُسجَّل كل رسالة نتائج (HL7 ORU^R01) على الطلب الذي يحمل رقم العيّنة المذكور فيها، وتُدمج مع ما أدخله المختبر. يعتمدها الأخصائي كالمعتاد، ولا يصل شيء إلى الطبيب قبل ذلك. النتيجة غير النهائية أو ذات الرمز غير المعروف أو بوحدة مختلفة لا تُسجَّل، وتظهر أدناه.",
+   "en": "Each result message (HL7 ORU^R01) is filed on the order its accession number names and merged with what the bench entered. The specialist verifies as always; nothing reaches the doctor before that. A result not final, with an unknown code or in other units is not filed and is named below.",
+   "fr": "Chaque message de résultats (HL7 ORU^R01) est classé sur la demande dont il cite le numéro d'échantillon et fusionné avec la saisie du laboratoire. Le biologiste valide comme toujours ; rien n'atteint le médecin avant. Un résultat non final, de code inconnu ou d'une autre unité n'est pas classé et figure ci-dessous."
+  },
+  "The analysers' tables are not created yet (hospital_h198_lab_devices.sql).": {
+   "ar": "جداول أجهزة المختبر غير منشأة بعد (hospital_h198_lab_devices.sql).",
+   "en": "The analysers' tables are not created yet (hospital_h198_lab_devices.sql).",
+   "fr": "Les tables des automates ne sont pas encore créées (hospital_h198_lab_devices.sql)."
+  },
+  "Messages received": {
+   "ar": "الرسائل المستلمة",
+   "en": "Messages received",
+   "fr": "Messages reçus"
+  },
+  "{0} messages": {
+   "ar": "{0} رسالة",
+   "en": "{0} messages",
+   "fr": "{0} messages"
+  },
+  "Device, accession, patient": {
+   "ar": "الجهاز أو رقم العيّنة أو المريض",
+   "en": "Device, accession, patient",
+   "fr": "Automate, n° d'échantillon, patient"
+  },
+  "No message received yet.": {
+   "ar": "لم تُستلم أي رسالة بعد.",
+   "en": "No message received yet.",
+   "fr": "Aucun message reçu pour l'instant."
+  },
+  "Lab order": {
+   "ar": "طلب التحليل",
+   "en": "Lab order",
+   "fr": "Demande d'analyse"
+  },
+  "Not filed": {
+   "ar": "لم يُسجَّل",
+   "en": "Not filed",
+   "fr": "Non classé"
+  },
+  "{0} results filed": {
+   "ar": "سُجّلت {0} نتيجة",
+   "en": "{0} results filed",
+   "fr": "{0} résultats classés"
+  },
+  "Link {0}": {
+   "ar": "ربط {0}",
+   "en": "Link {0}",
+   "fr": "Lier {0}"
+  },
+  "Apply again": {
+   "ar": "تطبيق مرة أخرى",
+   "en": "Apply again",
+   "fr": "Appliquer à nouveau"
+  },
+  "Receive a message": {
+   "ar": "استلام رسالة",
+   "en": "Receive a message",
+   "fr": "Recevoir un message"
+  },
+  "Paste the HL7 result message, or open the file the analyser's middleware wrote.": {
+   "ar": "الصق رسالة نتائج HL7، أو افتح الملف الذي كتبه برنامج الوسيط الخاص بالجهاز.",
+   "en": "Paste the HL7 result message, or open the file the analyser's middleware wrote.",
+   "fr": "Collez le message de résultats HL7, ou ouvrez le fichier écrit par le middleware de l'automate."
+  },
+  "Link a device code": {
+   "ar": "ربط رمز الجهاز",
+   "en": "Link a device code",
+   "fr": "Lier un code d'automate"
+  },
+  "The analyte it means": {
+   "ar": "المؤشر المقصود به",
+   "en": "The analyte it means",
+   "fr": "L'analyte qu'il désigne"
+  },
+  "From now on this device's code files on that analyte. Apply the message again to file it.": {
+   "ar": "من الآن يُسجَّل رمز هذا الجهاز على ذلك المؤشر. طبّق الرسالة مرة أخرى لتسجيله.",
+   "en": "From now on this device's code files on that analyte. Apply the message again to file it.",
+   "fr": "Désormais ce code de l'automate est classé sur cet analyte. Appliquez à nouveau le message pour le classer."
+  },
+  "Link": {
+   "ar": "ربط",
+   "en": "Link",
+   "fr": "Lier"
+  },
+  "The acknowledgement sent back": {
+   "ar": "رسالة الإقرار المُعادة للجهاز",
+   "en": "The acknowledgement sent back",
+   "fr": "L'accusé de réception renvoyé"
+  },
+  "dev:Accepted": {
+   "ar": "مقبولة",
+   "en": "Accepted",
+   "fr": "Acceptée"
+  },
+  "dev:Partial": {
+   "ar": "مقبولة جزئيًا",
+   "en": "Partly accepted",
+   "fr": "Partiellement acceptée"
+  },
+  "dev:Refused": {
+   "ar": "مرفوضة",
+   "en": "Refused",
+   "fr": "Refusée"
+  },
+  "dev:Duplicate": {
+   "ar": "مكررة",
+   "en": "Duplicate",
+   "fr": "Doublon"
+  },
+  "The message is empty": {
+   "ar": "الرسالة فارغة",
+   "en": "The message is empty",
+   "fr": "Le message est vide"
+  },
+  "This is not an HL7 message (no MSH segment)": {
+   "ar": "هذه ليست رسالة HL7 (لا يوجد مقطع MSH)",
+   "en": "This is not an HL7 message (no MSH segment)",
+   "fr": "Ce n'est pas un message HL7 (pas de segment MSH)"
+  },
+  "Only result messages (ORU^R01) are read": {
+   "ar": "تُقرأ رسائل النتائج (ORU^R01) فقط",
+   "en": "Only result messages (ORU^R01) are read",
+   "fr": "Seuls les messages de résultats (ORU^R01) sont lus"
+  },
+  "The message names no sending device (MSH-3)": {
+   "ar": "لا تذكر الرسالة الجهاز المُرسِل (MSH-3)",
+   "en": "The message names no sending device (MSH-3)",
+   "fr": "Le message ne nomme aucun émetteur (MSH-3)"
+  },
+  "The message has no control id (MSH-10)": {
+   "ar": "لا تحمل الرسالة رقمًا تعريفيًا (MSH-10)",
+   "en": "The message has no control id (MSH-10)",
+   "fr": "Le message n'a pas d'identifiant (MSH-10)"
+  },
+  "The message names no order (OBR-2 or OBR-3)": {
+   "ar": "لا تذكر الرسالة أي طلب (OBR-2 أو OBR-3)",
+   "en": "The message names no order (OBR-2 or OBR-3)",
+   "fr": "Le message ne nomme aucune demande (OBR-2 ou OBR-3)"
+  },
+  "The message holds no results (OBX)": {
+   "ar": "لا تحتوي الرسالة على نتائج (OBX)",
+   "en": "The message holds no results (OBX)",
+   "fr": "Le message ne contient aucun résultat (OBX)"
+  },
+  "Already received: nothing changed": {
+   "ar": "مستلمة من قبل: لم يتغير شيء",
+   "en": "Already received: nothing changed",
+   "fr": "Déjà reçu : rien n'a changé"
+  },
+  "No order has this accession number": {
+   "ar": "لا يوجد طلب بهذا الرقم",
+   "en": "No order has this accession number",
+   "fr": "Aucune demande ne porte ce numéro"
+  },
+  "The specimen was never collected": {
+   "ar": "لم تُسحب العيّنة أصلًا",
+   "en": "The specimen was never collected",
+   "fr": "Le prélèvement n'a jamais été fait"
+  },
+  "This message was applied in full": {
+   "ar": "طُبّقت هذه الرسالة بالكامل",
+   "en": "This message was applied in full",
+   "fr": "Ce message a été appliqué en entier"
+  },
+  "Name the device and its code": {
+   "ar": "اذكر الجهاز ورمزه",
+   "en": "Name the device and its code",
+   "fr": "Nommez l'automate et son code"
+  },
+  "{0}: not final": {
+   "ar": "{0}: نتيجة غير نهائية",
+   "en": "{0}: not final",
+   "fr": "{0} : non final"
+  },
+  "{0}: unknown code": {
+   "ar": "{0}: رمز غير معروف",
+   "en": "{0}: unknown code",
+   "fr": "{0} : code inconnu"
+  },
+  "{0}: in {1}, not {2}": {
+   "ar": "{0}: بوحدة {1} لا {2}",
+   "en": "{0}: in {1}, not {2}",
+   "fr": "{0} : en {1}, pas {2}"
+  }
+ }
+}
