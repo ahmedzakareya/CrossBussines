@@ -71,9 +71,20 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void QuickDash_averages_the_answered_items_and_needs_ten()
+		{
+			Assert.Equal(0m, HospitalClinicalCalc.QuickDash(Enumerable.Repeat((decimal?)1, 11).ToList()));
+			Assert.Equal(100m, HospitalClinicalCalc.QuickDash(Enumerable.Repeat((decimal?)5, 11).ToList()));
+			var v = new decimal?[] { 2, 3, 2, 4, 1, 2, 3, 2, 2, 3, null };   // ten answered: (24/10 − 1) × 25
+			Assert.Equal(35m, HospitalClinicalCalc.QuickDash(v));
+			var two = (decimal?[])v.Clone(); two[0] = null; Assert.Null(HospitalClinicalCalc.QuickDash(two));   // only nine answered
+			var bad = (decimal?[])v.Clone(); bad[1] = 6; Assert.Null(HospitalClinicalCalc.QuickDash(bad));
+		}
+
+		[Fact]
 		public void The_slice_allows_every_calculator()
 		{
-			var s = HospitalSliceParity.Slice("hospital_h188_specialty_calculators.sql");
+			var s = HospitalSliceParity.Slice("hospital_h188_specialty_calculators.sql") + HospitalSliceParity.Slice("hospital_h191_quickdash.sql");
 			foreach (var k in HospitalConceptCalculator.All) Assert.Contains("'" + k + "'", s);
 		}
 	}

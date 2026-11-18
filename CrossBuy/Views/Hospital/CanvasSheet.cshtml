@@ -110,7 +110,7 @@
             }
             else if (Model.Sheet?.Status == HospitalCanvasStatus.Signed)
             {
-                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"]</span>
+                <span class="badge badge-light-primary fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-primary me-1"></i>@T["Signed"]</span>
                 @* H111: the signed drawing's paper — through Report Studio only *@
                 @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCanvasSheet, DocumentId = Model.Sheet.ID.ToString(), DocumentTitle = title })
             }
@@ -138,7 +138,7 @@
                         <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified."]</span></h3>
                         @if (Model.PhotoConsent is { } pcn)
                         {
-                            <div class="card-toolbar"><span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-shield-tick fs-5 text-success me-2"></i>@T["Photos under consent {0} — {1}", pcn.No, T["photo-scope-short:" + pcn.Scope].Value]</span></div>
+                            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-shield-tick fs-5 text-primary me-2"></i>@T["Photos under consent {0} — {1}", pcn.No, T["photo-scope-short:" + pcn.Scope].Value]</span></div>
                         }</div>
                         <div class="card-body pt-3">
                             @if (canEdit)
@@ -558,10 +558,10 @@
                         return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label fw-bold fs-7 text-white hp-num" style="background:' + (m.carried ? '#9CA3AF' : '#3A5795') + '">' + numberOf(m) + '</span></div><div class="flex-grow-1 min-w-0"><div class="text-gray-800 fw-bold fs-6">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num" dir="ltr">' + (m.ms && +m.ms.l === +m.s ? m.ms.l + (m.ms.w != null ? ' × ' + m.ms.w : '') + ' mm ±' + m.ms.pm : m.s + ' mm') + '</bdi>' : '') +
                             (m.ms && +m.ms.l === +m.s ? ' <span class="badge badge-light-primary fs-8 fw-bold">' + W.onPhoto + '</span>' : '') + '</div>' +
                             '<span class="text-gray-500 fw-semibold fs-7 d-block">' + esc(regionAt(+m.x, +m.y) || '—') + '</span>' +
-                            (m.photo && m.pc ? '<span class="fs-8 d-block ' + (m.pc.wd ? 'text-danger fw-bold' : 'text-gray-500 fw-semibold') + '"><i class="ki-outline ki-shield-tick fs-7 ' + (m.pc.wd ? 'text-danger' : 'text-success') + ' me-1"></i>' + esc(fmt(W.underConsent, m.pc.no)) + ' · ' + esc(m.pc.wd ? W.withdrawn : (W.scope[m.pc.scope] || m.pc.scope)) + '</span>' : '') +
+                            (m.photo && m.pc ? '<span class="fs-8 d-block ' + (m.pc.wd ? 'text-danger fw-bold' : 'text-gray-500 fw-semibold') + '"><i class="ki-outline ki-shield-tick fs-7 ' + (m.pc.wd ? 'text-danger' : 'text-primary') + ' me-1"></i>' + esc(fmt(W.underConsent, m.pc.no)) + ' · ' + esc(m.pc.wd ? W.withdrawn : (W.scope[m.pc.scope] || m.pc.scope)) + '</span>' : '') +
                             ((compare || grew) && prev && prev.s != null ? '<span class="fs-7 d-block ' + (grew ? 'text-danger fw-bold' : 'text-gray-500 fw-semibold') + '">' + fmt(W.was, prev.s) + (grew ? ' · ' + W.grew : '') + '</span>' : '') + '</div>' +
                             '<div class="d-flex align-items-center gap-1 flex-shrink-0">' +
-                            (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 fw-bold" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-8 fw-bold">' + W.carried + '</span>') : '<span class="badge badge-light-success fs-8 fw-bold">' + W.verified + '</span>') +
+                            (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 fw-bold" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-8 fw-bold">' + W.carried + '</span>') : '<span class="badge badge-light-primary fs-8 fw-bold">' + W.verified + '</span>') +
                             (m.photo && m.id ? '<a href="@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo" target="_blank" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary"><i class="ki-outline ki-picture fs-4"></i></a>' : '') +
                             (m.photo && m.id && canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary" data-ms="' + i + '" title="' + esc(W.measure) + '"><i class="ki-outline ki-size fs-4"></i></button>' : '') +
                             (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger" data-rm="' + i + '" title="' + W.remove + '"><i class="ki-outline ki-trash fs-4"></i></button>' : '') + '</div></div>';
@@ -707,7 +707,7 @@
                 function grade(v) { return v == null ? '—' : AT.g[v < 20 ? 'Normal' : v < 35 ? 'Mild' : v < 50 ? 'Moderate' : v < 65 ? 'Moderately severe' : v < 80 ? 'Severe' : v < 95 ? 'Profound' : 'Complete']; }
                 function gap(a, b) { return [500, 1000, 2000, 4000].some(function (f) { return pts[a + f] != null && pts[b + f] != null && pts[a + f] - pts[b + f] >= 15; }); }
                 function draw() {
-                    var g = '<rect x="' + PL + '" y="' + Y(-10) + '" width="' + (WW - PL - PR) + '" height="' + (Y(25) - Y(-10)) + '" fill="#DCFCE7" opacity=".5"/>';
+                    var g = '<rect x="' + PL + '" y="' + Y(-10) + '" width="' + (WW - PL - PR) + '" height="' + (Y(25) - Y(-10)) + '" fill="#E1E8F5" opacity=".6"/>';   // the normal hearing band in the brand's light blue (no green)
                     for (var db = -10; db <= 120; db += 10) g += '<line x1="' + PL + '" x2="' + (WW - PR) + '" y1="' + Y(db) + '" y2="' + Y(db) + '" stroke="#E5E7EB"/><text x="' + (PL - 8) + '" y="' + (Y(db) + 4) + '" font-size="11" text-anchor="end" fill="#6B7280">' + db + '</text>';
                     FREQ.forEach(function (f, i) { g += '<line x1="' + X(i) + '" x2="' + X(i) + '" y1="' + PT + '" y2="' + (HH - PB) + '" stroke="#E5E7EB"/><text x="' + X(i) + '" y="' + (PT - 10) + '" font-size="11" text-anchor="middle" fill="#6B7280">' + (f >= 1000 ? f / 1000 + 'k' : f) + '</text>'; });
                     Object.keys(SY).forEach(function (k) { var sy = SY[k];

@@ -162,7 +162,7 @@ namespace CrossBuy.BL.Hospital
 			if (!string.IsNullOrWhiteSpace(i.Calculator) && Inputs(i.CalcInputs).Count == 0) return "List the codes the calculator reads";
 			// H188: a calculator reads its inputs by position — exactly as many as it needs (a sum: any number)
 			if (!string.IsNullOrWhiteSpace(i.Calculator) && i.Calculator != HospitalConceptCalculator.Sum && Inputs(i.CalcInputs).Count != HospitalConceptCalculator.InputsNeeded(i.Calculator))
-				return HospitalConceptCalculator.InputsNeeded(i.Calculator) switch { 1 => "This calculator reads one code", 2 => "This calculator reads two codes, in order", _ => "This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling" };
+				return HospitalConceptCalculator.InputsNeeded(i.Calculator) switch { 1 => "This calculator reads one code", 2 => "This calculator reads two codes, in order", 11 => "This calculator reads its eleven items", _ => "This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling" };
 			return null;
 		}
 	}

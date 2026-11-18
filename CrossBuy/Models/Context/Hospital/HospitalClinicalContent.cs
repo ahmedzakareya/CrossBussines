@@ -58,7 +58,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Pasi = "Pasi";
 		/// H188: the WHO bone density class from the T-score.
 		public const string TScoreClass = "TScoreClass";
-		public static readonly IReadOnlyList<string> All = new[] { Bmi, EgfrCkdEpi2021, Kdigo, Sum, IgeClass, QtcBazett, QtcFridericia, TiRads, Pasi, TScoreClass };
+		/// H191: QuickDASH — disability of the arm, shoulder and hand (0 none – 100 most) from its eleven items (1–5).
+		public const string QuickDash = "QuickDash";
+		public static readonly IReadOnlyList<string> All = new[] { Bmi, EgfrCkdEpi2021, Kdigo, Sum, IgeClass, QtcBazett, QtcFridericia, TiRads, Pasi, TScoreClass, QuickDash };
 
 		/// H188: how many codes each calculator reads, in order (Sum: at least one).
 		public static int InputsNeeded(string? calculator) => calculator switch
@@ -66,6 +68,7 @@ namespace CrossBuy.Models.Context.Hospital
 			Bmi or Kdigo or QtcBazett or QtcFridericia or TiRads => 2,
 			EgfrCkdEpi2021 or IgeClass or TScoreClass => 1,
 			Pasi => 16,
+			QuickDash => 11,
 			Sum => 1,
 			_ => 0,
 		};

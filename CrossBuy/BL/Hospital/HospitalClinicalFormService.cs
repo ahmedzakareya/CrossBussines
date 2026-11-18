@@ -71,6 +71,14 @@ namespace CrossBuy.BL.Hospital
 			return Math.Round(total, 1);
 		}
 
+		/// H191: QuickDASH = (Σ answered / n − 1) × 25 over the eleven items (each 1–5); at least ten must be answered.
+		public static decimal? QuickDash(IReadOnlyList<decimal?> v)
+		{
+			var a = v.Where(x => x != null).Select(x => x!.Value).ToList();
+			if (v.Count != 11 || a.Count < 10 || a.Any(x => x is < 1 or > 5)) return null;
+			return Math.Round((a.Sum() / a.Count - 1) * 25, 1);
+		}
+
 		/// H188: WHO — a T-score of −1.0 or more is normal, between −1.0 and −2.5 osteopenia, −2.5 or less osteoporosis.
 		public static string? TScoreClass(decimal? t) => t == null || t < -10 || t > 10 ? null : t >= -1.0m ? "Normal" : t > -2.5m ? "Osteopenia" : "Osteoporosis";
 
@@ -227,6 +235,7 @@ namespace CrossBuy.BL.Hospital
 						case HospitalConceptCalculator.TiRads when ins.Count >= 2:
 							if (HospitalClinicalCalc.TiRadsLevel(Get(ins[0])) is int tr) { v = tr; code = "TR" + tr + "-" + HospitalClinicalCalc.TiRadsAdvice(tr, Get(ins[1])); } break;   // "TR4-FNA": the concept's choices name it in each language
 						case HospitalConceptCalculator.Pasi when ins.Count >= 16: v = HospitalClinicalCalc.Pasi(ins.Take(16).Select(Get).ToList()); break;
+						case HospitalConceptCalculator.QuickDash when ins.Count >= 11: v = HospitalClinicalCalc.QuickDash(ins.Take(11).Select(Get).ToList()); break;   // H191
 						case HospitalConceptCalculator.TScoreClass when ins.Count >= 1:
 							if (HospitalClinicalCalc.TScoreClass(Get(ins[0])) is string tc) { v = Get(ins[0]); code = tc; } break;
 						case HospitalConceptCalculator.Sum:
