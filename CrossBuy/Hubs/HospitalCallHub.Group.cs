@@ -29,8 +29,15 @@ namespace CrossBuy.Hubs
 			public int? RecId, RecBy, RecorderId;   // RecBy asked; RecorderId's browser records (a browser, never a phone)
 			public readonly ConcurrentDictionary<int, bool> RecYes = new();
 			public bool Recording;
+			public int? ConversationId;   // the group conversation it was started from (Communication)
+			public DateTime StartedAt = DateTime.UtcNow;
 		}
 		private static readonly ConcurrentDictionary<int, GroupLive> _groups = new();
+
+		/// Communication: the group calls going on now in this company's conversations — the conversation shows them live.
+		public static IReadOnlyList<(int ConversationId, int CallId, bool Video, DateTime StartedAt, int[] Joined)> LiveInConversations(int companyId)
+			=> _groups.Values.Where(g => g.CompanyId == companyId && g.ConversationId != null && !g.Joined.IsEmpty)
+				.Select(g => (g.ConversationId!.Value, g.CallId, g.Video, g.StartedAt, g.Joined.Keys.ToArray())).ToList();
 
 		private static bool RingingInGroup(int employeeId) => _groups.Values.Any(g => g.Ringing.ContainsKey(employeeId));
 		private static IEnumerable<string> Conns(GroupLive g) => g.Joined.Values.Where(c => c.Length > 0);
@@ -58,7 +65,7 @@ namespace CrossBuy.Hubs
 			if (call == null || call.Status != HospitalCallStatus.Answered) return new { ok = false };
 			var parts = await GroupSvc.ParticipantsAsync(co, callId);
 			if (!parts.Any(p => p.EmployeeId == me && (p.State == HospitalCallParticipantState.Host || p.State == HospitalCallParticipantState.Joined))) return new { ok = false };
-			var g = _groups.GetOrAdd(callId, _ => new GroupLive { CallId = callId, CompanyId = co, HostId = call.CallerEmployeeId, Video = call.IsVideo, PatientId = call.PatientId, Reason = call.Reason });
+			var g = _groups.GetOrAdd(callId, _ => new GroupLive { CallId = callId, CompanyId = co, HostId = call.CallerEmployeeId, Video = call.IsVideo, PatientId = call.PatientId, Reason = call.Reason, ConversationId = call.ConversationId, StartedAt = call.AnsweredAt ?? call.StartedAt });
 			if (g.Joined.IsEmpty)
 			{
 				// rebuilt after a restart: everyone in it is "away" until their tab comes back
@@ -130,7 +137,43 @@ namespace CrossBuy.Hubs
 
 		/// The host starts a group call with these people — or turns a live two-person call into one (fromCallId): the
 		/// other person of that call joins at once, without ringing again.
-		public async Task<object> GroupInvite(int[] ids, bool video, int? patientId, string? reason, int? fromCallId)
+		public Task<object> GroupInvite(int[] ids, bool video, int? patientId, string? reason, int? fromCallId)
+			=> GroupInviteCore(ids, video, patientId, reason, fromCallId, null);
+
+		/// Communication: a group call from a group conversation — everyone called is a member of it, and the call belongs
+		/// to it (the conversation shows it live and lists it).
+		public async Task<object> GroupInviteIn(int conversationId, int[] ids, bool video)
+		{
+			if (await MeAsync() is not var (me, co)) return new { ok = false, error = "forbidden" };
+			var members = await ConversationMembersAsync(co, conversationId);
+			if (!members.Contains(me) || (ids ?? Array.Empty<int>()).Any(i => !members.Contains(i))) return new { ok = false, error = "not_found" };
+			return await GroupInviteCore(ids!, video, null, null, null, conversationId);
+		}
+
+		/// Communication: a member of the conversation joins the group call going on in it ("Join" on its banner), invited or not.
+		public async Task<object> GroupJoinIn(int callId, bool video)
+		{
+			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || g.CompanyId != co || g.ConversationId is not int conv) return new { ok = false };
+			if (g.Joined.ContainsKey(me)) return new { ok = false, error = "You are already in a call" };
+			if (!(await ConversationMembersAsync(co, conv)).Contains(me)) return new { ok = false };
+			var s = await Svc.SettingsAsync(co);
+			if (g.Joined.Count + g.Ringing.Count(r => r.Key != me) >= CapOf(s)) return new { ok = false, error = "A group call is up to {0} people", name = CapOf(s).ToString() };
+			if (!g.Ringing.ContainsKey(me))
+			{
+				await GroupSvc.InviteAsync(co, callId, me, HospitalCallParticipantState.Invited, DateTime.UtcNow);
+				g.Ringing[me] = DateTime.UtcNow;
+			}
+			return await GroupJoin(callId, video);
+		}
+
+		private async Task<HashSet<int>> ConversationMembersAsync(int companyId, int conversationId)
+		{
+			bool ours = await _db.Conversations.AsNoTracking().AnyAsync(c => c.ID == conversationId && c.CompanyID == companyId && c.Kind == "Group");
+			if (!ours) return new HashSet<int>();
+			return (await _db.ConversationMembers.AsNoTracking().Where(m => m.ConversationId == conversationId).Select(m => m.EmployeeId).ToListAsync()).ToHashSet();
+		}
+
+		private async Task<object> GroupInviteCore(int[] ids, bool video, int? patientId, string? reason, int? fromCallId, int? conversationId)
 		{
 			if (await MeAsync() is not var (me, co)) return new { ok = false, error = "forbidden" };
 			var svc = Svc; var now = DateTime.UtcNow;
@@ -167,7 +210,8 @@ namespace CrossBuy.Hubs
 			var list = invite.Select(i => (i, Presence(i) == "on" || i == peer ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy)).ToList();
 			if (peer is int p0) list.Insert(0, (p0, HospitalCallParticipantState.Invited));
 			var row = await GroupSvc.OpenAsync(co, me, list, video, patientId, reason, now);
-			var g = new GroupLive { CallId = row.ID, CompanyId = co, HostId = me, Video = video, PatientId = patientId, Reason = row.Reason };
+			var g = new GroupLive { CallId = row.ID, CompanyId = co, HostId = me, Video = video, PatientId = patientId, Reason = row.Reason, ConversationId = conversationId };
+			if (conversationId is int cv) await _db.Set<HospitalCall>().Where(c => c.ID == row.ID && c.CompanyId == co).ExecuteUpdateAsync(x => x.SetProperty(c => c.ConversationId, cv));
 			g.Joined[me] = Context.ConnectionId;
 			_groups[row.ID] = g;
 			_busy[me] = row.ID;

@@ -25,27 +25,22 @@
 		if (g || inv || K.current() || K.ringing()) return;
 		var left = m.ringSeconds || 30, video = !!m.video, joined = m.members.filter(function (x) { return x.state === 'joined'; });
 		var others = m.members.filter(function (x) { return x.card && x.card.id !== me && !x.host; });
-		var el = document.createElement('div'); el.className = 'cbc-overlay'; el.setAttribute('role', 'alertdialog');
-		el.innerHTML = '<div class="cbc-card">' +
-			'<div class="cbc-band">' +
-				'<div class="cbc-kind"><i class="ki-outline ki-people fs-5 text-white"></i>' + esc(t('grpInvite')) + '</div>' +
-				'<span class="cbc-ring">' + face(m.host, 90) + '</span>' +
-				'<div class="fs-3 fw-bolder mt-6">' + esc(t('grpInvites', m.host.name)) + '</div>' +
-				'<div class="d-flex align-items-center justify-content-center gap-2 mt-3"><span class="cbc-stack">' + others.slice(0, 3).map(function (x) { return face(x.card, 30); }).join('') + '</span>' +
-					'<span class="fs-7 opacity-75">' + esc(t('grpWithJoined').replace('{0}', m.members.length).replace('{1}', joined.length)) + '</span></div>' +
-			'</div><div class="p-6">' +
-				(m.patient || m.reason ? '<div class="cbc-about">' + (m.patient ? face(m.patient, 40) : '<i class="ki-outline ki-message-text fs-2x text-primary"></i>') +
-					'<div class="min-w-0 flex-grow-1"><div class="text-muted fs-8">' + esc(m.patient ? t('aboutPatient') : t('reason')) + '</div>' +
-					(m.patient ? '<div class="fw-bold text-gray-900 text-truncate">' + esc(m.patient.name) + ' · ' + num(esc(m.patient.mrn)) + '</div>' : '') +
-					(m.reason ? '<div class="text-gray-700 fs-7">' + esc(m.reason) + '</div>' : '') + '</div></div>' : '') +
-				(m.recording ? '<div class="cbc-recnote"><span class="text-danger">' + ico('rec', 22) + '</span><div class="fs-7 text-gray-800 text-start">' + esc(t('grpRecNotice')) + '</div></div>' : '') +
-				'<div class="d-flex justify-content-center align-items-start gap-8 mb-3">' +
-					'<div><button type="button" class="cbc-round decline" data-no><i class="ki-outline ki-cross fs-1 text-white"></i></button><div class="fs-8 text-gray-700 mt-2">' + esc(t('grpDecline')) + '</div></div>' +
-					(video ? '<div><button type="button" class="cbc-round ghost" data-voice>' + ico('phone', 24) + '</button><div class="fs-8 text-gray-700 mt-2">' + esc(t('grpJoinVoice')) + '</div></div>' : '') +
-					'<div><button type="button" class="cbc-round accept" data-yes>' + (video ? ico('cam', 24) : ico('phone', 24)) + '</button><div class="fs-8 text-gray-700 mt-2">' + esc(t('grpJoin')) + '</div></div>' +
-				'</div>' +
-				'<div class="text-muted fs-8 mt-4" data-left>' + t('ringLeft', num(left)) + '</div>' +
-			'</div></div>';
+		var el = document.createElement('div'); el.className = 'cm-ring'; el.setAttribute('role', 'alertdialog');
+		var about = m.patient ? '<div class="cm-lastmsg">' + ico('user-round', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('aboutPatient')) + '</div><span class="fw-bold">' + esc(m.patient.name) + '</span> · ' + num(esc(m.patient.mrn)) + (m.reason ? '<div>' + esc(m.reason) + '</div>' : '') + '</div></div>'
+			: m.reason ? '<div class="cm-lastmsg">' + ico('message-square-text', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('reason')) + '</div>' + esc(m.reason) + '</div></div>' : '';
+		el.innerHTML = '<div class="band"><span class="ring">' + face(m.host, 56) + '</span><div class="min-w-0">' +
+				'<div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico('users-round', 13) + esc(t('grpInvite')) + '</div>' +
+				'<div class="fs-4 fw-bold text-truncate">' + esc(t('grpInvites', m.host.name)) + '</div>' +
+				'<div class="d-flex align-items-center gap-2 mt-1"><span class="cbc-stack">' + others.slice(0, 3).map(function (x) { return face(x.card, 24); }).join('') + '</span>' +
+				'<span class="fs-8 opacity-75">' + esc(t('grpWithJoined').replace('{0}', m.members.length).replace('{1}', joined.length)) + '</span></div></div></div>' +
+			'<div class="p-5">' + about +
+				(m.recording ? '<div class="cm-lastmsg" style="background:var(--cm-red-soft);color:var(--cm-red)">' + ico('circle-dot', 16) + '<div class="fs-7 text-gray-800">' + esc(t('grpRecNotice')) + '</div></div>' : '') +
+				'<div class="cm-ringbtns"' + (video ? '' : ' style="grid-template-columns:repeat(2,1fr)"') + '>' +
+					'<button type="button" class="no" data-no>' + ico('phone-off', 20) + '<span>' + esc(t('grpDecline')) + '</span></button>' +
+					(video ? '<button type="button" class="vo" data-voice>' + ico('phone', 20) + '<span>' + esc(t('grpJoinVoice')) + '</span></button>' : '') +
+					'<button type="button" class="yes" data-yes>' + ico(video ? 'video' : 'phone', 20) + '<span>' + esc(t('grpJoin')) + '</span></button></div>' +
+				'<div class="text-muted fs-8 text-center mt-3" data-left>' + t('ringLeft', num(left)) + '</div>' +
+			'</div>';
 		document.body.appendChild(el);
 		inv = { callId: m.callId, el: el, stop: K.tone(K.RING) };
 		inv.timer = setInterval(function () {
@@ -75,6 +70,24 @@
 			open(r, !!r.video, true);
 		}).catch(function () { toast(t('failed'), 'error'); });
 	}
+	// Communication: a group call from a group conversation (it belongs to the conversation), and joining one going on in it
+	function startIn(conversationId, ids, video) {
+		if (g || K.current()) { toast(t('alreadyInCall')); return; }
+		if (!window.isSecureContext) { toast(t('insecure'), 'error'); return; }
+		call('GroupInviteIn', conversationId, ids, !!video).then(function (r) {
+			if (!r || !r.ok) { toast(t(r && r.error ? r.error : 'failed', r && r.name), 'error'); return; }
+			if (r.busy && r.busy.length) toast(t('grpBusy', r.busy.join('، ')));
+			open(r, !!r.video, true); K.refreshLog();
+		}).catch(function () { toast(t('failed'), 'error'); });
+	}
+	function joinIn(callId, video) {
+		if (g || K.current()) { toast(t('alreadyInCall')); return; }
+		if (!window.isSecureContext) { toast(t('insecure'), 'error'); return; }
+		call('GroupJoinIn', callId, !!video).then(function (r) {
+			if (!r || !r.ok) { toast(t(r && r.error ? r.error : 'failed', r && r.name), 'error'); return; }
+			open(r, !!video); K.refreshLog();
+		}).catch(function () { toast(t('failed'), 'error'); });
+	}
 	// a two-person call becomes a group call: pick who to add, the other person comes along without ringing again
 	function fromCall(c) {
 		pick([c.peer.id], function (ids) {
@@ -101,10 +114,10 @@
 		g.el = document.createElement('div'); g.el.className = 'cbc-stage';
 		g.el.innerHTML =
 			'<div class="cbc-main">' +
-				'<div class="cbc-top"><span class="cbc-step" style="width:40px;height:40px;background:rgba(255,255,255,.15);color:#fff"><i class="ki-outline ki-people fs-2"></i></span>' +
+				'<div class="cbc-top"><span class="cbc-step" style="width:40px;height:40px;background:rgba(255,255,255,.15);color:#fff">' + ico('users-round', 20) + '</span>' +
 					'<div class="min-w-0"><div class="fw-bold fs-5 text-white">' + esc(t('grpCall')) + ' · <bdi class="cbc-num" dir="ltr" data-count>1</bdi></div><div class="fs-8 text-white opacity-75 text-truncate">' +
 						(g.patient ? esc(g.patient.name) + ' · ' + num(esc(g.patient.mrn)) : esc(t('grpHostIs', r.host.name))) + '</div></div>' +
-					'<span class="cbc-chip ms-3 d-none d-md-inline-flex"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('hospitalOnly')) + '</span>' +
+					'<span class="cbc-chip ms-3 d-none d-md-inline-flex"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('cmSecure')) + '</span>' +
 					'<span class="cbc-chip d-none" data-recchip></span>' +
 					'<span class="ms-auto fs-4 fw-bold cbc-num text-white" dir="ltr" data-clock>00:00</span>' +
 				'</div>' +
@@ -310,10 +323,10 @@
 		bar.innerHTML =
 			'<button type="button" class="cbc-ctl' + (g.mic ? '' : ' off') + '" data-k="mic" title="' + esc(g.mic ? t('mute') : t('unmute')) + '">' + ico(g.mic ? 'mic' : 'micOff', 22) + '</button>' +
 			'<button type="button" class="cbc-ctl' + (g.cam ? '' : ' off') + '" data-k="cam" title="' + esc(t('camera')) + '">' + ico(g.cam ? 'cam' : 'camOff', 22) + '</button>' +
-			(g.share && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (g.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '"><i class="ki-outline ki-screen fs-2 ' + (g.sharing ? '' : 'text-white') + '"></i></button>' : '') +
+			(g.share && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (g.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '">' + ico('monitor-up', 21) + '</button>' : '') +
 			(g.canRecord && window.MediaRecorder ? '<button type="button" class="cbc-ctl' + (r && r.state === 'on' ? ' rec-on' : '') + '" data-k="rec" title="' + esc(r && r.state === 'on' ? t('recStop') : t('grpRecAsk')) + '">' + ico('rec', 22) + '</button>' : '') +
-			(g.hostId === me ? '<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPeople')) + '"><i class="ki-outline ki-user-tick fs-2 text-white"></i></button>' : '') +
-			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('grpLeave')) + '"><span style="display:inline-flex;transform:rotate(135deg)">' + ico('phone', 24) + '</span></button>';
+			(g.hostId === me ? '<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPeople')) + '">' + ico('user-plus', 21) + '</button>' : '') +
+			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('grpLeave')) + '">' + ico('phone-off', 21) + '</button>';
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(b.getAttribute('data-k')); }; });
 	}
 	function stateBadge(s) {
@@ -627,5 +640,5 @@
 	(window.cbCallsHooks = window.cbCallsHooks || []).push(hook);
 	if (conn()) hook(conn());
 
-	window.cbCallsGroup = { start: start, fromCall: fromCall, busy: function () { return !!g || !!inv; } };
+	window.cbCallsGroup = { start: start, startIn: startIn, joinIn: joinIn, fromCall: fromCall, busy: function () { return !!g || !!inv; }, current: function () { return g ? g.id : null; } };
 })();

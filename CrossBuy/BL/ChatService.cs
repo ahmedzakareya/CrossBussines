@@ -18,6 +18,12 @@ namespace CrossBuy.BL
         public DateTime? LastAt { get; set; }
         public int Unread { get; set; }
         public int? OtherEmployeeId { get; set; }
+        /// Communication (2026-11-18): pinned to the top of my list, and muted (no notice for a message, a mention still notifies).
+        public bool Pinned { get; set; }
+        public bool Muted { get; set; }
+        /// the last message is mine, and (a direct conversation) the other side has read it — the list's tick
+        public bool LastMine { get; set; }
+        public bool LastSeen { get; set; }
     }
     public class ChatMsgDto
     {
@@ -329,6 +335,9 @@ namespace CrossBuy.BL
 
             var otherIds = otherMems.Where(m => m.EmployeeId != meId).Select(m => m.EmployeeId).Distinct().ToList();
             var names = await NamesAsync(otherIds);
+            var lastIds = await _db.ChatMessages.AsNoTracking().Where(x => convIds.Contains(x.ConversationId) && x.DeletedAt == null)
+                .GroupBy(x => x.ConversationId).Select(g => g.Max(x => x.ID)).ToListAsync();
+            var lastMsgs = await _db.ChatMessages.AsNoTracking().Where(x => lastIds.Contains(x.ID)).Select(x => new { x.ID, x.ConversationId, x.SenderEmployeeId }).ToDictionaryAsync(x => x.ConversationId);
 
             var list = new List<ChatConvListItem>();
             foreach (var c in convs)
@@ -343,9 +352,13 @@ namespace CrossBuy.BL
                     online = otherId.HasValue && otherId != 0 && ChatHub.IsOnline(otherId.Value);
                 }
                 else { title = c.Title ?? "-"; }
-                list.Add(new ChatConvListItem { Id = c.ID, Kind = c.Kind, Title = title, Avatar = avatar, Online = online, Preview = c.LastMessagePreview, LastAt = c.LastMessageAt ?? c.CreatedAt, Unread = unread, OtherEmployeeId = (otherId == 0 ? null : otherId) });
+                var mine = myMems.First(m => m.ConversationId == c.ID);
+                list.Add(new ChatConvListItem { Id = c.ID, Kind = c.Kind, Title = title, Avatar = avatar, Online = online, Preview = c.LastMessagePreview, LastAt = c.LastMessageAt ?? c.CreatedAt, Unread = unread, OtherEmployeeId = (otherId == 0 ? null : otherId),
+                    Pinned = mine.PinnedAt != null, Muted = mine.MutedUntil != null && mine.MutedUntil > DateTime.UtcNow,
+                    LastMine = lastMsgs.TryGetValue(c.ID, out var lm) && lm.SenderEmployeeId == meId,
+                    LastSeen = lm != null && lm.SenderEmployeeId == meId && otherMems.Where(m => m.ConversationId == c.ID && m.EmployeeId != meId).All(m => m.LastReadMessageId >= lm.ID) });
             }
-            return list.OrderByDescending(x => x.LastAt).ToList();
+            return list.OrderByDescending(x => x.Pinned).ThenByDescending(x => x.LastAt).ToList();
         }
 
         private async Task<bool> IsMemberAsync(int conversationId, int meId) =>
@@ -517,6 +530,9 @@ namespace CrossBuy.BL
 
             // other members: conversation-list bump + a bell notification (deduped per conversation) + mentions
             var members = await _db.ConversationMembers.AsNoTracking().Where(m => m.ConversationId == conversationId && m.EmployeeId != meId).Select(m => m.EmployeeId).ToListAsync();
+            // a member who muted this conversation gets no notice for an ordinary message (a mention still reaches them)
+            var nowMute = DateTime.UtcNow;
+            var muted = (await _db.ConversationMembers.AsNoTracking().Where(m => m.ConversationId == conversationId && m.MutedUntil != null && m.MutedUntil > nowMute).Select(m => m.EmployeeId).ToListAsync()).ToHashSet();
             // store the sender name in BOTH languages so each recipient sees it in THEIR culture
             var senderRaw = await _db.Employee.AsNoTracking().Where(e => e.ID == meId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync();
             var nameAr = senderRaw?.FullName ?? "";
@@ -529,6 +545,7 @@ namespace CrossBuy.BL
                 try
                 {
                     bool mention = mset.Contains(mem);
+                    if (!mention && muted.Contains(mem)) continue;
                     await _notify.NotifyAsync(mem,
                         nameAr, nameEn, preview, preview,
                         mention ? NotificationTypes.ChatMention : NotificationTypes.ChatMessage,

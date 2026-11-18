@@ -43,6 +43,8 @@ namespace CrossBuy.Models.Context.Chat
         public string Role { get; set; } = "Member";         // Owner | Member
         public int LastReadMessageId { get; set; } = 0;      // read high-water mark → unread = msgs with Id > this
         public DateTime? MutedUntil { get; set; }
+        /// Communication (2026-11-18, comm_pin.sql): pinned to the top of this member's list.
+        public DateTime? PinnedAt { get; set; }
         public DateTime JoinedAt { get; set; }
     }
 

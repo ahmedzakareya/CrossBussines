@@ -19,14 +19,14 @@
         "Picture", "Previous", "React", "Read by all", "Recorded", "Recording", "Remove", "Reply", "Replying to", "Search the chat", "Search", "Seen", "Send failed",
         "Send", "Sent", "Show more", "This recording is not open to you", "Today", "Unread", "Video call", "Video", "Voice and video", "Voice call", "Voice message",
         "Voice", "Message — @ to mention", "Write a message", "Yes, delete", "Yes, leave", "Yesterday", "You are no longer a member of this group",
-        "You declined", "On call now", "You left the group", "You were removed from this group", "You", "agreed by", "available", "edited", "is typing", "members",
+        "You declined", "On call now", " and ", "A group call is on now", "for", "Join", "Group calls", "people (count)", "Up to 4, up to 12 with the internal media server", "Pinned", "Live", "Play", "Sound", "Full screen", "Unmute", "Mute", "Unpin the chat", "Pin the chat to the top", "Every file and recording in the File Manager", "Admin", "you (me)", "Stop and send", "You left the group", "You were removed from this group", "You", "agreed by", "available", "edited", "is typing", "members (count)",
     };
     var S = keys.ToDictionary(k => k, k => Localizer[k].Value);
     var cfg = new
     {
         meId, openConv, tab, hospital = (bool)(ViewBag.Hospital ?? false), module = (string?)ViewBag.CommModule,
         meName = (string?)ViewBag.MeName, meAlt = (string?)ViewBag.MeAlt, meAvatar = (string?)ViewBag.MeAvatar,
-        blank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg"),
+        blank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg"), fileManager = Url.Action("Index", "FileManager"),
         signalr = Url.Content("~/Backend-assets/plugins/signalr.min.js"),
         S,
     };
@@ -63,9 +63,9 @@
                     </div>
                     <div class="cm-search"><i data-lucide="search" class="cm-i" style="width:16px;height:16px"></i><input type="text" id="cmSearch" autocomplete="off" placeholder="@Localizer["Search chats and people"]" /></div>
                     <div class="cm-tabs" id="cmTabs" role="tablist">
-                        <button type="button" data-tab="chats" class="@(tab == "chats" ? "on" : "")"><i data-lucide="message-circle" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Chats"]<span class="cm-count cm-num" id="cmCountChats"></span></button>
-                        <button type="button" data-tab="calls" class="@(tab == "calls" ? "on" : "")"><i data-lucide="phone" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Calls"]<span class="cm-count red cm-num" id="cmCountCalls"></span></button>
-                        <button type="button" data-tab="people" class="@(tab == "people" ? "on" : "")"><i data-lucide="contact-round" class="cm-i" style="width:15px;height:15px"></i>@Localizer["People"]</button>
+                        <a role="tab" tabindex="0" data-tab="chats" class="@(tab == "chats" ? "on" : "")"><i data-lucide="message-circle" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Chats"]<span class="cm-count num" id="cmCountChats"></span></a>
+                        <a role="tab" tabindex="0" data-tab="calls" class="@(tab == "calls" ? "on" : "")"><i data-lucide="phone" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Calls"]<span class="cm-count red num" id="cmCountCalls"></span></a>
+                        <a role="tab" tabindex="0" data-tab="people" class="@(tab == "people" ? "on" : "")"><i data-lucide="contact-round" class="cm-i" style="width:15px;height:15px"></i>@Localizer["People"]</a>
                     </div>
                     <div class="cm-chips" id="cmChips"></div>
                 </div>
@@ -80,6 +80,7 @@
                     <div class="fs-7 mt-1">@Localizer["Write, or call by voice or video, from the same place"]</div>
                 </div></div>
                 <div class="cm-head d-none" id="cmHead"></div>
+                <div class="cm-banner d-none" id="cmBanner"></div>
                 <div class="cm-head d-none py-2" id="cmFind" style="min-height:0">
                     <i data-lucide="search" class="cm-i" style="width:16px;height:16px;color:var(--cm-muted)"></i>
                     <input type="text" id="cmFindInput" class="form-control form-control-sm form-control-solid" autocomplete="off" placeholder="@Localizer["Search in this conversation"]" />
@@ -105,9 +106,10 @@
                             <button type="button" class="cm-ib ghost xs" id="cmAttachBtn" title="@Localizer["Attach"]" aria-label="@Localizer["Attach"]"><i data-lucide="plus" class="cm-i" style="width:18px;height:18px"></i></button>
                             <textarea id="cmInput" rows="1" maxlength="@CrossBuy.BL.ChatService.MaxMessageLength" placeholder="@Localizer["Write a message"]"></textarea>
                             <button type="button" class="cm-ib ghost xs" id="cmEmojiBtn" title="@Localizer["Emoji"]" aria-label="@Localizer["Emoji"]"><i data-lucide="smile" class="cm-i" style="width:18px;height:18px"></i></button>
+                            <button type="button" class="cm-ib ghost xs" id="cmPaperBtn" title="@Localizer["File"]" aria-label="@Localizer["File"]"><i data-lucide="paperclip" class="cm-i" style="width:18px;height:18px"></i></button>
                             <button type="button" class="cm-ib ghost xs" id="cmImageBtn" title="@Localizer["Picture"]" aria-label="@Localizer["Picture"]"><i data-lucide="image" class="cm-i" style="width:18px;height:18px"></i></button>
                         </div>
-                        <button type="button" class="cm-send" id="cmMic" title="@Localizer["Voice message"]" aria-label="@Localizer["Voice message"]"><i data-lucide="mic" class="cm-i" style="width:18px;height:18px"></i></button>
+                        <button type="button" class="cm-send voice" id="cmMic" title="@Localizer["Voice message"]" aria-label="@Localizer["Voice message"]"><i data-lucide="mic" class="cm-i" style="width:18px;height:18px"></i></button>
                         <button type="button" class="cm-send" id="cmSend" title="@Localizer["Send"]" aria-label="@Localizer["Send"]"><i data-lucide="send-horizontal" class="cm-i" style="width:18px;height:18px"></i></button>
                         <input type="file" id="cmFile" class="d-none" />
                     </div>
@@ -178,7 +180,6 @@
 </div></div></div>
 
 @section Scripts {
-<script src="~/lib/lucide/lucide-0.469.0.min.js"></script>
 <script>window.CB_COMM = @(Json.Serialize(cfg));</script>
 <script src="~/js/comm/comm.js" asp-append-version="true"></script>
 }

@@ -36,6 +36,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public bool IsVideo { get; set; }
 		/// A group call: the caller is its host and HospitalCallParticipants holds everyone in it.
 		public bool IsGroup { get; set; }
+		/// Communication (2026-11-18, comm_group_call_conversation.sql): the group conversation a group call was started from.
+		public int? ConversationId { get; set; }
 		/// The patient the call is about, when it was started from a record or linked during it.
 		public int? PatientId { get; set; }
 		public string? Reason { get; set; }

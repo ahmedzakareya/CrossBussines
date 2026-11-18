@@ -445,7 +445,7 @@
   <data name="is typing" xml:space="preserve">
     <value>يكتب الآن</value>
   </data>
-  <data name="members" xml:space="preserve">
+  <data name="members (count)" xml:space="preserve">
     <value>أعضاء</value>
   </data>
   <data name="Chats &amp; calls" xml:space="preserve">
@@ -489,5 +489,65 @@
   </data>
   <data name="Communication settings" xml:space="preserve">
     <value>إعدادات التواصل</value>
+  </data>
+  <data name="Pinned" xml:space="preserve">
+    <value>المثبّتة</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>جارية</value>
+  </data>
+  <data name="Play" xml:space="preserve">
+    <value>تشغيل</value>
+  </data>
+  <data name="Sound" xml:space="preserve">
+    <value>الصوت</value>
+  </data>
+  <data name="Full screen" xml:space="preserve">
+    <value>ملء الشاشة</value>
+  </data>
+  <data name="Unmute" xml:space="preserve">
+    <value>إلغاء الكتم</value>
+  </data>
+  <data name="Mute" xml:space="preserve">
+    <value>كتم</value>
+  </data>
+  <data name="Unpin the chat" xml:space="preserve">
+    <value>إلغاء تثبيت المحادثة</value>
+  </data>
+  <data name="Pin the chat to the top" xml:space="preserve">
+    <value>تثبيت المحادثة في الأعلى</value>
+  </data>
+  <data name="Every file and recording in the File Manager" xml:space="preserve">
+    <value>كل الملفات والتسجيلات في مدير الملفات</value>
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value>المشرف</value>
+  </data>
+  <data name="you (me)" xml:space="preserve">
+    <value>أنت</value>
+  </data>
+  <data name="Stop and send" xml:space="preserve">
+    <value>إيقاف وإرسال</value>
+  </data>
+  <data name=" and " xml:space="preserve">
+    <value> و</value>
+  </data>
+  <data name="A group call is on now" xml:space="preserve">
+    <value>مكالمة جماعية جارية الآن</value>
+  </data>
+  <data name="for" xml:space="preserve">
+    <value>منذ</value>
+  </data>
+  <data name="Join" xml:space="preserve">
+    <value>انضمام</value>
+  </data>
+  <data name="Group calls" xml:space="preserve">
+    <value>مكالمات المجموعة</value>
+  </data>
+  <data name="people (count)" xml:space="preserve">
+    <value>مشاركين</value>
+  </data>
+  <data name="Up to 4, up to 12 with the internal media server" xml:space="preserve">
+    <value>حتى ٤ أشخاص، وحتى ١٢ مع خادم الوسائط الداخلي</value>
   </data>
 </root>

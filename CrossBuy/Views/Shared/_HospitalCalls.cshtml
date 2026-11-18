@@ -39,7 +39,46 @@
 }
 @if (me != null)
 {
+<link href="~/css/comm/comm.css" rel="stylesheet" asp-append-version="true" />
 <style>
+    /* Communication (owner, 2026-11-18): the 1:1 call is the prototype's .cm-stage / .cm-ring (comm.css); these fit the
+       real video into it, keep it above the theme's drawers, and give the group stage the same look. */
+    .cm-stage{z-index:2040}.cm-ring{z-index:2050}
+    .cm-stage.no-side{grid-template-columns:minmax(0,1fr)}.cm-stage.no-side .side{display:none}
+    .cm-stage .vid{display:grid;place-items:center}
+    .cm-stage .vid video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .cm-stage .vid video.cbc-contain{object-fit:contain}
+    .cm-stage .cbc-rface{position:relative;z-index:0}
+    .cm-stage .top .min-w-0{min-width:0}
+    .cm-stage .pip{overflow:hidden;display:grid;place-items:center}
+    .cm-stage .pip video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    .cm-stage .bar button:disabled{opacity:.4}
+    .cm-stage .side{position:relative}
+    .cm-stage .side .cm-head{min-height:0}
+    .cm-stage .side .cm-thread{padding:14px 16px 8px}
+    .cm-stage .side .cm-bwrap{max-width:86%}
+    .cm-stage .side .cm-compose{padding:10px 14px 14px}
+    .cm-stage .side .cbc-ctx{flex:1;overflow-y:auto;background:#fff}
+    .cm-stage .side .cbc-emo{position:absolute}
+    .cm-ring .band .min-w-0{min-width:0}
+    .cm-ring .cm-lastmsg .min-w-0{min-width:0}
+    /* the group call: the same dark stage, chips and bar as the prototype's call */
+    .cbc-stage{background:#0F1A30 !important}
+    .cbc-stage .cbc-chip{background:#0c183799;border:1px solid #ffffff1f;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:600;backdrop-filter:blur(6px)}
+    .cbc-stage .cbc-chip.cbc-rec{background:#C0392Bcc;border-color:transparent}
+    .cbc-stage .cbc-bar{inset-inline:auto;left:50%;transform:translateX(-50%);bottom:26px;gap:10px;background:#0c1837cc;border:1px solid #ffffff14;border-radius:24px;padding:10px 14px;backdrop-filter:blur(10px)}
+    .cbc-stage .cbc-ctl{width:52px;height:52px;border-radius:16px;background:#ffffff14}
+    .cbc-stage .cbc-ctl:hover{background:#ffffff26}
+    .cbc-stage .cbc-ctl.off{background:#fff;color:#1F2D4D}
+    .cbc-stage .cbc-ctl.rec-on{background:#C0392B}
+    .cbc-stage .cbc-ctl.end{background:#D93636;width:64px;border-radius:16px}
+    .cbc-stage .cbc-side{background:#F6F8FB;width:380px}
+    .cbc-stage .cbc-tile{border-radius:16px}
+    /* the prototype's floating button sits in the corner; the AI assistant's button moves up above it */
+    html.cm-has-fab .cb-ai-fab{inset-block-end:calc(104px + env(safe-area-inset-bottom,0px)) !important}
+    html.cm-has-fab .cb-ai-panel{inset-block-end:calc(176px + env(safe-area-inset-bottom,0px)) !important}
+    .cm-fab{cursor:pointer}
+
     .cbc-num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
     .cbc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
     .cbc-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -105,10 +144,51 @@
         livekit: @Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js")),
         recChunk: @Json.Serialize(Url.Content("~/Chat/CallRecordingChunk/__id__")),
         recFinish: @Json.Serialize(Url.Content("~/Chat/CallRecordingFinish/__id__")),
+        lastWith: @Json.Serialize(Url.Content("~/Chat/LastWith")),
+        chatStart: @Json.Serialize(Url.Content("~/Chat/StartDirect")),
+        chatMessages: @Json.Serialize(Url.Content("~/Chat/Messages")),
+        chatSend: @Json.Serialize(Url.Content("~/Chat/Send")),
+        chatRead: @Json.Serialize(Url.Content("~/Chat/MarkRead")),
+        comm: @Json.Serialize(Url.Content("~/Chat")),
         hospital: @(hospitalOn ? "true" : "false")   // a call's patient is a hospital thing
     };
     window.cbCallsT = {
         me: { id: @me.ID, name: @Json.Serialize(DisplayName.Of(me.FullName ?? "", me.FullNameEn ?? me.FullName ?? "")), photo: @Json.Serialize(mePhoto), initials: @Json.Serialize(HospitalUi.Initials(me.FullNameEn ?? me.FullName)) },
+        cmChats: @Json.Serialize(S("Chats")),
+        cmCalls: @Json.Serialize(S("Calls")),
+        cmCommunication: @Json.Serialize(S("Communication")),
+        cmNewChat: @Json.Serialize(S("New chat")),
+        cmOpenAll: @Json.Serialize(S("Open all")),
+        cmSearch: @Json.Serialize(S("Search")),
+        cmYesterday: @Json.Serialize(S("Yesterday")),
+        cmVoiceMsg: @Json.Serialize(S("Voice message")),
+        cmPicture: @Json.Serialize(S("Picture")),
+        cmNoResults: @Json.Serialize(S("No results")),
+        cmNoChats: @Json.Serialize(S("No conversations yet")),
+        cmRingLeft: @Json.Serialize(S("s, then a missed call is written into the chat")),
+        cmIncomingVideo: @Json.Serialize(S("Incoming video call")),
+        cmIncomingVoice: @Json.Serialize(S("Incoming voice call")),
+        cmLastMsg: @Json.Serialize(S("Your last message")),
+        cmQuick1: @Json.Serialize(S("I will call you shortly")),
+        cmQuick2: @Json.Serialize(S("In a meeting now")),
+        cmQuick3: @Json.Serialize(S("Write to me")),
+        cmByVoice: @Json.Serialize(S("By voice")),
+        cmAnswer: @Json.Serialize(S("Answer (call)")),
+        cmSecure: @Json.Serialize(S("Inside the company network · encrypted")),
+        cmTheChat: @Json.Serialize(S("The chat")),
+        cmChatStays: @Json.Serialize(S("What you write here stays in the chat after the call")),
+        cmHide: @Json.Serialize(S("Hide")),
+        cmToday: @Json.Serialize(S("Today")),
+        cmAttach: @Json.Serialize(S("Attach")),
+        cmWrite: @Json.Serialize(S("Write a message")),
+        cmEmoji: @Json.Serialize(S("Emoji")),
+        cmFile: @Json.Serialize(S("File")),
+        cmSend: @Json.Serialize(S("Send")),
+        cmDeleted: @Json.Serialize(S("Message deleted")),
+        cmSendFailed: @Json.Serialize(S("The message could not be sent")),
+        cmNotePh: @Json.Serialize(S("e.g. we agreed to send the report on Thursday")),
+        cmContextSub: @Json.Serialize(S("Kept in the call log")),
+        cmShare: @Json.Serialize(S("Share the screen")),
         incomingVideo: @Json.Serialize(S("Incoming internal video call")),
         incomingVoice: @Json.Serialize(S("Incoming internal voice call")),
         aboutPatient: @Json.Serialize(S("About the patient")),
@@ -258,6 +338,8 @@
         @Html.Raw(Json.Serialize(HospitalCallService.NoTables)): @Json.Serialize(S(HospitalCallService.NoTables))
     };
 </script>
+<script src="~/lib/lucide/lucide-0.469.0.min.js"></script>
 <script src="~/js/hospital/hospital-calls.js" asp-append-version="true"></script>
 <script src="~/js/hospital/hospital-calls-group.js" asp-append-version="true"></script>
+<script src="~/js/comm/comm-everywhere.js" asp-append-version="true"></script>
 }

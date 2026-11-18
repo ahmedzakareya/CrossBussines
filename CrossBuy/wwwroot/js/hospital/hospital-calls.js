@@ -34,7 +34,15 @@
 		rec: '<circle cx="12" cy="12" r="6" fill="currentColor"/><circle cx="12" cy="12" r="10"/>',
 		phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'
 	};
-	function ico(k, size) { return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SVG[k] + '</svg>'; }
+	// Lucide (the Communication prototype's icons), drawn as an inline svg from its own shapes; the old names map onto it
+	var LMAP = { mic: 'mic', micOff: 'mic-off', cam: 'video', camOff: 'video-off', rec: 'circle-dot', phone: 'phone' };
+	function ico(k, size) {
+		var s = size || 20, name = LMAP[k] || k, L = window.lucide && window.lucide.icons;
+		var node = L && L[name.replace(/(^|-)([a-z0-9])/g, function (m, a, b) { return b.toUpperCase(); })];
+		var open = '<svg class="cm-i" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+		if (node && node[2]) return open + node[2].map(function (c) { return '<' + c[0] + Object.keys(c[1]).map(function (a) { return ' ' + a + '="' + c[1][a] + '"'; }).join('') + '/>'; }).join('') + '</svg>';
+		return SVG[k] ? open + SVG[k] + '</svg>' : '';
+	}
 	function face(p, size) {
 		p = p || {};
 		return '<span class="cbc-face" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.36) + 'px">' +
@@ -109,45 +117,45 @@
 		return get(U.ice).then(function (r) { var s = (r && r.iceServers) || []; iceCache = { at: Date.now(), servers: s }; return s; });
 	}
 
-	/* ---------------- incoming ---------------- */
+	/* ---------------- incoming: the prototype's card (#/comm-ring), in the corner of whatever screen is open ---------------- */
+	function ringLeft(n) { return '<span class="num">' + Math.max(0, n) + '</span> ' + esc(t('cmRingLeft')); }
 	function onIncoming(m) {
 		if (current || ring || (window.cbCallsGroup && window.cbCallsGroup.busy())) { return; }   // the server already refuses a second call to someone busy; a second tab still answers only once
-		var left = m.ringSeconds || 30, video = !!m.video;
-		var el = document.createElement('div'); el.className = 'cbc-overlay'; el.setAttribute('role', 'alertdialog');
-		var p = m.patient;
-		el.innerHTML = '<div class="cbc-card">' +
-			'<div class="cbc-band">' +
-				'<div class="cbc-kind">' + (video ? ico('cam', 16) : ico('phone', 15)) + esc(video ? t('incomingVideo') : t('incomingVoice')) + '</div>' +
-				'<span class="cbc-ring">' + face(m.caller, 100) + '</span>' +
-				'<div class="fs-2 fw-bolder mt-6">' + esc(m.caller.name) + '</div>' +
-				'<div class="fs-7 opacity-75">' + esc([m.caller.title, m.caller.department].filter(Boolean).join(' · ')) + '</div>' +
-			'</div><div class="p-6">' +
-				(p || m.reason ? '<div class="cbc-about">' + (p ? face(p, 40) : '<i class="ki-outline ki-message-text fs-2x text-primary"></i>') +
-					'<div class="min-w-0 flex-grow-1"><div class="text-muted fs-8">' + esc(p ? t('aboutPatient') : t('reason')) + '</div>' +
-					(p ? '<div class="fw-bold text-gray-900 text-truncate">' + esc(p.name) + ' · ' + num(esc(p.mrn)) + '</div>' : '') +
-					(m.reason ? '<div class="text-gray-700 fs-7">' + esc(m.reason) + '</div>' : '') + '</div></div>' : '') +
-				'<div class="d-flex justify-content-center align-items-start gap-8 mb-5">' +
-					'<div><button type="button" class="cbc-round decline" data-decline title="' + esc(t('decline')) + '"><i class="ki-outline ki-cross fs-1 text-white"></i></button><div class="fs-8 text-gray-700 mt-2">' + esc(t('decline')) + '</div></div>' +
-					(video ? '<div><button type="button" class="cbc-round ghost" data-voice>' + ico('phone', 24) + '</button><div class="fs-8 text-gray-700 mt-2">' + esc(t('voiceOnly')) + '</div></div>' : '') +
-					'<div><button type="button" class="cbc-round accept" data-accept>' + (video ? ico('cam', 24) : ico('phone', 24)) + '</button><div class="fs-8 text-gray-700 mt-2">' + esc(t('answer')) + '</div></div>' +
-				'</div>' +
-				'<div class="d-flex flex-wrap justify-content-center gap-2">' + [t('quick1'), t('quick2')].map(function (q) { return '<button type="button" class="btn btn-sm btn-light fs-8" data-reply>' + esc(q) + '</button>'; }).join('') + '</div>' +
-				'<div class="text-muted fs-8 mt-5" data-left>' + t('ringLeft', num(left)) + '</div>' +
-			'</div></div>';
+		var left = m.ringSeconds || 30, video = !!m.video, p = m.patient, who = m.caller || {};
+		var el = document.createElement('div'); el.className = 'cm-ring'; el.setAttribute('role', 'alertdialog');
+		var about = p ? '<div class="cm-lastmsg">' + ico('user-round', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('aboutPatient')) + '</div><span class="fw-bold">' + esc(p.name) + '</span> · ' + num(esc(p.mrn)) + (m.reason ? '<div>' + esc(m.reason) + '</div>' : '') + '</div></div>'
+			: m.reason ? '<div class="cm-lastmsg">' + ico('message-square-text', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('reason')) + '</div>' + esc(m.reason) + '</div></div>' : '';
+		el.innerHTML = '<div class="band"><span class="ring">' + face(who, 56) + '</span><div class="min-w-0">' +
+				'<div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico(video ? 'video' : 'phone', 13) + esc(video ? t('cmIncomingVideo') : t('cmIncomingVoice')) + '</div>' +
+				'<div class="fs-4 fw-bold text-truncate">' + esc(who.name) + '</div><div class="fs-8 opacity-75 text-truncate">' + esc([who.title, who.department].filter(Boolean).join(' · ')) + '</div></div></div>' +
+			'<div class="p-5">' + about +
+				'<div class="cm-lastmsg d-none" data-last>' + ico('message-circle', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('cmLastMsg')) + '</div><div class="text-truncate" dir="auto" data-lasttx></div></div></div>' +
+				'<div class="d-flex flex-wrap gap-2 mb-4">' + [t('cmQuick1'), t('cmQuick2'), t('cmQuick3')].map(function (q) { return '<button type="button" class="cm-pill light sm" data-reply>' + esc(q) + '</button>'; }).join('') + '</div>' +
+				'<div class="cm-ringbtns"' + (video ? '' : ' style="grid-template-columns:repeat(2,1fr)"') + '>' +
+					'<button type="button" class="no" data-decline>' + ico('phone-off', 20) + '<span>' + esc(t('decline')) + '</span></button>' +
+					(video ? '<button type="button" class="vo" data-voice>' + ico('phone', 20) + '<span>' + esc(t('cmByVoice')) + '</span></button>' : '') +
+					'<button type="button" class="yes" data-accept>' + ico(video ? 'video' : 'phone', 20) + '<span>' + esc(t('cmAnswer')) + '</span></button></div>' +
+				'<div class="text-muted fs-8 text-center mt-3" data-left>' + ringLeft(left) + '</div>' +
+			'</div>';
 		document.body.appendChild(el);
+		// the last message between the two of you (the prototype's "your last message")
+		if (U.lastWith && who.id) get(U.lastWith + '?other=' + who.id).then(function (r) {
+			if (!r || !r.body || !ring || ring.el !== el) return;
+			el.querySelector('[data-lasttx]').textContent = r.body; el.querySelector('[data-last]').classList.remove('d-none');
+		});
 		var stopTone = tone(RING);
 		ring = { callId: m.callId, el: el, stopTone: stopTone, msg: m };
 		ring.timer = setInterval(function () {
-			left--; var l = el.querySelector('[data-left]'); if (l) l.innerHTML = t('ringLeft', num(Math.max(0, left)));
+			left--; var l = el.querySelector('[data-left]'); if (l) l.innerHTML = ringLeft(left);
 			if (left <= -5) closeRing();   // the caller's side ends it; this only tidies up if its message was lost
 		}, 1000);
 		el.querySelector('[data-decline]').onclick = function () { conn.invoke('Decline', m.callId, null); closeRing(); };
-		[].slice.call(el.querySelectorAll('[data-reply]')).forEach(function (b) { b.onclick = function () { conn.invoke('Decline', m.callId, b.textContent); closeRing(); toast(t('replySent', m.caller.name), 'success'); }; });
+		[].slice.call(el.querySelectorAll('[data-reply]')).forEach(function (b) { b.onclick = function () { conn.invoke('Decline', m.callId, b.textContent); closeRing(); toast(t('replySent', who.name), 'success'); }; });
 		function accept(withVideo) {
 			closeRing();
 			conn.invoke('Answer', m.callId, withVideo).then(function (r) {
 				if (!r || !r.ok) { toast(t('failed'), 'error'); return; }
-				current = newCall({ id: m.callId, role: 'callee', video: withVideo, peer: m.caller, patient: m.patient, reason: m.reason, share: m.share, maxHeight: m.maxHeight, canRecord: m.canRecord });
+				current = newCall({ id: m.callId, role: 'callee', video: withVideo, peer: who, patient: m.patient, reason: m.reason, share: m.share, maxHeight: m.maxHeight, canRecord: m.canRecord });
 				current.answered = true;
 				openStage(current); startClock(current);
 				current.pcReady = prepare(current);
@@ -266,7 +274,7 @@
 			if (d.t === 'answer') return pc.setRemoteDescription(d.sdp).then(function () { flush(c); sendState(c); });
 			if (d.t === 'cand') { if (pc.remoteDescription) return pc.addIceCandidate(d.c).catch(function () { }); c.cands.push(d.c); return; }
 			if (d.t === 'state') { c.remote = { mic: d.mic, cam: d.cam, share: d.share }; paintRemote(c); return; }
-			if (d.t === 'patient' && d.patient && !c.patient) { c.patient = d.patient; paintSide(c); return; }
+			if (d.t === 'patient' && d.patient && !c.patient) { c.patient = d.patient; paintContext(c); return; }
 		}).catch(function () { });
 	}
 	function flush(c) { var l = c.cands; c.cands = []; l.forEach(function (x) { c.pc.addIceCandidate(x).catch(function () { }); }); }
@@ -282,30 +290,30 @@
 			var lossPct = got ? lost / (lost + got) : 0;
 			var q = rtt == null ? 3 : (rtt < 0.15 && lossPct < 0.02) ? 3 : (rtt < 0.4 && lossPct < 0.08) ? 2 : 1;
 			var chip = c.el.querySelector('[data-q]'); if (!chip) return;
-			chip.querySelectorAll('i').forEach(function (b, i) { b.style.opacity = i < q ? 1 : 0.3; });
-			chip.querySelector('[data-qt]').textContent = q === 3 ? t('qExcellent') : q === 2 ? t('qGood') : t('qWeak');
+			var sig = chip.querySelector('svg'); if (sig) sig.style.opacity = q === 3 ? 1 : q === 2 ? 0.7 : 0.4;
+			chip.title = q === 3 ? t('qExcellent') : q === 2 ? t('qGood') : t('qWeak');
 		}).catch(function () { });
 	}
 
-	/* ---------------- the stage ---------------- */
+	/* ---------------- the stage: the prototype's #/comm-incall — the picture, and the same conversation beside it ---------------- */
 	function openStage(c) {
-		var el = c.el = document.createElement('div'); el.className = 'cbc-stage';
+		var el = c.el = document.createElement('div'); el.className = 'cm-stage'; c.sideOpen = true;
 		el.innerHTML =
-			'<div class="cbc-main">' +
-				'<div class="cbc-top">' + face(c.peer, 40) +
-					'<div class="min-w-0"><div class="fw-bold fs-5 text-white text-truncate">' + esc(c.peer.name) + '</div><div class="fs-8 text-white opacity-75 text-truncate">' + esc([c.peer.title, c.peer.department].filter(Boolean).join(' · ')) + '</div></div>' +
-					'<span class="cbc-chip ms-3" data-q><span class="cbc-bars"><i style="height:5px"></i><i style="height:9px"></i><i style="height:14px"></i></span><span data-qt>' + esc(t('qExcellent')) + '</span></span>' +
-					'<span class="cbc-chip d-none d-md-inline-flex"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('hospitalOnly')) + '</span>' +
-					'<span class="cbc-chip d-none" data-recchip></span>' +
-					'<span class="cbc-chip d-none" data-net><span class="spinner-border spinner-border-sm"></span>' + esc(t('reconnecting')) + '</span>' +
-					'<span class="ms-auto fs-4 fw-bold cbc-num text-white" dir="ltr" data-clock></span>' +
-				'</div>' +
-				'<div class="cbc-remote" data-remote><video autoplay playsinline data-rvideo class="d-none"></video><div data-rface></div></div>' +
+			'<div class="main">' +
+				'<div class="vid" data-remote><video autoplay playsinline data-rvideo class="d-none"></video><div class="cbc-rface" data-rface></div></div>' +
 				'<audio autoplay data-raudio></audio>' +
-				'<div class="cbc-self" data-self></div>' +
-				'<div class="cbc-bar" data-bar></div>' +
+				'<div class="top">' + face(c.peer, 40) +
+					'<div class="min-w-0"><div class="fw-bold text-truncate">' + esc(c.peer.name) + '</div><div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico('shield-check', 12) + ' ' + esc(t('cmSecure')) + '</div></div>' +
+					'<span class="ms-auto d-flex align-items-center gap-2">' +
+						'<span class="chip d-none" data-net><span class="spinner-border spinner-border-sm"></span>' + esc(t('reconnecting')) + '</span>' +
+						'<span class="chip rec d-none" data-recchip></span>' +
+						'<span class="chip" data-q>' + ico('signal', 13) + ' <span class="num" data-clock>' + esc(t('calling')) + '</span></span>' +
+					'</span>' +
+				'</div>' +
+				'<div class="pip" data-self></div>' +
+				'<div class="bar" data-bar></div>' +
 			'</div>' +
-			'<div class="cbc-side" data-side></div>';
+			'<div class="side" data-side></div>';
 		document.body.appendChild(el);
 		paintRemote(c); paintSelf(c); paintBar(c); paintSide(c);
 		window.addEventListener('beforeunload', c.unload = function () { if (current) conn.invoke('Hangup', current.id, false); });
@@ -320,7 +328,7 @@
 	function paintRemote(c) {
 		var box = c.el.querySelector('[data-rface]'), v = c.el.querySelector('[data-rvideo]');
 		if (!c.answered) {
-			box.innerHTML = '<div class="text-center"><span class="cbc-ring">' + face(c.peer, 125) + '</span><div class="fs-3 fw-bold mt-6 text-white">' + esc(c.peer.name) + '</div><div class="text-white opacity-75 mt-1">' + esc(t('calling')) + '</div></div>';
+			box.innerHTML = '<div class="text-center text-white"><span class="cbc-ring">' + face(c.peer, 125) + '</span><div class="fs-3 fw-bold mt-6">' + esc(c.peer.name) + '</div><div class="opacity-75 mt-1">' + esc(t('calling')) + '</div></div>';
 			v.classList.add('d-none'); return;
 		}
 		var vt = c.remoteStream && c.remoteStream.getVideoTracks()[0];
@@ -328,7 +336,7 @@
 		if (showVideo) { if (v.srcObject !== c.remoteStream) v.srcObject = c.remoteStream; v.classList.remove('d-none'); v.classList.toggle('cbc-contain', !!c.remote.share); box.innerHTML = ''; v.play().catch(function () { }); }
 		else {
 			v.classList.add('d-none');
-			box.innerHTML = '<div class="text-center">' + face(c.peer, 125) + '<div class="text-white opacity-75 mt-5">' + esc(c.video || c.remote.cam ? t('theirCamOff') : t('voiceCall')) + (c.remote.mic === false ? ' · ' + esc(t('theyMuted')) : '') + '</div></div>';
+			box.innerHTML = '<div class="text-center text-white">' + face(c.peer, 125) + '<div class="opacity-75 mt-5">' + esc(c.video || c.remote.cam ? t('theirCamOff') : t('voiceCall')) + (c.remote.mic === false ? ' · ' + esc(t('theyMuted')) : '') + '</div></div>';
 		}
 	}
 
@@ -336,20 +344,23 @@
 		if (!c.el) return;
 		var box = c.el.querySelector('[data-self]');
 		var vt = c.local && c.local.getVideoTracks()[0];
-		if (c.sharing) { box.innerHTML = '<div class="text-center text-white"><i class="ki-outline ki-screen fs-2x text-white"></i><div class="fs-8 mt-2">' + esc(t('sharing')) + '</div></div><span class="tag">' + esc(t('you')) + '</span>'; return; }
-		if (vt && c.cam) { box.innerHTML = '<video autoplay muted playsinline></video><span class="tag">' + esc(t('you')) + '</span>'; box.querySelector('video').srcObject = new MediaStream([vt]); }
-		else box.innerHTML = face(W.me || {}, 60) + '<span class="tag">' + esc(t('you')) + '</span>';
+		if (c.sharing) { box.innerHTML = '<div class="text-center text-white">' + ico('monitor-up', 28) + '<div class="fs-8 mt-2">' + esc(t('sharing')) + '</div></div>'; return; }
+		if (vt && c.cam) { box.innerHTML = '<video autoplay muted playsinline></video>'; box.querySelector('video').srcObject = new MediaStream([vt]); }
+		else box.innerHTML = face(W.me || {}, 60);
 	}
 
+	// the prototype's bar: microphone, camera, share the screen, the chat, record, add someone, end
 	function paintBar(c) {
-		var bar = c.el.querySelector('[data-bar]');
+		var bar = c.el.querySelector('[data-bar]'), recOn = c.rec && c.rec.state === 'on';
+		function cb(k, icon, label, cls, off) { return '<button type="button" data-k="' + k + '" class="' + (cls || '') + '" title="' + esc(label) + '" aria-label="' + esc(label) + '"' + (off ? ' disabled' : '') + '>' + ico(icon, 21) + '</button>'; }
 		bar.innerHTML =
-			'<button type="button" class="cbc-ctl' + (c.mic ? '' : ' off') + '" data-k="mic" title="' + esc(c.mic ? t('mute') : t('unmute')) + '">' + ico(c.mic ? 'mic' : 'micOff', 22) + '</button>' +
-			'<button type="button" class="cbc-ctl' + (c.cam ? '' : ' off') + '" data-k="cam" title="' + esc(t('camera')) + '">' + ico(c.cam ? 'cam' : 'camOff', 22) + '</button>' +
-			(c.share !== false && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (c.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '"><i class="ki-outline ki-screen fs-2 ' + (c.sharing ? '' : 'text-white') + '"></i></button>' : '') +
-			(c.canRecord && window.MediaRecorder ? '<button type="button" class="cbc-ctl' + (c.rec && c.rec.state === 'on' ? ' rec-on' : '') + '" data-k="rec" title="' + esc(c.rec && c.rec.state === 'on' ? t('recStop') : t('recAsk')) + '"' + (c.answered ? '' : ' disabled') + '>' + ico('rec', 22) + '</button>' : '') +
-			'<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPeople')) + '"' + (c.answered && window.cbCallsGroup ? '' : ' disabled') + '><i class="ki-outline ki-user-tick fs-2 text-white"></i></button>' +
-			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('end')) + '"><span style="display:inline-flex;transform:rotate(135deg)">' + ico('phone', 24) + '</span></button>';
+			cb('mic', c.mic ? 'mic' : 'mic-off', c.mic ? t('mute') : t('unmute'), c.mic ? '' : 'on') +
+			cb('cam', c.cam ? 'video' : 'video-off', t('camera'), c.cam ? '' : 'on') +
+			(c.share !== false && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? cb('share', 'monitor-up', t('cmShare'), c.sharing ? 'on' : '') : '') +
+			cb('chat', 'message-circle', t('cmTheChat'), c.sideOpen ? 'on' : '') +
+			(c.canRecord && window.MediaRecorder ? cb('rec', recOn ? 'circle-stop' : 'circle-dot', recOn ? t('recStop') : t('recAsk'), recOn ? 'rec' : '', !c.answered) : '') +
+			cb('add', 'user-plus', t('addPeople'), '', !(c.answered && window.cbCallsGroup)) +
+			cb('end', 'phone-off', t('end'), 'red');
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(c, b.getAttribute('data-k')); }; });
 	}
 
@@ -357,6 +368,7 @@
 		if (k === 'end') { hangup(c); return; }
 		if (k === 'rec') { recControl(c); return; }
 		if (k === 'add') { if (window.cbCallsGroup) window.cbCallsGroup.fromCall(c); return; }
+		if (k === 'chat') { c.sideOpen = !c.sideOpen; c.el.classList.toggle('no-side', !c.sideOpen); c.el.classList.toggle('side-open', c.sideOpen); paintBar(c); return; }
 		if (k === 'mic') { var a = c.local && c.local.getAudioTracks()[0]; if (!a) { toast(t('noMic'), 'error'); return; } c.mic = !c.mic; a.enabled = c.mic; }
 		if (k === 'cam') {
 			var v = c.local && c.local.getVideoTracks()[0];
@@ -391,38 +403,67 @@
 		if (c.el) { paintSelf(c); paintBar(c); } sendState(c);
 	}
 
+	/* ---- the side: the conversation between the two (what is written stays in the chat after the call), and the call's
+	   own context (the note, the participants, the recording's trail; in the hospital, the patient) one tap away ---- */
 	function paintSide(c) {
-		var side = c.el.querySelector('[data-side]'), p = c.patient;
-		var head = '<div class="p-6 border-bottom"><div class="fw-bold fs-5 text-gray-900 mb-1">' + esc(t('context')) + '</div><div class="text-muted fs-7">' + esc(t('contextSub')) + '</div></div>';
+		var side = c.el.querySelector('[data-side]');
+		side.innerHTML =
+			'<div class="cm-head"><div class="min-w-0"><div class="nm" data-stitle>' + esc(t('cmTheChat')) + '</div><div class="st text-muted fs-8" data-ssub>' + esc(t('cmChatStays')) + '</div></div>' +
+				'<div class="acts"><button type="button" class="cm-ib ghost sm" data-ctx title="' + esc(t('context')) + '" aria-label="' + esc(t('context')) + '">' + ico('clipboard-list', 18) + '</button>' +
+				'<button type="button" class="cm-ib ghost sm" data-hide title="' + esc(t('cmHide')) + '" aria-label="' + esc(t('cmHide')) + '">' + ico('x', 18) + '</button></div></div>' +
+			'<div class="cm-thread" data-sthread><div class="cm-day"><span>' + esc(t('cmToday')) + '</span></div></div>' +
+			'<div class="cm-compose" data-scompose><div class="box">' +
+				'<button type="button" class="cm-ib ghost xs" data-sattach title="' + esc(t('cmAttach')) + '">' + ico('plus', 18) + '</button>' +
+				'<input data-sinput placeholder="' + esc(t('cmWrite')) + '" />' +
+				'<button type="button" class="cm-ib ghost xs" data-semoji title="' + esc(t('cmEmoji')) + '">' + ico('smile', 18) + '</button>' +
+				'<button type="button" class="cm-ib ghost xs" data-sfile title="' + esc(t('cmFile')) + '">' + ico('paperclip', 18) + '</button></div>' +
+				'<button type="button" class="cm-send" data-ssend title="' + esc(t('cmSend')) + '">' + ico('send-horizontal', 18) + '</button>' +
+				'<input type="file" class="d-none" data-sfileinput /></div>' +
+			'<div class="cbc-ctx d-none" data-ctxpane></div>';
+		side.querySelector('[data-hide]').onclick = function () { control(c, 'chat'); };
+		side.querySelector('[data-ctx]').onclick = function () {
+			var pane = side.querySelector('[data-ctxpane]'), on = pane.classList.contains('d-none');
+			pane.classList.toggle('d-none', !on);
+			['[data-sthread]', '[data-scompose]'].forEach(function (q) { side.querySelector(q).classList.toggle('d-none', on); });
+			side.querySelector('[data-stitle]').textContent = on ? t('context') : t('cmTheChat');
+			side.querySelector('[data-ssub]').textContent = on ? t(U.hospital ? 'contextSub' : 'cmContextSub') : t('cmChatStays');
+			this.innerHTML = ico(on ? 'message-circle' : 'clipboard-list', 18);
+		};
+		paintContext(c);
+		sideChat(c);
+	}
+	function paintContext(c) {
+		var pane = c.el.querySelector('[data-ctxpane]'); if (!pane) return;
+		var p = c.patient;
 		// a patient belongs to the hospital module: someone without it sees no patient search and no file link
-		var pat = !U.hospital ? '' : p
+		var pat = !U.hospital ? (c.reason ? '<div class="p-6 border-bottom text-gray-700 fs-7">' + esc(c.reason) + '</div>' : '') : p
 			? '<div class="p-6 border-bottom"><div class="d-flex align-items-center gap-3">' + face(p, 45) + '<div class="min-w-0"><div class="fw-bold text-gray-900 text-truncate">' + esc(p.name) + '</div><div class="text-muted fs-7">' + num(esc(p.mrn)) + '</div></div></div>' +
 				(c.reason ? '<div class="text-gray-700 fs-7 mt-3">' + esc(c.reason) + '</div>' : '') +
-				'<a class="btn btn-sm btn-light-primary w-100 mt-4" target="_blank" rel="noopener" href="' + esc(U.patient.replace('__id__', p.id)) + '"><i class="ki-outline ki-folder fs-4"></i>' + esc(t('openFile')) + '</a></div>'
+				'<a class="cm-pill light w-100 justify-content-center mt-4" target="_blank" rel="noopener" href="' + esc(U.patient.replace('__id__', p.id)) + '">' + ico('folder-open', 15) + esc(t('openFile')) + '</a></div>'
 			: '<div class="p-6 border-bottom">' + (c.reason ? '<div class="text-gray-700 fs-7 mb-3">' + esc(c.reason) + '</div>' : '') + '<div class="text-muted fs-7 mb-3">' + esc(t('notLinked')) + '</div>' +
-				'<div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i><input class="form-control form-control-solid ps-12" data-psearch placeholder="' + esc(t('searchPatient')) + '" autocomplete="off" /></div>' +
+				'<div class="cm-search">' + ico('search', 16) + '<input data-psearch placeholder="' + esc(t('searchPatient')) + '" autocomplete="off" /></div>' +
 				'<div data-presults class="mt-2"></div></div>';
 		var note = '<div class="p-6 border-bottom"><label class="fw-semibold fs-7 text-gray-700 mb-2">' + esc(t('quickNote')) + '</label>' +
-			'<textarea class="form-control form-control-solid" rows="4" maxlength="1000" data-note placeholder="' + esc(t('notePh')) + '">' + esc(c.note || '') + '</textarea>' +
+			'<textarea class="form-control form-control-solid" rows="4" maxlength="1000" data-note placeholder="' + esc(U.hospital ? t('notePh') : t('cmNotePh')) + '">' + esc(c.note || '') + '</textarea>' +
 			'<div class="text-muted fs-8 mt-2">' + esc(t('noteHelp')) + '</div></div>';
 		var who = '<div class="p-6"><div class="fw-bold text-gray-900 mb-3">' + esc(t('inCall')) + '</div>' +
-			'<div class="d-flex align-items-center gap-3 mb-3">' + face(W.me || {}, 35) + '<div><div class="fw-bold text-gray-900 fs-7">' + esc((W.me || {}).name || '') + '</div><div class="text-muted fs-8">' + esc(t('you')) + '</div></div></div>' +
-			'<div class="d-flex align-items-center gap-3">' + face(c.peer, 35) + '<div><div class="fw-bold text-gray-900 fs-7">' + esc(c.peer.name) + '</div><div class="text-muted fs-8">' + esc(c.peer.title || '') + '</div></div></div></div>';
-		side.innerHTML = head + pat + note + '<div class="p-6 border-bottom' + (c.recTrail && c.recTrail.length ? '' : ' d-none') + '" data-rectrail>' + recTrailHtml(c) + '</div>' + who;
-		var ta = side.querySelector('[data-note]');
+			'<div class="cm-row">' + face(W.me || {}, 35) + '<div><div class="t">' + esc((W.me || {}).name || '') + '</div><div class="s">' + esc(t('you')) + '</div></div></div>' +
+			'<div class="cm-row">' + face(c.peer, 35) + '<div><div class="t">' + esc(c.peer.name) + '</div><div class="s">' + esc(c.peer.title || '') + '</div></div></div></div>';
+		pane.innerHTML = pat + note + '<div class="p-6 border-bottom' + (c.recTrail && c.recTrail.length ? '' : ' d-none') + '" data-rectrail>' + recTrailHtml(c) + '</div>' + who;
+		var ta = pane.querySelector('[data-note]');
 		ta.addEventListener('input', function () { c.note = ta.value; c.noteDirty = true; });
 		ta.addEventListener('blur', function () { saveNote(c); });
-		var ps = side.querySelector('[data-psearch]');
+		var ps = pane.querySelector('[data-psearch]');
 		if (ps) {
 			var tm;
 			ps.addEventListener('input', function () {
-				clearTimeout(tm); var q = ps.value.trim(), out = side.querySelector('[data-presults]');
+				clearTimeout(tm); var q = ps.value.trim(), out = pane.querySelector('[data-presults]');
 				if (q.length < 2) { out.innerHTML = ''; return; }
 				tm = setTimeout(function () {
 					get(U.patientSearch + '?q=' + encodeURIComponent(q)).then(function (r) {
 						var rows = (r && r.results) || [];
 						out.innerHTML = rows.slice(0, 6).map(function (x) {
-							return '<a href="#" class="d-flex align-items-center gap-3 p-2 rounded cbc-hit" data-pid="' + x.id + '">' + face(x, 30) + '<span class="min-w-0"><span class="d-block fw-semibold text-gray-900 fs-7 text-truncate">' + esc(x.name) + '</span><span class="d-block text-muted fs-8">' + num(esc(x.mrn)) + '</span></span></a>';
+							return '<a href="#" class="cm-row text-decoration-none cbc-hit" data-pid="' + x.id + '">' + face(x, 30) + '<span class="min-w-0"><span class="d-block t text-truncate">' + esc(x.name) + '</span><span class="d-block s">' + num(esc(x.mrn)) + '</span></span></a>';
 						}).join('') || '<div class="text-muted fs-8 p-2">' + esc(t('noMatch')) + '</div>';
 						[].slice.call(out.querySelectorAll('[data-pid]')).forEach(function (a) {
 							a.onclick = function (e) {
@@ -430,7 +471,7 @@
 								post(U.note.replace('__id__', c.id), { patientId: +a.getAttribute('data-pid') }).then(function (res) {
 									if (!res.ok) { toast(res.error || t('failed'), 'error'); return; }
 									get(U.patientCard.replace('__id__', a.getAttribute('data-pid'))).then(function (pc) {
-										if (pc && pc.patient) { c.patient = pc.patient; paintSide(c); send(c, { t: 'patient', patient: pc.patient }); }
+										if (pc && pc.patient) { c.patient = pc.patient; paintContext(c); send(c, { t: 'patient', patient: pc.patient }); }
 									});
 								});
 							};
@@ -439,6 +480,60 @@
 				}, 250);
 			});
 		}
+	}
+
+	// the conversation beside the call: the same direct chat as the Communication page (read, write, attach)
+	function postForm(url, data) {
+		var fd = data instanceof FormData ? data : new FormData(); if (!(data instanceof FormData)) for (var k in data) if (data[k] != null) fd.append(k, data[k]);
+		return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': token() }, body: fd }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+	}
+	function chatMsg(m) {
+		var mine = m.senderId === (W.me || {}).id, d = new Date(m.createdAt);
+		var at = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+		var body = m.deleted ? '<div class="tx">' + esc(t('cmDeleted')) + '</div>'
+			: (m.attachmentPath ? '<div class="cm-file"><span class="fi">' + ico(m.attachmentType === 'image' ? 'image' : m.attachmentType === 'audio' ? 'mic' : 'file', 18) + '</span><div class="fm"><div class="fn">' + esc(m.attachmentName || '') + '</div></div></div>' : '') +
+				(m.body ? '<div class="tx" dir="auto">' + esc(m.body) + '</div>' : '');
+		return '<div class="cm-msg' + (mine ? ' mine' : '') + '" data-id="' + m.id + '">' + (mine ? '' : '<span class="cm-msg-face">' + face({ name: m.senderName, photo: m.senderAvatar, initials: (m.senderName || '?').charAt(0) }, 30) + '</span>') +
+			'<div class="cm-bwrap"><div class="cm-bubble">' + body + '<div class="cm-meta"><span class="num">' + at + '</span>' + (mine ? '<span class="cm-tick">' + ico('check-check', 14) + '</span>' : '') + '</div></div></div></div>';
+	}
+	function sideChat(c) {
+		var side = c.el.querySelector('[data-side]'), box = side.querySelector('[data-sthread]'), input = side.querySelector('[data-sinput]'), seen = {};
+		function add(list) {
+			var stick = box.scrollHeight - box.scrollTop - box.clientHeight < 80, added = false;
+			(list || []).forEach(function (m) { if (seen[m.id]) return; seen[m.id] = 1; box.insertAdjacentHTML('beforeend', chatMsg(m)); added = true; });
+			if (added && stick) box.scrollTop = box.scrollHeight;
+		}
+		function load() {
+			if (!c.convId || c.closed) return;
+			get(U.chatMessages + '?c=' + c.convId).then(function (list) { if (list && list.length) { add(list); postForm(U.chatRead, { c: c.convId }); } });
+		}
+		postForm(U.chatStart, { otherId: c.peer.id }).then(function (r) {
+			if (!r || !r.id || c.closed) return;
+			c.convId = r.id; load(); box.scrollTop = box.scrollHeight;
+			c.chatPoll = setInterval(load, 3000);
+		});
+		function sendNow(file) {
+			var body = input.value.trim(); if (!c.convId || (!body && !file)) return;
+			var fd = new FormData(); fd.append('c', c.convId); if (body) fd.append('body', body); if (file) fd.append('file', file, file.name);
+			input.value = '';
+			postForm(U.chatSend, fd).then(function (dto) { if (dto && dto.id) { add([dto]); box.scrollTop = box.scrollHeight; } else toast(t('cmSendFailed'), 'error'); });
+		}
+		side.querySelector('[data-ssend]').onclick = function () { sendNow(null); };
+		input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendNow(null); } });
+		var fi = side.querySelector('[data-sfileinput]');
+		side.querySelector('[data-sattach]').onclick = function () { fi.accept = ''; fi.click(); };
+		side.querySelector('[data-sfile]').onclick = function () { fi.accept = '.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip'; fi.click(); };
+		fi.onchange = function () { var f = fi.files && fi.files[0]; if (f) sendNow(f); fi.value = ''; };
+		var emo = side.querySelector('[data-semoji]');
+		emo.onclick = function (e) {
+			e.stopPropagation();
+			var old = side.querySelector('.cbc-emo'); if (old) { old.remove(); return; }
+			var pop = document.createElement('div'); pop.className = 'cm-pop cbc-emo';
+			pop.innerHTML = '<div class="cm-emoji-grid">' + ['👍', '❤️', '😂', '🙏', '👏', '✅', '🔥', '😊', '🤝', '👌', '🎉', '😀', '🙂', '👀'].map(function (x) { return '<button type="button">' + x + '</button>'; }).join('') + '</div>';
+			pop.style.cssText = 'bottom:70px;inset-inline-end:16px;';
+			side.appendChild(pop);
+			pop.onclick = function (ev) { var b = ev.target.closest('button'); if (!b) return; input.value += b.textContent; input.focus(); pop.remove(); };
+		};
 	}
 
 	function saveNote(c) {
@@ -451,7 +546,7 @@
 
 	function teardown(c) {
 		if (!c || c.closed) return; c.closed = true;
-		clearInterval(c.ringTimer); clearInterval(c.clock); clearInterval(c.quality); if (c.stopTone) c.stopTone();
+		clearInterval(c.ringTimer); clearInterval(c.clock); clearInterval(c.quality); clearInterval(c.chatPoll); if (c.stopTone) c.stopTone();
 		saveNote(c);
 		if (c.rec && c.rec.recorder) recFinish(c);
 		stopShare(c);
@@ -473,13 +568,14 @@
 	function trail(c, icon, text, red) {
 		c.recTrail = c.recTrail || []; c.recTrail.push({ icon: icon, text: text, at: hm(), red: !!red });
 		var box = c.el && c.el.querySelector('[data-rectrail]'); if (box) { box.classList.remove('d-none'); box.innerHTML = recTrailHtml(c); }
+		if (c.el && !red) toast(text, 'info');
 	}
 	function recChip(c) {
 		var chip = c.el.querySelector('[data-recchip]'); if (!chip) return;
 		var r = c.rec;
-		if (!r || r.state === 'off') { chip.className = 'cbc-chip d-none'; chip.innerHTML = ''; return; }
-		if (r.state === 'asking') { chip.className = 'cbc-chip'; chip.innerHTML = '<span class="spinner-border spinner-border-sm"></span>' + esc(t('recWaiting', c.peer.name)); return; }
-		chip.className = 'cbc-chip cbc-rec'; chip.innerHTML = '<span class="cbc-recdot"></span>' + esc(t('recLabel')) + ' <bdi class="cbc-num" dir="ltr">' + mmss(r.secs || 0) + '</bdi>';
+		if (!r || r.state === 'off') { chip.className = 'chip rec d-none'; chip.innerHTML = ''; return; }
+		if (r.state === 'asking') { chip.className = 'chip'; chip.innerHTML = '<span class="spinner-border spinner-border-sm"></span>' + esc(t('recWaiting', c.peer.name)); return; }
+		chip.className = 'chip rec'; chip.innerHTML = '<span class="dot"></span>' + esc(t('recLabel')) + ' <span class="num">' + mmss(r.secs || 0) + '</span>';
 	}
 	function recControl(c) {
 		var r = c.rec;
