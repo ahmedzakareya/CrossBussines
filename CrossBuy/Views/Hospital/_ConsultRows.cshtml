@@ -15,7 +15,7 @@
     var who = DisplayName.Of(x.Name, x.NameEn);
     bool open = HospitalConsultRequestStatus.Open(r.Status);
     string urg = r.Urgency == HospitalConsultUrgency.Emergency ? "badge-light-danger" : r.Urgency == HospitalConsultUrgency.Urgent ? "badge-light-primary" : "badge-light";
-    string st = r.Status == HospitalConsultRequestStatus.Answered ? "badge-light-success" : r.Status == HospitalConsultRequestStatus.Cancelled ? "badge-light" : r.Status == HospitalConsultRequestStatus.Accepted ? "badge-light-info" : "badge-light-primary";
+    string st = r.Status == HospitalConsultRequestStatus.Answered ? "badge-light-primary" : r.Status == HospitalConsultRequestStatus.Cancelled ? "badge-light" : r.Status == HospitalConsultRequestStatus.Accepted ? "badge-light-info" : "badge-light-primary";
     string doctor = x.Practitioner == null ? "" : DisplayName.Of(x.Practitioner, x.PractitionerEn ?? x.Practitioner);
     <tr class="@(r.Status == HospitalConsultRequestStatus.Cancelled ? "opacity-50" : "")">
         <td class="ps-4"><div class="d-flex flex-column align-items-start">
@@ -47,7 +47,7 @@
             @if (x.Requester != null) {<div class="d-flex align-items-center fs-7"><div class="symbol symbol-circle symbol-20px overflow-hidden me-2 flex-shrink-0">@if (!string.IsNullOrEmpty(x.RequesterPhoto)) {<div class="symbol-label"><img src="@x.RequesterPhoto" alt="" class="w-100" data-initials="@HospitalUi.Initials(x.Requester)" /></div>} else {<div class="symbol-label hp-initials" style="font-size:.55rem">@HospitalUi.Initials(x.Requester)</div>}</div><span>@T["Asked by {0}", x.Requester] · <span class="hp-num">@HospitalNursingService.UtcToWard(r.RequestedAt).ToString("yyyy-MM-dd HH:mm")</span></span></div>}
             @if (r.Status == HospitalConsultRequestStatus.Answered)
             {
-                <div class="border-start border-3 border-success ps-3 mt-3">
+                <div class="border-start border-3 border-primary ps-3 mt-3">
                     @if (r.Findings != null) {<div class="fs-8 text-muted">@T["Findings"]</div><div class="text-gray-800 mb-2" style="white-space:pre-wrap"><bdi>@r.Findings</bdi></div>}
                     <div class="fs-8 text-muted">@T["Recommendations"]</div><div class="text-gray-800" style="white-space:pre-wrap"><bdi>@r.Recommendations</bdi></div>
                     <div class="d-flex align-items-center fs-8 mt-1"><div class="symbol symbol-circle symbol-20px overflow-hidden me-2 flex-shrink-0">@if (!string.IsNullOrEmpty(x.AnswererPhoto)) {<div class="symbol-label"><img src="@x.AnswererPhoto" alt="" class="w-100" data-initials="@HospitalUi.Initials(x.Answerer)" /></div>} else {<div class="symbol-label hp-initials" style="font-size:.55rem">@HospitalUi.Initials(x.Answerer)</div>}</div><span>@x.Answerer · <span class="hp-num">@HospitalNursingService.UtcToWard(r.AnsweredAt!.Value).ToString("yyyy-MM-dd HH:mm")</span>@if (r.FollowUp) {<text> · @T["Will keep following"]</text>}</span></div>

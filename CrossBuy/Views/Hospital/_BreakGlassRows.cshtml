@@ -16,13 +16,13 @@
         <td><a href="@Url.Action("Patient", new { id = g.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@r.Mrn</bdi></td>
         <td class="mw-300px"><span class="text-gray-800 fw-semibold fs-7" dir="auto">@g.Reason</span></td>
         <td>@if (g.ReviewedAt == null) {<span class="badge badge-light-primary fs-7 fw-bold">@T["bg:waiting"]</span>}
-            else {<span class="badge @(g.Outcome == HospitalBreakGlassOutcome.Justified ? "badge-light-success" : "badge-light-danger") fs-7 fw-bold">@T["bg:" + g.Outcome]</span>
+            else {<span class="badge @(g.Outcome == HospitalBreakGlassOutcome.Justified ? "badge-light-primary" : "badge-light-danger") fs-7 fw-bold">@T["bg:" + g.Outcome]</span>
                 <span class="text-muted fw-semibold fs-7 d-block mt-1">@DisplayName.Of(r.Reviewer ?? "", r.ReviewerEn ?? r.Reviewer ?? "")@if (g.ReviewNote != null) {<span dir="auto"> · @g.ReviewNote</span>}</span>}</td>
         <td class="text-end pe-4">
             @if (g.ReviewedAt == null && me != g.EmployeeId)
             {
                 <div class="d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" data-glass-review="@g.ID" data-outcome="@HospitalBreakGlassOutcome.Justified" title="@T["bg:Justified"]" data-bs-toggle="tooltip"><i class="ki-outline ki-check-circle fs-3"></i></button>
+                    <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-glass-review="@g.ID" data-outcome="@HospitalBreakGlassOutcome.Justified" title="@T["bg:Justified"]" data-bs-toggle="tooltip"><i class="ki-outline ki-check-circle fs-3"></i></button>
                     <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-glass-review="@g.ID" data-outcome="@HospitalBreakGlassOutcome.Unjustified" data-ask="@T["Why was this opening not justified?"]" title="@T["bg:Unjustified"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>
                 </div>
             }

@@ -52,12 +52,12 @@
             }
             else
             {
-                <div class="d-flex align-items-center mb-5"><span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-success me-2"></i>@T["Connected provider:"]&nbsp;<bdi class="text-gray-800">@provider</bdi></span></div>
+                <div class="d-flex align-items-center mb-5"><span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-primary me-2"></i>@T["Connected provider:"]&nbsp;<bdi class="text-gray-800">@provider</bdi></span></div>
             }
             <div class="row g-5 mb-5">
                 @* H128: stat tiles (demo39 dashboards/logistics) *@
                 @foreach (var s in new[] {
-                    (T["Waiting to go"].Value, f.Queued, "ki-time", "primary"), (T["Sent today"].Value, f.SentToday, "ki-send", "success"),
+                    (T["Waiting to go"].Value, f.Queued, "ki-time", "primary"), (T["Sent today"].Value, f.SentToday, "ki-send", "primary"),
                     (T["Failed"].Value, f.Failed, "ki-cross-circle", f.Failed > 0 ? "danger" : "gray"), (T["Not reachable (30 days)"].Value, f.Skipped30, "ki-disconnect", "gray"),
                     (T["Asked for no messages"].Value, f.OptOuts, "ki-notification-bing", "gray") })
                 {

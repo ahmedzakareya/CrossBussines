@@ -83,15 +83,15 @@
                     <div class="card card-flush">
                         <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@(Model.Holds.Count > 0 ? T["What still holds the body"] : T["Nothing holds the body: it may be released"])</span>
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held."]</span></h3>
-                            <div class="card-toolbar"><span class="badge badge-light-@(Model.Holds.Count > 0 ? "danger" : "success") fs-7 fw-bold hp-num">@Model.Holds.Count</span></div></div>
+                            <div class="card-toolbar"><span class="badge badge-light-@(Model.Holds.Count > 0 ? "danger" : "primary") fs-7 fw-bold hp-num">@Model.Holds.Count</span></div></div>
                         <div class="card-body pt-4">
                             @if (c.MedicoLegal)
                             {
                                 <div class="d-flex flex-stack">
-                                    <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(policeOpen ? "danger" : "success")"><i class="ki-outline ki-shield-tick fs-2 text-@(policeOpen ? "danger" : "success")"></i></span></div>
+                                    <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(policeOpen ? "danger" : "primary")"><i class="ki-outline ki-shield-tick fs-2 text-@(policeOpen ? "danger" : "primary")"></i></span></div>
                                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
                                         <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block">@T["Police clearance"]</span><span class="text-gray-500 fw-semibold fs-7 d-block">@if (c.PoliceRef != null) {<span>@T["Report"] <bdi class="hp-num">@c.PoliceRef</bdi></span>}@if (c.PoliceClearedAt != null) {<span> · @T["Cleared {0}", L(c.PoliceClearedAt)] · @Who(c.PoliceClearedByEmployeeId)</span>}</span></div>
-                                        <div class="flex-shrink-0">@if (policeOpen) {if (canWork) {<button type="button" class="btn btn-sm btn-light-danger" data-police>@T["Record the clearance"]</button>} else {<span class="badge badge-light-danger fs-7 fw-bold">@T["mgw:PoliceHold"]</span>}} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}</div>
+                                        <div class="flex-shrink-0">@if (policeOpen) {if (canWork) {<button type="button" class="btn btn-sm btn-light-danger" data-police>@T["Record the clearance"]</button>} else {<span class="badge badge-light-danger fs-7 fw-bold">@T["mgw:PoliceHold"]</span>}} else {<i class="ki-outline ki-check-circle text-primary fs-2"></i>}</div>
                                     </div>
                                 </div>
                                 <div class="separator separator-dashed my-4"></div>
@@ -103,16 +103,16 @@
                                     <div class="flex-shrink-0">
                                         @if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.Requested) {<button type="button" class="btn btn-sm btn-light-danger" data-autopsy="AutopsyDone">@T["Record it done"]</button>}
                                         else if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.None) {<button type="button" class="btn btn-sm btn-light" data-autopsy="AutopsyRequest">@T["Request an autopsy"]</button>}
-                                        else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                                        else {<i class="ki-outline ki-check-circle text-primary fs-2"></i>}
                                     </div>
                                 </div>
                             </div>
                             <div class="separator separator-dashed my-4"></div>
                             <div class="d-flex flex-stack">
-                                <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(unidentified ? "danger" : "success")"><i class="ki-outline ki-profile-circle fs-2 text-@(unidentified ? "danger" : "success")"></i></span></div>
+                                <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(unidentified ? "danger" : "primary")"><i class="ki-outline ki-profile-circle fs-2 text-@(unidentified ? "danger" : "primary")"></i></span></div>
                                 <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
                                     <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block">@T["Identity and certificate"]</span><span class="text-gray-500 fw-semibold fs-7 d-block">@(c.PatientId == null ? T["Unknown body: released only by transfer to the authorities, or once identified and certified."] : Model.Holds.Contains(HospitalMorgueWarning.NoCertificate) ? T["The certificate is voided: certify the death again."] : T["Identified and certified"])</span></div>
-                                    <div class="flex-shrink-0">@if (unidentified) {<i class="ki-outline ki-cross-circle text-danger fs-2"></i>} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}</div>
+                                    <div class="flex-shrink-0">@if (unidentified) {<i class="ki-outline ki-cross-circle text-danger fs-2"></i>} else {<i class="ki-outline ki-check-circle text-primary fs-2"></i>}</div>
                                 </div>
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                                 }
                                 </tbody>
                             </table></div>
-                            @if (!inside) {<div class="notice d-flex bg-light-success rounded border-success border border-dashed p-4 mt-5"><i class="ki-outline ki-check-circle fs-2x text-success me-3"></i><div class="fs-6 fw-semibold text-gray-700 align-self-center">@T["Handed over with the body"]</div></div>}
+                            @if (!inside) {<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-5"><i class="ki-outline ki-check-circle fs-2x text-primary me-3"></i><div class="fs-6 fw-semibold text-gray-700 align-self-center">@T["Handed over with the body"]</div></div>}
                         }
                     </div>
                 </div>

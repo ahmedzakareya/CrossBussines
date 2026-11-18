@@ -11,7 +11,7 @@
         <td class="hp-num text-nowrap" dir="ltr"><span class="text-gray-900 fw-bold">@(r.MaxSingle is decimal s ? HospitalDrugSafetyRules.Num(s) + " " + r.Unit : "—")</span></td>
         <td class="hp-num text-nowrap" dir="ltr"><span class="text-gray-900 fw-bold">@(r.MaxDaily is decimal d ? HospitalDrugSafetyRules.Num(d) + " " + r.Unit : "—")</span></td>
         <td class="fs-7 fw-semibold text-gray-600" dir="auto">@r.Note</td>
-        <td>@if (r.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
+        <td>@if (r.IsActive) {<span class="badge badge-light-primary fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
         <td class="text-end pe-4">@if (canKeep) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-ds-edit="@r.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { drug = r.Drug, route = r.Route ?? "", unit = r.Unit, maxSingle = r.MaxSingle, maxDaily = r.MaxDaily, perKgMg = r.PerKgMg, everyHours = r.EveryHours, strengthMgPerMl = r.StrengthMgPerMl, renalReviewBelow = r.RenalReviewBelow, renalStopBelow = r.RenalStopBelow, note = r.Note, isActive = r.IsActive })"><i class="ki-outline ki-pencil fs-4"></i></button> }</td>
     </tr>
 }

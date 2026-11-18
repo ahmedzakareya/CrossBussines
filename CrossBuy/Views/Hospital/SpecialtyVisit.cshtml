@@ -42,7 +42,7 @@
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 <style>
     .hp-kd td { width: 25%; text-align: center; font-weight: 700; padding: .55rem .3rem !important; border: 2px solid #fff; }
-    .hp-kd .lo { background: #DCFCE7; color: #166534; } .hp-kd .mo { background: #DBEAFE; color: #1E40AF; } .hp-kd .hi { background: #FECACA; color: #991B1B; } .hp-kd .vh { background: #DC2626; color: #fff; }
+    .hp-kd .lo { background: #E1E8F5; color: #166534; } .hp-kd .mo { background: #DBEAFE; color: #1E40AF; } .hp-kd .hi { background: #FECACA; color: #991B1B; } .hp-kd .vh { background: #DC2626; color: #fff; }
     .hp-kd .me { outline: 3px solid #111827; outline-offset: -3px; }
     .hp-gap { display: flex; gap: 1rem; align-items: center; padding: .85rem 0; border-bottom: 1px dashed var(--bs-gray-300, #E4E6EF); }
     .hp-gap:last-child { border-bottom: 0; }
@@ -74,7 +74,7 @@
             }
             else if (e.Status == HospitalEncounterStatus.Signed)
             {
-                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"]</span>
+                <span class="badge badge-light-primary fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-primary me-1"></i>@T["Signed"]</span>
             }
         </div>
     </div></div>
@@ -108,7 +108,7 @@
                 @if (W?.Adrenaline is { } adr)
                 {
                     if (adr.Anaphylaxis) {<span class="badge badge-light-danger fw-bold fs-7">@T["Previous anaphylaxis"]</span>}
-                    if (adr.Prescribed) {<span class="badge badge-light-success fw-bold fs-7">@T["Adrenaline auto-injector: prescribed"]</span>}
+                    if (adr.Prescribed) {<span class="badge badge-light-primary fw-bold fs-7">@T["Adrenaline auto-injector: prescribed"]</span>}
                     else if (adr.Needed) {<a href="@Url.Action("Consult", new { id = e.ID })" class="badge badge-danger fw-bold fs-7">@T["Adrenaline auto-injector: not prescribed"]</a>}
                 }
                 @foreach (var d in Model.Visit.Diagnoses) {<span class="badge badge-light-primary fw-bold fs-7">@Nm(d.Name, d.NameEn)</span>}
@@ -212,7 +212,7 @@
                         <span class="fs-2hx fw-bold lh-1 @(bad ? "text-danger" : "text-gray-900")"><bdi class="hp-num">@Val(h.Concept, h.Last)@(h.Last != null && (h.Concept.Unit == "%" || (h.Concept.Unit ?? "").StartsWith("/")) ? h.Concept.Unit : "")</bdi></span>
                         <span class="text-gray-500 pt-1 fw-semibold fs-6">@Nm(h.Concept.Name, h.Concept.NameEn)</span></div>
                         <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@(bad || alerted ? "danger" : "primary")"><i class="ki-outline ki-pulse fs-2 text-@(bad || alerted ? "danger" : "primary")"></i></span></div></div></div>
-                    <div class="card-body d-flex align-items-end pt-0"><div class="d-flex align-items-center"><span class="bullet bullet-dot bg-@(bad || alerted ? "danger" : "success") h-6px w-6px me-2 flex-shrink-0"></span><span class="@(alerted ? "text-danger" : "text-gray-500") fw-semibold fs-7">@sub</span></div></div>
+                    <div class="card-body d-flex align-items-end pt-0"><div class="d-flex align-items-center"><span class="bullet bullet-dot bg-@(bad || alerted ? "danger" : "primary") h-6px w-6px me-2 flex-shrink-0"></span><span class="@(alerted ? "text-danger" : "text-gray-500") fw-semibold fs-7">@sub</span></div></div>
                 </div></div>
             }
             @{ int gaps = Model.Care.Count(c => c.Kind == "Gap"); }
@@ -220,7 +220,7 @@
                 <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column">
                     <span class="fs-2hx fw-bold lh-1 hp-num @(gaps > 0 ? "text-danger" : "text-gray-900")">@gaps</span>
                     <span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Care gaps"]</span></div>
-                    <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@(gaps > 0 ? "danger" : "success")"><i class="ki-outline ki-calendar-tick fs-2 text-@(gaps > 0 ? "danger" : "success")"></i></span></div></div></div>
+                    <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@(gaps > 0 ? "danger" : "primary")"><i class="ki-outline ki-calendar-tick fs-2 text-@(gaps > 0 ? "danger" : "primary")"></i></span></div></div></div>
                 <div class="card-body d-flex align-items-end pt-0"><div class="text-gray-500 fw-semibold fs-7">@(gaps == 0 ? T["Nothing overdue"].Value : string.Join(isAr ? "، " : ", ", Model.Care.Where(c => c.Kind == "Gap").Select(c => isAr ? c.Text : c.TextEn)))</div></div>
             </div></div>
         </div>
@@ -241,11 +241,11 @@
                                     {
                                         <tr class="@(r.Control ? "bg-light" : "")"><td class="ps-4 text-gray-900 fw-bold fs-6">@(isAr ? r.Label : r.LabelEn)</td>
                                             <td class="text-center hp-num @(r.Positive == true ? "text-danger fw-bold" : "")">@(r.Wheal?.ToString("0.#") ?? "—")</td><td class="text-center hp-num">@(r.Flare?.ToString("0.#") ?? "—")</td>
-                                            <td class="text-center pe-4">@if (r.Control) {<span class="badge badge-light fs-7 fw-bold">@T["Control"]</span>} else if (r.Positive == true) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Positive"]</span>} else if (r.Positive == false) {<span class="badge badge-light-success fs-7 fw-bold">@T["Negative"]</span>} else {<span class="text-muted">—</span>}</td></tr>
+                                            <td class="text-center pe-4">@if (r.Control) {<span class="badge badge-light fs-7 fw-bold">@T["Control"]</span>} else if (r.Positive == true) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Positive"]</span>} else if (r.Positive == false) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Negative"]</span>} else {<span class="text-muted">—</span>}</td></tr>
                                     }
                                 </tbody>
                             </table></div>
-                            <div class="mt-4">@if (W.Spt.Valid == true) {<span class="badge badge-light-success fs-7 fw-bold">@T["Test valid: saline ≤ 3 and histamine 3 mm or more above it"]</span>} else if (W.Spt.Valid == false) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Test invalid: read no result — repeat it (check antihistamines, the controls)"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Write both controls to read the test"]</span>}</div>
+                            <div class="mt-4">@if (W.Spt.Valid == true) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Test valid: saline ≤ 3 and histamine 3 mm or more above it"]</span>} else if (W.Spt.Valid == false) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Test invalid: read no result — repeat it (check antihistamines, the controls)"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Write both controls to read the test"]</span>}</div>
                         </div>
                     </div>
                 }
@@ -283,7 +283,7 @@
                             bool signed = vf.Form.Status == HospitalFormStatus.Signed; string dis = signed || !canEdit ? "disabled" : "";
                             var all = vf.Fields.ToDictionary(x => x.Field.ID, x => x.Field);
                             bool gridOn = false;
-                            if (Model.Forms.Count > 1) {<div class="d-flex align-items-center mb-4 @(vf == Model.Forms[0] ? "" : "mt-8")"><span class="bullet bullet-vertical h-20px bg-primary me-3"></span><span class="text-gray-800 fw-bold fs-5">@Nm(vf.Template.Name, vf.Template.NameEn)</span><span class="badge badge-light-primary fs-8 fw-bold hp-num ms-2" dir="ltr">v@(vf.Version.Version)</span>@if (signed) {<span class="badge badge-light-success fs-8 fw-bold ms-2">@T["Signed"]</span>}</div>}
+                            if (Model.Forms.Count > 1) {<div class="d-flex align-items-center mb-4 @(vf == Model.Forms[0] ? "" : "mt-8")"><span class="bullet bullet-vertical h-20px bg-primary me-3"></span><span class="text-gray-800 fw-bold fs-5">@Nm(vf.Template.Name, vf.Template.NameEn)</span><span class="badge badge-light-primary fs-8 fw-bold hp-num ms-2" dir="ltr">v@(vf.Version.Version)</span>@if (signed) {<span class="badge badge-light-primary fs-8 fw-bold ms-2">@T["Signed"]</span>}</div>}
                             <div class="row g-4" data-form="@vf.Form.ID">
                                 @foreach (var fv in vf.Fields)
                                 {
@@ -415,7 +415,7 @@
                                                     }
                                                     else
                                                     {
-                                                        string kind = d.Reaction switch { HospitalImmunoReaction.Systemic => "danger", HospitalImmunoReaction.LargeLocal => "primary", _ => "success" };
+                                                        string kind = d.Reaction switch { HospitalImmunoReaction.Systemic => "danger", HospitalImmunoReaction.LargeLocal => "primary", _ => "primary" };
                                                         <span class="badge badge-light-@kind fs-7 fw-bold">@T["imr:" + d.Reaction]@if (d.WhealMm != null) {<text> <bdi class="hp-num" dir="ltr">@d.WhealMm&nbsp;mm</bdi></text>}@if (d.Reaction == HospitalImmunoReaction.LargeLocal) {<text> — @T["repeat dose"]</text>}</span>
                                                     }</td></tr>
                                         }
@@ -471,7 +471,7 @@
                             @foreach (var ms in W.Development)
                             {
                                 bool ok = ms.Answer == "Y";
-                                <div class="hp-gap" data-milestone="@ms.Key" data-mform="@ms.FormId"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light"><i class="ki-outline @(ok ? "ki-check-circle text-success" : "ki-time text-primary") fs-2"></i></span></div><div><div class="text-gray-800 fw-bold fs-6">@(isAr ? ms.Label : ms.LabelEn)</div><div class="text-muted fw-semibold fs-7">@(ok ? T["Achieved"] : ms.Answer == "N" ? T["Not yet"] : T["Not assessed"])</div></div></div>
+                                <div class="hp-gap" data-milestone="@ms.Key" data-mform="@ms.FormId"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light"><i class="ki-outline @(ok ? "ki-check-circle text-primary" : "ki-time text-primary") fs-2"></i></span></div><div><div class="text-gray-800 fw-bold fs-6">@(isAr ? ms.Label : ms.LabelEn)</div><div class="text-muted fw-semibold fs-7">@(ok ? T["Achieved"] : ms.Answer == "N" ? T["Not yet"] : T["Not assessed"])</div></div></div>
                             }
                         </div>
                     </div>
@@ -577,9 +577,9 @@
                         }
                         @foreach (var d in Model.Done)
                         {
-                            <div class="hp-gap"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check fs-3 text-success"></i></span></div>
+                            <div class="hp-gap"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check fs-3 text-primary"></i></span></div>
                                 <div class="flex-grow-1"><div class="text-gray-800 fw-bold fs-6">@T["{0} done {1}", Nm(d.Concept.Name, d.Concept.NameEn), d.At.ToString("yyyy-MM-dd")]</div><div class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@d.Value</bdi></div></div>
-                                <span class="badge badge-light-success fs-7 fw-bold"><i class="ki-outline ki-check-circle text-success fs-5"></i></span></div>
+                                <span class="badge badge-light-primary fs-7 fw-bold"><i class="ki-outline ki-check-circle text-primary fs-5"></i></span></div>
                         }
                     </div>
                 </div>
@@ -741,7 +741,7 @@
                 var s = '', vs = Math.pow(10, Math.floor(Math.log10((v1 - v0) / 5))), vstep = (v1 - v0) / vs > 10 ? vs * 2 : vs;
                 for (var v = Math.ceil(v0 / vstep) * vstep; v <= v1; v += vstep) s += '<line x1="' + PL + '" x2="' + (W3 - PR) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#EEF0F6"/><text x="' + (PL - 6) + '" y="' + (Y(v) + 4) + '" font-size="10" text-anchor="end" fill="#6B7280">' + (+v.toFixed(1)) + '</text>';
                 for (var a = Math.ceil(a0); a <= a1; a++) s += '<line x1="' + X(a) + '" x2="' + X(a) + '" y1="' + PT + '" y2="' + (H3 - PB) + '" stroke="#F4F5F9"/><text x="' + X(a) + '" y="' + (H3 - 12) + '" font-size="10" text-anchor="middle" fill="#6B7280">' + a + '</text>';
-                var col = { P3: '#DC2626', P15: '#9CA3AF', P50: '#16A34A', P85: '#9CA3AF', P97: '#DC2626' };
+                var col = { P3: '#DC2626', P15: '#9CA3AF', P50: '#3A5795', P85: '#9CA3AF', P97: '#DC2626' };
                 Object.keys(g.lines).forEach(function (k) {
                     var d = g.lines[k].map(function (v, i) { return (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ');
                     s += '<path d="' + d + '" fill="none" stroke="' + col[k] + '" stroke-width="' + (k === 'P50' ? 2 : 1.3) + '"' + (k === 'P15' || k === 'P85' ? ' stroke-dasharray="4 4"' : '') + '/><text x="' + (W3 - PR + 4) + '" y="' + (Y(g.lines[k][g.lines[k].length - 1]) + 4) + '" font-size="10" fill="' + col[k] + '">' + k + '</text>';
@@ -778,7 +778,7 @@
             function devTicks() {
                 document.querySelectorAll('[data-milestone]').forEach(function (m) {
                     var i = form.querySelector('[data-form="' + m.dataset.mform + '"] [data-key="' + m.dataset.milestone + '"]'); if (!i) return;
-                    m.querySelector('i').className = 'ki-outline ' + (i.value === 'Y' ? 'ki-check-circle text-success' : 'ki-time text-primary') + ' fs-2';
+                    m.querySelector('i').className = 'ki-outline ' + (i.value === 'Y' ? 'ki-check-circle text-primary' : 'ki-time text-primary') + ' fs-2';
                     m.querySelector('.text-muted').textContent = i.value === 'Y' ? MT.yes : i.value === 'N' ? MT.no : MT.none;
                 });
             }
@@ -812,7 +812,7 @@
                 function X(i) { return PL + (W2 - PL - PR) * (h.pts.length < 2 ? 0.5 : i / (h.pts.length - 1)); } function Y(v) { return PT + (H2 - PT - PB) * (mx - v) / (mx - mn); }
                 var g = '', step = Math.pow(10, Math.floor(Math.log10((mx - mn) / 4))), t0 = Math.ceil(mn / step) * step;
                 for (var t = t0; t <= mx; t += step * (((mx - mn) / step) > 8 ? 2 : 1)) g += '<line x1="' + PL + '" x2="' + (W2 - PR) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="#EEF0F6"/><text x="' + (PL - 6) + '" y="' + (Y(t) + 4) + '" font-size="10" text-anchor="end" fill="#6B7280">' + (+t.toFixed(2)) + '</text>';
-                if (h.lo != null && h.hi != null && !h.panel) g += '<rect x="' + PL + '" width="' + (W2 - PL - PR) + '" y="' + Y(h.hi) + '" height="' + (Y(h.lo) - Y(h.hi)) + '" fill="#DCFCE7" opacity=".5"/>';
+                if (h.lo != null && h.hi != null && !h.panel) g += '<rect x="' + PL + '" width="' + (W2 - PL - PR) + '" y="' + Y(h.hi) + '" height="' + (Y(h.lo) - Y(h.hi)) + '" fill="#E1E8F5" opacity=".5"/>';
                 [[h.hi, h.panel ? '#DC2626' : null], [h.hi2, '#DC2626'], [h.alert, '#DC2626', h.alertText]].forEach(function (l) { if (l[0] == null || !l[1]) return; g += '<line x1="' + PL + '" x2="' + (W2 - PR) + '" y1="' + Y(l[0]) + '" y2="' + Y(l[0]) + '" stroke="' + l[1] + '" stroke-dasharray="5 4"/>' + (l[2] ? '<text x="' + (W2 - PR - 2) + '" y="' + (Y(l[0]) - 4 < 12 ? Y(l[0]) + 13 : Y(l[0]) - 4) + '" font-size="10" text-anchor="end" fill="' + l[1] + '">' + l[2] + '</text>' : ''); });
                 h.pts.forEach(function (p, i) { if (i % Math.ceil(h.pts.length / 8) === 0) g += '<text x="' + X(i) + '" y="' + (H2 - 8) + '" font-size="10" text-anchor="' + (h.pts.length > 1 && i === h.pts.length - 1 ? 'end' : i === 0 && h.pts.length > 1 ? 'start' : 'middle') + '" fill="#6B7280">' + p.at + '</text>'; });
                 [['v', '#3A5795'], ['v2', '#7239EA']].forEach(function (s) { var pts = h.pts.map(function (p, i) { return p[s[0]] == null ? null : X(i) + ',' + Y(p[s[0]]); }).filter(Boolean); if (!pts.length) return;

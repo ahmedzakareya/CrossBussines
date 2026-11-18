@@ -50,7 +50,7 @@
             @foreach (var g in groups)
             {
                 bool money = g.Key is HospitalReportGroups.Financial or HospitalReportGroups.Insurance;
-                string tone = g.Key == HospitalReportGroups.Clinical ? "danger" : g.Key == HospitalReportGroups.Operational ? "primary" : g.Key == HospitalReportGroups.Financial ? "success" : "info";
+                string tone = g.Key == HospitalReportGroups.Clinical ? "danger" : g.Key == HospitalReportGroups.Operational ? "primary" : g.Key == HospitalReportGroups.Financial ? "primary" : "info";
                 var list = Model.Where(x => x.Group == g.Key).ToList();
                 @* H128: list widget (demo39 dashboards/logistics) — symbol · title over a muted line · action *@
                 <div class="col-xl-6">

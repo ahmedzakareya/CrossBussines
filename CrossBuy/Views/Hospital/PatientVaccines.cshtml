@@ -49,7 +49,7 @@
                         <span class="d-flex align-items-center"><i class="ki-outline ki-calendar fs-4 me-1"></i>@(m.BirthDate == null ? T["No birth date on file"].Value : string.Format(T["Born {0}"].Value, m.BirthDate.Value.ToString("yyyy-MM-dd")))</span>
                     </div>
                     <div class="d-flex flex-wrap gap-3">
-                        @foreach (var (st, tone) in new[] { (HospitalImmunizationStatus.Given, "success"), (HospitalImmunizationStatus.Due, "primary"), (HospitalImmunizationStatus.Overdue, "danger") })
+                        @foreach (var (st, tone) in new[] { (HospitalImmunizationStatus.Given, "primary"), (HospitalImmunizationStatus.Due, "primary"), (HospitalImmunizationStatus.Overdue, "danger") })
                         {
                             int n = m.Doses.Count(d => d.Status == st);
                             <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4">
@@ -78,7 +78,7 @@
                     @foreach (var d in m.Doses)
                     {
                         var g = d.Given;
-                        string tone = d.Status == HospitalImmunizationStatus.Given ? "success" : d.Status == HospitalImmunizationStatus.Overdue ? "danger" : d.Status == HospitalImmunizationStatus.Due ? "primary" : "secondary";
+                        string tone = d.Status == HospitalImmunizationStatus.Given ? "primary" : d.Status == HospitalImmunizationStatus.Overdue ? "danger" : d.Status == HospitalImmunizationStatus.Due ? "primary" : "secondary";
                         <tr>
                             <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 text-nowrap">@Age(d.Item.AgeDays)</span></td>
                             <td><div class="d-flex align-items-center">

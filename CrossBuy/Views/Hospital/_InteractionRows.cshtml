@@ -13,7 +13,7 @@
                 <div class="d-flex align-items-center flex-wrap gap-2" dir="ltr" style="justify-content:flex-start"><bdi class="fw-bold fs-6 text-gray-900">@r.DrugA</bdi><span class="text-muted fw-bold">+</span><bdi class="fw-bold fs-6 text-gray-900">@r.DrugB</bdi></div></div></td>
         <td><span class="badge @sev fs-7 fw-bold text-nowrap">@T["sev:" + r.Severity]</span></td>
         <td><div class="fs-7 fw-semibold text-gray-700" dir="auto">@DisplayName.Of(r.EffectAr, r.EffectEn)</div></td>
-        <td>@if (r.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
+        <td>@if (r.IsActive) {<span class="badge badge-light-primary fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
         <td class="text-end pe-4">@if (canKeep) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-ds-edit="@r.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { drugA = r.DrugA, drugB = r.DrugB, severity = r.Severity, effectAr = r.EffectAr, effectEn = r.EffectEn, isActive = r.IsActive })"><i class="ki-outline ki-pencil fs-4"></i></button> }</td>
     </tr>
 }

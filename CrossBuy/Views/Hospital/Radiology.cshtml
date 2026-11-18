@@ -14,12 +14,12 @@
     string Prio(string p) => p == HospitalLabPriority.Stat ? "<span class=\"badge badge-danger fs-7 fw-bold\">STAT</span>" : p == HospitalLabPriority.Urgent ? "<span class=\"badge badge-light-primary fs-7 fw-bold\">" + T["Urgent"].Value + "</span>" : "<span class=\"badge badge-light fs-7 fw-bold\">" + T["Routine"].Value + "</span>";
     string RoomBadge(string state) => state switch
     {
-        HospitalRadiologyService.RoomFree => "<span class=\"badge badge-light-success fs-7 fw-bold\">" + T["Free (room)"].Value + "</span>",
+        HospitalRadiologyService.RoomFree => "<span class=\"badge badge-light-primary fs-7 fw-bold\">" + T["Free (room)"].Value + "</span>",
         HospitalRadiologyService.RoomBusy => "<span class=\"badge hp-badge fs-7 fw-bold\">" + T["Scanning"].Value + "</span>",
         HospitalRadiologyService.RoomReady => "<span class=\"badge badge-light-info fs-7 fw-bold\">" + T["Patient ready"].Value + "</span>",
         _ => "<span class=\"badge badge-light-danger fs-7 fw-bold\">" + T["Maintenance"].Value + "</span>",
     };
-    string St(string s) => s switch { "Scheduled" => "secondary", "Arrived" => "info", "Scanning" => "primary", "Reporting" => "primary", _ => "success" };
+    string St(string s) => s switch { "Scheduled" => "secondary", "Arrived" => "info", "Scanning" => "primary", "Reporting" => "primary", _ => "primary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()

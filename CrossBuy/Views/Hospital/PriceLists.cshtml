@@ -21,13 +21,13 @@
     // Each percentage is isolated left-to-right, or "-15%" reads "15-%" on an Arabic page.
     string P(decimal v) => "<bdi class=\"hp-num text-gray-800 fw-bold\" dir=\"ltr\">" + Pct(v) + "</bdi>";
     string Rule(HospitalPriceList l) => "<span class=\"d-block\">" + T["Services (group)"].Value + " " + P(l.ServicesAdjPct) + "</span><span class=\"d-block\">" + T["Medicines"].Value + " " + P(l.MedicinesAdjPct) + " · " + T["Consumables"].Value + " " + P(l.ConsumablesAdjPct) + "</span>";
-    string StatusBadge(string s) => s == HospitalPriceListStatus.Active ? "success" : s == HospitalPriceListStatus.Draft ? "secondary" : "danger";
+    string StatusBadge(string s) => s == HospitalPriceListStatus.Active ? "primary" : s == HospitalPriceListStatus.Draft ? "secondary" : "danger";
     string Arrow() => DisplayName.IsArabic ? "←" : "→";
     var tiles = new[] {
         (Num: (live.Count + 1).ToString(), Label: T["Price lists"].Value, Icon: "price-tag", Tone: "primary", Line: (string?)null),
         (Num: inUse.Count.ToString(), Label: T["Currencies in use"].Value, Icon: "dollar", Tone: "info", Line: (string?)null),
-        (Num: stale.ToString(), Label: T["Prices not updated"].Value, Icon: "time", Tone: stale > 0 ? "danger" : "success", Line: (string?)T["Awaiting review, or the main price moved"].Value),
-        (Num: pending.ToString(), Label: T["New items not added"].Value, Icon: "add-item", Tone: pending > 0 ? "info" : "success", Line: (string?)T["On the main list only"].Value) };
+        (Num: stale.ToString(), Label: T["Prices not updated"].Value, Icon: "time", Tone: stale > 0 ? "danger" : "primary", Line: (string?)T["Awaiting review, or the main price moved"].Value),
+        (Num: pending.ToString(), Label: T["New items not added"].Value, Icon: "add-item", Tone: pending > 0 ? "info" : "primary", Line: (string?)T["On the main list only"].Value) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -101,7 +101,7 @@
                     <tbody>
                         <tr>
                             <td class="ps-4"><div class="d-flex align-items-center">
-                                <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-price-tag fs-2 text-success"></i></span></div>
+                                <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-price-tag fs-2 text-primary"></i></span></div>
                                 <div class="d-flex flex-column">
                                     <a href="@Url.Action("Catalog")" class="text-gray-900 fw-bold text-hover-primary fs-6">@T["Main list"] <span class="badge badge-light-primary fs-8 ms-1">@T["Cash"]</span></a>
                                     <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">MAIN</bdi> · @T["Updates itself from the card"]</span>
@@ -110,9 +110,9 @@
                             <td><span class="badge badge-light-primary fs-7 fw-bold hp-num">@fac.Code</span></td>
                             <td class="text-gray-600 fw-semibold fs-7">@T["No discount — it is the selling price"]</td>
                             <td class="text-center text-muted">—</td>
-                            <td><span class="badge badge-light-success fs-7 fw-bold">@T["Automatic"]</span></td>
+                            <td><span class="badge badge-light-primary fs-7 fw-bold">@T["Automatic"]</span></td>
                             <td class="text-muted fw-semibold fs-7">@T["Open"]</td>
-                            <td class="pe-4"><span class="badge badge-light-success fs-7 fw-bold">@T["Active"]</span></td>
+                            <td class="pe-4"><span class="badge badge-light-primary fs-7 fw-bold">@T["Active"]</span></td>
                         </tr>
                         @foreach (var r in Model)
                         {
@@ -131,7 +131,7 @@
                                 <td>
                                     @if (r.Stale > 0) { <span class="badge badge-light-danger fs-7 fw-bold me-1"><span class="hp-num me-1">@r.Stale</span>@T["not updated (count)"]</span> }
                                     @if (r.Pending > 0) { <span class="badge badge-light-info fs-7 fw-bold"><span class="hp-num me-1">@r.Pending</span>@T["new (count)"]</span> }
-                                    @if (r.Stale == 0 && r.Pending == 0) { <span class="badge badge-light-success fs-7 fw-bold">@T["Up to date"]</span> }
+                                    @if (r.Stale == 0 && r.Pending == 0) { <span class="badge badge-light-primary fs-7 fw-bold">@T["Up to date"]</span> }
                                 </td>
                                 <td class="text-gray-600 fw-semibold fs-7 text-nowrap"><span class="hp-num">@l.ValidFrom.ToString("yyyy-MM-dd")</span> @Arrow() @if (l.ValidTo is DateTime to) {<span class="hp-num">@to.ToString("yyyy-MM-dd")</span>} else {<span class="text-muted">@T["Open"]</span>}</td>
                                 <td class="pe-4"><span class="badge badge-light-@StatusBadge(l.Status) fs-7 fw-bold">@T["plst:" + l.Status]</span></td>
@@ -277,7 +277,7 @@
                 fetch(urls.quote + '?patientId=' + pSel.value + '&serviceId=' + sSel.value, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
                     if (!d.ok) { out.textContent = W.failed; return; }
                     var html = row('price-tag', 'primary', W.list, d.list ? '<a class="fw-bold" href="' + urls.list.replace(/0$/, d.list.id) + '">' + esc(d.list.name) + '</a> <span class="badge ' + (d.foreign ? 'badge-light-info' : 'badge-light-primary') + ' fs-8 hp-num">' + esc(d.currencyCode) + '</span>' : '<span class="text-gray-800 fw-bold">' + esc(W.main) + '</span>');
-                    html += sep + row('dollar', 'success', W.price, '<span class="text-gray-900 fw-bold fs-5 hp-num" dir="ltr">' + esc(d.price) + '</span> <span class="text-muted fs-8">' + esc(d.currency) + '</span> <span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.src[d.source] || d.source) + '</span>');
+                    html += sep + row('dollar', 'primary', W.price, '<span class="text-gray-900 fw-bold fs-5 hp-num" dir="ltr">' + esc(d.price) + '</span> <span class="text-muted fs-8">' + esc(d.currency) + '</span> <span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.src[d.source] || d.source) + '</span>');
                     if (d.facility) html += sep + row('arrows-loop', 'info', W.facility, '<span class="text-gray-800 fw-bold hp-num" dir="ltr">' + esc(d.facility) + '</span> <span class="text-muted fs-8">(' + esc(W.rate) + ' <span class="hp-num">' + esc(d.rate) + '</span>)</span>');
                     if (d.outside) html += '<div class="text-danger fw-semibold fs-7 mt-4">' + esc(W.outside) + '</div>';
                     if (d.assignedButUnusable) html += '<div class="text-danger fw-semibold fs-7 mt-4">' + esc(W.unusable) + '</div>';

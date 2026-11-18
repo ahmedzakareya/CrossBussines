@@ -34,7 +34,7 @@
             <div class="row g-5 mb-5">
                 @* H128: stat tiles (demo39 dashboards/logistics) *@
                 @foreach (var (n, label, line, icon, tone) in new[] {
-                    (waiting, T["Openings waiting for review"].Value, T["bg:waiting"].Value, "ki-time", waiting > 0 ? "danger" : "success"),
+                    (waiting, T["Openings waiting for review"].Value, T["bg:waiting"].Value, "ki-time", waiting > 0 ? "danger" : "primary"),
                     (restricted, T["Restricted files"].Value, T["A file is restricted from the patient's file page."].Value, "ki-lock-2", "primary") })
                 {
                     <div class="col-md-6"><div class="card card-flush h-100">

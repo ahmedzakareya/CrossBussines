@@ -97,7 +97,7 @@
                 (T["ICU beds"].Value, b.Patients.Count.ToString(inv), string.Format(T["{0} of {1}"].Value, b.Patients.Count, b.Beds) + " " + T["beds:occupied"].Value, "text-gray-900", "home-2", "primary"),
                 (T["Ventilated"].Value, b.Ventilated.ToString(inv), "", "text-gray-900", "wind", "info"),
                 (T["On vasopressors"].Value, b.Vasopressors.ToString(inv), "", b.Vasopressors > 0 ? "text-danger" : "text-gray-900", "pulse", "danger"),
-                ("SOFA", sofa?.ToString(inv) ?? "—", p == null ? "" : sofaSub, sofa is int a1 && sofaY is int a0 && a1 > a0 ? "text-danger" : "text-gray-900", "graph-up", sofa is int a2 && sofaY is int a3 && a2 > a3 ? "danger" : "success") })
+                ("SOFA", sofa?.ToString(inv) ?? "—", p == null ? "" : sofaSub, sofa is int a1 && sofaY is int a0 && a1 > a0 ? "text-danger" : "text-gray-900", "graph-up", sofa is int a2 && sofaY is int a3 && a2 > a3 ? "danger" : "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">

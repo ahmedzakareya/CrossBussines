@@ -68,7 +68,7 @@
             var erTiles = new[] {
                 (T["In department now"].Value, stats.InDepartment.ToString(), "", T["Bays"].Value + " \u2066" + stats.Capacity + "\u2069", "ki-people", "primary", "primary"),
                 (T["Door-to-doctor"].Value, stats.DoorToDoctorToday?.ToString() ?? "—", stats.DoorToDoctorToday == null ? "" : T["min"].Value, T["today · target 30 min"].Value, "ki-timer", stats.DoorToDoctorToday > 30 ? "danger" : "info", stats.DoorToDoctorToday > 30 ? "danger" : "info"),
-                (T["Longest wait"].Value, stats.LongestWaitMinutes >= 1440 ? (stats.LongestWaitMinutes / 1440).ToString() : Wait(stats.LongestWaitMinutes), stats.LongestWaitMinutes >= 1440 ? T["days"].Value : WaitUnit(stats.LongestWaitMinutes), stats.LongestWaitEsi is int lw ? "ESI " + lw : T["nobody waiting"].Value, "ki-time", stats.LongestWaitMinutes > 45 ? "danger" : "success", stats.LongestWaitMinutes > 45 ? "danger" : "success"),
+                (T["Longest wait"].Value, stats.LongestWaitMinutes >= 1440 ? (stats.LongestWaitMinutes / 1440).ToString() : Wait(stats.LongestWaitMinutes), stats.LongestWaitMinutes >= 1440 ? T["days"].Value : WaitUnit(stats.LongestWaitMinutes), stats.LongestWaitEsi is int lw ? "ESI " + lw : T["nobody waiting"].Value, "ki-time", stats.LongestWaitMinutes > 45 ? "danger" : "primary", stats.LongestWaitMinutes > 45 ? "danger" : "primary"),
                 (T["Left without being seen"].Value, stats.LeftWithoutBeingSeenRate30d is decimal lr ? lr.ToString("0.0", inv) : "—", stats.LeftWithoutBeingSeenRate30d == null ? "" : "%", T["last 30 days"].Value, "ki-exit-right", "gray-600", "secondary") };
         }
         <div class="row g-5 g-xl-8 mb-5">

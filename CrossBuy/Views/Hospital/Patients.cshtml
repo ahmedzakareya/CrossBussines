@@ -39,7 +39,7 @@
             @foreach (var s in new[] {
                 (T["Total patients"].Value, Model.Stats.Total, T["Every open file"].Value, "primary", "ki-profile-user"),
                 (T["Registered this month"].Value, Model.Stats.ThisMonth, T["New files since the 1st"].Value, "info", "ki-calendar-add"),
-                (T["Possible duplicates"].Value, Model.Stats.PossibleDuplicates, T["Same name and date of birth"].Value, Model.Stats.PossibleDuplicates > 0 ? "danger" : "success", "ki-copy"),
+                (T["Possible duplicates"].Value, Model.Stats.PossibleDuplicates, T["Same name and date of birth"].Value, Model.Stats.PossibleDuplicates > 0 ? "danger" : "primary", "ki-copy"),
                 (T["Recorded allergy"].Value, Model.Stats.WithAllergy, T["Files carrying an allergy alert"].Value, "danger", "ki-shield-cross") })
             {
                 <div class="col-sm-6 col-xl-3">

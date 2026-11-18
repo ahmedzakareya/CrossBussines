@@ -16,7 +16,7 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Kind(string s) => s switch
     {
-        HospitalSetStatus.Sterile => "success", HospitalSetStatus.InAutoclave => "primary", HospitalSetStatus.Packed => "secondary", HospitalSetStatus.Quarantine => "info",
+        HospitalSetStatus.Sterile => "primary", HospitalSetStatus.InAutoclave => "primary", HospitalSetStatus.Packed => "secondary", HospitalSetStatus.Quarantine => "info",
         HospitalSetStatus.InUse => "dark", HospitalCssdRules.Expired => "danger", _ => "secondary",
     };
     var packed = b.Sets.Where(s => s.Set.Status == HospitalSetStatus.Packed).ToList();
@@ -73,7 +73,7 @@
         }
         @* H128: the sets in figures — the theme's stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 mb-5">
-            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Sterile), T["set:" + HospitalSetStatus.Sterile].Value, "shield-tick", "success", "success"); }</div>
+            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Sterile), T["set:" + HospitalSetStatus.Sterile].Value, "shield-tick", "primary", "primary"); }</div>
             <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Quarantine), T["set:" + HospitalSetStatus.Quarantine].Value, "shield-search", "info"); }</div>
             <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.AwaitingWash), T["set:" + HospitalSetStatus.AwaitingWash].Value, "drop", "info"); }</div>
             <div class="col-sm-6 col-xl-3">@{ int ex = CountOf(HospitalCssdRules.Expired); Tile(ex, T["set:" + HospitalCssdRules.Expired].Value, "information-5", "danger", ex > 0 ? "danger" : "gray-900"); }</div>
@@ -149,11 +149,11 @@
                                     @if (y.ImplantLoad) { <span class="badge badge-light-info fs-9 fw-bold mt-1">@T["Implantable items"]</span> }</td>
                                 <td><span class="text-gray-600 fw-semibold hp-num fs-7" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
                                 <td><bdi class="text-gray-800 fw-semibold fs-7 hp-num" dir="ltr">@y.TemperatureC?.ToString("0.#", inv) °C · @y.ExposureMinutes <bdi>@T["min"]</bdi>@if (y.PressureKpa != null) { <text> · @y.PressureKpa.Value.ToString("0.#", inv) kPa</text> }</bdi></td>
-                                <td><span class="badge badge-light-@(y.Chemical == HospitalIndicator.Pass ? "success" : y.Chemical == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Chemical:" + y.Chemical]</span></td>
-                                <td><span class="badge badge-light-@(y.Biological == HospitalIndicator.Pass ? "success" : y.Biological == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Biological:" + y.Biological]</span>
+                                <td><span class="badge badge-light-@(y.Chemical == HospitalIndicator.Pass ? "primary" : y.Chemical == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Chemical:" + y.Chemical]</span></td>
+                                <td><span class="badge badge-light-@(y.Biological == HospitalIndicator.Pass ? "primary" : y.Biological == HospitalIndicator.Fail ? "danger" : "primary") fs-8 fw-bold">@T["ind:Biological:" + y.Biological]</span>
                                     @if (canWork && y.Biological == HospitalIndicator.Pending)
                                     {
-                                        <div class="d-flex gap-1 mt-2"><button type="button" class="btn btn-icon btn-sm btn-light-success w-25px h-25px" title="@T["Pass"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Pass" data-what="@y.CycleNo"><i class="ki-outline ki-check fs-5"></i></button><button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Fail"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Fail" data-what="@y.CycleNo"><i class="ki-outline ki-cross fs-5"></i></button></div>
+                                        <div class="d-flex gap-1 mt-2"><button type="button" class="btn btn-icon btn-sm btn-light-primary w-25px h-25px" title="@T["Pass"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Pass" data-what="@y.CycleNo"><i class="ki-outline ki-check fs-5"></i></button><button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Fail"]" data-bs-toggle="tooltip" data-cs-bio="@y.ID" data-result="Fail" data-what="@y.CycleNo"><i class="ki-outline ki-cross fs-5"></i></button></div>
                                     }</td>
                                 <td>@if (y.ReleasedAt != null) { <span class="badge badge-light-primary fs-8 fw-bold">@T["rel:Released"]</span>@if (c.ReleasedBy != null) { <div class="text-muted fs-8 mt-1">@c.ReleasedBy</div> } }
                                     else { <span class="badge badge-light-secondary fs-8 fw-bold">@T["rel:Awaiting"]</span>@if (refuse != null) { <div class="text-muted fs-8 mt-1">@T[refuse]</div> } }</td>
@@ -222,7 +222,7 @@
                                 <td class="text-gray-800 fw-semibold" dir="auto">@c.Cycle.Autoclave</td>
                                 <td><span class="text-gray-800 fw-semibold hp-num text-nowrap" dir="ltr" data-utc="@c.Cycle.StartedAt.ToString("o", inv)">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></td>
                                 <td><span class="text-gray-600 fw-semibold hp-num fs-7" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
-                                <td class="pe-4"><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary") fs-7 fw-bold">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@c.Cycle.Note</div>}
+                                <td class="pe-4"><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "primary" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary") fs-7 fw-bold">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@c.Cycle.Note</div>}
                                     @if (c.Cycle.RecalledAt != null) { <div class="mt-1"><span class="badge badge-danger fs-8 fw-bold">@T["rel:Recalled"]</span></div> }
                                     else if (c.Cycle.ReleasedAt != null) { <div class="mt-1"><span class="badge badge-light-primary fs-8 fw-bold">@T["rel:Released"]</span>@if (canWork) { <button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px ms-1" title="@T["Recall this cycle"]" data-cs-recall="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-arrow-circle-left fs-5"></i></button> }</div> }</td>
                             </tr>

@@ -7,7 +7,7 @@
 @{ var inv = System.Globalization.CultureInfo.InvariantCulture; }
 @foreach (var r in Model)
 {
-    string tone = r.State == HospitalPharmacyStockState.Ok ? "success" : "danger";
+    string tone = r.State == HospitalPharmacyStockState.Ok ? "primary" : "danger";
     <tr>
         <td class="ps-4"><div class="d-flex align-items-center">
             <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-calendar fs-2 text-@tone"></i></span></div>

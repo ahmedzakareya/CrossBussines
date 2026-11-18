@@ -67,7 +67,7 @@
                         @if (dlinks.Count > 0)
                         {
                             <div class="card-toolbar gap-2">
-                                <span class="badge badge-light-success fs-7 fw-bold py-3 px-4">@T["{0} linked", linkedN]</span>
+                                <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4">@T["{0} linked", linkedN]</span>
                                 @if (unlinkedN > 0) {<span class="badge badge-light-danger fs-7 fw-bold py-3 px-4">@T["{0} not linked", unlinkedN]</span>}
                             </div>
                         }
@@ -87,9 +87,9 @@
                                     bool linked = d.Link != null;
                                     <tr data-dl="@d.DrugName">
                                         <td class="ps-4"><div class="d-flex align-items-center">
-                                            <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@(linked ? "success" : "danger")"><i class="ki-outline ki-@(linked ? "check-circle" : "cross-circle") fs-2 text-@(linked ? "success" : "danger")"></i></span></div>
+                                            <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@(linked ? "primary" : "danger")"><i class="ki-outline ki-@(linked ? "check-circle" : "cross-circle") fs-2 text-@(linked ? "primary" : "danger")"></i></span></div>
                                             <div class="d-flex flex-column"><bdi dir="ltr" class="text-gray-900 fw-bold fs-6">@d.DrugName</bdi>
-                                                <span class="badge badge-light-@(linked ? "success" : "danger") fs-8 fw-bold mt-1 align-self-start">@T[linked ? "Linked" : "Not linked"]</span></div>
+                                                <span class="badge badge-light-@(linked ? "primary" : "danger") fs-8 fw-bold mt-1 align-self-start">@T[linked ? "Linked" : "Not linked"]</span></div>
                                         </div></td>
                                         <td><span class="badge badge-light-primary fs-7 fw-bold hp-num">@d.Regimens</span></td>
                                         <td>@if (canPh)

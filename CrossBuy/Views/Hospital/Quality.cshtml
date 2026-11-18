@@ -43,7 +43,7 @@
         }
         @* H128: stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 mb-5">
-            @foreach (var (st, icon, tone) in new[] { ("Met", "ki-check-circle", "success"), ("NotMet", "ki-cross-circle", "danger"), ("NoData", "ki-question", "gray") })
+            @foreach (var (st, icon, tone) in new[] { ("Met", "ki-check-circle", "primary"), ("NotMet", "ki-cross-circle", "danger"), ("NoData", "ki-question", "gray") })
             {
                 <div class="col-md-4"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -62,8 +62,8 @@
         <div class="row g-5">
             @foreach (var q in Model.Values)
             {
-                string tone = q.Status == "Met" ? "success" : q.Status == "NotMet" ? "danger" : "gray-500";
-                string badge = q.Status == "Met" ? "success" : q.Status == "NotMet" ? "danger" : "primary";
+                string tone = q.Status == "Met" ? "primary" : q.Status == "NotMet" ? "danger" : "gray-500";
+                string badge = q.Status == "Met" ? "primary" : q.Status == "NotMet" ? "danger" : "primary";
                 <div class="col-md-6 col-xl-4"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800 fs-6">@T["qi:" + q.Code]</span>
@@ -85,7 +85,7 @@
                             {
                                 var v = q.Trend[i]; var mm = Model.TrendMonths[i];
                                 string st = HospitalQualityRules.Status(v, q.Target, q.LowerBetter);
-                                <div class="flex-grow-1 text-center rounded py-1 @(st == "Met" ? "bg-light-success" : st == "NotMet" ? "bg-light-danger" : "bg-light") @(i == q.Trend.Count - 1 ? "border border-gray-400" : "")">
+                                <div class="flex-grow-1 text-center rounded py-1 @(st == "Met" ? "bg-light-primary" : st == "NotMet" ? "bg-light-danger" : "bg-light") @(i == q.Trend.Count - 1 ? "border border-gray-400" : "")">
                                     <div class="fs-9 fw-bold hp-num">@F(v, q.Unit)</div><div class="fs-9 text-muted hp-num">@($"{mm.Month:00}/{mm.Year % 100:00}")</div></div>
                             }
                         </div>

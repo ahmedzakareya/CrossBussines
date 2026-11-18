@@ -11,7 +11,7 @@
 @foreach (var r in Model)
 {
     var g = r.Grant;
-    string tone = g.Status == HospitalCharityStatus.Approved ? "success" : g.Status == HospitalCharityStatus.Refused ? "danger" : "primary";
+    string tone = g.Status == HospitalCharityStatus.Approved ? "primary" : g.Status == HospitalCharityStatus.Refused ? "danger" : "primary";
     <tr data-charity-row="@g.ID">
         <td class="ps-4"><div class="d-flex align-items-center">
             <div class="symbol symbol-45px symbol-circle flex-shrink-0 me-4">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>

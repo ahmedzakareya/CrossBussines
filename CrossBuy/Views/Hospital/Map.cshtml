@@ -54,7 +54,7 @@
             @foreach (var s in new[] {
                 (T["Patients in the building"].Value, (inBeds + inClinics + waiting + elsewhere).ToString(), T["In beds"].Value + " ⁦" + inBeds + "⁩ · " + T["in clinics"].Value + " ⁦" + (inClinics + waiting) + "⁩ · " + T["map:elsewhere"].Value + " ⁦" + elsewhere + "⁩", "ki-people", "text-gray-900", "primary"),
                 (T["Doctors today"].Value, doctorsToday.ToString(), T["With appointments today"].Value, "ki-briefcase", "text-gray-900", "info"),
-                (T["Beds free"].Value, freeBeds.ToString(), T["of"].Value + " ⁦" + allBeds + "⁩ " + T["beds (count)"].Value, "ki-home-3", "text-success", "success"),
+                (T["Beds free"].Value, freeBeds.ToString(), T["of"].Value + " ⁦" + allBeds + "⁩ " + T["beds (count)"].Value, "ki-home-3", "text-primary", "primary"),
                 (T["Waiting in clinics"].Value, waiting.ToString(), T["Arrived, not called yet"].Value, "ki-time", waiting > 0 ? "text-primary" : "text-gray-900", "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">

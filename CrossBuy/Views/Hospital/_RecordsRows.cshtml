@@ -10,17 +10,17 @@
     <tr>
         @* H128: a table-widget row (demo39 widgets/tables) *@
         <td class="ps-4"><div class="d-flex align-items-center">
-            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(r.Review != null ? "success" : r.Delinquent ? "danger" : "primary")"><i class="ki-outline ki-folder fs-2x text-@(r.Review != null ? "success" : r.Delinquent ? "danger" : "primary")"></i></span></div>
+            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(r.Review != null ? "primary" : r.Delinquent ? "danger" : "primary")"><i class="ki-outline ki-folder fs-2x text-@(r.Review != null ? "primary" : r.Delinquent ? "danger" : "primary")"></i></span></div>
             <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@who</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@r.Mrn</bdi></div>
         </div></td>
         <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-6 hp-num d-block" dir="ltr">@HospitalNursingService.UtcToWard(r.DischargedAt).ToString("yyyy-MM-dd")</span>
             <span class="badge badge-light-@(r.Delinquent ? "danger" : "primary") fs-8 fw-bold mt-1">@T["{0} days ago", r.DaysSince]</span></td>
         <td class="text-gray-700 fw-semibold fs-7">@(r.Attending ?? "—")</td>
         <td>
-            @if (r.Deficiencies.Count == 0) {<span class="badge badge-light-success fs-7 fw-bold"><i class="ki-outline ki-check fs-6 text-success me-1"></i>@T["Nothing missing"]</span>}
+            @if (r.Deficiencies.Count == 0) {<span class="badge badge-light-primary fs-7 fw-bold"><i class="ki-outline ki-check fs-6 text-primary me-1"></i>@T["Nothing missing"]</span>}
             else {<div class="d-flex flex-wrap gap-1">@foreach (var d in r.Deficiencies) {<span class="badge badge-light-primary fs-8 fw-bold" title="@T["owner:" + HospitalChartDeficiency.OwnerOf(d)]">@T["chd:" + d] <span class="text-gray-500 fw-semibold ms-1">· @T["owner:" + HospitalChartDeficiency.OwnerOf(d)]</span></span>}</div>}
         </td>
-        <td>@if (r.Review != null) {<span class="badge badge-light-success fs-7 fw-bold">@T["Signed"]</span><span class="d-block fs-7 hp-num text-muted fw-semibold mt-1" dir="ltr">@HospitalNursingService.UtcToWard(r.Review.ReviewedAt).ToString("yyyy-MM-dd")</span>}
+        <td>@if (r.Review != null) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Signed"]</span><span class="d-block fs-7 hp-num text-muted fw-semibold mt-1" dir="ltr">@HospitalNursingService.UtcToWard(r.Review.ReviewedAt).ToString("yyyy-MM-dd")</span>}
             else if (r.Delinquent) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Delinquent"]</span>}
             else if (r.Deficiencies.Count > 0) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Incomplete"]</span>}
             else {<span class="badge badge-light-info fs-7 fw-bold">@T["Waiting for sign-off"]</span>}</td>

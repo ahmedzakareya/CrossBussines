@@ -26,11 +26,11 @@
     var witnesses = (ViewBag.Witnesses as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
     var vendors = (ViewBag.Vendors as List<(int ID, string Name, string? NameEn)>) ?? new();
     var tiles = new (string Label, decimal Value, string Note, string Icon, string Tone, string? Filter, string Tab)[] {
-        (T["Expired on the shelf"].Value, Model.ExpiredValue, string.Format(T["{0} batches to destroy"].Value, Model.ExpiredBatches), "ki-calendar-remove", Model.ExpiredValue > 0 ? "danger" : "success", HospitalDisposalState.Expired, HospitalController.DisposalTabs.Todo),
-        (T["Near expiry"].Value, Model.NearValue, T["return or use it before it expires"].Value, "ki-time", Model.NearValue > 0 ? "danger" : "success", HospitalDisposalState.Near, HospitalController.DisposalTabs.Todo),
+        (T["Expired on the shelf"].Value, Model.ExpiredValue, string.Format(T["{0} batches to destroy"].Value, Model.ExpiredBatches), "ki-calendar-remove", Model.ExpiredValue > 0 ? "danger" : "primary", HospitalDisposalState.Expired, HospitalController.DisposalTabs.Todo),
+        (T["Near expiry"].Value, Model.NearValue, T["return or use it before it expires"].Value, "ki-time", Model.NearValue > 0 ? "danger" : "primary", HospitalDisposalState.Near, HospitalController.DisposalTabs.Todo),
         (T["In quarantine"].Value, Model.QuarantineValue, T["recalled or suspect"].Value, "ki-lock-2", "dark", HospitalDisposalState.Quarantined, HospitalController.DisposalTabs.Todo),
         (T["Lost this year"].Value, Model.DestroyedValue, T["destroyed, written off at cost"].Value, "ki-chart-line-down", Model.DestroyedValue > 0 ? "danger" : "primary", HospitalDisposalKind.Destroyed, HospitalController.DisposalTabs.Done),
-        (T["Credited this year"].Value, Model.ReturnedValue, T["returned, debit notes to suppliers"].Value, "ki-arrow-circle-left", "success", HospitalDisposalKind.Returned, HospitalController.DisposalTabs.Done) };
+        (T["Credited this year"].Value, Model.ReturnedValue, T["returned, debit notes to suppliers"].Value, "ki-arrow-circle-left", "primary", HospitalDisposalKind.Returned, HospitalController.DisposalTabs.Done) };
     var tabs = new (string Key, string Label, string Icon)[] {
         (HospitalController.DisposalTabs.Todo, T["To deal with"].Value, "ki-notification-status"),
         (HospitalController.DisposalTabs.Done, T["Destroyed and returned"].Value, "ki-archive-tick") };

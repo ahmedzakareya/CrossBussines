@@ -45,12 +45,12 @@
                 var tiles = new (string Icon, string Color, int N, string Label)[]
                 {
                     ("ki-home-2", "primary", counts.Admitted, T["Admitted now"].Value),
-                    ("ki-user-tick", "success", counts.InClinic, T["With a doctor now"].Value),
+                    ("ki-user-tick", "primary", counts.InClinic, T["With a doctor now"].Value),
                     ("ki-time", "info", counts.WaitingClinic, T["Waiting for a clinic"].Value),
                     ("ki-pulse", "danger", counts.InEmergency, T["In the emergency department"].Value),
                     ("ki-heart-circle", "danger", counts.InTheatre, T["In an operation"].Value),
                     ("ki-scan-barcode", "primary", counts.InImaging, T["At imaging"].Value),
-                    ("ki-calendar-tick", "success", counts.ArrivalsToday, T["Clinic arrivals today"].Value),
+                    ("ki-calendar-tick", "primary", counts.ArrivalsToday, T["Clinic arrivals today"].Value),
                 };
                 @* H125: the theme's stat tile (demo39 dashboards/logistics) — symbol, the large figure, its label *@
                 <div class="row g-5 mb-5">
@@ -109,12 +109,12 @@
                       since: @Json.Serialize(T["since {0}"].Value), map: @Json.Serialize(T["On the map"].Value), file: @Json.Serialize(T["Open file"].Value),
                       restricted: @Json.Serialize(T["Restricted file: the location is not given at the desk — ask the care team"].Value), hint: @Json.Serialize(T["Results appear as you type."].Value),
                       kind: @Json.Serialize(new[] { "Theatre", "Emergency", "Imaging", "ClinicInRoom", "ClinicWaiting", "Ward" }.ToDictionary(k => k, k => T["where:" + k].Value)) };
-            var ICON = { Theatre: 'ki-heart-circle text-danger', Emergency: 'ki-pulse text-danger', Imaging: 'ki-scan-barcode text-primary', ClinicInRoom: 'ki-user-tick text-success', ClinicWaiting: 'ki-time text-info', Ward: 'ki-home-2 text-primary' };
+            var ICON = { Theatre: 'ki-heart-circle text-danger', Emergency: 'ki-pulse text-danger', Imaging: 'ki-scan-barcode text-primary', ClinicInRoom: 'ki-user-tick text-primary', ClinicWaiting: 'ki-time text-info', Ward: 'ki-home-2 text-primary' };
             function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
             function ini(n) { return (n || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join(''); }
             var wq = document.getElementById('w_q'), wo = document.getElementById('w_out'), wt = null, wseq = 0;
             // H125: the theme's list widget — the person (photo, name over the file number), each place a tinted block (demo39 widgets/lists)
-            var TONE = { Theatre: 'danger', Emergency: 'danger', Imaging: 'primary', ClinicInRoom: 'success', ClinicWaiting: 'info', Ward: 'primary' };
+            var TONE = { Theatre: 'danger', Emergency: 'danger', Imaging: 'primary', ClinicInRoom: 'primary', ClinicWaiting: 'info', Ward: 'primary' };
             function wrender(rows) {
                 if (!rows.length) { wo.innerHTML = '<div class="text-center py-6"><i class="ki-outline ki-user fs-3x text-gray-300 d-block mb-3"></i><div class="fs-6 fw-semibold text-gray-600">' + esc(W.none) + '</div></div>'; return; }
                 wo.innerHTML = rows.map(function (r, i) {

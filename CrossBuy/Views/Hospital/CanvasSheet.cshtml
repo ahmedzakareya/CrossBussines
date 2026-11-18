@@ -752,7 +752,7 @@
                     var tj = J.filter(function (j) { return st[j.k] === 1 || st[j.k] === 3; }).length, sj = J.filter(function (j) { return st[j.k] === 2 || st[j.k] === 3; }).length;
                     var esr = parseFloat(document.getElementById('jt_esr').value), pga = parseInt(document.getElementById('jt_pga').value, 10), ok = esr >= 1 && pga >= 0;
                     var das = ok ? 0.56 * Math.sqrt(tj) + 0.28 * Math.sqrt(sj) + 0.70 * Math.log(esr) + 0.014 * pga : null;
-                    var band = das == null ? null : das > 5.1 ? ['High', 'danger'] : das > 3.2 ? ['Moderate', 'primary'] : das >= 2.6 ? ['Low', 'info'] : ['Remission', 'success'];
+                    var band = das == null ? null : das > 5.1 ? ['High', 'danger'] : das > 3.2 ? ['Moderate', 'primary'] : das >= 2.6 ? ['Low', 'info'] : ['Remission', 'primary'];
                     // H127: the counts and the score as the theme's stat boxes; a count of the 28 reads "{0} of {1}", never a slash
                     function box(lbl, val, big) { return '<div class="col-4"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-gray-500 fw-semibold fs-7 mb-1">' + lbl + '</div><div class="' + (big ? 'fs-2hx hp-num' : 'fs-3') + ' fw-bold lh-1 text-gray-900">' + val + '</div></div></div>'; }
                     document.getElementById('jt_out').innerHTML = '<div class="row g-3">' + box(JT.tender, esc(fmt(JT.of, tj).replace('{1}', 28))) + box(JT.swollen, esc(fmt(JT.of, sj).replace('{1}', 28))) + box('<span dir="ltr">DAS28</span>', das == null ? '—' : das.toFixed(2), true) + '</div>' +

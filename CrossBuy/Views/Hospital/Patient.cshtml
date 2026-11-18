@@ -98,7 +98,7 @@
                 <span class="fw-bold text-primary fs-6"><i class="ki-outline ki-geolocation fs-3 text-primary me-1"></i>@T["Now:"]</span>
                 @foreach (var w in whereNow)
                 {
-                    <span class="fs-7 text-gray-800"><span class="fw-bold">@T["where:" + w.Kind]</span> · <bdi>@(isArNow ? w.Place : w.PlaceEn)</bdi>@if ((isArNow ? w.Detail : w.DetailEn) is string d) {<text> · <bdi class="text-muted">@d</bdi></text>}@if (w.Live) {<span class="badge badge-light-success fs-9 ms-1">@T["now"]</span>}</span>
+                    <span class="fs-7 text-gray-800"><span class="fw-bold">@T["where:" + w.Kind]</span> · <bdi>@(isArNow ? w.Place : w.PlaceEn)</bdi>@if ((isArNow ? w.Detail : w.DetailEn) is string d) {<text> · <bdi class="text-muted">@d</bdi></text>}@if (w.Live) {<span class="badge badge-light-primary fs-9 ms-1">@T["now"]</span>}</span>
                 }
             </div>
         }
@@ -115,7 +115,7 @@
                             <span class="hp-photo-btn"><i class="ki-outline ki-picture fs-6 text-white"></i></span>
                             <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-photo-input />
                         }
-                        @if (current != null) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px" title="@T["Admitted"]"></div>}
+                        @if (current != null) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-primary rounded-circle border border-4 border-body h-20px w-20px" title="@T["Admitted"]"></div>}
                     </label>
                 </div>
                 <div class="flex-grow-1 min-w-0">
@@ -136,7 +136,7 @@
                     </div>
                     <div class="d-flex flex-wrap">
                         @foreach (var (label, n, icon, tone) in new[] { (T["Visits"].Value, visits.Count, "ki-notepad-edit", "primary"), (T["Admissions"].Value, stays.Count, "ki-home-2", "info"),
-                            (T["Appointments"].Value, appointments.Count, "ki-calendar", "success"), (T["Bills"].Value, bills.Count, "ki-bill", "danger") })
+                            (T["Appointments"].Value, appointments.Count, "ki-calendar", "primary"), (T["Bills"].Value, bills.Count, "ki-bill", "danger") })
                         {
                             <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                                 <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@n</div></div>
@@ -244,8 +244,8 @@
                                             <div class="text-muted fs-7">@Model.EmergencyRelation @if (Model.EmergencyPhone != null) {<text> · </text><span class="hp-num">@Model.EmergencyPhone</span>}</div>
                                         }
                                         <div class="separator separator-dashed my-4"></div>
-                                        <div class="fs-7 fw-semibold @(Model.ConsentSigned ? "text-success" : "text-danger")">
-                                            <i class="ki-outline @(Model.ConsentSigned ? "ki-check-circle text-success" : "ki-cross-circle text-danger") fs-5 me-1"></i>@(Model.ConsentSigned ? T["General consent signed"] : T["General consent not signed"])
+                                        <div class="fs-7 fw-semibold @(Model.ConsentSigned ? "text-primary" : "text-danger")">
+                                            <i class="ki-outline @(Model.ConsentSigned ? "ki-check-circle text-primary" : "ki-cross-circle text-danger") fs-5 me-1"></i>@(Model.ConsentSigned ? T["General consent signed"] : T["General consent not signed"])
                                         </div>
                                     </div>
                                 </div>
@@ -268,7 +268,7 @@
                                                 <td class="hp-num">@v.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
                                                 <td class="fs-7">@(vd == null ? "—" : DisplayName.Of(vd.Row.Name, vd.Row.NameEn))</td>
                                                 <td>@if (!canClinical) {<span class="text-muted fs-8"><i class="ki-outline ki-lock-2 fs-8 me-1"></i>@T["For the care team"]</span>} else if (v.PrimaryCode != null) {<span class="badge hp-code fs-9 hp-num me-1">@v.PrimaryCode</span>@DisplayName.Of(v.PrimaryName, v.PrimaryNameEn)} else {<span class="text-muted">@(v.ChiefComplaint ?? "—")</span>}</td>
-                                                <td><span class="badge @(v.Status == HospitalEncounterStatus.Signed ? "badge-light-success" : "badge-light-primary") fs-8">@T["enc:" + v.Status]</span></td>
+                                                <td><span class="badge @(v.Status == HospitalEncounterStatus.Signed ? "badge-light-primary" : "badge-light-primary") fs-8">@T["enc:" + v.Status]</span></td>
                                                 <td class="text-end"><a href="@Url.Action("Consult", new { id = v.Id })" class="btn btn-sm btn-light-primary">@T["Open"]</a></td>
                                             </tr>
                                         }
@@ -335,7 +335,7 @@
 
                     <div class="tab-pane fade" id="pfAccount">
                         <div class="row g-5 mb-5">
-                            @foreach (var k in new[] { (T["Billed"].Value, bills.Sum(b => b.Total), "text-gray-900"), (T["Collected"].Value, bills.Sum(b => b.Paid), "text-success"), (T["Still owed"].Value, bills.Sum(b => b.Total - b.Paid), bills.Sum(b => b.Total - b.Paid) > 0 ? "text-danger" : "text-gray-900") })
+                            @foreach (var k in new[] { (T["Billed"].Value, bills.Sum(b => b.Total), "text-gray-900"), (T["Collected"].Value, bills.Sum(b => b.Paid), "text-primary"), (T["Still owed"].Value, bills.Sum(b => b.Total - b.Paid), bills.Sum(b => b.Total - b.Paid) > 0 ? "text-danger" : "text-gray-900") })
                             {
                                 <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@k.Item1</div><div class="fs-2x fw-bold @k.Item3 hp-num">@BM(k.Item2)</div><div class="text-muted fs-8">@billCurrency?.Label(DisplayName.IsArabic)</div></div></div></div>
                             }
@@ -357,7 +357,7 @@
                                                 <td class="hp-num fs-7">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
                                                 <td class="text-end hp-num">@BM(b.Total)</td>
                                                 <td class="text-end hp-num fw-bold @(b.Total - b.Paid > 0 ? "text-danger" : "")">@BM(b.Total - b.Paid)</td>
-                                                <td><span class="badge @(b.Status == HospitalBillStatus.Open ? "badge-light-primary" : "badge-light-success") fs-8">@T["bill:" + b.Status]</span></td>
+                                                <td><span class="badge @(b.Status == HospitalBillStatus.Open ? "badge-light-primary" : "badge-light-primary") fs-8">@T["bill:" + b.Status]</span></td>
                                                 <td class="text-end"><a href="@Url.Action("Bill", new { id = b.Id })" class="btn btn-sm btn-light-primary">@T["Open"]</a></td>
                                             </tr>
                                         }
@@ -402,7 +402,7 @@
                                                 <td><span class="hp-num" dir="ltr">@l.FromDate.ToString("yyyy-MM-dd") → @l.ToDate.ToString("yyyy-MM-dd")</span><div class="text-muted fs-8"><span class="hp-num">@l.Days</span> @T["days"]</div></td>
                                                 <td>@T["sl:" + l.Kind]@if (l.Diagnosis != null && canClinical) {<div class="text-muted fs-8" dir="auto">@l.Diagnosis @if (!l.ShowDiagnosis) {<span class="badge badge-light fs-9">@T["not printed"]</span>}</div>}</td>
                                                 <td>@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</td>
-                                                <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-success">@T["sl:valid"]</span>}</td>
+                                                <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-primary">@T["sl:valid"]</span>}</td>
                                                 <td class="text-end"><div class="d-flex justify-content-end gap-2">
                                                     @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalSickLeave, DocumentId = l.ID.ToString(), DocumentTitle = l.LeaveNo })
                                                     @if (!isVoid && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-sick-void="@l.ID" data-no="@l.LeaveNo">@T["sl:voidAction"]</button> }
@@ -443,7 +443,7 @@
                                                     @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalConsent, DocumentId = c.ID.ToString(), DocumentTitle = c.ConsentNo })
                                                     @if (!withdrawn && c.Decision == HospitalConsentDecision.Given && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-consent-withdraw="@c.ID" data-no="@c.ConsentNo">@T["cn:withdraw"]</button> }
                                                 </div></td>
-                                                <td>@if (c.Decision == HospitalConsentDecision.Given) {<span class="badge badge-light-success">@T["cns:Given"]</span>} else {<span class="badge badge-light-danger">@T["cns:Refused"]</span>}
+                                                <td>@if (c.Decision == HospitalConsentDecision.Given) {<span class="badge badge-light-primary">@T["cns:Given"]</span>} else {<span class="badge badge-light-danger">@T["cns:Refused"]</span>}
                                                     <div class="mt-1">@if (withdrawn) {<span class="badge badge-light-danger">@T["cn:withdrawn"]</span><div class="text-muted fs-9 mt-1" dir="auto">@c.WithdrawReason</div>} else {<span class="badge badge-light-primary">@T["cn:inForce"]</span>}</div></td>
                                                 <td><div dir="auto">@c.SignerName</div>@if (c.SignerKind == HospitalConsentSigner.Representative) {<div class="text-muted fs-8" dir="auto">@c.SignerRelation · @T["cp:" + c.ProxyReason]</div>}
                                                     <div class="text-muted fs-8 mt-1">@T["cn:explainedBy"]: @DisplayName.Of(r.ExplainedBy, r.ExplainedByEn)</div><div class="text-muted fs-8">@T["Witness"]: @DisplayName.Of(r.Witness, r.WitnessEn)</div></td>

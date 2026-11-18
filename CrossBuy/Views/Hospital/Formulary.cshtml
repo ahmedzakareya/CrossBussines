@@ -17,8 +17,8 @@
     int undescribed = Model.Medicines - Model.Described;
     var tiles = new (string Label, int N, string Note, string Icon, string Tone, string? Filter)[] {
         (T["Medicines"].Value, Model.Medicines, string.Format(T["{0} described"].Value, Model.Described), "ki-capsule", "primary", null),
-        (T["Not described yet"].Value, undescribed, T["no generic name behind the brand"].Value, "ki-question-2", undescribed > 0 ? "danger" : "success", HospitalFormularyFilter.Undescribed),
-        (T["Incomplete records"].Value, Model.Incomplete, T["strength, form, route or ATC missing"].Value, "ki-notepad-edit", Model.Incomplete > 0 ? "danger" : "success", HospitalFormularyFilter.Incomplete),
+        (T["Not described yet"].Value, undescribed, T["no generic name behind the brand"].Value, "ki-question-2", undescribed > 0 ? "danger" : "primary", HospitalFormularyFilter.Undescribed),
+        (T["Incomplete records"].Value, Model.Incomplete, T["strength, form, route or ATC missing"].Value, "ki-notepad-edit", Model.Incomplete > 0 ? "danger" : "primary", HospitalFormularyFilter.Incomplete),
         (T["High-alert medicines"].Value, Model.HighAlert, T["a second check before they leave"].Value, "ki-shield-cross", "danger", HospitalFormularyFilter.HighAlert),
         (T["Controlled drugs"].Value, Model.Controlled, T["narcotics and psychotropics"].Value, "ki-lock-2", "dark", HospitalFormularyFilter.Controlled),
         (T["Off the list or restricted"].Value, Model.Restricted + Model.OffList, string.Format(T["{0} restricted"].Value, Model.Restricted), "ki-cross-square", "info", HospitalFormularyStatus.Restricted) };

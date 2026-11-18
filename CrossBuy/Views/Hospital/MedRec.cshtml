@@ -25,7 +25,7 @@
     var inpatient = m.Lines.Where(l => l.Kind == HospitalMedLineKind.Inpatient).ToList();
     var fresh = m.Lines.Where(l => l.Kind == HospitalMedLineKind.New).ToList();
     var undecidedOrders = m.OpenOrders.Where(o => !inpatient.Any(l => l.MedOrderId == o.ID)).ToList();
-    string DecisionBadge(string? d) => d switch { HospitalMedDecision.Continue => "badge-light-success", HospitalMedDecision.Stop => "badge-light-danger", null => "badge-light", _ => "badge-light-primary" };
+    string DecisionBadge(string? d) => d switch { HospitalMedDecision.Continue => "badge-light-primary", HospitalMedDecision.Stop => "badge-light-danger", null => "badge-light", _ => "badge-light-primary" };
     string Med(string drug, string? dose, string? route, string? freq) => string.Join(" · ", new[] { dose, route, freq }.Where(x => !string.IsNullOrWhiteSpace(x)));
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -39,7 +39,7 @@
         string E(string s) => System.Net.WebUtility.HtmlEncode(s);
         if (decision != null)
         {
-            var cls = decision == HospitalMedDecision.Continue ? "badge-light-success" : decision == HospitalMedDecision.Stop ? "badge-light-danger" : "badge-light-primary";
+            var cls = decision == HospitalMedDecision.Continue ? "badge-light-primary" : decision == HospitalMedDecision.Stop ? "badge-light-danger" : "badge-light-primary";
             sb.Append($"<span class=\"badge {cls} fs-7 fw-bold\">{E(T["mrd:" + decision].Value)}</span>");
             if (!string.IsNullOrWhiteSpace(reason)) sb.Append($"<div class=\"fs-8 text-gray-700 mt-1\" dir=\"auto\">{E(reason)}</div>");
             sb.Append($"<div class=\"fs-9 text-muted mt-1\">{E(who)}</div>");
@@ -91,9 +91,9 @@
                 </div>
                 <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
                     <li class="nav-item"><a class="nav-link text-active-primary py-5 me-6 @(stage == HospitalMedReconStage.Admission ? "active" : "")" href="@Url.Action("MedRec", new { id = m.AdmissionId, stage = HospitalMedReconStage.Admission })">@T["On admission"]
-                        <span class="badge ms-2 fs-8 fw-bold @(admSigned ? "badge-light-success" : overdue ? "badge-light-danger" : "badge-light")">@(admSigned ? T["Signed"] : overdue ? T["Overdue"] : T["Open"])</span></a></li>
+                        <span class="badge ms-2 fs-8 fw-bold @(admSigned ? "badge-light-primary" : overdue ? "badge-light-danger" : "badge-light")">@(admSigned ? T["Signed"] : overdue ? T["Overdue"] : T["Open"])</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary py-5 me-6 @(stage == HospitalMedReconStage.Discharge ? "active" : "")" href="@Url.Action("MedRec", new { id = m.AdmissionId, stage = HospitalMedReconStage.Discharge })">@T["On discharge"]
-                        <span class="badge ms-2 fs-8 fw-bold @(disSigned ? "badge-light-success" : "badge-light")">@(disSigned ? T["Signed"] : T["Open"])</span></a></li>
+                        <span class="badge ms-2 fs-8 fw-bold @(disSigned ? "badge-light-primary" : "badge-light")">@(disSigned ? T["Signed"] : T["Open"])</span></a></li>
                 </ul>
             </div></div>
 
@@ -101,7 +101,7 @@
             {
                 @if (admSigned)
                 {
-                    <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-5 mb-5"><i class="ki-outline ki-check-circle fs-2tx text-success me-4"></i>
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-check-circle fs-2tx text-primary me-4"></i>
                         <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Signed"]</h4>
                         <div class="fs-6 text-gray-700">@string.Format(T["Signed by {0} on {1}"].Value, Who(m.AdmissionDone!.CompletedByEmployeeId), At(m.AdmissionDone.CompletedAt))@if (m.AdmissionDone.NoHomeMeds) {<text> — @T["The patient takes no medicines at home"]</text>}</div></div></div>
                 }
@@ -165,7 +165,7 @@
             {
                 @if (disSigned)
                 {
-                    <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-5 mb-5"><i class="ki-outline ki-check-circle fs-2tx text-success me-4"></i>
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-check-circle fs-2tx text-primary me-4"></i>
                         <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Signed"]</h4>
                         <div class="fs-6 text-gray-700">@string.Format(T["Signed by {0} on {1}"].Value, Who(m.DischargeDone!.CompletedByEmployeeId), At(m.DischargeDone.CompletedAt))</div></div></div>
                 }
@@ -199,10 +199,10 @@
                             }
                             @foreach (var l in fresh)
                             {
-                                <tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-plus-square fs-3 text-success"></i></span></div>
+                                <tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-plus-square fs-3 text-primary"></i></span></div>
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6" dir="auto">@l.Drug</span><span class="text-muted fw-semibold d-block fs-7" dir="auto">@Med(l.Drug, l.Dose, l.Route, l.Frequency)</span>@if (l.DischargeNote != null) {<span class="fs-7 text-gray-700" dir="auto">@l.DischargeNote</span>}</div></div></td>
-                                    <td><span class="badge badge-light-success fs-7 fw-bold">@T["New for home"]</span></td>
-                                    <td class="pe-4"><span class="badge badge-light-success fs-7 fw-bold">@T["mrd:Continue"]</span>
+                                    <td><span class="badge badge-light-primary fs-7 fw-bold">@T["New for home"]</span></td>
+                                    <td class="pe-4"><span class="badge badge-light-primary fs-7 fw-bold">@T["mrd:Continue"]</span>
                                         @if (!disSigned && active && canDecide) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-2" title="@T["Remove"]" data-bs-toggle="tooltip" data-remove="@l.ID" data-what="@l.Drug"><i class="ki-outline ki-trash fs-4"></i></button> }</td></tr>
                             }
                             @if (home.Count + inpatient.Count + undecidedOrders.Count + fresh.Count == 0) { <tr><td colspan="3"><div class="text-center py-10"><i class="ki-outline ki-capsule fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No medicines to reconcile."]</div></div></td></tr> }

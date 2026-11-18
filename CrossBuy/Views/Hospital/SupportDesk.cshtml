@@ -64,7 +64,7 @@
                 <div class="col-md-6 col-xl-3">@{ Tile(openBy.Values.Sum().ToString(), T["Jobs open"].Value, "notification-on", "primary"); }</div>
                 <div class="col-md-6 col-xl-3">@{ Tile(beds.ToString(), T["Beds waiting to be cleaned"].Value, "brush", "info", numTone: beds > 0 ? "primary" : "gray-900"); }</div>
                 <div class="col-md-6 col-xl-3">@{ Tile(avg?.ToString() ?? "—", T["Average response today"].Value, "time", "primary", avg != null ? T["min"].Value : null); }</div>
-                <div class="col-md-6 col-xl-3">@{ Tile(doneToday.ToString(), T["Done today"].Value, "check-circle", "success", numTone: "success"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(doneToday.ToString(), T["Done today"].Value, "check-circle", "primary", numTone: "primary"); }</div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-4">

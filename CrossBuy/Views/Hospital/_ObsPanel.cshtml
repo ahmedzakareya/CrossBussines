@@ -18,7 +18,7 @@
         HospitalNews2Risk.High => "badge-danger",
         HospitalNews2Risk.Medium => "badge-light-danger",
         HospitalNews2Risk.LowSingle => "badge-light-danger",
-        _ => n == 0 ? "badge-light-success" : "badge-light-primary",
+        _ => n == 0 ? "badge-light-primary" : "badge-light-primary",
     };
     int overdue = Model.Count(p => p.ObsOverdue), high = Model.Count(p => p.Last?.News2Risk is HospitalNews2Risk.High or HospitalNews2Risk.Medium or HospitalNews2Risk.LowSingle);
 }
@@ -63,7 +63,7 @@
 }
 else
 {
-    <a href="@Url.Action("MedRec", new { id = p.AdmissionId })" class="badge fw-bold mt-2 text-nowrap @(p.MedRecSigned ? "badge-light-success" : p.MedRecOverdue ? "badge-light-danger" : "badge-light-primary")"><i class="ki-outline ki-capsule fs-7 me-1 @(p.MedRecSigned ? "text-success" : p.MedRecOverdue ? "text-danger" : "text-primary")"></i>@(p.MedRecSigned ? T["Medicines reconciled"] : p.MedRecOverdue ? T["Reconcile medicines — overdue"] : T["Reconcile medicines"])</a>
+    <a href="@Url.Action("MedRec", new { id = p.AdmissionId })" class="badge fw-bold mt-2 text-nowrap @(p.MedRecSigned ? "badge-light-primary" : p.MedRecOverdue ? "badge-light-danger" : "badge-light-primary")"><i class="ki-outline ki-capsule fs-7 me-1 @(p.MedRecSigned ? "text-primary" : p.MedRecOverdue ? "text-danger" : "text-primary")"></i>@(p.MedRecSigned ? T["Medicines reconciled"] : p.MedRecOverdue ? T["Reconcile medicines — overdue"] : T["Reconcile medicines"])</a>
 }</div>
                         </div></td>
                     <td>@if (o?.News2 is int n) {<div class="badge @RiskBadge(o.News2Risk, n) fw-bold fs-6 hp-num px-3">@n</div><div class="fs-8 text-muted mt-1 text-nowrap">@T["news2risk:" + o.News2Risk]</div>}

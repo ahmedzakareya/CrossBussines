@@ -34,7 +34,7 @@ else
                     </div>
                 </a>
                 <div class="min-w-150px"><div class="text-muted fs-8">@T["match:id"]</div><div class="fw-bold hp-num fs-7">@(c.NationalId ?? "—")</div></div>
-                <div class="min-w-125px"><div class="text-muted fs-8">@T["Matched by"]</div><span class="badge badge-light-@(c.Score >= 90 ? "success" : "primary") fs-8 fw-bold">@T["match:" + c.Reason] · <span class="hp-num">@c.Score%</span></span></div>
+                <div class="min-w-125px"><div class="text-muted fs-8">@T["Matched by"]</div><span class="badge badge-light-@(c.Score >= 90 ? "primary" : "primary") fs-8 fw-bold">@T["match:" + c.Reason] · <span class="hp-num">@c.Score%</span></span></div>
                 <div class="min-w-150px">@if (c.TodayStatus != null) {<div class="text-muted fs-8">@T["Today"]</div><span class="badge badge-light-info fs-8 fw-bold">@T["desk:" + HospitalFrontDeskRules.Stage(c.TodayStatus)]@if (c.QueueNumber is int q) {<text> · </text><span class="hp-num">#@q</span>}</span>}</div>
                 <div class="d-flex gap-1 ms-auto">
                     @if (canBook && c.TodayAppointmentId is int ap && c.TodayStatus == CrossBuy.Models.Context.Hospital.HospitalAppointmentStatus.Booked)

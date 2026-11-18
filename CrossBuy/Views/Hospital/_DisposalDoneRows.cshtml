@@ -27,7 +27,7 @@
         <td><span class="badge badge-light-@(destroyed ? "danger" : "primary") fs-7 fw-bold">@T["dsp:" + x.Kind]</span>
             <span class="text-muted fs-8 d-block mt-1">@T["dspr:" + x.Reason]@if (destroyed && x.Method != null) {<text> · @T["dspm:" + x.Method]</text>}@if (!destroyed && r.Vendor != null) {<text> · </text><bdi>@r.Vendor</bdi>}</span></td>
         <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@x.Qty.ToString("0.###", inv)</span></td>
-        <td class="text-end"><span class="fw-bold hp-num text-@(destroyed ? "danger" : "success")">@x.Value.ToString("N" + dp, inv)</span></td>
+        <td class="text-end"><span class="fw-bold hp-num text-@(destroyed ? "danger" : "primary")">@x.Value.ToString("N" + dp, inv)</span></td>
         <td>@if (x.DocumentNo != null) {<span class="badge badge-light fs-7 fw-bold hp-num">@x.DocumentNo</span>} else {<span class="text-gray-400">—</span>}</td>
         <td class="pe-4">@if (r.Witness != null)
             {

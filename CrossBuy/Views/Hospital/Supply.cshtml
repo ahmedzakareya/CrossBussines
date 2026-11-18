@@ -21,7 +21,7 @@
     string StateKind(string s) => s switch
     {
         HospitalRequisitionStatus.Draft => "secondary", HospitalRequisitionStatus.Submitted => "primary", HospitalRequisitionStatus.Approved => "info",
-        HospitalRequisitionStatus.Picking => "primary", HospitalRequisitionStatus.Dispatched => "success", _ => "danger",
+        HospitalRequisitionStatus.Picking => "primary", HospitalRequisitionStatus.Dispatched => "primary", _ => "danger",
     };
     string PrioKind(string p) => p == HospitalRequisitionPriority.Stat ? "danger" : p == HospitalRequisitionPriority.Urgent ? "primary" : "secondary";
     var cons = (ViewBag.Consignments as IReadOnlyList<HospitalConsignmentRow>) ?? Array.Empty<HospitalConsignmentRow>();
@@ -29,7 +29,7 @@
     var vendors = (ViewBag.Vendors as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
     // used, and the supplier's purchase order not yet received / invoiced (procurement raises it approved, never draft)
     int awaitingPo = cons.Count(c => HospitalConsignmentRules.State(c.Row.Status, c.PoStatus) is "DraftPO" or "POApproved");
-    string ConsKind(string st) => st switch { "Consignment" => "secondary", "DraftPO" => "primary", "Invoiced" => "success", "Returned" => "light", _ => "info" };
+    string ConsKind(string st) => st switch { "Consignment" => "secondary", "DraftPO" => "primary", "Invoiced" => "primary", "Returned" => "light", _ => "info" };
     // H39: the controlled-drugs register
     var cdStores = (ViewBag.CdStores as IReadOnlyList<(int WarehouseId, string Code, string Name, string NameEn)>) ?? Array.Empty<(int, string, string, string)>();
     var cdStore = ViewBag.CdStore is ValueTuple<int, string, string, string> cs0 ? cs0 : default;
@@ -278,7 +278,7 @@
                     </h3>
                     <div class="card-toolbar gap-2">
                         <span class="badge badge-light-@StateKind(st) fs-7 fw-bold py-3 px-4">@T["req:" + st]</span>
-                        @if (sel.TransferNo != null) { <span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-arrow-right-left fs-5 me-2 text-success"></i>@T["Store transfer"] <bdi class="hp-num ms-1">@sel.TransferNo</bdi></span> }
+                        @if (sel.TransferNo != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-arrow-right-left fs-5 me-2 text-primary"></i>@T["Store transfer"] <bdi class="hp-num ms-1">@sel.TransferNo</bdi></span> }
                         else { <span class="badge badge-light fs-7 fw-bold py-3 px-4">@T["Store transfers with approval"]</span> }
                     </div>
                 </div>

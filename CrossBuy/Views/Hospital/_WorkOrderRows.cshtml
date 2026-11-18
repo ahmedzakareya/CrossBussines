@@ -8,8 +8,8 @@
 {
     var o = r.Order; bool mine = o.TechnicianEmployeeId == me;
     string pr = o.Priority == HospitalWorkOrderPriority.Urgent ? "badge-light-danger" : o.Priority == HospitalWorkOrderPriority.High ? "badge-light-primary" : "badge-light";
-    string st = o.Status switch { HospitalWorkOrderStatus.Done => "badge-light-success", HospitalWorkOrderStatus.Cancelled => "badge-light", HospitalWorkOrderStatus.InProgress => "badge-primary", _ => "badge-light-primary" };
-    string icTone = o.Priority == HospitalWorkOrderPriority.Urgent ? "danger" : o.Status == HospitalWorkOrderStatus.Done ? "success" : "primary";
+    string st = o.Status switch { HospitalWorkOrderStatus.Done => "badge-light-primary", HospitalWorkOrderStatus.Cancelled => "badge-light", HospitalWorkOrderStatus.InProgress => "badge-primary", _ => "badge-light-primary" };
+    string icTone = o.Priority == HospitalWorkOrderPriority.Urgent ? "danger" : o.Status == HospitalWorkOrderStatus.Done ? "primary" : "primary";
     @* H128: the theme's table widget row (demo39 widgets/tables) — symbol · device over its tag · values as light badges *@
     <tr data-wo-row="@o.ID" class="@(o.Status == HospitalWorkOrderStatus.Cancelled ? "opacity-75" : "")">
         <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@o.OrderNo</span><div class="text-muted fw-semibold fs-8 mt-1 hp-num text-nowrap" dir="ltr">@At(o.ReportedAt)</div></td>

@@ -86,7 +86,7 @@
                     (string.Format(T["Meals in {0}"].Value, monthLabel), N(m.Meals), T["patients · staff · cafeteria"].Value, "text-gray-900", "cup", "primary"),
                     (T["Total kitchen cost"].Value, Money(m.PoolTotal), "", "text-gray-900", "bank", "info"),
                     (T["Average cost per meal"].Value, m.Meals > 0 ? Money(m.PoolTotal / m.Meals) : "—", T["including labour and running costs"].Value, "text-gray-900", "calculator", "primary"),
-                    (T["Cafeteria margin"].Value, cafe != null && cafe.Sales > 0 ? Math.Round((cafe.Sales - cafe.MealCost) * 100 / cafe.Sales).ToString(inv) + "%" : "—", T["after its share of kitchen cost"].Value, "text-success", "shop", "success") })
+                    (T["Cafeteria margin"].Value, cafe != null && cafe.Sales > 0 ? Math.Round((cafe.Sales - cafe.MealCost) * 100 / cafe.Sales).ToString(inv) + "%" : "—", T["after its share of kitchen cost"].Value, "text-primary", "shop", "primary") })
                 {
                     <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                         <div class="card-header pt-5 flex-nowrap gap-3">
@@ -145,7 +145,7 @@
                                                 <td><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-cup fs-3 text-primary"></i></span></div><span class="text-gray-900 fw-bold fs-6">@T["round:" + r.Round]</span></div></td>
                                                 <td><span class="text-gray-700 fw-bold hp-num" dir="ltr">@times[r.Round]</span></td>
                                                 @foreach (var n in new[] { r.Patients, r.Staff, r.Cafeteria }) { <td class="text-end">@if (n > 0) {<span class="text-gray-800 fw-bold fs-6 hp-num">@N(n)</span>} else {<span class="text-gray-400">—</span>}</td> }
-                                                <td>@if (r.State == "Served") {<span class="badge badge-light-success fs-7 fw-bold">@T["kt:Served"]</span>} else if (r.State == "Serving") {<span class="badge badge-primary fs-7 fw-bold">@T["kt:Serving"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["kt:Planned"]</span>}</td>
+                                                <td>@if (r.State == "Served") {<span class="badge badge-light-primary fs-7 fw-bold">@T["kt:Served"]</span>} else if (r.State == "Serving") {<span class="badge badge-primary fs-7 fw-bold">@T["kt:Serving"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["kt:Planned"]</span>}</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -268,7 +268,7 @@
                                     <div class="card-header pt-5 flex-nowrap gap-3">
                                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800"><bdi>@DisplayName.Of(o.Name, o.NameEn)</bdi></span>
                                             <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi>@(o.Branch == null ? "—" : DisplayName.Of(o.BranchAr ?? o.Branch, o.Branch))</bdi></span></h3>
-                                        <div class="card-toolbar">@if (o.Branch != null) {<span class="badge badge-light-success fs-7 fw-bold">@T["POS linked"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["No POS branch"]</span>}</div>
+                                        <div class="card-toolbar">@if (o.Branch != null) {<span class="badge badge-light-primary fs-7 fw-bold">@T["POS linked"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["No POS branch"]</span>}</div>
                                     </div>
                                     <div class="card-body d-flex align-items-end pt-0"><div class="d-flex flex-column">
                                         <span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num" dir="ltr">@Money(o.Sales)</span>
@@ -296,7 +296,7 @@
                                 <div class="card-body pt-2">
                                     @foreach (var (label, v, total) in new[] { (T["Sales"].Value, cafe.Sales, false), (T["Meal cost (its share of the kitchen)"].Value, -cafe.MealCost, false), (T["Cafeteria net (before its own payroll)"].Value, cafe.Sales - cafe.MealCost, true) })
                                     {
-                                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="@(total ? "fw-bold text-gray-900" : "fw-semibold text-gray-700")">@label</span><span class="hp-num fw-bold @(total ? "fs-4 text-success" : v < 0 ? "text-danger" : "")" dir="ltr">@Money(v)</span></div>
+                                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="@(total ? "fw-bold text-gray-900" : "fw-semibold text-gray-700")">@label</span><span class="hp-num fw-bold @(total ? "fs-4 text-primary" : v < 0 ? "text-danger" : "")" dir="ltr">@Money(v)</span></div>
                                     }
                                     <div class="text-muted fs-8 mt-3">@T["The cafeteria is its own profit centre; its staff payroll reaches it from payroll."]</div>
                                 </div>
@@ -330,7 +330,7 @@
                                 <span class="card-label fw-bold text-gray-800">@T["Allocation to cost centres"]</span>
                                 <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Basis: meals × the recipe's standard cost"]</span>
                             </h3>
-                            @if (m.Posted != null) { <div class="card-toolbar"><span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 me-2 text-success"></i>@T["Posted"] <bdi class="hp-num ms-1">@m.PostedEntryNo</bdi></span></div> }
+                            @if (m.Posted != null) { <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 me-2 text-primary"></i>@T["Posted"] <bdi class="hp-num ms-1">@m.PostedEntryNo</bdi></span></div> }
                         </div>
                         <div class="card-body pt-2">
                             @if (m.Shares.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-notepad fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No meal this month."]</div></div> }

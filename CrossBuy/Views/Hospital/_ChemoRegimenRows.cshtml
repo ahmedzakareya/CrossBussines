@@ -35,7 +35,7 @@
                     @if (d.LifetimeMgM2 != null) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Lifetime {0} mg/m²", d.LifetimeMgM2.Value.ToString("0")]</span>}
                 </div>
             }</td>
-        <td>@if (row.ActiveCourses > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num">@row.ActiveCourses</span>} else {<span class="text-gray-400 fw-bold">—</span>}</td>
+        <td>@if (row.ActiveCourses > 0) {<span class="badge badge-light-primary fs-7 fw-bold hp-num">@row.ActiveCourses</span>} else {<span class="text-gray-400 fw-bold">—</span>}</td>
         <td class="text-end pe-4">@if (canLib) {<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary" data-reg-edit="@json" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
     </tr>
 }

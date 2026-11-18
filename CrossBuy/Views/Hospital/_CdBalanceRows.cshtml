@@ -25,7 +25,7 @@
         <td class="text-end"><span class="text-gray-900 fw-bold fs-3 hp-num">@r.OnHand.ToString("0.###", inv)</span></td>
         <td>@if (r.LastCount is { } c)
             {
-                string ct = c.Status == HospitalCountStatus.Open ? "danger" : "success";
+                string ct = c.Status == HospitalCountStatus.Open ? "danger" : "primary";
                 <span class="badge badge-light-@ct fs-7 fw-bold">@T["cds:" + c.Status]</span>
                 @if (r.Overdue) {<span class="badge badge-danger fs-8 fw-bold ms-1">@T["Overdue"]</span>}
                 <span class="text-muted fs-8 d-block mt-1 hp-num" data-fmt data-utc="@c.CountedAt.ToString("o")">@c.CountedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>

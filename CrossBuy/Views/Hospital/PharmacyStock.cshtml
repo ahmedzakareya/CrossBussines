@@ -16,10 +16,10 @@
     bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     var tiles = new (string Label, int N, string Note, string Icon, string Tone, string? Filter, string Tab)[] {
         (T["Medicines in the formulary"].Value, Model.Medicines, Model.StoreName ?? "", "ki-capsule", "primary", null, HospitalController.PharmacyStockTabs.Medicines),
-        (T["Out of stock"].Value, Model.OutOfStock, T["nothing on the shelf"].Value, "ki-cross-circle", Model.OutOfStock > 0 ? "danger" : "success", HospitalPharmacyStockState.Out, HospitalController.PharmacyStockTabs.Medicines),
-        (T["Below reorder point"].Value, Model.Low, T["in the pharmacy store"].Value, "ki-chart-line-down", Model.Low > 0 ? "danger" : "success", HospitalPharmacyStockState.Low, HospitalController.PharmacyStockTabs.Medicines),
-        (T["Near-expiry batches"].Value, Model.NearBatches, string.Format(T["within {0} days"].Value, Model.NearDays), "ki-time", Model.NearBatches > 0 ? "danger" : "success", HospitalPharmacyStockState.Near, HospitalController.PharmacyStockTabs.Batches),
-        (T["Expired batches"].Value, Model.ExpiredBatches, T["still on the shelf"].Value, "ki-information", Model.ExpiredBatches > 0 ? "danger" : "success", HospitalPharmacyStockState.Expired, HospitalController.PharmacyStockTabs.Batches) };
+        (T["Out of stock"].Value, Model.OutOfStock, T["nothing on the shelf"].Value, "ki-cross-circle", Model.OutOfStock > 0 ? "danger" : "primary", HospitalPharmacyStockState.Out, HospitalController.PharmacyStockTabs.Medicines),
+        (T["Below reorder point"].Value, Model.Low, T["in the pharmacy store"].Value, "ki-chart-line-down", Model.Low > 0 ? "danger" : "primary", HospitalPharmacyStockState.Low, HospitalController.PharmacyStockTabs.Medicines),
+        (T["Near-expiry batches"].Value, Model.NearBatches, string.Format(T["within {0} days"].Value, Model.NearDays), "ki-time", Model.NearBatches > 0 ? "danger" : "primary", HospitalPharmacyStockState.Near, HospitalController.PharmacyStockTabs.Batches),
+        (T["Expired batches"].Value, Model.ExpiredBatches, T["still on the shelf"].Value, "ki-information", Model.ExpiredBatches > 0 ? "danger" : "primary", HospitalPharmacyStockState.Expired, HospitalController.PharmacyStockTabs.Batches) };
     var tabs = new (string Key, string Label, string Icon)[] {
         (HospitalController.PharmacyStockTabs.Medicines, T["Medicines"].Value, "ki-capsule"),
         (HospitalController.PharmacyStockTabs.Batches, T["Batches and expiry dates"].Value, "ki-calendar"),

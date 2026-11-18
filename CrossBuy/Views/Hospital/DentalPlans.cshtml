@@ -7,7 +7,7 @@
     ViewData["Title"] = T["Treatment plans"].Value;
     var s = ViewBag.Stats as HospitalDentalPlanStats;
     string N(decimal v, int dec) => v.ToString("N" + dec, System.Globalization.CultureInfo.InvariantCulture);
-    string St(string state) => state switch { "Accepted" => "success", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
+    string St(string state) => state switch { "Accepted" => "primary", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
     // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
     void Stat(string label, string value, string? unit, object? sub, string icon, string tone)
     {
@@ -51,7 +51,7 @@
             <div class="row g-5 g-xl-8 mb-5">
                 @{
                     Stat(T["Plans presented"].Value, s.PresentedThisMonth.ToString(), null, T["this month"], "document", "primary");
-                    Stat(T["Acceptance rate"].Value, s.AcceptanceRate == null ? "—" : s.AcceptanceRate + "%", null, T["by value"], "check-square", "success");
+                    Stat(T["Acceptance rate"].Value, s.AcceptanceRate == null ? "—" : s.AcceptanceRate + "%", null, T["by value"], "check-square", "primary");
                     Stat(T["Accepted, not done"].Value, N(s.AcceptedNotDone, s.Decimals), s.Currency, T["accepted work not yet done"], "time", "info");
                     Stat(T["Yearly dental limit"].Value, s.YearlyLimitMin == null ? "—" : s.YearlyLimitMin == s.YearlyLimitMax ? N(s.YearlyLimitMin.Value, s.Decimals) : N(s.YearlyLimitMin.Value, 0) + "–" + N(s.YearlyLimitMax!.Value, 0), null, T["per the payer contract"], "shield-tick", "primary");
                 }

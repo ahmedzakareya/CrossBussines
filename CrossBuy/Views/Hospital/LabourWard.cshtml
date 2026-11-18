@@ -73,7 +73,7 @@
                                         <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@r.Mrn</bdi>@if (r.Bed != null) {<text> · @T["Bed"] <bdi class="hp-num fw-bold">@r.Bed</bdi></text>}</span>
                                     </div>
                                 </div>
-                                <div class="card-toolbar"><span class="badge badge-light-@(r.MinutesSinceLast > 60 ? "danger" : "success") fs-8 fw-bold text-nowrap">@T["{0} min since the last look", r.MinutesSinceLast]</span></div>
+                                <div class="card-toolbar"><span class="badge badge-light-@(r.MinutesSinceLast > 60 ? "danger" : "primary") fs-8 fw-bold text-nowrap">@T["{0} min since the last look", r.MinutesSinceLast]</span></div>
                             </div>
                             <div class="card-body pt-4 d-flex flex-column">
                                 <div class="d-flex flex-wrap gap-3 mb-4">

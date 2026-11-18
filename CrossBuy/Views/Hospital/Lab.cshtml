@@ -11,7 +11,7 @@
     string? status = ViewBag.Status as string;
     bool canLab = ViewBag.CanLab == true, canManage = ViewBag.CanManage == true;
     string Prio(string p) => p == HospitalLabPriority.Stat ? "<span class=\"badge badge-danger fs-7 fw-bold\">STAT</span>" : p == HospitalLabPriority.Urgent ? "<span class=\"badge badge-light-primary fs-7 fw-bold\">" + T["Urgent"].Value + "</span>" : "<span class=\"badge badge-light fs-7 fw-bold\">" + T["Routine"].Value + "</span>";
-    string St(string s) => s switch { "Ordered" => "secondary", "Collected" => "info", "Received" => "info", "Resulted" => "primary", _ => "success" };
+    string St(string s) => s switch { "Ordered" => "secondary", "Collected" => "info", "Received" => "info", "Resulted" => "primary", _ => "primary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -37,8 +37,8 @@
             @foreach (var s in new[] {
                 (T["Orders today"].Value, stats.OrdersToday.ToString(), "", "ki-flask", "primary"),
                 (T["Average turnaround"].Value, stats.AvgTurnaroundMinutes?.ToString() ?? "—", T["minutes, order to verification, today"].Value, "ki-time", "info"),
-                (T["Awaiting verification"].Value, stats.AwaitingVerification.ToString(), T["Entered, not yet verified"].Value, "ki-shield-search", stats.AwaitingVerification > 0 ? "primary" : "success"),
-                (T["Critical values not yet told"].Value, stats.OpenCriticals.ToString(), T["The doctor must be told"].Value, "ki-notification-status", stats.OpenCriticals > 0 ? "danger" : "success") })
+                (T["Awaiting verification"].Value, stats.AwaitingVerification.ToString(), T["Entered, not yet verified"].Value, "ki-shield-search", stats.AwaitingVerification > 0 ? "primary" : "primary"),
+                (T["Critical values not yet told"].Value, stats.OpenCriticals.ToString(), T["The doctor must be told"].Value, "ki-notification-status", stats.OpenCriticals > 0 ? "danger" : "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -76,7 +76,7 @@
                 {
                     bool on = status == st, done = st == HospitalLabStatus.Verified;
                     <a href="@Url.Action("Lab", new { status = st })" class="d-flex align-items-center gap-3 flex-grow-1 rounded border border-dashed p-3 @(on ? "bg-light-primary border-primary" : "border-gray-300 bg-hover-light")" style="min-width:150px">
-                        <span class="symbol symbol-40px"><span class="symbol-label fw-bold fs-5 hp-num @(done ? "bg-light-success text-success" : "bg-light-primary text-primary")">@stats.Pipeline.GetValueOrDefault(st)</span></span>
+                        <span class="symbol symbol-40px"><span class="symbol-label fw-bold fs-5 hp-num @(done ? "bg-light-primary text-primary" : "bg-light-primary text-primary")">@stats.Pipeline.GetValueOrDefault(st)</span></span>
                         <span class="fw-bold @(on ? "text-primary" : "text-gray-800") fs-6">@T["lab:" + st]</span>
                     </a>
                 }

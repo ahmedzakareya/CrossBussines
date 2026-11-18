@@ -82,7 +82,7 @@
             @* H128: the round in figures — the theme's stat tiles (demo39 dashboards/logistics) *@
             <div class="row g-5 mb-5">
                 <div class="col-sm-6 col-xl-3">@{ Tile(b.Rows.Count, T["Patients on the ward"].Value, "people", "primary"); }</div>
-                <div class="col-sm-6 col-xl-3">@{ Tile(toServe, T["meal:" + HospitalMealStatus.Sent].Value, "delivery-3", "success"); }</div>
+                <div class="col-sm-6 col-xl-3">@{ Tile(toServe, T["meal:" + HospitalMealStatus.Sent].Value, "delivery-3", "primary"); }</div>
                 <div class="col-sm-6 col-xl-3">@{ Tile(served, T["meal:" + HospitalMealStatus.Served].Value, "check-circle", "primary"); }</div>
                 <div class="col-sm-6 col-xl-3">@{ Tile(allergic, T["Allergies"].Value, "shield-cross", "danger", allergic > 0 ? "danger" : "gray-900"); }</div>
             </div>
@@ -126,7 +126,7 @@
                                             @if (!r.Ordered) { <div class="text-muted fw-semibold fs-8 mt-1">@T["No diet ordered: regular"]</div> }</td>
                                         <td>@if (al.Length > 0) {<span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start"><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@string.Join(DisplayName.IsArabic ? "، " : ", ", al)</span>} else {<span class="text-gray-400">—</span>}</td>
                                         <td class="pe-4">@if (r.Meal == null) {<span class="text-gray-400">—</span>}
-                                            else { <span class="badge badge-light-@(r.Meal.Status == HospitalMealStatus.Served ? "primary" : r.Meal.Status == HospitalMealStatus.Held ? "dark" : "success") fs-7 fw-bold">@T["meal:" + r.Meal.Status]</span>
+                                            else { <span class="badge badge-light-@(r.Meal.Status == HospitalMealStatus.Served ? "primary" : r.Meal.Status == HospitalMealStatus.Held ? "dark" : "primary") fs-7 fw-bold">@T["meal:" + r.Meal.Status]</span>
                                                 @if (r.Meal.Diet != r.Diet) {<div class="text-muted fw-semibold fs-8 mt-1">@T["diet:" + r.Meal.Diet]</div>} }</td>
                                     </tr>
                                 }

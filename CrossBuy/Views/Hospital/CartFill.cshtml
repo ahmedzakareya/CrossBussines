@@ -20,7 +20,7 @@
     bool canFill = ViewBag.CanPharmacy == true && Model != null;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Q(decimal v) => v.ToString("0.##", inv);
-    string StateTone(string s) => s == HospitalCartLineState.Fill ? "success" : s == HospitalCartLineState.Short ? "danger" : s == HospitalCartLineState.Cabinet ? "info" : "secondary";
+    string StateTone(string s) => s == HospitalCartLineState.Fill ? "primary" : s == HospitalCartLineState.Short ? "danger" : s == HospitalCartLineState.Cabinet ? "info" : "secondary";
     var fill = Model?.Lines.Where(l => l.State == HospitalCartLineState.Fill).ToList() ?? new();
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -57,7 +57,7 @@
         {
             var tiles = new (string Label, string N, string Note, string Icon, string Tone)[] {
                 (T["Patients on the fill"].Value, fill.Select(l => l.PatientId).Distinct().Count().ToString(), string.Format(T["of {0} in the ward's beds"].Value, Model.Lines.Select(l => l.PatientId).Distinct().Count()), "ki-people", "primary"),
-                (T["Lines to fill"].Value, fill.Count.ToString(), string.Format(T["{0} medicines"].Value, Model.Totals.Count), "ki-capsule", "success"),
+                (T["Lines to fill"].Value, fill.Count.ToString(), string.Format(T["{0} medicines"].Value, Model.Totals.Count), "ki-capsule", "primary"),
                 (T["Units to send"].Value, Q(fill.Sum(l => l.Units)), T["from the pharmacy store, nearest expiry first"].Value, "ki-delivery", "info"),
                 (T["Not filled"].Value, (Model.Lines.Count - fill.Count).ToString(), T["cabinet, on its way, not stocked or short"].Value, "ki-information-2", Model.Lines.Any(l => l.State == HospitalCartLineState.Short) ? "danger" : "secondary") };
             <div class="row g-5 g-xl-8 mb-5">
@@ -137,7 +137,7 @@
                             @if (Model.LastFill is { } lf)
                             {
                                 <div class="separator separator-dashed my-5"></div>
-                                <div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-3 text-success"></i></span></div>
+                                <div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check-circle fs-3 text-primary"></i></span></div>
                                     <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-7">@T["Last fill"] <span class="hp-num">@lf.FillNo</span></span>
                                         <span class="text-muted fs-8"><span class="hp-num" data-fmt data-utc="@lf.DoneAt.ToString("o")">@lf.DoneAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span> · @string.Format(T["{0} deliveries, {1} units"].Value, lf.Deliveries, Q(lf.Units))</span></div></div>
                             }

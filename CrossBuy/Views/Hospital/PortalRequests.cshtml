@@ -10,7 +10,7 @@
     bool canRegister = ViewBag.CanRegister == true;
     int openCount = ViewBag.OpenCount is int oc ? oc : 0;
     var doctors = (ViewBag.Doctors as List<(int Id, string Name, string NameEn, int? DepartmentId)>) ?? new();
-    string Badge(string s) => s switch { HospitalPortalRequestStatus.Booked => "success", HospitalPortalRequestStatus.Declined => "danger", HospitalPortalRequestStatus.Withdrawn => "secondary", _ => "primary" };
+    string Badge(string s) => s switch { HospitalPortalRequestStatus.Booked => "primary", HospitalPortalRequestStatus.Declined => "danger", HospitalPortalRequestStatus.Withdrawn => "secondary", _ => "primary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()

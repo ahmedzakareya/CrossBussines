@@ -52,7 +52,7 @@
                 <div class="me-7 mb-4">
                     <div class="symbol symbol-100px symbol-lg-125px symbol-circle symbol-fixed position-relative">
                         @if (Model.PhotoPath != null) {<img src="@Model.PhotoPath" alt="@name" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-1 fw-bold bg-light-primary text-primary">@HospitalUi.Initials(p.NameEn)</span>}
-                        @if (day.Count > 0) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px" title="@T["Today's appointments"]"></div>}
+                        @if (day.Count > 0) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-primary rounded-circle border border-4 border-body h-20px w-20px" title="@T["Today's appointments"]"></div>}
                     </div>
                 </div>
                 <div class="flex-grow-1 min-w-0">
@@ -70,7 +70,7 @@
                     </div>
                     <div class="d-flex flex-wrap">
                         @foreach (var (label, n, icon, tone) in new[] { (T["Today's appointments"].Value, day.Count, "ki-calendar", "primary"), (T["Fee rules"].Value, feeRules.Count, "ki-wallet", "info"),
-                            (T["Leave"].Value, leaves.Count, "ki-calendar-remove", "danger"), (T["Minutes per patient"].Value, p.SlotMinutes, "ki-timer", "success") })
+                            (T["Leave"].Value, leaves.Count, "ki-calendar-remove", "danger"), (T["Minutes per patient"].Value, p.SlotMinutes, "ki-timer", "primary") })
                         {
                             <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                                 <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@n</div></div>
@@ -118,7 +118,7 @@
                                 @foreach (var a in day)
                                 {
                                     var st = a.Status.ToString();
-                                    var tone = st switch { "Done" => "success", "Arrived" => "info", "InRoom" => "primary", "NoShow" => "danger", "Cancelled" => "secondary", _ => "primary" };
+                                    var tone = st switch { "Done" => "primary", "Arrived" => "info", "InRoom" => "primary", "NoShow" => "danger", "Cancelled" => "secondary", _ => "primary" };
                                     <tr>
                                         <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@HospitalUi.Clock(a.StartMinute)</span></td>
                                         <td><div class="d-flex align-items-center">
@@ -178,7 +178,7 @@
                             <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
                                 <div class="me-3"><span class="text-gray-800 fw-bold fs-6">@T["Professional licence"]</span><bdi class="text-gray-500 fw-semibold fs-7 d-block hp-num" dir="ltr">@(p.LicenseNumber ?? "—")</bdi></div>
                                 <div class="d-flex align-items-center"><span class="text-gray-500 fw-semibold fs-7 me-3">@T["Expiry"]</span>
-                                    <span class="badge badge-light-@(left is int ll && ll <= 60 ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@(p.LicenseExpiry?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                                    <span class="badge badge-light-@(left is int ll && ll <= 60 ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@(p.LicenseExpiry?.ToString("yyyy-MM-dd") ?? "—")</span></div>
                             </div>
                         </div>
                     </div>
@@ -196,7 +196,7 @@
                         {
                             var k = privAll[i]; bool has = privileges.Contains(k);
                             <div class="d-flex align-items-center">
-                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(has ? "success" : "secondary")"><i class="ki-outline @(has ? "ki-check" : "ki-cross") fs-3 text-@(has ? "success" : "gray-500")"></i></span></div>
+                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(has ? "primary" : "secondary")"><i class="ki-outline @(has ? "ki-check" : "ki-cross") fs-3 text-@(has ? "primary" : "gray-500")"></i></span></div>
                                 <span class="fw-bold fs-6 @(has ? "text-gray-800" : "text-gray-500")">@T["priv:" + k]</span>
                             </div>
                             if (i < privAll.Count - 1) {<div class="separator separator-dashed my-3"></div>}

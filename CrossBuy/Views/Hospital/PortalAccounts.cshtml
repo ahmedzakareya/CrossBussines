@@ -19,7 +19,7 @@
     var monthStart = new DateTime(now.Year, now.Month, 1);
     string Badge(string st) => st switch
     {
-        HospitalPortalAccountState.Active => "badge-light-success", HospitalPortalAccountState.Invited => "badge-light-primary", HospitalPortalAccountState.Unverified => "badge-light-info",
+        HospitalPortalAccountState.Active => "badge-light-primary", HospitalPortalAccountState.Invited => "badge-light-primary", HospitalPortalAccountState.Unverified => "badge-light-info",
         HospitalPortalAccountState.Locked => "badge-light-danger", HospitalPortalAccountState.InviteExpired => "badge-light-danger", HospitalPortalAccountState.NoSignIn => "badge-light-secondary", _ => "badge-light-dark",
     };
 }
@@ -53,7 +53,7 @@
             @* H128: stat tiles (demo39 dashboards/logistics) *@
             @foreach (var s in new[] {
                 (T["Portal accounts"].Value, rows.Count, "", "ki-profile-circle", "primary"),
-                (T["Signed in this month"].Value, rows.Count(r => r.Account.LastSeenAt >= monthStart), "", "ki-entrance-left", "success"),
+                (T["Signed in this month"].Value, rows.Count(r => r.Account.LastSeenAt >= monthStart), "", "ki-entrance-left", "primary"),
                 (T["Invitations waiting"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Invited), string.Format(T["Link valid {0} hours"].Value, HospitalPortalPasswordRules.InviteHours), "ki-send", "info"),
                 (T["Locked accounts"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Locked), string.Format(T["Unlock by themselves after {0} minutes"].Value, HospitalPortalPasswordRules.LockMinutes), "ki-lock-2", "danger") })
             {
@@ -182,7 +182,7 @@
                         T["At least 6 characters with a capital letter, a small letter, a digit and a symbol"].Value })
                     {
                         <div class="d-flex align-items-center py-3 border-bottom border-gray-300 border-bottom-dashed">
-                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-shield-tick fs-3 text-success"></i></span></div>
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shield-tick fs-3 text-primary"></i></span></div>
                             <span class="text-gray-800 fw-bold fs-6">@text</span></div>
                     }
                 </div>

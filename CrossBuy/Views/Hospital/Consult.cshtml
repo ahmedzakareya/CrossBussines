@@ -54,7 +54,7 @@
             }
             else if (e.Status == HospitalEncounterStatus.Signed)
             {
-                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-utc="@e.SignedAt?.ToString("o")">@e.SignedAt?.ToString("yyyy-MM-dd HH:mm")</span></span>
+                <span class="badge badge-light-primary fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-primary me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-utc="@e.SignedAt?.ToString("o")">@e.SignedAt?.ToString("yyyy-MM-dd HH:mm")</span></span>
             }
         </div>
     </div></div>
@@ -74,7 +74,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 @if (allergies.Length > 0) { <span class="badge badge-light-danger fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-shield-cross fs-5 text-danger me-1"></i>@T["Allergy"]</span> }
-                <span class="badge badge-light-@(e.Status == HospitalEncounterStatus.Signed ? "success" : "primary") fs-7 fw-bold py-3 px-4">@(e.Status == HospitalEncounterStatus.Signed ? T["Signed"] : T["Draft"])</span>
+                <span class="badge badge-light-@(e.Status == HospitalEncounterStatus.Signed ? "primary" : "primary") fs-7 fw-bold py-3 px-4">@(e.Status == HospitalEncounterStatus.Signed ? T["Signed"] : T["Draft"])</span>
             </div>
         </div></div></div>
 
@@ -182,7 +182,7 @@
                         </div>
                         <div class="separator separator-dashed my-3"></div>
                         <div class="d-flex align-items-start">
-                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(chronic.Length == 0 ? "success" : "danger")"><i class="ki-outline ki-pulse fs-3 text-@(chronic.Length == 0 ? "success" : "danger")"></i></span></div>
+                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(chronic.Length == 0 ? "primary" : "danger")"><i class="ki-outline ki-pulse fs-3 text-@(chronic.Length == 0 ? "primary" : "danger")"></i></span></div>
                             <div class="flex-grow-1 min-w-0"><span class="text-gray-500 fw-semibold fs-7 d-block">@T["Chronic conditions"]</span>
                                 @if (chronic.Length == 0) { <div class="text-gray-800 fw-bold fs-6">@T["None recorded"]</div> }
                                 else { <div class="d-flex flex-wrap gap-1 mt-1">@foreach (var c in chronic) {<span class="badge badge-light-danger fs-7 fw-bold">@c</span>}</div> }
@@ -296,7 +296,7 @@
             function drawRx() {
                 if (!rx.length) { rxBody.innerHTML = empty('capsule', W.noRx, 4); return; }
                 rxBody.innerHTML = rx.map(function (r, i) {
-                    if (!canEdit) return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-' + (r.itemId ? 'success' : 'secondary') + '"><i class="ki-outline ki-capsule fs-3 text-' + (r.itemId ? 'success' : 'gray-600') + '"></i></span></div><div><span class="text-gray-800 fw-bold fs-6 d-block" dir="auto">' + esc(r.drug) + '</span>' + (r.itemId ? '<span class="badge badge-light-success fs-8 fw-bold">' + esc(W.stocked) + '</span>' : '') + '</div></div></td><td class="fs-7 text-gray-700" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-gray-500 fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td><span class="text-gray-800 fw-bold hp-num">' + r.quantity + '</span></td><td class="pe-4"></td></tr>';
+                    if (!canEdit) return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-' + (r.itemId ? 'primary' : 'secondary') + '"><i class="ki-outline ki-capsule fs-3 text-' + (r.itemId ? 'primary' : 'gray-600') + '"></i></span></div><div><span class="text-gray-800 fw-bold fs-6 d-block" dir="auto">' + esc(r.drug) + '</span>' + (r.itemId ? '<span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.stocked) + '</span>' : '') + '</div></div></td><td class="fs-7 text-gray-700" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-gray-500 fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td><span class="text-gray-800 fw-bold hp-num">' + r.quantity + '</span></td><td class="pe-4"></td></tr>';
                     var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.code) + '</option>'; }).join('') +
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
                     return '<tr><td class="ps-4 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
@@ -311,7 +311,7 @@
                     var $s = jQuery(this);
                     $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dir: document.documentElement.dir || 'ltr',
                         templateResult: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null;
-                            return f ? jQuery('<span><span class="fw-semibold">' + esc(f.name) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span></span>') : o.text; },
+                            return f ? jQuery('<span><span class="fw-semibold">' + esc(f.name) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-primary fs-9">' + esc(W.stocked) + '</span></span>') : o.text; },
                         // the search matches the Arabic name, the English name and the code; the chosen line shows the reader's name
                         templateSelection: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null; return f ? f.name : o.text; } })
                       .on('change', function () {

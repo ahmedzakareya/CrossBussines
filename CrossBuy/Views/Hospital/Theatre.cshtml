@@ -82,8 +82,8 @@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
                 (T["Cases today"].Value, cases.Count.ToString(inv), "", "ki-calendar-8", "primary"),
-                (T["Completed"].Value, cases.Count(c => c.Case.Status == HospitalSurgeryStatus.Done).ToString(inv), "", "ki-check-circle", "success"),
-                (T["Theatre utilisation"].Value, (Model?.Utilisation ?? 0).ToString(inv) + "%", T["Target 75%"].Value, "ki-chart-pie-simple", (Model?.Utilisation ?? 0) >= 75 ? "success" : "info"),
+                (T["Completed"].Value, cases.Count(c => c.Case.Status == HospitalSurgeryStatus.Done).ToString(inv), "", "ki-check-circle", "primary"),
+                (T["Theatre utilisation"].Value, (Model?.Utilisation ?? 0).ToString(inv) + "%", T["Target 75%"].Value, "ki-chart-pie-simple", (Model?.Utilisation ?? 0) >= 75 ? "primary" : "info"),
                 (T["First-case on-time start"].Value, string.Format(T["{0} of {1}"].Value, (Model?.OnTime ?? 0).ToString(inv), (Model?.FirstCases ?? 0).ToString(inv)), "", "ki-time", "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
@@ -108,7 +108,7 @@
                     <span class="text-gray-500 mt-1 fw-semibold fs-7">@day.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture)</span>
                 </h3>
                 <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
-                    @foreach (var (st, tone) in new[] { (HospitalSurgeryStatus.Planned, "secondary"), (HospitalSurgeryStatus.InProgress, "primary"), (HospitalSurgeryStatus.Done, "success") })
+                    @foreach (var (st, tone) in new[] { (HospitalSurgeryStatus.Planned, "secondary"), (HospitalSurgeryStatus.InProgress, "primary"), (HospitalSurgeryStatus.Done, "primary") })
                     {<span class="d-flex align-items-center"><span class="bullet bullet-dot bg-@tone h-8px w-8px me-2"></span>@T["or:" + st]</span>}
                 </div>
             </div>
@@ -152,7 +152,7 @@
                                 <span class="text-gray-500 mt-1 fw-semibold fs-7">@DisplayName.Of(room?.Name ?? "", room?.NameEn ?? "") · <bdi class="hp-num" dir="ltr">@HospitalUi.Clock(sc.StartMinute)–@HospitalUi.Clock(sc.StartMinute + sc.DurationMinutes)</bdi> · <bdi class="hp-num">@sc.CaseNo</bdi></span>
                             </h3>
                             <div class="card-toolbar gap-2">
-                                <span class="badge badge-light-@(sc.Status == HospitalSurgeryStatus.Done ? "success" : sc.Status == HospitalSurgeryStatus.InProgress ? "primary" : "secondary") fs-7 fw-bold">@T["or:" + sc.Status]</span>
+                                <span class="badge badge-light-@(sc.Status == HospitalSurgeryStatus.Done ? "primary" : sc.Status == HospitalSurgeryStatus.InProgress ? "primary" : "secondary") fs-7 fw-bold">@T["or:" + sc.Status]</span>
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-primary" data-case-move="InProgress" data-id="@sc.ID"><i class="ki-outline ki-time fs-4"></i>@T["Start"]</button> }
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.InProgress) { <button type="button" class="btn btn-sm btn-primary" data-case-move="Done" data-id="@sc.ID"><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the case"]</button> }
                                 @if (canBook && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-case-move="Cancelled" data-id="@sc.ID" title="@T["Cancel"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-2"></i></button> }
@@ -202,7 +202,7 @@
                             {
                                 <div class="separator separator-dashed my-4"></div>
                                 <div class="d-flex align-items-center">
-                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-bill fs-3 text-success"></i></span></div>
+                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-bill fs-3 text-primary"></i></span></div>
                                     <span class="text-gray-700 fw-semibold fs-6">@T["The procedure is on the patient's bill."]</span>
                                 </div>
                             }
@@ -262,7 +262,7 @@
                                     <span class="text-gray-500 mt-1 fw-semibold fs-7">@(kit.KitItemId != null ? DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "") : T["This procedure has no kit set"].Value) · @T["From the theatre store"]: <bdi>@(kit.StoreName ?? T["not set"].Value)</bdi></span>
                                 </h3>
                                 <div class="card-toolbar gap-2">
-                                    @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-success me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
+                                    @if (kit.IssuedAt != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-primary me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
                                     else if (sc.Status == HospitalSurgeryStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-primary" data-kit-issue="@sc.ID"><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
                                     else if (kit.KitItemId != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-time fs-5 text-primary me-2"></i>@T["Leaves the store when the case closes"]</span> }
                                 </div>
@@ -291,7 +291,7 @@
                                                 </div></td>
                                                 <td class="text-end"><span class="text-gray-900 fw-bold d-block fs-6 hp-num">@l.Qty.ToString("0.###", inv)</span></td>
                                                 <td class="text-end pe-4">@if (kit.IssuedAt != null) {<span class="text-muted fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}
-                                                    else {<span class="badge badge-light-@(lineShort ? "danger" : "success") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
+                                                    else {<span class="badge badge-light-@(lineShort ? "danger" : "primary") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
                                             </tr>
                                         }</tbody>
                                     </table></div>
@@ -332,10 +332,10 @@
                                 <span class="card-label fw-bold text-gray-800">@T["Surgical safety checklist"]</span>
                                 <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["WHO checklist"]</span>
                             </h3>
-                            <div class="card-toolbar"><span class="badge badge-light-@(doneN == allN ? "success" : "primary") fs-7 fw-bold">@T["{0} of {1}", doneN, allN]</span></div>
+                            <div class="card-toolbar"><span class="badge badge-light-@(doneN == allN ? "primary" : "primary") fs-7 fw-bold">@T["{0} of {1}", doneN, allN]</span></div>
                         </div>
                         <div class="card-body pt-2">
-                            <div class="progress h-6px bg-light mb-6"><div class="progress-bar bg-@(doneN == allN ? "success" : "primary")" role="progressbar" style="width:@(allN == 0 ? 0 : doneN * 100 / allN)%"></div></div>
+                            <div class="progress h-6px bg-light mb-6"><div class="progress-bar bg-@(doneN == allN ? "primary" : "primary")" role="progressbar" style="width:@(allN == 0 ? 0 : doneN * 100 / allN)%"></div></div>
                             @{ int ix = 0; }
                             @foreach (var item in HospitalSurgeryChecklist.All)
                             {
@@ -350,7 +350,7 @@
                                         @if (item == HospitalSurgeryChecklist.Consent)
                                         {
                                             var cno = ViewBag.CaseConsentNo as string;
-                                            if (cno != null) { <a href="@Url.Action("Patient", new { id = sc.PatientId })#pfConsents" class="badge badge-light-success fs-8 fw-bold hp-num">@cno</a> }
+                                            if (cno != null) { <a href="@Url.Action("Patient", new { id = sc.PatientId })#pfConsents" class="badge badge-light-primary fs-8 fw-bold hp-num">@cno</a> }
                                             else if (canConsult && open) { <a href="@Url.Action("NewConsent", new { id = sc.PatientId, surgeryId = sc.ID })" class="btn btn-sm btn-light-primary py-1 px-3 fs-8">@T["Take the consent"]</a> }
                                         }
                                         <span class="badge badge-light-@(HospitalSurgeryChecklist.BeforeStart.Contains(item) ? "info" : "primary") fs-8">@(HospitalSurgeryChecklist.BeforeStart.Contains(item) ? T["Before induction"] : T["Before leaving theatre"])</span>

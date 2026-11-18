@@ -17,7 +17,7 @@
     // H125: the day's counts as the theme's stat tiles (demo39 dashboards/logistics: a big figure over its label), each with its symbol
     var tiles = new (string Key, string Label, int N, string Tone, string Icon)[] {
         (HospitalDialysisDayState.Due, "dxs:Due", Model.Due, "primary", "calendar"), (HospitalDialysisDayState.Running, "dxs:Running", Model.Running, "info", "pulse"),
-        (HospitalDialysisDayState.Done, "dxs:Done", Model.Done, "success", "check-circle"), (HospitalDialysisDayState.Missed, "dxs:Missed", Model.Missed, "dark", "cross-circle"), ("warning", "With a warning", Model.Warned, "danger", "information") };
+        (HospitalDialysisDayState.Done, "dxs:Done", Model.Done, "primary", "check-circle"), (HospitalDialysisDayState.Missed, "dxs:Missed", Model.Missed, "dark", "cross-circle"), ("warning", "With a warning", Model.Warned, "danger", "information") };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()

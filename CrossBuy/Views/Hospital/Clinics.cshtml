@@ -39,8 +39,8 @@
             @foreach (var s in new[] {
                 (T["Clinics running"].Value, string.Format(T["{0} of {1}"].Value, running, Model.Count), T["a patient is with the doctor"].Value, "ki-briefcase", "primary", "gray-900"),
                 (T["Waiting"].Value, waiting.ToString(), T["arrived, not yet called"].Value, "ki-people", "info", "gray-900"),
-                (T["Seen today"].Value, Model.Sum(c => c.Seen).ToString(), T["visits finished"].Value, "ki-check-circle", "success", "success"),
-                (T["Clinics running late"].Value, late.ToString(), T["over 15 minutes"].Value, "ki-time", late > 0 ? "danger" : "success", late > 0 ? "danger" : "gray-900") })
+                (T["Seen today"].Value, Model.Sum(c => c.Seen).ToString(), T["visits finished"].Value, "ki-check-circle", "primary", "primary"),
+                (T["Clinics running late"].Value, late.ToString(), T["over 15 minutes"].Value, "ki-time", late > 0 ? "danger" : "primary", late > 0 ? "danger" : "gray-900") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -80,7 +80,7 @@
                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Clinic"] <bdi class="hp-num">@(d.ClinicRoomNumber ?? "—")</bdi></span>
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@(d.Department == null ? "" : DisplayName.Of(d.Department.Name, d.Department.NameEn))</span></h3>
                         <div class="card-toolbar">
-                            @if (c.Current != null) { <span class="badge badge-light-success fs-7 fw-bold">@T["In session"]</span> }
+                            @if (c.Current != null) { <span class="badge badge-light-primary fs-7 fw-bold">@T["In session"]</span> }
                             else if (c.Seen == 0 && c.Waiting.Count == 0) { <span class="badge badge-light fs-7 fw-bold">@T["Not started"]</span> }
                             else { <span class="badge badge-light-info fs-7 fw-bold">@T["Available"]</span> }
                         </div>
@@ -99,14 +99,14 @@
                                 <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (cur.PatientPhoto != null) {<img src="@cur.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(cur.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(cur.PatientNameEn)</span>}</div>
                                 <div class="d-flex flex-column ms-3 min-w-0 flex-grow-1"><a href="@Url.Action("Patient", new { id = cur.PatientId })" class="text-gray-900 text-hover-primary fw-bold fs-6 text-truncate">@DisplayName.Of(cur.PatientName, cur.PatientNameEn)</a>
                                     <span class="text-gray-500 fw-semibold fs-7"><span class="hp-num" dir="ltr">@Q(cur.QueueNumber)</span> · <span class="hp-num" dir="ltr">@HospitalUi.Clock(cur.StartMinute)</span></span></div>
-                                @if (canBook) { <button type="button" class="btn btn-sm btn-success flex-shrink-0" data-finish="@cur.Id"><i class="ki-outline ki-check fs-5"></i>@T["Finish"]</button> }
+                                @if (canBook) { <button type="button" class="btn btn-sm btn-primary flex-shrink-0" data-finish="@cur.Id"><i class="ki-outline ki-check fs-5"></i>@T["Finish"]</button> }
                             </div>
                         }
                         else { <span class="text-gray-400 fw-bold">—</span> }
                     </div>
                     <div class="d-flex gap-3 mb-5">
                         <div class="border border-gray-300 border-dashed rounded flex-grow-1 py-3 px-3 text-center"><div class="fs-2 fw-bold text-gray-800 hp-num">@c.Waiting.Count</div><div class="fw-semibold fs-7 text-gray-500">@T["Waiting"]</div></div>
-                        <div class="border border-gray-300 border-dashed rounded flex-grow-1 py-3 px-3 text-center"><div class="fs-2 fw-bold text-success hp-num">@c.Seen</div><div class="fw-semibold fs-7 text-gray-500">@T["Seen"]</div></div>
+                        <div class="border border-gray-300 border-dashed rounded flex-grow-1 py-3 px-3 text-center"><div class="fs-2 fw-bold text-primary hp-num">@c.Seen</div><div class="fw-semibold fs-7 text-gray-500">@T["Seen"]</div></div>
                         <div class="border border-gray-300 border-dashed rounded flex-grow-1 py-3 px-3 text-center"><div class="fs-2 fw-bold hp-num @(c.DelayMinutes > 15 ? "text-danger" : "text-gray-800")">@c.DelayMinutes</div><div class="fw-semibold fs-7 text-gray-500">@T["Delay (min)"]</div></div>
                     </div>
                     <div class="separator separator-dashed mb-4 mt-auto"></div>

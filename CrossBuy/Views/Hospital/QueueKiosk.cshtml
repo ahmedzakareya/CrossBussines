@@ -81,9 +81,9 @@
                     if (!res.ok) { err(res.error || W.failed); return; }
                     document.getElementById('kqHello').textContent = W.hello.replace('{0}', res.name || '');
                     document.getElementById('kqList').innerHTML = res.appointments.map(function (a) {
-                        var act = a.arrived ? '<span class="badge badge-light-success fs-4 p-3">' + esc(W.already) + ' ' + esc(a.queue) + '</span>'
+                        var act = a.arrived ? '<span class="badge badge-light-primary fs-4 p-3">' + esc(W.already) + ' ' + esc(a.queue) + '</span>'
                             : a.tooEarly ? '<span class="badge badge-light fs-5 p-3">' + esc(W.early) + '</span>'
-                            : '<button type="button" class="btn btn-success kq-btn" data-check="' + a.id + '">' + esc(W.checkIn) + '</button>';
+                            : '<button type="button" class="btn btn-primary kq-btn" data-check="' + a.id + '">' + esc(W.checkIn) + '</button>';
                         return '<div class="kq-appt"><div><div class="d">' + esc(a.doctor) + '</div><div class="s">' + esc(a.department || '') + ' · ' + esc(W.at) + ' <bdi>' + esc(a.time) + '</bdi></div></div>' + act + '</div>';
                     }).join('');
                     step('pick');

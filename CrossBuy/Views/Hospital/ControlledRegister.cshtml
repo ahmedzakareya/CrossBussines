@@ -28,8 +28,8 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Tab, string? Filter)[] {
         (T["Controlled drugs in stock"].Value, Model.Drugs.ToString(), string.Format(T["{0} units on hand"].Value, Model.Units.ToString("0.###", inv)), "ki-lock-2", "dark", HospitalController.CdTabs.Balances, "stock"),
-        (T["Open discrepancies"].Value, Model.OpenDiscrepancies.ToString(), T["counts that did not match"].Value, "ki-information-2", Model.OpenDiscrepancies > 0 ? "danger" : "success", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
-        (T["Overdue"].Value, Model.Overdue.ToString(), T["open past the 12-hour shift"].Value, "ki-timer", Model.Overdue > 0 ? "danger" : "success", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
+        (T["Open discrepancies"].Value, Model.OpenDiscrepancies.ToString(), T["counts that did not match"].Value, "ki-information-2", Model.OpenDiscrepancies > 0 ? "danger" : "primary", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
+        (T["Overdue"].Value, Model.Overdue.ToString(), T["open past the 12-hour shift"].Value, "ki-timer", Model.Overdue > 0 ? "danger" : "primary", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
         (T["Counts this week"].Value, Model.CountsThisWeek.ToString(), T["blind, witnessed"].Value, "ki-clipboard", "primary", HospitalController.CdTabs.Counts, null) };
     var tabs = new (string Key, string Label, string Icon)[] {
         (HospitalController.CdTabs.Balances, T["Balances"].Value, "ki-capsule"),

@@ -21,7 +21,7 @@
                 <span class="text-gray-500 mt-1 fw-semibold fs-7">@(kit.KitItemId != null ? DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "") : T["The unit has no kit set"].Value) · @T["From the unit's store"]: <bdi>@(kit.StoreName ?? T["not set"].Value)</bdi></span>
             </h3>
             <div class="card-toolbar gap-2">
-                @if (one && kit.IssuedAt != null) { <span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-success me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
+                @if (one && kit.IssuedAt != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-primary me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
                 else if (one && Model.Completed && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-primary" data-kit-issue-unit="@Model.Unit" data-kit-id="@Model.SessionId"><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
                 else if (kit.KitItemId != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-time fs-5 text-primary me-2"></i>@T["kitwhen:" + Model.Unit]</span> }
             </div>
@@ -52,7 +52,7 @@
                             </div></td>
                             <td class="text-end"><span class="text-gray-900 fw-bold d-block fs-6 hp-num">@l.Qty.ToString("0.###", inv)</span></td>
                             <td class="text-end pe-4">@if (one && kit.IssuedAt != null) {<span class="text-muted fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}
-                                else {<span class="badge badge-light-@(lineShort ? "danger" : "success") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
+                                else {<span class="badge badge-light-@(lineShort ? "danger" : "primary") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
                         </tr>
                     }</tbody>
                 </table></div>

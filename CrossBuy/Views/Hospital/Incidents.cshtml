@@ -22,7 +22,7 @@
         HospitalIncidentHarm.NearMiss => "badge-light-secondary", HospitalIncidentHarm.NoHarm => "badge-light-info", HospitalIncidentHarm.Mild => "badge-light-primary",
         HospitalIncidentHarm.Moderate => "badge-light-danger", _ => "badge-danger",
     };
-    string StateKind(string s) => s switch { HospitalIncidentStatus.New => "primary", HospitalIncidentStatus.Review => "info", HospitalIncidentStatus.Rca => "danger", _ => "success" };
+    string StateKind(string s) => s switch { HospitalIncidentStatus.New => "primary", HospitalIncidentStatus.Review => "info", HospitalIncidentStatus.Rca => "danger", _ => "primary" };
     string Place(HospitalIncidentRow r) => r.Row.Place == HospitalIncidentPlace.Ward ? DisplayName.Of(r.Ward ?? "", r.WardEn ?? r.Ward ?? "") : T["place:" + r.Row.Place].Value;
     string When(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("yyyy-MM-dd", inv);
 }
@@ -55,7 +55,7 @@
                 (T["Reports this month"].Value, b.ThisMonth.ToString(inv), b.ThisMonth > b.LastMonth ? T["Reporting culture: healthy rise"].Value : string.Format(T["{0} last month"].Value, b.LastMonth), "ki-notepad", "primary"),
                 (T["Medication errors"].Value, b.MedicationErrors.ToString(inv), "", "ki-capsule", "info"),
                 (T["Falls"].Value, b.Falls.ToString(inv), b.FallsPer1000 is decimal f ? f.ToString("0.0", inv) + " " + T["per 1,000 patient-days"].Value : T["no patient-days yet this month"].Value, "ki-arrow-down", "primary"),
-                (T["Open root-cause analyses"].Value, b.OpenRca.ToString(inv), b.NearestDue is DateTime d ? string.Format(T["next due {0}"].Value, d.ToString("yyyy-MM-dd", inv)) : T["45-day deadline"].Value, "ki-search-list", b.OpenRca > 0 ? "danger" : "success") })
+                (T["Open root-cause analyses"].Value, b.OpenRca.ToString(inv), b.NearestDue is DateTime d ? string.Format(T["next due {0}"].Value, d.ToString("yyyy-MM-dd", inv)) : T["45-day deadline"].Value, "ki-search-list", b.OpenRca > 0 ? "danger" : "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -141,7 +141,7 @@
                                                     <div class="symbol symbol-30px symbol-circle me-3 flex-shrink-0" title="@who">@if (f.Photo != null) {<img src="@f.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(f.AssigneeEn ?? who)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(f.AssigneeEn ?? who)</span>}</div>
                                                     <div class="flex-grow-1 min-w-0"><a href="@Url.Action("Detail", "Tasks", new { id = f.TaskId })" target="_blank" class="text-gray-800 text-hover-primary fs-7 fw-semibold" dir="auto">@f.Title</a>
                                                         <div class="text-muted fs-9">@who @if (f.Due is DateTime fd) {<text> · </text><span class="hp-num @(f.Overdue ? "text-danger" : "")" dir="ltr">@fd.ToString("yyyy-MM-dd", inv)</span>}</div></div>
-                                                    <span class="badge @(f.Status == "Done" ? "badge-light-success" : f.Overdue ? "badge-light-danger" : "badge-light-primary") fs-7 fw-bold">@T["task:" + f.Status]</span>
+                                                    <span class="badge @(f.Status == "Done" ? "badge-light-primary" : f.Overdue ? "badge-light-danger" : "badge-light-primary") fs-7 fw-bold">@T["task:" + f.Status]</span>
                                                 </div>
                                             }
                                             @if (i.Status == HospitalIncidentStatus.Rca && canManage && staff.Count > 0)

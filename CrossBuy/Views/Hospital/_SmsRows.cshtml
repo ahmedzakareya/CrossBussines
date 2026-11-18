@@ -13,10 +13,10 @@
         HospitalSmsKind.Booked => ("ki-calendar-tick", "primary"),
         HospitalSmsKind.Reminder => ("ki-notification-on", "info"),
         HospitalSmsKind.NoShow => ("ki-calendar-remove", "danger"),
-        HospitalSmsKind.LabReady => ("ki-flask", "success"),
+        HospitalSmsKind.LabReady => ("ki-flask", "primary"),
         _ => ("ki-message-text-2", "primary"),
     };
-    string st = m.Status switch { HospitalSmsStatus.Sent => "badge-light-success", HospitalSmsStatus.Failed => "badge-light-danger", HospitalSmsStatus.Queued => "badge-light-primary", _ => "badge-light" };
+    string st = m.Status switch { HospitalSmsStatus.Sent => "badge-light-primary", HospitalSmsStatus.Failed => "badge-light-danger", HospitalSmsStatus.Queued => "badge-light-primary", _ => "badge-light" };
     @* H128: a row of the theme's table widget (demo39 widgets/tables) — kind over the number and time; cancel is an icon *@
     <tr data-sms-row="@m.ID" class="@(m.Status == HospitalSmsStatus.Cancelled ? "opacity-75" : "")">
         <td class="ps-4"><div class="d-flex align-items-center">

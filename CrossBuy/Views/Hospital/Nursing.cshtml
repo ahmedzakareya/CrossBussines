@@ -61,7 +61,7 @@
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] {
                     (T["Doses due now"].Value, b.DueNow, string.Format(T["within {0} minutes of their hour"].Value, HospitalNursingRules.WindowMinutes), "ki-capsule", "primary"),
-                    (T["Overdue doses"].Value, b.Overdue, T["need recording or a documented reason"].Value, "ki-time", b.Overdue > 0 ? "danger" : "success"),
+                    (T["Overdue doses"].Value, b.Overdue, T["need recording or a documented reason"].Value, "ki-time", b.Overdue > 0 ? "danger" : "primary"),
                     (T["Nursing tasks due"].Value, b.TasksDue, T["within the next hour"].Value, "ki-notepad-edit", "info"),
                     (T["Patients on the ward"].Value, b.Patients.Count, System.Text.RegularExpressions.Regex.Replace(T["shift:" + b.Shift].Value, @"\s*\([^)]*\)", ""), "ki-profile-user", "primary") })
                 {
@@ -134,9 +134,9 @@
                                                         @foreach (var dv in ic.Devices) {if (canAdmit || canConsult) {<button type="button" class="badge @(dv.Day >= 7 ? "badge-light-danger" : "badge-light-primary") fs-8 fw-bold border-0" data-ic-remove="@dv.Id" data-what="@who — @T["dev:" + dv.Kind]" title="@T["Record its removal"]">@T["dev:" + dv.Kind] · @T["Day {0}", dv.Day] <i class="ki-outline ki-cross fs-8 ms-1"></i></button>} else {<span class="badge @(dv.Day >= 7 ? "badge-light-danger" : "badge-light-primary") fs-8 fw-bold">@T["dev:" + dv.Kind] · @T["Day {0}", dv.Day]</span>}}
                                                     </div>}
                                                     @{ var cr = (ViewBag.Cr as IReadOnlyDictionary<int, IReadOnlyList<HospitalConsultBadge>>) is { } crAll && crAll.TryGetValue(p.AdmissionId, out var crOne) ? crOne : null; }
-                                                    @if (cr != null) {<div class="d-flex flex-wrap gap-1 mt-2">@foreach (var c in cr) {<a href="@Url.Action("Consults", new { scope = "all" })" class="badge @(c.Overdue ? "badge-light-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "badge-light-success" : "badge-light-info") fs-8 fw-bold" title="@c.RequestNo"><i class="ki-outline ki-messages fs-8 me-1 @(c.Overdue ? "text-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "text-success" : "text-info")"></i>@DisplayName.Of(c.Department, c.DepartmentEn) · @(c.Overdue ? T["Overdue"].Value : T["crs:" + c.Status].Value)</a>}</div>}
+                                                    @if (cr != null) {<div class="d-flex flex-wrap gap-1 mt-2">@foreach (var c in cr) {<a href="@Url.Action("Consults", new { scope = "all" })" class="badge @(c.Overdue ? "badge-light-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "badge-light-primary" : "badge-light-info") fs-8 fw-bold" title="@c.RequestNo"><i class="ki-outline ki-messages fs-8 me-1 @(c.Overdue ? "text-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "text-primary" : "text-info")"></i>@DisplayName.Of(c.Department, c.DepartmentEn) · @(c.Overdue ? T["Overdue"].Value : T["crs:" + c.Status].Value)</a>}</div>}
                                                     <div class="d-flex flex-wrap gap-1 mt-2">
-                                                        @if ((ViewBag.Fb as IReadOnlyDictionary<int, HospitalFluidBadge>) is { } fbAll && fbAll.TryGetValue(p.AdmissionId, out var fb)) {<button type="button" class="badge badge-light fs-8 fw-bold border-0" data-fluid="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-drop fs-8 text-primary me-1"></i>@T["Fluid balance"] <bdi dir="ltr" class="hp-num ms-1 @(fb.Balance < 0 ? "text-danger" : "text-success")">@((fb.Balance > 0 ? "+" : fb.Balance < 0 ? "−" : "") + Math.Abs(fb.Balance).ToString("#,0", System.Globalization.CultureInfo.InvariantCulture))&nbsp;ml</bdi></button>}
+                                                        @if ((ViewBag.Fb as IReadOnlyDictionary<int, HospitalFluidBadge>) is { } fbAll && fbAll.TryGetValue(p.AdmissionId, out var fb)) {<button type="button" class="badge badge-light fs-8 fw-bold border-0" data-fluid="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-drop fs-8 text-primary me-1"></i>@T["Fluid balance"] <bdi dir="ltr" class="hp-num ms-1 @(fb.Balance < 0 ? "text-danger" : "text-primary")">@((fb.Balance > 0 ? "+" : fb.Balance < 0 ? "−" : "") + Math.Abs(fb.Balance).ToString("#,0", System.Globalization.CultureInfo.InvariantCulture))&nbsp;ml</bdi></button>}
                                                         @if ((ViewBag.Cp as IReadOnlyDictionary<int, HospitalCareBadge>) is { } cpAll && cpAll.TryGetValue(p.AdmissionId, out var cpb)) {<button type="button" class="badge @(cpb.ReviewDue > 0 || cpb.Suggested > 0 ? "badge-light-danger" : "badge-light-primary") fs-8 fw-bold border-0" data-careplan="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-notepad-edit fs-8 me-1"></i>@T["Care plan"] · <span class="hp-num">@cpb.ActivePlans</span>@if (cpb.ReviewDue > 0) {<text> · @T["Review due"]</text>}@if (cpb.Suggested > 0) {<text> · @T["Plan suggested"]</text>}</button>}
                                                     </div>
                                                     @* the patient's actions — demo39 icon buttons, each named by its tooltip *@
@@ -227,7 +227,7 @@
                         {
                             var (p, t) = tasks[k];
                             bool late = t.DoneAt == null && t.DueAt < DateTime.UtcNow, urgent = t.Title.StartsWith("NEWS2|");
-                            string tone = t.DoneAt != null ? "success" : urgent || late ? "danger" : "primary";
+                            string tone = t.DoneAt != null ? "primary" : urgent || late ? "danger" : "primary";
                             <div class="d-flex flex-stack">
                                 <div class="form-check form-check-custom form-check-solid me-4"><input type="checkbox" class="form-check-input" @(t.DoneAt != null ? "checked disabled" : "") @(canAdmit && t.DoneAt == null ? "" : "disabled") data-task-done="@t.ID" data-what="@HospitalNews2Text.TaskText(t.Title, k2 => T[k2].Value)" /></div>
                                 <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -659,7 +659,7 @@
                 var id = Number(sEl.querySelector('[data-set-pick]').value), set = sets.filter(function (x) { return x.id === id; })[0], box = sEl.querySelector('[data-set-lines]');
                 box.innerHTML = !set ? '' : set.items.map(function (i) {
                     return '<label class="d-flex align-items-start gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed"><input class="form-check-input mt-1" type="checkbox" data-line="' + i.id + '"' + (i.preselected ? ' checked' : '') + ' />' +
-                        '<div class="flex-grow-1"><span class="badge ' + (i.kind === 'Med' ? 'badge-light-primary' : 'badge-light-success') + ' fs-9 me-2">' + (i.kind === 'Med' ? W.med : W.task) + '</span>' +
+                        '<div class="flex-grow-1"><span class="badge ' + (i.kind === 'Med' ? 'badge-light-primary' : 'badge-light-primary') + ' fs-9 me-2">' + (i.kind === 'Med' ? W.med : W.task) + '</span>' +
                         '<bdi class="fw-semibold text-gray-800">' + esc(i.text) + '</bdi>' + (i.note ? '<div class="text-muted fs-8" dir="auto">' + esc(i.note) + '</div>' : '') + '</div></label>';
                 }).join('');
             }

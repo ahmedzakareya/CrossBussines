@@ -17,8 +17,8 @@
     bool draft = b.Status == HospitalClaimBatchStatus.Draft;
     string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
     string Plain(decimal v) => v.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
-    string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "success", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
-    string LineBadge(string s) => s switch { HospitalClaimLineStatus.Accepted => "success", HospitalClaimLineStatus.Rejected => "danger", HospitalClaimLineStatus.Resubmitted => "info", _ => "primary" };
+    string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "primary", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
+    string LineBadge(string s) => s switch { HospitalClaimLineStatus.Accepted => "primary", HospitalClaimLineStatus.Rejected => "danger", HospitalClaimLineStatus.Resubmitted => "info", _ => "primary" };
     int flagged = Model.Claims.Sum(c => c.Lines.Count(l => l.MissingPreauth));
     // H62: the claim check of a draft batch — errors block the submission (fix, or hold the claim); warnings do not
     var scrub = (ViewBag.Scrub as IReadOnlyList<HospitalScrubIssue>) ?? Array.Empty<HospitalScrubIssue>();
@@ -30,8 +30,8 @@
     var tiles = new[] {
         (Num: Model.Row.Claims.ToString(), Label: T["Claims"].Value, Icon: "document", Tone: "primary", Line: T["one per closed bill"].Value, Danger: false),
         (Num: Money(Model.Row.Amount), Label: T["Claimed from the payer"].Value, Icon: "send", Tone: "info", Line: cur ?? "", Danger: false),
-        (Num: Model.Row.Accepted > 0 ? Money(Model.Row.Accepted) : "—", Label: T["Accepted"].Value, Icon: "check-circle", Tone: "success", Line: cur ?? "", Danger: false),
-        (Num: Model.Row.Rejected > 0 ? Money(Model.Row.Rejected) : "—", Label: T["Rejected"].Value, Icon: "cross-circle", Tone: Model.Row.Rejected > 0 ? "danger" : "success", Line: cur ?? "", Danger: Model.Row.Rejected > 0) };
+        (Num: Model.Row.Accepted > 0 ? Money(Model.Row.Accepted) : "—", Label: T["Accepted"].Value, Icon: "check-circle", Tone: "primary", Line: cur ?? "", Danger: false),
+        (Num: Model.Row.Rejected > 0 ? Money(Model.Row.Rejected) : "—", Label: T["Rejected"].Value, Icon: "cross-circle", Tone: Model.Row.Rejected > 0 ? "danger" : "primary", Line: cur ?? "", Danger: Model.Row.Rejected > 0) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -94,8 +94,8 @@
             }
             else
             {
-                <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-6 mb-5" data-scrub-summary>
-                    <i class="ki-outline ki-shield-tick fs-2tx text-success me-4"></i>
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5" data-scrub-summary>
+                    <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
                     <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Claim check: nothing stops this batch"]</h4>
                         <div class="fs-6 text-gray-700">@(warnClaims > 0 ? string.Format(T["{0} claims have warnings: read them before submitting."].Value, warnClaims) : T["Every claim has its approvals, cover, member number, codes and diagnosis."].Value)</div></div>
                 </div>
@@ -140,7 +140,7 @@
                                 @foreach (var pst in led.Item2)
                                 {
                                     var code = pst.ClaimLineId is int cl ? Model.Claims.SelectMany(c => c.Lines).FirstOrDefault(x => x.ID == cl)?.Code : null;
-                                    string tone = pst.Event == HospitalClaimEvent.Remittance || pst.Event == HospitalClaimEvent.Recovery ? "success" : pst.Event == HospitalClaimEvent.Rejection ? "danger" : "secondary";
+                                    string tone = pst.Event == HospitalClaimEvent.Remittance || pst.Event == HospitalClaimEvent.Recovery ? "primary" : pst.Event == HospitalClaimEvent.Rejection ? "danger" : "secondary";
                                     <tr>
                                         <td class="ps-4"><div class="d-flex align-items-center">
                                             <div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-bank fs-3 text-@(tone == "secondary" ? "gray-600" : tone)"></i></span></div>
@@ -224,12 +224,12 @@
                                     </div></td>
                                     <td class="text-gray-600 fw-semibold fs-7">@T["cat:" + l.Category]</td>
                                     <td class="text-end"><span class="text-gray-700 fw-bold fs-6 hp-num">@Money(l.Amount)</span></td>
-                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(l.InsurerAmount)</span>@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<span class="text-success fw-semibold d-block fs-7">@T["Paid"] <span class="hp-num" dir="ltr">@Money(l.AcceptedAmount ?? 0)</span></span>}@if (l.RecoupedAmount is decimal rc) {<span class="text-danger fw-semibold d-block fs-7" title="@l.RecoupReason">@T["Recouped"] <span class="hp-num" dir="ltr">@Money(rc)</span></span>}</td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(l.InsurerAmount)</span>@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<span class="text-primary fw-semibold d-block fs-7">@T["Paid"] <span class="hp-num" dir="ltr">@Money(l.AcceptedAmount ?? 0)</span></span>}@if (l.RecoupedAmount is decimal rc) {<span class="text-danger fw-semibold d-block fs-7" title="@l.RecoupReason">@T["Recouped"] <span class="hp-num" dir="ltr">@Money(rc)</span></span>}</td>
                                     <td><span class="badge badge-light-@LineBadge(l.Status) fs-7 fw-bold">@T["cl:" + l.Status]</span></td>
                                     <td class="text-end pe-4 text-nowrap">
                                         @if (canBill && !draft && l.Status == HospitalClaimLineStatus.Pending)
                                         {
-                                            <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success me-1" title="@T["Accepted"]" data-bs-toggle="tooltip" data-accept="@l.ID" data-full="@Plain(l.InsurerAmount)" data-ask="@string.Format(T["The payer accepted {0}: enter the amount it pays."].Value, what)"><i class="ki-outline ki-check fs-3"></i></button>
+                                            <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" title="@T["Accepted"]" data-bs-toggle="tooltip" data-accept="@l.ID" data-full="@Plain(l.InsurerAmount)" data-ask="@string.Format(T["The payer accepted {0}: enter the amount it pays."].Value, what)"><i class="ki-outline ki-check fs-3"></i></button>
                                             <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["Rejected"]" data-bs-toggle="tooltip" data-reject="@l.ID" data-ask="@string.Format(T["The payer rejected {0}: enter its rejection code."].Value, what)" data-ask2="@T["And the payer's reason:"]"><i class="ki-outline ki-cross fs-3"></i></button>
                                         }
                                         else if (canBill && l.Status == HospitalClaimLineStatus.Accepted && l.RecoupedAmount == null)

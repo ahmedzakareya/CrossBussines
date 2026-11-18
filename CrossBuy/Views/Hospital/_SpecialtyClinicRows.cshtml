@@ -19,8 +19,8 @@
             <div class="symbol symbol-35px symbol-circle flex-shrink-0 me-3">@if (!string.IsNullOrEmpty(r.DoctorPhoto)) {<img src="@r.DoctorPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.DoctorEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</div>
             <span class="text-gray-800 fw-bold fs-7">@DisplayName.Of(r.Doctor, r.DoctorEn)</span></div></td>
         <td class="text-gray-600 fw-semibold fs-7 mw-250px">@if (r.Complaint != null) {<bdi>@r.Complaint</bdi>} else {<span class="text-gray-400">—</span>}</td>
-        <td>@if (r.Forms == 0) {<span class="text-gray-400">—</span>} else {<span class="badge badge-light-@(r.SignedForms == r.Forms ? "success" : "primary") fs-7 fw-bold hp-num">@T["{0} of {1}", r.SignedForms, r.Forms]</span>}</td>
-        <td>@if (signed) {<span class="badge badge-light-success fs-7 fw-bold">@T["Signed"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["Visit open"]</span>}</td>
+        <td>@if (r.Forms == 0) {<span class="text-gray-400">—</span>} else {<span class="badge badge-light-@(r.SignedForms == r.Forms ? "primary" : "primary") fs-7 fw-bold hp-num">@T["{0} of {1}", r.SignedForms, r.Forms]</span>}</td>
+        <td>@if (signed) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Signed"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["Visit open"]</span>}</td>
         <td class="text-end pe-4"><a href="@Url.Action("SpecialtyVisit", new { id = r.EncounterId })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the visit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
     </tr>
 }

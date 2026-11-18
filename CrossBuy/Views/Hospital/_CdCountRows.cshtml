@@ -18,14 +18,14 @@
 @foreach (var r in Model)
 {
     var c = r.C;
-    string tone = c.Status == HospitalCountStatus.Open ? "danger" : c.Status == HospitalCountStatus.Matched ? "success" : "primary";
+    string tone = c.Status == HospitalCountStatus.Open ? "danger" : c.Status == HospitalCountStatus.Matched ? "primary" : "primary";
     string diff = (c.Difference > 0 ? "+" : c.Difference < 0 ? "−" : "") + Math.Abs(c.Difference).ToString("0.###", inv);
     <tr>
         <td class="ps-4 text-nowrap"><span class="text-gray-900 fw-bold hp-num d-block">@c.CountNo</span><span class="text-muted fs-8 hp-num" data-fmt data-utc="@c.CountedAt.ToString("o")">@c.CountedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
         <td><span class="text-gray-900 fw-bold d-block"><bdi>@DisplayName.Of(r.Name, r.NameEn)</bdi></span><bdi class="text-muted fs-8" dir="ltr">@r.Code</bdi></td>
         <td class="text-end"><span class="text-gray-700 fw-bold hp-num">@c.Expected.ToString("0.###", inv)</span></td>
         <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@c.Counted.ToString("0.###", inv)</span></td>
-        <td class="text-end"><span class="badge badge-light-@(c.Difference == 0 ? "success" : "danger") fs-7 fw-bold hp-num" dir="ltr">@diff</span></td>
+        <td class="text-end"><span class="badge badge-light-@(c.Difference == 0 ? "primary" : "danger") fs-7 fw-bold hp-num" dir="ltr">@diff</span></td>
         <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["cds:" + c.Status]</span>@if (r.Overdue) {<span class="badge badge-danger fs-8 fw-bold ms-1">@T["Overdue"]</span>}
             @if (c.Resolution != null) {<span class="text-muted fs-8 d-block mt-1">@T["cdr:" + c.Resolution]@if (c.DocumentNo != null) {<text> · </text><span class="hp-num">@c.DocumentNo</span>}</span>@if (c.ResolutionNote != null) {<bdi class="text-gray-600 fs-8 d-block" dir="auto">@c.ResolutionNote</bdi>}}</td>
         <td><div class="d-flex align-items-center">

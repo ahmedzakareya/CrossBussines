@@ -36,7 +36,7 @@
             if (Model.Count == 0) { <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i><div class="fs-6 text-gray-700 fw-semibold">@T["No compartment yet: add the cold chambers' places first."]</div></div> }
             @* H128: the occupancy as the theme's stat tiles (demo39 dashboards/logistics) *@
             int police = Model.Count(x => x.Case != null && x.Case.MedicoLegal && x.Case.PoliceClearedAt == null), warned = Model.Count(x => x.Case != null && x.Warnings.Count > 0);
-            var tiles = new (string Label, int N, string Tone, string Icon)[] { ("Occupied", Model.Count - free.Count, "primary", "lock"), ("Vacant", free.Count, "success", "check-circle"),
+            var tiles = new (string Label, int N, string Tone, string Icon)[] { ("Occupied", Model.Count - free.Count, "primary", "lock"), ("Vacant", free.Count, "primary", "check-circle"),
                 ("Police hold", police, "danger", "shield-tick"), ("With a warning", warned, "danger", "information") };
             <div class="row g-4 mb-5">
                 @foreach (var t in tiles)
@@ -59,7 +59,7 @@
                         @if (c == null)
                         {
                             <div class="card h-100 border border-dashed border-gray-300 bg-transparent shadow-none"><div class="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center">
-                                <div class="symbol symbol-35px mb-2"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-3 text-success"></i></span></div>
+                                <div class="symbol symbol-35px mb-2"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check-circle fs-3 text-primary"></i></span></div>
                                 <div class="fs-4 fw-bold text-gray-700 hp-num"><bdi>@v.Compartment.Code</bdi></div><div class="text-gray-500 fw-semibold fs-8">@T["mgk:" + v.Compartment.Kind] · @T["Vacant"]</div></div></div>
                         }
                         else

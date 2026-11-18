@@ -9,12 +9,12 @@
      · Then: strength and form, routes, ATC with its anatomical group, the formulary status, the safety flags, and the edit button. *@
 @{
     bool canEdit = ViewBag.CanPharmacy == true;
-    string StatusTone(string s) => s == HospitalFormularyStatus.Formulary ? "success" : s == HospitalFormularyStatus.Restricted ? "info" : "danger";
+    string StatusTone(string s) => s == HospitalFormularyStatus.Formulary ? "primary" : s == HospitalFormularyStatus.Restricted ? "info" : "danger";
 }
 @foreach (var r in Model)
 {
     var d = r.Drug;
-    string tone = d == null ? "danger" : r.Missing.Count > 0 ? "primary" : "success";
+    string tone = d == null ? "danger" : r.Missing.Count > 0 ? "primary" : "primary";
     string brand = DisplayName.Of(r.Name, r.NameEn);
     <tr>
         <td class="ps-4"><div class="d-flex align-items-center">

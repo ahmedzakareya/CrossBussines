@@ -43,8 +43,8 @@
             @foreach (var s in new[] {
                 (T["Open bills"].Value, open.Count.ToString(), T["visits and stays still running"].Value, "primary", "bill", "text-gray-900"),
                 (T["Billed"].Value, M(home.Sum(b => b.Total)), cur, "info", "document", "text-gray-900"),
-                (T["Collected"].Value, M(home.Sum(b => b.Paid)), cur, "success", "wallet", "text-success"),
-                (T["Still owed"].Value, M(owed), cur, owed > 0 ? "danger" : "success", "dollar", owed > 0 ? "text-danger" : "text-gray-900") })
+                (T["Collected"].Value, M(home.Sum(b => b.Paid)), cur, "primary", "wallet", "text-primary"),
+                (T["Still owed"].Value, M(owed), cur, owed > 0 ? "danger" : "primary", "dollar", owed > 0 ? "text-danger" : "text-gray-900") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -99,9 +99,9 @@
                                     <td><a href="@url" class="text-gray-900 fw-bold text-hover-primary d-block fs-6"><bdi class="hp-num">@b.BillNo</bdi></a>
                                         <span class="text-muted fw-semibold d-block fs-7">@(b.Inpatient ? T["Inpatient stay"] : T["Outpatient visit"]) · <span class="hp-num" dir="ltr">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span></span></td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Total)</span>@if (Foreign(b)) {<span class="badge badge-light-info fs-8 ms-1">@b.Currency!.Code</span>}</td>
-                                    <td class="text-end"><span class="text-success fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Paid)</span></td>
-                                    <td class="text-end"><span class="badge badge-light-@(due > 0 ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@RM(b, due)</span></td>
-                                    <td><span class="badge badge-light-@(b.Status == HospitalBillStatus.Open ? "primary" : "success") fs-7 fw-bold">@T["bill:" + b.Status]</span></td>
+                                    <td class="text-end"><span class="text-primary fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Paid)</span></td>
+                                    <td class="text-end"><span class="badge badge-light-@(due > 0 ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@RM(b, due)</span></td>
+                                    <td><span class="badge badge-light-@(b.Status == HospitalBillStatus.Open ? "primary" : "primary") fs-7 fw-bold">@T["bill:" + b.Status]</span></td>
                                     <td class="text-end pe-4"><a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the bill"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
                                 </tr>
                             }

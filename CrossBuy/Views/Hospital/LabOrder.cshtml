@@ -44,7 +44,7 @@
             @if (canLab && o.Status == HospitalLabStatus.Collected) { <button type="button" class="btn btn-sm btn-primary" data-step="Receive" data-confirm="@string.Format(T["Receive the specimen of {0} for {1} ({2}) in the lab?"].Value, o.AccessionNo, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive"]</button> }
             @if (canEnter) { <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button> }
             @if (canVerify && o.Status == HospitalLabStatus.Resulted) { <button type="button" class="btn btn-sm btn-primary" data-step="Verify" data-confirm="@T["Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed."]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Verify result"]</button> }
-            @if (locked) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Verified"] <span class="hp-num ms-1" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+            @if (locked) { <span class="badge badge-light-primary fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-primary me-1"></i>@T["Verified"] <span class="hp-num ms-1" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
             <partial name="_HospitalPortalRelease" model="@((HospitalPortalResultSource.Lab, o.ID, locked, ViewBag.PortalRelease as HospitalPortalRelease, (bool)(ViewBag.CanConsult == true)))" />
         </div>
     </div></div>
@@ -80,8 +80,8 @@
             }
             else
             {
-                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-success border-success">
-                    <i class="ki-outline ki-call fs-2tx text-success me-4"></i>
+                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-primary border-primary">
+                    <i class="ki-outline ki-call fs-2tx text-primary me-4"></i>
                     <div class="fw-semibold">
                         <h4 class="text-gray-900 fw-bold mb-1">@T["The doctor was told of the critical value"]</h4>
                         <div class="fs-6 text-gray-700">@if (o.CriticalNote?.StartsWith(HospitalLabAlertService.ReadBackNotePrefix) == true) {<text>@T["Read back on screen:"] <bdi dir="ltr" class="hp-num">@o.CriticalNote[HospitalLabAlertService.ReadBackNotePrefix.Length..]</bdi></text>} else {@o.CriticalNote} — <a href="@Url.Action("LabCritical", new { id = o.ID })" class="fw-semibold">@T["Following it up"]</a> — @Who(o.CriticalAcknowledgedByEmployeeId) · <span class="hp-num" data-fmt data-utc="@o.CriticalAcknowledgedAt?.ToString("o")">@o.CriticalAcknowledgedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div>
@@ -100,7 +100,7 @@
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@if (specimen != null) {<text>@T["Specimen:"] @specimen</text>}@if (labSection != null) {<text> · @labSection</text>}@if (o.CollectedAt != null) {<text> · @T["collected at"] <span class="hp-num" data-fmt data-utc="@o.CollectedAt?.ToString("o")">@o.CollectedAt?.ToLocalTime().ToString("HH:mm")</span></text>}</span>
                         </h3>
                         <div class="card-toolbar">
-                            <span class="badge badge-light-@(locked ? "success" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7 fw-bold">@T["lab:" + o.Status]</span>
+                            <span class="badge badge-light-@(locked ? "primary" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7 fw-bold">@T["lab:" + o.Status]</span>
                         </div>
                     </div>
                     <div class="card-body pt-2">

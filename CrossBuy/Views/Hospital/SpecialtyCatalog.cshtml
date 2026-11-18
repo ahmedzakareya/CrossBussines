@@ -37,7 +37,7 @@
                 <div class="col-6 col-md-4 col-xl"><a href="@href" class="card card-flush h-100 hoverable">
                     <div class="card-header pt-5 flex-nowrap gap-3">
                         <div class="card-title d-flex flex-column">
-                            @if (dental) {<span class="lh-1"><i class="ki-outline ki-check-circle fs-2x text-success"></i></span>}
+                            @if (dental) {<span class="lh-1"><i class="ki-outline ki-check-circle fs-2x text-primary"></i></span>}
                             else {<span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num">@b.Visits</span>}
                             <span class="text-gray-800 pt-2 fw-bold fs-6">@Nm(b.Clinic, b.Entry.Dept)</span>
                         </div>
@@ -53,14 +53,14 @@
             {
                 var e = c.Entry;
                 string kindKey = e.Kind == "Built" ? "Exists (H85)" : e.Kind == "Widget" ? "spc:" + e.Key + ":widget" : "Template only";
-                string tone = e.Kind == "Built" ? "success" : e.Kind == "Widget" ? "info" : "primary";
+                string tone = e.Kind == "Built" ? "primary" : e.Kind == "Widget" ? "info" : "primary";
                 <div class="col-md-6 col-xl-4"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
                         <div class="card-title d-flex align-items-center">
                             <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline @e.Icon fs-2 text-@tone"></i></span></div>
                             <span class="card-label fw-bold text-gray-800 fs-5">@Nm(c.Clinic, e.Key)</span>
                         </div>
-                        <div class="card-toolbar"><span class="badge badge-light-@(e.Kind == "Built" ? "success" : e.Kind == "Widget" ? "info" : "secondary") fw-bold fs-8 text-nowrap">@T[kindKey]</span></div>
+                        <div class="card-toolbar"><span class="badge badge-light-@(e.Kind == "Built" ? "primary" : e.Kind == "Widget" ? "info" : "secondary") fw-bold fs-8 text-nowrap">@T[kindKey]</span></div>
                     </div>
                     <div class="card-body pt-2 d-flex flex-column">
                         <div class="d-flex flex-column gap-2 mb-4">
@@ -71,7 +71,7 @@
                         <div class="d-flex flex-wrap gap-2">
                             @if (c.Clinic == null) {<span class="badge badge-light fs-7 fw-bold">@T["No clinic yet"]</span>}
                             else {<a href="@Url.Action("SpecialtyClinic", new { code = e.Dept })" class="badge badge-light-primary fs-7 fw-bold">@T["Clinic: {0} visits", c.Visits]</a>}
-                            <span class="badge badge-light-@(c.Templates > 0 ? "success" : "secondary") fs-7 fw-bold">@T["Published templates: {0}", c.Templates]</span>
+                            <span class="badge badge-light-@(c.Templates > 0 ? "primary" : "secondary") fs-7 fw-bold">@T["Published templates: {0}", c.Templates]</span>
                         </div>
                     </div>
                 </div></div>

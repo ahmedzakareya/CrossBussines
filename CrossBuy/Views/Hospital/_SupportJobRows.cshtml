@@ -8,8 +8,8 @@
 {
     var j = r.Job;
     // one icon per kind, in its own tinted square: cleaning (brush), porter (a route from one place to another), laundry (basket)
-    var (icon, tint) = j.Kind == HospitalSupportKind.Cleaning ? ("ki-brush", "primary") : j.Kind == HospitalSupportKind.Porter ? ("ki-route", "info") : ("ki-basket", "success");
-    string st = j.Status switch { HospitalSupportStatus.Done => "badge-light-success", HospitalSupportStatus.Cancelled => "badge-light", HospitalSupportStatus.Taken => "badge-primary", _ => "badge-light-primary" };
+    var (icon, tint) = j.Kind == HospitalSupportKind.Cleaning ? ("ki-brush", "primary") : j.Kind == HospitalSupportKind.Porter ? ("ki-route", "info") : ("ki-basket", "primary");
+    string st = j.Status switch { HospitalSupportStatus.Done => "badge-light-primary", HospitalSupportStatus.Cancelled => "badge-light", HospitalSupportStatus.Taken => "badge-primary", _ => "badge-light-primary" };
     <tr data-job-row="@j.ID" class="@(j.Status == HospitalSupportStatus.Cancelled ? "opacity-75" : "")">
         <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@j.JobNo</span><div class="text-muted fw-semibold fs-8 mt-1 hp-num text-nowrap" dir="ltr">@At(j.RequestedAt)</div></td>
         <td><div class="d-flex align-items-center gap-3">

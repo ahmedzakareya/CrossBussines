@@ -22,7 +22,7 @@
     int dp = currency?.Decimals ?? 2;
     (string Name, string En) Who(int id) => people.TryGetValue(id, out var p) ? p : ("—", "");
     string PmIcon(string m) => m == HospitalPaymentMethods.Cash ? "dollar" : m == HospitalPaymentMethods.Card ? "credit-cart" : m == HospitalPaymentMethods.Transfer ? "bank" : "wallet";
-    string PmTone(string m) => m == HospitalPaymentMethods.Cash ? "success" : m == HospitalPaymentMethods.Card ? "primary" : m == HospitalPaymentMethods.Transfer ? "info" : "danger";
+    string PmTone(string m) => m == HospitalPaymentMethods.Cash ? "primary" : m == HospitalPaymentMethods.Card ? "primary" : m == HospitalPaymentMethods.Transfer ? "info" : "danger";
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -115,7 +115,7 @@
                                     @foreach (var d in denoms)
                                     {
                                         <tr><td class="ps-4"><div class="d-flex align-items-center">
-                                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-dollar fs-3 text-success"></i></span></div>
+                                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-dollar fs-3 text-primary"></i></span></div>
                                                 <span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@d.ToString(d < 1 ? "0.000" : "0", System.Globalization.CultureInfo.InvariantCulture)</span></div></td>
                                             <td><input type="number" min="0" step="1" class="form-control form-control-sm form-control-solid hp-num w-100px" dir="ltr" data-denom="@d.ToString(System.Globalization.CultureInfo.InvariantCulture)" value="0" /></td>
                                             <td class="text-end pe-4"><span class="text-gray-800 fw-bold hp-num" dir="ltr" data-value></span></td></tr>
@@ -134,7 +134,7 @@
                         </div>
                         <div class="card-body pt-2">
                             @* list-widget rows — demo39 dashboards/logistics *@
-                            @foreach (var r in new[] { (T["Opening float"].Value, s.OpeningFloat, "lock-3", "primary"), (T["Cash receipts"].Value, mine.CashReceipts, "dollar", "success"), (T["Expected cash"].Value, mine.Expected, "wallet", "info") })
+                            @foreach (var r in new[] { (T["Opening float"].Value, s.OpeningFloat, "lock-3", "primary"), (T["Cash receipts"].Value, mine.CashReceipts, "dollar", "primary"), (T["Expected cash"].Value, mine.Expected, "wallet", "info") })
                             {
                                 <div class="d-flex flex-stack">
                                     <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@r.Item4"><i class="ki-outline ki-@r.Item3 fs-3 text-@r.Item4"></i></span></div>
@@ -188,7 +188,7 @@
                                     <td><span class="text-gray-800 fw-bold hp-num" dir="ltr"><span data-utc-time="@x.Shift.OpenedAt.ToString("o")">@x.Shift.OpenedAt.ToString("HH:mm")</span>–@if (x.Shift.ClosedAt is DateTime c) {<span data-utc-time="@c.ToString("o")">@c.ToString("HH:mm")</span>}</span></td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@M(x.ByMethod.Values.Sum())</span></td>
                                     <td class="text-end">@if (x.Shift.Variance is decimal v && v != 0) {<span class="badge badge-light-@(v < 0 ? "danger" : "info") fs-7 fw-bold hp-num" dir="ltr">@M(v)</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td class="pe-4"><span class="badge badge-light-@(x.Shift.Status == HospitalShiftStatus.Open ? "info" : "success") fs-7 fw-bold">@T["shift:" + x.Shift.Status]</span></td>
+                                    <td class="pe-4"><span class="badge badge-light-@(x.Shift.Status == HospitalShiftStatus.Open ? "info" : "primary") fs-7 fw-bold">@T["shift:" + x.Shift.Status]</span></td>
                                 </tr>
                             }
                         </tbody>
@@ -234,7 +234,7 @@
                 var c = document.querySelector('[data-counted]'); if (c) c.textContent = fmt(total);
                 var box = document.querySelector('[data-variance-box]'); if (!box) return;
                 var diff = Math.round((total - expected()) * Math.pow(10, dp)) / Math.pow(10, dp);
-                var kind = diff === 0 ? 'success' : diff < 0 ? 'danger' : 'info';
+                var kind = diff === 0 ? 'primary' : diff < 0 ? 'danger' : 'info';
                 box.innerHTML = '<div class="notice d-flex rounded border border-' + kind + ' border-dashed bg-light-' + kind + ' p-5"><i class="ki-outline ' + (diff === 0 ? 'ki-check-circle' : 'ki-information-5') + ' fs-2tx text-' + kind + ' me-4"></i>' +
                     '<div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">' + (diff === 0 ? W.balances : diff < 0 ? W.short : W.over) + '</h4><div class="fs-7 text-gray-700">' + (diff === 0 ? W.none : W.posts) + '</div></div>' +
                     (diff === 0 ? '' : '<span class="badge badge-' + kind + ' fs-7 px-4 py-2 hp-num">' + fmt(diff) + '</span>') + '</div></div>';

@@ -91,7 +91,7 @@
                                 <span class="text-gray-600 fw-semibold fs-7 d-block" dir="auto">@h.Merge.Reason</span>
                                 <span class="text-gray-500 fw-semibold fs-7 d-block">@DisplayName.Of(h.By ?? "", h.ByEn ?? h.By ?? "") · <span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(h.Merge.MergedAt).ToString("yyyy-MM-dd HH:mm", inv)</span></span>
                             </div>
-                            <span class="badge badge-light-success fs-7 fw-bold text-nowrap">@T["records moved"]&nbsp;<span class="hp-num">@moved.Values.Sum()</span></span>
+                            <span class="badge badge-light-primary fs-7 fw-bold text-nowrap">@T["records moved"]&nbsp;<span class="hp-num">@moved.Values.Sum()</span></span>
                         </div>
                     </div>
                     if (hi < history.Count - 1) {<div class="separator separator-dashed my-3"></div>}

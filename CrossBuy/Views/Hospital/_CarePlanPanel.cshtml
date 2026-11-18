@@ -47,7 +47,7 @@ else
             @foreach (var p in Model.Plan)
             {
                 bool open = p.Status == HospitalCarePlanStatus.Active, due = HospitalCarePlanRules.ReviewDue(p, Model.Today);
-                string tone = !open ? (p.Status == HospitalCarePlanStatus.Met ? "success" : "secondary") : due ? "danger" : "primary";
+                string tone = !open ? (p.Status == HospitalCarePlanStatus.Met ? "primary" : "secondary") : due ? "danger" : "primary";
                 @* one plan — the theme's feed item (demo39 widgets/feeds): symbol · need over the goal · state *@
                 <div class="card card-bordered mb-4 @(open ? "" : "bg-light opacity-75")"><div class="card-body p-5">
                     <div class="d-flex flex-stack flex-wrap gap-2 mb-4">
@@ -56,7 +56,7 @@ else
                             <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@T["need:" + p.Need]</span>@if (p.NeedText != null) {<bdi class="text-gray-500 fw-semibold fs-7">@p.NeedText</bdi>}</div>
                         </div>
                         @if (open) {<span class="badge @(due ? "badge-light-danger" : "badge-light-primary") fs-7 fw-bold">@if (due) {@T["Review due"]} else {@T["Review by {0}", p.ReviewBy.ToString("yyyy-MM-dd")]}</span>}
-                        else {<span class="badge @(p.Status == HospitalCarePlanStatus.Met ? "badge-light-success" : "badge-light") fs-7 fw-bold">@T["cps:" + p.Status]</span>}
+                        else {<span class="badge @(p.Status == HospitalCarePlanStatus.Met ? "badge-light-primary" : "badge-light") fs-7 fw-bold">@T["cps:" + p.Status]</span>}
                     </div>
                     <div class="mb-3"><div class="text-gray-500 fw-semibold fs-7">@T["Goal"]</div><bdi class="text-gray-800 fw-semibold fs-6">@p.Goal</bdi></div>
                     <div><div class="text-gray-500 fw-semibold fs-7">@T["Interventions"]</div><bdi class="text-gray-800 fs-6 d-block" style="white-space:pre-wrap">@p.Interventions</bdi></div>
@@ -65,7 +65,7 @@ else
                     <div class="d-flex flex-stack flex-wrap gap-2">
                         <div class="text-gray-500 fw-semibold fs-7">@Who(p.CreatedByEmployeeId) · <span class="hp-num">@D(p.CreatedAt)</span>@if (!open) {<text> → @Who(p.ClosedByEmployeeId) · <span class="hp-num">@D(p.ClosedAt!.Value)</span></text>}</div>
                         @if (open && canWard) {<div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-light-success" data-cp-close="@p.ID" data-status="Met" data-what="@T["need:" + p.Need]"><i class="ki-outline ki-check fs-5"></i>@T["Goal met"]</button>
+                            <button type="button" class="btn btn-sm btn-light-primary" data-cp-close="@p.ID" data-status="Met" data-what="@T["need:" + p.Need]"><i class="ki-outline ki-check fs-5"></i>@T["Goal met"]</button>
                             <button type="button" class="btn btn-sm btn-light" data-cp-close="@p.ID" data-status="Discontinued" data-what="@T["need:" + p.Need]">@T["Discontinue"]</button></div>}
                     </div>
                 </div></div>
@@ -103,7 +103,7 @@ else
                             <td><span class="badge @(p.Kind == HospitalProblemKind.Chronic ? "badge-light-info" : "badge-light-primary") fs-7 fw-bold">@T["pk:" + p.Kind]</span></td>
                             <td><span class="text-gray-800 fw-semibold hp-num" dir="ltr">@(p.OnsetDate?.ToString("yyyy-MM-dd") ?? "—")</span></td>
                             <td>@if (active) {<span class="badge badge-light-danger fs-7 fw-bold">@T["pbs:Active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["pbs:Resolved"]</span><div class="fs-8 text-muted hp-num mt-1">@D(p.ResolvedAt!.Value)</div>}</td>
-                            <td class="text-end pe-4">@if (active && canConsult) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" title="@T["Resolved"]" data-bs-toggle="tooltip" data-pb-resolve="@p.ID" data-what="@DisplayName.Of(p.Name, p.NameEn ?? p.Name)"><i class="ki-outline ki-check-circle fs-3"></i></button>}</td>
+                            <td class="text-end pe-4">@if (active && canConsult) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Resolved"]" data-bs-toggle="tooltip" data-pb-resolve="@p.ID" data-what="@DisplayName.Of(p.Name, p.NameEn ?? p.Name)"><i class="ki-outline ki-check-circle fs-3"></i></button>}</td>
                         </tr>
                     }
                     </tbody>

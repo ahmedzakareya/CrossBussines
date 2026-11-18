@@ -11,7 +11,7 @@
     var fac = (HospitalPriceCurrency)ViewBag.Facility;
     bool canConsult = ViewBag.CanConsult == true, canPay = ViewBag.CanPay == true;
     var today = DateTime.Now.Date;
-    string St(string v) => v switch { HospitalOrthoStatus.Active => "primary", HospitalOrthoStatus.Retention => "info", HospitalOrthoStatus.Completed => "success", _ => "secondary" };
+    string St(string v) => v switch { HospitalOrthoStatus.Active => "primary", HospitalOrthoStatus.Retention => "info", HospitalOrthoStatus.Completed => "primary", _ => "secondary" };
     // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
     void Stat(string label, string value, string? unit, object? sub, string icon, string tone, bool alert = false)
     {
@@ -54,8 +54,8 @@
             @{
                 Stat(T["Active ortho cases"].Value, s.Active.ToString(), null, null, "element-11", "primary");
                 Stat(T["Adjustments this week"].Value, s.AdjustmentsThisWeek.ToString(), null, null, "wrench", "info");
-                Stat(T["Instalments due"].Value, fac.Format(s.InstalmentsDue), fac.Code, T["collected at the cashier"], "wallet", "success");
-                Stat(T["Missed adjustments"].Value, s.Missed.ToString(), null, null, "calendar-remove", s.Missed > 0 ? "danger" : "success", s.Missed > 0);
+                Stat(T["Instalments due"].Value, fac.Format(s.InstalmentsDue), fac.Code, T["collected at the cashier"], "wallet", "primary");
+                Stat(T["Missed adjustments"].Value, s.Missed.ToString(), null, null, "calendar-remove", s.Missed > 0 ? "danger" : "primary", s.Missed > 0);
             }
         </div>
 
@@ -92,7 +92,7 @@
                                         <span class="text-muted fw-semibold d-block fs-7">@T["appl:" + c.Appliance]@if (c.Stages != null) {<text> · </text>@T["Stage"]<text> </text>@T["{0} of {1}", c.CurrentStage, c.Stages]}</span>
                                         @if (c.AngleClass != null) {<div class="d-flex flex-wrap gap-1 mt-1"><span class="badge badge-light-primary fs-8 fw-bold">@T["angle:" + c.AngleClass]</span>@if (c.Iotn != null) {<span class="badge badge-light-@(c.Iotn >= 4 ? "danger" : c.Iotn == 3 ? "info" : "secondary") fs-8 fw-bold" title="@T["iotn:" + HospitalOrthoClinicalRules.Need(c.Iotn)]" data-bs-toggle="tooltip">IOTN <span class="hp-num ms-1">@c.Iotn</span></span>}</div>}</td>
                                     <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@c.StartDate.ToString("yyyy-MM-dd")</span><span class="text-muted fw-semibold d-block fs-7">@T["Visits"] <span class="hp-num">@r.Visits</span></span></td>
-                                    <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1 bg-light-@(r.Progress >= 100 ? "success" : "primary")"><div class="progress-bar @(r.Progress >= 100 ? "bg-success" : "bg-primary")" role="progressbar" style="width:@Math.Clamp(r.Progress, 0, 100)%"></div></div><span class="text-gray-800 fw-bold fs-7 hp-num">@r.Progress%</span></div>
+                                    <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1 bg-light-@(r.Progress >= 100 ? "primary" : "primary")"><div class="progress-bar @(r.Progress >= 100 ? "bg-primary" : "bg-primary")" role="progressbar" style="width:@Math.Clamp(r.Progress, 0, 100)%"></div></div><span class="text-gray-800 fw-bold fs-7 hp-num">@r.Progress%</span></div>
                                         <div class="text-muted fw-semibold fs-8 mt-1">@T["{0} of {1}", HospitalDentalCasesRules.MonthsElapsed(c.StartDate, today), c.PlannedMonths] @T["months"]</div></td>
                                     <td class="text-nowrap">@if (c.NextVisit != null) {<span class="badge badge-light-@(r.Missed ? "danger" : "primary") fs-7 fw-bold hp-num">@c.NextVisit.Value.ToString("yyyy-MM-dd")</span>@if (r.Missed) {<div class="text-danger fw-semibold fs-8 mt-1">@T["missed"]</div>}} else {<span class="text-muted">—</span>}
                                         @if (r.NextReview != null) {<div class="text-muted fw-semibold fs-8 mt-1">@T["Retention review"] <span class="hp-num">@r.NextReview.Value.ToString("yyyy-MM-dd")</span></div>}

@@ -10,7 +10,7 @@
     var departments = (ViewBag.Departments as IReadOnlyList<HospitalDepartment>) ?? Array.Empty<HospitalDepartment>();
     DateTime today = ViewBag.Today;
     int? DaysLeft(HospitalPractitioner p) => p.LicenseExpiry is DateTime x ? (int)(x.Date - today).TotalDays : null;
-    string EngagementBadge(string e) => e == HospitalEngagements.Visiting ? "badge-light-info" : e == HospitalEngagements.PartTime ? "badge-light-primary" : "badge-light-success";
+    string EngagementBadge(string e) => e == HospitalEngagements.Visiting ? "badge-light-info" : e == HospitalEngagements.PartTime ? "badge-light-primary" : "badge-light-primary";
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -42,8 +42,8 @@
             @foreach (var s in new[] {
                 (T["Permanent doctors"].Value, Model.Count(p => p.Row.Engagement == HospitalEngagements.Permanent), T["through payroll"].Value, "primary", "ki-briefcase"),
                 (T["Part-time"].Value, Model.Count(p => p.Row.Engagement == HospitalEngagements.PartTime), T["payroll, variable line"].Value, "info", "ki-time"),
-                (T["Visiting"].Value, Model.Count(p => p.Row.Engagement == HospitalEngagements.Visiting), T["through vendors & payables"].Value, "success", "ki-route"),
-                (T["Licences expiring in 60 days"].Value, Model.Count(p => DaysLeft(p.Row) is int d && d <= 60), T["Booking stops on expiry"].Value, Model.Any(p => DaysLeft(p.Row) is int d && d <= 60) ? "danger" : "success", "ki-shield-tick") })
+                (T["Visiting"].Value, Model.Count(p => p.Row.Engagement == HospitalEngagements.Visiting), T["through vendors & payables"].Value, "primary", "ki-route"),
+                (T["Licences expiring in 60 days"].Value, Model.Count(p => DaysLeft(p.Row) is int d && d <= 60), T["Booking stops on expiry"].Value, Model.Any(p => DaysLeft(p.Row) is int d && d <= 60) ? "danger" : "primary", "ki-shield-tick") })
             {
                 @* H128: stat tiles (demo39 dashboards/logistics) *@
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">

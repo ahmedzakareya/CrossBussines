@@ -53,7 +53,7 @@
             @foreach (var s in new[] {
                 (T["Rooms / beds"].Value, $"{rooms.Count(r => r.Beds.Count > 0)} / {beds.Count}", T.GetString("across {0} floors", Model.Count).Value, "ki-home-3", "gray"),
                 (T["Occupied"].Value, Count(HospitalBedStatus.Occupied).ToString(), T.GetString("{0}% occupancy", occupancy).Value, "ki-profile-user", "primary"),
-                (T["Available now"].Value, Count(HospitalBedStatus.Vacant).ToString(), T.GetString("{0} being cleaned", Count(HospitalBedStatus.Cleaning)).Value, "ki-check-circle", "success"),
+                (T["Available now"].Value, Count(HospitalBedStatus.Vacant).ToString(), T.GetString("{0} being cleaned", Count(HospitalBedStatus.Cleaning)).Value, "ki-check-circle", "primary"),
                 (T["Reserved or blocked"].Value, (Count(HospitalBedStatus.Reserved) + Count(HospitalBedStatus.Blocked)).ToString(), T["not available to accommodate"].Value, "ki-lock-2", "danger") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">

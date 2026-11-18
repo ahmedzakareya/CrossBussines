@@ -59,7 +59,7 @@
                                     @foreach (var mod in HospitalRadModality.All) { <option value="@mod" selected="@(m?.Modality == mod)">@T["mod:" + mod]</option> }
                                 </select></td>
                                 <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" @(m == null || m.IsActive ? "checked" : "") @ro /></div></td>
-                                <td>@if (m != null) { if (m.InMaintenance) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Maintenance"]</span>} else {<span class="badge badge-light-success fs-7 fw-bold">@T["Working"]</span>}}</td>
+                                <td>@if (m != null) { if (m.InMaintenance) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Maintenance"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["Working"]</span>}}</td>
                                 <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon @(m == null ? "btn-primary" : "btn-bg-light btn-active-color-primary")" data-save-room title="@(m == null ? T["Add"] : T["Save"])" data-bs-toggle="tooltip"><i class="ki-outline @(m == null ? "ki-plus" : "ki-check") fs-3"></i></button>}</td>
                             </tr>
                         }

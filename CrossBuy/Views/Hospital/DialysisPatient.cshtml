@@ -73,7 +73,7 @@
                     Row("pulse", "danger", T["Vascular access"].Value, null, T["dxa:" + p.Access].Value, ltr: false);
                     Row("time", "primary", T["Hours"].Value, null, (p.DurationMin / 60m).ToString("0.#", inv));
                     Row("drop", "info", T["Blood / dialysate flow"].Value, null, p.BloodFlow + " / " + (p.DialysateFlow?.ToString() ?? "—") + " ml/min", last: p.Dialyzer == null && p.Anticoagulation == null && p.Note == null);
-                    if (p.Dialyzer != null) { Row("filter", "success", T["Dialyser"].Value, null, p.Dialyzer, last: p.Anticoagulation == null && p.Note == null); }
+                    if (p.Dialyzer != null) { Row("filter", "primary", T["Dialyser"].Value, null, p.Dialyzer, last: p.Anticoagulation == null && p.Note == null); }
                     if (p.Anticoagulation != null) { Row("capsule", "primary", T["Anticoagulation"].Value, p.Anticoagulation, "", last: p.Note == null, ltr: false); }
                     if (p.Note != null) { Row("notepad", "primary", T["Note"].Value, p.Note, "", last: true, ltr: false); }
                 }
@@ -81,12 +81,12 @@
             <div class="col-xl-8 d-flex flex-column gap-5">
                 @* H128: the month as the theme's stat tiles (demo39 dashboards/logistics) *@
                 @{
-                    string ktTone = Model.AvgKtV == null ? "gray-400" : Model.AvgKtV < HospitalDialysisRules.MinKtV ? "danger" : "success";
+                    string ktTone = Model.AvgKtV == null ? "gray-400" : Model.AvgKtV < HospitalDialysisRules.MinKtV ? "danger" : "primary";
                 }
                 <div class="row g-4">
                     <div class="col-4"><div class="card card-flush h-100">
                         <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num">@Model.Done30</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Sessions in 30 days"]</span></div>
-                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-2 text-success"></i></span></div></div></div>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check-circle fs-2 text-primary"></i></span></div></div></div>
                         <div class="card-body pt-0"></div></div></div>
                     <div class="col-4"><div class="card card-flush h-100">
                         <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold lh-1 hp-num text-@(Model.Missed30 > 0 ? "danger" : "gray-900")">@Model.Missed30</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Missed in 30 days"]</span></div>
@@ -121,11 +121,11 @@
                                         else
                                         {
                                             <td><span class="text-gray-800 fw-bold hp-num text-nowrap" dir="ltr">@F1(s.PreWeightKg) → @F1(s.PostWeightKg)</span></td>
-                                            <td>@if (o.GainPct != null) {<span class="badge badge-light-@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@F1(o.GainPct)&nbsp;%</span>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td>@if (o.GainPct != null) {<span class="badge badge-light-@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@F1(o.GainPct)&nbsp;%</span>} else {<span class="text-gray-400">—</span>}</td>
                                             <td class="text-nowrap"><span class="text-gray-800 fw-bold hp-num d-block" dir="ltr">@(o.UfMl?.ToString() ?? "—")</span>@if (o.UfRate != null) {<span class="fs-7 hp-num @(o.UfRate > HospitalDialysisRules.MaxUfRate ? "text-danger fw-bold" : "text-gray-500 fw-semibold")" dir="ltr">@F1(o.UfRate)&nbsp;ml/kg/h</span>}</td>
                                             <td><span class="text-gray-800 fw-bold hp-num">@(o.Minutes?.ToString() ?? "—")</span></td>
-                                            <td>@if (o.Urr != null) {<span class="badge badge-light-@(o.Urr < HospitalDialysisRules.MinUrr ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@F1(o.Urr)&nbsp;%</span>} else {<span class="text-gray-400">—</span>}</td>
-                                            <td>@if (o.KtV != null) {<span class="badge badge-light-@(o.KtV < HospitalDialysisRules.MinKtV ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@o.KtV.Value.ToString("0.00", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td>@if (o.Urr != null) {<span class="badge badge-light-@(o.Urr < HospitalDialysisRules.MinUrr ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@F1(o.Urr)&nbsp;%</span>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td>@if (o.KtV != null) {<span class="badge badge-light-@(o.KtV < HospitalDialysisRules.MinKtV ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@o.KtV.Value.ToString("0.00", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
                                             <td><span class="hp-num fw-bold @(o.NadirSbp < HospitalDialysisRules.HypotensionNadir ? "text-danger" : "text-gray-800")">@(o.NadirSbp?.ToString() ?? "—")</span></td>
                                             <td class="pe-4">@if (o.Warnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in o.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["dxw:" + w]</span>}</div>}</td>
                                         }

@@ -33,7 +33,7 @@ else
         }
         @* H128: in · out · net — the theme's stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-4 mb-5">
-            @foreach (var (label, val, icon, tone, signed) in new[] { (T["Fluid in"].Value, Model.Today.In, "arrow-down", "primary", false), (T["Fluid out"].Value, Model.Today.Out, "arrow-up", "info", false), (T["Net"].Value, Model.Today.Balance, "abstract-26", Model.Today.Balance < 0 ? "danger" : "success", true) })
+            @foreach (var (label, val, icon, tone, signed) in new[] { (T["Fluid in"].Value, Model.Today.In, "arrow-down", "primary", false), (T["Fluid out"].Value, Model.Today.Out, "arrow-up", "info", false), (T["Net"].Value, Model.Today.Balance, "abstract-26", Model.Today.Balance < 0 ? "danger" : "primary", true) })
             {
                 <div class="col-4"><div class="card card-bordered h-100"><div class="card-body d-flex flex-stack flex-nowrap gap-3 p-4">
                     <div class="d-flex flex-column"><span class="fs-2 fw-bold lh-1 hp-num text-@(signed ? tone : "gray-900")" dir="ltr">@(signed ? Signed(val) : Ml(val))&nbsp;<span class="fs-7 text-gray-500">ml</span></span>
@@ -69,7 +69,7 @@ else
         <div class="fw-bold text-gray-800 fs-6 mb-3">@T["The last five days"]</div>
         <div class="table-responsive"><table class="table align-middle gs-0 gy-2 mb-0">
             <thead><tr class="fw-bold text-muted bg-light fs-7"><th class="ps-4 rounded-start">@T["Fluid day"]</th><th class="text-end">@T["Fluid in"]</th><th class="text-end">@T["Fluid out"]</th><th class="text-end pe-4 rounded-end">@T["Net"]</th></tr></thead>
-            <tbody class="hp-num fw-semibold text-gray-700">@foreach (var d in Model.Days) {<tr><td dir="ltr" class="text-start ps-4">@d.DayStart.ToString("MM-dd")</td><td class="text-end">@Ml(d.In)</td><td class="text-end">@Ml(d.Out)</td><td class="text-end pe-4"><span class="badge @(d.Balance < 0 ? "badge-light-danger" : "badge-light-success") fs-7 fw-bold" dir="ltr">@Signed(d.Balance)</span></td></tr>}</tbody>
+            <tbody class="hp-num fw-semibold text-gray-700">@foreach (var d in Model.Days) {<tr><td dir="ltr" class="text-start ps-4">@d.DayStart.ToString("MM-dd")</td><td class="text-end">@Ml(d.In)</td><td class="text-end">@Ml(d.Out)</td><td class="text-end pe-4"><span class="badge @(d.Balance < 0 ? "badge-light-danger" : "badge-light-primary") fs-7 fw-bold" dir="ltr">@Signed(d.Balance)</span></td></tr>}</tbody>
         </table></div>
     </div>
 }

@@ -54,12 +54,12 @@
                 (T["Waiting for an earlier slot"].Value, b?.Waiting.ToString(inv) ?? "0", "", "ki-time", "primary"),
                 (T["Offers open now"].Value, b?.OpenOffers.ToString(inv) ?? "0", string.Format(T["Each held {0} minutes"].Value, mins), "ki-sms", "info"),
                 (T["Slots refilled this month"].Value, b?.Refilled.ToString(inv) ?? "0", string.Format(T["of {0} freed up"].Value, b?.Freed ?? 0), "ki-calendar-tick", "primary"),
-                (T["Average days gained"].Value, (b?.AverageDaysGained ?? 0).ToString("0.#", inv), "", "ki-rocket", "success") })
+                (T["Average days gained"].Value, (b?.AverageDaysGained ?? 0).ToString("0.#", inv), "", "ki-rocket", "primary") })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
                         <div class="card-title d-flex flex-column">
-                            <span class="fs-2hx fw-bold @(s.Item5 == "success" ? "text-success" : "text-gray-900") me-2 lh-1 ls-n2"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></span>
+                            <span class="fs-2hx fw-bold @(s.Item5 == "primary" ? "text-primary" : "text-gray-900") me-2 lh-1 ls-n2"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></span>
                             <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
                         </div>
                         <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div></div>
@@ -122,7 +122,7 @@
                                                 <div class="text-muted fs-8">@string.Format(T["Offer lapses in {0} min"].Value, r.MinutesLeft)</div>
                                                 break;
                                             case HospitalWaitlistState.Took:
-                                                <span class="badge badge-light-success fs-7 fw-bold">@T["Took an earlier slot"]</span>
+                                                <span class="badge badge-light-primary fs-7 fw-bold">@T["Took an earlier slot"]</span>
                                                 <div class="text-muted fs-8 mt-1">@string.Format(T["Gained {0} days"].Value, r.DaysGained.ToString("0.#", inv))</div>
                                                 break;
                                             case HospitalWaitlistState.Lapsed:
@@ -171,7 +171,7 @@
                         var (icon, tone, text) = e.Kind switch
                         {
                             "Sent" => ("ki-sms", "primary", string.Format(T["Offer emailed to {0}"].Value, who) + (n == 1 ? " " + T["(first in line)"].Value : "")),
-                            "Taken" => ("ki-check-circle", "success", string.Format(T["{0} took the slot; their later appointment was released"].Value, who)),
+                            "Taken" => ("ki-check-circle", "primary", string.Format(T["{0} took the slot; their later appointment was released"].Value, who)),
                             "Declined" => ("ki-cross-circle", "danger", string.Format(T["{0} kept their appointment — passed to the next"].Value, who)),
                             "Passed" => ("ki-send", "primary", T["The desk passed the offer to the next"].Value),
                             _ => ("ki-time", "primary", T["The offer lapsed unanswered — passed to the next"].Value),

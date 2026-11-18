@@ -13,12 +13,12 @@
             <span class="text-muted fw-semibold fs-8 hp-num" dir="ltr">@s.IntakeNo</span></div></td>
         <td>@if (s.Name != null) {<span class="text-gray-900 fw-bold fs-6 d-block"><bdi>@s.Name</bdi></span><span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@s.Phone</bdi>@if (s.BirthDate != null) {<text> · <span class="hp-num">@s.BirthDate.Value.ToString("yyyy-MM-dd")</span></text>}</span>}
             else {<span class="text-gray-500 fw-semibold fs-7">@T["Not given — sent to the desk"]</span>}
-            @if (r.PatientName != null) {<span class="badge badge-light-success fs-8 fw-bold mt-1"><i class="ki-outline ki-check fs-8 text-success me-1"></i><bdi>@r.PatientName</bdi>&nbsp;<bdi class="hp-num" dir="ltr">@r.PatientMrn</bdi></span>}</td>
+            @if (r.PatientName != null) {<span class="badge badge-light-primary fs-8 fw-bold mt-1"><i class="ki-outline ki-check fs-8 text-primary me-1"></i><bdi>@r.PatientName</bdi>&nbsp;<bdi class="hp-num" dir="ltr">@r.PatientMrn</bdi></span>}</td>
         <td><span class="text-gray-800 fw-bold fs-6 d-block">@T["ivt:" + s.VisitType]</span>@if (s.Reason != null) {<span class="text-muted fw-semibold d-block fs-7 text-truncate mw-250px"><bdi>@s.Reason</bdi></span>}</td>
         <td class="text-nowrap"><span class="badge badge-light-@(waiting && r.Minutes > 20 ? "danger" : "primary") fs-7 fw-bold">@T["{0} min", r.Minutes]</span></td>
         <td><div class="d-flex flex-wrap gap-1">@if (alarm) {<span class="badge badge-danger fs-7 fw-bold">@T["Danger signs"]</span>}
             else if (s.Urgent) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Danger signs — seen"]</span>}
-            <span class="badge @(waiting ? "badge-light-primary" : s.Status == HospitalIntakeStatus.Linked || s.Status == HospitalIntakeStatus.NewFile ? "badge-light-success" : "badge-light") fs-7 fw-bold">@T["ist:" + s.Status]</span></div>
+            <span class="badge @(waiting ? "badge-light-primary" : s.Status == HospitalIntakeStatus.Linked || s.Status == HospitalIntakeStatus.NewFile ? "badge-light-primary" : "badge-light") fs-7 fw-bold">@T["ist:" + s.Status]</span></div>
             @if (s.RedFlags != null) {<div class="d-flex flex-wrap gap-1 mt-2">@foreach (var f in s.RedFlags.Split(',')) {<span class="badge badge-light-danger fs-8">@T["irf:" + f]</span>}</div>}</td>
         <td class="pe-4 text-end"><a href="@Url.Action("IntakeReview", new { id = s.ID })" class="btn btn-sm @(alarm ? "btn-danger" : "btn-light-primary") text-nowrap"><i class="ki-outline ki-eye fs-4"></i>@T["Open"]</a></td>
     </tr>

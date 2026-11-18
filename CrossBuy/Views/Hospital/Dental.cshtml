@@ -14,8 +14,8 @@
     string N(decimal v, int d) => v.ToString("N" + d, System.Globalization.CultureInfo.InvariantCulture);
     bool today = Model.Day == DateTime.Now.Date;
     // H127: a slot's tone — the theme's light colours (no amber/yellow, house rule)
-    string Tone(string s) => s switch { HospitalAppointmentStatus.Done => "success", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", HospitalAppointmentStatus.NoShow => "secondary", _ => "info" };
-    string Badge(string s) => s switch { HospitalAppointmentStatus.Done => "success", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", _ => "secondary" };
+    string Tone(string s) => s switch { HospitalAppointmentStatus.Done => "primary", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", HospitalAppointmentStatus.NoShow => "secondary", _ => "info" };
+    string Badge(string s) => s switch { HospitalAppointmentStatus.Done => "primary", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", _ => "secondary" };
     string Av(string? photo, string nameEn, int size) => photo != null
         ? $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
@@ -68,8 +68,8 @@
             @{
                 Stat(today ? T["Appointments today"] : T["Appointments"], Model.Appointments.ToString(), null, new Microsoft.AspNetCore.Html.HtmlString(string.Format(System.Net.WebUtility.HtmlEncode(T["over {0} chairs"].Value), "<span class=\"hp-num\">" + Model.Chairs.Count + "</span>")), "calendar", "primary");
                 Stat(T["Chair occupancy"], Model.Occupancy == null ? "—" : Model.Occupancy + "%", null, T["of the open chair hours (08:00–16:00)"], "chart-pie-simple", "info");
-                Stat(T["Plans accepted this month"], N(acc.Accepted, acc.Decimals), acc.Currency, new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(T["of plans worth"].Value) + "&nbsp;<span class=\"hp-num\">" + N(acc.Presented, acc.Decimals) + "</span>"), "document", "success");
-                Stat(T["Lab cases at risk"], Model.LabAtRisk.Count.ToString(), null, T["fit booked before receipt"], "abstract-26", Model.LabAtRisk.Count > 0 ? "danger" : "success", Model.LabAtRisk.Count > 0);
+                Stat(T["Plans accepted this month"], N(acc.Accepted, acc.Decimals), acc.Currency, new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(T["of plans worth"].Value) + "&nbsp;<span class=\"hp-num\">" + N(acc.Presented, acc.Decimals) + "</span>"), "document", "primary");
+                Stat(T["Lab cases at risk"], Model.LabAtRisk.Count.ToString(), null, T["fit booked before receipt"], "abstract-26", Model.LabAtRisk.Count > 0 ? "danger" : "primary", Model.LabAtRisk.Count > 0);
             }
         </div>
 

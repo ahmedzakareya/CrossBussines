@@ -9,7 +9,7 @@
     ViewData["Title"] = T["Treatment plan"].Value + " " + r.Plan.PlanNo;
     bool canConsult = ViewBag.CanConsult == true, canDecide = ViewBag.CanDecide == true;
     string N(decimal v) => v.ToString("N" + r.Decimals, System.Globalization.CultureInfo.InvariantCulture);
-    string St(string state) => state switch { "Accepted" => "success", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
+    string St(string state) => state switch { "Accepted" => "primary", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
     var firstPending = Model.Phases.FirstOrDefault(p => p.Phase.Decision == HospitalDentalDecision.Pending && p.Lines.Any());
     // H179
     var consents = (ViewBag.PhaseConsents as IReadOnlyDictionary<int, HospitalConsent>) ?? new Dictionary<int, HospitalConsent>();
@@ -67,7 +67,7 @@
                     </div>
                     <div class="d-flex flex-wrap">
                         @foreach (var (label, value, icon, tone) in new[] { (T["Phases"].Value, Model.Phases.Count.ToString(), "ki-element-11", "primary"), (T["Plan total"].Value, N(r.Quote.Gross), "ki-bill", "info"),
-                            (T["Estimated patient share"].Value, N(r.Quote.PatientShare), "ki-wallet", "success") })
+                            (T["Estimated patient share"].Value, N(r.Quote.PatientShare), "ki-wallet", "primary") })
                         {
                             <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                                 <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@value</div></div>
@@ -102,7 +102,7 @@
                                         @if (canConsult) { <a class="btn btn-sm btn-light-primary" href="@Url.Action("NewConsent", new { id = r.Plan.PatientId, dentalPhaseId = ph.Phase.ID })"><i class="ki-outline ki-pencil fs-4"></i>@T["Take the consent"]</a> }
                                     }
                                 }
-                                @if (dec == HospitalDentalDecision.Accepted) { <span class="badge badge-light-success fs-7 fw-bold">@T["Accepted"]</span> }
+                                @if (dec == HospitalDentalDecision.Accepted) { <span class="badge badge-light-primary fs-7 fw-bold">@T["Accepted"]</span> }
                                 else if (dec == HospitalDentalDecision.Declined) { <span class="badge badge-light-secondary fs-7 fw-bold">@T["Declined"]</span> }
                                 else
                                 {
@@ -159,7 +159,7 @@
                                                 <td class="text-end">@if (q != null && q.CoverPct > 0) {<span class="badge badge-light-info fs-7 fw-bold hp-num">@q.CoverPct.ToString("0.##")%</span>} else {<span class="text-muted">—</span>}</td>
                                                 <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@(q == null ? "—" : N(q.Fee - q.PayerShare))</span></td>
                                                 <td class="text-end pe-4 text-nowrap">
-                                                    @if (l.Line.Status == HospitalDentalLineStatus.Completed) { <span class="badge badge-light-success fs-7 fw-bold">@T["Done"]</span>
+                                                    @if (l.Line.Status == HospitalDentalLineStatus.Completed) { <span class="badge badge-light-primary fs-7 fw-bold">@T["Done"]</span>
                                                         if (canConsult) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Not done: take it back"]" data-bs-toggle="tooltip" data-line-undo="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-arrow-circle-left fs-3"></i></button>} }
                                                     else if (canConsult && dec == HospitalDentalDecision.Accepted) { <button type="button" class="btn btn-sm btn-light-primary" data-line-done="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-check fs-4"></i>@T["Mark done"]</button> }
                                                     else if (canConsult && dec == HospitalDentalDecision.Pending) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["Take out of the plan"]" data-bs-toggle="tooltip" data-line-cancel="@l.Line.ID" data-what="@DisplayName.Of(l.Procedure.Name, l.Procedure.NameEn)"><i class="ki-outline ki-cross fs-3"></i></button> }
@@ -212,7 +212,7 @@
                             <div class="border border-gray-300 border-dashed rounded p-5 mb-4">
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3"><bdi class="badge badge-light-primary fs-7 fw-bold hp-num">@x.SessionNo</bdi>
                                     <span class="text-gray-800 fw-bold fs-7">@se.Dentist</span><span class="text-muted fs-8 hp-num" dir="ltr">@x.SessionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
-                                    <span class="badge badge-light-success fs-8 fw-bold">@T["Signed"]</span></div>
+                                    <span class="badge badge-light-primary fs-8 fw-bold">@T["Signed"]</span></div>
                                 <div class="fs-7 text-gray-800 mb-2"><span class="text-gray-500">@T["Work done"]:</span> @string.Join(" · ", se.Lines.Select(u => DisplayName.Of(u.Procedure, u.ProcedureEn) + (u.Tooth is int t ? " (" + t + ")" : "")))</div>
                                 <div class="row g-3 fs-7">
                                     <div class="col-md-6"><span class="text-gray-500">@T["Anaesthetic"]:</span> <span dir="auto">@x.Anaesthetic @x.AnaestheticAmount @x.AnaestheticSite</span></div>
@@ -235,7 +235,7 @@
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@(Model.Payer == null ? T["Self-pay"].Value : DisplayName.Of(Model.Payer, Model.PayerEn ?? Model.Payer))</span></h3>
                     </div>
                     <div class="card-body pt-2">
-                        @{ var quote = new[] { (T["Plan total"].Value, r.Quote.Gross, "bill", "primary"), (T["Estimated payer share"].Value, r.Quote.PayerShare, "shield-tick", "info"), (T["Estimated patient share"].Value, r.Quote.PatientShare, "wallet", "success") }; }
+                        @{ var quote = new[] { (T["Plan total"].Value, r.Quote.Gross, "bill", "primary"), (T["Estimated payer share"].Value, r.Quote.PayerShare, "shield-tick", "info"), (T["Estimated patient share"].Value, r.Quote.PatientShare, "wallet", "primary") }; }
                         @for (int i = 0; i < quote.Length; i++)
                         {
                             var (label, v, icon, tone) = quote[i];
@@ -270,7 +270,7 @@
                         @for (int i = 0; i < rules.Length; i++)
                         {
                             <div class="d-flex align-items-start">
-                                <div class="symbol symbol-30px me-4 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check fs-4 text-success"></i></span></div>
+                                <div class="symbol symbol-30px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check fs-4 text-primary"></i></span></div>
                                 <span class="fs-7 fw-semibold text-gray-700 pt-1">@T[rules[i]]</span>
                             </div>
                             if (i < rules.Length - 1) { <div class="separator separator-dashed my-3"></div> }

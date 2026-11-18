@@ -46,8 +46,8 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(acknowledged ? "bg-light-success border-success" : "bg-light-danger border-danger")">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(acknowledged ? "bg-success" : "bg-danger")"><i class="ki-outline @(acknowledged ? "ki-check-circle" : "ki-notification-status") fs-2x text-white"></i></span></span>
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(acknowledged ? "bg-light-primary border-primary" : "bg-light-danger border-danger")">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(acknowledged ? "bg-primary" : "bg-danger")"><i class="ki-outline @(acknowledged ? "ki-check-circle" : "ki-notification-status") fs-2x text-white"></i></span></span>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@(rad ? T["Critical result:"] : T["Critical value:"]) @(first != null ? DisplayName.Of(first.Name, first.NameEn) : DisplayName.Of(Model.Name, Model.NameEn)) @if (first != null) {<bdi dir="ltr" class="hp-num">@first.Shown @first.Unit</bdi>}</h4>
@@ -55,7 +55,7 @@
                         @(acknowledged ? T["the doctor acknowledged it."] : T["choose whom to tell; he gets an alert sized to the danger and his acknowledgement is recorded."])</div>
                     @if (rad && Model.Impression != null) { <div class="fs-6 text-gray-900 fw-bold mt-2">@Model.Impression</div> }
                 </div>
-                @if (first != null) { <span class="badge @(acknowledged ? "badge-success" : "badge-danger") fs-7 fw-bold px-4 py-2 flex-shrink-0">@first.Flag</span> }
+                @if (first != null) { <span class="badge @(acknowledged ? "badge-primary" : "badge-danger") fs-7 fw-bold px-4 py-2 flex-shrink-0">@first.Flag</span> }
             </div>
         </div>
 
@@ -77,7 +77,7 @@
                                     <div class="text-gray-900 fw-bold fs-6">@DisplayName.Of(d.Name, d.NameEn)</div>
                                     <div class="text-muted fw-semibold fs-7">@(r.HasUser ? WhyText(r) : T["has no user in the system — an alert cannot reach him"].Value)@if (waiting) {<text> · <span class="text-danger fw-semibold">@T["alert waiting"]</span></text>}</div>
                                 </div>
-                                <span class="hp-crit-dot" style="background:@(r.OnDuty ? "#16A34A" : "#99A1B7")"></span>
+                                <span class="hp-crit-dot" style="background:@(r.OnDuty ? "#3A5795" : "#99A1B7")"></span>
                             </div>
                         }
                         @if (rest.Count > 0)
@@ -126,7 +126,7 @@
                         @{
                             var verified = Model.Final;
                         }
-                        <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-shield-tick fs-6 text-white"></i></span>
+                        <div class="hp-crit-step"><span class="ic" style="background:#3A5795"><i class="ki-outline ki-shield-tick fs-6 text-white"></i></span>
                             <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@(rad ? T["Report signed"] : verified ? T["Result verified"] : T["Result entered"])</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@Model.DoneAt?.ToString("o")">@Clock(Model.DoneAt)</span></div>
                             <div class="text-muted fs-8">@Who(Model.DoneByEmployeeId)</div></div>
                         @if (trail.Count == 0 && !acknowledged)
@@ -145,7 +145,7 @@
                                 <div class="text-muted fs-8">@(a.SeenAt != null ? T["The alert opened on his screen"] : T["It opens on his next screen or sign-in"])</div></div>
                             if (done)
                             {
-                                <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-check-circle fs-6 text-white"></i></span>
+                                <div class="hp-crit-step"><span class="ic" style="background:#3A5795"><i class="ki-outline ki-check-circle fs-6 text-white"></i></span>
                                     <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@(a.ReadBack != null ? T["Acknowledged with read-back"] : T["Acknowledged"])</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@a.AcknowledgedAt?.ToString("o")">@Clock(a.AcknowledgedAt)</span></div>
                                     <div class="text-muted fs-8">@t.AcknowledgedBy@if (a.ReadBack != null) {<text> · <bdi dir="ltr" class="hp-num">@a.ReadBack</bdi></text>}</div></div>
                             }
@@ -167,7 +167,7 @@
                         }
                         @if (phoneCall)
                         {
-                            <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-call fs-6 text-white"></i></span>
+                            <div class="hp-crit-step"><span class="ic" style="background:#3A5795"><i class="ki-outline ki-call fs-6 text-white"></i></span>
                                 <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@T["The call was recorded"]</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@Model.AcknowledgedAt?.ToString("o")">@Clock(Model.AcknowledgedAt)</span></div>
                                 <div class="text-muted fs-8">@Model.CriticalNote · @Who(Model.AcknowledgedByEmployeeId)</div></div>
                         }
@@ -181,7 +181,7 @@
                         @{ var levels = new[] {
                             ("danger", "ki-notification-status", T["Critical (LL / HH)"].Value, T["A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged."].Value),
                             ("primary", "ki-information-5", T["Abnormal on a STAT/urgent order (L / H)"].Value, T["A notice to the ordering doctor when the result is verified — it does not stop his work."].Value),
-                            ("success", "ki-check-circle", T["Normal"].Value, T["No alert; it appears in the patient file once verified."].Value) }; }
+                            ("primary", "ki-check-circle", T["Normal"].Value, T["No alert; it appears in the patient file once verified."].Value) }; }
                         @for (int i = 0; i < levels.Length; i++)
                         {
                             var l = levels[i];

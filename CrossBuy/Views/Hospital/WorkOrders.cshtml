@@ -65,7 +65,7 @@
                 <div class="col-md-6 col-xl-3">@{ Tile(open.ToString(), T["Open orders"].Value, "setting-3", "primary"); }</div>
                 <div class="col-md-6 col-xl-3">@{ Tile(urgent.ToString(), T["Urgent, still open"].Value, "information-5", "danger", numTone: urgent > 0 ? "danger" : "gray-900"); }</div>
                 <div class="col-md-6 col-xl-3">@{ Tile(avg?.ToString("0.#", inv) ?? "—", T["Average time to fix"].Value, "time", "info", T["wo:hours"].Value, T["The last 30 days"].Value); }</div>
-                <div class="col-md-6 col-xl-3">@{ Tile(done30.ToString(), T["Fixed in 30 days"].Value, "check-circle", "success", numTone: "success"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(done30.ToString(), T["Fixed in 30 days"].Value, "check-circle", "primary", numTone: "primary"); }</div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-4">

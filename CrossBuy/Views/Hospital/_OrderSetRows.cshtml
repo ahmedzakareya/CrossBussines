@@ -16,7 +16,7 @@
         <td><span class="text-gray-800 fw-semibold fs-7">@(r.Department != null ? DisplayName.Of(r.Department, r.DepartmentEn ?? r.Department) : T["Any department"].Value)</span></td>
         <td class="text-center"><span class="badge badge-light-primary fs-7 fw-bold hp-num">@r.Items</span></td>
         <td class="text-center"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Uses</span></td>
-        <td>@if (s.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
+        <td>@if (s.IsActive) {<span class="badge badge-light-primary fs-7 fw-bold">@T["In use"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not in use"]</span>}</td>
         <td class="text-end pe-4 text-nowrap">
             <a href="@Url.Action("OrderSet", new { id = s.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a>
             @if (canManage) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-edit-set="@s.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { code = s.Code, name = s.Name, nameEn = s.NameEn, departmentId = s.DepartmentId, diagnosisCodes = s.DiagnosisCodes, isActive = s.IsActive })"><i class="ki-outline ki-pencil fs-3"></i></button> }

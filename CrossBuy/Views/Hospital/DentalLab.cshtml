@@ -53,7 +53,7 @@
         <div class="row g-5 g-xl-8 mb-5">
             @{
                 Stat(T["Open cases"].Value, s.Open.ToString(), null, null, "abstract-26", "primary");
-                Stat(T["On time"].Value, Pct(s.OnTimeRate), null, T["last 90 days"], "time", "success");
+                Stat(T["On time"].Value, Pct(s.OnTimeRate), null, T["last 90 days"], "time", "primary");
                 Stat(T["Remake rate"].Value, Pct(s.RemakeRate), null, s.RemakeLabShare == null ? null : new Microsoft.AspNetCore.Html.HtmlString("<span class=\"hp-num\">" + Pct(s.RemakeLabShare) + "</span>&nbsp;" + System.Net.WebUtility.HtmlEncode(T["of them the lab's fault"].Value)), "arrows-circle", "danger");
                 Stat(T["Lab cost this month"].Value, fac.Format(s.CostThisMonth), fac.Code, T["what the labs charge for this month's cases"], "bill", "info");
             }
@@ -67,8 +67,8 @@
                 @foreach (var st in HospitalLabCaseStage.Pipeline)
                 {
                     bool fitted = st == HospitalLabCaseStage.Fitted;
-                    <div class="flex-fill border border-dashed rounded min-w-125px py-3 px-4 @(fitted ? "border-success bg-light-success" : "border-gray-300")">
-                        <div class="d-flex align-items-center"><i class="ki-outline @(fitted ? "ki-check-circle text-success" : "ki-abstract-26 text-primary") fs-3 me-2"></i><div class="fs-2 fw-bold hp-num text-gray-900">@Model.Count(c => c.Case.Stage == st)</div></div>
+                    <div class="flex-fill border border-dashed rounded min-w-125px py-3 px-4 @(fitted ? "border-primary bg-light-primary" : "border-gray-300")">
+                        <div class="d-flex align-items-center"><i class="ki-outline @(fitted ? "ki-check-circle text-primary" : "ki-abstract-26 text-primary") fs-3 me-2"></i><div class="fs-2 fw-bold hp-num text-gray-900">@Model.Count(c => c.Case.Stage == st)</div></div>
                         <div class="fw-semibold fs-6 text-gray-500">@T["dlab:" + st]</div>
                     </div>
                 }
@@ -114,7 +114,7 @@
                                     <td class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(r.Lab, r.LabEn)</td>
                                     <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@c.DueDate.ToString("yyyy-MM-dd")</span></td>
                                     <td class="text-nowrap">@if (r.FitAt != null) {<span class="badge badge-light-@(r.AtRisk ? "danger" : "primary") fs-7 fw-bold hp-num">@r.FitAt.Value.ToString("yyyy-MM-dd HH:mm")</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td>@if (c.Stage == HospitalLabCaseStage.Remake) {<span class="badge badge-light-danger fs-7 fw-bold">@T["dlab:Remake"]</span>} else if (c.Stage == HospitalLabCaseStage.Fitted) {<span class="badge badge-light-success fs-7 fw-bold">@T["dlab:Fitted"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["dlab:" + c.Stage]</span>}
+                                    <td>@if (c.Stage == HospitalLabCaseStage.Remake) {<span class="badge badge-light-danger fs-7 fw-bold">@T["dlab:Remake"]</span>} else if (c.Stage == HospitalLabCaseStage.Fitted) {<span class="badge badge-light-primary fs-7 fw-bold">@T["dlab:Fitted"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["dlab:" + c.Stage]</span>}
                                         @if (c.RemakeReason != null) { <div class="text-danger fw-semibold fs-8 mt-1">@c.RemakeReason — @(c.RemakeFault == "Lab" ? T["lab's fault"] : T["clinic's fault"])</div> }
                                         @if (c.QcAt != null) { <div class="fs-8 text-gray-700 mt-1"><i class="ki-outline ki-check-square fs-7 text-primary me-1"></i>@T["Checked on receipt"]</div> }</td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@fac.Format(c.Cost)</span></td>

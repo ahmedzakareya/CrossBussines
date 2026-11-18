@@ -19,7 +19,7 @@
 }
 @if (bill != null)
 {
-    <a href="@Url.Action("Bill", "Hospital", new { id = bill.ID })" class="badge badge-light-success fs-8 text-nowrap"><i class="ki-outline ki-bill fs-7 text-success me-1"></i><bdi class="hp-num">@bill.BillNo</bdi></a>
+    <a href="@Url.Action("Bill", "Hospital", new { id = bill.ID })" class="badge badge-light-primary fs-8 text-nowrap"><i class="ki-outline ki-bill fs-7 text-primary me-1"></i><bdi class="hp-num">@bill.BillNo</bdi></a>
 }
 else if (!Model.Chargeable)
 {

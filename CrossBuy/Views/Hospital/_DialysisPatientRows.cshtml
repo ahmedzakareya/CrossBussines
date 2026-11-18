@@ -25,8 +25,8 @@
         <td><span class="text-gray-800 fw-bold fs-7 d-block">@T["dxa:" + p.Access] · <span class="text-nowrap">@T["{0} h", (p.DurationMin / 60m).ToString("0.#")]</span></span>
             <span class="text-gray-500 fw-semibold fs-7">@T["Dry weight"] <bdi class="hp-num" dir="ltr">@p.DryWeightKg.ToString("0.0")&nbsp;kg</bdi> · <bdi class="hp-num" dir="ltr">Qb&nbsp;@p.BloodFlow</bdi></span></td>
         <td><span class="text-gray-800 fw-bold fs-6 hp-num text-nowrap">@(r.LastSession?.ToString("yyyy-MM-dd") ?? "—")</span></td>
-        <td>@if (r.LastKtV is decimal k) {<span class="badge badge-light-@(k < HospitalDialysisRules.MinKtV ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@k.ToString("0.00")</span>} else {<span class="text-gray-400">—</span>}</td>
-        <td>@if (r.Missed30 > 0) {<span class="badge badge-light-danger fs-7 fw-bold hp-num">@r.Missed30</span>} else {<span class="badge badge-light-success fs-7 fw-bold hp-num">0</span>}</td>
+        <td>@if (r.LastKtV is decimal k) {<span class="badge badge-light-@(k < HospitalDialysisRules.MinKtV ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@k.ToString("0.00")</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (r.Missed30 > 0) {<span class="badge badge-light-danger fs-7 fw-bold hp-num">@r.Missed30</span>} else {<span class="badge badge-light-primary fs-7 fw-bold hp-num">0</span>}</td>
         <td>@if (r.LastWarnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.LastWarnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["dxw:" + w]</span>}</div>}</td>
         <td class="text-end pe-4"><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>

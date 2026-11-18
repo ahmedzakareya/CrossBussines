@@ -17,7 +17,7 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Kind(string s) => s switch
     {
-        HospitalTransfusionStatus.Requested => "secondary", HospitalTransfusionStatus.CrossMatching => "primary", HospitalTransfusionStatus.Compatible => "success",
+        HospitalTransfusionStatus.Requested => "secondary", HospitalTransfusionStatus.CrossMatching => "primary", HospitalTransfusionStatus.Compatible => "primary",
         HospitalTransfusionStatus.Issued => "info", HospitalTransfusionStatus.Incompatible => "danger", _ => "dark",
     };
     bool open(string s) => s is HospitalTransfusionStatus.Requested or HospitalTransfusionStatus.CrossMatching or HospitalTransfusionStatus.Compatible;
@@ -114,7 +114,7 @@
                                     <td><span class="text-gray-900 fw-bold">@T["bp:" + r.Row.Product]</span>@if (r.Row.Note != null) {<div class="text-muted fs-7" dir="auto">@r.Row.Note</div>}</td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0) {<div class="text-muted fs-8 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}</td>
                                     <td><span class="badge badge-light-@Kind(st) fs-7 fw-bold">@T["tx:" + st]</span>@if (r.Row.Reason != null) {<div class="text-muted fs-7 mt-1" dir="auto">@r.Row.Reason</div>}
-                                        @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-7 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-success")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
+                                        @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-7 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-primary")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
                                     <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
                                         @if (canLab && st == HospitalTransfusionStatus.Requested) { <button type="button" class="btn btn-sm btn-light-primary" data-bb-move="@r.Row.ID" data-to="CrossMatching">@T["Start cross-match"]</button> }
                                         @if (canLab && st == HospitalTransfusionStatus.CrossMatching)
@@ -149,7 +149,7 @@
                                 <td><span class="badge badge-light-danger fs-7 fw-bold hp-num" dir="ltr">@u.BloodGroup</span></td>
                                 <td class="text-gray-800">@T["bp:" + u.Product]</td>
                                 <td><span class="hp-num @(expired ? "text-danger fw-bold" : "text-gray-800")" dir="ltr">@u.ExpiresOn.ToString("yyyy-MM-dd", inv)</span></td>
-                                <td><span class="badge badge-light-@(u.Status == HospitalBloodUnitStatus.Reserved ? "primary" : "success") fs-7 fw-bold">@T["bu:" + u.Status]</span></td>
+                                <td><span class="badge badge-light-@(u.Status == HospitalBloodUnitStatus.Reserved ? "primary" : "primary") fs-7 fw-bold">@T["bu:" + u.Status]</span></td>
                                 <td class="text-end pe-4">@if (canLab && u.Status == HospitalBloodUnitStatus.Available) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-bb-discard="@u.ID" title="@T["Discard"]"><i class="ki-outline ki-trash fs-4"></i></button> }</td>
                             </tr>
                         }

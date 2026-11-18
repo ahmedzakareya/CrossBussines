@@ -21,7 +21,7 @@
         @for (int i = 0; i < Model.Signed.Count; i++)
         {
             var r = Model.Signed[i];
-            string tone = r.ImpressionCategory == HospitalRadImpression.Critical || r.ImpressionCategory == HospitalRadImpression.Abnormal ? "danger" : r.ImpressionCategory == null ? "primary" : "success";
+            string tone = r.ImpressionCategory == HospitalRadImpression.Critical || r.ImpressionCategory == HospitalRadImpression.Abnormal ? "danger" : r.ImpressionCategory == null ? "primary" : "primary";
             <a href="@Url.Action("RadOrder", new { id = r.ID })" class="d-flex align-items-start text-hover-primary">
                 <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-scan-barcode fs-3 text-@tone"></i></span></div>
                 <div class="flex-grow-1 min-w-0">
@@ -29,7 +29,7 @@
                         <span class="text-gray-800 fw-bold fs-6 text-truncate">@DisplayName.Of(r.Name, r.NameEn)</span>
                         <span class="text-gray-500 fw-semibold fs-7 hp-num text-nowrap" dir="ltr" data-fmt data-utc="@r.SignedAt?.ToString("o")">@r.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span>
                     </div>
-                    @if (r.ImpressionCategory != null) { <span class="badge @(r.ImpressionCategory == HospitalRadImpression.Critical ? "badge-danger" : r.ImpressionCategory == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-success") fs-8 fw-bold my-1">@T["imp:" + r.ImpressionCategory]</span> }
+                    @if (r.ImpressionCategory != null) { <span class="badge @(r.ImpressionCategory == HospitalRadImpression.Critical ? "badge-danger" : r.ImpressionCategory == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-primary") fs-8 fw-bold my-1">@T["imp:" + r.ImpressionCategory]</span> }
                     <div class="text-gray-600 fw-semibold fs-7 @(Model.Compact ? "text-truncate" : "")" style="white-space:pre-line" dir="auto">@r.Impression</div>
                 </div>
             </a>

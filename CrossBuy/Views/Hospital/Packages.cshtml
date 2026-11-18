@@ -68,7 +68,7 @@
                                     <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@p.Price.ToString("N3", inv)</span>&nbsp;<span class="text-muted fs-8">@cur</span></td>
                                     <td class="text-end"><span class="badge badge-light-info fs-7 fw-bold hp-num">@p.IncludedNights</span></td>
                                     <td><span class="text-gray-700 fw-semibold fs-7">@(r.RoomType ?? "—")</span></td>
-                                    <td>@if (p.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["Active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Inactive"]</span>}</td>
+                                    <td>@if (p.IsActive) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Inactive"]</span>}</td>
                                     <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-edit="@System.Text.Json.JsonSerializer.Serialize(PackageData(r))"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
                                 </tr>
                             }

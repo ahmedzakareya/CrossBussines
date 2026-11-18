@@ -74,7 +74,7 @@
                     <div class="card-header pt-5">
                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["A recipe per diet"]</span>
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["An inventory item whose bill of materials is one tray; a diet with none costs as regular"]</span></h3>
-                        <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-success"><i class="ki-outline ki-notepad fs-2 text-success"></i></span></div></div>
+                        <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-notepad fs-2 text-primary"></i></span></div></div>
                     </div>
                     <div class="card-body pt-2">
                         @{ var dietList = HospitalDiet.All.Where(d => d != HospitalDiet.Npo).ToList(); }
@@ -111,7 +111,7 @@
                                 @foreach (var d in dests)
                                 {
                                     var cc = centres.FirstOrDefault(c => c.Id == d.CostCenterId); var br = branches.FirstOrDefault(b => b.Id == d.PosBranchId);
-                                    string tone = d.Stream == HospitalKitchenStream.Patient ? "primary" : d.Stream == HospitalKitchenStream.Staff ? "info" : "success";
+                                    string tone = d.Stream == HospitalKitchenStream.Patient ? "primary" : d.Stream == HospitalKitchenStream.Staff ? "info" : "primary";
                                     string icon = d.Stream == HospitalKitchenStream.Patient ? "pulse" : d.Stream == HospitalKitchenStream.Staff ? "people" : "shop";
                                     <tr><td class="ps-4"><div class="d-flex align-items-center">
                                             <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-3 text-@tone"></i></span></div>

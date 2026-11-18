@@ -31,12 +31,12 @@
         <td class="text-nowrap">
             @if (r.NextDue is DateTime d)
             {
-                <span class="badge badge-light-@(r.Overdue ? "danger" : d <= today.AddDays(2) ? "primary" : "success") fs-7 fw-bold hp-num">@d.ToString("yyyy-MM-dd")</span>
+                <span class="badge badge-light-@(r.Overdue ? "danger" : d <= today.AddDays(2) ? "primary" : "primary") fs-7 fw-bold hp-num">@d.ToString("yyyy-MM-dd")</span>
                 if (r.Overdue) {<span class="text-danger fw-bold d-block fs-8 mt-1">@T["Overdue"]</span>} else if (r.Held) {<span class="text-muted fw-semibold d-block fs-8 mt-1">@T["Held"]</span>}
             }
             else {<span class="badge badge-light fs-7 fw-semibold">@T["All cycles given"]</span>}
         </td>
-        <td>@if (r.LastToxicity is int g) {<span class="badge badge-light-@(g >= 3 ? "danger" : g >= 1 ? "primary" : "success") fs-7 fw-bold">@T["Grade {0}", g]</span>} else {<span class="text-muted">—</span>}</td>
+        <td>@if (r.LastToxicity is int g) {<span class="badge badge-light-@(g >= 3 ? "danger" : g >= 1 ? "primary" : "primary") fs-7 fw-bold">@T["Grade {0}", g]</span>} else {<span class="text-muted">—</span>}</td>
         <td class="text-end pe-4"><a href="@Url.Action("ChemoCourse", new { id = c.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

@@ -47,7 +47,7 @@
                     (T["Patients in isolation"].Value, Model.Isolations.Select(i => i.Patient.PatientId).Distinct().Count().ToString(), "ki-shield-cross", "danger"),
                     (T["Devices in place"].Value, Model.Devices.Count.ToString(), "ki-syringe", "primary"),
                     (T["Suspected cases to review"].Value, Model.Suspected.ToString(), "ki-search-list", "info"),
-                    (T["Hospital-acquired per 1,000 patient-days this month"].Value, R(total.HaiRate), "ki-chart-line-down", "success") })
+                    (T["Hospital-acquired per 1,000 patient-days this month"].Value, R(total.HaiRate), "ki-chart-line-down", "primary") })
                 {
                     <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                         <div class="card-header pt-5 flex-nowrap gap-3">

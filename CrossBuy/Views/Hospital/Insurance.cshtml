@@ -20,17 +20,17 @@
     bool canBill = ViewBag.CanBill == true;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Money(decimal v) => v.ToString("N3", inv);
-    string PaBadge(string s) => s switch { HospitalPreauthStatus.Approved => "success", HospitalPreauthStatus.Rejected => "danger", _ => "primary" };
-    string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "success", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
+    string PaBadge(string s) => s switch { HospitalPreauthStatus.Approved => "primary", HospitalPreauthStatus.Rejected => "danger", _ => "primary" };
+    string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "primary", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
     // the person, not a glyph: the patient's photo, or their initials
     string Avatar(string? photo, string nameEn, int px) => photo != null
         ? $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0 me-3\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0 me-3\"><span class=\"symbol-label fw-bold fs-7 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
     var claimMonth = DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM", inv);
     var tiles = new[] {
-        (Num: stats.PendingPreauths.ToString(), Label: T["Approvals pending"].Value, Icon: "shield-tick", Tone: stats.PendingPreauths > 0 ? "primary" : "success", Ltr: false),
+        (Num: stats.PendingPreauths.ToString(), Label: T["Approvals pending"].Value, Icon: "shield-tick", Tone: stats.PendingPreauths > 0 ? "primary" : "primary", Ltr: false),
         (Num: Money(stats.ClaimedThisMonth), Label: T["Claims this month"].Value, Icon: "send", Tone: "info", Ltr: true),
-        (Num: stats.RejectionRate is decimal rr ? rr.ToString("0.0", inv) + "%" : "—", Label: T["Rejection rate"].Value, Icon: "cross-circle", Tone: stats.RejectionRate > 5 ? "danger" : "success", Ltr: true),
+        (Num: stats.RejectionRate is decimal rr ? rr.ToString("0.0", inv) + "%" : "—", Label: T["Rejection rate"].Value, Icon: "cross-circle", Tone: stats.RejectionRate > 5 ? "danger" : "primary", Ltr: true),
         (Num: stats.DaysToCollect?.ToString() ?? "—", Label: T["Days to collect"].Value, Icon: "time", Tone: "primary", Ltr: false) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -129,7 +129,7 @@
                                         <td class="text-end pe-4 text-nowrap">
                                             @if (canBill && a.Status == HospitalPreauthStatus.Pending)
                                             {
-                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success me-1" title="@T["pa:Approved"]" data-bs-toggle="tooltip" data-decide="@a.ID" data-approve="1" data-ask="@string.Format(T["The payer approved {0} for {1}: enter its approval reference."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)"><i class="ki-outline ki-check fs-3"></i></button>
+                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" title="@T["pa:Approved"]" data-bs-toggle="tooltip" data-decide="@a.ID" data-approve="1" data-ask="@string.Format(T["The payer approved {0} for {1}: enter its approval reference."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)"><i class="ki-outline ki-check fs-3"></i></button>
                                                 <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["pa:Rejected"]" data-bs-toggle="tooltip" data-decide="@a.ID" data-approve="0" data-ask="@string.Format(T["The payer rejected {0} for {1}: enter its reason."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)"><i class="ki-outline ki-cross fs-3"></i></button>
                                             }
                                         </td>
@@ -164,7 +164,7 @@
                                         <td class="text-gray-800 fw-bold fs-7">@DisplayName.Of(b.Payer, b.PayerEn)</td>
                                         <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@b.Claims</span></td>
                                         <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(b.Amount)</span>@if (b.Currency != null) {<span class="badge badge-light-info fs-8 fw-bold ms-1 hp-num">@b.Currency</span>}</td>
-                                        <td class="text-end">@if (b.Accepted > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num">@Money(b.Accepted)</span>} else {<span class="text-muted">—</span>}</td>
+                                        <td class="text-end">@if (b.Accepted > 0) {<span class="badge badge-light-primary fs-7 fw-bold hp-num">@Money(b.Accepted)</span>} else {<span class="text-muted">—</span>}</td>
                                         <td class="text-end">@if (b.Rejected > 0) {<span class="badge badge-light-danger fs-7 fw-bold hp-num">@Money(b.Rejected)</span>} else {<span class="text-muted">—</span>}</td>
                                         <td class="pe-4"><span class="badge badge-light-@BatchBadge(b.Batch.Status) fs-7 fw-bold">@T["cb:" + b.Batch.Status]</span></td>
                                     </tr>
@@ -288,7 +288,7 @@
                 $(pSel).on('select2:select', function () {
                     cover.textContent = '';
                     fetch(urls.eligibility.replace(/0$/, pSel.value), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
-                        cover.className = 'fs-7 mt-2 fw-semibold ' + (d.eligible ? 'text-success' : 'text-danger');
+                        cover.className = 'fs-7 mt-2 fw-semibold ' + (d.eligible ? 'text-primary' : 'text-danger');
                         cover.textContent = d.eligible ? d.payer + ' · ' + d.policyNo + (d.memberClass ? ' · ' + d.memberClass : '') : d.reason;
                     });
                 });

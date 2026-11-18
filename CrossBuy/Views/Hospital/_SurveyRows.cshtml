@@ -7,7 +7,7 @@
 @foreach (var row in Model)
 {
     var r = row.Response;
-    string score = r.Average >= 4 ? "badge-light-success" : r.Average <= HospitalSurveyRules.LowAverage ? "badge-light-danger" : "badge-light-primary";
+    string score = r.Average >= 4 ? "badge-light-primary" : r.Average <= HospitalSurveyRules.LowAverage ? "badge-light-danger" : "badge-light-primary";
     @* H128: a row of the theme's table widget (demo39 widgets/tables) — the response number and time ride under the patient *@
     <tr data-survey-row="@r.ID">
         <td class="ps-4"><div class="d-flex align-items-center">
@@ -26,7 +26,7 @@
             }
             else if (r.FollowUp == HospitalSurveyFollowUp.Done)
             {
-                <span class="badge badge-light-success fs-7 fw-bold">@T["svf:Done"]</span><div class="text-muted fs-7 mt-1" dir="auto">@DisplayName.Of(row.FollowedBy ?? "", row.FollowedByEn ?? row.FollowedBy ?? "") · @r.FollowUpNote</div>
+                <span class="badge badge-light-primary fs-7 fw-bold">@T["svf:Done"]</span><div class="text-muted fs-7 mt-1" dir="auto">@DisplayName.Of(row.FollowedBy ?? "", row.FollowedByEn ?? row.FollowedBy ?? "") · @r.FollowUpNote</div>
             }
         </td>
     </tr>

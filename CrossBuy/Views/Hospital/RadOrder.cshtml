@@ -19,7 +19,7 @@
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
     string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
     string Clock(DateTime? t) => t?.ToLocalTime().ToString("HH:mm") ?? "—";
-    string CatClass(string? c) => c == HospitalRadImpression.Critical ? "badge-danger" : c == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-success";
+    string CatClass(string? c) => c == HospitalRadImpression.Critical ? "badge-danger" : c == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-primary";
     var trail = new (string Label, DateTime? At, int? By, string Icon)[] {
         (T["Ordered"].Value, o.OrderedAt, o.OrderedByEmployeeId, "ki-document"),
         (T["Arrived at radiology"].Value, o.ArrivedAt, o.ArrivedByEmployeeId, "ki-entrance-left"),
@@ -57,7 +57,7 @@
                 <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button>
                 <button type="button" class="btn btn-sm btn-primary" data-sign><i class="ki-outline ki-check-circle fs-4"></i>@T["Sign report"]</button>
             }
-            @if (signed) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-fmt data-utc="@o.SignedAt?.ToString("o")">@o.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+            @if (signed) { <span class="badge badge-light-primary fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-primary me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-fmt data-utc="@o.SignedAt?.ToString("o")">@o.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
             <partial name="_HospitalPortalRelease" model="@((HospitalPortalResultSource.Radiology, o.ID, signed, ViewBag.PortalRelease as HospitalPortalRelease, (bool)(ViewBag.CanConsult == true)))" />
         </div>
     </div></div>
@@ -89,8 +89,8 @@
         }
         @if (o.IsCritical)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(o.CriticalAcknowledgedAt == null ? "bg-light-danger border-danger" : "bg-light-success border-success")">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(o.CriticalAcknowledgedAt == null ? "bg-danger" : "bg-success")"><i class="ki-outline @(o.CriticalAcknowledgedAt == null ? "ki-notification-status" : "ki-check-circle") fs-2x text-white"></i></span></span>
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(o.CriticalAcknowledgedAt == null ? "bg-light-danger border-danger" : "bg-light-primary border-primary")">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(o.CriticalAcknowledgedAt == null ? "bg-danger" : "bg-primary")"><i class="ki-outline @(o.CriticalAcknowledgedAt == null ? "ki-notification-status" : "ki-check-circle") fs-2x text-white"></i></span></span>
                 <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                     <div class="mb-3 mb-md-0 fw-semibold pe-5">
                         <h4 class="text-gray-900 fw-bold mb-1">@(o.CriticalAcknowledgedAt == null ? T["A critical result — tell the doctor now"] : T["The doctor was told of the critical result"])</h4>
@@ -110,7 +110,7 @@
                             <span class="card-label fw-bold text-gray-800">@DisplayName.Of(o.Name, o.NameEn) <bdi class="badge badge-light-primary fw-bold fs-7 hp-num ms-1" dir="ltr">@o.AccessionNo</bdi></span>
                             <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["mod:" + o.Modality]@if (o.Contrast) {<text> · @T["with contrast"]</text>}@if (Model.Room != null) {<text> · <bdi class="hp-num" dir="ltr">@Model.Room.Code</bdi></text>}</span>
                         </h3>
-                        <div class="card-toolbar"><span class="badge badge-light-@(signed ? "success" : "primary") fs-7 fw-bold">@T["rad:" + o.Status]</span></div>
+                        <div class="card-toolbar"><span class="badge badge-light-@(signed ? "primary" : "primary") fs-7 fw-bold">@T["rad:" + o.Status]</span></div>
                     </div>
                     <div class="card-body pt-2">
                         @if (o.Status is HospitalRadStatus.Scheduled or HospitalRadStatus.Arrived or HospitalRadStatus.Scanning)
@@ -147,7 +147,7 @@
                             <div class="separator separator-dashed my-5"></div>
                             <div class="text-gray-500 fs-7 fw-bold mb-2">@T["Impression"]</div>
                             <div class="text-gray-900 fs-5 fw-bold" style="white-space:pre-line" dir="auto">@(o.Impression == null && o.ImpressionEn == null ? "—" : DisplayName.Of(o.Impression ?? "", o.ImpressionEn ?? ""))</div>
-                            @if (signed) { <div class="d-flex align-items-center text-gray-500 fw-semibold fs-7 mt-5"><i class="ki-outline ki-shield-tick fs-4 text-success me-2"></i>@T["Signed by"]&nbsp;<span class="text-gray-800">@Who(o.SignedByEmployeeId)</span></div> }
+                            @if (signed) { <div class="d-flex align-items-center text-gray-500 fw-semibold fs-7 mt-5"><i class="ki-outline ki-shield-tick fs-4 text-primary me-2"></i>@T["Signed by"]&nbsp;<span class="text-gray-800">@Who(o.SignedByEmployeeId)</span></div> }
                             @* H34: English added after signing — the signed Arabic is not changed; who added it and when is shown *@
                             @if (signed && o.TranslatedAt != null) { <div class="text-muted fs-8 mt-1"><i class="ki-outline ki-message-text fs-7 me-1"></i>@T["Translation added by"] @Who(o.TranslatedByEmployeeId) · <span class="hp-num" data-fmt data-utc="@o.TranslatedAt?.ToString("o")">@o.TranslatedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div> }
                             @if (signed && canReport)

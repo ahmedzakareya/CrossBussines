@@ -53,9 +53,9 @@
             <div class="row g-5 mb-5">
                 @foreach (var t in new (string Label, string Value, string? Sub, string Icon, string Tone, string NumTone)[] {
                     (T["Surveys"].Value, Model.Responses.ToString(inv), null, "ki-questionnaire-tablet", "primary", "text-gray-900"),
-                    (T["Net promoter score"].Value, Model.Nps?.ToString(inv) ?? "—", T["Promoters (9–10) less detractors (0–6)"].Value, "ki-like", Model.Nps is < 0 ? "danger" : "success", Model.Nps is >= 30 ? "text-success" : Model.Nps is < 0 ? "text-danger" : "text-gray-900"),
+                    (T["Net promoter score"].Value, Model.Nps?.ToString(inv) ?? "—", T["Promoters (9–10) less detractors (0–6)"].Value, "ki-like", Model.Nps is < 0 ? "danger" : "primary", Model.Nps is >= 30 ? "text-primary" : Model.Nps is < 0 ? "text-danger" : "text-gray-900"),
                     (T["Average satisfaction"].Value, Model.Average?.ToString("0.0", inv) ?? "—", Model.Average == null ? null : string.Format(T["{0} of {1}"].Value, Model.Average.Value.ToString("0.0", inv), 5), "ki-star", "info", "text-gray-900"),
-                    (T["Follow-ups open"].Value, Model.OpenFollowUps.ToString(inv), null, "ki-message-question", Model.OpenFollowUps > 0 ? "danger" : "success", Model.OpenFollowUps > 0 ? "text-danger" : "text-gray-900") })
+                    (T["Follow-ups open"].Value, Model.OpenFollowUps.ToString(inv), null, "ki-message-question", Model.OpenFollowUps > 0 ? "danger" : "primary", Model.OpenFollowUps > 0 ? "text-danger" : "text-gray-900") })
                 {
                     <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                         <div class="card-header pt-5 flex-nowrap gap-3">
@@ -142,7 +142,7 @@
                             @foreach (var q in questions)
                             {
                                 <tr><td class="ps-4"><span class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">@q.Code</span></td><td class="text-gray-700 fw-semibold fs-7">@T["sv:" + q.Kind]</td><td class="text-gray-900 fw-bold fs-6" dir="auto">@DisplayName.Of(q.Text, q.TextEn)</td>
-                                    <td>@if (q.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["cf:active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["cf:inactive"]</span>}</td>
+                                    <td>@if (q.IsActive) {<span class="badge badge-light-primary fs-7 fw-bold">@T["cf:active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["cf:inactive"]</span>}</td>
                                     <td class="text-end pe-4"><button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-q-edit='@Json.Serialize(new { id = q.ID, code = q.Code, kind = q.Kind, text = q.Text, textEn = q.TextEn, sortOrder = q.SortOrder, isActive = q.IsActive })'><i class="ki-outline ki-pencil fs-5"></i></button></td></tr>
                             }
                         </tbody></table></div>

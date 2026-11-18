@@ -85,7 +85,7 @@
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] {
                     (T["Total billed"].Value, N(st?.Billed ?? 0), (string?)null, "info", "bill", m.Lines.Count),
-                    (T["Actually collected"].Value, N(st?.Collected ?? 0), T["the calculation basis"].Value, "success", "wallet", -1),
+                    (T["Actually collected"].Value, N(st?.Collected ?? 0), T["the calculation basis"].Value, "primary", "wallet", -1),
                     (T["Doctor share"].Value, N(st?.Share ?? 0), (string?)null, "primary", "percentage", -1),
                     (T["Net due"].Value, N(st?.Share ?? 0), m.Currency, "primary", "dollar", -1) })
                 {
@@ -175,7 +175,7 @@
                                 <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label @(ok ? "bg-primary text-inverse-primary" : "bg-light-primary text-primary") fw-bold fs-6"><span class="hp-num">@(i + 1)</span></span></div>
                                 <div class="flex-grow-1"><span class="text-gray-800 fw-bold fs-6 d-block">@label</span>
                                     @if (at != null) {<span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">@at.Value.ToLocalTime().ToString("yyyy-MM-dd")</span>}</div>
-                                @if (ok) {<span class="badge badge-light-success fs-7 fw-bold"><i class="ki-outline ki-check fs-5 text-success"></i></span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Pending"]</span>}
+                                @if (ok) {<span class="badge badge-light-primary fs-7 fw-bold"><i class="ki-outline ki-check fs-5 text-primary"></i></span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Pending"]</span>}
                             </div>
                         }
                         </div>
@@ -184,7 +184,7 @@
                 <div class="col-xl-6"><div class="card card-flush mb-5 h-xl-100">
                     <div class="card-header pt-5">
                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Journal on approval"]</span>
-                            @if (st?.JournalEntryId != null) {<span class="text-success mt-1 fw-semibold fs-7"><i class="ki-outline ki-check-circle fs-6 text-success"></i> @T["Posted"]</span>}</h3>
+                            @if (st?.JournalEntryId != null) {<span class="text-primary mt-1 fw-semibold fs-7"><i class="ki-outline ki-check-circle fs-6 text-primary"></i> @T["Posted"]</span>}</h3>
                     </div>
                     <div class="card-body pt-2">
                         @if (!vendor)

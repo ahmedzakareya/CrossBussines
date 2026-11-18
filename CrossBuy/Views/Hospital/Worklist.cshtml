@@ -18,10 +18,10 @@
         HospitalAppointmentStatus.Booked => "badge-light",
         HospitalAppointmentStatus.Arrived => "badge-light-info",
         HospitalAppointmentStatus.InRoom => "hp-badge",
-        HospitalAppointmentStatus.Done => "badge-light-success",
+        HospitalAppointmentStatus.Done => "badge-light-primary",
         _ => "badge-light",
     };
-    string Tone(string s) => s switch { HospitalAppointmentStatus.Arrived => "info", HospitalAppointmentStatus.InRoom => "primary", HospitalAppointmentStatus.Done => "success", _ => "gray-500" };
+    string Tone(string s) => s switch { HospitalAppointmentStatus.Arrived => "info", HospitalAppointmentStatus.InRoom => "primary", HospitalAppointmentStatus.Done => "primary", _ => "gray-500" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -62,7 +62,7 @@
                         </div>
                     </div>
                     <div class="d-flex flex-wrap">
-                        @foreach (var (label, n, icon, tone) in new[] { (T["Waiting"].Value, waiting, "ki-time", "info"), (T["Seen"].Value, seen, "ki-check-circle", "success"), (T["Remaining"].Value, remaining, "ki-calendar", "primary") })
+                        @foreach (var (label, n, icon, tone) in new[] { (T["Waiting"].Value, waiting, "ki-time", "info"), (T["Seen"].Value, seen, "ki-check-circle", "primary"), (T["Remaining"].Value, remaining, "ki-calendar", "primary") })
                         {
                             <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 ms-3 mb-3">
                                 <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@n</div></div>
@@ -104,9 +104,9 @@
                                                 <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@a.Mrn</bdi>@if (a.QueueNumber != null) {<text> · </text><bdi class="hp-num" dir="ltr">A-@a.QueueNumber.Value.ToString("000")</bdi>}</span></div>
                                         </div></td>
                                         <td><span class="badge badge-light fs-7 fw-bold">@T["visit:" + a.VisitType]</span></td>
-                                        <td class="text-center">@if (r.HasVitals) {<i class="ki-outline ki-check-circle fs-2 text-success"></i>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td class="text-center">@if (r.HasVitals) {<i class="ki-outline ki-check-circle fs-2 text-primary"></i>} else {<span class="text-gray-400">—</span>}</td>
                                         <td>@if (wait != null) {<span class="badge badge-light-@(wait > 15 ? "danger" : "primary") fs-7 fw-bold hp-num text-nowrap"><span dir="ltr">@wait</span>&nbsp;@T["min"]</span>} else {<span class="text-gray-400">—</span>}</td>
-                                        <td><span class="d-inline-flex align-items-center"><span class="bullet bullet-dot bg-@Tone(a.Status) h-8px w-8px me-2"></span><span class="badge @StatusBadge(a.Status) fs-7 fw-bold">@T["appt:" + a.Status]</span></span>@if (r.EncounterStatus == HospitalEncounterStatus.Signed) {<span class="badge badge-light-success fs-7 fw-bold ms-1">@T["Signed"]</span>}</td>
+                                        <td><span class="d-inline-flex align-items-center"><span class="bullet bullet-dot bg-@Tone(a.Status) h-8px w-8px me-2"></span><span class="badge @StatusBadge(a.Status) fs-7 fw-bold">@T["appt:" + a.Status]</span></span>@if (r.EncounterStatus == HospitalEncounterStatus.Signed) {<span class="badge badge-light-primary fs-7 fw-bold ms-1">@T["Signed"]</span>}</td>
                                         <td class="text-end pe-4 text-nowrap">
                                             @if (r.EncounterId is int eid)
                                             {

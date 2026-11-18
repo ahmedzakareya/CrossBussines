@@ -46,7 +46,7 @@
                 (T["Active medication orders"].Value, (int?)Model.Active, "", T["on their way to the bedside"].Value, "capsule", "primary", false),
                 (T["STAT turnaround"].Value, Model.StatTurnaround, T["min"].Value, string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Stat)), "timer", "danger", false),
                 (T["Routine turnaround"].Value, Model.RoutineTurnaround, T["min"].Value, string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Routine)), "time", "info", false),
-                (T["Late against target"].Value, (int?)Model.Late, "", T["still on their way past their target"].Value, "information-5", Model.Late > 0 ? "danger" : "success", Model.Late > 0) })
+                (T["Late against target"].Value, (int?)Model.Late, "", T["still on their way past their target"].Value, "information-5", Model.Late > 0 ? "danger" : "primary", Model.Late > 0) })
             {
                 <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
                     <div class="card-header pt-5 flex-nowrap gap-3">
@@ -80,7 +80,7 @@
                 {
                     bool lastStage = i == stages.Length - 1;
                     <div class="col-6 col-md-4 col-xl-2"><div class="rounded p-4 h-100 mr-stage @(lastStage ? "last" : "")">
-                        <div class="d-flex flex-stack mb-3"><span class="symbol symbol-30px"><span class="symbol-label bg-white"><i class="ki-outline ki-@stageIcons[i] fs-3 text-@(lastStage ? "success" : "primary")"></i></span></span><span class="text-gray-500 fw-bold fs-8 hp-num">@(i + 1)</span></div>
+                        <div class="d-flex flex-stack mb-3"><span class="symbol symbol-30px"><span class="symbol-label bg-white"><i class="ki-outline ki-@stageIcons[i] fs-3 text-@(lastStage ? "primary" : "primary")"></i></span></span><span class="text-gray-500 fw-bold fs-8 hp-num">@(i + 1)</span></div>
                         <div class="fs-2hx fw-bold lh-1 text-gray-900 hp-num">@Model.StageCounts[i]</div>
                         <div class="fs-7 fw-semibold text-gray-600 pt-1">@T["mr:" + stages[i]]</div>
                     </div></div>
@@ -180,7 +180,7 @@
                     @for (int bi = 0; bi < behind.Length; bi++)
                     {
                         <div class="d-flex align-items-center">
-                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-3 text-success"></i></span></div>
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check-circle fs-3 text-primary"></i></span></div>
                             <span class="text-gray-800 fw-bold fs-6">@T[behind[bi]]</span>
                         </div>
                         if (bi < behind.Length - 1) { <div class="separator separator-dashed my-3"></div> }

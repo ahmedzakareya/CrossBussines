@@ -13,8 +13,8 @@
     bool inward = r.Direction > 0;
     <tr>
         <td class="ps-4 text-nowrap"><span class="text-gray-800 fw-bold d-block fs-7 hp-num" data-fmt data-utc="@r.At.ToString("o")">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span><span class="text-muted fs-8 hp-num">@r.At.ToLocalTime().ToString("HH:mm")</span></td>
-        <td><div class="symbol symbol-35px"><span class="symbol-label bg-light-@(inward ? "success" : "danger")"><i class="ki-outline ki-arrow-@(inward ? "down" : "up") fs-3 text-@(inward ? "success" : "danger")"></i></span></div></td>
-        <td class="text-end"><span class="badge badge-light-@(inward ? "success" : "danger") fs-7 fw-bold hp-num" dir="ltr">@(inward ? "+" : "−")@r.Qty.ToString("0.###", inv)</span></td>
+        <td><div class="symbol symbol-35px"><span class="symbol-label bg-light-@(inward ? "primary" : "danger")"><i class="ki-outline ki-arrow-@(inward ? "down" : "up") fs-3 text-@(inward ? "primary" : "danger")"></i></span></div></td>
+        <td class="text-end"><span class="badge badge-light-@(inward ? "primary" : "danger") fs-7 fw-bold hp-num" dir="ltr">@(inward ? "+" : "−")@r.Qty.ToString("0.###", inv)</span></td>
         <td class="text-end"><span class="text-gray-900 fw-bold fs-5 hp-num">@r.Balance.ToString("0.###", inv)</span></td>
         <td><span class="text-gray-800 fw-semibold fs-7">@T[HospitalStockSourceLabels.Key(r.SourceType)]</span>@if (r.Reference != null) {<bdi class="text-muted fs-8 d-block hp-num" dir="ltr">@r.Reference</bdi>}</td>
         <td class="pe-4"><span class="text-gray-700 fs-7">@(r.By != null ? DisplayName.Of(r.By, r.ByEn) : "—")</span></td>
