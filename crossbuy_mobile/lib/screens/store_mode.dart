@@ -52,13 +52,15 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
         return ExecFrame(
           mode: mode(_wh!.label),
           bottomBar: ExecNav(
-            items: [(Lu.scanBarcode, L(context, 'جرد', 'Count')), (Lu.arrowLeftRight, L(context, 'تحويل', 'Transfer'))],
+            items: [(Lu.scanBarcode, L(context, 'جرد', 'Count')), (Lu.arrowLeftRight, L(context, 'تحويل', 'Transfer')), (Lu.packageCheck, L(context, 'استلام', 'Receive'))],
             index: _tab,
             onTap: (i) => setState(() => _tab = i),
           ),
-          child: _tab == 0
-              ? _CountView(key: ValueKey('count-${_wh!.id}'), warehouse: _wh!, onSwitch: switchWarehouse)
-              : _TransferView(key: ValueKey('transfer-${_wh!.id}'), from: _wh!, onSwitch: switchWarehouse, targets: targets.where((t) => t.id != _wh!.id).toList()),
+          child: switch (_tab) {
+            0 => _CountView(key: ValueKey('count-${_wh!.id}'), warehouse: _wh!, onSwitch: switchWarehouse),
+            1 => _TransferView(key: ValueKey('transfer-${_wh!.id}'), from: _wh!, onSwitch: switchWarehouse, targets: targets.where((t) => t.id != _wh!.id).toList()),
+            _ => _ReceiveView(key: ValueKey('receive-${_wh!.id}'), warehouse: _wh!, onSwitch: switchWarehouse),
+          },
         );
       },
     );
@@ -382,5 +384,160 @@ class _TransferViewState extends State<_TransferView> {
       const SizedBox(height: 14),
       FilledButton(onPressed: _busy || _lines.isEmpty ? null : _submit, child: Text(L(context, 'ترحيل التحويل', 'Post transfer'))),
     ]);
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ receive
+/// RECEIVE (the reference's "store-receive"): the approved purchase orders awaiting goods for this warehouse; open one
+/// and each line shows what is being received against what is due ("90 / 150"). A scan adds one to its line; a tap
+/// sets the quantity. "Confirm receipt" posts when every line is complete, "partial receipt" posts what is there. Prices,
+/// units and currency come from the order on the server. Batch / expiry / serial items are received on the web.
+class _ReceiveView extends StatefulWidget {
+  final StoreWarehouse warehouse;
+  final VoidCallback? onSwitch;
+  const _ReceiveView({super.key, required this.warehouse, this.onSwitch});
+  @override
+  State<_ReceiveView> createState() => _ReceiveViewState();
+}
+
+class _ReceiveViewState extends State<_ReceiveView> {
+  late Future<List<OpenPurchaseOrder>?> _orders = ApiService.instance.getOpenOrders(widget.warehouse.id);
+  OpenPurchaseOrder? _po;
+  Future<(String, String, List<ReceiptLine>)>? _sheet;
+  final Map<int, double> _got = {};
+  final _scan = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _scan.dispose();
+    super.dispose();
+  }
+
+  void _open(OpenPurchaseOrder po) => setState(() {
+        _po = po;
+        _got.clear();
+        _sheet = ApiService.instance.getReceiptSheet(po.id, widget.warehouse.id);
+      });
+
+  void _back() => setState(() {
+        _po = null;
+        _sheet = null;
+        _got.clear();
+        _orders = ApiService.instance.getOpenOrders(widget.warehouse.id);
+      });
+
+  void _onScan(List<ReceiptLine> lines, String code) {
+    _scan.clear();
+    final hit = lines.where((l) => l.matches(code)).toList();
+    if (hit.isEmpty) return _toast(context, L(context, 'الصنف ليس في هذا الأمر', 'That item is not on this order'));
+    final l = hit.firstWhere((x) => (_got[x.lineId] ?? 0) < x.remaining, orElse: () => hit.first);
+    if (l.needsDetails) return _toast(context, L(context, 'صنف بدفعات أو صلاحية: يُستلم على الويب.', 'Batch / expiry item: received on the web.'));
+    setState(() => _got[l.lineId] = ((_got[l.lineId] ?? 0) + 1).clamp(0, l.remaining).toDouble());
+  }
+
+  Future<void> _edit(ReceiptLine l) async {
+    if (l.needsDetails) return _toast(context, L(context, 'صنف بدفعات أو صلاحية: يُستلم على الويب.', 'Batch / expiry item: received on the web.'));
+    final c = TextEditingController(text: _got[l.lineId] == null ? '' : _qty(_got[l.lineId]!));
+    final v = await showDialog<double?>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(l.name, style: T.h2),
+        content: TextField(controller: c, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: L(context, 'الكمية المستلمة', 'Quantity received'), helperText: L(context, 'المطلوب ${_qty(l.remaining)}', '${_qty(l.remaining)} due'))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d, l.remaining), child: Text(L(context, 'كامل المطلوب', 'All due'))),
+          FilledButton(onPressed: () => Navigator.pop(d, double.tryParse(c.text.trim())), child: Text(L(context, 'حفظ', 'Save'))),
+        ],
+      ),
+    );
+    if (v == null) return;
+    setState(() => v <= 0 ? _got.remove(l.lineId) : _got[l.lineId] = v.clamp(0, l.remaining).toDouble());
+  }
+
+  Future<void> _post() async {
+    if (_po == null || _got.isEmpty || _busy) return;
+    setState(() => _busy = true);
+    final (ok, msg) = await ApiService.instance.postReceipt(_po!.id, widget.warehouse.id, Map.of(_got));
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(context, ok ? '${L(context, 'رُحّل الاستلام ', 'Receipt posted ')}${msg ?? ''}' : (msg ?? L(context, 'تعذّر الاستلام', 'The receipt could not be posted')));
+    if (ok) _back();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_po == null) {
+      return FutureBuilder<List<OpenPurchaseOrder>?>(
+        future: _orders,
+        builder: (context, s) {
+          final head = _head(context, L(context, 'استلام بضاعة', 'Receive goods'), '${L(context, 'إلى', 'Into')} ${widget.warehouse.name}', widget.onSwitch);
+          if (s.hasError) return ExecBody(children: [head, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+          if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          final list = s.data;
+          if (list == null) return ExecBody(children: [head, EmptyNote(icon: Lu.lock, title: L(context, 'الاستلام غير مسموح', 'Receiving is not allowed'), text: L(context, 'استلام البضاعة لمن يملك صلاحية المشتريات في المخزون.', 'Receiving goods needs the inventory purchasing permission.'))]);
+          return ExecBody(onRefresh: () async => _back(), children: [
+            head,
+            if (list.isEmpty)
+              EmptyNote(icon: Lu.packageCheck, title: L(context, 'لا أوامر بانتظار الاستلام', 'No orders awaiting goods'), text: L(context, 'تظهر هنا أوامر الشراء المعتمدة لهذا المستودع.', 'Approved purchase orders for this warehouse show here.'))
+            else
+              DataList(children: [
+                for (final po in list)
+                  ItemRow(
+                    leading: const IconBox(icon: Lu.clipboardList),
+                    title: '${po.orderNo} · ${po.vendor}',
+                    subtitle: [
+                      L(context, po.lines == 1 ? 'بند واحد' : po.lines == 2 ? 'بندان' : po.lines <= 10 ? '${po.lines} بنود' : '${po.lines} بنداً', po.lines == 1 ? '1 line' : '${po.lines} lines'),
+                      if (po.expectedDate != null) '${L(context, 'متوقع', 'Due')} ${dayMonth(context, po.expectedDate!)}',
+                    ].join(' · '),
+                    end: po.partly ? Tag(L(context, 'استلام جزئي', 'Partly received')) : null,
+                    onTap: () => _open(po),
+                  ),
+              ]),
+          ]);
+        },
+      );
+    }
+    return FutureBuilder<(String, String, List<ReceiptLine>)>(
+      future: _sheet,
+      builder: (context, s) {
+        final head = [
+          BackLink(L(context, 'أوامر الشراء', 'Purchase orders'), onTap: _back),
+          PageHead(L(context, 'استلام بضاعة', 'Receive goods'), eyebrow: '${L(context, 'أمر شراء', 'Purchase order')} ${_po!.orderNo}'),
+        ];
+        if (s.hasError) return ExecBody(children: [...head, EmptyNote(icon: Lu.lock, title: L(context, 'الأمر غير متاح', 'Order not available'), text: L(context, 'لم يعد هذا الأمر مفتوحاً لهذا المستودع.', 'This order is no longer open for this warehouse.'))]);
+        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        final (_, vendor, lines) = s.data!;
+        final open = lines.where((l) => !l.needsDetails).toList();
+        final complete = open.isNotEmpty && open.every((l) => (_got[l.lineId] ?? 0) >= l.remaining);
+        return ExecBody(children: [
+          ...head,
+          TextField(
+            controller: _scan, autofocus: true, textInputAction: TextInputAction.done,
+            onSubmitted: (v) => _onScan(lines, v),
+            decoration: InputDecoration(prefixIcon: const Icon(Lu.scanBarcode, size: 17), hintText: L(context, 'امسح الصنف المستلم — كل مسح قطعة', 'Scan each item received — one per scan')),
+          ),
+          const SizedBox(height: 12),
+          DataList(children: [
+            for (final l in lines)
+              ItemRow(
+                leading: IconBox(icon: (_got[l.lineId] ?? 0) >= l.remaining ? Lu.packageCheck : Lu.package),
+                title: l.name,
+                subtitle: l.needsDetails ? L(context, 'بدفعات أو صلاحية — يُستلم على الويب', 'Batch / expiry — received on the web') : '${L(context, 'المطلوب', 'Due')} ${_qty(l.remaining)}',
+                end: l.needsDetails
+                    ? const Icon(Lu.ban, size: 16, color: Brand.mutedC)
+                    : ((_got[l.lineId] ?? 0) >= l.remaining ? Tag.ok : Tag.new)('${_qty(_got[l.lineId] ?? 0)} / ${_qty(l.remaining)}'),
+                onTap: () => _edit(l),
+              ),
+          ]),
+          if (vendor.isNotEmpty) ...[const SizedBox(height: 10), Text('${L(context, 'المورد', 'Vendor')}: $vendor', textAlign: TextAlign.center, style: T.small)],
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(child: FilledButton(onPressed: _busy || !complete ? null : _post, child: Text(L(context, 'تأكيد الاستلام', 'Confirm receipt')))),
+            const SizedBox(width: 9),
+            Expanded(child: OutlinedButton(onPressed: _busy || _got.isEmpty || complete ? null : _post, child: Text(L(context, 'استلام جزئي', 'Partial receipt')))),
+          ]),
+        ]);
+      },
+    );
   }
 }

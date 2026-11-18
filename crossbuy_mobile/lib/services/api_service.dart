@@ -410,6 +410,37 @@ class ApiService {
         'lines': [for (final e in counted.entries) {'itemId': e.key, 'countedQty': e.value}],
       });
 
+  /// Approved purchase orders awaiting goods for a warehouse; null = not allowed to receive (no "purchase" permission).
+  Future<List<OpenPurchaseOrder>?> getOpenOrders(int warehouseId) async {
+    try {
+      final res = await _dio.get('/api/store/receipts', queryParameters: {'warehouseId': warehouseId});
+      return _list(res.data).map(OpenPurchaseOrder.fromJson).toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) return null;
+      rethrow;
+    }
+  }
+
+  /// The order's lines still awaiting goods: (orderNo, vendor, lines).
+  Future<(String, String, List<ReceiptLine>)> getReceiptSheet(int poId, int warehouseId) async {
+    final res = await _dio.get('/api/store/receipts/$poId', queryParameters: {'warehouseId': warehouseId});
+    final d = res.data['data'] as Map<String, dynamic>;
+    return (d['orderNo']?.toString() ?? '', d['vendor']?.toString() ?? '', [for (final l in (d['lines'] as List? ?? [])) ReceiptLine.fromJson(l as Map<String, dynamic>)]);
+  }
+
+  /// Receive the scanned quantities against the order's lines. Returns (ok, receiptNo or the server's refusal).
+  Future<(bool, String?)> postReceipt(int poId, int warehouseId, Map<int, double> qtyByLine) async {
+    try {
+      final res = await _dio.post('/api/store/receipts', data: {
+        'poId': poId, 'warehouseId': warehouseId, 'notes': 'mobile',
+        'lines': [for (final e in qtyByLine.entries) {'lineId': e.key, 'qty': e.value}],
+      });
+      return (res.data?['success'] == true, res.data?['receiptNo']?.toString());
+    } on DioException catch (e) {
+      return (false, e.response?.data is Map ? e.response?.data['message'] as String? : null);
+    }
+  }
+
   Future<StoreResult> postTransfer(int fromId, int toId, Map<int, double> qty, {String? notes}) =>
       _storePost('/api/store/transfer', {
         'fromWarehouseId': fromId, 'toWarehouseId': toId, 'notes': notes,
