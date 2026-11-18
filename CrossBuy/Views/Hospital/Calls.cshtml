@@ -463,13 +463,19 @@
     // THE LOG PAGES IN PLACE: a page link or a search swaps only the log's body (the directory, the presence and any
     // call in progress stay as they are), and the address follows so Back, refresh and a shared link still land on it.
     var logCard = document.getElementById('hcLogCard');
+    var loadingText = @Json.Serialize(T["Loading…"].Value);
     function loadLog(url, push) {
-        var body = logCard.querySelector('.card-body');
-        body.style.transition = 'opacity .15s'; body.style.opacity = '.45';
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+        var body = logCard.querySelector('.card-body'), rows = body.querySelector('tbody');
+        // the same loading state as the accounting lists (cbServerList): the rows give way to a centred spinner
+        if (rows) rows.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm me-2"></span>' + esc(loadingText) + '</td></tr>';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then(function (r) {
+            // an expired session answers with the login page: go there rather than inject it as rows
+            if (r.redirected && /\/Account\/Login/i.test(r.url)) { location.href = r.url; throw new Error('session'); }
+            return r.text();
+        }).then(function (html) {
             var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('#hcLogCard .card-body');
             if (!fresh) { location.href = url; return; }
-            body.innerHTML = fresh.innerHTML; body.style.opacity = '';
+            body.innerHTML = fresh.innerHTML;
             // a call-back button follows the person's presence, as on first paint
             body.querySelectorAll('[data-call]').forEach(function (b) { b.disabled = state[b.getAttribute('data-call')] !== 'on'; });
             if (push) history.pushState({ hcLog: 1 }, '', url);
