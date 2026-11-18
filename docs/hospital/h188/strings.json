@@ -1,0 +1,55 @@
+{
+ "unit": "H188 - specialty calculators",
+ "strings": {
+  "calc:IgeClass": {
+   "ar": "فئة IgE النوعي (0–6)",
+   "en": "Specific IgE class (0–6)",
+   "fr": "Classe d'IgE spécifiques (0–6)"
+  },
+  "calc:QtcBazett": {
+   "ar": "QTc بمعادلة بازيت",
+   "en": "QTc (Bazett)",
+   "fr": "QTc (Bazett)"
+  },
+  "calc:QtcFridericia": {
+   "ar": "QTc بمعادلة فريدريشيا",
+   "en": "QTc (Fridericia)",
+   "fr": "QTc (Fridericia)"
+  },
+  "calc:TiRads": {
+   "ar": "TI-RADS للعقيدة الدرقية (ACR 2017)",
+   "en": "Thyroid nodule TI-RADS (ACR 2017)",
+   "fr": "TI-RADS du nodule thyroïdien (ACR 2017)"
+  },
+  "calc:Pasi": {
+   "ar": "مؤشر PASI للصدفية",
+   "en": "PASI (psoriasis)",
+   "fr": "PASI (psoriasis)"
+  },
+  "calc:TScoreClass": {
+   "ar": "تصنيف كثافة العظام من T-score",
+   "en": "Bone density class from the T-score",
+   "fr": "Classe de densité osseuse selon le T-score"
+  },
+  "This calculator reads one code": {
+   "ar": "تقرأ هذه الحاسبة رمزًا واحدًا",
+   "en": "This calculator reads one code",
+   "fr": "Ce calcul lit un code"
+  },
+  "This calculator reads two codes, in order": {
+   "ar": "تقرأ هذه الحاسبة رمزين بالترتيب",
+   "en": "This calculator reads two codes, in order",
+   "fr": "Ce calcul lit deux codes, dans l'ordre"
+  },
+  "This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling": {
+   "ar": "تقرأ هذه الحاسبة ستة عشر رمزًا بالترتيب: المناطق الأربع، ولكل منها المساحة والاحمرار والتسمّك والتقشّر",
+   "en": "This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling",
+   "fr": "Ce calcul lit seize codes, dans l'ordre : les quatre régions, chacune en surface, érythème, infiltration, desquamation"
+  },
+  "For a calculator, the names of its result codes (TI-RADS: TR4-FNA|…|…; bone density: Osteopenia|…|…).": {
+   "ar": "للحاسبة: أسماء رموز نتائجها (TI-RADS: TR4-FNA|…|…؛ كثافة العظام: Osteopenia|…|…).",
+   "en": "For a calculator, the names of its result codes (TI-RADS: TR4-FNA|…|…; bone density: Osteopenia|…|…).",
+   "fr": "Pour un calcul : les noms de ses codes de résultat (TI-RADS : TR4-FNA|…|… ; densité osseuse : Osteopenia|…|…)."
+  }
+ }
+}

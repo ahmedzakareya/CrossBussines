@@ -49,7 +49,26 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Sum = "Sum";
 		/// H97: the specific-IgE class (ImmunoCAP 0–6) from kU/L.
 		public const string IgeClass = "IgeClass";
-		public static readonly IReadOnlyList<string> All = new[] { Bmi, EgfrCkdEpi2021, Kdigo, Sum, IgeClass };
+		/// H188: the corrected QT (ms) from the QT (ms) and the heart rate (bpm) — Bazett (QT/√RR) or Fridericia (QT/∛RR).
+		public const string QtcBazett = "QtcBazett";
+		public const string QtcFridericia = "QtcFridericia";
+		/// H188: ACR TI-RADS 2017 — the level from the points, and what the nodule's size calls for (FNA, follow-up, none).
+		public const string TiRads = "TiRads";
+		/// H188: the Psoriasis Area and Severity Index (0–72) from the four regions' area and erythema, induration, scaling.
+		public const string Pasi = "Pasi";
+		/// H188: the WHO bone density class from the T-score.
+		public const string TScoreClass = "TScoreClass";
+		public static readonly IReadOnlyList<string> All = new[] { Bmi, EgfrCkdEpi2021, Kdigo, Sum, IgeClass, QtcBazett, QtcFridericia, TiRads, Pasi, TScoreClass };
+
+		/// H188: how many codes each calculator reads, in order (Sum: at least one).
+		public static int InputsNeeded(string? calculator) => calculator switch
+		{
+			Bmi or Kdigo or QtcBazett or QtcFridericia or TiRads => 2,
+			EgfrCkdEpi2021 or IgeClass or TScoreClass => 1,
+			Pasi => 16,
+			Sum => 1,
+			_ => 0,
+		};
 	}
 
 	public static class HospitalTemplateStatus

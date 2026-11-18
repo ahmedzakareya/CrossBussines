@@ -153,6 +153,7 @@ namespace CrossBuy.Tests
 			var s = HospitalSliceParity.Slice("hospital_h93_clinical_content.sql");
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h94_specialty_visit.sql");   // H94 adds two columns
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h97_allergy.sql");   // H97: the IgeClass calculator
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h188_specialty_calculators.sql");   // H188: the specialty calculators
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h106_field_alert_escalation.sql");   // H106: the alert notifies, opens a template
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h110_canvas_results.sql");   // H110: the canvas source
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h112_patient_pain.sql");   // H112: the patient's own report

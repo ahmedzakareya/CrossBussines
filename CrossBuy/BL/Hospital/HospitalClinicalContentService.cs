@@ -159,7 +159,10 @@ namespace CrossBuy.BL.Hospital
 			// a score is typed as its total (ACT), or summed from its items — never another calculator
 			if (i.ValueType == HospitalConceptType.Score && !string.IsNullOrWhiteSpace(i.Calculator) && i.Calculator != HospitalConceptCalculator.Sum) return "A score is the sum of its items: choose Sum";
 			if (!string.IsNullOrWhiteSpace(i.Calculator) && !HospitalConceptCalculator.All.Contains(i.Calculator)) return "Choose the calculator";
-			if ((i.Calculator is HospitalConceptCalculator.Sum or HospitalConceptCalculator.Kdigo or HospitalConceptCalculator.Bmi or HospitalConceptCalculator.EgfrCkdEpi2021 or HospitalConceptCalculator.IgeClass) && Inputs(i.CalcInputs).Count == 0) return "List the codes the calculator reads";
+			if (!string.IsNullOrWhiteSpace(i.Calculator) && Inputs(i.CalcInputs).Count == 0) return "List the codes the calculator reads";
+			// H188: a calculator reads its inputs by position — exactly as many as it needs (a sum: any number)
+			if (!string.IsNullOrWhiteSpace(i.Calculator) && i.Calculator != HospitalConceptCalculator.Sum && Inputs(i.CalcInputs).Count != HospitalConceptCalculator.InputsNeeded(i.Calculator))
+				return HospitalConceptCalculator.InputsNeeded(i.Calculator) switch { 1 => "This calculator reads one code", 2 => "This calculator reads two codes, in order", _ => "This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling" };
 			return null;
 		}
 	}
@@ -259,7 +262,7 @@ namespace CrossBuy.BL.Hospital
 				c.Unit = Clip(i.Unit, 30); c.Decimals = i.Decimals; c.NormalLow = i.NormalLow; c.NormalHigh = i.NormalHigh; c.NormalHigh2 = i.NormalHigh2;
 				c.CriticalLow = i.CriticalLow; c.CriticalHigh = i.CriticalHigh; c.CriticalHigh2 = i.CriticalHigh2;
 				c.NormalText = Clip(i.NormalText, 60); c.NormalTextEn = Clip(i.NormalTextEn, 60); c.CriticalText = Clip(i.CriticalText, 60); c.CriticalTextEn = Clip(i.CriticalTextEn, 60);
-				c.Choices = i.ValueType is HospitalConceptType.Choice or HospitalConceptType.Score ? Clip(i.Choices, 2000) : null;   // H98: a score keeps its bands here
+				c.Choices = i.ValueType is HospitalConceptType.Choice or HospitalConceptType.Score or HospitalConceptType.Calculated ? Clip(i.Choices, 2000) : null;   // H98: a score keeps its bands here; H188: a calculator names its result codes here ("TR4-FNA|…|…")
 				c.Calculator = string.IsNullOrWhiteSpace(i.Calculator) ? null : i.Calculator; c.CalcInputs = c.Calculator == null ? null : Clip(i.CalcInputs, 200);
 				c.HasLaterality = i.HasLaterality; c.LabAnalyteCode = Clip(i.LabAnalyteCode, 20); c.IsActive = i.IsActive;
 				c.UpdatedAt = nowUtc; c.UpdatedByEmployeeId = employeeId;

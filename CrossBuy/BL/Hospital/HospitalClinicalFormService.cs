@@ -38,6 +38,42 @@ namespace CrossBuy.BL.Hospital
 		/// H97: the ImmunoCAP class of a specific IgE (kU/L): 0 under 0.35, 1 to 0.7, 2 to 3.5, 3 to 17.5, 4 to 50, 5 to 100, 6 above.
 		public static int? IgeClass(decimal? ku) => ku == null || ku < 0 ? null : ku < 0.35m ? 0 : ku < 0.7m ? 1 : ku < 3.5m ? 2 : ku < 17.5m ? 3 : ku < 50m ? 4 : ku < 100m ? 5 : 6;
 
+		/// H188: the corrected QT in ms; RR = 60 / heart rate (s). Bazett divides by √RR, Fridericia by ∛RR.
+		public static decimal? QtcBazett(decimal? qtMs, decimal? hr) => qtMs is > 0 and < 1000 && hr is >= 20 and <= 300 ? Math.Round((decimal)((double)qtMs.Value / Math.Sqrt(60.0 / (double)hr.Value)), 0) : null;
+		public static decimal? QtcFridericia(decimal? qtMs, decimal? hr) => qtMs is > 0 and < 1000 && hr is >= 20 and <= 300 ? Math.Round((decimal)((double)qtMs.Value / Math.Cbrt(60.0 / (double)hr.Value)), 0) : null;
+
+		/// H188: ACR TI-RADS 2017 — 0–1 points TR1, 2 TR2, 3 TR3, 4–6 TR4, 7 or more TR5.
+		public static int? TiRadsLevel(decimal? points) => points == null || points < 0 ? null : points <= 1 ? 1 : points == 2 ? 2 : points == 3 ? 3 : points <= 6 ? 4 : 5;
+
+		/// H188: what the level and the largest diameter (cm) call for — FNA at or above the level's FNA size, follow-up at or
+		/// above its follow-up size, otherwise none (TR1–TR2: none). TR3 2.5/1.5, TR4 1.5/1.0, TR5 1.0/0.5 cm.
+		public static string? TiRadsAdvice(int? level, decimal? sizeCm)
+		{
+			if (level == null) return null;
+			if (level <= 2 || sizeCm is not > 0) return "None";
+			var (fna, follow) = level switch { 3 => (2.5m, 1.5m), 4 => (1.5m, 1.0m), _ => (1.0m, 0.5m) };
+			return sizeCm >= fna ? "FNA" : sizeCm >= follow ? "FollowUp" : "None";
+		}
+
+		/// H188: PASI = Σ region weight × area (0–6) × (erythema + induration + scaling, each 0–4); the regions in the order
+		/// head (0.1), upper limbs (0.2), trunk (0.3), lower limbs (0.4), each as area, erythema, induration, scaling.
+		public static decimal? Pasi(IReadOnlyList<decimal?> v)
+		{
+			if (v.Count != 16 || v.Any(x => x == null)) return null;
+			decimal[] w = { 0.1m, 0.2m, 0.3m, 0.4m };
+			decimal total = 0;
+			for (int r = 0; r < 4; r++)
+			{
+				decimal area = v[r * 4]!.Value, e = v[r * 4 + 1]!.Value, i = v[r * 4 + 2]!.Value, s = v[r * 4 + 3]!.Value;
+				if (area is < 0 or > 6 || e is < 0 or > 4 || i is < 0 or > 4 || s is < 0 or > 4) return null;
+				total += w[r] * area * (e + i + s);
+			}
+			return Math.Round(total, 1);
+		}
+
+		/// H188: WHO — a T-score of −1.0 or more is normal, between −1.0 and −2.5 osteopenia, −2.5 or less osteoporosis.
+		public static string? TScoreClass(decimal? t) => t == null || t < -10 || t > 10 ? null : t >= -1.0m ? "Normal" : t > -2.5m ? "Osteopenia" : "Osteoporosis";
+
 		public static string? GCategory(decimal? egfr) => egfr == null ? null : egfr >= 90 ? "G1" : egfr >= 60 ? "G2" : egfr >= 45 ? "G3a" : egfr >= 30 ? "G3b" : egfr >= 15 ? "G4" : "G5";
 		public static string? ACategory(decimal? acrMgG) => acrMgG == null ? null : acrMgG < 30 ? "A1" : acrMgG <= 300 ? "A2" : "A3";
 
@@ -186,6 +222,13 @@ namespace CrossBuy.BL.Hospital
 							if (g != null && a != null) code = g + " " + a; break;
 						case HospitalConceptCalculator.IgeClass when ins.Count >= 1:
 							if (HospitalClinicalCalc.IgeClass(Get(ins[0])) is int cls) { v = cls; code = "Class " + cls; } break;
+						case HospitalConceptCalculator.QtcBazett when ins.Count >= 2: v = HospitalClinicalCalc.QtcBazett(Get(ins[0]), Get(ins[1])); break;   // H188
+						case HospitalConceptCalculator.QtcFridericia when ins.Count >= 2: v = HospitalClinicalCalc.QtcFridericia(Get(ins[0]), Get(ins[1])); break;
+						case HospitalConceptCalculator.TiRads when ins.Count >= 2:
+							if (HospitalClinicalCalc.TiRadsLevel(Get(ins[0])) is int tr) { v = tr; code = "TR" + tr + "-" + HospitalClinicalCalc.TiRadsAdvice(tr, Get(ins[1])); } break;   // "TR4-FNA": the concept's choices name it in each language
+						case HospitalConceptCalculator.Pasi when ins.Count >= 16: v = HospitalClinicalCalc.Pasi(ins.Take(16).Select(Get).ToList()); break;
+						case HospitalConceptCalculator.TScoreClass when ins.Count >= 1:
+							if (HospitalClinicalCalc.TScoreClass(Get(ins[0])) is string tc) { v = Get(ins[0]); code = tc; } break;
 						case HospitalConceptCalculator.Sum:
 							var items = ins.Select(Get).ToList();
 							if (items.Count > 0 && items.All(x => x != null)) v = items.Sum(x => x!.Value); break;
