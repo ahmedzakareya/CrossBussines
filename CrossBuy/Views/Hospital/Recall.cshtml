@@ -20,7 +20,7 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     bool open = r.Status == HospitalLotRecallStatus.Quarantined, canEdit = ViewBag.CanPharmacy == true && open;
     string classTone = r.RecallClass == HospitalLotRecallClass.I ? "danger" : r.RecallClass == HospitalLotRecallClass.II ? "primary" : "info";
-    string stateTone = open ? "danger" : r.Status == HospitalLotRecallStatus.Released ? "success" : "dark";
+    string stateTone = open ? "danger" : r.Status == HospitalLotRecallStatus.Released ? "primary" : "dark";
     string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
     decimal held = Model.Places.Where(p => p.Quarantine).Sum(p => p.Qty), outside = Model.Places.Where(p => !p.Quarantine && p.Qty > 0).Sum(p => p.Qty);
 }

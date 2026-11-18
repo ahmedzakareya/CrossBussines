@@ -79,7 +79,7 @@ namespace CrossBuy.BL.Hospital
 
 		/// A starter set of common outpatient ICD-10 codes, for a hospital that has none yet. The
 		/// country's own edition (ICD-10-AM, ICD-10-CM) replaces it from the country settings unit.
-		private static readonly (string Code, string Ar, string En)[] StandardCodes =
+		public static readonly (string Code, string Ar, string En)[] StandardCodes =
 		{
 			("E11.9", "داء السكري من النوع الثاني بدون مضاعفات", "Type 2 diabetes mellitus without complications"),
 			("E11.65", "داء السكري من النوع الثاني مع ارتفاع السكر", "Type 2 diabetes mellitus with hyperglycaemia"),
@@ -135,6 +135,79 @@ namespace CrossBuy.BL.Hospital
 			("N94.6", "عسر الطمث", "Dysmenorrhoea, unspecified"),
 			("Z00.00", "فحص طبي عام", "General adult medical examination"),
 			("Z23", "تطعيم", "Encounter for immunisation"),
+			// H196: the specialties' essential codes (ICD-10-CM), so their rules have something to read
+			// cardiovascular — what CHA₂DS₂-VASc reads (stroke, TIA, vascular disease) and anticoagulation
+			("I63.9", "احتشاء دماغي", "Cerebral infarction, unspecified"),
+			("G45.9", "نوبة إقفارية عابرة", "Transient cerebral ischaemic attack, unspecified"),
+			("Z86.73", "سوابق نوبة إقفارية عابرة أو احتشاء دماغي دون عجز متبقٍّ", "Personal history of TIA and cerebral infarction without residual deficits"),
+			("I21.9", "احتشاء عضلة القلب الحاد", "Acute myocardial infarction, unspecified"),
+			("I25.2", "احتشاء قديم في عضلة القلب", "Old myocardial infarction"),
+			("I70.90", "تصلب الشرايين", "Unspecified atherosclerosis"),
+			("I73.9", "مرض الأوعية الدموية الطرفية", "Peripheral vascular disease, unspecified"),
+			("I11.0", "مرض القلب الناتج عن ارتفاع الضغط مع قصور القلب", "Hypertensive heart disease with heart failure"),
+			("I42.9", "اعتلال عضلة القلب", "Cardiomyopathy, unspecified"),
+			("I26.99", "انصمام رئوي", "Other pulmonary embolism without acute cor pulmonale"),
+			("I82.409", "خثار وريدي عميق في الطرف السفلي", "Acute embolism and thrombosis of unspecified deep veins of unspecified lower extremity"),
+			("Z79.01", "استخدام طويل الأمد لمضادات التخثر", "Long term (current) use of anticoagulants"),
+			("I49.9", "اضطراب نظم القلب", "Cardiac arrhythmia, unspecified"),
+			// the kidney
+			("N18.30", "مرض الكلى المزمن، المرحلة الثالثة", "Chronic kidney disease, stage 3 unspecified"),
+			("N18.4", "مرض الكلى المزمن، المرحلة الرابعة", "Chronic kidney disease, stage 4 (severe)"),
+			("N18.5", "مرض الكلى المزمن، المرحلة الخامسة", "Chronic kidney disease, stage 5"),
+			("N18.6", "الفشل الكلوي في المرحلة النهائية", "End stage renal disease"),
+			("Z99.2", "الاعتماد على الغسيل الكلوي", "Dependence on renal dialysis"),
+			// the eye
+			("H40.9", "الزرق (المياه الزرقاء)", "Unspecified glaucoma"),
+			("H25.9", "الساد المرتبط بالعمر (المياه البيضاء)", "Unspecified age-related cataract"),
+			("E11.319", "اعتلال الشبكية السكري دون وذمة بقعية", "Type 2 diabetes with unspecified diabetic retinopathy without macular oedema"),
+			("H35.30", "التنكس البقعي", "Unspecified macular degeneration"),
+			("H10.9", "التهاب الملتحمة", "Unspecified conjunctivitis"),
+			("H52.13", "قصر النظر في العينين", "Myopia, bilateral"),
+			// bones and joints
+			("M16.9", "خشونة مفصل الورك", "Osteoarthritis of hip, unspecified"),
+			("M75.100", "تمزق الكفة المدورة للكتف", "Unspecified rotator cuff tear or rupture of unspecified shoulder, not specified as traumatic"),
+			("M81.0", "هشاشة العظام المرتبطة بالعمر", "Age-related osteoporosis without current pathological fracture"),
+			("M85.80", "نقص كثافة العظام", "Other specified disorders of bone density and structure, unspecified site"),
+			("M06.9", "التهاب المفاصل الروماتويدي", "Rheumatoid arthritis, unspecified"),
+			("M10.9", "النقرس", "Gout, unspecified"),
+			("T79.A0XA", "متلازمة الحيّز الرضحية", "Compartment syndrome, unspecified, initial encounter"),
+			// the skin
+			("L40.0", "الصدفية الشائعة", "Psoriasis vulgaris"),
+			("L40.9", "الصدفية", "Psoriasis, unspecified"),
+			("L30.9", "التهاب الجلد", "Dermatitis, unspecified"),
+			("L50.9", "الشرى (الأرتكاريا)", "Urticaria, unspecified"),
+			("D22.9", "وحمة صبغية", "Melanocytic naevi, unspecified"),
+			("C43.9", "الورم الميلانيني الخبيث", "Malignant melanoma of skin, unspecified"),
+			// the glands
+			("E04.1", "عقيدة درقية مفردة غير سامة", "Nontoxic single thyroid nodule"),
+			("E05.90", "فرط نشاط الغدة الدرقية", "Thyrotoxicosis, unspecified, without thyrotoxic crisis"),
+			("E06.3", "التهاب الغدة الدرقية المناعي (هاشيموتو)", "Autoimmune thyroiditis"),
+			("E10.9", "داء السكري من النوع الأول", "Type 1 diabetes mellitus without complications"),
+			("E28.2", "متلازمة تكيس المبايض", "Polycystic ovarian syndrome"),
+			// ear, nose and throat
+			("H91.20", "فقدان السمع المفاجئ مجهول السبب", "Sudden idiopathic hearing loss, unspecified ear"),
+			("H90.3", "فقدان سمع حسي عصبي في الأذنين", "Sensorineural hearing loss, bilateral"),
+			("H81.10", "الدوار الموضعي الانتيابي الحميد", "Benign paroxysmal vertigo, unspecified ear"),
+			("J32.9", "التهاب الجيوب الأنفية المزمن", "Chronic sinusitis, unspecified"),
+			("H61.20", "انحشار الصملاخ (شمع الأذن)", "Impacted cerumen, unspecified ear"),
+			// mental health
+			("F33.9", "اضطراب اكتئابي متكرر", "Major depressive disorder, recurrent, unspecified"),
+			("F31.9", "الاضطراب الوجداني ثنائي القطب", "Bipolar disorder, unspecified"),
+			("F20.9", "الفصام", "Schizophrenia, unspecified"),
+			("F43.10", "اضطراب ما بعد الصدمة", "Post-traumatic stress disorder, unspecified"),
+			("R45.851", "أفكار انتحارية", "Suicidal ideations"),
+			// allergy
+			("T78.2XXA", "صدمة تأقية", "Anaphylactic shock, unspecified, initial encounter"),
+			("Z88.0", "حساسية من البنسلين", "Allergy status to penicillin"),
+			// pregnancy
+			("O13.9", "ارتفاع ضغط الدم الحملي", "Gestational hypertension without significant proteinuria, unspecified trimester"),
+			("O14.90", "تسمم الحمل", "Unspecified pre-eclampsia, unspecified trimester"),
+			("O99.280", "اضطرابات الغدد الصماء المصاحبة للحمل", "Endocrine, nutritional and metabolic diseases complicating pregnancy, unspecified trimester"),
+			// oncology
+			("C50.919", "سرطان الثدي", "Malignant neoplasm of unspecified site of unspecified female breast"),
+			("C18.9", "سرطان القولون", "Malignant neoplasm of colon, unspecified"),
+			("C34.90", "سرطان الرئة", "Malignant neoplasm of unspecified part of unspecified bronchus or lung"),
+			("Z51.11", "جلسة علاج كيميائي", "Encounter for antineoplastic chemotherapy"),
 		};
 
 		public async Task<HospitalResult> SeedDefaultCodesAsync(BusinessContext ctx, CancellationToken ct = default)

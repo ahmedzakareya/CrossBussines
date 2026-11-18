@@ -19,8 +19,8 @@
     int.TryParse(Context.Request.Query["item"], out var preItem);
     string? preBatch = Context.Request.Query["batch"];
     var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Filter)[] {
-        (T["Open recalls"].Value, Model.Open.ToString(), T["batches held in quarantine"].Value, "ki-shield-cross", Model.Open > 0 ? "danger" : "success", HospitalLotRecallStatus.Quarantined),
-        (T["Class I open"].Value, Model.ClassIOpen.ToString(), T["may cause serious harm"].Value, "ki-information-2", Model.ClassIOpen > 0 ? "danger" : "success", HospitalLotRecallStatus.Quarantined),
+        (T["Open recalls"].Value, Model.Open.ToString(), T["batches held in quarantine"].Value, "ki-shield-cross", Model.Open > 0 ? "danger" : "primary", HospitalLotRecallStatus.Quarantined),
+        (T["Class I open"].Value, Model.ClassIOpen.ToString(), T["may cause serious harm"].Value, "ki-information-2", Model.ClassIOpen > 0 ? "danger" : "primary", HospitalLotRecallStatus.Quarantined),
         (T["Units in quarantine"].Value, HospitalUi.LabNum(Model.UnitsHeld, 0), T["out of reach of dispensing"].Value, "ki-lock-2", "dark", null),
         (T["Ended recalls"].Value, Model.Closed.ToString(), T["released or closed"].Value, "ki-check-circle", "primary", HospitalLotRecallStatus.Closed) };
 }

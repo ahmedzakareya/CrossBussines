@@ -13,7 +13,7 @@
     // the notice names a held cycle still needing action: a recalled cycle whose every patient follow-up is closed is done
     var failed = cycles.FirstOrDefault(c => HospitalDentalPracticeRules.Held(c.Cycle)
         && !(c.Cycle.RecalledAt != null && follow.Any(f => f.Recall.CycleId == c.Cycle.ID) && follow.Where(f => f.Recall.CycleId == c.Cycle.ID).All(f => f.Recall.ClosedAt != null)));
-    string Ind(string v) => v switch { HospitalIndicator.Pass => "success", HospitalIndicator.Fail => "danger", _ => "primary" };
+    string Ind(string v) => v switch { HospitalIndicator.Pass => "primary", HospitalIndicator.Fail => "danger", _ => "primary" };
     string Av(string? photo, string nameEn, int size) => photo != null
         ? $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
@@ -54,10 +54,10 @@
         @* H127: the figures — demo39 dashboards/logistics stat tiles *@
         <div class="row g-5 g-xl-8 mb-5">
             @{
-                Stat(T["Recall pre-booked"].Value, s.PreBookedRate == null ? "—" : s.PreBookedRate + "%", T["of the recalls due within a month, already booked"], "calendar-tick", "success");
+                Stat(T["Recall pre-booked"].Value, s.PreBookedRate == null ? "—" : s.PreBookedRate + "%", T["of the recalls due within a month, already booked"], "calendar-tick", "primary");
                 Stat(T["Due this month"].Value, s.DueThisMonth.ToString(), null, "calendar", "primary");
-                Stat(T["Overdue"].Value, s.Overdue.ToString(), T["go into the reactivation campaign"], "calendar-remove", s.Overdue > 0 ? "danger" : "success", s.Overdue > 0);
-                Stat(T["Failed sterilisation cycle"].Value, s.FailedCycles.ToString(), T["its kits are on hold"], "shield-cross", s.FailedCycles > 0 ? "danger" : "success", s.FailedCycles > 0);
+                Stat(T["Overdue"].Value, s.Overdue.ToString(), T["go into the reactivation campaign"], "calendar-remove", s.Overdue > 0 ? "danger" : "primary", s.Overdue > 0);
+                Stat(T["Failed sterilisation cycle"].Value, s.FailedCycles.ToString(), T["its kits are on hold"], "shield-cross", s.FailedCycles > 0 ? "danger" : "primary", s.FailedCycles > 0);
             }
         </div>
 
@@ -140,7 +140,7 @@
                                         <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@(r.Recall.LastVisit?.ToString("yyyy-MM-dd") ?? "—")</span>
                                             <span class="text-muted fw-semibold d-block fs-7"><span class="hp-num">@r.Recall.IntervalMonths</span>&nbsp;@T["months"]</span></td>
                                         <td class="text-nowrap"><span class="text-gray-900 fw-bold hp-num">@r.Recall.DueDate.ToString("yyyy-MM-dd")</span></td>
-                                        <td>@if (r.State == "Booked") {<span class="badge badge-light-success fs-7 fw-bold">@T["recall:Booked"]</span><div class="text-muted fs-8 hp-num mt-1">@r.NextVisit?.ToString("yyyy-MM-dd HH:mm")</div>}
+                                        <td>@if (r.State == "Booked") {<span class="badge badge-light-primary fs-7 fw-bold">@T["recall:Booked"]</span><div class="text-muted fs-8 hp-num mt-1">@r.NextVisit?.ToString("yyyy-MM-dd HH:mm")</div>}
                                             else if (r.State == "Overdue") {<span class="badge badge-light-danger fs-7 fw-bold">@T["recall:Overdue"]</span>}
                                             else {<span class="badge badge-light-secondary fs-7 fw-bold">@T["recall:NotDue"]</span>}
                                             @if (r.Recall.Attempts > 0) { <div class="text-danger fw-semibold fs-8 mt-1">@T["Contact attempts"] <span class="hp-num">@r.Recall.Attempts</span></div> }</td>
@@ -196,7 +196,7 @@
                                             <td><span class="badge badge-light-@Ind(v) fs-8 fw-bold">@T["ind:" + kind + ":" + v]</span>
                                                 @if (canConsult && v == HospitalIndicator.Pending)
                                                 {
-                                                    <div class="d-flex gap-1 mt-2"><button type="button" class="btn btn-icon btn-sm btn-light-success w-25px h-25px" title="@T["Pass"]" data-bs-toggle="tooltip" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Pass" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-check fs-5"></i></button><button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Fail"]" data-bs-toggle="tooltip" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Fail" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-cross fs-5"></i></button></div>
+                                                    <div class="d-flex gap-1 mt-2"><button type="button" class="btn btn-icon btn-sm btn-light-primary w-25px h-25px" title="@T["Pass"]" data-bs-toggle="tooltip" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Pass" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-check fs-5"></i></button><button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Fail"]" data-bs-toggle="tooltip" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Fail" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-cross fs-5"></i></button></div>
                                                 }</td>
                                         }
                                         <td class="text-nowrap"><span class="text-gray-900 fw-bold hp-num">@c.Used</span>

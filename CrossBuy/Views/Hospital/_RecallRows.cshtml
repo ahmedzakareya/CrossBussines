@@ -11,7 +11,7 @@
 @{
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string ClassTone(string c) => c == HospitalLotRecallClass.I ? "danger" : c == HospitalLotRecallClass.II ? "primary" : "info";
-    string StateTone(string s) => s == HospitalLotRecallStatus.Quarantined ? "danger" : s == HospitalLotRecallStatus.Released ? "success" : "dark";
+    string StateTone(string s) => s == HospitalLotRecallStatus.Quarantined ? "danger" : s == HospitalLotRecallStatus.Released ? "primary" : "dark";
 }
 @foreach (var r in Model)
 {
