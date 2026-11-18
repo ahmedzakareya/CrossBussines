@@ -11,7 +11,7 @@ namespace CrossBuy.Controllers
     // Communication Hub P3 — internal Teams-style chat. Renders the chat shell + JSON endpoints;
     // realtime is over ChatHub (/hubs/chat). Internal employee↔employee only.
     [SessionValidation]
-    public class ChatController : Controller
+    public partial class ChatController : Controller
     {
         private readonly IChatService _chat;
         private readonly IEmployeeService _employees;
@@ -44,12 +44,22 @@ namespace CrossBuy.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? c)
+        public async Task<IActionResult> Index(int? c, string? m = null, string? tab = null)
         {
             var me = await MeAsync();
             if (me == null) return RedirectToAction("Login", "Account");
             ViewBag.MeId = me.Value.empId;
             ViewBag.OpenConv = c;
+            // Communication opens INSIDE the module the person came from (owner, 2026-11-18): its layout and its menu
+            ViewBag.CommLayout = CommLayout(m);
+            ViewBag.Tab = tab is "calls" or "people" ? tab : "chats";
+            ViewBag.Hospital = await HospitalOnAsync();
+            ViewBag.CanManage = await MayManageCallsAsync();
+            var self = await _db.Employee.AsNoTracking().Where(e => e.ID == me.Value.empId).Select(e => new { e.FullName, e.FullNameEn, e.ProfileImage }).FirstOrDefaultAsync();
+            ViewBag.MeName = self == null ? "" : DisplayName.Of(self.FullName, self.FullNameEn ?? self.FullName);
+            ViewBag.MeAvatar = string.IsNullOrEmpty(self?.ProfileImage) ? null : self.ProfileImage;
+            // my name in the other language, so a mention of me typed in either language is shown as one
+            ViewBag.MeAlt = self == null ? null : System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? self.FullNameEn : self.FullName;
             return View();
         }
 
@@ -138,7 +148,7 @@ namespace CrossBuy.Controllers
                 var stored = Guid.NewGuid() + ext;
                 using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
                 path = "/uploads/chat/" + stored; name = Path.GetFileName(file.FileName);
-                type = ChatAttachments.IsImage(ext) ? "image" : "file";
+                type = ChatAttachments.IsImage(ext) ? "image" : ChatAttachments.IsAudio(ext) ? "audio" : "file";
             }
             var ids = (mentionedIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(s => int.TryParse(s, out var n) ? n : 0).Where(n => n > 0).ToList();

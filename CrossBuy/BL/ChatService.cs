@@ -41,7 +41,7 @@ namespace CrossBuy.BL
     public class ChatReactionDto { public string Emoji { get; set; } = ""; public int Count { get; set; } public bool Mine { get; set; } }
     public class ChatMemberRead { public int EmployeeId { get; set; } public int LastReadMessageId { get; set; } }
     public class ChatHeaderDto { public int Id { get; set; } public string Kind { get; set; } = ""; public string Title { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } public int MemberCount { get; set; } public List<int> MemberIds { get; set; } = new(); public int OtherReadMessageId { get; set; } public List<ChatMemberRead> MemberReads { get; set; } = new(); public List<ChatDirectoryDto> Members { get; set; } = new(); public bool IsOwner { get; set; } }
-    public class ChatDirectoryDto { public int Id { get; set; } public string Name { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } }
+    public class ChatDirectoryDto { public int Id { get; set; } public string Name { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } /* the name in the other language: a mention typed in Arabic still shows as a mention on an English screen */ public string? AltName { get; set; } }
 
     // ===== Attachment policy (F8-B) =====
     // A conservative allow-list for ordinary business files and images. Everything not named here is
@@ -67,7 +67,12 @@ namespace CrossBuy.BL
         { "text/html", "application/xhtml", "image/svg", "application/javascript", "text/javascript",
           "application/x-httpd", "application/xml", "text/xml" };
 
+        // Voice messages (Communication, owner 2026-11-18): recorded in the browser, passive audio only.
+        private static readonly HashSet<string> Audio = new(StringComparer.OrdinalIgnoreCase)
+        { ".webm", ".ogg", ".m4a", ".mp3", ".wav" };
+
         public static bool IsImage(string? ext) => ext != null && Images.Contains(ext);
+        public static bool IsAudio(string? ext) => ext != null && Audio.Contains(ext);
 
         // NAMED FOR WHAT IT IS. This was called IsAllowed, and CBA003 correctly flagged that: an
         // "IsAllowed" predicate inside a mutating endpoint reads as an authorization decision, and this is
@@ -77,7 +82,7 @@ namespace CrossBuy.BL
         public static bool IsAcceptedType(string? ext, string? declaredContentType)
         {
             if (string.IsNullOrWhiteSpace(ext)) return false;                     // no extension: refuse
-            if (!Images.Contains(ext) && !Documents.Contains(ext)) return false;   // not on the list: refuse
+            if (!Images.Contains(ext) && !Documents.Contains(ext) && !Audio.Contains(ext)) return false;   // not on the list: refuse
             if (!string.IsNullOrWhiteSpace(declaredContentType))
             {
                 var ct = declaredContentType.Trim().ToLowerInvariant();
@@ -85,6 +90,7 @@ namespace CrossBuy.BL
                 // An extension claiming to be an image while the browser declares something else is a
                 // mismatch, and a mismatch is refused rather than reconciled.
                 if (Images.Contains(ext) && !ct.StartsWith("image/", StringComparison.Ordinal)) return false;
+                if (Audio.Contains(ext) && !ct.StartsWith("audio/", StringComparison.Ordinal)) return false;
             }
             return true;
         }
@@ -429,7 +435,7 @@ namespace CrossBuy.BL
                 var nm = senderNames.TryGetValue(s.SenderEmployeeId, out var info) ? info.name : "-";
                 string? prev = s.DeletedAt != null ? null
                     : !string.IsNullOrWhiteSpace(s.Body) ? (s.Body!.Length > 120 ? s.Body!.Substring(0, 120) : s.Body!)
-                    : (s.AttachmentType == "image" ? "📷" : (s.AttachmentName != null ? "📎 " + s.AttachmentName : null));
+                    : (s.AttachmentType == "image" ? "📷" : s.AttachmentType == "audio" ? "🎤" : (s.AttachmentName != null ? "📎 " + s.AttachmentName : null));
                 map[s.ID] = (nm, prev);
             }
             return map;
@@ -633,7 +639,7 @@ namespace CrossBuy.BL
             if (!string.IsNullOrWhiteSpace(q)) { var t = q.Trim(); query = query.Where(e => e.FullName.Contains(t) || (e.FullNameEn != null && e.FullNameEn.Contains(t))); }
             var emps = await query.OrderBy(e => e.FullName).Take(50)
                 .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage }).ToListAsync();
-            return emps.Select(e => new ChatDirectoryDto { Id = e.ID, Name = Nm(e.FullName, e.FullNameEn), Avatar = string.IsNullOrEmpty(e.ProfileImage) ? null : e.ProfileImage, Online = ChatHub.IsOnline(e.ID) }).ToList();
+            return emps.Select(e => new ChatDirectoryDto { Id = e.ID, Name = Nm(e.FullName, e.FullNameEn), AltName = IsAr ? e.FullNameEn : e.FullName, Avatar = string.IsNullOrEmpty(e.ProfileImage) ? null : e.ProfileImage, Online = ChatHub.IsOnline(e.ID) }).ToList();
         }
 
         // bilingual actor name for member add/remove notices

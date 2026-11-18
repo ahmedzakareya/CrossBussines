@@ -90,6 +90,12 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? SfuApiSecret { get; set; }
 		/// The staff groups that may ASK to record, comma separated. Null = doctors and administration.
 		public string? RecordingGroups { get; set; }
+		/// Communication (2026-11-18, comm_call_settings.sql): write each call into the conversation between the two people.
+		public bool CallsInChat { get; set; } = true;
+		/// Hospital only: a call may be linked to a patient, shown before answering.
+		public bool PatientLink { get; set; } = true;
+		/// Hospital only: who is on call now, at the top of People.
+		public bool OnCallList { get; set; } = true;
 		public DateTime? UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
 	}

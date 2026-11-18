@@ -147,6 +147,11 @@ namespace CrossBuy.BL.Hospital
 		public string? SfuApiKey { get; set; }
 		/// Null = keep the stored secret; "" = remove it.
 		public string? SfuApiSecret { get; set; }
+		public bool CallsInChat { get; set; } = true;
+		public bool PatientLink { get; set; } = true;
+		public bool OnCallList { get; set; } = true;
+		/// Communication's page (2026-11-18): everyone in the company may call everyone, so there is no policy matrix to save.
+		public bool KeepPolicy { get; set; }
 	}
 
 	public sealed class HospitalCallService
@@ -188,8 +193,12 @@ namespace CrossBuy.BL.Hospital
 				row.VideoEnabled = i.VideoEnabled; row.ScreenShareEnabled = i.ScreenShareEnabled; row.RingSeconds = i.RingSeconds; row.MaxVideoHeight = i.MaxVideoHeight;
 				row.TurnUrls = urls.Count == 0 ? null : string.Join(",", urls);
 				if (i.TurnSecret != null) row.TurnSecret = Clip(i.TurnSecret, 200);
-				var policy = HospitalCallRules.FormatPolicy(pairs);
-				row.Policy = policy.Length == 0 ? "-" : policy;
+				if (!i.KeepPolicy)
+				{
+					var policy = HospitalCallRules.FormatPolicy(pairs);
+					row.Policy = policy.Length == 0 ? "-" : policy;
+				}
+				row.CallsInChat = i.CallsInChat; row.PatientLink = i.PatientLink; row.OnCallList = i.OnCallList;
 				row.RecordingEnabled = i.RecordingEnabled; row.RecordingMode = i.RecordingMode!; row.RecordingDays = i.RecordingDays;
 				row.RecordingGroups = HospitalCallRecordingRules.FormatGroups(i.RecordingGroups);
 				row.RecordingReviewers = HospitalCallRecordingRules.FormatIds(i.RecordingReviewers);
@@ -263,11 +272,10 @@ namespace CrossBuy.BL.Hospital
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return new HashSet<int>(); }
 		}
 
-		public async Task<bool> MayCallAsync(int companyId, HospitalCallPerson caller, HospitalCallPerson callee, CancellationToken ct = default)
-		{
-			var s = await SettingsAsync(companyId, ct);
-			return HospitalCallRules.Allowed(HospitalCallRules.ParsePolicy(s.Policy), caller.Groups, callee.Groups);
-		}
+		/// Owner, 2026-11-18: calls belong to the whole system and anyone in the company may call anyone in it, like the chat.
+		/// (The hospital's group matrix — HospitalCallRules.Allowed — no longer decides it.)
+		public Task<bool> MayCallAsync(int companyId, HospitalCallPerson caller, HospitalCallPerson callee, CancellationToken ct = default)
+			=> Task.FromResult(caller.EmployeeId != callee.EmployeeId);
 
 		// ---------------------------------------------------------------------------------------
 		// THE CALL'S LIFE (called by the hub)

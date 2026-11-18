@@ -394,7 +394,8 @@
 	function paintSide(c) {
 		var side = c.el.querySelector('[data-side]'), p = c.patient;
 		var head = '<div class="p-6 border-bottom"><div class="fw-bold fs-5 text-gray-900 mb-1">' + esc(t('context')) + '</div><div class="text-muted fs-7">' + esc(t('contextSub')) + '</div></div>';
-		var pat = p
+		// a patient belongs to the hospital module: someone without it sees no patient search and no file link
+		var pat = !U.hospital ? '' : p
 			? '<div class="p-6 border-bottom"><div class="d-flex align-items-center gap-3">' + face(p, 45) + '<div class="min-w-0"><div class="fw-bold text-gray-900 text-truncate">' + esc(p.name) + '</div><div class="text-muted fs-7">' + num(esc(p.mrn)) + '</div></div></div>' +
 				(c.reason ? '<div class="text-gray-700 fs-7 mt-3">' + esc(c.reason) + '</div>' : '') +
 				'<a class="btn btn-sm btn-light-primary w-100 mt-4" target="_blank" rel="noopener" href="' + esc(U.patient.replace('__id__', p.id)) + '"><i class="ki-outline ki-folder fs-4"></i>' + esc(t('openFile')) + '</a></div>'

@@ -1,0 +1,1013 @@
+/* =====================================================================================================================
+   Communication — chat and calls in one page for the whole system (owner, 2026-11-18; the approved prototype
+   design-output/comm-prototype). It keeps every behaviour of the old chat page (conversations, search, older messages
+   on scroll, replies, @mentions in groups, emoji, reactions, attachments with a preview, edit, delete, members, new chat,
+   new group, read ticks, typing, live updates) and adds the calls: voice/video from a conversation, calls written into
+   the conversation, the calls tab with the recording player, and the people tab with live presence.
+   Settings come from window.CB_COMM (the view). No browser confirm(): a Swal dialog.
+   ===================================================================================================================== */
+(function () {
+	'use strict';
+	var CFG = window.CB_COMM || {}, S = CFG.s || CFG.S || {},   // the view's serializer camel-cases S to s
+	 meId = CFG.meId, blank = CFG.blank || '';
+	function t(k) { return S[k] || k; }
+	var $ = function (id) { return document.getElementById(id); };
+	function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+	var LOCALE = document.documentElement.lang || 'en';
+	var isRtl = document.documentElement.dir === 'rtl';
+
+	/* ---------------- icons: Lucide, drawn whenever an <i data-lucide> appears ---------------- */
+	function ico(name, s) { return '<i data-lucide="' + name + '" class="cm-i" style="width:' + (s || 18) + 'px;height:' + (s || 18) + 'px" aria-hidden="true"></i>'; }
+	// Lucide keeps data-lucide on the <svg> it draws, so only act while an <i> is left, with the observer paused
+	// while it draws (otherwise its own changes wake it again, for ever)
+	var mo = new MutationObserver(paint);
+	function paint() {
+		if (!window.lucide || !document.querySelector('.cm-root i[data-lucide], .cm-pop i[data-lucide], .modal i[data-lucide]')) return;
+		mo.disconnect();
+		try { lucide.createIcons({ attrs: { 'stroke-width': 1.75 }, nameAttr: 'data-lucide' }); } catch (e) { }
+		mo.observe(document.body, { childList: true, subtree: true });
+	}
+	function ib(name, title, cls, attrs) { return '<button type="button" class="cm-ib ' + (cls || '') + '" title="' + esc(title) + '" aria-label="' + esc(title) + '" ' + (attrs || '') + '>' + ico(name, 18) + '</button>'; }
+
+	/* ---------------- people: a face (photo or initials), with presence ---------------- */
+	function initials(n) { var w = String(n || '').replace(/^(د\.|Dr\.?)\s*/i, '').trim().split(/\s+/).filter(Boolean); return ((w[0] || '?').charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : '')).toUpperCase(); }
+	function hasPhoto(p) { return p && p !== blank && !/blank\.svg/i.test(p); }
+	function av(name, photo, size) {
+		size = size || 44;
+		var st = 'width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * .36) + 'px';
+		return hasPhoto(photo) ? '<img class="cm-av" src="' + esc(photo) + '" alt="" style="' + st + '" />' : '<span class="cm-av" style="' + st + '">' + esc(initials(name)) + '</span>';
+	}
+	var pres = {};   // employee → on | busy | off (the calls hub; the chat's own flag until it answers)
+	function presOf(id, fallbackOnline) { return pres[id] || (fallbackOnline ? 'on' : 'off'); }
+	function face(name, photo, size, state) { return '<div class="cm-face">' + av(name, photo, size) + (state ? '<span class="pres ' + state + '"></span>' : '') + '</div>'; }
+	function grpFace(size) { var s = size || 44; return '<div class="cm-grp" style="width:' + s + 'px;height:' + s + 'px">' + ico('users-round', Math.round(s * .42)) + '</div>'; }
+	function presText(state) {
+		return state === 'on' ? '<span class="cm-st on">' + t('Available now') + '</span>' : state === 'busy' ? '<span class="cm-st busy">' + t('In a call') + '</span>' : '<span class="cm-st">' + t('Offline') + '</span>';
+	}
+
+	/* ---------------- time ---------------- */
+	function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+	function hm(d) { try { return d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+	function when(iso) {
+		var d = new Date(iso), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+		if (sameDay(d, now)) return hm(d);
+		if (sameDay(d, y)) return t('Yesterday');
+		// built by hand: the locale's own short date carries a right-to-left mark that reorders inside an isolated number
+		return (d.getDate() < 10 ? '0' : '') + d.getDate() + '/' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+	}
+	function dayLabel(d) {
+		var now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+		if (sameDay(d, now)) return t('Today');
+		if (sameDay(d, y)) return t('Yesterday');
+		try { return d.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return d.toDateString(); }
+	}
+	function dur(sec) { sec = sec || 0; var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + (m < 10 ? '0' : '') : (m < 10 ? '0' : '')) + m + ':' + (s < 10 ? '0' : '') + s; }
+	function num(s) { return '<span class="cm-num">' + esc(s) + '</span>'; }
+
+	/* ---------------- server ---------------- */
+	var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+	function token() { return tokenEl ? tokenEl.value : ''; }
+	function getJson(url) { return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+	function post(url, data) {
+		var fd; if (data instanceof FormData) fd = data; else { fd = new FormData(); for (var k in data) if (data[k] != null) fd.append(k, data[k]); }
+		return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': token() }, body: fd }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+	}
+	function toast(kind, msg) { if (window.toastr) toastr[kind](msg); }
+	function ask(title, yes) {
+		if (!window.Swal) return Promise.resolve(false);
+		return Swal.fire({ text: title, icon: 'warning', showCancelButton: true, buttonsStyling: false, confirmButtonText: yes, cancelButtonText: t('Cancel'),
+			customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } }).then(function (r) { return !!r.isConfirmed; });
+	}
+
+	/* ================================================================================================================
+	   STATE
+	   ================================================================================================================ */
+	var tab = CFG.tab || 'chats', chip = 'all';
+	var convs = [], dir = [], members = [], callPeople = [];
+	var cur = null, curHeader = null, conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null, noOlder = false;
+	var calls = [], callsShown = {}, msgCache = {};
+	var callPage = 1, callSel = null;
+
+	var shell = $('cmShell'), items = $('cmItems'), chips = $('cmChips'), search = $('cmSearch');
+	var conv = $('cmConv'), head = $('cmHead'), thread = $('cmThread'), blankBox = $('cmBlank'), info = $('cmInfo');
+	var input = $('cmInput'), sendBtn = $('cmSend'), micBtn = $('cmMic'), typingEl = $('cmTyping'), compose = $('cmComposeWrap');
+
+	/* ================================================================================================================
+	   THE LIST: three tabs
+	   ================================================================================================================ */
+	function setTab(next) {
+		tab = next; chip = 'all';
+		document.querySelectorAll('#cmTabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === tab); });
+		try { history.replaceState(null, '', location.pathname + '?tab=' + tab + (cur && tab === 'chats' ? '&c=' + cur : '')); } catch (e) { }
+		renderChips(); renderList();
+		if (tab === 'calls') { callPage = 1; loadCalls(); }
+		if (tab === 'people') loadPeople();
+		if (tab === 'chats' && !cur) showBlank();
+	}
+	document.querySelectorAll('#cmTabs button').forEach(function (b) { b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); }); });
+
+	function renderChips() {
+		var list = tab === 'chats' ? [['all', t('All')], ['unread', t('Unread')], ['groups', t('Groups')]]
+			: tab === 'calls' ? [['all', t('All')], ['missed', t('Missed')], ['recorded', t('Recorded')]] : [];
+		chips.innerHTML = list.map(function (c) { return '<button type="button" data-chip="' + c[0] + '" class="' + (chip === c[0] ? 'on' : '') + '">' + esc(c[1]) + '</button>'; }).join('');
+		chips.classList.toggle('d-none', !list.length);
+		chips.querySelectorAll('button').forEach(function (b) {
+			b.addEventListener('click', function () { chip = b.getAttribute('data-chip'); renderChips(); if (tab === 'calls') { callPage = 1; loadCalls(); } else renderList(); });
+		});
+	}
+	search.addEventListener('input', function () {
+		if (tab === 'calls') { clearTimeout(search._t); search._t = setTimeout(function () { callPage = 1; loadCalls(); }, 300); }
+		else renderList();
+	});
+	function q() { return (search.value || '').trim().toLowerCase(); }
+	function renderList() { if (tab === 'chats') renderConvs(); else if (tab === 'people') renderPeople(); else renderCalls(); }
+
+	/* ---------------- chats ---------------- */
+	function previewHtml(c) {
+		var p = c.preview || '';
+		if (/^🎤/.test(p)) return ico('mic', 14) + '<span class="tx">' + esc(t('Voice message')) + '</span>';
+		if (/^📷/.test(p)) return ico('image', 14) + '<span class="tx">' + esc(t('Picture')) + '</span>';
+		if (/^📎/.test(p)) return ico('paperclip', 14) + '<span class="tx">' + esc(p.replace(/^📎\s*/, '')) + '</span>';
+		return '<span class="tx" dir="auto">' + esc(p) + '</span>';
+	}
+	function convItem(c) {
+		var direct = c.kind === 'Direct', st = direct ? presOf(c.otherEmployeeId, c.online) : null;
+		return '<div class="cm-item' + (cur === c.id ? ' on' : '') + '" role="button" tabindex="0" data-conv="' + c.id + '">' +
+			(direct ? face(c.title, c.avatar, 46, st) : grpFace(46)) +
+			'<div class="cm-item-body">' +
+				'<div class="cm-line1"><span class="nm">' + esc(c.title) + '</span><span class="when' + (c.unread ? ' hot' : '') + '">' + num(c.lastAt ? when(c.lastAt) : '') + '</span></div>' +
+				'<div class="cm-line2"><span class="last">' + previewHtml(c) + '</span>' + (c.unread ? '<span class="unread">' + num(c.unread) + '</span>' : '') + '</div>' +
+			'</div>' +
+			(direct ? '<span class="cm-quick">' + ib('phone', t('Voice call'), 'sm', 'data-call="0" data-emp="' + c.otherEmployeeId + '"') + ib('video', t('Video call'), 'sm', 'data-call="1" data-emp="' + c.otherEmployeeId + '"') + '</span>' : '') +
+			'</div>';
+	}
+	function renderConvs() {
+		var s = q();
+		var list = convs.filter(function (c) {
+			if (s && (c.title || '').toLowerCase().indexOf(s) === -1) return false;
+			if (chip === 'unread') return c.unread > 0;
+			if (chip === 'groups') return c.kind === 'Group';
+			return true;
+		});
+		var html = list.map(convItem).join('');
+		// people who match the search but have no conversation yet: start one from here
+		if (s) {
+			var have = {}; convs.forEach(function (c) { if (c.otherEmployeeId) have[c.otherEmployeeId] = 1; });
+			var more = dir.filter(function (d) { return !have[d.id] && d.name.toLowerCase().indexOf(s) !== -1; }).slice(0, 8);
+			if (more.length) html += '<div class="cm-sec">' + esc(t('People')) + '</div>' + more.map(function (d) {
+				return '<div class="cm-item" role="button" tabindex="0" data-start="' + d.id + '">' + face(d.name, d.avatar, 42, presOf(d.id, d.online)) +
+					'<div class="cm-item-body"><div class="cm-line1"><span class="nm">' + esc(d.name) + '</span></div><div class="cm-line2"><span class="last"><span class="tx">' + esc(t('New chat')) + '</span></span></div></div></div>';
+			}).join('');
+		}
+		items.innerHTML = html || '<div class="cm-empty">' + esc(s ? t('No results') : t('No conversations yet')) + '</div>';
+	}
+	items.addEventListener('click', function (e) {
+		var callBtn = e.target.closest('[data-call]');
+		if (callBtn) { e.stopPropagation(); startCall(+callBtn.getAttribute('data-emp'), callBtn.getAttribute('data-call') === '1'); return; }
+		var chatBtn = e.target.closest('[data-chatwith]');
+		if (chatBtn) { e.stopPropagation(); chatWith(+chatBtn.getAttribute('data-chatwith')); return; }
+		var it = e.target.closest('.cm-item'); if (!it) return;
+		if (it.hasAttribute('data-conv')) { var c = convs.find(function (x) { return x.id === +it.getAttribute('data-conv'); }); if (c) openConversation(c.id, c); }
+		else if (it.hasAttribute('data-start')) chatWith(+it.getAttribute('data-start'));
+		else if (it.hasAttribute('data-callrow')) selectCall(+it.getAttribute('data-callrow'));
+		else if (it.hasAttribute('data-person')) chatWith(+it.getAttribute('data-person'));
+	});
+	items.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.classList.contains('cm-item')) e.target.click(); });
+
+	function loadConvs(then) {
+		return getJson('/Chat/Conversations').then(function (list) {
+			convs = list || [];
+			var unread = convs.reduce(function (n, c) { return n + (c.unread || 0); }, 0);
+			$('cmCountChats').textContent = unread ? unread : '';
+			askPresence(convs.filter(function (c) { return c.otherEmployeeId; }).map(function (c) { return c.otherEmployeeId; }));
+			if (tab === 'chats') renderConvs();
+			if (then) then(convs);
+		});
+	}
+	function loadDir(cb) { return getJson('/Chat/Directory').then(function (list) { dir = list || []; repaintBodies(); if (cb) cb(dir); }); }
+	function chatWith(empId) {
+		post('/Chat/StartDirect', { otherId: empId }).then(function (res) {
+			if (!res) return;
+			if (tab !== 'chats') setTab('chats');
+			loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); var d = dir.find(function (x) { return x.id === empId; }); openConversation(res.id, m || { kind: 'Direct', title: d ? d.name : '', avatar: d && d.avatar, otherEmployeeId: empId }); });
+		});
+	}
+
+	/* ---------------- people ---------------- */
+	function loadPeople() {
+		getJson('/Chat/CallPeople').then(function (r) { callPeople = r && r.people ? r.people : []; onCall = r && r.onCall ? r.onCall : []; callPeople.forEach(function (p) { pres[p.id] = p.state; }); if (tab === 'people') renderPeople(); });
+	}
+	function renderPeople() {
+		var s = q(), rank = { on: 0, busy: 1, off: 2 };
+		var list = callPeople.filter(function (p) { return !s || (p.name || '').toLowerCase().indexOf(s) !== -1 || (p.department || '').toLowerCase().indexOf(s) !== -1 || (p.title || '').toLowerCase().indexOf(s) !== -1; })
+			.sort(function (a, b) { return (rank[presOf(a.id)] - rank[presOf(b.id)]) || String(a.name).localeCompare(String(b.name)); });
+		var shown = list.slice(0, peopleLimit);
+		// the hospital's on-call list first (hospital module, switched on in the settings), then everyone, available first
+		var oc = onCall.length ? list.filter(function (p) { return onCall.indexOf(p.id) !== -1; }) : [];
+		items.innerHTML = list.length ? (oc.length ? '<div class="cm-sec">' + esc(t('On call now')) + '</div>' + oc.map(personItem).join('') : '') + '<div class="cm-sec">' + esc(t('Available first')) + '</div>' + shown.map(personItem).join('') + (list.length > shown.length ? '<div class="cm-pager"><button type="button" class="cm-pill light" id="cmMorePeople">' + esc(t('Show more')) + ' ' + num('(' + (list.length - shown.length) + ')') + '</button></div>' : '')
+			: '<div class="cm-empty">' + esc(t('No results')) + '</div>';
+		var more = $('cmMorePeople'); if (more) more.addEventListener('click', function () { peopleLimit += 40; renderPeople(); });
+	}
+	var onCall = [];
+	function personItem(p) {
+			var st = presOf(p.id), off = st === 'off' ? 'disabled' : '';
+			var sub = [p.title, p.department].filter(Boolean).join(' · ');
+			return '<div class="cm-item" data-person="' + p.id + '">' + face(p.name, p.photo, 40, st) +
+				'<div class="cm-item-body"><div class="cm-line1"><span class="nm">' + esc(p.name) + '</span></div><div class="cm-line2"><span class="last"><span class="tx">' + esc(sub || presLabel(st)) + '</span></span></div></div>' +
+				'<span class="d-flex gap-1">' + ib('message-circle', t('Chat'), 'sm', 'data-chatwith="' + p.id + '"') + ib('phone', t('Voice call'), 'sm', off + ' data-call="0" data-emp="' + p.id + '"') + ib('video', t('Video call'), 'sm fill', off + ' data-call="1" data-emp="' + p.id + '"') + '</span></div>';
+	}
+	var peopleLimit = 40;
+	function presLabel(st) { return st === 'on' ? t('Available now') : st === 'busy' ? t('In a call') : t('Offline'); }
+
+	/* ---------------- calls ---------------- */
+	var callLog = null;
+	function loadCalls() {
+		var url = '/Chat/CallLog?page=' + callPage + '&filter=' + (chip === 'all' ? '' : chip) + '&q=' + encodeURIComponent(search.value || '');
+		getJson(url).then(function (r) {
+			callLog = r || { rows: [], total: 0, page: 1, pageSize: 10 };
+			if (r && r.stats) $('cmCountCalls').textContent = r.stats.missed ? r.stats.missed : '';
+			(callLog.rows || []).forEach(function (k) { if (k.other) pres[k.other.id] = k.other.state; });
+			if (tab === 'calls') { renderCalls(); if (!callSel && callLog.rows && callLog.rows.length && !isPhone()) selectCall(callLog.rows[0].id); else if (callSel) paintCallDetail(); }
+		});
+	}
+	function callTitle(k) {
+		var missed = k.status === 'Missed' && !k.outgoing;
+		return missed ? t('Missed') : k.status === 'Declined' ? (k.outgoing ? t('Declined') : t('You declined')) : k.status === 'Cancelled' ? (k.outgoing ? t('Cancelled') : t('Missed')) : k.status === 'Missed' ? t('Not answered') : k.outgoing ? t('Outgoing') : t('Incoming');
+	}
+	function renderCalls() {
+		if (!callLog) { items.innerHTML = '<div class="cm-empty">…</div>'; return; }
+		if (callLog.installed === false || !callLog.rows || !callLog.rows.length) { items.innerHTML = '<div class="cm-empty">' + esc(t('No calls yet')) + '</div>'; return; }
+		var pages = Math.max(1, Math.ceil((callLog.total || 0) / (callLog.pageSize || 10)));
+		items.innerHTML = callLog.rows.map(function (k) {
+			var o = k.other, missed = (k.status === 'Missed' || k.status === 'Cancelled') && !k.outgoing;
+			var dirIco = missed ? 'phone-missed' : k.outgoing ? 'phone-outgoing' : 'phone-incoming';
+			var name = k.group ? t('Group call') : o ? o.name : '—';
+			return '<div class="cm-item' + (callSel === k.id ? ' on' : '') + '" role="button" tabindex="0" data-callrow="' + k.id + '">' + (k.group || !o ? grpFace(42) : face(o.name, o.photo, 42, presOf(o.id, false))) +
+				'<div class="cm-item-body"><div class="cm-line1"><span class="nm' + (missed ? ' cm-red' : '') + '">' + esc(name) + '</span><span class="when">' + num(when(k.at)) + '</span></div>' +
+				'<div class="cm-line2"><span class="last' + (missed ? ' missed' : '') + '">' + ico(dirIco, 14) + '<span class="tx">' + esc(callTitle(k)) + ' · ' + esc(k.video ? t('Video') : t('Voice')) + (k.seconds ? ' · ' + num(dur(k.seconds)) : '') + '</span></span>' +
+				(k.recordingId ? '<span class="cm-rec">' + ico('circle-dot', 11) + esc(t('Recorded')) + '</span>' : '') + '</div></div>' +
+				(o && !k.group ? '<span class="cm-quick show">' + ib(k.video ? 'video' : 'phone', t('Call back'), 'sm' + (missed ? ' fill' : ''), 'data-call="' + (k.video ? 1 : 0) + '" data-emp="' + o.id + '"') + '</span>' : '') + '</div>';
+		}).join('') + (pages > 1 ? '<div class="cm-pager">' + ib(isRtl ? 'chevron-right' : 'chevron-left', t('Previous'), 'xs', callPage <= 1 ? 'disabled id="cmPrev"' : 'id="cmPrev"') +
+			'<span>' + esc(t('Page')) + ' ' + num(callPage + ' / ' + pages) + '</span>' + ib(isRtl ? 'chevron-left' : 'chevron-right', t('Next'), 'xs', callPage >= pages ? 'disabled id="cmNext"' : 'id="cmNext"') + '</div>' : '');
+		var pv = $('cmPrev'), nx = $('cmNext');
+		if (pv) pv.addEventListener('click', function () { callPage--; loadCalls(); });
+		if (nx) nx.addEventListener('click', function () { callPage++; loadCalls(); });
+	}
+	function selectCall(id) {
+		callSel = id; cur = null;
+		items.querySelectorAll('[data-callrow]').forEach(function (el) { el.classList.toggle('on', +el.getAttribute('data-callrow') === id); });
+		paintCallDetail();
+		if (isPhone()) setPane('thread');
+	}
+	function paintCallDetail() {
+		var k = callLog && (callLog.rows || []).find(function (x) { return x.id === callSel; });
+		if (!k) return;
+		shell.classList.add('no-info');
+		blankBox.classList.add('d-none'); thread.classList.remove('d-none'); head.classList.remove('d-none'); compose.classList.add('d-none'); typingEl.innerHTML = '';
+		var o = k.other, st = o ? presOf(o.id, false) : 'off', off = st === 'off' ? 'disabled' : '';
+		head.innerHTML = backBtn() + (o && !k.group ? face(o.name, o.photo, 42, st) : grpFace(42)) +
+			'<div style="min-width:0"><div class="nm">' + esc(o && !k.group ? o.name : t('Group call')) + '</div><div class="st">' + (o && !k.group ? presText(st) + (o.title ? '<span class="text-muted"> · ' + esc(o.title) + '</span>' : '') : '') + '</div></div>' +
+			(o && !k.group ? '<div class="acts">' + ib('message-circle', t('Open the chat'), '', 'data-chatwith="' + o.id + '"') + ib('phone', t('Voice call'), '', off + ' data-call="0" data-emp="' + o.id + '"') + ib('video', t('Video call'), 'fill', off + ' data-call="1" data-emp="' + o.id + '"') + '</div>' : '');
+		var s = callLog.stats;
+		var html = s ? '<div class="cm-stats"><div><b>' + num(s.today) + '</b><span>' + esc(t('Calls today')) + '</span></div><div><b>' + num(dur(s.average)) + '</b><span>' + esc(t('Average length')) + '</span></div><div class="' + (s.missed ? 'red' : '') + '"><b>' + num(s.missed) + '</b><span>' + esc(t('Missed, not returned')) + '</span></div></div>' : '';
+		html += callCard(k, o && !k.group ? o.name : '');
+		if (k.patient) html += '<div class="cm-call"><span class="ic">' + ico('user-round', 16) + '</span><div class="cm-call-tx"><div class="t">' + esc(k.patient.name) + '</div><div class="s">' + esc(t('Patient')) + (k.patient.mrn ? ' · ' + num(k.patient.mrn) : '') + '</div></div></div>';
+		if (k.note) html += '<div class="cm-call"><span class="ic">' + ico('notebook-pen', 16) + '</span><div class="cm-call-tx"><div class="t">' + esc(t('Call note')) + '</div><div class="s" style="white-space:pre-wrap">' + esc(k.note) + '</div></div></div>';
+		html += k.recordingId ? '<div id="cmPlayer" class="cm-player"><div class="text-muted fs-7">…</div></div>' : '';
+		thread.innerHTML = html;
+		if (k.recordingId) loadPlayer(k.recordingId);
+	}
+	function loadPlayer(recId) {
+		getJson('/Chat/CallRecording/' + recId).then(function (r) {
+			var box = $('cmPlayer'); if (!box) return;
+			if (!r || !r.recording) { box.innerHTML = '<div class="text-muted fs-7">' + esc(t('This recording is not open to you')) + '</div>'; return; }
+			var d = r.recording, video = d.kind !== 'audio';
+			var src = '/Chat/CallRecordingMedia/' + recId;
+			function who(p) { return p ? esc(p.name) : '—'; }
+			var facts = [
+				[t('Call'), (d.outgoing ? t('Outgoing to') + ' ' + who(d.callee) : t('Incoming from') + ' ' + who(d.caller)) + ' · ' + num(hm(new Date(d.startedAt.endsWith && !/Z$/.test(d.startedAt) ? d.startedAt + 'Z' : d.startedAt)))],
+				[t('Recording'), esc(video ? t('Voice and video') : t('Voice')) + ' · ' + num(dur(d.seconds) + (d.size ? ' · ' + (d.size / 1048576).toFixed(1) + ' MB' : ''))],
+				[t('Consent'), t('Asked by') + ' ' + who(d.requestedBy) + (d.agreedBy ? ' · ' + t('agreed by') + ' ' + who(d.agreedBy) : '')],
+				[t('File'), esc(t('File Manager')) + ' / ' + num(d.folder)],
+			];
+			if (d.deleteAfter) facts.push([t('Deleted automatically on'), num(String(d.deleteAfter).substring(0, 10))]);
+			box.innerHTML = '<div class="hd">' + ico('circle-dot', 16) + '<b>' + esc(t('Call recording')) + '</b></div>' +
+				(video ? '<video controls preload="metadata" playsinline></video>' : '<audio controls preload="metadata"></audio>') +
+				'<div class="facts">' + facts.map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + f[1] + '</b></div>'; }).join('') + '</div>';
+			var media = box.querySelector('video,audio'), logged = false;
+			media.src = src;
+			media.addEventListener('play', function () { if (!logged) { logged = true; fetch(src + '?log=1', { credentials: 'same-origin', headers: { Range: 'bytes=0-0' } }).catch(function () { }); } });
+		});
+	}
+	function callCard(k, otherName) {
+		var missed = (k.status === 'Missed' || k.status === 'Cancelled') && !k.outgoing;
+		var icn = missed ? 'phone-missed' : k.video ? 'video' : k.outgoing ? 'phone-outgoing' : 'phone-incoming';
+		var title = missed ? (k.video ? t('Missed video call') : t('Missed voice call')) + (otherName ? ' · ' + otherName : '')
+			: k.status === 'Declined' ? (k.outgoing ? t('Declined') : t('You declined')) + ' · ' + (k.video ? t('Video') : t('Voice'))
+			: k.status === 'Missed' || k.status === 'Cancelled' ? t('Not answered') + ' · ' + (k.video ? t('Video') : t('Voice'))
+			: (k.outgoing ? (k.video ? t('Outgoing video call') : t('Outgoing voice call')) : (k.video ? t('Incoming video call') : t('Incoming voice call')));
+		var sub = num(hm(new Date(k.at))) + (k.seconds ? ' · ' + num(dur(k.seconds)) : '') + (k.reply ? ' · «' + esc(k.reply) + '»' : '');
+		var go = '';
+		if (k.recordingId) go += '<button type="button" class="cm-rec" data-rec="' + k.id + '">' + ico('circle-dot', 12) + esc(t('Recording')) + ' ' + ico('play', 11) + '</button>';
+		if (missed && k.other !== null) go += '<button type="button" class="cm-pill" data-callback="' + (k.video ? 1 : 0) + '">' + ico('phone', 14) + esc(t('Call back')) + '</button>';
+		return '<div class="cm-call' + (missed ? ' missed' : '') + '" data-at="' + new Date(k.at).getTime() + '" data-callid="' + k.id + '"><span class="ic">' + ico(icn, 16) + '</span><div class="cm-call-tx"><div class="t">' + esc(title) + '</div><div class="s">' + sub + '</div></div><div class="go">' + go + '</div></div>';
+	}
+
+	/* ================================================================================================================
+	   A CONVERSATION
+	   ================================================================================================================ */
+	function backBtn() { return '<button type="button" class="cm-ib ghost sm d-lg-none" data-back="1" title="' + esc(t('Back')) + '">' + ico(isRtl ? 'arrow-right' : 'arrow-left', 18) + '</button>'; }
+	function showBlank() {
+		blankBox.classList.remove('d-none'); head.classList.add('d-none'); thread.classList.add('d-none'); compose.classList.add('d-none'); info.innerHTML = ''; typingEl.innerHTML = '';
+		shell.classList.add('no-info');
+	}
+	function paintHead() {
+		if (!curHeader) return;
+		var direct = curHeader.kind === 'Direct';
+		var acts;
+		if (direct) {
+			var st = presOf(curHeader.other, curHeader.online), off = st === 'off' ? 'disabled' : '';
+			head.innerHTML = backBtn() + face(curHeader.title, curHeader.avatar, 42, st) +
+				'<div style="min-width:0"><div class="nm">' + esc(curHeader.title) + '</div><div class="st">' + presText(st) + '</div></div>';
+			acts = ib('phone', t('Voice call'), '', off + ' data-hcall="0"') + ib('video', t('Video call'), 'fill', off + ' data-hcall="1"');
+		} else {
+			var avail = members.filter(function (m) { return presOf(m.id, m.online) === 'on'; }).length, count = curHeader.memberCount || (members.length + 1);
+			head.innerHTML = backBtn() + grpFace(42) +
+				'<div style="min-width:0"><div class="nm">' + esc(curHeader.title) + '</div><div class="st">' + (avail ? '<span class="cm-st on">' + num(avail) + ' ' + esc(t('available')) + '</span><span class="text-muted"> · </span>' : '') + '<span class="text-muted">' + num(count) + ' ' + esc(t('members')) + '</span></div></div>';
+			acts = ib('phone', t('Group voice call'), '', (members.length ? '' : 'disabled') + ' data-gcall="0"') + ib('video', t('Group video call'), 'fill', (members.length ? '' : 'disabled') + ' data-gcall="1"');
+		}
+		head.innerHTML += '<div class="acts">' + acts + '<span class="cm-sep"></span>' + ib('search', t('Search the chat'), 'ghost', 'data-find="1"') + ib('panel-right', t('Details'), 'ghost', 'data-info="1"') + '</div>';
+	}
+	head.addEventListener('click', function (e) {
+		var b = e.target.closest('button'); if (!b || b.disabled) return;
+		if (b.hasAttribute('data-back')) { setPane('list'); return; }
+		if (b.hasAttribute('data-hcall')) { startCall(curHeader.other, b.getAttribute('data-hcall') === '1'); return; }
+		if (b.hasAttribute('data-gcall')) { startGroup(b.getAttribute('data-gcall') === '1'); return; }
+		if (b.hasAttribute('data-call')) { startCall(+b.getAttribute('data-emp'), b.getAttribute('data-call') === '1'); return; }
+		if (b.hasAttribute('data-chatwith')) { chatWith(+b.getAttribute('data-chatwith')); return; }
+		if (b.hasAttribute('data-find')) { toggleFind(); return; }
+		if (b.hasAttribute('data-info')) { if (window.matchMedia('(max-width: 1399.98px)').matches) shell.classList.toggle('info-open'); else shell.classList.toggle('no-info'); return; }
+	});
+
+	/* the details pane */
+	function paintInfo() {
+		if (!curHeader) { info.innerHTML = ''; return; }
+		var html;
+		if (curHeader.kind === 'Direct') {
+			var st = presOf(curHeader.other, curHeader.online), off = st === 'off' ? 'disabled' : '';
+			var dp = callPeople.find(function (p) { return p.id === curHeader.other; });
+			var sub = dp ? [dp.title, dp.department].filter(Boolean).join(' · ') : '';
+			html = '<div class="sect text-center"><div class="d-flex justify-content-center mb-3">' + face(curHeader.title, curHeader.avatar, 76, st) + '</div>' +
+				'<div class="fs-5 fw-bold text-gray-900">' + esc(curHeader.title) + '</div>' + (sub ? '<div class="text-muted fs-7">' + esc(sub) + '</div>' : '') +
+				'<div class="fs-7 mt-1">' + presText(st) + '</div>' +
+				'<div class="cm-actions"><button type="button" data-icall="0" ' + off + '><span>' + ico('phone', 18) + '</span>' + esc(t('Voice')) + '</button><button type="button" data-icall="1" ' + off + '><span>' + ico('video', 18) + '</span>' + esc(t('Video')) + '</button><button type="button" data-find="1"><span>' + ico('search', 18) + '</span>' + esc(t('Search')) + '</button></div></div>';
+			var mine = calls.slice(0, 4);
+			html += '<div class="sect"><h4>' + ico('phone', 15) + esc(t('Calls between you')) + '</h4>' + (mine.length ? mine.map(function (k) {
+				var missed = (k.status === 'Missed' || k.status === 'Cancelled') && !k.outgoing;
+				return '<div class="cm-row"><span class="cm-chip' + (missed ? ' red' : '') + '">' + ico(missed ? 'phone-missed' : k.video ? 'video' : k.outgoing ? 'phone-outgoing' : 'phone-incoming', 14) + '</span><div style="min-width:0"><div class="t' + (missed ? ' cm-red' : '') + '">' + esc(callTitle(k)) + ' · ' + esc(k.video ? t('Video') : t('Voice')) + (k.seconds ? ' · ' + num(dur(k.seconds)) : '') + '</div><div class="s">' + num(when(k.at)) + '</div></div>' +
+					(k.recordingId ? '<button type="button" class="cm-rec ms-auto" data-rec="' + k.id + '">' + ico('circle-dot', 11) + esc(t('Recorded')) + '</button>' : '') + '</div>';
+			}).join('') : '<div class="text-muted fs-7">' + esc(t('No calls yet')) + '</div>') + '</div>';
+		} else {
+			var owner = curHeader.isOwner, count = curHeader.memberCount || (members.length + 1);
+			html = '<div class="sect"><h4>' + ico('users-round', 15) + esc(t('Members')) + ' · ' + num(count) + '</h4>' +
+				'<div class="cm-row">' + av(CFG.meName, CFG.meAvatar, 36) + '<div style="min-width:0"><div class="t">' + esc(t('You')) + '</div><div class="s">' + esc(owner ? t('Owner') : t('Member')) + '</div></div></div>' +
+				members.map(function (m) {
+					var st = presOf(m.id, m.online);
+					return '<div class="cm-row">' + face(m.name, m.avatar, 36, st) + '<div style="min-width:0"><div class="t">' + esc(m.name) + '</div><div class="s">' + presText(st) + '</div></div>' +
+						'<span class="ms-auto">' + ib('phone', t('Voice call'), 'xs', (st === 'off' ? 'disabled ' : '') + 'data-call="0" data-emp="' + m.id + '"') + '</span></div>';
+				}).join('') +
+				'<button type="button" class="cm-pill light w-100 mt-3 justify-content-center" data-members="1">' + ico('user-plus', 15) + esc(t('Add a member')) + '</button></div>';
+		}
+		var files = [].slice.call(thread.querySelectorAll('.cm-msg[data-file]')).reverse().slice(0, 5);
+		html += '<div class="sect"><h4>' + ico('folder', 15) + esc(t('Files & media')) + '</h4>' + (files.length ? files.map(function (el) {
+			var name = el.getAttribute('data-file'), kind = el.getAttribute('data-kind');
+			return '<a class="cm-row text-decoration-none" href="' + esc(el.getAttribute('data-href')) + '" target="_blank" rel="noopener"><span class="cm-fic ' + (/\.pdf$/i.test(name) ? 'pdf' : '') + '">' + ico(kind === 'image' ? 'image' : kind === 'audio' ? 'mic' : fileIcon(name), 16) + '</span><div style="min-width:0"><div class="t">' + esc(name) + '</div><div class="s">' + num(el.getAttribute('data-when')) + '</div></div></a>';
+		}).join('') : '<div class="text-muted fs-7">' + esc(t('No files yet')) + '</div>') + '</div>';
+		info.innerHTML = html;
+	}
+	info.addEventListener('click', function (e) {
+		var b = e.target.closest('button'); if (!b || b.disabled) return;
+		if (b.hasAttribute('data-icall')) startCall(curHeader.other, b.getAttribute('data-icall') === '1');
+		else if (b.hasAttribute('data-call')) startCall(+b.getAttribute('data-emp'), b.getAttribute('data-call') === '1');
+		else if (b.hasAttribute('data-find')) toggleFind();
+		else if (b.hasAttribute('data-members')) { renderMembers(); membersModal.show(); }
+		else if (b.hasAttribute('data-rec')) openRecording(+b.getAttribute('data-rec'));
+	});
+	function fileIcon(n) { return /\.(xlsx?|csv|ods)$/i.test(n) ? 'file-spreadsheet' : /\.(pdf|docx?|txt|rtf|odt)$/i.test(n) ? 'file-text' : /\.zip$/i.test(n) ? 'file-archive' : 'file'; }
+
+	function openConversation(id, meta) {
+		if (conn && cur) { try { conn.invoke('LeaveConversation', cur); } catch (e) { } }
+		callSel = null;
+		cur = id; replyTo = null; hideReply(); oldestId = null; noOlder = false; members = []; calls = []; callsShown = {}; closeFind();
+		curHeader = { kind: meta.kind, title: meta.title, avatar: meta.avatar, online: !!meta.online, other: meta.otherEmployeeId || meta.other || null };
+		if (tab !== 'chats') { tab = 'chats'; document.querySelectorAll('#cmTabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === 'chats'); }); renderChips(); }
+		try { history.replaceState(null, '', location.pathname + '?tab=chats&c=' + id); } catch (e) { }
+		shell.classList.remove('no-info');
+		blankBox.classList.add('d-none'); head.classList.remove('d-none'); thread.classList.remove('d-none'); compose.classList.remove('d-none'); setComposerEnabled(true);
+		input.placeholder = meta.kind === 'Group' ? t('Message — @ to mention') : t('Write a message');
+		paintHead(); renderConvs();
+		if (isPhone()) setPane('thread');
+		seen = {}; otherReadUpTo = 0; memberReads = {}; thread.innerHTML = ''; typingEl.innerHTML = '';
+		var opened = id;
+		var msgsP = getJson('/Chat/Messages?c=' + id).then(function (msgs) {
+			if (cur !== opened) return;
+			msgs = msgs || [];
+			msgs.forEach(function (m) { appendMsg(m, false); });
+			if (msgs.length) oldestId = msgs[0].id;
+			if (msgs.length < 30) noOlder = true;
+		});
+		var callsP = curHeader.other ? getJson('/Chat/CallsWith?other=' + curHeader.other).then(function (r) { if (cur === opened) calls = r || []; }) : Promise.resolve();
+		Promise.all([msgsP, callsP]).then(function () { if (cur !== opened) return; placeCalls(); regroup(); paintInfo(); scrollBottom(); setTimeout(scrollBottom, 150); });
+		getJson('/Chat/Header?c=' + id).then(function (h) {
+			if (!h || cur !== opened) return;
+			otherReadUpTo = h.otherReadMessageId || 0;
+			curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner;
+			members = h.members || [];
+			memberReads = {}; (h.memberReads || []).forEach(function (r) { memberReads[r.employeeId] = r.lastReadMessageId; });
+			askPresence(members.map(function (m) { return m.id; }));
+			repaintBodies(); paintTicks(); paintHead(); paintInfo();
+			if (membersModalOpen()) renderMembers();
+		});
+		if (conn) { try { conn.invoke('JoinConversation', id); } catch (e) { } }
+		post('/Chat/MarkRead', { c: id }).then(function () { loadConvs(); if (window.__cbnbReload) window.__cbnbReload(); });
+	}
+
+	/* ---------------- messages ---------------- */
+	function isImg(m) { return m.attachmentType === 'image' || /\.(png|jpe?g|gif|bmp|webp|avif|jfif|tiff?)(\?|#|$)/i.test(m.attachmentName || ''); }
+	function isAudio(m) { return m.attachmentType === 'audio'; }
+	// an attachment served by the chat's own action takes a flag (?…&preview=true); a stored file path is used as it is
+	function attUrl(path, flag) { return path.indexOf('?') >= 0 ? path + '&' + flag : path; }
+	function fileHtml(m) {
+		if (!m.attachmentPath) return '';
+		if (isImg(m)) return '<img class="cm-img" src="' + esc(m.attachmentPath) + '" alt="" data-zoom="1" />';
+		if (isAudio(m)) return '<audio controls preload="metadata" src="' + esc(attUrl(m.attachmentPath, 'preview=true')) + '" style="max-width:260px;height:40px;display:block;margin-bottom:4px"></audio>';
+		var name = m.attachmentName || 'file';
+		return '<a class="cm-file" href="' + esc(attUrl(m.attachmentPath, 'download=true')) + '" target="_blank" rel="noopener"><span class="fi ' + (/\.pdf$/i.test(name) ? 'pdf' : '') + '">' + ico(fileIcon(name), 20) + '</span><div style="min-width:0;flex:1"><div class="fn">' + esc(name) + '</div></div>' + ico('download', 16) + '</a>';
+	}
+	function reactsHtml(m) {
+		if (!m.reactions || !m.reactions.length) return '';
+		return '<div class="cm-reacts">' + m.reactions.map(function (r) { return '<span class="' + (r.mine ? 'mine' : '') + '" data-emoji="' + esc(r.emoji) + '">' + r.emoji + ' <b class="cm-num">' + r.count + '</b></span>'; }).join('') + '</div>';
+	}
+	function bubbleInner(m) {
+		var mine = m.senderId === meId;
+		if (m.deleted) return '<div class="tx">' + esc(t('Message deleted')) + '</div>';
+		var body = '';
+		if (!mine && curHeader && curHeader.kind === 'Group') body += '<div class="who">' + esc(m.senderName) + '</div>';
+		if (m.replyToId) body += '<div class="cm-quote" data-goto="' + m.replyToId + '"><b>' + esc(m.replyToSender || t('Message')) + '</b><span>' + esc(m.replyToBody != null ? m.replyToBody : t('Message deleted')) + '</span></div>';
+		body += fileHtml(m);
+		if (m.body) body += '<div class="tx" dir="auto">' + richText(m.body) + '</div>';
+		body += '<div class="cm-meta">' + (m.editedAt ? '<span>' + esc(t('edited')) + ' ·</span>' : '') + num(hm(new Date(m.createdAt))) + (mine ? '<span class="cm-tick">' + ico('check-check', 14) + '</span>' : '') + '</div>';
+		return body;
+	}
+	// @mentions stand apart from the text (owner, 2026-11-18): each known person's full name after @ becomes its own
+	// chip, isolated so an Arabic name inside an Arabic sentence (or the reverse) cannot run into the words around it.
+	// Names carry spaces and brackets, so they are matched against the people we know, longest first.
+	function mentionNames() {
+		var seen = {}, list = [];
+		[].concat(members, dir, [{ name: CFG.meName, altName: CFG.meAlt }]).forEach(function (d) {
+			if (!d) return;
+			[d.name, d.altName].forEach(function (x) { var n = x && String(x).trim(); if (n && !seen[n]) { seen[n] = 1; list.push(n); } });
+		});
+		return list.sort(function (a, b) { return b.length - a.length; });
+	}
+	function reEsc(x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+	function richText(raw) {
+		var names = mentionNames();
+		if (!names.length || raw.indexOf('@') === -1) return linkify(esc(raw));
+		var re = new RegExp('@(' + names.map(reEsc).join('|') + ')', 'g'), out = '', last = 0, m;
+		while ((m = re.exec(raw))) {
+			out += linkify(esc(raw.slice(last, m.index)));
+			var me = m[1] === CFG.meName || m[1] === CFG.meAlt;
+			out += '<bdi class="cm-at' + (me ? ' me' : '') + '">@' + esc(m[1]) + '</bdi>';
+			last = m.index + m[0].length;
+		}
+		return out + linkify(esc(raw.slice(last)));
+	}
+	// the people arrive after the first messages: paint the mentions again once they are known
+	function repaintBodies() {
+		thread.querySelectorAll('.cm-msg').forEach(function (el) {
+			var m = msgCache[+el.getAttribute('data-id')]; if (!m || m.deleted || !m.body || m.body.indexOf('@') === -1) return;
+			var tx = el.querySelector('.cm-bubble > .tx'); if (tx) tx.innerHTML = richText(m.body);
+		});
+	}
+	function linkify(h) { return h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">$1</a>'); }
+	function msgEl(m) {
+		var mine = m.senderId === meId, el = document.createElement('div');
+		el.className = 'cm-msg' + (mine ? ' mine' : '') + (m.deleted ? ' deleted' : '');
+		el.setAttribute('data-id', m.id); el.setAttribute('data-sender', m.senderId); el.setAttribute('data-at', new Date(m.createdAt).getTime());
+		el.setAttribute('data-body', m.body || ''); el.setAttribute('data-text', m.body || m.attachmentName || '');
+		el.setAttribute('data-name', mine ? t('You') : (m.senderName || ''));
+		if (m.attachmentPath && !m.deleted) { el.setAttribute('data-file', m.attachmentName || (isImg(m) ? t('Picture') : 'file')); el.setAttribute('data-kind', isImg(m) ? 'image' : isAudio(m) ? 'audio' : 'file'); el.setAttribute('data-href', m.attachmentPath); el.setAttribute('data-when', when(m.createdAt)); }
+		var faceHtml = mine ? '' : '<span class="cm-msg-face">' + av(m.senderName, m.senderAvatar, 30) + '</span>';
+		var bar = m.deleted ? '' : '<div class="cm-hover">' + ib('smile-plus', t('React'), 'xs', 'data-act="react"') + ib('reply', t('Reply'), 'xs', 'data-act="reply"') + ib('ellipsis', t('More'), 'xs', 'data-act="more"') + '</div>';
+		el.innerHTML = faceHtml + '<div class="cm-bwrap"><div class="cm-bubble">' + bubbleInner(m) + '</div>' + bar + reactsHtml(m) + '</div>';
+		msgCache[m.id] = m;
+		return el;
+	}
+	function appendMsg(m, prepend) {
+		if (m.id) { if (seen[m.id]) return null; seen[m.id] = 1; }
+		var el = msgEl(m);
+		if (prepend) thread.insertBefore(el, thread.firstChild); else thread.appendChild(el);
+		if (!prepend) { var im = el.querySelector('img.cm-img'); if (im) im.addEventListener('load', function () { if (nearBottom()) scrollBottom(); }); }
+		return el;
+	}
+	// a call goes where its time falls among the messages loaded so far; older ones wait for older messages
+	function placeCalls() {
+		var floor = noOlder ? 0 : (function () { var f = thread.querySelector('.cm-msg'); return f ? +f.getAttribute('data-at') : Infinity; })();
+		calls.forEach(function (k) {
+			var at = new Date(k.at).getTime();
+			if (callsShown[k.id] || at < floor) return;
+			callsShown[k.id] = 1;
+			var w = document.createElement('div'); w.innerHTML = callCard(k, curHeader ? curHeader.title : ''); var el = w.firstChild;
+			var after = [].slice.call(thread.querySelectorAll('.cm-msg, .cm-call')).find(function (x) { return +x.getAttribute('data-at') > at; });
+			if (after) thread.insertBefore(el, after); else thread.appendChild(el);
+		});
+	}
+	// runs: the face on the last message of a run, the name on the first, rounded corners between; a day line on a new day
+	function regroup() {
+		thread.querySelectorAll('.cm-day').forEach(function (d) { d.remove(); });
+		var rows = [].slice.call(thread.querySelectorAll('.cm-msg, .cm-call')), lastDay = null;
+		rows.forEach(function (el, i) {
+			var at = new Date(+el.getAttribute('data-at'));
+			if (!lastDay || !sameDay(lastDay, at)) { var d = document.createElement('div'); d.className = 'cm-day'; d.innerHTML = '<span>' + esc(dayLabel(at)) + '</span>'; thread.insertBefore(d, el); }
+			lastDay = at;
+			if (!el.classList.contains('cm-msg')) return;
+			var prev = rows[i - 1], next = rows[i + 1];
+			function same(o) { return o && o.classList.contains('cm-msg') && o.getAttribute('data-sender') === el.getAttribute('data-sender') && Math.abs(+o.getAttribute('data-at') - +el.getAttribute('data-at')) < 5 * 60000 && sameDay(new Date(+o.getAttribute('data-at')), at); }
+			var cont = same(prev), more = same(next);
+			el.classList.toggle('cont', cont); el.classList.toggle('more', more);
+			var f = el.querySelector('.cm-msg-face > *'); if (f) f.style.visibility = more ? 'hidden' : '';
+			var w = el.querySelector('.who'); if (w) w.style.display = cont ? 'none' : '';
+		});
+		paintTicks();
+	}
+	function paintTicks() {
+		if (!curHeader) return;
+		var others = (curHeader.memberCount || 2) - 1;
+		thread.querySelectorAll('.cm-msg.mine').forEach(function (el) {
+			var id = +el.getAttribute('data-id'), read;
+			if (curHeader.kind === 'Direct') read = otherReadUpTo >= id;
+			else { var n = 0; for (var k in memberReads) if (memberReads[k] >= id) n++; read = others > 0 && n >= others; }
+			var tk = el.querySelector('.cm-tick'); if (tk) { tk.classList.toggle('read', !!read); tk.title = read ? (curHeader.kind === 'Direct' ? t('Seen') : t('Read by all')) : t('Sent'); }
+		});
+	}
+	function nearBottom() { return thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120; }
+	function scrollBottom() { thread.scrollTop = thread.scrollHeight; }
+
+	// older messages when the top is reached
+	thread.addEventListener('scroll', function () {
+		if (!cur || thread.scrollTop > 40 || !oldestId || loading || noOlder) return;
+		loading = true; var keep = thread.scrollHeight, opened = cur;
+		getJson('/Chat/Messages?c=' + cur + '&before=' + oldestId).then(function (msgs) {
+			loading = false; if (cur !== opened) return;
+			msgs = msgs || [];
+			if (!msgs.length) noOlder = true;
+			msgs.slice().reverse().forEach(function (m) { appendMsg(m, true); });
+			if (msgs.length) oldestId = msgs[0].id;
+			placeCalls(); regroup(); thread.scrollTop = thread.scrollHeight - keep;
+		});
+	});
+
+	// the hover bar, reactions, quotes, call cards in the thread
+	thread.addEventListener('click', function (e) {
+		var el = e.target.closest('.cm-msg'), b = e.target.closest('button,[data-emoji],.cm-quote,[data-zoom]');
+		if (b && b.hasAttribute('data-rec')) { openRecording(+b.getAttribute('data-rec')); return; }
+		if (b && b.hasAttribute('data-callback')) { startCall(curHeader && curHeader.other, b.getAttribute('data-callback') === '1'); return; }
+		if (!el) return;
+		var id = +el.getAttribute('data-id');
+		if (b && b.hasAttribute('data-zoom')) { openImage(b.getAttribute('src')); return; }
+		if (b && b.classList.contains('cm-quote')) { gotoMsg(b.getAttribute('data-goto')); return; }
+		if (b && b.hasAttribute('data-emoji')) { react(id, b.getAttribute('data-emoji')); return; }
+		if (b && b.getAttribute('data-act') === 'react') { e.stopPropagation(); openEmoji(b, function (em) { react(id, em); }); return; }
+		if (b && b.getAttribute('data-act') === 'reply') { setReply(id, el.getAttribute('data-name'), el.getAttribute('data-text')); return; }
+		if (b && b.getAttribute('data-act') === 'more') { e.stopPropagation(); openMore(b, el); return; }
+		// a phone has no hover: a tap shows the bar
+		if (isPhone() && !b) { thread.querySelectorAll('.cm-msg.tools-open').forEach(function (x) { if (x !== el) x.classList.remove('tools-open'); }); el.classList.toggle('tools-open'); }
+	});
+	var myTaps = {};   // the reaction broadcast does not say who: my own tap flips my mark when it comes back
+	function react(id, emoji) { myTaps[id] = emoji; post('/Chat/React', { id: id, emoji: emoji }); }
+	function gotoMsg(id) {
+		var tgt = thread.querySelector('.cm-msg[data-id="' + id + '"]'); if (!tgt) return;
+		tgt.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		var bb = tgt.querySelector('.cm-bubble'); bb.classList.add('cm-flash'); setTimeout(function () { bb.classList.remove('cm-flash'); }, 1200);
+	}
+	function openImage(src) {
+		$('cmImgView').innerHTML = '<img src="' + esc(src) + '" alt="" style="max-width:100%;max-height:78vh;border-radius:12px;display:block;margin:0 auto" />';
+		imgViewModal.show();
+	}
+
+	/* ---------------- pop-ups: emoji and the "more" menu ---------------- */
+	var EMO = ['👍', '❤️', '😂', '🙏', '👏', '🎉', '✅', '🔥', '😀', '😃', '😄', '😁', '😆', '🤣', '🥹', '😊', '😍', '🥰', '😘', '😎', '🤩', '🥳', '🫠', '🥲', '🤔', '🫡', '🤯', '🫣', '🤗', '🫶', '🙂', '😉', '👎', '🙌', '🤝', '💪', '👌', '🫰', '🩷', '✨', '🚀', '🌟', '💯', '❌', '⚡', '🎯', '🧠', '👀', '☕'];
+	var pop = document.createElement('div'); pop.className = 'cm-pop d-none'; document.body.appendChild(pop);
+	var popFor = null;
+	function placePop(anchor) {
+		pop.classList.remove('d-none');
+		var r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+		var left = Math.min(Math.max(8, isRtl ? r.right - w : r.left), window.innerWidth - w - 8);
+		var top = r.top - h - 8; if (top < 8) top = r.bottom + 8;
+		pop.style.position = 'fixed'; pop.style.left = left + 'px'; pop.style.top = top + 'px';
+	}
+	function openEmoji(anchor, pick) {
+		popFor = pick;
+		pop.innerHTML = '<div class="cm-emoji-grid">' + EMO.map(function (e) { return '<button type="button" data-em="' + e + '" title="' + e + '">' + e + '</button>'; }).join('') + '</div>';
+		placePop(anchor);
+	}
+	function openMore(anchor, el) {
+		var mine = el.classList.contains('mine'), id = +el.getAttribute('data-id');
+		var rows = [['copy', t('Copy'), 'copy']];
+		if (mine && el.getAttribute('data-body')) rows.push(['pencil', t('Edit'), 'edit']);
+		if (mine) rows.push(['trash-2', t('Delete'), 'delete']);
+		pop.innerHTML = rows.map(function (r) { return '<button type="button" class="cm-item w-100 border-0 bg-transparent' + (r[2] === 'delete' ? ' cm-red' : '') + '" data-more="' + r[2] + '" style="padding:8px 12px">' + ico(r[0], 16) + '<span class="fs-7 fw-semibold">' + esc(r[1]) + '</span></button>'; }).join('');
+		popFor = function (what) {
+			if (what === 'copy') { try { navigator.clipboard.writeText(el.getAttribute('data-text') || ''); toast('success', t('Copied')); } catch (x) { } }
+			if (what === 'edit') openEdit(id, el.getAttribute('data-body'));
+			if (what === 'delete') ask(t('Delete message?'), t('Yes, delete')).then(function (ok) { if (ok) post('/Chat/Delete', { id: id }); });
+		};
+		placePop(anchor);
+	}
+	pop.addEventListener('click', function (e) {
+		var b = e.target.closest('button'); if (!b || !popFor) return;
+		var fn = popFor; closePop();
+		fn(b.getAttribute('data-em') || b.getAttribute('data-more'));
+	});
+	function closePop() { pop.classList.add('d-none'); popFor = null; }
+	document.addEventListener('click', function (e) { if (!pop.classList.contains('d-none') && !pop.contains(e.target)) closePop(); });
+	thread.addEventListener('scroll', function () { if (!pop.classList.contains('d-none')) closePop(); });
+
+	/* ---------------- search inside the conversation ---------------- */
+	var findBox = $('cmFind'), findInput = $('cmFindInput');
+	function toggleFind() { if (findBox.classList.contains('d-none')) { findBox.classList.remove('d-none'); findInput.focus(); } else closeFind(); }
+	function closeFind() { findBox.classList.add('d-none'); findInput.value = ''; applyFind(); }
+	function applyFind() {
+		var s = findInput.value.trim().toLowerCase(), hits = 0;
+		thread.querySelectorAll('.cm-msg').forEach(function (el) { var on = !s || (el.getAttribute('data-text') || '').toLowerCase().indexOf(s) !== -1; el.style.display = on ? '' : 'none'; if (s && on) hits++; });
+		thread.querySelectorAll('.cm-call, .cm-day').forEach(function (el) { el.style.display = s ? 'none' : ''; });
+		$('cmFindCount').innerHTML = s ? num(hits) : '';
+	}
+	findInput.addEventListener('input', applyFind);
+	findInput.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeFind(); });
+	$('cmFindClose').addEventListener('click', closeFind);
+
+	/* ================================================================================================================
+	   THE COMPOSER
+	   ================================================================================================================ */
+	function setReply(id, who, text) {
+		replyTo = id;
+		$('cmReplyWho').textContent = t('Replying to') + ' ' + (who || '');
+		$('cmReplyText').textContent = text || '';
+		$('cmReplyBar').classList.remove('d-none'); input.focus();
+	}
+	function hideReply() { replyTo = null; $('cmReplyBar').classList.add('d-none'); }
+	$('cmReplyCancel').addEventListener('click', hideReply);
+
+	function autoGrow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; syncSend(); }
+	function syncSend() { var has = !!input.value.trim(); sendBtn.classList.toggle('d-none', !has && !!micBtn && !recording && canRecord()); if (micBtn) micBtn.classList.toggle('d-none', has || !canRecord()); }
+	function canRecord() { return !!(navigator.mediaDevices && window.MediaRecorder); }
+
+	// @mentions — groups only, members only
+	var mentionBox = $('cmMention'), mentionStart = -1;
+	function mentionOpen() { return !mentionBox.classList.contains('d-none'); }
+	function hideMention() { mentionBox.classList.add('d-none'); mentionStart = -1; }
+	function showMention() {
+		var val = input.value, pos = input.selectionStart == null ? val.length : input.selectionStart;
+		var m = val.substring(0, pos).match(/@(\S{0,20})$/);
+		var src = curHeader && curHeader.kind === 'Group' ? members : [];
+		if (!m || !src.length) { hideMention(); return; }
+		mentionStart = pos - m[0].length;
+		var s = m[1].toLowerCase(), list = src.filter(function (d) { return d.name.toLowerCase().indexOf(s) !== -1; }).slice(0, 8);
+		if (!list.length) { hideMention(); return; }
+		mentionBox.innerHTML = list.map(function (d, i) { return '<div class="cm-item' + (i === 0 ? ' active' : '') + '" data-name="' + esc(d.name) + '">' + av(d.name, d.avatar, 28) + '<span class="fs-7 fw-semibold">' + esc(d.name) + '</span></div>'; }).join('');
+		mentionBox.querySelectorAll('.cm-item').forEach(function (el) { el.addEventListener('mousedown', function (ev) { ev.preventDefault(); pickMention(el.getAttribute('data-name')); }); });
+		mentionBox.classList.remove('d-none');
+	}
+	function pickMention(name) {
+		var val = input.value, pos = input.selectionStart == null ? val.length : input.selectionStart;
+		input.value = val.substring(0, mentionStart) + '@' + name + ' ' + val.substring(pos);
+		var np = mentionStart + name.length + 2; try { input.setSelectionRange(np, np); } catch (e) { }
+		hideMention(); input.focus();
+	}
+	function detectMentions(body) {
+		var src = members.length ? members : dir, ids = [];
+		src.forEach(function (d) { if (body.indexOf('@' + d.name) !== -1) ids.push(d.id); });
+		return ids.join(',');
+	}
+	input.addEventListener('input', function () { showMention(); autoGrow(); });
+	input.addEventListener('blur', function () { setTimeout(hideMention, 200); });
+	var typingSent = 0;
+	input.addEventListener('keydown', function (e) {
+		if (mentionOpen()) {
+			var list = [].slice.call(mentionBox.querySelectorAll('.cm-item'));
+			if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); var a = mentionBox.querySelector('.active') || list[0]; if (a) pickMention(a.getAttribute('data-name')); return; }
+			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+				e.preventDefault(); var i = list.findIndex(function (x) { return x.classList.contains('active'); }); if (i < 0) i = 0;
+				list[i].classList.remove('active'); i = e.key === 'ArrowDown' ? (i + 1) % list.length : (i - 1 + list.length) % list.length; list[i].classList.add('active'); return;
+			}
+			if (e.key === 'Escape') { hideMention(); return; }
+		}
+		if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); return; }
+		if (conn && cur && Date.now() - typingSent > 1500) { typingSent = Date.now(); try { conn.invoke('Typing', cur); } catch (x) { } }
+	});
+	$('cmEmojiBtn').addEventListener('click', function (e) {
+		e.stopPropagation();
+		openEmoji(this, function (em) {
+			var s = input.selectionStart == null ? input.value.length : input.selectionStart, en = input.selectionEnd == null ? s : input.selectionEnd;
+			input.value = input.value.slice(0, s) + em + input.value.slice(en);
+			var np = s + em.length; input.focus(); try { input.setSelectionRange(np, np); } catch (x) { }
+			autoGrow();
+		});
+	});
+
+	function sendCore(body, file) {
+		if (!cur) return;
+		body = (body || '').trim();
+		if (!body && !file) return;
+		if (file && file.size > 50 * 1024 * 1024) { toast('error', t('File too large')); return; }
+		var fd = new FormData(); fd.append('c', cur); if (body) fd.append('body', body);
+		if (replyTo) fd.append('replyToId', replyTo);
+		var mids = body ? detectMentions(body) : ''; if (mids) fd.append('mentionedIds', mids);
+		if (file) fd.append('file', file, file.name);
+		hideReply();
+		sendBtn.disabled = true;
+		fetch('/Chat/Send', { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': token() }, body: fd })
+			.then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+			.then(function (dto) { if (!dto) throw new Error('empty'); appendMsg(dto, false); regroup(); scrollBottom(); paintInfo(); loadConvs(); })
+			.catch(function (err) { toast('error', t('Send failed') + ' (' + (err && err.message ? err.message : '') + ')'); })
+			.then(function () { sendBtn.disabled = false; });
+	}
+	function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; autoGrow(); sendCore(b, null); }
+	sendBtn.addEventListener('click', doSend);
+
+	// a file or a picture opens a preview (with an optional caption) before it is sent
+	function pickFile(accept) { var f = $('cmFile'); f.accept = accept || ''; f.value = ''; f.click(); }
+	$('cmAttachBtn').addEventListener('click', function () { pickFile(''); });
+	$('cmImageBtn').addEventListener('click', function () { pickFile('image/*'); });
+	$('cmFile').addEventListener('change', function () {
+		var f = this.files && this.files[0]; if (!f) return;
+		pendingFile = f;
+		var wrap = $('cmPreviewWrap');
+		wrap.innerHTML = /^image\//.test(f.type) ? '<img src="' + URL.createObjectURL(f) + '" style="max-width:100%;max-height:52vh;border-radius:12px;display:block;margin:0 auto" />'
+			: '<div class="d-flex flex-column align-items-center py-6"><span class="cm-fic" style="width:64px;height:64px;border-radius:18px">' + ico(fileIcon(f.name), 30) + '</span><div class="fw-semibold mt-3">' + esc(f.name) + '</div><div class="text-muted fs-8">' + num((f.size / 1024).toFixed(0) + ' KB') + '</div></div>';
+		$('cmCaption').value = input.value.trim();
+		previewModal.show();
+	});
+	$('cmPreviewSend').addEventListener('click', function () {
+		var cap = $('cmCaption').value.trim(), f = pendingFile;
+		pendingFile = null; input.value = ''; autoGrow(); previewModal.hide();
+		sendCore(cap, f);
+	});
+	$('cmPreviewModal').addEventListener('hidden.bs.modal', function () { pendingFile = null; $('cmPreviewWrap').innerHTML = ''; $('cmCaption').value = ''; });
+
+	// a voice message: press the microphone, speak, press again to send (or the cross to drop it)
+	var recording = null, recChunks = [], recStart = 0, recTimer = null;
+	if (micBtn) micBtn.addEventListener('click', function () {
+		if (recording) { stopVoice(true); return; }
+		navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+			var type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'].find(function (x) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(x); }) || '';
+			recording = new MediaRecorder(stream, type ? { mimeType: type } : undefined); recChunks = [];
+			recording.ondataavailable = function (ev) { if (ev.data && ev.data.size) recChunks.push(ev.data); };
+			recording.start(); recStart = Date.now();
+			$('cmVoiceBar').classList.remove('d-none'); compose.classList.add('recording');
+			micBtn.innerHTML = ico('send-horizontal', 18); micBtn.title = t('Send');
+			recTimer = setInterval(function () { $('cmVoiceTime').textContent = dur(Math.round((Date.now() - recStart) / 1000)); }, 500);
+		}).catch(function () { toast('error', t('Microphone unavailable')); });
+	});
+	$('cmVoiceCancel').addEventListener('click', function () { stopVoice(false); });
+	function stopVoice(send) {
+		var r = recording; if (!r) return;
+		recording = null; clearInterval(recTimer);
+		$('cmVoiceBar').classList.add('d-none'); $('cmVoiceTime').textContent = '0:00'; compose.classList.remove('recording');
+		micBtn.innerHTML = ico('mic', 18); micBtn.title = t('Voice message');
+		r.onstop = function () {
+			r.stream.getTracks().forEach(function (x) { x.stop(); });
+			if (!send || !recChunks.length) return;
+			var mime = (r.mimeType || 'audio/webm').split(';')[0], ext = mime.indexOf('ogg') >= 0 ? 'ogg' : mime.indexOf('mp4') >= 0 ? 'm4a' : 'webm';
+			if (ext === 'm4a') mime = 'audio/mp4';
+			var blob = new Blob(recChunks, { type: mime });
+			var file = new File([blob], 'voice-' + new Date().toISOString().replace(/[:.]/g, '-') + '.' + ext, { type: mime });
+			sendCore('', file);
+		};
+		try { r.stop(); } catch (e) { }
+	}
+
+	/* ---------------- edit ---------------- */
+	function openEdit(id, body) {
+		$('cmEditId').value = id; var ta = $('cmEditText'); ta.value = body || ''; editModal.show();
+		setTimeout(function () { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (x) { } }, 250);
+	}
+	function saveEdit() { var id = $('cmEditId').value, nb = $('cmEditText').value.trim(); if (!id || !nb) return; post('/Chat/Edit', { id: id, body: nb }); editModal.hide(); }
+	$('cmEditSave').addEventListener('click', saveEdit);
+	$('cmEditText').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); } });
+
+	function setComposerEnabled(on) {
+		$('cmCompose').classList.toggle('locked', !on);
+		input.disabled = !on;
+		if (!on) input.placeholder = t('You are no longer a member of this group');
+		sendBtn.disabled = !on;
+	}
+
+	/* ================================================================================================================
+	   MEMBERS, NEW CHAT, NEW GROUP
+	   ================================================================================================================ */
+	function modal(id) { return window.bootstrap ? new bootstrap.Modal($(id)) : { show: function () { }, hide: function () { } }; }
+	var membersModal = modal('cmMembersModal'), newModal = modal('cmNewModal'), groupModal = modal('cmGroupModal'), previewModal = modal('cmPreviewModal'), editModal = modal('cmEditModal'), imgViewModal = modal('cmImgViewModal'), recModal = modal('cmRecModal');
+	function membersModalOpen() { return $('cmMembersModal').classList.contains('show'); }
+	function personRow(d, tail) { return '<div class="cm-row" data-id="' + d.id + '">' + face(d.name, d.avatar, 36, presOf(d.id, d.online)) + '<div class="flex-grow-1" style="min-width:0"><div class="t">' + esc(d.name) + '</div></div>' + (tail || '') + '</div>'; }
+	function renderMembers() {
+		var owner = curHeader && curHeader.isOwner;
+		$('cmMemList').innerHTML = '<div class="cm-row">' + av(CFG.meName, CFG.meAvatar, 36) + '<div class="flex-grow-1"><div class="t">' + esc(t('You')) + (owner ? ' · ' + esc(t('Owner')) : '') + '</div></div><button type="button" class="btn btn-sm btn-light-danger" data-leave="1">' + esc(t('Leave group')) + '</button></div>' +
+			members.map(function (d) { return personRow(d, owner ? ib('user-minus', t('Remove'), 'xs', 'data-remove="' + d.id + '"') : ''); }).join('');
+		loadDir(function () { renderMemAdd(''); });
+	}
+	function renderMemAdd(s) {
+		var have = {}; members.forEach(function (d) { have[d.id] = 1; }); have[meId] = 1;
+		var list = dir.filter(function (d) { return !have[d.id] && d.name.toLowerCase().indexOf(s.toLowerCase()) !== -1; }).slice(0, 30);
+		$('cmMemAdd').innerHTML = list.length ? list.map(function (d) { return personRow(d, ib('user-plus', t('Add a member'), 'xs', 'data-add="' + d.id + '"')); }).join('') : '<div class="cm-empty py-4">' + esc(t('No results')) + '</div>';
+	}
+	$('cmMemSearch').addEventListener('input', function () { renderMemAdd(this.value); });
+	$('cmMembersModal').addEventListener('click', function (e) {
+		var b = e.target.closest('button'); if (!b) return;
+		if (b.hasAttribute('data-add')) post('/Chat/AddMember', { c: cur, employeeId: b.getAttribute('data-add') }).then(refreshHeaderMembers);
+		if (b.hasAttribute('data-remove')) post('/Chat/RemoveMember', { c: cur, employeeId: b.getAttribute('data-remove') }).then(refreshHeaderMembers);
+		if (b.hasAttribute('data-leave')) ask(t('Leave this group?'), t('Yes, leave')).then(function (ok) {
+			if (!ok) return;
+			post('/Chat/RemoveMember', { c: cur, employeeId: meId }).then(function () { membersModal.hide(); setComposerEnabled(false); toast('info', t('You left the group')); cur = null; curHeader = null; showBlank(); loadConvs(); });
+		});
+	});
+	function refreshHeaderMembers() {
+		if (!cur) return;
+		getJson('/Chat/Header?c=' + cur).then(function (h) {
+			if (!h || !curHeader) return;
+			curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner; members = h.members || [];
+			paintHead(); paintInfo(); if (membersModalOpen()) renderMembers();
+		});
+	}
+	function dirRows(list, check) {
+		return list.map(function (d) { return '<label class="cm-row" style="cursor:pointer" data-id="' + d.id + '" data-name="' + esc(d.name) + '">' + face(d.name, d.avatar, 36, presOf(d.id, d.online)) + '<div class="flex-grow-1" style="min-width:0"><div class="t">' + esc(d.name) + '</div></div>' + (check ? '<input type="checkbox" class="form-check-input cm-grp-chk" value="' + d.id + '" />' : '') + '</label>'; }).join('') || '<div class="cm-empty py-4">' + esc(t('No results')) + '</div>';
+	}
+	$('cmNewChat').addEventListener('click', function () { loadDir(function () { $('cmDirSearch').value = ''; $('cmDirList').innerHTML = dirRows(dir.slice(0, 60), false); }); newModal.show(); });
+	$('cmDirSearch').addEventListener('input', function () { var s = this.value.toLowerCase(); $('cmDirList').innerHTML = dirRows(dir.filter(function (d) { return d.name.toLowerCase().indexOf(s) !== -1; }).slice(0, 60), false); });
+	$('cmDirList').addEventListener('click', function (e) { var r = e.target.closest('[data-id]'); if (!r) return; newModal.hide(); chatWith(+r.getAttribute('data-id')); });
+	var grpPicked = {};
+	$('cmNewGroup').addEventListener('click', function () { grpPicked = {}; $('cmGrpTitle').value = ''; $('cmGrpSearch').value = ''; loadDir(function () { $('cmGrpList').innerHTML = dirRows(dir.slice(0, 60), true); }); groupModal.show(); });
+	$('cmGrpSearch').addEventListener('input', function () {
+		var s = this.value.toLowerCase(); $('cmGrpList').innerHTML = dirRows(dir.filter(function (d) { return d.name.toLowerCase().indexOf(s) !== -1; }).slice(0, 60), true);
+		$('cmGrpList').querySelectorAll('.cm-grp-chk').forEach(function (c) { c.checked = !!grpPicked[c.value]; });
+	});
+	$('cmGrpList').addEventListener('change', function (e) { if (e.target.classList.contains('cm-grp-chk')) { if (e.target.checked) grpPicked[e.target.value] = 1; else delete grpPicked[e.target.value]; } });
+	$('cmGrpCreate').addEventListener('click', function () {
+		var title = $('cmGrpTitle').value.trim(); if (!title) { $('cmGrpTitle').focus(); return; }
+		post('/Chat/CreateGroup', { title: title, memberIds: Object.keys(grpPicked).join(',') }).then(function (res) {
+			if (!res) return; groupModal.hide();
+			loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); openConversation(res.id, m || { kind: 'Group', title: title }); });
+		});
+	});
+
+	/* ================================================================================================================
+	   CALLS
+	   ================================================================================================================ */
+	function startCall(empId, video) {
+		if (!empId) return;
+		if (!window.cbCalls) { toast('error', t('Calls are not available here')); return; }
+		window.cbCalls.start(empId, !!video);
+	}
+	function startGroup(video) {
+		if (!window.cbCallsGroup) { toast('error', t('Calls are not available here')); return; }
+		var ids = members.map(function (m) { return m.id; }).filter(function (id) { return presOf(id) !== 'off'; });
+		if (!ids.length) { toast('info', t('Nobody in this group is available now')); return; }
+		window.cbCallsGroup.start(ids, !!video);
+	}
+	function openRecording(callId) {
+		var k = calls.find(function (x) { return x.id === callId; }) || (callLog && (callLog.rows || []).find(function (x) { return x.id === callId; }));
+		if (!k || !k.recordingId) return;
+		$('cmRecBody').innerHTML = '<div id="cmPlayer" class="cm-player mt-0"><div class="text-muted fs-7">…</div></div>';
+		recModal.show();
+		loadPlayer(k.recordingId);
+	}
+	$('cmRecModal').addEventListener('hidden.bs.modal', function () { $('cmRecBody').innerHTML = ''; });
+	function askPresence(ids) {
+		if (!window.cbCalls || !ids || !ids.length) return;
+		window.cbCalls.presenceOf(ids).then(function (rows) {
+			var changed = false;
+			(rows || []).forEach(function (r) { if (pres[r.employeeId] !== r.state) { pres[r.employeeId] = r.state; changed = true; } });
+			if (changed) repaintPresence();
+		}).catch(function () { });
+	}
+	var presT = null;
+	function repaintPresence() { clearTimeout(presT); presT = setTimeout(function () { renderList(); if (curHeader) { paintHead(); paintInfo(); } }, 120); }
+	function hookCalls() {
+		if (!window.cbCalls || hookCalls.done) return; hookCalls.done = true;
+		window.cbCalls.onPresence(function (m) {
+			if (m && m.refresh) { askPresence(Object.keys(pres).map(Number)); return; }
+			if (m && m.employeeId) { pres[m.employeeId] = m.state; repaintPresence(); }
+		});
+		askPresence(convs.filter(function (c) { return c.otherEmployeeId; }).map(function (c) { return c.otherEmployeeId; }));
+	}
+	document.addEventListener('cbcalls:ready', hookCalls);
+	// a call ended or changed: write it into the conversation, refresh the log
+	document.addEventListener('cbcalls:changed', function () {
+		if (curHeader && curHeader.other) {
+			var opened = cur;
+			getJson('/Chat/CallsWith?other=' + curHeader.other).then(function (r) { if (cur !== opened || !r) return; var stick = nearBottom(); calls = r; placeCalls(); regroup(); paintInfo(); if (stick) scrollBottom(); });
+		}
+		if (tab === 'calls') loadCalls(); else getJson('/Chat/CallLog?page=1').then(function (r) { if (r && r.stats) $('cmCountCalls').textContent = r.stats.missed ? r.stats.missed : ''; });
+	});
+
+	/* ================================================================================================================
+	   LIVE: the chat hub
+	   ================================================================================================================ */
+	function startHub() {
+		if (!window.signalR) return;
+		conn = new signalR.HubConnectionBuilder().withUrl('/hubs/chat').withAutomaticReconnect().build();
+		conn.on('message', function (m) {
+			if (m.conversationId === cur && m.senderId !== meId) {
+				var stick = nearBottom(); appendMsg(m, false); regroup(); paintInfo(); if (stick) scrollBottom();
+				typingEl.innerHTML = '';
+				post('/Chat/MarkRead', { c: cur });
+			}
+			loadConvs();
+		});
+		conn.on('edited', function (e) {
+			if (e.conversationId !== cur) return;
+			var m = msgCache[e.id]; if (!m) return; m.body = e.body; m.editedAt = new Date().toISOString();
+			var el = thread.querySelector('.cm-msg[data-id="' + e.id + '"]'); if (!el) return;
+			el.querySelector('.cm-bubble').innerHTML = bubbleInner(m); el.setAttribute('data-body', e.body || ''); el.setAttribute('data-text', e.body || ''); regroup();
+		});
+		conn.on('deleted', function (e) {
+			if (e.conversationId !== cur) return;
+			var m = msgCache[e.id], el = thread.querySelector('.cm-msg[data-id="' + e.id + '"]'); if (!el || !m) return;
+			m.deleted = true; m.reactions = [];
+			var fresh = msgEl(m); el.replaceWith(fresh); regroup(); paintInfo();
+		});
+		conn.on('reaction', function (e) {
+			if (e.conversationId !== cur) return;
+			var m = msgCache[e.id], el = thread.querySelector('.cm-msg[data-id="' + e.id + '"]'); if (!el) return;
+			// the broadcast carries the counts; whether each is mine is kept from what I knew, or flipped by my own tap
+			var before = {}; (m && m.reactions || []).forEach(function (r) { before[r.emoji] = !!r.mine; });
+			var tapped = myTaps[e.id]; if (tapped) { before[tapped] = !before[tapped]; delete myTaps[e.id]; }
+			var list = (e.reactions || []).map(function (r) { return { emoji: r.emoji, count: r.count, mine: !!before[r.emoji] }; });
+			if (m) m.reactions = list;
+			var old = el.querySelector('.cm-reacts'); var html = reactsHtml({ reactions: list });
+			if (old) old.outerHTML = html || ''; else if (html) el.querySelector('.cm-bwrap').insertAdjacentHTML('beforeend', html);
+		});
+		conn.on('typing', function (e) {
+			if (e.conversationId !== cur || e.employeeId === meId) return;
+			var nm = '';
+			if (curHeader && curHeader.kind === 'Group') { var d = members.find(function (x) { return x.id === e.employeeId; }) || dir.find(function (x) { return x.id === e.employeeId; }); if (d) nm = d.name + ' '; }
+			typingEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>' + esc(nm + t('is typing'));
+			clearTimeout(typingEl._t); typingEl._t = setTimeout(function () { typingEl.innerHTML = ''; }, 2500);
+		});
+		conn.on('presence', function () { loadConvs(); });
+		conn.on('conversation', function () { loadConvs(); });
+		conn.on('members', function (e) { if (e && e.conversationId === cur) refreshHeaderMembers(); loadConvs(); });
+		conn.on('removed', function (e) {
+			if (e && e.conversationId === cur) { setComposerEnabled(false); if (membersModalOpen()) membersModal.hide(); toast('warning', t('You were removed from this group')); }
+			loadConvs();
+		});
+		conn.on('read', function (e) {
+			if (e.conversationId !== cur || e.employeeId === meId) return;
+			otherReadUpTo = Math.max(otherReadUpTo, e.lastReadId || 0);
+			memberReads[e.employeeId] = Math.max(memberReads[e.employeeId] || 0, e.lastReadId || 0);
+			paintTicks();
+		});
+		conn.onreconnected(function () {
+			if (cur) {
+				try { conn.invoke('JoinConversation', cur); } catch (e) { }
+				getJson('/Chat/Messages?c=' + cur).then(function (msgs) { var added = false; (msgs || []).forEach(function (m) { if (appendMsg(m, false)) added = true; }); if (added) { regroup(); scrollBottom(); } });
+			}
+			loadConvs();
+		});
+		conn.start().then(function () { if (cur) conn.invoke('JoinConversation', cur); }).catch(function () { });
+	}
+
+	/* ================================================================================================================
+	   PHONE: one pane at a time; DESKTOP: the shell fills the screen
+	   ================================================================================================================ */
+	var PHONE = '(max-width: 991.98px)';
+	function isPhone() { return window.matchMedia(PHONE).matches; }
+	function setPane(which) { shell.setAttribute('data-pane', which); fit(); if (which === 'thread') setTimeout(scrollBottom, 60); }
+	function fit() {
+		var top = shell.getBoundingClientRect().top + window.scrollY;
+		shell.style.height = Math.max(520, window.innerHeight - Math.max(0, top - window.scrollY) - 24) + 'px';
+	}
+	window.addEventListener('resize', fit);
+
+	/* ================================================================================================================
+	   BOOT
+	   ================================================================================================================ */
+	mo.observe(document.body, { childList: true, subtree: true });
+	if (window.signalR) startHub(); else if (CFG.signalr) { var sc = document.createElement('script'); sc.src = CFG.signalr; sc.onload = startHub; document.head.appendChild(sc); }
+	if (window.cbCalls && window.cbCalls.connected && window.cbCalls.connected()) hookCalls();
+	setTimeout(hookCalls, 2500);
+	renderChips();
+	document.querySelectorAll('#cmTabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === tab); });
+	showBlank();
+	loadDir();
+	loadPeople();
+	getJson('/Chat/CallLog?page=1').then(function (r) { if (r && r.stats) $('cmCountCalls').textContent = r.stats.missed ? r.stats.missed : ''; });
+	loadConvs(function (list) {
+		if (CFG.openConv) { var m = list.find(function (x) { return x.id === CFG.openConv; }); if (m) { openConversation(m.id, m); return; } }
+		if (tab !== 'chats') setTab(tab);
+		else if (!isPhone() && list.length) openConversation(list[0].id, list[0]);
+	});
+	syncSend(); fit(); setTimeout(fit, 300); paint();
+})();

@@ -1,0 +1,307 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="A year" xml:space="preserve">
+    <value>سنة</value>
+  </data>
+  <data name="API key" xml:space="preserve">
+    <value>مفتاح الواجهة</value>
+  </data>
+  <data name="API secret" xml:space="preserve">
+    <value>سر الواجهة</value>
+  </data>
+  <data name="Across the whole company" xml:space="preserve">
+    <value>على مستوى الشركة كلها</value>
+  </data>
+  <data name="Allow asking to record" xml:space="preserve">
+    <value>السماح بطلب التسجيل</value>
+  </data>
+  <data name="Answers" xml:space="preserve">
+    <value>يستجيب</value>
+  </data>
+  <data name="By module" xml:space="preserve">
+    <value>حسب الموديول</value>
+  </data>
+  <data name="Call options" xml:space="preserve">
+    <value>خيارات المكالمة</value>
+  </data>
+  <data name="Call recording" xml:space="preserve">
+    <value>تسجيل المكالمات</value>
+  </data>
+  <data name="Calls are not installed yet" xml:space="preserve">
+    <value>المكالمات غير مثبّتة بعد</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Chosen roles" xml:space="preserve">
+    <value>أدوار محددة</value>
+  </data>
+  <data name="Comma separated. Empty: calls work only between devices on the same network." xml:space="preserve">
+    <value>مفصولة بفواصل. إن تُركت فارغة تعمل المكالمات فقط بين الأجهزة على الشبكة نفسها.</value>
+  </data>
+  <data name="Communication settings" xml:space="preserve">
+    <value>إعدادات التواصل</value>
+  </data>
+  <data name="Communication" xml:space="preserve">
+    <value>التواصل</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>متصلة</value>
+  </data>
+  <data name="Could not save" xml:space="preserve">
+    <value>تعذّر الحفظ</value>
+  </data>
+  <data name="Everyone in the company may chat with and call everyone" xml:space="preserve">
+    <value>كل موظفي الشركة يتراسلون ويتصلون ببعضهم</value>
+  </data>
+  <data name="Everyone" xml:space="preserve">
+    <value>الجميع</value>
+  </data>
+  <data name="Highest video quality" xml:space="preserve">
+    <value>أعلى جودة للفيديو</value>
+  </data>
+  <data name="Hospital: link a call to a patient" xml:space="preserve">
+    <value>المستشفى: ربط المكالمة بمريض</value>
+  </data>
+  <data name="Hospital: on call now" xml:space="preserve">
+    <value>المستشفى: المناوبون الآن</value>
+  </data>
+  <data name="Infrastructure" xml:space="preserve">
+    <value>جاهزية البنية</value>
+  </data>
+  <data name="Internal servers" xml:space="preserve">
+    <value>الخوادم الداخلية</value>
+  </data>
+  <data name="Kept for" xml:space="preserve">
+    <value>مدة الحفظ</value>
+  </data>
+  <data name="Like the chat: no limits between departments. A call never leaves the company network." xml:space="preserve">
+    <value>مثل المحادثات: لا قيود بين الأقسام. المكالمة لا تخرج من شبكة الشركة.</value>
+  </data>
+  <data name="Media server address (LiveKit)" xml:space="preserve">
+    <value>عنوان خادم الوسائط (LiveKit)</value>
+  </data>
+  <data name="Most people in a group call" xml:space="preserve">
+    <value>أقصى عدد في المكالمة الجماعية</value>
+  </data>
+  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve">
+    <value>أشخاص محددون بالاسم فقط. وفيما عداهم لا يفتح التسجيلَ إلا من كانوا في المكالمة، وتُسجَّل كل مرة يُفتح فيها.</value>
+  </data>
+  <data name="Never without every side agreeing — a fixed rule" xml:space="preserve">
+    <value>لا يبدأ إلا بموافقة كل الأطراف — شرط ثابت</value>
+  </data>
+  <data name="No answer" xml:space="preserve">
+    <value>لا يستجيب</value>
+  </data>
+  <data name="No automatic deletion" xml:space="preserve">
+    <value>دون حذف تلقائي</value>
+  </data>
+  <data name="Nobody — only the people in each call" xml:space="preserve">
+    <value>لا أحد — فقط أطراف كل مكالمة</value>
+  </data>
+  <data name="Not allowed" xml:space="preserve">
+    <value>غير مسموح</value>
+  </data>
+  <data name="Not connected" xml:space="preserve">
+    <value>غير متصلة</value>
+  </data>
+  <data name="Not secure" xml:space="preserve">
+    <value>غير آمن</value>
+  </data>
+  <data name="Not set" xml:space="preserve">
+    <value>غير مُعدّ</value>
+  </data>
+  <data name="Only where the module is on" xml:space="preserve">
+    <value>تظهر فقط حيث الموديول مفعّل</value>
+  </data>
+  <data name="Relay addresses (TURN)" xml:space="preserve">
+    <value>عناوين خادم الترحيل (TURN)</value>
+  </data>
+  <data name="Relay shared secret" xml:space="preserve">
+    <value>السر المشترك لخادم الترحيل</value>
+  </data>
+  <data name="Remove the saved secret" xml:space="preserve">
+    <value>إزالة السر المحفوظ</value>
+  </data>
+  <data name="Ring time" xml:space="preserve">
+    <value>مدة الرنين</value>
+  </data>
+  <data name="Save the settings?" xml:space="preserve">
+    <value>حفظ الإعدادات؟</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+  <data name="Saved — type to replace it" xml:space="preserve">
+    <value>محفوظ — اكتب لاستبداله</value>
+  </data>
+  <data name="Set by IT; nothing leaves the company network" xml:space="preserve">
+    <value>يضبطها قسم تقنية المعلومات، ولا يخرج شيء من شبكة الشركة</value>
+  </data>
+  <data name="Settings saved" xml:space="preserve">
+    <value>تم حفظ الإعدادات</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+  <data name="Test again" xml:space="preserve">
+    <value>إعادة الاختبار</value>
+  </data>
+  <data name="Tested from this browser" xml:space="preserve">
+    <value>تُختبر من هذا المتصفح فعلياً</value>
+  </data>
+  <data name="The on-call roster at the top of People" xml:space="preserve">
+    <value>قائمة المناوبين في رأس الأشخاص</value>
+  </data>
+  <data name="The patient shows before answering; the note and the recording join their file" xml:space="preserve">
+    <value>يظهر المريض للطرف الآخر قبل الرد، وتُحفظ الملاحظة والتسجيل في ملفه</value>
+  </data>
+  <data name="The recording goes to the File Manager on the call's record" xml:space="preserve">
+    <value>يُحفظ التسجيل في مدير الملفات على سجل المكالمة</value>
+  </data>
+  <data name="Voice and video" xml:space="preserve">
+    <value>صوت وفيديو</value>
+  </data>
+  <data name="Voice only" xml:space="preserve">
+    <value>صوت فقط</value>
+  </data>
+  <data name="What is recorded" xml:space="preserve">
+    <value>ما يُسجَّل</value>
+  </data>
+  <data name="Who may ask to record" xml:space="preserve">
+    <value>من يحق له طلب التسجيل</value>
+  </data>
+  <data name="Who reaches whom" xml:space="preserve">
+    <value>من يتواصل مع من</value>
+  </data>
+  <data name="Who reviews every recording" xml:space="preserve">
+    <value>من يراجع كل التسجيلات</value>
+  </data>
+  <data name="{0} days, then deleted" xml:space="preserve">
+    <value>{0} يوماً ثم يُحذف</value>
+  </data>
+  <data name="{0} seconds" xml:space="preserve">
+    <value>{0} ثانية</value>
+  </data>
+  <data name="Video calls" xml:space="preserve">
+    <value>مكالمات الفيديو</value>
+  </data>
+  <data name="With voice; can be voice-only on weak networks" xml:space="preserve">
+    <value>مع الصوت، ويمكن قصرها على الصوت في الشبكات الضعيفة</value>
+  </data>
+  <data name="Screen sharing" xml:space="preserve">
+    <value>مشاركة الشاشة</value>
+  </data>
+  <data name="To show a file or a screen during a call" xml:space="preserve">
+    <value>لعرض ملف أو شاشة أثناء المكالمة</value>
+  </data>
+  <data name="Group calls" xml:space="preserve">
+    <value>المكالمات الجماعية</value>
+  </data>
+  <data name="From any group chat, up to twelve with the media server" xml:space="preserve">
+    <value>من أي محادثة جماعية، حتى ١٢ مع خادم الوسائط</value>
+  </data>
+  <data name="From any group chat, up to four people" xml:space="preserve">
+    <value>من أي محادثة جماعية، حتى ٤ أشخاص</value>
+  </data>
+  <data name="Write calls into the chat" xml:space="preserve">
+    <value>كتابة المكالمات في المحادثة</value>
+  </data>
+  <data name="Missed, finished and recorded calls appear inside the chat" xml:space="preserve">
+    <value>الفائتة والمنتهية والمسجّلة تظهر داخل المحادثة</value>
+  </data>
+  <data name="A trusted internal HTTPS address" xml:space="preserve">
+    <value>عنوان HTTPS داخلي موثوق</value>
+  </data>
+  <data name="Browsers open the camera only on a secure connection" xml:space="preserve">
+    <value>المتصفح لا يفتح الكاميرا إلا على اتصال آمن</value>
+  </data>
+  <data name="The signalling channel" xml:space="preserve">
+    <value>قناة الإشارة (الاتصال اللحظي)</value>
+  </data>
+  <data name="The same one that carries chats and notifications" xml:space="preserve">
+    <value>نفسها التي تحمل المحادثات والإشعارات</value>
+  </data>
+  <data name="The internal relay (TURN)" xml:space="preserve">
+    <value>خادم الترحيل الداخلي (TURN)</value>
+  </data>
+  <data name="Carries calls between branches and separate networks" xml:space="preserve">
+    <value>يمرّر المكالمة بين الفروع والشبكات المنفصلة</value>
+  </data>
+  <data name="The relay answers from this device" xml:space="preserve">
+    <value>خادم الترحيل يستجيب من هذا الجهاز</value>
+  </data>
+  <data name="UDP 3478 and 49152–65535 open between the networks" xml:space="preserve">
+    <value>منافذ UDP مفتوحة بين الشبكات: 3478، ومن 49152 إلى 65535</value>
+  </data>
+  <data name="Camera and microphone on this device" xml:space="preserve">
+    <value>الكاميرا والميكروفون على هذا الجهاز</value>
+  </data>
+  <data name="A local test from the browser" xml:space="preserve">
+    <value>اختبار محلي من المتصفح</value>
+  </data>
+  <data name="The media server (more than four)" xml:space="preserve">
+    <value>خادم الوسائط (أكثر من ٤)</value>
+  </data>
+  <data name="LiveKit on an internal server" xml:space="preserve">
+    <value>LiveKit على خادم داخلي</value>
+  </data>
+</root>

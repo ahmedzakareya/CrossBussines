@@ -1,827 +1,184 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
-    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
-    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    // COMMUNICATION — chat and calls for the whole system (owner, 2026-11-18; the approved prototype
+    // design-output/comm-prototype). The page opens INSIDE the module the person came from: Accounting keeps the
+    // Accounting layout and menu, Inventory keeps Inventory's, the hospital keeps the hospital's — the modules never mix.
+    Layout = (string?)ViewBag.CommLayout ?? "~/Views/Shared/_LayoutBackend.cshtml";
     int meId = ViewBag.MeId;
     var openConv = ViewBag.OpenConv as int?;
-    var blank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+    string tab = ViewBag.Tab ?? "chats";
+    // every string the page's script shows, localized here (English is the key)
+    var keys = new[] {
+        "Add a member", "All", "Asked by", "Available first", "Available now", "Average length", "Back", "Call back", "Call note", "Call recording", "Call",
+        "Calls are not available here", "Calls between you", "Calls today", "Cancel", "Cancelled", "Chat", "Consent", "Copied", "Copy", "Declined",
+        "Delete message?", "Delete", "Deleted automatically on", "Details", "Edit", "File Manager", "File too large", "File", "Files & media", "Group call",
+        "Group video call", "Group voice call", "Groups", "In a call", "Incoming from", "Incoming video call", "Incoming voice call", "Incoming", "Leave group",
+        "Leave this group?", "Member", "Members", "Message deleted", "Message", "Microphone unavailable", "Missed video call", "Missed voice call", "Missed",
+        "Missed, not returned", "More", "New chat", "Next", "No calls yet", "No conversations yet", "No files yet", "No results", "Nobody in this group is available now",
+        "Not answered", "Offline", "Open the chat", "Outgoing to", "Outgoing video call", "Outgoing voice call", "Outgoing", "Owner", "Page", "Patient", "People",
+        "Picture", "Previous", "React", "Read by all", "Recorded", "Recording", "Remove", "Reply", "Replying to", "Search the chat", "Search", "Seen", "Send failed",
+        "Send", "Sent", "Show more", "This recording is not open to you", "Today", "Unread", "Video call", "Video", "Voice and video", "Voice call", "Voice message",
+        "Voice", "Message — @ to mention", "Write a message", "Yes, delete", "Yes, leave", "Yesterday", "You are no longer a member of this group",
+        "You declined", "On call now", "You left the group", "You were removed from this group", "You", "agreed by", "available", "edited", "is typing", "members",
+    };
+    var S = keys.ToDictionary(k => k, k => Localizer[k].Value);
+    var cfg = new
+    {
+        meId, openConv, tab, hospital = (bool)(ViewBag.Hospital ?? false), module = (string?)ViewBag.CommModule,
+        meName = (string?)ViewBag.MeName, meAlt = (string?)ViewBag.MeAlt, meAvatar = (string?)ViewBag.MeAvatar,
+        blank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg"),
+        signalr = Url.Content("~/Backend-assets/plugins/signalr.min.js"),
+        S,
+    };
 }
-<link href="~/css/chat-modern.css" rel="stylesheet" asp-append-version="true" />
-<style>
-    .chat-col { position: relative; }
-    .chat-tools { position: absolute; top: -12px; display: flex; opacity: 0; pointer-events: none; transition: opacity .12s ease; background: #fff; border: 1px solid #e4e6ef; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.08); padding: 2px 4px; z-index: 5; white-space: nowrap; }
-    .chat-tools-start { inset-inline-start: 0; }
-    .chat-tools-end { inset-inline-end: 0; }
-    .chat-msg:hover .chat-tools { opacity: 1; pointer-events: auto; }
-    /* fixed messenger height so the composer stays pinned/visible without page scroll */
-    #cbchat_messenger { display: flex; flex-direction: column; min-height: 420px; }
-    #cbchat_messenger_body { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
-    #chatScroll { flex: 1 1 auto; height: auto !important; }
-    #chatFooter { flex: 0 0 auto; position: relative; }
-    #chatMentionBox .cbm.active { background: var(--bs-light-primary); }
-    /* WhatsApp-style composer */
-    .cbchat-pill { background: var(--bs-gray-100); border-radius: 24px; padding: 4px 6px; min-height: 46px; }
-    .cbchat-pill .cbchat-ta { background: transparent !important; border: 0 !important; box-shadow: none !important; resize: none; padding: 8px 6px; margin: 0; max-height: 130px; line-height: 1.4; }
-    .cbchat-pill .cbchat-ta:focus { background: transparent !important; }
-    .cbchat-icbtn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; color: var(--bs-gray-600); cursor: pointer; flex: 0 0 auto; margin: 0; transition: color .15s, background .15s; }
-    .cbchat-icbtn:hover { color: var(--bs-primary); background: rgba(0,0,0,.05); }
-    .cbchat-send { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 2px 6px rgba(31,125,87,.35); }
-    .cbchat-send i { font-size: 20px; }
-    .cbchat-quote { max-width: 420px; }
-    .cbchat-flash { animation: cbchatFlash 1.2s ease; }
-    @@keyframes cbchatFlash { 0%, 100% { box-shadow: none; } 25% { box-shadow: 0 0 0 3px rgba(31,125,87,.45); } }
-    .cbchat-locked { opacity: .55; pointer-events: none; }
-    .rtl-flip { transform: scaleX(1); }
-    html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
+<link href="~/css/comm/comm.css" rel="stylesheet" asp-append-version="true" />
 
-    /* ---------------- PHONE: one pane at a time ----------------
-       Below lg the two columns are two SCREENS, not two stacked cards. The list fills the viewport;
-       opening a conversation swaps to the thread, which is a fixed full-height column: sticky header,
-       the messages scrolling in the middle, and the composer pinned above the home indicator. */
-    @@media (max-width: 991.98px) {
-        #cbchat_wrap[data-cbchat-pane="list"]   #cbchat_threadpane { display: none; }
-        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_listpane   { display: none; }
-
-        /* the list scrolls with the page instead of inside a 65vh box that produced two scrollbars */
-        #chatConvList { max-height: none !important; }
-        #cbchat_listpane { margin-bottom: 0 !important; }
-
-        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger {
-            position: fixed; inset: 0; z-index: 105;
-            height: 100dvh; max-height: 100dvh;
-            margin: 0; border-radius: 0; border: 0;
-        }
-        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger_header {
-            flex: 0 0 auto; min-height: 0; padding: 10px 12px;
-            padding-top: calc(10px + env(safe-area-inset-top));
-            border-bottom: 1px solid var(--bs-gray-200);
-        }
-        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger_body { padding: 10px 12px 0; }
-        #cbchat_wrap[data-cbchat-pane="thread"] #chatFooter {
-            padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) !important;
-            border-top: 1px solid var(--bs-gray-200);
-        }
-        /* a 16px composer: anything smaller makes iOS zoom the whole page on focus */
-        #cbchat_wrap[data-cbchat-pane="thread"] .cbchat-ta { font-size: 16px; }
-        /* a quoted message may not force the thread wider than the screen */
-        .cbchat-quote { max-width: 100%; }
-
-        /* TAP TO REVEAL, not always-on. There is no hover on a touch screen, but pinning the delete /
-           edit / react row above every bubble buried the conversation under its own controls — measured
-           at six visible tool rows on one screen. Tapping a message opens its tools and closes the
-           others, which is the gesture every phone messenger already trained people to expect. */
-        .chat-msg .chat-tools { opacity: 0; pointer-events: none; }
-        .chat-msg.cbchat-tools-open .chat-tools { opacity: 1; pointer-events: auto; }
-    }
-
-    /* A LONG UNBROKEN STRING IS NOT A LAYOUT: one pasted url or token measured 23,256px wide inside a
-       390px screen, so the message was simply unreadable. Applies at every width — a desktop bubble
-       blows out the same way, it just takes a longer string. */
-    .chat-msg .p-4, .chat-msg .cbchat-quote { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
-    #chatScroll { overflow-x: hidden; }
-</style>
 <div class="d-flex flex-column flex-column-fluid">
+    @Html.AntiForgeryToken()
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
-            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Chat"]</h1>
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Chats & calls"]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
-                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
-                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                <li class="breadcrumb-item text-muted">@Localizer["Communications"]</li>
+                <li class="breadcrumb-item text-muted">@Localizer["Communication"]</li>
             </ul>
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @* ONE PANE AT A TIME ON A PHONE. The desktop layout is two columns side by side; below lg it
-           simply STACKED, so the phone showed the whole conversation list and then an empty "select a
-           conversation" card underneath it. Tapping a name opened a thread that was entirely below the
-           fold — nothing appeared to happen — and the composer was never on screen at all. Same markup,
-           same desktop behaviour: the panes become alternating full-screen views, switched by
-           data-cbchat-pane on the wrapper. *@
-        <div class="d-flex flex-column flex-lg-row" id="cbchat_wrap" data-cbchat-pane="list">
-            <!--begin::Contacts sidebar-->
-            <div class="flex-column flex-lg-row-auto w-100 w-lg-300px w-xl-350px mb-10 mb-lg-0" id="cbchat_listpane">
-                <div class="card card-flush">
-                    <div class="card-header pt-7 border-0" id="cbchat_contacts_header">
-                        <div class="d-flex align-items-center gap-3 w-100">
-                            <div class="position-relative flex-grow-1 my-1">
-                                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4 top-50 translate-middle-y"></i>
-                                <input type="text" id="chatSearch" class="form-control form-control-solid ps-12" placeholder="@SR["Search"]" autocomplete="off" />
-                            </div>
-                            <div class="flex-shrink-0">
-                                <button class="btn btn-icon btn-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end" title="@Localizer["New"]"><i class="ki-outline ki-plus fs-2"></i></button>
-                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 fw-semibold w-200px py-3" data-kt-menu="true">
-                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" id="chatBtnNew"><i class="ki-outline ki-message-text-2 fs-5 me-2"></i>@Localizer["New chat"]</a></div>
-                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" id="chatBtnGroup"><i class="ki-outline ki-people fs-5 me-2"></i>@Localizer["New group"]</a></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body pt-5">
-                        <div id="chatConvList" class="scroll-y" style="max-height:65vh;">
-                            <div class="text-center text-muted py-10 fs-7" id="chatConvEmpty">@Localizer["No conversations yet"]</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!--end::Contacts sidebar-->
+        <div class="cm-root">
+        <div class="cm-shell no-info" id="cmShell" data-pane="list">
 
-            <!--begin::Messenger-->
-            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10" id="cbchat_threadpane">
-                <div class="card" id="cbchat_messenger">
-                    <div class="card-header" id="cbchat_messenger_header">
-                        <div class="card-title">
-                            @* The way back. A full-screen thread with no way out is a trap, and the
-                               browser's back button would leave the screen entirely. *@
-                            <button type="button" class="btn btn-icon btn-sm btn-light me-2 d-lg-none" id="chatBack" aria-label="@SR["Back"]">
-                                <i class="ki-outline ki-black-left fs-3 rtl-flip"></i>
-                            </button>
-                            <div class="symbol symbol-40px symbol-circle me-3 d-none" id="chatHeadSym"><img id="chatHeadAvatar" src="@blank" alt="" /></div>
-                            <div class="d-flex justify-content-center flex-column">
-                                <span class="fs-4 fw-bold text-gray-900 me-1 mb-1 lh-1" id="chatTitle">@Localizer["Select a conversation"]</span>
-                                <div class="mb-0 lh-1"><span id="chatPresence" class="fs-7 fw-semibold text-muted"></span></div>
-                            </div>
-                        </div>
-                        <div class="card-toolbar">
-                            <button type="button" class="btn btn-sm btn-light-primary d-none" id="chatMembersBtn" title="@Localizer["Members"]">
-                                <i class="ki-outline ki-people fs-4 me-1"></i><span id="chatMembersCount"></span>
-                            </button>
-                        </div>
+            @* ---------------- the list: chats, calls, people ---------------- *@
+            <div class="cm-pane cm-list">
+                <div class="cm-list-head">
+                    <div class="cm-title"><span>@Localizer["Communication"]</span>
+                        <span class="ms-auto d-flex gap-1">
+                            @if (ViewBag.CanManage == true)
+                            {
+                                <a class="cm-ib ghost" href="@Url.Action("Settings")" title="@Localizer["Communication settings"]" aria-label="@Localizer["Communication settings"]"><i data-lucide="settings" class="cm-i" style="width:18px;height:18px"></i></a>
+                            }
+                            <button type="button" class="cm-ib ghost" id="cmNewGroup" title="@Localizer["New group"]" aria-label="@Localizer["New group"]"><i data-lucide="users-round" class="cm-i" style="width:18px;height:18px"></i></button>
+                            <button type="button" class="cm-ib ghost" id="cmNewChat" title="@Localizer["New chat"]" aria-label="@Localizer["New chat"]"><i data-lucide="square-pen" class="cm-i" style="width:18px;height:18px"></i></button>
+                        </span>
                     </div>
-                    <div class="card-body" id="cbchat_messenger_body">
-                        <div id="chatEmpty" class="d-flex flex-center flex-column py-20 text-muted">
-                            <i class="ki-outline ki-message-text-2 fs-5x text-primary mb-4"></i>
-                            <div class="fs-5 fw-semibold">@Localizer["Pick someone to start chatting"]</div>
-                        </div>
-                        <div id="chatScroll" class="scroll-y me-n5 pe-5 d-none" style="height:58vh;"></div>
-                        <div id="chatSeen" class="text-muted fs-8 fw-semibold text-end pe-2" style="height:16px;"></div>
-                        <div id="chatTyping" class="text-muted fs-8 fw-semibold mt-1" style="height:16px;"></div>
+                    <div class="cm-search"><i data-lucide="search" class="cm-i" style="width:16px;height:16px"></i><input type="text" id="cmSearch" autocomplete="off" placeholder="@Localizer["Search chats and people"]" /></div>
+                    <div class="cm-tabs" id="cmTabs" role="tablist">
+                        <button type="button" data-tab="chats" class="@(tab == "chats" ? "on" : "")"><i data-lucide="message-circle" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Chats"]<span class="cm-count cm-num" id="cmCountChats"></span></button>
+                        <button type="button" data-tab="calls" class="@(tab == "calls" ? "on" : "")"><i data-lucide="phone" class="cm-i" style="width:15px;height:15px"></i>@Localizer["Calls"]<span class="cm-count red cm-num" id="cmCountCalls"></span></button>
+                        <button type="button" data-tab="people" class="@(tab == "people" ? "on" : "")"><i data-lucide="contact-round" class="cm-i" style="width:15px;height:15px"></i>@Localizer["People"]</button>
                     </div>
-                    <div class="card-footer pt-4 d-none" id="chatFooter">
-                        <div id="chatMentionBox" class="d-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-1" style="bottom:100%;inset-inline-start:12px;margin-bottom:6px;max-height:230px;overflow:auto;width:270px;z-index:30;"></div>
-                        <div id="chatReplyBar" class="d-none align-items-center bg-light-primary rounded p-2 mb-2">
-                            <svg class="cb-reply-ic text-primary me-2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-                            <span class="fs-8 text-gray-700 flex-grow-1 text-truncate" id="chatReplyText"></span>
-                            <button type="button" class="btn btn-icon btn-sm" id="chatReplyCancel"><i class="ki-outline ki-cross fs-6"></i></button>
+                    <div class="cm-chips" id="cmChips"></div>
+                </div>
+                <div class="cm-items" id="cmItems"><div class="cm-empty">…</div></div>
+            </div>
+
+            @* ---------------- the conversation (or the selected call) ---------------- *@
+            <div class="cm-pane cm-conv" id="cmConv">
+                <div class="cm-blank" id="cmBlank"><div>
+                    <div class="ic"><i data-lucide="messages-square" class="cm-i" style="width:32px;height:32px"></i></div>
+                    <div class="fs-5 fw-bold text-gray-800">@Localizer["Pick someone to start"]</div>
+                    <div class="fs-7 mt-1">@Localizer["Write, or call by voice or video, from the same place"]</div>
+                </div></div>
+                <div class="cm-head d-none" id="cmHead"></div>
+                <div class="cm-head d-none py-2" id="cmFind" style="min-height:0">
+                    <i data-lucide="search" class="cm-i" style="width:16px;height:16px;color:var(--cm-muted)"></i>
+                    <input type="text" id="cmFindInput" class="form-control form-control-sm form-control-solid" autocomplete="off" placeholder="@Localizer["Search in this conversation"]" />
+                    <span class="fs-7 text-muted" id="cmFindCount"></span>
+                    <button type="button" class="cm-ib ghost xs" id="cmFindClose" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:16px;height:16px"></i></button>
+                </div>
+                <div class="cm-thread d-none" id="cmThread"></div>
+                <div class="cm-compose-wrap d-none" id="cmComposeWrap">
+                    <div class="cm-typing" id="cmTyping"></div>
+                    <div class="cm-pop cm-mention d-none" id="cmMention"></div>
+                    <div class="cm-replybar d-none" id="cmReplyBar">
+                        <i data-lucide="reply" class="cm-i" style="width:16px;height:16px"></i>
+                        <div class="flex-grow-1" style="min-width:0"><div class="fw-bold fs-8" id="cmReplyWho"></div><div class="fs-8 text-muted text-truncate" id="cmReplyText"></div></div>
+                        <button type="button" class="cm-ib ghost xs" id="cmReplyCancel" title="@Localizer["Cancel"]"><i data-lucide="x" class="cm-i" style="width:16px;height:16px"></i></button>
+                    </div>
+                    <div class="cm-replybar d-none" id="cmVoiceBar" style="color:var(--cm-red);border-inline-start-color:var(--cm-red)">
+                        <span class="cm-live-dot" style="background:var(--cm-red);box-shadow:none"></span>
+                        <div class="flex-grow-1 fw-bold fs-7">@Localizer["Recording a voice message"] · <span class="cm-num" id="cmVoiceTime">0:00</span></div>
+                        <button type="button" class="cm-ib ghost xs" id="cmVoiceCancel" title="@Localizer["Cancel"]"><i data-lucide="trash-2" class="cm-i" style="width:16px;height:16px"></i></button>
+                    </div>
+                    <div class="cm-compose" id="cmCompose">
+                        <div class="box">
+                            <button type="button" class="cm-ib ghost xs" id="cmAttachBtn" title="@Localizer["Attach"]" aria-label="@Localizer["Attach"]"><i data-lucide="plus" class="cm-i" style="width:18px;height:18px"></i></button>
+                            <textarea id="cmInput" rows="1" maxlength="@CrossBuy.BL.ChatService.MaxMessageLength" placeholder="@Localizer["Write a message"]"></textarea>
+                            <button type="button" class="cm-ib ghost xs" id="cmEmojiBtn" title="@Localizer["Emoji"]" aria-label="@Localizer["Emoji"]"><i data-lucide="smile" class="cm-i" style="width:18px;height:18px"></i></button>
+                            <button type="button" class="cm-ib ghost xs" id="cmImageBtn" title="@Localizer["Picture"]" aria-label="@Localizer["Picture"]"><i data-lucide="image" class="cm-i" style="width:18px;height:18px"></i></button>
                         </div>
-                        <div id="chatAttachName" class="fs-8 text-muted mb-2 d-none"><i class="ki-outline ki-paper-clip fs-6 me-1"></i><span></span></div>
-                        <div class="d-flex align-items-end gap-2">
-                            <div class="cbchat-pill d-flex align-items-center flex-grow-1">
-                                <span class="cbchat-icbtn" id="chatEmojiBtn" title="@Localizer["Emoji"]"><i class="ki-outline ki-emoji-happy fs-2"></i></span>
-                                <label class="cbchat-icbtn mb-0" title="@Localizer["Attach"]">
-                                    <i class="ki-outline ki-plus fs-1"></i>
-                                    <input type="file" id="chatAttach" class="d-none" />
-                                </label>
-                                <textarea class="form-control cbchat-ta flex-grow-1" rows="1" id="chatInput" maxlength="@CrossBuy.BL.ChatService.MaxMessageLength" placeholder="@Localizer["Type a message"]"></textarea>
-                            </div>
-                            <button class="btn btn-primary btn-icon cbchat-send" id="chatSend" type="button" title="@Localizer["Send"]"><i class="ki-outline ki-send fs-2"></i></button>
-                        </div>
+                        <button type="button" class="cm-send" id="cmMic" title="@Localizer["Voice message"]" aria-label="@Localizer["Voice message"]"><i data-lucide="mic" class="cm-i" style="width:18px;height:18px"></i></button>
+                        <button type="button" class="cm-send" id="cmSend" title="@Localizer["Send"]" aria-label="@Localizer["Send"]"><i data-lucide="send-horizontal" class="cm-i" style="width:18px;height:18px"></i></button>
+                        <input type="file" id="cmFile" class="d-none" />
                     </div>
                 </div>
             </div>
-            <!--end::Messenger-->
+
+            @* ---------------- the details ---------------- *@
+            <div class="cm-pane cm-info" id="cmInfo"></div>
+        </div>
         </div>
     </div></div>
 </div>
 
-<!--begin::New chat modal-->
-<div class="modal fade" id="chatNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New chat"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+@* ---------------- windows ---------------- *@
+<div class="modal fade" id="cmNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content cm-root">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New chat"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
     <div class="modal-body">
-        <input type="text" id="dirSearch" class="form-control form-control-solid mb-4" placeholder="@SR["Search"]" autocomplete="off" />
-        <div id="dirList" class="scroll-y mh-350px"></div>
+        <div class="cm-search mb-3"><i data-lucide="search" class="cm-i" style="width:16px;height:16px"></i><input type="text" id="cmDirSearch" autocomplete="off" placeholder="@Localizer["Search"]" /></div>
+        <div id="cmDirList" class="scroll-y mh-400px"></div>
     </div>
 </div></div></div>
-<!--end::New chat modal-->
 
-<!--begin::New group modal-->
-<div class="modal fade" id="chatGroupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New group"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+<div class="modal fade" id="cmGroupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content cm-root">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New group"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
     <div class="modal-body">
-        <label class="fw-semibold fs-7 mb-1">@Localizer["Group name"]</label>
-        <input type="text" id="grpTitle" class="form-control form-control-solid mb-4" />
-        <input type="text" id="grpSearch" class="form-control form-control-solid mb-3" placeholder="@SR["Search"]" autocomplete="off" />
-        <div id="grpList" class="scroll-y mh-300px"></div>
+        <label class="fw-semibold fs-7 mb-1" for="cmGrpTitle">@Localizer["Group name"]</label>
+        <input type="text" id="cmGrpTitle" class="form-control form-control-solid mb-4" />
+        <div class="cm-search mb-3"><i data-lucide="search" class="cm-i" style="width:16px;height:16px"></i><input type="text" id="cmGrpSearch" autocomplete="off" placeholder="@Localizer["Search"]" /></div>
+        <div id="cmGrpList" class="scroll-y mh-300px"></div>
     </div>
-    <div class="modal-footer py-3"><button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary" id="grpCreate">@Localizer["Create"]</button></div>
+    <div class="modal-footer py-3"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@Localizer["Cancel"]</button><button type="button" class="btn btn-primary" id="cmGrpCreate">@Localizer["Create"]</button></div>
 </div></div></div>
-<!--end::New group modal-->
 
-<!--begin::Image/attachment preview modal (before send)-->
-<div class="modal fade" id="chatImgModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Send image"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+<div class="modal fade" id="cmMembersModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content cm-root">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["Members"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
     <div class="modal-body">
-        <div id="chatImgPreviewWrap" class="text-center mb-4"></div>
-        <input type="text" id="chatImgCaption" class="form-control form-control-solid" placeholder="@Localizer["Add a caption…"]" />
-    </div>
-    <div class="modal-footer py-3">
-        <button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
-        <button class="btn btn-primary" id="chatImgSend"><i class="ki-outline ki-send fs-4"></i>@Localizer["Send"]</button>
-    </div>
-</div></div></div>
-<!--end::Image/attachment preview modal-->
-
-<!--begin::Edit message modal-->
-<div class="modal fade" id="chatEditModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Edit message"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body">
-        <input type="hidden" id="chatEditId" />
-        <textarea id="chatEditText" class="form-control form-control-solid" rows="4"></textarea>
-    </div>
-    <div class="modal-footer py-3">
-        <button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
-        <button class="btn btn-primary" id="chatEditSave"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button>
-    </div>
-</div></div></div>
-<!--end::Edit message modal-->
-
-<!--begin::Group members modal-->
-<div class="modal fade" id="chatMembersModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["Members"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body">
-        <div id="memList" class="scroll-y mh-250px mb-2"></div>
-        <div id="memAddWrap" class="border-top pt-3 d-none">
-            <label class="fw-semibold fs-7 mb-2 d-block">@Localizer["Add member"]</label>
-            <input type="text" id="memSearch" class="form-control form-control-solid mb-3" placeholder="@SR["Search"]" autocomplete="off" />
-            <div id="memAddList" class="scroll-y mh-200px"></div>
+        <div id="cmMemList" class="scroll-y mh-250px mb-3"></div>
+        <div class="border-top pt-4">
+            <div class="fw-bold fs-7 mb-2">@Localizer["Add a member"]</div>
+            <div class="cm-search mb-3"><i data-lucide="search" class="cm-i" style="width:16px;height:16px"></i><input type="text" id="cmMemSearch" autocomplete="off" placeholder="@Localizer["Search"]" /></div>
+            <div id="cmMemAdd" class="scroll-y mh-200px"></div>
         </div>
     </div>
-    <div class="modal-footer py-3"><button class="btn btn-light" data-bs-dismiss="modal">@SR["Close"]</button></div>
 </div></div></div>
-<!--end::Group members modal-->
+
+<div class="modal fade" id="cmPreviewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content cm-root">
+    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Send a file"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
+    <div class="modal-body">
+        <div id="cmPreviewWrap" class="mb-4"></div>
+        <input type="text" id="cmCaption" class="form-control form-control-solid" placeholder="@Localizer["Add a caption…"]" />
+    </div>
+    <div class="modal-footer py-3"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@Localizer["Cancel"]</button><button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2" id="cmPreviewSend"><i data-lucide="send-horizontal" class="cm-i" style="width:16px;height:16px"></i>@Localizer["Send"]</button></div>
+</div></div></div>
+
+<div class="modal fade" id="cmEditModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content cm-root">
+    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Edit message"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
+    <div class="modal-body"><input type="hidden" id="cmEditId" /><textarea id="cmEditText" class="form-control form-control-solid" rows="4"></textarea></div>
+    <div class="modal-footer py-3"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@Localizer["Cancel"]</button><button type="button" class="btn btn-primary" id="cmEditSave">@Localizer["Save"]</button></div>
+</div></div></div>
+
+<div class="modal fade" id="cmImgViewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content bg-transparent border-0 shadow-none">
+    <div class="modal-body p-0" id="cmImgView" data-bs-dismiss="modal"></div>
+</div></div></div>
+
+<div class="modal fade" id="cmRecModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content cm-root">
+    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Call recording"]</h2><button type="button" class="cm-ib ghost sm" data-bs-dismiss="modal" title="@Localizer["Close"]"><i data-lucide="x" class="cm-i" style="width:18px;height:18px"></i></button></div>
+    <div class="modal-body" id="cmRecBody"></div>
+</div></div></div>
 
 @section Scripts {
-<script>
-(function () {
-    // surface any JS error on-screen (so we can see it without the console)
-    window.addEventListener('error', function (e) {
-        try {
-            var d = document.getElementById('cbchat_err');
-            if (!d) { d = document.createElement('div'); d.id = 'cbchat_err'; d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#f1416c;color:#fff;padding:10px;font:12px/1.5 monospace;white-space:pre-wrap'; (document.body || document.documentElement).appendChild(d); }
-            d.textContent = 'CHAT JS ERROR: ' + e.message + '  @@ ' + String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno;
-        } catch (x) { }
-    });
-    // safety: never let the theme page-loader trap this page
-    setTimeout(function () { try { document.body.removeAttribute('data-kt-app-page-loading'); document.body.classList.remove('page-loading'); } catch (e) { } }, 1200);
-})();
-</script>
-<script src="@Url.Content("~/Backend-assets/plugins/signalr.min.js")"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var isAr = @(isAr ? "true" : "false");
-    var meId = @meId;
-    var blank = '@blank';
-    var EMO = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤩','🥳','😅','😉','🙂','😇','🤔','🤗','😴','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🤝','❤️','🔥','⭐','✅','❌','🎉','💯','☕','🚀','📎','📌'];
-    var openConv = @(openConv?.ToString() ?? "null");
-    var signalrSrc = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
-    var cur = null, curHeader = null, dir = [], members = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null;
-
-    var $ = function (id) { return document.getElementById(id); };
-    var convList = $('chatConvList'), convEmpty = $('chatConvEmpty');
-    var scroll = $('chatScroll'), emptyBox = $('chatEmpty'), footer = $('chatFooter');
-    var titleEl = $('chatTitle'), presenceEl = $('chatPresence'), typingEl = $('chatTyping');
-    var input = $('chatInput'), sendBtn = $('chatSend'), attach = $('chatAttach'), attachName = $('chatAttachName');
-    var headSym = $('chatHeadSym'), headAvatar = $('chatHeadAvatar');
-
-    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-    // THE PAGE'S LOCALE, NOT THE BROWSER'S. toLocaleString() with no argument asked the BROWSER, so an
-    // Arabic screen printed "8/26/2026, 7:52:05 AM" — a US format, to the second, that nobody reads on a
-    // message. A time is also a mixed run: dropped into an RTL line unisolated it reorders, which is why
-    // the stamp appeared to start with "AM".
-    var CB_CHAT_LOCALE = document.documentElement.lang || 'ar';
-    function timeStr(iso) {
-        try {
-            var d = new Date(iso), now = new Date();
-            var sameDay = d.toDateString() === now.toDateString();
-            return d.toLocaleString(CB_CHAT_LOCALE, sameDay
-                ? { hour: '2-digit', minute: '2-digit' }
-                : { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-        } catch (e) { return ''; }
-    }
-    function post(url, data) {
-        var fd; if (data instanceof FormData) fd = data; else { fd = new FormData(); for (var k in data) if (data[k] != null) fd.append(k, data[k]); }
-        return fetch(url, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r.ok ? r.json() : null; });
-    }
-
-    // ---------- conversation list ----------
-    function convItemHtml(c) {
-        var av = c.avatar || blank;
-        var dot = c.kind === 'Direct' ? '<span class="badge badge-circle w-8px h-8px position-absolute bottom-0 end-0 ' + (c.online ? 'badge-success' : 'badge-secondary') + '"></span>' : '';
-        var unread = c.unread > 0 ? '<span class="badge badge-circle badge-danger ms-2">' + c.unread + '</span>' : '';
-        var icon = c.kind === 'Group'
-            ? '<span class="symbol-label bg-light-primary"><i class="ki-outline ki-people fs-2 text-primary"></i></span>'
-            : '<img src="' + av + '" alt="" />';
-        return '<div class="d-flex align-items-center p-3 rounded mb-1 cursor-pointer chat-conv ' + (cur === c.id ? 'bg-light-primary' : 'bg-hover-light') + '" data-id="' + c.id + '" data-kind="' + c.kind + '" data-title="' + esc(c.title) + '" data-avatar="' + esc(av) + '" data-online="' + (c.online ? 1 : 0) + '" data-other="' + (c.otherEmployeeId || '') + '">' +
-            '<div class="symbol symbol-40px symbol-circle position-relative me-3">' + icon + dot + '</div>' +
-            '<div class="flex-grow-1 min-w-0"><div class="d-flex flex-stack"><span class="fw-bold text-gray-900 text-truncate">' + esc(c.title) + '</span>' + unread + '</div>' +
-            '<div class="text-muted fs-8 text-truncate">' + esc(c.preview || '') + '</div></div></div>';
-    }
-    function loadConvs(then) {
-        fetch('/Chat/Conversations', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) {
-            window._convs = list;
-            renderConvs(list);
-            if (then) then(list);
-        });
-    }
-    function renderConvs(list) {
-        var q = ($('chatSearch').value || '').trim().toLowerCase();
-        var filtered = list.filter(function (c) { return !q || (c.title || '').toLowerCase().indexOf(q) !== -1; });
-        if (!filtered.length) { convList.innerHTML = ''; convList.appendChild(convEmpty); convEmpty.style.display = ''; return; }
-        convEmpty.style.display = 'none';
-        convList.innerHTML = filtered.map(convItemHtml).join('');
-        convList.querySelectorAll('.chat-conv').forEach(function (el) {
-            el.addEventListener('click', function () { openConversation(parseInt(el.getAttribute('data-id')), {
-                kind: el.getAttribute('data-kind'), title: el.getAttribute('data-title'), avatar: el.getAttribute('data-avatar'), online: el.getAttribute('data-online') === '1', other: parseInt(el.getAttribute('data-other')) || null
-            }); });
-        });
-    }
-    $('chatSearch').addEventListener('input', function () { if (window._convs) renderConvs(window._convs); });
-
-    // ---------- messages ----------
-    function reactionsHtml(m) {
-        if (!m.reactions || !m.reactions.length) return '';
-        return '<div class="d-flex gap-1 mt-1">' + m.reactions.map(function (r) {
-            return '<span class="badge ' + (r.mine ? 'badge-light-primary' : 'badge-light') + ' fs-8">' + r.emoji + ' ' + r.count + '</span>';
-        }).join('') + '</div>';
-    }
-    function attachHtml(m) {
-        if (!m.attachmentPath) return '';
-        var isImg = m.attachmentType === 'image' || /\.(png|jpe?g|gif|bmp|webp|svg|avif|jfif|heic|heif|ico|tiff?)(\?|#|$)/i.test(m.attachmentPath);
-        if (isImg) return '<a href="' + m.attachmentPath + '" target="_blank"><img src="' + m.attachmentPath + '" class="rounded mw-250px mt-2" style="max-height:240px;display:block;cursor:zoom-in" /></a>';
-        return '<a href="' + m.attachmentPath + '" target="_blank" class="d-flex align-items-center bg-light rounded p-3 mt-2"><i class="ki-outline ki-file fs-2x text-primary me-3"></i><span class="fw-semibold text-gray-800">' + esc(m.attachmentName || 'file') + '</span></a>';
-    }
-    function msgHtml(m) {
-        var mine = m.senderId === meId;
-        var side = mine ? 'end' : 'start';
-        var bubbleBg = mine ? 'bg-light-primary' : 'bg-light-info';
-        var av = m.senderAvatar || blank;
-        var avatar = '<div class="symbol symbol-35px symbol-circle ' + (mine ? 'ms-3' : 'me-3') + '"><img src="' + av + '" alt="" /></div>';
-        var head = '<div class="d-flex align-items-center mb-1">' + (mine ? '' : avatar) +
-            '<div class="' + (mine ? 'me-3 text-end' : 'ms-0') + '"><span class="fs-6 fw-bold text-gray-900 me-1">' + (mine ? '@Localizer["You"]' : esc(m.senderName)) + '</span>' +
-            '<span class="text-muted fs-8" style="unicode-bidi:isolate;" dir="auto">' + timeStr(m.createdAt) + '</span>' + (m.editedAt ? '<span class="text-muted fs-8"> · @Localizer["edited"]</span>' : '') + '</div>' + (mine ? avatar : '') + '</div>';
-        var att = attachHtml(m);
-        var txt = m.body ? esc(m.body).replace(/\n/g, '<br>') : '';
-        var quote = '';
-        if (m.replyToId) {
-            var qs = esc(m.replyToSender || '@Localizer["Message"]');
-            var qb = m.replyToBody != null ? esc(m.replyToBody) : '@Localizer["Message deleted"]';
-            quote = '<div class="cbchat-quote border-start border-3 border-primary bg-light rounded ps-3 pe-2 py-1 mb-2 cursor-pointer" data-goto="' + m.replyToId + '">' +
-                '<div class="fs-8 fw-bold text-primary">' + qs + '</div>' +
-                '<div class="fs-8 text-gray-600 text-truncate">' + qb + '</div></div>';
-        }
-        var inner = quote + (att ? (att + (txt ? '<div class="mt-2">' + txt + '</div>' : '')) : txt);
-        var content = m.deleted
-            ? '<div class="p-3 rounded bg-light text-muted fst-italic mw-lg-450px">@Localizer["Message deleted"]</div>'
-            : '<div class="p-4 rounded ' + bubbleBg + ' text-gray-900 fw-semibold mw-lg-450px text-' + side + '">' + inner + '</div>';
-        var tools = m.deleted ? '' :
-            '<div class="chat-tools chat-tools-' + side + ' gap-1">' +
-              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="👍">👍</button>' +
-              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="❤️">❤️</button>' +
-              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="😂">😂</button>' +
-              '<button class="btn btn-icon btn-xs btn-light rxmore" title="@Localizer["React"]"><i class="ki-outline ki-emoji-happy fs-7"></i></button>' +
-              '<button class="btn btn-icon btn-xs btn-light re" title="@Localizer["Reply"]"><svg class="cb-reply-ic" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>' +
-              (mine ? '<button class="btn btn-icon btn-xs btn-light ed"><i class="ki-outline ki-pencil fs-7"></i></button><button class="btn btn-icon btn-xs btn-light-danger dl"><i class="ki-outline ki-trash fs-7"></i></button>' : '') +
-            '</div>';
-        return '<div class="d-flex justify-content-' + side + ' mb-6 chat-msg" data-id="' + m.id + '" data-mine="' + (mine ? 1 : 0) + '" data-body="' + esc(m.body || '') + '" data-text="' + esc(m.body || (m.attachmentName || '')) + '">' +
-            '<div class="d-flex flex-column chat-col align-items-' + side + '">' + head + content + reactionsHtml(m) + tools + '</div></div>';
-    }
-    // shared full-emoji reaction picker (react with ANY emoji, not only the 3 quick ones)
-    var rxPop = document.createElement('div');
-    rxPop.className = 'd-none position-fixed bg-body border border-gray-300 rounded shadow-sm p-2';
-    rxPop.style.cssText += 'width:284px;max-height:210px;overflow:auto;z-index:1085;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;';
-    rxPop.innerHTML = EMO.map(function (e) { return '<span class="cbemo" style="cursor:pointer;font-size:20px;text-align:center;padding:4px;border-radius:6px;">' + e + '</span>'; }).join('');
-    document.body.appendChild(rxPop);
-    var rxTargetId = null;
-    function openRxPicker(btn, id) {
-        rxTargetId = id;
-        var r = btn.getBoundingClientRect();
-        rxPop.classList.remove('d-none');
-        var w = rxPop.offsetWidth, h = rxPop.offsetHeight;
-        var left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
-        var top = r.top - h - 8; if (top < 8) top = r.bottom + 8;
-        rxPop.style.left = left + 'px'; rxPop.style.top = top + 'px';
-    }
-    rxPop.addEventListener('click', function (e) { var t = e.target.closest('.cbemo'); if (!t || !rxTargetId) return; post('/Chat/React', { id: rxTargetId, emoji: t.textContent }); rxPop.classList.add('d-none'); rxTargetId = null; });
-    document.addEventListener('click', function (e) { if (!rxPop.classList.contains('d-none') && !rxPop.contains(e.target) && !e.target.closest('.rxmore')) { rxPop.classList.add('d-none'); rxTargetId = null; } });
-    window.addEventListener('scroll', function () { if (!rxPop.classList.contains('d-none')) { rxPop.classList.add('d-none'); rxTargetId = null; } }, true);
-
-    function bindMsg(el, m) {
-        el.querySelectorAll('.rx').forEach(function (b) { b.addEventListener('click', function () { post('/Chat/React', { id: el.getAttribute('data-id'), emoji: b.getAttribute('data-emoji') }); }); });
-        var rxm = el.querySelector('.rxmore'); if (rxm) rxm.addEventListener('click', function (e) { e.stopPropagation(); openRxPicker(rxm, el.getAttribute('data-id')); });
-        var re = el.querySelector('.re'); if (re) re.addEventListener('click', function () { setReply(el.getAttribute('data-id'), el.getAttribute('data-text')); });
-        var ed = el.querySelector('.ed'); if (ed) ed.addEventListener('click', function () { openEdit(el.getAttribute('data-id'), el.getAttribute('data-body')); });
-        var dl = el.querySelector('.dl'); if (dl) dl.addEventListener('click', function () { if (confirm('@Localizer["Delete message?"]')) post('/Chat/Delete', { id: el.getAttribute('data-id') }); });
-        var qt = el.querySelector('.cbchat-quote'); if (qt) qt.addEventListener('click', function () {
-            var tid = qt.getAttribute('data-goto'); var tgt = scroll.querySelector('.chat-msg[data-id="' + tid + '"]');
-            if (tgt) { tgt.scrollIntoView({ behavior: 'smooth', block: 'center' }); var b = tgt.querySelector('.rounded'); if (b) { b.classList.add('cbchat-flash'); setTimeout(function () { b.classList.remove('cbchat-flash'); }, 1200); } }
-        });
-    }
-    function appendMsg(m, prepend) {
-        if (m.id) { if (seen[m.id]) return null; seen[m.id] = 1; }
-        var wrap = document.createElement('div'); wrap.innerHTML = msgHtml(m); var el = wrap.firstChild;
-        if (prepend) scroll.insertBefore(el, scroll.firstChild); else scroll.appendChild(el);
-        bindMsg(el, m);
-        if (!prepend) { var im = el.querySelector('img'); if (im) im.addEventListener('load', function () { scrollBottom(); }); }
-        return el;
-    }
-    function scrollBottom() { scroll.scrollTop = scroll.scrollHeight; }
-    // size the messenger to fill from its top edge down to the viewport bottom → composer always visible
-    // ---- phone: the two columns are two screens ------------------------------------------------
-    var CB_CHAT_PHONE = '(max-width: 991.98px)';
-    function isPhone() { return window.matchMedia(CB_CHAT_PHONE).matches; }
-    // WHERE THE LIST WAS. body{overflow:hidden} stops the page scrolling behind the full-screen thread,
-    // but the browser CLAMPS the document scroll to 0 while it is set and does not put it back when it is
-    // cleared — so scrolling down the list, opening a chat and coming back dropped you at the top of the
-    // list every time, with the name you had just found scrolled away again. Measured: 80 → 0 → 0.
-    var listScrollY = 0;
-    function setPane(which) {
-        var w = document.getElementById('cbchat_wrap'); if (!w) return;
-        var wasList = w.getAttribute('data-cbchat-pane') !== 'thread';
-        if (which === 'thread' && isPhone() && wasList) listScrollY = window.scrollY || 0;
-
-        w.setAttribute('data-cbchat-pane', which);
-        document.body.style.overflow = (which === 'thread' && isPhone()) ? 'hidden' : '';
-
-        if (which === 'list') {
-            // After the layout is back, not before: restoring into a still-clamped document scrolls nowhere.
-            var y = listScrollY;
-            requestAnimationFrame(function () { window.scrollTo(0, y); });
-        }
-        fitMessenger();
-        if (which === 'thread') setTimeout(scrollBottom, 60);
-    }
-    var backBtn = document.getElementById('chatBack');
-    if (backBtn) backBtn.addEventListener('click', function () { setPane('list'); });
-
-    // Tap a bubble to show its tools; tap it again, or another one, to put them away. Delegated, because
-    // messages arrive after this runs. Anything already interactive inside the bubble keeps its own tap.
-    document.addEventListener('click', function (e) {
-        if (!isPhone()) return;
-        var msg = e.target.closest ? e.target.closest('.chat-msg') : null;
-        if (e.target.closest && e.target.closest('.chat-tools, a, button, input, textarea, .cbchat-quote')) return;
-        document.querySelectorAll('.chat-msg.cbchat-tools-open').forEach(function (el) {
-            if (el !== msg) el.classList.remove('cbchat-tools-open');
-        });
-        if (msg) msg.classList.toggle('cbchat-tools-open');
-    });
-
-    function fitMessenger() {
-        var m = document.getElementById('cbchat_messenger'); if (!m) return;
-        var w = document.getElementById('cbchat_wrap');
-        // On a phone the thread is position:fixed and the CSS already gives it the viewport height —
-        // an inline pixel height computed from a rect would fight it, and 100dvh is what tracks the
-        // browser chrome collapsing as you scroll.
-        if (isPhone() && w && w.getAttribute('data-cbchat-pane') === 'thread') { m.style.height = ''; if (cur) scrollBottom(); return; }
-        m.style.height = '';
-        var h = window.innerHeight - m.getBoundingClientRect().top - 16;
-        m.style.height = Math.max(420, h) + 'px';
-        if (cur) scrollBottom();
-    }
-    window.addEventListener('resize', fitMessenger);
-    // Leaving phone width with a thread open must not leave the list hidden on a desktop layout.
-    try {
-        window.matchMedia(CB_CHAT_PHONE).addEventListener('change', function (e) {
-            if (!e.matches) { document.body.style.overflow = ''; fitMessenger(); }
-            else if (cur) setPane('thread');
-        });
-    } catch (e) { /* older browsers: the resize handler above still refits */ }
-    function updateSeenBar() {
-        var el = $('chatSeen'); if (!el || !curHeader) { if (el) el.innerHTML = ''; return; }
-        var rows = scroll.querySelectorAll('.chat-msg[data-mine="1"]');
-        if (!rows.length) { el.innerHTML = ''; return; }
-        var lastId = parseInt(rows[rows.length - 1].getAttribute('data-id')) || 0;
-        var seenIco = '<i class="ki-outline ki-double-check fs-7 text-primary"></i> ';
-        var sentIco = '<i class="ki-outline ki-check fs-7"></i> ';
-        if (curHeader.kind === 'Direct') {
-            el.innerHTML = (otherReadUpTo >= lastId) ? seenIco + '@Localizer["Seen"]' : sentIco + '@Localizer["Sent"]';
-        } else {
-            var others = (curHeader.memberCount || 1) - 1, readers = 0;
-            for (var k in memberReads) { if (memberReads[k] >= lastId) readers++; }
-            if (others > 0 && readers >= others) el.innerHTML = seenIco + '@Localizer["Read by all"]';
-            else if (readers > 0) el.innerHTML = seenIco + '@Localizer["Read by"]' + ' ' + readers;
-            else el.innerHTML = sentIco + '@Localizer["Sent"]';
-        }
-    }
-
-    function openConversation(id, meta) {
-        if (conn && cur) { try { conn.invoke('LeaveConversation', cur); } catch (e) {} }
-        cur = id; curHeader = { kind: meta.kind, other: meta.other || null }; replyTo = null; $('chatReplyBar').classList.add('d-none'); oldestId = null; members = [];
-        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none'); setComposerEnabled(true);
-        if (isPhone()) setPane('thread'); else fitMessenger();
-        titleEl.textContent = meta.title || '';
-        headSym.classList.toggle('d-none', meta.kind === 'Group');
-        headAvatar.src = meta.avatar || blank;
-        presenceEl.innerHTML = meta.kind === 'Direct' ? ('<span class="badge badge-circle w-8px h-8px me-1 ' + (meta.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (meta.online ? '@Localizer["Active"]' : '@Localizer["Offline"]')) : '@Localizer["Group"]';
-        updateMembersBtn();
-        seen = {}; otherReadUpTo = 0; memberReads = {}; scroll.innerHTML = ''; var se = $('chatSeen'); if (se) se.innerHTML = '';
-        fetch('/Chat/Messages?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
-            msgs.forEach(function (m) { appendMsg(m, false); });
-            if (msgs.length) oldestId = msgs[0].id;
-            scrollBottom(); setTimeout(scrollBottom, 120); setTimeout(scrollBottom, 400);
-        });
-        fetch('/Chat/Header?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) {
-            if (!h) return;
-            otherReadUpTo = h.otherReadMessageId || 0;
-            if (curHeader) { curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner; }
-            members = h.members || [];   // group members → mention picker + member management
-            memberReads = {}; (h.memberReads || []).forEach(function (r) { memberReads[r.employeeId] = r.lastReadMessageId; });
-            updateSeenBar();
-            updateMembersBtn();
-            if (membersModalOpen()) renderMembers();   // live-refresh if the modal is open
-        });
-        if (conn) { try { conn.invoke('JoinConversation', id); } catch (e) {} }
-        post('/Chat/MarkRead', { c: id }).then(function () { loadConvs(); if (window.__cbnbReload) window.__cbnbReload(); });
-        // update selected styling
-        convList.querySelectorAll('.chat-conv').forEach(function (el) { el.classList.toggle('bg-light-primary', parseInt(el.getAttribute('data-id')) === id); });
-    }
-
-    // infinite scroll up → load older
-    scroll.addEventListener('scroll', function () {
-        if (scroll.scrollTop < 40 && oldestId && !loading) {
-            loading = true; var keep = scroll.scrollHeight;
-            fetch('/Chat/Messages?c=' + cur + '&before=' + oldestId, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
-                msgs.reverse().forEach(function (m) { appendMsg(m, true); });
-                if (msgs.length) oldestId = msgs[msgs.length - 1].id;
-                scroll.scrollTop = scroll.scrollHeight - keep; loading = false;
-            });
-        }
-    });
-
-    // ---------- reply ----------
-    function setReply(id, text) { replyTo = id; $('chatReplyText').textContent = text; $('chatReplyBar').classList.remove('d-none'); $('chatReplyBar').classList.add('d-flex'); input.focus(); }
-    $('chatReplyCancel').addEventListener('click', function () { replyTo = null; $('chatReplyBar').classList.add('d-none'); });
-
-    // ---------- send ----------
-    function detectMentions(body) {
-        if (!body || !dir.length) return '';
-        var ids = [];
-        dir.forEach(function (d) { if (body.indexOf('@@' + d.name) !== -1) ids.push(d.id); });
-        return ids.join(',');
-    }
-    // ---------- @@mention autocomplete ----------
-    var mentionBox = $('chatMentionBox'), mentionStart = -1;
-    function mentionOpen() { return mentionBox && !mentionBox.classList.contains('d-none'); }
-    function hideMention() { if (mentionBox) mentionBox.classList.add('d-none'); mentionStart = -1; }
-    function showMention() {
-        if (!mentionBox) return;
-        var val = input.value, pos = (input.selectionStart == null ? val.length : input.selectionStart);
-        var m = val.substring(0, pos).match(/@@(\S{0,20})$/);
-        // mentions only make sense in a GROUP, and only its members are mentionable
-        var src = (curHeader && curHeader.kind === 'Group') ? members : [];
-        if (!m || !src.length) { hideMention(); return; }
-        mentionStart = pos - m[0].length;
-        var q = m[1].toLowerCase();
-        var list = src.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
-        if (!list.length) { hideMention(); return; }
-        mentionBox.innerHTML = list.map(function (d, i) {
-            return '<div class="cbm d-flex align-items-center p-2 rounded bg-hover-light cursor-pointer' + (i === 0 ? ' active' : '') + '" data-name="' + esc(d.name) + '">' +
-                '<div class="symbol symbol-25px symbol-circle me-2"><img src="' + (d.avatar || blank) + '" alt=""></div><span class="fs-7 fw-semibold text-gray-800">' + esc(d.name) + '</span></div>';
-        }).join('');
-        mentionBox.querySelectorAll('.cbm').forEach(function (el) {
-            el.addEventListener('mousedown', function (ev) { ev.preventDefault(); pickMention(el.getAttribute('data-name')); });
-        });
-        mentionBox.classList.remove('d-none');
-    }
-    function pickMention(name) {
-        var val = input.value, pos = (input.selectionStart == null ? val.length : input.selectionStart);
-        input.value = val.substring(0, mentionStart) + '@@' + name + ' ' + val.substring(pos);
-        var np = mentionStart + name.length + 2; try { input.setSelectionRange(np, np); } catch (e) { }
-        hideMention(); input.focus();
-    }
-    function autoGrow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
-    input.addEventListener('input', function () { showMention(); autoGrow(); });
-    input.addEventListener('blur', function () { setTimeout(hideMention, 200); });
-    // ---------- emoji picker (lightweight, no external lib) ----------
-    (function () {
-        var btn = $('chatEmojiBtn'); if (!btn) return;
-        var pop = document.createElement('div');
-        pop.className = 'd-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-2';
-        pop.style.cssText += 'bottom:100%;inset-inline-start:6px;margin-bottom:8px;width:284px;max-height:210px;overflow:auto;z-index:31;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;';
-        pop.innerHTML = EMO.map(function (e) { return '<span class="cbemo" style="cursor:pointer;font-size:20px;text-align:center;padding:4px;border-radius:6px;">' + e + '</span>'; }).join('');
-        $('chatFooter').appendChild(pop);
-        btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pop.classList.toggle('d-none'); });
-        pop.addEventListener('click', function (e) {
-            var t = e.target.closest('.cbemo'); if (!t) return;
-            var s = input.selectionStart == null ? input.value.length : input.selectionStart;
-            var en = input.selectionEnd == null ? s : input.selectionEnd;
-            input.value = input.value.slice(0, s) + t.textContent + input.value.slice(en);
-            var np = s + t.textContent.length; input.focus(); try { input.setSelectionRange(np, np); } catch (x) {}
-            autoGrow();
-        });
-        document.addEventListener('click', function (e) { if (!pop.classList.contains('d-none') && !pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) pop.classList.add('d-none'); });
-    })();
-    function sendCore(body, file) {
-        if (!cur) return;
-        body = (body || '').trim();
-        if (!body && !file) return;
-        if (file && file.size > 50 * 1024 * 1024) { if (window.toastr) toastr.error('@Localizer["Image too large"]'); return; }
-        var fd = new FormData(); fd.append('c', cur); if (body) fd.append('body', body);
-        if (replyTo) fd.append('replyToId', replyTo);
-        var mids = detectMentions(body); if (mids) fd.append('mentionedIds', mids);
-        if (file) fd.append('file', file);
-        replyTo = null; $('chatReplyBar').classList.add('d-none');
-        var sb = $('chatSend'); if (sb) sb.disabled = true;
-        // dedicated fetch (not the silent post()) so mobile upload failures SURFACE a reason instead of vanishing
-        fetch('/Chat/Send', { method: 'POST', credentials: 'same-origin', body: fd })
-            .then(function (r) { if (!r.ok) return r.text().then(function () { throw new Error('HTTP ' + r.status); }); return r.json(); })
-            .then(function (dto) { if (dto) { appendMsg(dto, false); scrollBottom(); updateSeenBar(); loadConvs(); } else { throw new Error('empty'); } })
-            .catch(function (err) { if (window.toastr) toastr.error('@Localizer["Send failed"]' + ' (' + (err && err.message ? err.message : '') + ')'); })
-            .then(function () { if (sb) sb.disabled = false; });
-    }
-    function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; sendCore(b, null); }
-    sendBtn.addEventListener('click', doSend);
-    input.addEventListener('keydown', function (e) {
-        if (mentionOpen()) {
-            var items = [].slice.call(mentionBox.querySelectorAll('.cbm'));
-            if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); var a = mentionBox.querySelector('.cbm.active') || items[0]; if (a) pickMention(a.getAttribute('data-name')); return; }
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault(); var idx = items.findIndex(function (x) { return x.classList.contains('active'); }); if (idx < 0) idx = 0;
-                items[idx].classList.remove('active'); idx = e.key === 'ArrowDown' ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
-                items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); return;
-            }
-            if (e.key === 'Escape') { hideMention(); return; }
-        }
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
-        else if (conn && cur) { try { conn.invoke('Typing', cur); } catch (x) {} }
-    });
-    // attaching a file opens a PREVIEW modal (image/preview + optional caption) BEFORE sending
-    attach.addEventListener('change', function () {
-        var f = attach.files && attach.files[0]; if (!f) return;
-        pendingFile = f;
-        var wrap = $('chatImgPreviewWrap');
-        if (/^image\//.test(f.type)) { wrap.innerHTML = '<img src="' + URL.createObjectURL(f) + '" style="max-width:100%;max-height:52vh;border-radius:8px;display:block;margin:0 auto;" />'; }
-        else { wrap.innerHTML = '<div class="d-flex flex-center flex-column py-8"><i class="ki-outline ki-file fs-5x text-primary mb-3"></i><div class="fw-semibold text-gray-800">' + esc(f.name) + '</div></div>'; }
-        $('chatImgCaption').value = input.value.trim();
-        imgModal.show();
-    });
-    $('chatImgSend').addEventListener('click', function () {
-        var cap = $('chatImgCaption').value.trim(), f = pendingFile;
-        pendingFile = null; attach.value = ''; input.value = ''; imgModal.hide();
-        sendCore(cap, f);
-    });
-    $('chatImgModal').addEventListener('hidden.bs.modal', function () { pendingFile = null; attach.value = ''; $('chatImgPreviewWrap').innerHTML = ''; $('chatImgCaption').value = ''; });
-
-    // ---------- edit message (modal shows the CURRENT text, user edits it) ----------
-    var editModal = new bootstrap.Modal($('chatEditModal'));
-    function openEdit(id, body) {
-        $('chatEditId').value = id;
-        var t = $('chatEditText'); t.value = body || '';
-        editModal.show();
-        setTimeout(function () { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (x) {} }, 250);
-    }
-    function saveEdit() {
-        var id = $('chatEditId').value, nb = $('chatEditText').value.trim();
-        if (!id || !nb) return;
-        post('/Chat/Edit', { id: id, body: nb });
-        editModal.hide();
-    }
-    $('chatEditSave').addEventListener('click', saveEdit);
-    $('chatEditText').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); } });
-
-    // ---------- group members: view / add / remove ----------
-    var membersModal = new bootstrap.Modal($('chatMembersModal'));
-    function membersModalOpen() { return $('chatMembersModal').classList.contains('show'); }
-    function setComposerEnabled(on) {
-        footer.classList.toggle('cbchat-locked', !on);
-        input.disabled = !on; input.placeholder = on ? '@Localizer["Type a message"]' : '@Localizer["You are no longer a member of this group"]';
-        var sb = $('chatSend'); if (sb) sb.disabled = !on;
-    }
-    function updateMembersBtn() {
-        var btn = $('chatMembersBtn'); if (!btn) return;
-        var isGroup = curHeader && curHeader.kind === 'Group';
-        btn.classList.toggle('d-none', !isGroup);
-        if (isGroup) $('chatMembersCount').textContent = (curHeader.memberCount || (members.length + 1));
-    }
-    function memberRowHtml(d, removable) {
-        return '<div class="d-flex align-items-center p-2 rounded bg-hover-light" data-id="' + d.id + '">' +
-            '<div class="symbol symbol-35px symbol-circle position-relative me-3"><img src="' + (d.avatar || blank) + '" alt="" />' +
-              '<span class="badge badge-circle w-8px h-8px ' + (d.online ? 'badge-success' : 'badge-secondary') + ' position-absolute bottom-0 end-0"></span></div>' +
-            '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
-            (removable ? '<button class="btn btn-icon btn-sm btn-light-danger mem-del" title="@Localizer["Remove"]"><i class="ki-outline ki-trash fs-6"></i></button>' : '') +
-            '</div>';
-    }
-    function renderMembers() {
-        var owner = curHeader && curHeader.isOwner;
-        // "me" first (with a Leave button), then the rest
-        var meRow = '<div class="d-flex align-items-center p-2 rounded" data-id="' + meId + '">' +
-            '<div class="symbol symbol-35px symbol-circle me-3"><span class="symbol-label bg-light-primary text-primary fw-bold">@Localizer["You"]</span></div>' +
-            '<span class="fw-semibold text-gray-800 flex-grow-1">@Localizer["You"]' + (owner ? ' · <span class="badge badge-light-primary">@Localizer["Owner"]</span>' : '') + '</span>' +
-            '<button class="btn btn-sm btn-light-danger mem-leave">@Localizer["Leave group"]</button></div>';
-        $('memList').innerHTML = meRow + members.map(function (d) { return memberRowHtml(d, owner); }).join('');
-        $('memList').querySelectorAll('.mem-del').forEach(function (b) {
-            b.addEventListener('click', function () { var row = b.closest('[data-id]'); removeMember(parseInt(row.getAttribute('data-id'))); });
-        });
-        var lv = $('memList').querySelector('.mem-leave'); if (lv) lv.addEventListener('click', function () { if (confirm('@Localizer["Leave this group?"]')) removeMember(meId); });
-        // add-section: any member may add; list = directory minus current members
-        $('memAddWrap').classList.remove('d-none');
-        loadDir(function () { renderMemAddList(''); });
-    }
-    function renderMemAddList(q) {
-        var have = {}; members.forEach(function (d) { have[d.id] = 1; }); have[meId] = 1;
-        var list = dir.filter(function (d) { return !have[d.id] && d.name.toLowerCase().indexOf(q.toLowerCase()) !== -1; }).slice(0, 30);
-        $('memAddList').innerHTML = list.length ? list.map(function (d) {
-            return '<div class="d-flex align-items-center p-2 rounded bg-hover-light" data-id="' + d.id + '">' +
-                '<div class="symbol symbol-35px symbol-circle me-3"><img src="' + (d.avatar || blank) + '" alt="" /></div>' +
-                '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
-                '<button class="btn btn-icon btn-sm btn-light-primary mem-add" title="@Localizer["Add member"]"><i class="ki-outline ki-plus fs-4"></i></button></div>';
-        }).join('') : '<div class="text-muted text-center py-4 fs-8">@Localizer["No results"]</div>';
-        $('memAddList').querySelectorAll('.mem-add').forEach(function (b) {
-            b.addEventListener('click', function () { var row = b.closest('[data-id]'); addMember(parseInt(row.getAttribute('data-id'))); });
-        });
-    }
-    function addMember(id) { if (!cur) return; post('/Chat/AddMember', { c: cur, employeeId: id }).then(function () { refreshHeaderMembers(); }); }
-    function removeMember(id) {
-        if (!cur) return;
-        post('/Chat/RemoveMember', { c: cur, employeeId: id }).then(function () {
-            if (id === meId) { membersModal.hide(); setComposerEnabled(false); toastr && toastr.info('@Localizer["You left the group"]'); cur = null; loadConvs(); }
-            else refreshHeaderMembers();
-        });
-    }
-    function refreshHeaderMembers() {
-        if (!cur) return;
-        fetch('/Chat/Header?c=' + cur, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) {
-            if (!h) return;
-            if (curHeader) { curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner; }
-            members = h.members || [];
-            updateMembersBtn();
-            if (membersModalOpen()) renderMembers();
-        });
-    }
-    $('chatMembersBtn').addEventListener('click', function () { if (!curHeader || curHeader.kind !== 'Group') return; renderMembers(); membersModal.show(); });
-    $('memSearch').addEventListener('input', function () { renderMemAddList(this.value); });
-
-    // ---------- directory / new chat / new group ----------
-    function loadDir(cb) { fetch('/Chat/Directory', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) { dir = list; if (cb) cb(list); }); }
-    function dirRowHtml(d, checkbox) {
-        var dot = '<span class="badge badge-circle w-8px h-8px ' + (d.online ? 'badge-success' : 'badge-secondary') + ' position-absolute bottom-0 end-0"></span>';
-        return '<div class="d-flex align-items-center p-2 rounded bg-hover-light cursor-pointer dir-row" data-id="' + d.id + '" data-name="' + esc(d.name) + '">' +
-            '<div class="symbol symbol-35px symbol-circle position-relative me-3"><img src="' + (d.avatar || blank) + '" alt="" />' + dot + '</div>' +
-            '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
-            (checkbox ? '<input type="checkbox" class="form-check-input grp-chk" value="' + d.id + '" />' : '') + '</div>';
-    }
-    var newModal = new bootstrap.Modal($('chatNewModal'));
-    var grpModal = new bootstrap.Modal($('chatGroupModal'));
-    var imgModal = new bootstrap.Modal($('chatImgModal'));
-    $('chatBtnNew').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('dirList', list, false); }); newModal.show(); });
-    $('dirSearch').addEventListener('input', function () { var q = this.value.toLowerCase(); renderDir('dirList', dir.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }), false); });
-    $('chatBtnGroup').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('grpList', list, true); }); grpModal.show(); });
-    $('grpSearch').addEventListener('input', function () { var q = this.value.toLowerCase(); renderDir('grpList', dir.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }), true); });
-    function renderDir(containerId, list, checkbox) {
-        var c = $(containerId); c.innerHTML = list.map(function (d) { return dirRowHtml(d, checkbox); }).join('') || '<div class="text-muted text-center py-6 fs-7">—</div>';
-        if (!checkbox) c.querySelectorAll('.dir-row').forEach(function (el) { el.addEventListener('click', function () {
-            post('/Chat/StartDirect', { otherId: el.getAttribute('data-id') }).then(function (res) { newModal.hide(); loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); openConversation(res.id, m || { kind: 'Direct', title: el.getAttribute('data-name') }); }); });
-        }); });
-    }
-    $('grpCreate').addEventListener('click', function () {
-        var title = $('grpTitle').value.trim(); if (!title) { $('grpTitle').focus(); return; }
-        var ids = Array.prototype.slice.call(document.querySelectorAll('.grp-chk:checked')).map(function (x) { return x.value; }).join(',');
-        post('/Chat/CreateGroup', { title: title, memberIds: ids }).then(function (res) { grpModal.hide(); loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); openConversation(res.id, m || { kind: 'Group', title: title }); }); });
-    });
-
-    // ---------- realtime ----------
-    function startHub() {
-        if (!window.signalR) return;
-        conn = new signalR.HubConnectionBuilder().withUrl('/hubs/chat').withAutomaticReconnect().build();
-        conn.on('message', function (m) {
-            if (m.conversationId === cur) {
-                if (m.senderId !== meId) { appendMsg(m, false); scrollBottom(); post('/Chat/MarkRead', { c: cur }); }
-            }
-            loadConvs();
-        });
-        conn.on('edited', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"] .rounded'); if (el) el.innerHTML = esc(e.body).replace(/\n/g, '<br>'); } });
-        conn.on('deleted', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"]'); if (el) { var b = el.querySelector('.rounded'); if (b) { b.className = 'p-3 rounded bg-light text-muted fst-italic mw-lg-450px'; b.innerHTML = '@Localizer["Message deleted"]'; } } } });
-        conn.on('reaction', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"]'); if (el) { var old = el.querySelector('.d-flex.gap-1'); var html = '<div class="d-flex gap-1 mt-1">' + e.reactions.map(function (r) { return '<span class="badge badge-light fs-8">' + r.emoji + ' ' + r.count + '</span>'; }).join('') + '</div>'; if (old) old.outerHTML = html; else el.querySelector('.d-flex.flex-column').insertAdjacentHTML('beforeend', html); } } });
-        conn.on('typing', function (e) { if (e.conversationId === cur) { var nm = ''; if (curHeader && curHeader.kind === 'Group') { var d = dir.find(function (x) { return x.id === e.employeeId; }); if (d) nm = d.name + ' — '; } typingEl.textContent = nm + '@Localizer["typing..."]'; clearTimeout(window._typingT); window._typingT = setTimeout(function () { typingEl.textContent = ''; }, 2500); } });
-        conn.on('presence', function (e) { if (curHeader && curHeader.kind === 'Direct' && curHeader.other === e.employeeId) { presenceEl.innerHTML = '<span class="badge badge-circle w-8px h-8px me-1 ' + (e.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (e.online ? '@Localizer["Active"]' : '@Localizer["Offline"]'); } loadConvs(); });
-        conn.on('conversation', function () { loadConvs(); });
-        // group membership changed (someone added/removed) → refresh members list + mention source
-        conn.on('members', function (e) { if (e && e.conversationId === cur) refreshHeaderMembers(); loadConvs(); });
-        // I was removed from a group → lock the composer and inform me
-        conn.on('removed', function (e) {
-            if (e && e.conversationId === cur) { setComposerEnabled(false); if (membersModalOpen()) membersModal.hide(); if (window.toastr) toastr.warning('@Localizer["You were removed from this group"]'); }
-            loadConvs();
-        });
-        conn.on('read', function (e) { if (e.conversationId === cur && e.employeeId !== meId) { otherReadUpTo = Math.max(otherReadUpTo, e.lastReadId || 0); memberReads[e.employeeId] = Math.max(memberReads[e.employeeId] || 0, e.lastReadId || 0); updateSeenBar(); } });
-        // on auto-reconnect the server-side group membership is lost → rejoin the open conversation + refresh once
-        conn.onreconnected(function () {
-            if (cur) { try { conn.invoke('JoinConversation', cur); } catch (e) {}
-                fetch('/Chat/Messages?c=' + cur, { credentials: 'same-origin' }).then(function (r) { return r.json(); })
-                    .then(function (msgs) { var added = false; msgs.forEach(function (m) { if (appendMsg(m, false)) added = true; }); if (added) scrollBottom(); }).catch(function () {}); }
-            loadConvs();
-        });
-        conn.start().then(function () { if (cur) conn.invoke('JoinConversation', cur); }).catch(function () {});
-    }
-    if (window.signalR) startHub();
-    else { var s = document.createElement('script'); s.src = signalrSrc; s.onload = startHub; document.head.appendChild(s); }
-
-    // ---------- boot ----------
-    loadDir();
-    loadConvs(function (list) {
-        if (openConv) { var m = list.find(function (x) { return x.id === openConv; }); if (m) openConversation(openConv, m); }
-    });
-    fitMessenger(); setTimeout(fitMessenger, 250);
-});
-</script>
+<script src="~/lib/lucide/lucide-0.469.0.min.js"></script>
+<script>window.CB_COMM = @(Json.Serialize(cfg));</script>
+<script src="~/js/comm/comm.js" asp-append-version="true"></script>
 }

@@ -1,0 +1,255 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCallSettings
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> HT
+@*
+    COMMUNICATION SETTINGS (owner, 2026-11-18; the approved prototype, #/comm-settings) — for the whole system, opened
+    inside the module the administrator came from. Everyone in the company may chat with and call everyone, so the old
+    "who may call whom" matrix is gone; the hospital's own options show only where the hospital module is on.
+    What must be ready is TESTED from this browser, not ticked by hand.
+*@
+@{
+    Layout = (string?)ViewBag.CommLayout ?? "~/Views/Shared/_LayoutBackend.cshtml";
+    ViewData["Title"] = Localizer["Communication settings"].Value;
+    bool installed = ViewBag.Installed == true;
+    bool hospital = ViewBag.Hospital == true;
+    bool hasSecret = !string.IsNullOrEmpty(Model.TurnSecret);
+    bool hasSfuSecret = !string.IsNullOrEmpty(Model.SfuApiSecret);
+    bool sfuReady = HospitalCallGroupRules.SfuReady(Model.SfuUrl, Model.SfuApiKey, Model.SfuApiSecret);
+    var people = ViewBag.People as IReadOnlyList<HospitalCallPerson> ?? Array.Empty<HospitalCallPerson>();
+    var reviewers = HospitalCallRecordingRules.ParseIds(Model.RecordingReviewers);
+    var recGroups = HospitalCallRecordingRules.ParseGroups(Model.RecordingGroups);
+    bool everyone = HospitalCallGroups.All.All(g => recGroups.Contains(g));
+    string I(string name, int s = 18) => $"<i data-lucide=\"{name}\" class=\"cm-i\" style=\"width:{s}px;height:{s}px\" aria-hidden=\"true\"></i>";
+}
+<link href="~/css/comm/comm.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid cm-root">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Communication settings"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index")" class="text-muted text-hover-primary">@Localizer["Communication"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Settings"]</li>
+            </ul>
+        </div>
+        <button type="button" class="cm-pill" id="csSave" @(installed ? "" : "disabled")>@Html.Raw(I("save", 14))@Localizer["Save"]</button>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!installed)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <span class="cm-chip red me-4">@Html.Raw(I("triangle-alert"))</span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold">@Localizer["Calls are not installed yet"]</h4><div class="fs-6 text-gray-700">@HospitalCallService.NoTables</div></div>
+            </div>
+        }
+        <div class="row g-5">
+            <div class="col-xl-6">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("users-round"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Who reaches whom"]</span><span class="text-muted fs-7 mt-1">@Localizer["Across the whole company"]</span></div></div></div>
+                    <div class="card-body pt-2"><div class="cm-note">@Html.Raw(I("globe", 20))<div><div class="fw-bold">@Localizer["Everyone in the company may chat with and call everyone"]</div><div class="text-muted fs-7">@Localizer["Like the chat: no limits between departments. A call never leaves the company network."]</div></div></div></div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("sliders-horizontal"))</span><span class="fs-4 fw-bold">@Localizer["Call options"]</span></div></div>
+                    <div class="card-body pt-0">
+                        @foreach (var (id, icon, title, sub, on) in new[] {
+                            ("csVideo", "video", "Video calls", "With voice; can be voice-only on weak networks", Model.VideoEnabled),
+                            ("csShare", "monitor-up", "Screen sharing", "To show a file or a screen during a call", Model.ScreenShareEnabled),
+                            ("csGroup", "users-round", "Group calls", sfuReady ? "From any group chat, up to twelve with the media server" : "From any group chat, up to four people", Model.GroupEnabled),
+                            ("csInChat", "message-circle", "Write calls into the chat", "Missed, finished and recorded calls appear inside the chat", Model.CallsInChat) })
+                        {
+                            <div class="cm-set"><span class="cm-chip">@Html.Raw(I(icon, 16))</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">@Localizer[title]</div><div class="text-muted fs-7">@Localizer[sub]</div></div>
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="@id" @(on ? "checked" : "") aria-label="@Localizer[title]" /></label></div>
+                        }
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csRing">@Localizer["Ring time"]</label>
+                                <select class="form-select form-select-solid" id="csRing">@foreach (var s in new[] { 20, 30, 45, 60 }) { <option value="@s" selected="@(Model.RingSeconds == s)">@string.Format(Localizer["{0} seconds"].Value, s)</option> }</select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csGroupMax">@Localizer["Most people in a group call"]</label>
+                                <select class="form-select form-select-solid" id="csGroupMax">@foreach (var gm in sfuReady ? new[] { 3, 4, 6, 8, 12 } : new[] { 3, 4 }) { <option value="@gm" selected="@(HospitalCallGroupRules.Cap(Model.GroupMax, sfuReady) == gm)">@gm</option> }</select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csHeight">@Localizer["Highest video quality"]</label>
+                                <select class="form-select form-select-solid" id="csHeight">@foreach (var h in new[] { 480, 720, 1080 }) { <option value="@h" selected="@(Model.MaxVideoHeight == h)">@(h)p</option> }</select></div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (hospital)
+                {
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("layout-grid"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["By module"]</span><span class="text-muted fs-7 mt-1">@Localizer["Only where the module is on"]</span></div></div></div>
+                        <div class="card-body pt-0">
+                            <div class="cm-set"><span class="cm-chip">@Html.Raw(I("stethoscope", 16))</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">@Localizer["Hospital: link a call to a patient"]</div><div class="text-muted fs-7">@Localizer["The patient shows before answering; the note and the recording join their file"]</div></div>
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="csPatient" @(Model.PatientLink ? "checked" : "") /></label></div>
+                            <div class="cm-set"><span class="cm-chip">@Html.Raw(I("calendar-clock", 16))</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">@Localizer["Hospital: on call now"]</div><div class="text-muted fs-7">@Localizer["The on-call roster at the top of People"]</div></div>
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="csOnCall" @(Model.OnCallList ? "checked" : "") /></label></div>
+                        </div>
+                    </div>
+                }
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("server"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Internal servers"]</span><span class="text-muted fs-7 mt-1">@Localizer["Set by IT; nothing leaves the company network"]</span></div></div></div>
+                    <div class="card-body pt-2">
+                        <div class="mb-4"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csUrls">@Localizer["Relay addresses (TURN)"]</label>
+                            <input class="form-control form-control-solid" dir="ltr" id="csUrls" value="@Model.TurnUrls" placeholder="turn:10.0.5.20:3478, turns:turn.company.local:5349" />
+                            <div class="text-muted fs-8 mt-1">@Localizer["Comma separated. Empty: calls work only between devices on the same network."]</div></div>
+                        <div class="mb-6"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csSecret">@Localizer["Relay shared secret"]</label>
+                            <input type="password" class="form-control form-control-solid" dir="ltr" id="csSecret" autocomplete="new-password" placeholder="@(hasSecret ? Localizer["Saved — type to replace it"].Value : Localizer["Not set"].Value)" />
+                            @if (hasSecret) { <label class="form-check form-check-custom form-check-solid mt-3"><input class="form-check-input" type="checkbox" id="csClear" /><span class="form-check-label text-gray-700 fs-7">@Localizer["Remove the saved secret"]</span></label> }</div>
+                        <div class="mb-4"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csSfuUrl">@Localizer["Media server address (LiveKit)"]</label>
+                            <input class="form-control form-control-solid" dir="ltr" id="csSfuUrl" value="@Model.SfuUrl" placeholder="wss://livekit.company.local:7880" /></div>
+                        <div class="row g-4">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csSfuKey">@Localizer["API key"]</label>
+                                <input class="form-control form-control-solid" dir="ltr" id="csSfuKey" value="@Model.SfuApiKey" autocomplete="off" /></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2" for="csSfuSecret">@Localizer["API secret"]</label>
+                                <input type="password" class="form-control form-control-solid" dir="ltr" id="csSfuSecret" autocomplete="new-password" placeholder="@(hasSfuSecret ? Localizer["Saved — type to replace it"].Value : Localizer["Not set"].Value)" />
+                                @if (hasSfuSecret) { <label class="form-check form-check-custom form-check-solid mt-3"><input class="form-check-input" type="checkbox" id="csSfuClear" /><span class="form-check-label text-gray-700 fs-7">@Localizer["Remove the saved secret"]</span></label> }</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("activity"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Infrastructure"]</span><span class="text-muted fs-7 mt-1">@Localizer["Tested from this browser"]</span></div></div>
+                        <div class="card-toolbar"><button type="button" class="cm-pill light" id="csTest">@Html.Raw(I("refresh-cw", 14))@Localizer["Test again"]</button></div></div>
+                    <div class="card-body pt-0" id="csChecks">
+                        @foreach (var (k, title, sub) in new[] {
+                            ("https", "A trusted internal HTTPS address", "Browsers open the camera only on a secure connection"),
+                            ("hub", "The signalling channel", "The same one that carries chats and notifications"),
+                            ("turn", "The internal relay (TURN)", "Carries calls between branches and separate networks"),
+                            ("relay", "The relay answers from this device", "UDP 3478 and 49152–65535 open between the networks"),
+                            ("media", "Camera and microphone on this device", "A local test from the browser"),
+                            ("sfu", "The media server (more than four)", "LiveKit on an internal server") })
+                        {
+                            <div class="cm-set" data-check="@k"><span class="cm-chip wait"><span class="spinner-border spinner-border-sm"></span></span>
+                                <div class="flex-grow-1"><div class="fw-bold fs-7">@Localizer[title]</div><div class="text-muted fs-8">@Localizer[sub]</div></div>
+                                <span class="badge badge-light fw-bold cm-num" data-val>…</span></div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip red me-3">@Html.Raw(I("circle-dot"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Call recording"]</span><span class="text-muted fs-7 mt-1">@Localizer["Never without every side agreeing — a fixed rule"]</span></div></div></div>
+                    <div class="card-body pt-0">
+                        <div class="cm-set"><span class="cm-chip">@Html.Raw(I("mic", 16))</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">@Localizer["Allow asking to record"]</div><div class="text-muted fs-7">@Localizer["The recording goes to the File Manager on the call's record"]</div></div>
+                            <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="csRec" @(Model.RecordingEnabled ? "checked" : "") /></label></div>
+                        <div class="cm-set"><span class="cm-chip">@Html.Raw(I("film", 16))</span><div class="flex-grow-1 row g-3">
+                            <div class="col-md-6"><label class="fw-bold text-gray-900 mb-2 d-block" for="csRecMode">@Localizer["What is recorded"]</label>
+                                <select class="form-select form-select-solid" id="csRecMode"><option value="voice" selected="@(Model.RecordingMode == HospitalCallRecordingMode.Voice)">@Localizer["Voice only"]</option><option value="both" selected="@(Model.RecordingMode != HospitalCallRecordingMode.Voice)">@Localizer["Voice and video"]</option></select></div>
+                            <div class="col-md-6"><label class="fw-bold text-gray-900 mb-2 d-block" for="csRecDays">@Localizer["Kept for"]</label>
+                                <select class="form-select form-select-solid" id="csRecDays">@foreach (var d in HospitalCallRecordingRules.RetentionChoices) { <option value="@d" selected="@(Model.RecordingDays == d)">@(d == 0 ? Localizer["No automatic deletion"].Value : d == 365 ? Localizer["A year"].Value : string.Format(Localizer["{0} days, then deleted"].Value, d))</option> }</select></div>
+                        </div></div>
+                        <div class="cm-set"><span class="cm-chip">@Html.Raw(I("user-check", 16))</span><div class="flex-grow-1"><label class="fw-bold text-gray-900 mb-2 d-block" for="csWho">@Localizer["Who may ask to record"]</label>
+                            <select class="form-select form-select-solid" id="csWho"><option value="all" selected="@everyone">@Localizer["Everyone"]</option>@if (hospital) { <option value="some" selected="@(!everyone)">@Localizer["Chosen roles"]</option> }</select>
+                            @if (hospital)
+                            {
+                                <div class="d-flex flex-wrap gap-4 mt-3 @(everyone ? "d-none" : "")" id="csGroups">@foreach (var g in HospitalCallGroups.All) { <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-recgroup="@g" @(recGroups.Contains(g) ? "checked" : "") /><span class="form-check-label text-gray-800 fs-7">@HT["callgroup:" + g]</span></label> }</div>
+                            }
+                        </div></div>
+                        <div class="cm-set"><span class="cm-chip">@Html.Raw(I("eye", 16))</span><div class="flex-grow-1"><label class="fw-bold text-gray-900 mb-2 d-block" for="csReviewers">@Localizer["Who reviews every recording"]</label>
+                            <select class="form-select form-select-solid" id="csReviewers" multiple data-control="select2" data-placeholder="@Localizer["Nobody — only the people in each call"]">
+                                @foreach (var pp in people) { <option value="@pp.EmployeeId" selected="@reviewers.Contains(pp.EmployeeId)">@DisplayName.Of(pp.Name, pp.NameEn)</option> }</select>
+                            <div class="text-muted fs-8 mt-1">@Localizer["Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged."]</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script src="~/lib/lucide/lucide-0.469.0.min.js"></script>
+<script>
+(function () {
+    var W = @(Json.Serialize(new {
+        saved = Localizer["Settings saved"].Value, failed = Localizer["Could not save"].Value, save = Localizer["Save the settings?"].Value, yes = Localizer["Save"].Value, cancel = Localizer["Cancel"].Value,
+        connected = Localizer["Connected"].Value, notConnected = Localizer["Not connected"].Value, notSet = Localizer["Not set"].Value, noAnswer = Localizer["No answer"].Value,
+        answers = Localizer["Answers"].Value, denied = Localizer["Not allowed"].Value, notSecure = Localizer["Not secure"].Value }));
+    var saveUrl = @(Json.Serialize(Url.Action("SaveSettings")));
+    var sfuTestUrl = @(Json.Serialize(Url.Action("CallSfuTest")));
+    var lkUrl = @(Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js")));
+    var serverRelay = @(Json.Serialize(!string.IsNullOrEmpty(Model.TurnUrls) && !string.IsNullOrEmpty(Model.TurnSecret)));
+    var turnShown = @(Json.Serialize(string.IsNullOrEmpty(Model.TurnUrls) ? null : Model.TurnUrls.Split(',')[0]));
+    var allGroups = @(Json.Serialize(HospitalCallGroups.All));
+    function $(id) { return document.getElementById(id); }
+    function icons() { if (window.lucide && document.querySelector('i[data-lucide]')) lucide.createIcons({ attrs: { 'stroke-width': 1.75 } }); }
+    icons();
+
+    function mark(k, ok, val) {
+        var row = document.querySelector('[data-check="' + k + '"]'); if (!row) return;
+        var chip = row.querySelector('.cm-chip');
+        chip.className = 'cm-chip' + (ok ? '' : ' red');
+        chip.innerHTML = '<i data-lucide="' + (ok ? 'check' : 'x') + '" class="cm-i" style="width:16px;height:16px"></i>';
+        var b = row.querySelector('[data-val]'); b.textContent = val || ''; b.className = 'badge fw-bold cm-num ' + (ok ? 'badge-light-primary' : 'badge-light-danger');
+        icons();
+    }
+    function test() {
+        document.querySelectorAll('[data-check] .cm-chip').forEach(function (c) { c.className = 'cm-chip wait'; c.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; });
+        mark('https', window.isSecureContext, window.isSecureContext ? location.host : W.notSecure);
+        function hub() { var ok = window.cbCalls && window.cbCalls.connected(); mark('hub', !!ok, ok ? W.connected : W.notConnected); }
+        if (window.cbCalls && window.cbCalls.connected()) hub(); else { document.addEventListener('cbcalls:ready', hub); setTimeout(hub, 5000); }
+        mark('turn', serverRelay, serverRelay ? turnShown : W.notSet);
+        if (window.cbCalls) window.cbCalls.testRelay(6000).then(function (ok) { mark('relay', ok, ok ? W.answers : (serverRelay ? W.noAnswer : W.notSet)); });
+        else mark('relay', false, W.notSet);
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function (s) {
+                var v = s.getVideoTracks()[0], set = v && v.getSettings ? v.getSettings() : {};
+                mark('media', true, set.height ? set.height + 'p' : 'OK'); s.getTracks().forEach(function (t) { t.stop(); });
+            }).catch(function (e) { mark('media', false, e && e.name === 'NotAllowedError' ? W.denied : (e && e.name) || '—'); });
+        } else mark('media', false, W.notSecure);
+        fetch(sfuTestUrl, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (t) {
+            if (!t.ok) { mark('sfu', false, W.notSet); return; }
+            loadLk().then(function () {
+                var room = new LivekitClient.Room(), done = false;
+                var timer = setTimeout(function () { if (!done) { done = true; mark('sfu', false, W.noAnswer); try { room.disconnect(); } catch (e) { } } }, 8000);
+                room.connect(t.url, t.token).then(function () { if (done) return; done = true; clearTimeout(timer); mark('sfu', true, W.answers); room.disconnect(); })
+                    .catch(function () { if (done) return; done = true; clearTimeout(timer); mark('sfu', false, W.noAnswer); });
+            }).catch(function () { mark('sfu', false, W.noAnswer); });
+        }).catch(function () { mark('sfu', false, W.notSet); });
+    }
+    function loadLk() {
+        if (window.LivekitClient) return Promise.resolve();
+        return new Promise(function (ok, no) { var sc = document.createElement('script'); sc.src = lkUrl; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    }
+    $('csTest').addEventListener('click', test);
+    test();
+
+    var who = $('csWho'), grp = $('csGroups');
+    who.addEventListener('change', function () { if (grp) grp.classList.toggle('d-none', who.value === 'all'); });
+
+    function checked(id, fallback) { var el = $(id); return el ? el.checked : fallback; }
+    $('csSave').addEventListener('click', function () {
+        var btn = this;
+        Swal.fire({ text: W.save, icon: 'question', showCancelButton: true, buttonsStyling: false, confirmButtonText: W.yes, cancelButtonText: W.cancel,
+            customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } }).then(function (r) {
+            if (!r.isConfirmed) return;
+            var secret = $('csSecret').value, clear = $('csClear');
+            var groups = who.value === 'all' ? allGroups : Array.prototype.filter.call(document.querySelectorAll('[data-recgroup]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-recgroup'); });
+            var body = {
+                videoEnabled: $('csVideo').checked, screenShareEnabled: $('csShare').checked, groupEnabled: $('csGroup').checked, callsInChat: $('csInChat').checked,
+                patientLink: checked('csPatient', @(Model.PatientLink ? "true" : "false")), onCallList: checked('csOnCall', @(Model.OnCallList ? "true" : "false")),
+                ringSeconds: +$('csRing').value, maxVideoHeight: +$('csHeight').value, groupMax: +$('csGroupMax').value,
+                turnUrls: $('csUrls').value, turnSecret: clear && clear.checked ? '' : (secret ? secret : null),
+                sfuUrl: $('csSfuUrl').value, sfuApiKey: $('csSfuKey').value,
+                sfuApiSecret: (function () { var c = $('csSfuClear'), v = $('csSfuSecret').value; return c && c.checked ? '' : (v ? v : null); })(),
+                recordingEnabled: $('csRec').checked, recordingMode: $('csRecMode').value, recordingDays: +$('csRecDays').value,
+                recordingGroups: groups.length ? groups : ['-'],
+                recordingReviewers: Array.prototype.map.call($('csReviewers').selectedOptions, function (o) { return +o.value; })
+            };
+            btn.disabled = true;
+            fetch(saveUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: JSON.stringify(body) })
+                .then(function (r) { return r.json(); }).then(function (res) {
+                    btn.disabled = false;
+                    if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                    toastr.success(W.saved); setTimeout(function () { location.reload(); }, 700);
+                }).catch(function () { btn.disabled = false; toastr.error(W.failed); });
+        });
+    });
+})();
+</script>
+}

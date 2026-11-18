@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -195,5 +195,299 @@
   </data>
   <data name="Send failed" xml:space="preserve">
     <value>فشل الإرسال</value>
+  </data>
+  <data name="Add a member" xml:space="preserve">
+    <value>إضافة عضو</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>الكل</value>
+  </data>
+  <data name="Asked by" xml:space="preserve">
+    <value>طلبه</value>
+  </data>
+  <data name="Available first" xml:space="preserve">
+    <value>المتاحون أولاً</value>
+  </data>
+  <data name="Available now" xml:space="preserve">
+    <value>متاح الآن</value>
+  </data>
+  <data name="Average length" xml:space="preserve">
+    <value>متوسط المدة</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>رجوع</value>
+  </data>
+  <data name="Call back" xml:space="preserve">
+    <value>معاودة الاتصال</value>
+  </data>
+  <data name="Call note" xml:space="preserve">
+    <value>ملاحظة المكالمة</value>
+  </data>
+  <data name="Call recording" xml:space="preserve">
+    <value>تسجيل المكالمة</value>
+  </data>
+  <data name="Call" xml:space="preserve">
+    <value>المكالمة</value>
+  </data>
+  <data name="Calls are not available here" xml:space="preserve">
+    <value>المكالمات غير متاحة هنا</value>
+  </data>
+  <data name="Calls between you" xml:space="preserve">
+    <value>المكالمات بينكما</value>
+  </data>
+  <data name="Calls today" xml:space="preserve">
+    <value>مكالمات اليوم</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>أُلغيت</value>
+  </data>
+  <data name="Consent" xml:space="preserve">
+    <value>الموافقة</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>تم النسخ</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>نسخ</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>رُفضت</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+  <data name="Deleted automatically on" xml:space="preserve">
+    <value>يُحذف تلقائياً في</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>التفاصيل</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>تعديل</value>
+  </data>
+  <data name="File Manager" xml:space="preserve">
+    <value>مدير الملفات</value>
+  </data>
+  <data name="File too large" xml:space="preserve">
+    <value>الملف أكبر من المسموح</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>الملف</value>
+  </data>
+  <data name="Files &amp; media" xml:space="preserve">
+    <value>الملفات والوسائط</value>
+  </data>
+  <data name="Group call" xml:space="preserve">
+    <value>مكالمة جماعية</value>
+  </data>
+  <data name="Group video call" xml:space="preserve">
+    <value>مكالمة جماعية بالفيديو</value>
+  </data>
+  <data name="Group voice call" xml:space="preserve">
+    <value>مكالمة جماعية بالصوت</value>
+  </data>
+  <data name="Groups" xml:space="preserve">
+    <value>المجموعات</value>
+  </data>
+  <data name="In a call" xml:space="preserve">
+    <value>في مكالمة</value>
+  </data>
+  <data name="Incoming from" xml:space="preserve">
+    <value>واردة من</value>
+  </data>
+  <data name="Incoming video call" xml:space="preserve">
+    <value>مكالمة فيديو واردة</value>
+  </data>
+  <data name="Incoming voice call" xml:space="preserve">
+    <value>مكالمة صوتية واردة</value>
+  </data>
+  <data name="Incoming" xml:space="preserve">
+    <value>واردة</value>
+  </data>
+  <data name="Member" xml:space="preserve">
+    <value>عضو</value>
+  </data>
+  <data name="Microphone unavailable" xml:space="preserve">
+    <value>تعذّر الوصول إلى الميكروفون</value>
+  </data>
+  <data name="Missed video call" xml:space="preserve">
+    <value>مكالمة فيديو فائتة</value>
+  </data>
+  <data name="Missed voice call" xml:space="preserve">
+    <value>مكالمة صوتية فائتة</value>
+  </data>
+  <data name="Missed" xml:space="preserve">
+    <value>فائتة</value>
+  </data>
+  <data name="Missed, not returned" xml:space="preserve">
+    <value>فائتة لم يُرد عليها</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>المزيد</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>التالي</value>
+  </data>
+  <data name="No calls yet" xml:space="preserve">
+    <value>لا توجد مكالمات بعد</value>
+  </data>
+  <data name="No files yet" xml:space="preserve">
+    <value>لا توجد ملفات بعد</value>
+  </data>
+  <data name="Nobody in this group is available now" xml:space="preserve">
+    <value>لا أحد من أعضاء المجموعة متاح الآن</value>
+  </data>
+  <data name="Not answered" xml:space="preserve">
+    <value>لم يُرد عليها</value>
+  </data>
+  <data name="Open the chat" xml:space="preserve">
+    <value>فتح المحادثة</value>
+  </data>
+  <data name="Outgoing to" xml:space="preserve">
+    <value>صادرة إلى</value>
+  </data>
+  <data name="Outgoing video call" xml:space="preserve">
+    <value>مكالمة فيديو صادرة</value>
+  </data>
+  <data name="Outgoing voice call" xml:space="preserve">
+    <value>مكالمة صوتية صادرة</value>
+  </data>
+  <data name="Outgoing" xml:space="preserve">
+    <value>صادرة</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>صفحة</value>
+  </data>
+  <data name="Patient" xml:space="preserve">
+    <value>المريض</value>
+  </data>
+  <data name="People" xml:space="preserve">
+    <value>الأشخاص</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>السابق</value>
+  </data>
+  <data name="Recorded" xml:space="preserve">
+    <value>مسجّلة</value>
+  </data>
+  <data name="Recording" xml:space="preserve">
+    <value>التسجيل</value>
+  </data>
+  <data name="Replying to" xml:space="preserve">
+    <value>ترد على</value>
+  </data>
+  <data name="Search the chat" xml:space="preserve">
+    <value>بحث في المحادثة</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>بحث</value>
+  </data>
+  <data name="Show more" xml:space="preserve">
+    <value>عرض المزيد</value>
+  </data>
+  <data name="This recording is not open to you" xml:space="preserve">
+    <value>هذا التسجيل غير متاح لك</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>اليوم</value>
+  </data>
+  <data name="Unread" xml:space="preserve">
+    <value>غير مقروءة</value>
+  </data>
+  <data name="Video call" xml:space="preserve">
+    <value>مكالمة فيديو</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>فيديو</value>
+  </data>
+  <data name="Voice and video" xml:space="preserve">
+    <value>صوت وفيديو</value>
+  </data>
+  <data name="Voice call" xml:space="preserve">
+    <value>مكالمة صوتية</value>
+  </data>
+  <data name="Voice message" xml:space="preserve">
+    <value>رسالة صوتية</value>
+  </data>
+  <data name="Voice" xml:space="preserve">
+    <value>صوت</value>
+  </data>
+  <data name="Message — @ to mention" xml:space="preserve">
+    <value>اكتب رسالة — @ لذكر شخص</value>
+  </data>
+  <data name="Write a message" xml:space="preserve">
+    <value>اكتب رسالة</value>
+  </data>
+  <data name="Yes, delete" xml:space="preserve">
+    <value>نعم، احذف</value>
+  </data>
+  <data name="Yes, leave" xml:space="preserve">
+    <value>نعم، غادر</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>أمس</value>
+  </data>
+  <data name="You declined" xml:space="preserve">
+    <value>رفضتها</value>
+  </data>
+  <data name="agreed by" xml:space="preserve">
+    <value>ووافق</value>
+  </data>
+  <data name="available" xml:space="preserve">
+    <value>متاحون</value>
+  </data>
+  <data name="is typing" xml:space="preserve">
+    <value>يكتب الآن</value>
+  </data>
+  <data name="members" xml:space="preserve">
+    <value>أعضاء</value>
+  </data>
+  <data name="Chats &amp; calls" xml:space="preserve">
+    <value>المحادثات والمكالمات</value>
+  </data>
+  <data name="Communication" xml:space="preserve">
+    <value>التواصل</value>
+  </data>
+  <data name="Chats" xml:space="preserve">
+    <value>المحادثات</value>
+  </data>
+  <data name="Calls" xml:space="preserve">
+    <value>المكالمات</value>
+  </data>
+  <data name="Search chats and people" xml:space="preserve">
+    <value>ابحث في المحادثات والأشخاص</value>
+  </data>
+  <data name="Pick someone to start" xml:space="preserve">
+    <value>اختر شخصاً لتبدأ</value>
+  </data>
+  <data name="Write, or call by voice or video, from the same place" xml:space="preserve">
+    <value>اكتب أو اتصل بالصوت أو الفيديو من المكان نفسه</value>
+  </data>
+  <data name="Search in this conversation" xml:space="preserve">
+    <value>ابحث في هذه المحادثة</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>إغلاق</value>
+  </data>
+  <data name="Recording a voice message" xml:space="preserve">
+    <value>جارٍ تسجيل رسالة صوتية</value>
+  </data>
+  <data name="Send a file" xml:space="preserve">
+    <value>إرسال ملف</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+  <data name="On call now" xml:space="preserve">
+    <value>المناوبون الآن</value>
+  </data>
+  <data name="Communication settings" xml:space="preserve">
+    <value>إعدادات التواصل</value>
   </data>
 </root>

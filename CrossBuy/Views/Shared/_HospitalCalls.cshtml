@@ -4,6 +4,8 @@
 @using Microsoft.EntityFrameworkCore
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> HT
 @inject CrossBuy.Models.Context.CrossDbContext CallDb
+@inject CrossBuy.BL.Platform.IBusinessContextAccessor CallContexts
+@inject CrossBuy.BL.IHospitalAccessService CallHospital
 @*
     H176 — internal calls on EVERY screen of the system (rendered by _LabCriticalAlerts, which every layout renders): a
     call rings wherever the person is working, like a critical value does. Only an employee connects; a portal patient
@@ -20,6 +22,20 @@
         mePhoto = photos.GetValueOrDefault(me.ID);
     }
     string S(string k) => HT[k].Value;
+    // calls belong to the whole system; only someone with the hospital module sees a call's patient
+    bool hospitalOn = false;
+    if (me != null)
+    {
+        try
+        {
+            var callCtx = await CallContexts.TryGetCurrentAsync();
+            hospitalOn = callCtx != null && await CallHospital.CanAsync(callCtx, CrossBuy.BL.HospitalActions.Read, null);
+            // …and only while Communication's settings keep the patient link on
+            if (hospitalOn) hospitalOn = await CallDb.Set<CrossBuy.Models.Context.Hospital.HospitalCallSettings>().AsNoTracking()
+                .Where(x => x.CompanyId == me.EmpCompanyID).Select(x => (bool?)x.PatientLink).FirstOrDefaultAsync() ?? true;
+        }
+        catch (Exception) { }
+    }
 }
 @if (me != null)
 {
@@ -80,15 +96,16 @@
     window.cbCallsUrl = {
         hub: @Json.Serialize(Url.Content("~/hubs/calls")),
         signalr: @Json.Serialize(Url.Content("~/Backend-assets/plugins/signalr.min.js")),
-        ice: @Json.Serialize(Url.Content("~/Hospital/Calls/Ice")),
-        note: @Json.Serialize(Url.Content("~/Hospital/Calls/__id__/Note")),
+        ice: @Json.Serialize(Url.Content("~/Chat/CallIce")),
+        note: @Json.Serialize(Url.Content("~/Chat/CallNote/__id__")),
         patient: @Json.Serialize(Url.Content("~/Hospital/Patient/__id__")),
         patientCard: @Json.Serialize(Url.Content("~/Hospital/Calls/Patient/__id__")),
         patientSearch: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")),
-        people: @Json.Serialize(Url.Content("~/Hospital/Calls/People")),
+        people: @Json.Serialize(Url.Content("~/Chat/CallPeople")),
         livekit: @Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js")),
-        recChunk: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Chunk")),
-        recFinish: @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/__id__/Finish"))
+        recChunk: @Json.Serialize(Url.Content("~/Chat/CallRecordingChunk/__id__")),
+        recFinish: @Json.Serialize(Url.Content("~/Chat/CallRecordingFinish/__id__")),
+        hospital: @(hospitalOn ? "true" : "false")   // a call's patient is a hospital thing
     };
     window.cbCallsT = {
         me: { id: @me.ID, name: @Json.Serialize(DisplayName.Of(me.FullName ?? "", me.FullNameEn ?? me.FullName ?? "")), photo: @Json.Serialize(mePhoto), initials: @Json.Serialize(HospitalUi.Initials(me.FullNameEn ?? me.FullName)) },

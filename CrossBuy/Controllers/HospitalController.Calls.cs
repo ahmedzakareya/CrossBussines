@@ -35,6 +35,9 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || ctx.EmployeeId is not int me) return RedirectToAction("Index", "Home");
+			// Owner, 2026-11-18: calls belong to the whole system, joined with the chat — the page is Communication now,
+			// opened inside the hospital's own layout and menu
+			if (Request.Query["legacy"] != "1") return RedirectToAction("Index", "Chat", new { tab = "calls", m = "hospital" });
 			Chrome();
 			var now = DateTime.UtcNow;
 			bool installed = await CallSvc.InstalledAsync(ct);
@@ -177,6 +180,8 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
+			// Owner, 2026-11-18: the call settings are Communication's, for the whole system — opened inside the hospital
+			if (Request.Query["legacy"] != "1") return RedirectToAction("Settings", "Chat", new { m = "hospital" });
 			Chrome();
 			ViewBag.Installed = await CallSvc.InstalledAsync(ct);
 			// the people who may be named to review every recording (the company's active staff, by face)
@@ -201,6 +206,9 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			// this old page does not show Communication's three switches: keep what is stored
+			var kept = await CallSvc.SettingsAsync(ctx.CompanyId, ct);
+			input.CallsInChat = kept.CallsInChat; input.PatientLink = kept.PatientLink; input.OnCallList = kept.OnCallList;
 			return Result(await CallSvc.SaveSettingsAsync(ctx.CompanyId, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 	}

@@ -18,8 +18,8 @@ namespace CrossBuy.Controllers.Api
 	//
 	// Same rules as the browser, never a second set:
 	//   * the employee and company are the resolved BusinessContext's, never ids from the request;
-	//   * every action asks the hospital "read" action, as [HospitalPerm(Read)] does for the screens (calls are a
-	//     reception-allowed, administrative feature: no clinical gate);
+	//   * calls belong to the whole system (owner, 2026-11-18): every action needs an employee of the company, as the chat
+	//     does — only the patient search keeps the hospital's "read" action;
 	//   * a recording opens for the people in its call, the named reviewers, or the "call-recordings" action — which is
 	//     never bootstrap-open; every first playback is logged;
 	//   * a record that does not exist and one the caller may not see answer identically (404).
@@ -68,7 +68,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Me(CancellationToken ct)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null) return NotFound(Missing);
 			var svc = Svc;
 			if (!await svc.InstalledAsync(ct)) return Ok(new { ok = true, installed = false });
 			var s = await svc.SettingsAsync(me.CompanyId, ct);
@@ -92,7 +92,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> People(string? q, CancellationToken ct)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null) return NotFound(Missing);
 			var svc = Svc;
 			if (!await svc.InstalledAsync(ct)) return Ok(new { ok = true, people = Array.Empty<object>() });
 			var all = await svc.PeopleAsync(me.CompanyId, DateTime.UtcNow, null, ct);
@@ -112,7 +112,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Ice(CancellationToken ct)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null) return NotFound(Missing);
 			var s = await Svc.SettingsAsync(me.CompanyId, ct);
 			var urls = HospitalCallRules.ParseUrls(s.TurnUrls);
 			var stun = urls.Where(u => u.StartsWith("stun:", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -133,7 +133,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Log(string? q, int page = 1, string? only = null, CancellationToken ct = default)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null) return NotFound(Missing);
 			var svc = Svc;
 			if (!await svc.InstalledAsync(ct)) return Ok(new { ok = true, rows = Array.Empty<object>(), total = 0, page = 1, pageSize = 20 });
 			var now = DateTime.UtcNow;
@@ -187,7 +187,9 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Note(int id, [FromBody] NoteInput input, CancellationToken ct)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || input == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null || input == null) return NotFound(Missing);
+			var comm = _sp.GetRequiredService<ICommunicationAccessService>();   // the chat's own rule: may send in Communication
+			if (!await comm.CanAsync(me, CommunicationActions.Send, null, ct)) return NotFound(Missing);
 			var r = await Svc.NoteAsync(me.CompanyId, id, me.EmployeeId!.Value, input.Note, input.PatientId, ct);
 			return r.Ok ? Ok(new { ok = true }) : r.Error == "not_found" ? NotFound(Missing) : Ok(new { ok = false, error = r.Error });
 		}
@@ -201,7 +203,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Recording(int id, CancellationToken ct)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound(Missing);
+			if (me == null) return NotFound(Missing);
 			var d = await RecSvc.DetailAsync(me.CompanyId, id, me.EmployeeId!.Value, await ManagerAsync(me, ct), DateTime.UtcNow, ct);
 			return d == null ? NotFound(Missing) : Ok(new { ok = true, recording = d });
 		}
@@ -211,7 +213,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Media(int id, int log = 0, CancellationToken ct = default)
 		{
 			var me = await MeAsync(ct);
-			if (me == null || !await _access.CanAsync(me, HospitalActions.Read, null, ct)) return NotFound();
+			if (me == null) return NotFound();
 			var f = await RecSvc.OpenAsync(me.CompanyId, id, me.EmployeeId!.Value, await ManagerAsync(me, ct), DateTime.UtcNow, log == 1, ct);
 			if (f == null) return NotFound();
 			Response.Headers.CacheControl = "private, no-store";
