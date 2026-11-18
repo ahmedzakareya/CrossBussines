@@ -41,6 +41,9 @@ namespace CrossBuy.Controllers.Api
 			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var d = await _dashboard.BuildAsync(emp.ID);
+			// each balance's legal kind from the company's country rule pack (the same match the HR analytics use), so a
+			// client can lead with the annual leave and say when it renews, without guessing from a name
+			var pack = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(emp.EmpCompanyID ?? 0, HttpContext.RequestAborted))?.Rules;
 			return Ok(new
 			{
 				success = true,
@@ -69,7 +72,9 @@ namespace CrossBuy.Controllers.Api
 						nameEn = b.NameEn,
 						entitlement = b.Entitlement,
 						used = b.Used,
-						remaining = b.Remaining
+						remaining = b.Remaining,
+						code = CrossBuy.BL.Hr.HrLeaveMatch.For(pack, b.NameEn, b.NameAr)?.Code,
+						accrual = CrossBuy.BL.Hr.HrLeaveMatch.For(pack, b.NameEn, b.NameAr)?.Accrual,
 					})
 				}
 			});

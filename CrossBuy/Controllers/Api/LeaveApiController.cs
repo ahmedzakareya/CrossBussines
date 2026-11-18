@@ -43,7 +43,8 @@ namespace CrossBuy.Controllers.Api
 		// names of all approvers referenced by the given requests' steps
 		private async Task<Dictionary<int, (string? ar, string? en)>> ApproverNamesAsync(IEnumerable<LeaveRequest> reqs)
 		{
-			var ids = reqs.SelectMany(r => r.ApprovalSteps.Select(s => s.ApproverEmployeeID)).Distinct().ToList();
+			var ids = reqs.SelectMany(r => r.ApprovalSteps.Select(s => s.ApproverEmployeeID))
+				.Concat(reqs.Where(r => r.SubstituteEmployeeID.HasValue).Select(r => r.SubstituteEmployeeID!.Value)).Distinct().ToList();
 			if (ids.Count == 0) return new();
 			var rows = await _context.Employee.AsNoTracking()
 				.Where(e => ids.Contains(e.ID))
@@ -72,6 +73,9 @@ namespace CrossBuy.Controllers.Api
 			decisionAt = r.DecisionAt,
 			decisionNote = r.DecisionNote,
 			createdAt = r.CreatedAt,
+			substituteId = r.SubstituteEmployeeID,
+			substituteAr = r.SubstituteEmployeeID.HasValue && names != null && names.TryGetValue(r.SubstituteEmployeeID.Value, out var sb) ? sb.ar : null,
+			substituteEn = r.SubstituteEmployeeID.HasValue && names != null && names.TryGetValue(r.SubstituteEmployeeID.Value, out var sb2) ? sb2.en : null,
 			// multi-level approval chain
 			currentLevel = r.CurrentLevel,
 			totalLevels = r.ApprovalSteps?.Count ?? 0,
@@ -161,8 +165,18 @@ namespace CrossBuy.Controllers.Api
 			if ((await new CrossBuy.BL.Hr.HrLeaveEligibility(_context).CertificateTypesAsync(ctx.EmployeeId.Value)).Contains(dto.LeaveTypeID))
 				return BadRequest(new { success = false, message = CrossBuy.BL.Hr.HrLeaveEligibility.CertificateMissing.Text });
 
+			// the colleague who covers: optional, and only an active colleague of the same company who is not the requester
+			if (dto.SubstituteEmployeeID is int sub)
+			{
+				bool valid = sub != ctx.EmployeeId.Value && await _context.Employee.AsNoTracking()
+					.AnyAsync(e => e.ID == sub && e.EmpCompanyID == ctx.CompanyId && e.IsActive, HttpContext.RequestAborted);
+				if (!valid) return BadRequest(new { success = false, message = "The substitute must be an active colleague in your company." });
+			}
+
 			var (ok, error, req) = await _workflow.CreateAsync(ctx.EmployeeId.Value, dto.LeaveTypeID, dto.StartDate, dto.EndDate, dto.Reason);
 			if (!ok) return BadRequest(new { success = false, message = error });
+			if (dto.SubstituteEmployeeID is int chosen)
+				await _context.LeaveRequests.Where(r => r.ID == req!.ID).ExecuteUpdateAsync(s => s.SetProperty(r => r.SubstituteEmployeeID, chosen), HttpContext.RequestAborted);
 
 			return Ok(new { success = true, data = new { id = req!.ID, days = req.Days, status = req.Status, currentLevel = req.CurrentLevel } });
 		}
@@ -236,6 +250,69 @@ namespace CrossBuy.Controllers.Api
 			public DateTime StartDate { get; set; }
 			public DateTime EndDate { get; set; }
 			public string? Reason { get; set; }
+			public int? SubstituteEmployeeID { get; set; }   // optional: who covers during the leave
+		}
+
+		// GET /api/leave/colleagues?q= — who may cover my leave: active colleagues of my company (name and photo only),
+		// my own department first. The same self-service permission as raising the request.
+		[HttpGet("colleagues")]
+		public async Task<IActionResult> Colleagues(string? q = null)
+		{
+			var ctx = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (ctx is not { CompanyId: > 0 } || ctx.EmployeeId is not > 0) return NotFound(new { success = false, message = "Not authorised" });
+			if (!await _hrAccess.CanAsync(ctx, CrossBuy.BL.HrActions.EmployeeRequest,
+					CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(ctx.EmployeeId.Value, ctx.CompanyId), HttpContext.RequestAborted))
+				return NotFound(new { success = false, message = "Not authorised" });
+			var me = ctx.EmployeeId.Value;
+			var myDept = await _context.Employee.AsNoTracking().Where(e => e.ID == me).Select(e => e.DepartmentID).FirstOrDefaultAsync(HttpContext.RequestAborted);
+			var term = (q ?? "").Trim();
+			var rows = await _context.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == ctx.CompanyId && e.IsActive && e.ID != me)
+				.Where(e => term == "" || e.FullName.Contains(term) || (e.FullNameEn != null && e.FullNameEn.Contains(term)))
+				.OrderByDescending(e => myDept != null && e.DepartmentID == myDept).ThenBy(e => e.FullName)
+				.Take(30)
+				.Select(e => new { id = e.ID, nameAr = e.FullName, nameEn = e.FullNameEn, image = e.ProfileImage, sameDepartment = myDept != null && e.DepartmentID == myDept })
+				.ToListAsync(HttpContext.RequestAborted);
+			return Ok(new { success = true, data = rows });
+		}
+
+		// GET /api/leave/preview?typeId=&start=&end= — what the request will be, before it is sent: the working days the
+		// server counts (rest days and public holidays out), the balance after it, and who approves it — the manager chain
+		// shaped by the company's approval path, the same two steps CreateAsync takes. Nothing is written.
+		[HttpGet("preview")]
+		public async Task<IActionResult> Preview(int typeId, DateTime start, DateTime end)
+		{
+			var ctx = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (ctx is not { CompanyId: > 0 } || ctx.EmployeeId is not > 0) return NotFound(new { success = false, message = "Not authorised" });
+			if (!await _hrAccess.CanAsync(ctx, CrossBuy.BL.HrActions.EmployeeRequest,
+					CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(ctx.EmployeeId.Value, ctx.CompanyId), HttpContext.RequestAborted))
+				return NotFound(new { success = false, message = "Not authorised" });
+			if (end < start) return BadRequest(new { success = false, message = "The end date is before the start date." });
+			var me = ctx.EmployeeId.Value;
+			var days = await _dashboard.WorkingDaysAsync(me, start.Date, end.Date);
+			var balance = (await _dashboard.BuildAsync(me)).Balances.FirstOrDefault(b => b.LeaveTypeId == typeId);
+
+			var chain = await _workflow.ApproverChainAsync(me);
+			bool broken = chain.Approvers.Count == 0 && (chain.HierarchyDefect || !chain.RequesterIsVerifiedRoot);
+			var ids = broken ? new List<int>() : await new CrossBuy.BL.Hr.HrApprovalPathService(_context)
+				.ApplyAsync(CrossBuy.BL.Hr.HrApprovalKinds.Leave, typeId, days, me, chain.Approvers, HttpContext.RequestAborted);
+			var people = await _context.Employee.AsNoTracking().Where(e => ids.Contains(e.ID))
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync(HttpContext.RequestAborted);
+			var approvers = ids.Select(id => people.FirstOrDefault(p => p.ID == id)).Where(p => p != null)
+				.Select(p => new { nameAr = p!.FullName, nameEn = p.FullNameEn }).ToList();
+			return Ok(new
+			{
+				success = true,
+				data = new
+				{
+					days,
+					remaining = balance?.Remaining,
+					after = balance == null ? (int?)null : balance.Remaining - days,
+					approvers,
+					autoApproved = !broken && ids.Count == 0,   // nobody above the requester: the request approves itself
+					chainBroken = broken,
+				}
+			});
 		}
 
 		public class DecisionDto

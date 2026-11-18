@@ -27,6 +27,9 @@ namespace CrossBuy.Models.Context.Admin
 		public int CurrentLevel { get; set; }              // المستوى المعلّق حاليًا (0 = منتهٍ / لا سلسلة)
 		public int? CurrentApproverEmployeeID { get; set; } // من دوره يعتمد الآن (null عند الانتهاء)
 
+		// the colleague who covers during the leave (optional; same company, active, not the requester) — hr_leave_substitute.sql
+		public int? SubstituteEmployeeID { get; set; }
+
 		[ForeignKey(nameof(EmployeeID))]
 		public Employee? Employee { get; set; }
 

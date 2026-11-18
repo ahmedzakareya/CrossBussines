@@ -779,38 +779,72 @@ String dayMonth(BuildContext context, DateTime d) => '${d.day} ${monthName(conte
 String ymd(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 // ------------------------------------------------------------------------------------------------ work modes
-/// The reference's scan box: a dashed-feel card with the barcode ring, a one-line instruction and the code field a
-/// handheld scanner types into (it presses Enter after the code).
+/// The reference's scan box: a dashed card with the barcode tile, a one-line instruction and the soft code field a
+/// handheld scanner types into (it presses Enter after the code). [compact] is the smaller one on the transfer page.
 class ScanBox extends StatelessWidget {
   final String text, hint;
   final TextEditingController controller;
   final FocusNode? focusNode;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<String>? onChanged;
-  final bool autofocus;
-  const ScanBox({super.key, required this.text, required this.hint, required this.controller, required this.onSubmitted, this.focusNode, this.onChanged, this.autofocus = false});
+  final bool autofocus, compact;
+  const ScanBox({super.key, required this.text, required this.hint, required this.controller, required this.onSubmitted, this.focusNode, this.onChanged, this.autofocus = false, this.compact = false});
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-        decoration: BoxDecoration(color: Brand.paper, border: Border.all(color: Brand.lineC), borderRadius: BorderRadius.circular(18)),
-        child: Column(children: [
-          Container(
-            width: 54, height: 54, alignment: Alignment.center,
-            decoration: BoxDecoration(color: Brand.soft, shape: BoxShape.circle, border: Border.all(color: const Color(0xFFD5DEEE))),
-            child: const Icon(Lu.scanBarcode, size: 22, color: Brand.blue),
-          ),
-          const SizedBox(height: 10),
-          Text(text, textAlign: TextAlign.center, style: T.sub),
-          const SizedBox(height: 10),
-          TextField(
-            controller: controller, focusNode: focusNode, autofocus: autofocus, textInputAction: TextInputAction.done,
-            onSubmitted: onSubmitted, onChanged: onChanged,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(hintText: hint, isDense: true),
-          ),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final tile = compact ? 46.0 : 54.0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: CustomPaint(
+        painter: const _DashedRRect(color: Color(0xFFC9D3E3), radius: 18),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(18, compact ? 14 : 20, 18, compact ? 14 : 18),
+          child: Column(children: [
+            Container(
+              width: tile, height: tile, alignment: Alignment.center,
+              decoration: BoxDecoration(color: Brand.soft, borderRadius: BorderRadius.circular(tile * .3)),
+              child: Icon(Lu.scanBarcode, size: compact ? 20 : 23, color: Brand.blue),
+            ),
+            const SizedBox(height: 10),
+            Text(text, textAlign: TextAlign.center, style: T.sub),
+            if (!compact || hint.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller, focusNode: focusNode, autofocus: autofocus, textInputAction: TextInputAction.done,
+                onSubmitted: onSubmitted, onChanged: onChanged,
+                style: const TextStyle(fontSize: 13, color: Brand.inkC),
+                decoration: InputDecoration(
+                  hintText: hint, isDense: true, filled: true, fillColor: Brand.page,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Brand.lineC)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedRRect extends CustomPainter {
+  final Color color;
+  final double radius;
+  const _DashedRRect({required this.color, required this.radius});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 1.2;
+    final path = Path()..addRRect(RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)));
+    for (final m in path.computeMetrics()) {
+      for (double d = 0; d < m.length; d += 9) {
+        canvas.drawPath(m.extractPath(d, d + 5), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRect old) => old.color != color || old.radius != radius;
 }
 
 /// − n + : the reference's step control for a counted or transferred quantity.

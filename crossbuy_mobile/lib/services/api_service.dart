@@ -191,6 +191,22 @@ class ApiService {
         .toList();
   }
 
+  /// The request before it is sent: working days, balance after, and who approves it (null when it cannot be read).
+  Future<LeavePreview?> previewLeave(int typeId, DateTime start, DateTime end) async {
+    try {
+      final res = await _dio.get('/api/leave/preview', queryParameters: {'typeId': typeId, 'start': start.toIso8601String(), 'end': end.toIso8601String()});
+      return LeavePreview.fromJson(res.data['data'] as Map<String, dynamic>);
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// Colleagues who may cover my leave (active, my company, my department first).
+  Future<List<Colleague>> getColleagues({String? q}) async {
+    final res = await _dio.get('/api/leave/colleagues', queryParameters: {if (q != null && q.isNotEmpty) 'q': q});
+    return (res.data['data'] as List? ?? []).map((e) => Colleague.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<List<LeaveRequest>> getPendingApprovals() async {
     final res = await _dio.get('/api/leave/pending');
     return (res.data['data'] as List? ?? [])
@@ -204,6 +220,7 @@ class ApiService {
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
+    int? substituteEmployeeId,
   }) async {
     try {
       final res = await _dio.post('/api/leave', data: {
@@ -211,6 +228,7 @@ class ApiService {
         'startDate': startDate.toIso8601String(),
         'endDate': endDate.toIso8601String(),
         'reason': reason,
+        if (substituteEmployeeId != null) 'substituteEmployeeID': substituteEmployeeId,
       });
       final ok = res.data?['success'] == true;
       if (ok) AppNav.notifyDataChanged();

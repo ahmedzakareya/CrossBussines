@@ -6,6 +6,8 @@ class LeaveBalance {
   final int entitlement;
   final int used;
   final int remaining;
+  final String? code;      // the country rule pack's kind: annual, sick, casual, maternity… (null = not matched)
+  final String? accrual;   // "upfront" (the year's days on 1 January) or "monthly"
 
   LeaveBalance({
     required this.leaveTypeId,
@@ -14,6 +16,8 @@ class LeaveBalance {
     required this.entitlement,
     required this.used,
     required this.remaining,
+    this.code,
+    this.accrual,
   });
 
   factory LeaveBalance.fromJson(Map<String, dynamic> j) => LeaveBalance(
@@ -23,6 +27,8 @@ class LeaveBalance {
         entitlement: j['entitlement'] ?? 0,
         used: j['used'] ?? 0,
         remaining: j['remaining'] ?? 0,
+        code: j['code'],
+        accrual: j['accrual'],
       );
 }
 

@@ -58,6 +58,8 @@ class LeaveRequest {
   final String? statusEn;
   final String? decisionNote;
   final DateTime? createdAt;
+  final String? substituteAr;
+  final String? substituteEn;
   final int currentLevel;
   final int totalLevels;
   final List<ApprovalStep> approvals;
@@ -79,6 +81,8 @@ class LeaveRequest {
     this.statusEn,
     this.decisionNote,
     this.createdAt,
+    this.substituteAr,
+    this.substituteEn,
     this.currentLevel = 0,
     this.totalLevels = 0,
     this.approvals = const [],
@@ -103,10 +107,38 @@ class LeaveRequest {
         statusEn: j['statusEn'],
         decisionNote: j['decisionNote'],
         createdAt: _d(j['createdAt']),
+        substituteAr: j['substituteAr'],
+        substituteEn: j['substituteEn'],
         currentLevel: j['currentLevel'] ?? 0,
         totalLevels: j['totalLevels'] ?? 0,
         approvals: (j['approvals'] as List? ?? [])
             .map((e) => ApprovalStep.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+}
+
+/// What a leave request will be before it is sent (GET /api/leave/preview): the server's working-day count, the
+/// balance after it, and who approves it in order.
+class LeavePreview {
+  final int days;
+  final int? remaining, after;
+  final List<(String?, String?)> approvers;   // (Arabic, English) names, in order
+  final bool autoApproved, chainBroken;
+  LeavePreview({required this.days, this.remaining, this.after, this.approvers = const [], this.autoApproved = false, this.chainBroken = false});
+  factory LeavePreview.fromJson(Map<String, dynamic> j) => LeavePreview(
+        days: j['days'] ?? 0,
+        remaining: j['remaining'],
+        after: j['after'],
+        approvers: [for (final a in (j['approvers'] as List? ?? [])) ((a as Map)['nameAr'] as String?, a['nameEn'] as String?)],
+        autoApproved: j['autoApproved'] == true,
+        chainBroken: j['chainBroken'] == true,
+      );
+}
+
+/// A colleague who may cover a leave (GET /api/leave/colleagues).
+class Colleague {
+  final int id;
+  final String? nameAr, nameEn, image;
+  Colleague({required this.id, this.nameAr, this.nameEn, this.image});
+  factory Colleague.fromJson(Map<String, dynamic> j) => Colleague(id: j['id'] ?? 0, nameAr: j['nameAr'], nameEn: j['nameEn'], image: j['image']);
 }
