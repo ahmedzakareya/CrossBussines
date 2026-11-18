@@ -63,6 +63,10 @@
                 @if (p != null)
                 {
                     <div class="d-flex flex-stack fs-4 py-3"><div class="fw-bold">@T["Prescription"]</div></div>
+                    @* H183: the prescription's independent check by a second clinician *@
+                    @if (active && p.VerifiedAt != null) {<div class="mb-3"><span class="badge badge-light-primary" title="@p.VerifiedAt.Value.ToString("yyyy-MM-dd")"><i class="ki-outline ki-shield-tick fs-6 me-1 text-primary"></i>@T["Checked by a second clinician"]</span></div>}
+                    else if (active) {<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3"><span class="badge badge-light-danger">@T["Awaiting the second check"]</span>
+                        @if (canPlan) {<button type="button" class="btn btn-sm btn-light-primary" data-plan-verify="@p.ID"><i class="ki-outline ki-shield-tick fs-5"></i>@T["Check the prescription"]</button>}</div>}
                     <div class="separator separator-dashed mb-5"></div>
                     Row("abstract-26", "primary", T["Dry weight"].Value, null, p.DryWeightKg.ToString("0.0", inv) + " kg");
                     Row("calendar", "info", T["Dialysis days"].Value, string.Format(T["Shift {0}"].Value, p.Shift), Days(p.DaysMask), ltr: false);
@@ -145,8 +149,14 @@
     <script>
         (function () {
             var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Stop this patient's dialysis plan? The sessions stay on the file."].Value) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Stop this patient's dialysis plan? The sessions stay on the file."].Value),
+                verify: @Json.Serialize(T["You have reviewed the prescription against the doctor's order: dry weight, days, access, hours, dialyser, flows, dialysate and anticoagulation. Record the check?"].Value) };
             document.addEventListener('click', function (e) {
+                var v = e.target.closest('[data-plan-verify]');
+                if (v) { cbConfirm(W.verify).then(function (ok) { if (!ok) return; v.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Dialysis/Plan/")) + v.getAttribute('data-plan-verify') + '/Verify', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: '{}' })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { v.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); }); return; }
                 var b = e.target.closest('[data-plan-stop]'); if (!b) return;
                 cbConfirm(W.stop, { kind: 'danger' }).then(function (ok) { if (!ok) return; b.disabled = true;
                     fetch(@Json.Serialize(Url.Content("~/Hospital/Dialysis/Plan/")) + b.getAttribute('data-plan-stop') + '/Stop', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: '{}' })

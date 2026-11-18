@@ -71,6 +71,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
 		public DateTime? StoppedAt { get; set; }
+		/// H183: the prescription's independent check by a second clinician; any change to the prescription clears it.
+		public DateTime? VerifiedAt { get; set; }
+		public int? VerifiedByEmployeeId { get; set; }
 	}
 
 	public class HospitalDialysisSession
@@ -110,6 +113,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? Note { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
+		/// H183: the machine safety check before the session (alarms tested, conductivity, no disinfectant residue).
+		public bool? MachineChecked { get; set; }
 		public int? ClosedByEmployeeId { get; set; }
 	}
 

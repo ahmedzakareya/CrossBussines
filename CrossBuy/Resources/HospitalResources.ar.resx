@@ -8540,4 +8540,28 @@
   <data name="What did the check find?" xml:space="preserve"><value>ماذا وجد التحقق؟</value></data>
   <data name="Write what the check found" xml:space="preserve"><value>اكتب ما وجده التحقق</value></data>
   <data name="You checked the drugs, doses and patient independently: give this cycle?" xml:space="preserve"><value>تحققت بنفسك من الأدوية والجرعات وهوية المريض: هل تُعطى هذه الدورة؟</value></data>
+  <data name="A live vaccine is not given in immunosuppression or pregnancy" xml:space="preserve"><value>لا يُعطى لقاح حيّ في حالة نقص المناعة أو الحمل</value></data>
+  <data name="A severe reaction to a previous dose or a component: this vaccine is not given" xml:space="preserve"><value>تفاعل شديد مع جرعة سابقة أو أحد المكونات: لا يُعطى هذا اللقاح</value></data>
+  <data name="Answer the screening questions" xml:space="preserve"><value>أجب عن أسئلة الفحص المسبق</value></data>
+  <data name="Asked before every dose given now; a dose from another clinic's card needs no screening." xml:space="preserve"><value>يُسأل قبل كل جرعة تُعطى الآن؛ ولا تحتاج جرعة منقولة من بطاقة عيادة أخرى إلى فحص.</value></data>
+  <data name="Awaiting the second check" xml:space="preserve"><value>بانتظار التحقق الثاني</value></data>
+  <data name="Check the prescription" xml:space="preserve"><value>التحقق من الوصفة</value></data>
+  <data name="Checked by a second clinician" xml:space="preserve"><value>تحقق منها ممارس ثانٍ</value></data>
+  <data name="Choose the answer" xml:space="preserve"><value>اختر الإجابة</value></data>
+  <data name="Confirm the machine safety check: alarms tested, conductivity right, no disinfectant residue" xml:space="preserve"><value>أكّد فحص سلامة الجهاز: اختبار الإنذارات، وصحة الموصلية، وخلوّه من بقايا المطهّر</value></data>
+  <data name="Moderate or severe illness: defer the dose, or write why it is given now" xml:space="preserve"><value>مرض متوسط أو شديد: أجّل الجرعة، أو اكتب سبب إعطائها الآن</value></data>
+  <data name="Screening before the dose" xml:space="preserve"><value>الفحص المسبق قبل الجرعة</value></data>
+  <data name="The dialysis prescription awaits its independent check by a second clinician" xml:space="preserve"><value>وصفة الغسيل بانتظار التحقق المستقل من ممارس ثانٍ</value></data>
+  <data name="The independent check is by a second clinician, not the one who wrote the prescription" xml:space="preserve"><value>التحقق المستقل يجريه ممارس ثانٍ، لا من كتب الوصفة</value></data>
+  <data name="The machine is checked: alarms tested, conductivity and temperature right, no disinfectant residue." xml:space="preserve"><value>تم فحص الجهاز: اختُبرت الإنذارات، والموصلية والحرارة صحيحتان، ولا بقايا للمطهّر.</value></data>
+  <data name="This prescription is already checked" xml:space="preserve"><value>تم التحقق من هذه الوصفة من قبل</value></data>
+  <data name="Two doses of the same vaccine are at least 28 days apart" xml:space="preserve"><value>يفصل بين جرعتين من اللقاح نفسه 28 يومًا على الأقل</value></data>
+  <data name="Why it is given now" xml:space="preserve"><value>سبب إعطائها الآن</value></data>
+  <data name="Write the lot and its expiry" xml:space="preserve"><value>اكتب رقم التشغيلة وتاريخ انتهائها</value></data>
+  <data name="You have reviewed the prescription against the doctor's order: dry weight, days, access, hours, dialyser, flows, dialysate and anticoagulation. Record the check?" xml:space="preserve"><value>راجعتَ الوصفة مقابل أمر الطبيب: الوزن الجاف، والأيام، والوصلة الوعائية، والساعات، والمرشّح، ومعدلات التدفق، والمحلول، ومضاد التخثر. هل تسجّل التحقق؟</value></data>
+  <data name="vxs:Fever" xml:space="preserve"><value>مرض حاد متوسط أو شديد</value></data>
+  <data name="vxs:Immunosuppressed" xml:space="preserve"><value>نقص المناعة</value></data>
+  <data name="vxs:None" xml:space="preserve"><value>لا موانع</value></data>
+  <data name="vxs:Pregnant" xml:space="preserve"><value>حمل</value></data>
+  <data name="vxs:PriorSevere" xml:space="preserve"><value>تفاعل شديد سابق (تأق)</value></data>
 </root>

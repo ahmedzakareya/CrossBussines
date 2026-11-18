@@ -22,6 +22,17 @@ namespace CrossBuy.Models.Context.Hospital
 		public static readonly IReadOnlyList<string> All = new[] { IM, SC, ID, Oral, Nasal };
 	}
 
+	/// H183: the pre-vaccination screening answer (WHO/CDC contraindications and precautions).
+	public static class HospitalVaccineScreening
+	{
+		public const string None = "None";
+		public const string Fever = "Fever";                       // moderate or severe acute illness: a precaution — defer unless the clinician records why not
+		public const string PriorSevere = "PriorSevere";           // anaphylaxis to a previous dose or a component: a contraindication
+		public const string Immunosuppressed = "Immunosuppressed"; // a contraindication to a live vaccine
+		public const string Pregnant = "Pregnant";                 // a contraindication to a live vaccine
+		public static readonly IReadOnlyList<string> All = new[] { None, Fever, PriorSevere, Immunosuppressed, Pregnant };
+	}
+
 	public class HospitalVaccineScheduleItem
 	{
 		public int ID { get; set; }
@@ -57,6 +68,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? GivenByEmployeeId { get; set; }
 		/// An adverse event following immunization, as observed (fever, local swelling…).
 		public string? AdverseEvent { get; set; }
+		/// H183: the contraindication screening asked before the dose (HospitalVaccineScreening), and why a precaution was overridden.
+		public string? Screening { get; set; }
+		public string? ScreenOverride { get; set; }
 		public DateTime CreatedAt { get; set; }
 	}
 
@@ -84,6 +98,8 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Site).HasMaxLength(60);
 				e.Property(x => x.Route).HasMaxLength(6);
 				e.Property(x => x.AdverseEvent).HasMaxLength(300);
+				e.Property(x => x.Screening).HasMaxLength(16);
+				e.Property(x => x.ScreenOverride).HasMaxLength(300);
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});
 		}

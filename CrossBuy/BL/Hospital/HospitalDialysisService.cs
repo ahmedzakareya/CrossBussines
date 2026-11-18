@@ -40,6 +40,8 @@ namespace CrossBuy.BL.Hospital
 		public int? PrePulse { get; set; }
 		/// Empty means the weight above the dry weight.
 		public int? UfGoalMl { get; set; }
+		/// H183: the nurse confirms the machine safety check before connecting the patient.
+		public bool MachineChecked { get; set; }
 	}
 
 	public sealed class HospitalDialysisObservationInput
@@ -241,6 +243,17 @@ namespace CrossBuy.BL.Hospital
 		}
 	}
 
+	/// H183: the dialysis prescription's independent check.
+	public static class HospitalDialysisCheckRules
+	{
+		public const string Unverified = "The dialysis prescription awaits its independent check by a second clinician";
+
+		public static string? VerifyRefusal(HospitalDialysisPlan p, int checkerEmployeeId) =>
+			p.Status != HospitalDialysisPlanStatus.Active ? "This dialysis plan is stopped"
+			: p.VerifiedAt != null ? "This prescription is already checked"
+			: (p.UpdatedByEmployeeId ?? p.CreatedByEmployeeId) == checkerEmployeeId ? "The independent check is by a second clinician, not the one who wrote the prescription" : null;
+	}
+
 	public sealed class HospitalDialysisService
 	{
 		public const string NoTables = "Dialysis is not installed yet (hospital_h87_dialysis.sql).";
@@ -287,10 +300,27 @@ namespace CrossBuy.BL.Hospital
 					if (found.Status != HospitalDialysisPlanStatus.Active) return HospitalResult.Fail("This dialysis plan is stopped");
 					row = found; row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				}
+				row.VerifiedAt = null; row.VerifiedByEmployeeId = null;   // H183: a new or changed prescription waits for its independent check
 				row.DryWeightKg = input.DryWeightKg; row.Access = input.Access!; row.DurationMin = input.DurationMin; row.BloodFlow = input.BloodFlow; row.DialysateFlow = input.DialysateFlow;
 				row.Dialyzer = Clip(input.Dialyzer, 60); row.Anticoagulation = Clip(input.Anticoagulation, 100); row.DaysMask = input.DaysMask; row.Shift = input.Shift; row.Note = Clip(input.Note, 500);
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(row.ID);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
+		}
+
+		/// H183: a second clinician — not the one who last wrote the prescription — checks it independently.
+		public async Task<HospitalResult> VerifyPlanAsync(BusinessContext ctx, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Consult, null, ct) || employeeId is not int me) return HospitalResult.Fail("forbidden");
+			try
+			{
+				var p = await Plans(ctx).FirstOrDefaultAsync(x => x.ID == id, ct);
+				if (p == null) return HospitalResult.Fail("not_found");
+				if (HospitalDialysisCheckRules.VerifyRefusal(p, me) is string why) return HospitalResult.Fail(why);
+				p.VerifiedAt = nowUtc; p.VerifiedByEmployeeId = me;
+				await _db.SaveChangesAsync(ct);
+				return HospitalResult.Success(p.ID);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
 		}
@@ -319,6 +349,9 @@ namespace CrossBuy.BL.Hospital
 				var p = await Plans(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == input.PlanId, ct);
 				if (p == null) return HospitalResult.Fail("not_found");
 				if (p.Status != HospitalDialysisPlanStatus.Active) return HospitalResult.Fail("This dialysis plan is stopped");
+				// H183: the prescription checked by a second clinician; the machine checked before the patient is connected
+				if (p.VerifiedAt == null) return HospitalResult.Fail(HospitalDialysisCheckRules.Unverified);
+				if (!input.MachineChecked) return HospitalResult.Fail("Confirm the machine safety check: alarms tested, conductivity right, no disinfectant residue");
 				var at = input.At == null ? nowUtc : HospitalNursingService.WardToUtc(input.At.Value);
 				if (HospitalDialysisRules.StartRefusal(input, at, nowUtc) is string why) return HospitalResult.Fail(why);
 				var day = HospitalNursingService.UtcToWard(at).Date;
@@ -330,7 +363,7 @@ namespace CrossBuy.BL.Hospital
 				{
 					CompanyId = ctx.CompanyId, PlanId = p.ID, PatientId = p.PatientId, SessionDate = day, Shift = p.Shift, Station = Clip(input.Station, 20), Status = HospitalDialysisSessionStatus.Running,
 					DryWeightKg = p.DryWeightKg, PlannedMin = p.DurationMin, StartedAt = at, PreWeightKg = input.PreWeightKg, PreSbp = input.PreSbp, PreDbp = input.PreDbp, PrePulse = input.PrePulse,
-					UfGoalMl = input.UfGoalMl ?? HospitalDialysisRules.UfGoal(input.PreWeightKg!.Value, p.DryWeightKg), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
+					UfGoalMl = input.UfGoalMl ?? HospitalDialysisRules.UfGoal(input.PreWeightKg!.Value, p.DryWeightKg), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId, MachineChecked = true,
 				};
 				_db.Add(row);
 				await _db.SaveChangesAsync(ct);

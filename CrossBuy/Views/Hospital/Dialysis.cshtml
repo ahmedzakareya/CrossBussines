@@ -93,6 +93,10 @@
             <div class="col-6"><label class="form-label">@T["Volume to remove (ml)"]</label><input type="number" min="0" max="6000" step="50" class="form-control form-control-solid" dir="ltr" data-s="ufGoalMl" placeholder="@T["Weight above the dry weight"]" /></div>
             <div class="col-6"><label class="form-label">@T["Station"]</label><input type="text" maxlength="20" class="form-control form-control-solid" data-s="station" /></div>
             <div class="col-12"><label class="form-label">@T["Started at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-s="at" /><div class="text-muted fs-8 mt-1">@T["Empty means now."]</div></div>
+            @* H183: the machine safety check before the patient is connected *@
+            <div class="col-12"><div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4"><label class="form-check form-check-custom form-check-solid align-items-start">
+                <input class="form-check-input mt-1" type="checkbox" data-s-machine />
+                <span class="form-check-label fw-semibold text-gray-800 ms-3">@T["The machine is checked: alarms tested, conductivity and temperature right, no disinfectant residue."]</span></label></div></div>
         </div></div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-start-save>@T["Start the session"]</button></div>
     </div></div></div>
@@ -117,7 +121,7 @@
             var mEl = document.getElementById('startModal'), planId = 0;
             document.addEventListener('click', function (e) {
                 var st = e.target.closest('[data-dx-start]');
-                if (st && mEl) { planId = Number(st.getAttribute('data-dx-start')); mEl.querySelectorAll('[data-s]').forEach(function (i) { i.value = ''; });
+                if (st && mEl) { planId = Number(st.getAttribute('data-dx-start')); mEl.querySelectorAll('[data-s]').forEach(function (i) { i.value = ''; }); mEl.querySelector('[data-s-machine]').checked = false;
                     document.getElementById('startWho').textContent = st.getAttribute('data-who'); document.getElementById('startDry').value = st.getAttribute('data-dry');
                     bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
                 var ms = e.target.closest('[data-dx-miss]');
@@ -127,6 +131,7 @@
                 var sv = e.target.closest('[data-start-save]'); if (!sv) return;
                 var b = { planId: planId }; mEl.querySelectorAll('[data-s]').forEach(function (i) { var k = i.getAttribute('data-s'), v = (i.value || '').trim();
                     b[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v); });
+                b.machineChecked = mEl.querySelector('[data-s-machine]').checked;
                 cbConfirm(W.ask).then(function (ok) { if (!ok) return; sv.disabled = true;
                     post(@Json.Serialize(Url.Action("StartDialysis")), b).then(function (res) { sv.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
                         location.href = @Json.Serialize(Url.Content("~/Hospital/Dialysis/Session/")) + res.id; }); });

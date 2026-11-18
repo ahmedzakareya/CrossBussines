@@ -1,0 +1,125 @@
+{
+ "unit": "H183 - independent checks on dialysis and vaccination",
+ "strings": {
+  "The dialysis prescription awaits its independent check by a second clinician": {
+   "ar": "وصفة الغسيل بانتظار التحقق المستقل من ممارس ثانٍ",
+   "en": "The dialysis prescription awaits its independent check by a second clinician",
+   "fr": "La prescription de dialyse attend sa vérification indépendante par un second soignant"
+  },
+  "Confirm the machine safety check: alarms tested, conductivity right, no disinfectant residue": {
+   "ar": "أكّد فحص سلامة الجهاز: اختبار الإنذارات، وصحة الموصلية، وخلوّه من بقايا المطهّر",
+   "en": "Confirm the machine safety check: alarms tested, conductivity right, no disinfectant residue",
+   "fr": "Confirmez le contrôle de sécurité du générateur : alarmes testées, conductivité correcte, aucun résidu de désinfectant"
+  },
+  "This prescription is already checked": {
+   "ar": "تم التحقق من هذه الوصفة من قبل",
+   "en": "This prescription is already checked",
+   "fr": "Cette prescription est déjà vérifiée"
+  },
+  "The independent check is by a second clinician, not the one who wrote the prescription": {
+   "ar": "التحقق المستقل يجريه ممارس ثانٍ، لا من كتب الوصفة",
+   "en": "The independent check is by a second clinician, not the one who wrote the prescription",
+   "fr": "La vérification indépendante est faite par un second soignant, pas par l'auteur de la prescription"
+  },
+  "Checked by a second clinician": {
+   "ar": "تحقق منها ممارس ثانٍ",
+   "en": "Checked by a second clinician",
+   "fr": "Vérifiée par un second soignant"
+  },
+  "Awaiting the second check": {
+   "ar": "بانتظار التحقق الثاني",
+   "en": "Awaiting the second check",
+   "fr": "En attente de la seconde vérification"
+  },
+  "Check the prescription": {
+   "ar": "التحقق من الوصفة",
+   "en": "Check the prescription",
+   "fr": "Vérifier la prescription"
+  },
+  "You have reviewed the prescription against the doctor's order: dry weight, days, access, hours, dialyser, flows, dialysate and anticoagulation. Record the check?": {
+   "ar": "راجعتَ الوصفة مقابل أمر الطبيب: الوزن الجاف، والأيام، والوصلة الوعائية، والساعات، والمرشّح، ومعدلات التدفق، والمحلول، ومضاد التخثر. هل تسجّل التحقق؟",
+   "en": "You have reviewed the prescription against the doctor's order: dry weight, days, access, hours, dialyser, flows, dialysate and anticoagulation. Record the check?",
+   "fr": "Vous avez comparé la prescription à l'ordre du médecin : poids sec, jours, abord, durée, dialyseur, débits, dialysat et anticoagulation. Enregistrer la vérification ?"
+  },
+  "The machine is checked: alarms tested, conductivity and temperature right, no disinfectant residue.": {
+   "ar": "تم فحص الجهاز: اختُبرت الإنذارات، والموصلية والحرارة صحيحتان، ولا بقايا للمطهّر.",
+   "en": "The machine is checked: alarms tested, conductivity and temperature right, no disinfectant residue.",
+   "fr": "Le générateur est contrôlé : alarmes testées, conductivité et température correctes, aucun résidu de désinfectant."
+  },
+  "Two doses of the same vaccine are at least 28 days apart": {
+   "ar": "يفصل بين جرعتين من اللقاح نفسه 28 يومًا على الأقل",
+   "en": "Two doses of the same vaccine are at least 28 days apart",
+   "fr": "Deux doses du même vaccin sont espacées d'au moins 28 jours"
+  },
+  "Write the lot and its expiry": {
+   "ar": "اكتب رقم التشغيلة وتاريخ انتهائها",
+   "en": "Write the lot and its expiry",
+   "fr": "Indiquez le lot et sa péremption"
+  },
+  "Answer the screening questions": {
+   "ar": "أجب عن أسئلة الفحص المسبق",
+   "en": "Answer the screening questions",
+   "fr": "Répondez aux questions de dépistage"
+  },
+  "A severe reaction to a previous dose or a component: this vaccine is not given": {
+   "ar": "تفاعل شديد مع جرعة سابقة أو أحد المكونات: لا يُعطى هذا اللقاح",
+   "en": "A severe reaction to a previous dose or a component: this vaccine is not given",
+   "fr": "Réaction grave à une dose antérieure ou à un composant : ce vaccin n'est pas administré"
+  },
+  "A live vaccine is not given in immunosuppression or pregnancy": {
+   "ar": "لا يُعطى لقاح حيّ في حالة نقص المناعة أو الحمل",
+   "en": "A live vaccine is not given in immunosuppression or pregnancy",
+   "fr": "Un vaccin vivant n'est pas administré en cas d'immunodépression ou de grossesse"
+  },
+  "Moderate or severe illness: defer the dose, or write why it is given now": {
+   "ar": "مرض متوسط أو شديد: أجّل الجرعة، أو اكتب سبب إعطائها الآن",
+   "en": "Moderate or severe illness: defer the dose, or write why it is given now",
+   "fr": "Maladie modérée ou sévère : reportez la dose, ou indiquez pourquoi elle est donnée maintenant"
+  },
+  "Screening before the dose": {
+   "ar": "الفحص المسبق قبل الجرعة",
+   "en": "Screening before the dose",
+   "fr": "Dépistage avant la dose"
+  },
+  "Choose the answer": {
+   "ar": "اختر الإجابة",
+   "en": "Choose the answer",
+   "fr": "Choisissez la réponse"
+  },
+  "Asked before every dose given now; a dose from another clinic's card needs no screening.": {
+   "ar": "يُسأل قبل كل جرعة تُعطى الآن؛ ولا تحتاج جرعة منقولة من بطاقة عيادة أخرى إلى فحص.",
+   "en": "Asked before every dose given now; a dose from another clinic's card needs no screening.",
+   "fr": "Posé avant chaque dose donnée maintenant ; une dose reprise du carnet d'une autre clinique n'en a pas besoin."
+  },
+  "Why it is given now": {
+   "ar": "سبب إعطائها الآن",
+   "en": "Why it is given now",
+   "fr": "Pourquoi elle est donnée maintenant"
+  },
+  "vxs:None": {
+   "ar": "لا موانع",
+   "en": "No contraindication",
+   "fr": "Aucune contre-indication"
+  },
+  "vxs:Fever": {
+   "ar": "مرض حاد متوسط أو شديد",
+   "en": "Moderate or severe acute illness",
+   "fr": "Maladie aiguë modérée ou sévère"
+  },
+  "vxs:PriorSevere": {
+   "ar": "تفاعل شديد سابق (تأق)",
+   "en": "Prior severe reaction (anaphylaxis)",
+   "fr": "Réaction grave antérieure (anaphylaxie)"
+  },
+  "vxs:Immunosuppressed": {
+   "ar": "نقص المناعة",
+   "en": "Immunosuppression",
+   "fr": "Immunodépression"
+  },
+  "vxs:Pregnant": {
+   "ar": "حمل",
+   "en": "Pregnancy",
+   "fr": "Grossesse"
+  }
+ }
+}

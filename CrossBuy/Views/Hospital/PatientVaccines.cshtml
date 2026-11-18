@@ -137,9 +137,12 @@
             </div></div>
             <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Given at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-g="givenAt" /><div class="text-muted fs-7 mt-1">@T["Empty means now."]</div></div>
             <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["Route"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#giveModal" data-hide-search="true" data-g="route">@foreach (var r in HospitalVaccineRoute.All) {<option value="@r">@T["vxr:" + r]</option>}</select></div>
-            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Lot"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" data-g="lot" /></div>
-            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Lot expiry"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-g="lotExpiry" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2" data-g-now-req>@T["Lot"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" data-g="lot" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2" data-g-now-req>@T["Lot expiry"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-g="lotExpiry" /></div>
             <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Site"]</label><input class="form-control form-control-solid" maxlength="60" data-g="site" placeholder="@T["Left thigh"]" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2" data-g-now-req>@T["Screening before the dose"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#giveModal" data-hide-search="true" data-g="screening" data-placeholder="@T["Choose the answer"]"><option></option>@foreach (var c in HospitalVaccineScreening.All) {<option value="@c">@T["vxs:" + c]</option>}</select>
+                <div class="text-muted fs-7 mt-1">@T["Asked before every dose given now; a dose from another clinic's card needs no screening."]</div></div>
+            <div class="col-12 d-none" data-g-override><label class="required fs-6 fw-semibold mb-2">@T["Why it is given now"]</label><input class="form-control form-control-solid" maxlength="300" data-g="screenOverride" /></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-g-save>@T["Record the dose"]</button></div>
         </div>
@@ -152,6 +155,8 @@
             var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, item = null, pid = @m.PatientId;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), give: @Json.Serialize(T["Record this dose as given?"].Value),
                 aefi: @Json.Serialize(T["Record an adverse event"].Value), aefiWhat: @Json.Serialize(T["What was seen (fever, swelling, rash…)"].Value) };
+            // H183: the override reason appears only for a precaution (moderate or severe illness)
+            $(document.getElementById('giveModal').querySelector('[data-g=screening]')).on('change', function () { document.getElementById('giveModal').querySelector('[data-g-override]').classList.toggle('d-none', this.value !== 'Fever'); });
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
             function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
             document.addEventListener('click', function (e) {
@@ -159,13 +164,14 @@
                 if (g) { item = g.getAttribute('data-vx-give') ? Number(g.getAttribute('data-vx-give')) : null;
                     mEl.querySelector('[data-g-what]').textContent = g.getAttribute('data-label') || '';
                     mEl.querySelector('[data-g-off]').classList.toggle('d-none', item != null);
-                    mEl.querySelectorAll('[data-g]').forEach(function (i) { if (i.tagName === 'SELECT') i.value = g.getAttribute('data-route') || 'IM'; else if (i.getAttribute('data-g') !== 'doseNo') { i.value = ''; if (i._flatpickr) i._flatpickr.clear(); } });
+                    mEl.querySelectorAll('[data-g]').forEach(function (i) { if (i.tagName === 'SELECT') { $(i).val(i.getAttribute('data-g') === 'route' ? (g.getAttribute('data-route') || 'IM') : '').trigger('change'); } else if (i.getAttribute('data-g') !== 'doseNo') { i.value = ''; if (i._flatpickr) i._flatpickr.clear(); } });
                     if (window.jQuery) jQuery(mEl).find('select').trigger('change.select2');
                     bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
                 var a = e.target.closest('[data-vx-aefi]');
                 if (a) { cbPrompt(a.getAttribute('data-label') || '', { title: W.aefi, placeholder: W.aefiWhat, kind: 'danger', textarea: true }).then(function (t) { if (!t) return;
                     post(@Json.Serialize(Url.Content("~/Hospital/Vaccines/")) + a.getAttribute('data-vx-aefi') + '/Aefi', { text: t }).then(done); }); return; }
                 var s = e.target.closest('[data-g-save]'); if (!s) return;
+                if (mEl.querySelector('[data-g=screening]').value === 'Fever' && !mEl.querySelector('[data-g=screenOverride]').value.trim()) { mEl.querySelector('[data-g=screenOverride]').focus(); }
                 var b = { patientId: pid, scheduleItemId: item };
                 mEl.querySelectorAll('[data-g]').forEach(function (i) { var k = i.getAttribute('data-g'); if (item != null && (k === 'code' || k === 'name' || k === 'doseNo')) return; b[k] = k === 'doseNo' ? Number(i.value || 0) : (i.value.trim() || null); });
                 cbConfirm(W.give).then(function (ok) { if (!ok) return; s.disabled = true; post(@Json.Serialize(Url.Action("GiveVaccine")), b).then(function (r) { s.disabled = false; done(r); }); });

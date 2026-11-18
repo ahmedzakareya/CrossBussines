@@ -39,7 +39,8 @@
             @if (s != null && s.Status != HospitalDialysisSessionStatus.Missed) {<a href="@Url.Action("DialysisSession", new { id = s.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "left" : "right") fs-2"></i></a>}
             else if (s == null && canTreat)
             {
-                if (Model.Day == today) {<button type="button" class="btn btn-sm btn-primary" data-dx-start="@p.ID" data-who="@DisplayName.Of(r.Name, r.NameEn) — @r.Mrn" data-dry="@p.DryWeightKg.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)">@T["Start dialysis"]</button>}
+                if (Model.Day == today && p.VerifiedAt == null) {<span class="badge badge-light-danger" title="@T["The dialysis prescription awaits its independent check by a second clinician"]">@T["Awaiting the second check"]</span>}
+                else if (Model.Day == today) {<button type="button" class="btn btn-sm btn-primary" data-dx-start="@p.ID" data-who="@DisplayName.Of(r.Name, r.NameEn) — @r.Mrn" data-dry="@p.DryWeightKg.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)">@T["Start dialysis"]</button>}
                 if (Model.Day <= today) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" data-dx-miss="@p.ID" title="@T["Mark missed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-2"></i></button>}
             }
         </td>

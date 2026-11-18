@@ -25,6 +25,9 @@ namespace CrossBuy.BL.Hospital
 		public string? Site { get; set; }
 		public string? Route { get; set; }
 		public string? AdverseEvent { get; set; }
+		/// H183: the screening answer (HospitalVaccineScreening) and, for a precaution given anyway, why.
+		public string? Screening { get; set; }
+		public string? ScreenOverride { get; set; }
 	}
 
 	public static class HospitalImmunizationStatus
@@ -67,6 +70,30 @@ namespace CrossBuy.BL.Hospital
 			if (alreadyGiven) return "This dose is already recorded";
 			if (minAgeDays != null && birthDate != null && givenLocal.Date < birthDate.Value.Date.AddDays(minAgeDays.Value - GraceDays))
 				return "The patient is too young for this dose";
+			return null;
+		}
+
+		/// H183: live attenuated vaccines (a contraindication in immunosuppression and pregnancy).
+		public static readonly IReadOnlySet<string> LiveCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "BCG", "OPV", "MMR", "MR", "MMRV", "VAR", "YF", "ROTA", "LAIV" };
+		/// H183: the minimum interval between two doses of one vaccine.
+		public const int MinIntervalDays = 28;
+		/// H183: a dose recorded within this window of now is being given now (lot and screening required); older is a history entry.
+		public const int CurrentWindowHours = 24;
+
+		public static bool IsCurrent(DateTime givenLocal, DateTime nowLocal) => givenLocal >= nowLocal.AddHours(-CurrentWindowHours);
+
+		/// H183: the independent safety checks before a dose — the lot recorded, the screening asked, the interval kept.
+		public static string? SafetyRefusal(string code, DateTime givenLocal, DateTime nowLocal, string? lot, DateTime? lotExpiry, string? screening, string? overrideReason, DateTime? previousSameCodeLocal)
+		{
+			if (previousSameCodeLocal is DateTime prev && Math.Abs((givenLocal.Date - prev.Date).Days) < MinIntervalDays)
+				return "Two doses of the same vaccine are at least 28 days apart";
+			if (!IsCurrent(givenLocal, nowLocal)) return null;   // a history entry from another clinic: what was written then
+			if (string.IsNullOrWhiteSpace(lot) || lotExpiry == null) return "Write the lot and its expiry";
+			if (!HospitalVaccineScreening.All.Contains(screening ?? "")) return "Answer the screening questions";
+			if (screening == HospitalVaccineScreening.PriorSevere) return "A severe reaction to a previous dose or a component: this vaccine is not given";
+			if ((screening == HospitalVaccineScreening.Immunosuppressed || screening == HospitalVaccineScreening.Pregnant) && LiveCodes.Contains(code))
+				return "A live vaccine is not given in immunosuppression or pregnancy";
+			if (screening == HospitalVaccineScreening.Fever && string.IsNullOrWhiteSpace(overrideReason)) return "Moderate or severe illness: defer the dose, or write why it is given now";
 			return null;
 		}
 
@@ -212,12 +239,17 @@ namespace CrossBuy.BL.Hospital
 				bool already = s != null && await Doses(ctx).AnyAsync(x => x.PatientId == p.ID && x.ScheduleItemId == s.ID, ct);
 				var route = input.Route ?? s?.Route;
 				if (HospitalImmunizationRules.RecordRefusal(givenLocal, nowLocal, p.BirthDate, input.LotExpiry, route, s?.AgeDays, already) is string why) return HospitalResult.Fail(why);
+				var code = s?.Code ?? input.Code!.Trim().ToUpperInvariant();
+				var prevUtc = await Doses(ctx).Where(x => x.PatientId == p.ID && x.Code == code).OrderByDescending(x => x.GivenAt).Select(x => (DateTime?)x.GivenAt).FirstOrDefaultAsync(ct);
+				if (HospitalImmunizationRules.SafetyRefusal(code, givenLocal, nowLocal, input.Lot, input.LotExpiry, input.Screening, input.ScreenOverride, prevUtc == null ? null : Local(prevUtc.Value)) is string unsafeWhy) return HospitalResult.Fail(unsafeWhy);
+				var current = HospitalImmunizationRules.IsCurrent(givenLocal, nowLocal);
 				var row = new HospitalImmunization
 				{
 					CompanyId = ctx.CompanyId, PatientId = p.ID, ScheduleItemId = s?.ID, Code = s?.Code ?? input.Code!.Trim().ToUpperInvariant()[..Math.Min(12, input.Code!.Trim().Length)],
 					Name = s?.Name ?? Clip(input.Name, 100)!, NameEn = s?.NameEn ?? Clip(input.Name, 100)!, DoseNo = s?.DoseNo ?? input.DoseNo!.Value,
 					GivenAt = HospitalNursingService.WardToUtc(givenLocal), Lot = Clip(input.Lot, 40), LotExpiry = input.LotExpiry?.Date, Site = Clip(input.Site, 60), Route = route!,
 					GivenByEmployeeId = employeeId, AdverseEvent = Clip(input.AdverseEvent, 300), CreatedAt = nowUtc,
+					Screening = current ? input.Screening : null, ScreenOverride = current && input.Screening == HospitalVaccineScreening.Fever ? Clip(input.ScreenOverride, 300) : null,
 				};
 				_db.Add(row);
 				await _db.SaveChangesAsync(ct);

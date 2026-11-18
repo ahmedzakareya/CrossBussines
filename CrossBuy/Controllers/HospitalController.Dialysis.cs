@@ -116,6 +116,14 @@ namespace CrossBuy.Controllers
 			return Result(await DialysisSvc.SavePlanAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HttpPost("Dialysis/Plan/{id:int}/Verify"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]   // H183
+		public async Task<IActionResult> VerifyDialysisPlan(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ActivatorUtilities.CreateInstance<HospitalDialysisService>(HttpContext.RequestServices).VerifyPlanAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
 		[HttpPost("Dialysis/Plan/{id:int}/Stop"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
 		public async Task<IActionResult> StopDialysisPlan(int id, CancellationToken ct = default)
 		{

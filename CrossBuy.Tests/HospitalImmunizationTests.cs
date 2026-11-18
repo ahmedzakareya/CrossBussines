@@ -67,10 +67,11 @@ namespace CrossBuy.Tests
 		{
 			var s = HospitalSliceParity.Slice("hospital_h84_immunizations.sql");
 			var m = HospitalSliceParity.Model(HospitalImmunizationModel.Configure);
+			var full = s + Environment.NewLine + HospitalSliceParity.Slice("hospital_h183_independent_checks.sql");   // H183: the screening
 			foreach (var (t, n) in new[] { (typeof(HospitalVaccineScheduleItem), "HospitalVaccineScheduleItems"), (typeof(HospitalImmunization), "HospitalImmunizations") })
 			{
 				HospitalSliceParity.NamesItsTable(m, s, t, n);
-				HospitalSliceParity.ColumnsMatch(m, s, t, n);
+				HospitalSliceParity.ColumnsMatch(m, full, t, n);
 			}
 			foreach (var r in HospitalVaccineRoute.All) Assert.Contains("'" + r + "'", s);
 			Assert.Equal(new[] { "HospitalPatients" }, HospitalSliceParity.CheckedPrerequisites(s));
