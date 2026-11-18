@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 
 import '../app_config.dart';
-import '../l10n/app_localizations.dart';
 import '../models/inventory_item.dart';
 import '../services/api_service.dart';
 import '../services/app_nav.dart';
-import '../widgets/app_ui.dart';
+import '../theme/brand.dart';
+import '../widgets/ui.dart';
 
+String _qty(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
+String _img(String? img) => (img == null || img.isEmpty) ? '' : (img.startsWith('http') ? img : '${AppConfig.mediaBaseUrl}$img');
+
+/// The item's photo in the reference's soft square, or the package glyph when it has none.
+class _Thumb extends StatelessWidget {
+  final String url;
+  final double size;
+  const _Thumb(this.url, {this.size = 38});
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(width: size, height: size, alignment: Alignment.center, color: Brand.soft, child: Icon(Lu.package, size: size * .45, color: Brand.support));
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size * .28),
+      child: url.isEmpty ? fallback : Image.network(url, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => fallback),
+    );
+  }
+}
+
+/// INVENTORY (the owner's reference): search or scan an item, see it on hand, open it for the stock in each warehouse.
+/// Money is shown in the company's currency when the user may see the finance summary; otherwise without a unit.
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
   @override
@@ -15,17 +35,14 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   final _search = TextEditingController();
-  late Future<List<InventoryItem>> _future;
+  late Future<List<InventoryItem>> _future = ApiService.instance.getInventoryItems();
+  String _cur = '';
 
   @override
   void initState() {
     super.initState();
-    _future = ApiService.instance.getInventoryItems();
     AppNav.dataChanged.addListener(_reload);
-  }
-
-  void _reload() {
-    if (mounted) setState(() => _future = ApiService.instance.getInventoryItems(q: _search.text.trim()));
+    ApiService.instance.tryFinanceSummary().then((f) { if (mounted && f != null) setState(() => _cur = f.currency); });
   }
 
   @override
@@ -35,182 +52,109 @@ class _InventoryScreenState extends State<InventoryScreen> {
     super.dispose();
   }
 
-  String _img(String? img) =>
-      (img == null || img.isEmpty) ? '' : (img.startsWith('http') ? img : '${AppConfig.mediaBaseUrl}$img');
+  void _reload() {
+    if (mounted) setState(() => _future = ApiService.instance.getInventoryItems(q: _search.text.trim()));
+  }
 
-  String _qty(double v) => v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2);
-  String _money(double v) => v.toStringAsFixed(2).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
-
-  void _runSearch() => setState(() => _future = ApiService.instance.getInventoryItems(q: _search.text.trim()));
-
-  Future<void> _showDetail(String barcode) async {
-    final ar = AppLocalizations.of(context).isAr;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => FutureBuilder<ScanResult>(
-        future: ApiService.instance.scanInventory(barcode),
-        builder: (ctx, snap) {
-          if (!snap.hasData) return const SizedBox(height: 240, child: Center(child: CircularProgressIndicator()));
-          final d = snap.data!;
-          if (!d.ok) return SizedBox(height: 160, child: Center(child: Text(ar ? 'الصنف غير موجود' : 'Item not found')));
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Row(children: [
-                _thumb(_img(d.image), 64),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(d.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kInk)),
-                    const SizedBox(height: 3),
-                    Text(d.code, style: const TextStyle(color: kMuted, fontSize: 12.5)),
-                    if (d.isComposite)
-                      Padding(padding: const EdgeInsets.only(top: 5), child: _chip(
-                        d.compositeType == 'Bundle' ? (ar ? 'حزمة بيع' : 'Bundle') : (ar ? 'تجميع' : 'Assembly'),
-                        const Color(0xFFFFF4D6), const Color(0xFF9A6B00))),
-                  ]),
-                ),
-              ]),
-              const SizedBox(height: 16),
-              Row(children: [
-                _stat(ar ? 'الرصيد الكلي' : 'On hand', _qty(d.totalOnHand), kPrimary),
-                _stat(ar ? 'القيمة' : 'Value', _money(d.totalValue), kGreen),
-                _stat(ar ? 'سعر البيع' : 'Sale price', _money(d.salesPrice), kInk),
-              ]),
-              if (d.components.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(ar ? 'المكوّنات' : 'Components', style: const TextStyle(fontWeight: FontWeight.bold, color: kInk)),
-                const SizedBox(height: 6),
-                ...d.components.map((c) => Padding(padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(children: [const Icon(Icons.circle, size: 6, color: kMuted), const SizedBox(width: 8), Expanded(child: Text(c, style: const TextStyle(color: kInk)))]))),
-              ],
-              const SizedBox(height: 16),
-              Text(ar ? 'الرصيد حسب المخزن' : 'On hand by warehouse', style: const TextStyle(fontWeight: FontWeight.bold, color: kInk)),
-              const SizedBox(height: 6),
-              if (d.byWarehouse.isEmpty)
-                Text(ar ? 'لا يوجد رصيد' : 'No stock', style: const TextStyle(color: kMuted))
+  @override
+  Widget build(BuildContext context) {
+    return ExecFrame(
+      child: FutureBuilder<List<InventoryItem>>(
+        future: _future,
+        builder: (context, s) {
+          final head = [
+            if (Navigator.of(context).canPop()) BackLink(L(context, 'مساحات العمل', 'Workspaces')),
+            PageHead(L(context, 'المخزون', 'Inventory'), eyebrow: L(context, 'الأصناف والمستودعات', 'Items and warehouses')),
+            TextField(
+              controller: _search, textInputAction: TextInputAction.search, onSubmitted: (_) => _reload(),
+              decoration: InputDecoration(prefixIcon: const Icon(Lu.scanBarcode, size: 17), hintText: L(context, 'ابحث أو امسح الباركود', 'Search or scan a barcode')),
+            ),
+            const SizedBox(height: 14),
+          ];
+          if (s.hasError) return ExecBody(children: [...head, EmptyNote(icon: Lu.lock, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'لا تملك عرض المخزون، أو أن الاتصال انقطع.', 'You may not view inventory, or the connection dropped.'))]);
+          if (!s.hasData) return ExecBody(children: [...head, const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()))]);
+          final items = s.data!;
+          return ExecBody(
+            onRefresh: () async => _reload(),
+            children: [
+              ...head,
+              if (items.isEmpty)
+                EmptyNote(icon: Lu.package, title: L(context, 'لا أصناف', 'No items'), text: L(context, 'غيّر كلمة البحث.', 'Try another search.'))
               else
-                ...d.byWarehouse.map((w) => Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(color: kChipBg, borderRadius: BorderRadius.circular(12)),
-                      child: Row(children: [
-                        const Icon(Icons.warehouse_outlined, size: 18, color: kPrimary),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(w.warehouse, style: const TextStyle(fontWeight: FontWeight.w600, color: kInk))),
-                        Text(_qty(w.qty), style: const TextStyle(fontWeight: FontWeight.bold, color: kInk)),
-                        const SizedBox(width: 10),
-                        Text('@ ${_money(w.avgCost)}', style: const TextStyle(color: kMuted, fontSize: 12)),
-                      ]),
-                    )),
-            ]),
+                DataList(children: [
+                  for (final it in items)
+                    ItemRow(
+                      leading: _Thumb(_img(it.image)),
+                      title: it.name,
+                      subtitle: [it.code, if (it.salesPrice > 0) '${money(it.salesPrice, _cur)} ${curLabel(_cur, isAr(context))}'.trim()].join(' · '),
+                      end: it.onHand <= 0 ? Tag.bad(L(context, 'نفد', 'Out')) : Text(_qty(it.onHand), textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Brand.inkC)),
+                      onTap: (it.barcode ?? '').isEmpty && it.code.isEmpty ? null : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ItemDetailScreen(code: (it.barcode ?? '').isNotEmpty ? it.barcode! : it.code, currency: _cur))),
+                    ),
+                ]),
+            ],
           );
         },
       ),
     );
   }
+}
 
-  Widget _stat(String label, String value, Color color) => Expanded(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(color: kChipBg, borderRadius: BorderRadius.circular(12)),
-          child: Column(children: [
-            Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color)),
-            const SizedBox(height: 3),
-            Text(label, style: const TextStyle(color: kMuted, fontSize: 11)),
-          ]),
-        ),
-      );
-
-  Widget _chip(String text, Color bg, Color fg) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-        child: Text(text, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.bold)),
-      );
-
-  Widget _thumb(String url, double size) => ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: url.isEmpty
-            ? Container(width: size, height: size, color: kChipBg, child: const Icon(Icons.inventory_2_outlined, color: kMuted))
-            : Image.network(url, width: size, height: size, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(width: size, height: size, color: kChipBg, child: const Icon(Icons.inventory_2_outlined, color: kMuted))),
-      );
+/// One item: on hand and its value on the financial card, then the stock in each warehouse at its average cost.
+class ItemDetailScreen extends StatelessWidget {
+  final String code, currency;
+  const ItemDetailScreen({super.key, required this.code, this.currency = ''});
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    final ar = t.isAr;
-    return Container(
-      color: kBg,
-      child: Column(children: [
-        AppHeader(title: t.t('inventory')),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
-          child: TextField(
-            controller: _search,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _runSearch(),
-            decoration: InputDecoration(
-              hintText: ar ? 'بحث / امسح الباركود' : 'Search / scan barcode',
-              prefixIcon: const Icon(Icons.qr_code_scanner, color: kPrimary),
-              suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: _runSearch),
-              filled: true, fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+    final unit = curLabel(currency, isAr(context));
+    return ExecFrame(
+      child: FutureBuilder<ScanResult>(
+        future: ApiService.instance.scanInventory(code),
+        builder: (context, s) {
+          final back = BackLink(L(context, 'المخزون', 'Inventory'));
+          if (s.hasError || (s.hasData && !s.data!.ok)) return ExecBody(children: [back, EmptyNote(icon: Lu.packageX, title: L(context, 'الصنف غير موجود', 'Item not found'), text: L(context, 'لم يُعثر على صنف بهذا الكود.', 'No item has this code.'))]);
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final d = s.data!;
+          return ExecBody(children: [
+            back,
+            Row(children: [
+              _Thumb(_img(d.image), size: 56),
+              const SizedBox(width: 12),
+              Expanded(child: PageHead(d.name, eyebrow: d.code)),
+            ]),
+            if (d.isComposite) ...[
+              Align(alignment: AlignmentDirectional.centerStart, child: Tag.info(d.compositeType == 'Bundle' ? L(context, 'حزمة بيع', 'Bundle') : L(context, 'تجميع', 'Assembly'))),
+              const SizedBox(height: 12),
+            ],
+            FinancialCard(
+              label: L(context, 'الرصيد الكلي', 'On hand'),
+              icon: Lu.package,
+              amount: Amount(_qty(d.totalOnHand), d.units.isEmpty ? '' : d.units.first),
+              footer: [
+                (L(context, 'القيمة', 'Value'), whole(d.totalValue), unit),
+                (L(context, 'سعر البيع', 'Sale price'), money(d.salesPrice, currency), unit),
+              ],
             ),
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<InventoryItem>>(
-            future: _future,
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-              if (snap.hasError) return Center(child: Text(ar ? 'تعذّر التحميل' : 'Failed to load', style: const TextStyle(color: kMuted)));
-              final items = snap.data ?? [];
-              if (items.isEmpty) return Center(child: Text(ar ? 'لا توجد أصناف' : 'No items', style: const TextStyle(color: kMuted)));
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(14, 6, 14, 20),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) {
-                  final it = items[i];
-                  final low = it.onHand <= 0;
-                  return InkWell(
-                    onTap: () => it.barcode != null ? _showDetail(it.barcode!) : null,
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))]),
-                      child: Row(children: [
-                        _thumb(_img(it.image), 52),
-                        const SizedBox(width: 12),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(it.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, color: kInk)),
-                          const SizedBox(height: 3),
-                          Text('${it.code}${it.salesPrice > 0 ? '  ·  ${_money(it.salesPrice)}' : ''}', style: const TextStyle(color: kMuted, fontSize: 12)),
-                        ])),
-                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(color: low ? const Color(0xFFFDE7EA) : const Color(0xFFE8F8EF), borderRadius: BorderRadius.circular(20)),
-                            child: Text(_qty(it.onHand), style: TextStyle(fontWeight: FontWeight.bold, color: low ? const Color(0xFFD9214E) : const Color(0xFF0FA958)))),
-                          const SizedBox(height: 4),
-                          Text(ar ? 'الرصيد' : 'on hand', style: const TextStyle(color: kMuted, fontSize: 10)),
-                        ]),
-                      ]),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ]),
+            if (d.components.isNotEmpty) ...[
+              SectionHeading(L(context, 'المكوّنات', 'Components')),
+              DataList(children: [for (final c in d.components) ItemRow(leading: const IconBox(icon: Lu.puzzle), title: c)]),
+            ],
+            SectionHeading(L(context, 'حسب المستودع', 'By warehouse'), count: d.byWarehouse.length),
+            if (d.byWarehouse.isEmpty)
+              EmptyNote(icon: Lu.warehouse, title: L(context, 'لا رصيد', 'No stock'), text: L(context, 'لا يوجد رصيد لهذا الصنف في أي مستودع.', 'This item has no stock in any warehouse.'))
+            else
+              DataList(children: [
+                for (final w in d.byWarehouse)
+                  ItemRow(
+                    leading: const IconBox(icon: Lu.warehouse),
+                    title: w.warehouse,
+                    subtitle: '${L(context, 'متوسط التكلفة', 'Average cost')} ${money(w.avgCost, currency)} $unit'.trim(),
+                    end: Text(_qty(w.qty), textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Brand.inkC)),
+                  ),
+              ]),
+          ]);
+        },
+      ),
     );
   }
 }

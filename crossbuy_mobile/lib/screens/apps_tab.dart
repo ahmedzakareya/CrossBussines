@@ -23,15 +23,15 @@ class AppsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     void open(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
     final modules = <(IconData, String, String, String, String, Widget Function(BuildContext))>[
-      (Lu.wallet, 'المالية', 'Finance', 'السيولة والحسابات', 'Cash and accounts', (c) => PageFrame(title: L(c, 'المالية', 'Finance'), child: const FinanceScreen())),
-      (Lu.package, 'المخزون', 'Inventory', 'الأصناف والمستودعات', 'Items and warehouses', (c) => PageFrame(title: L(c, 'المخزون', 'Inventory'), child: const InventoryScreen())),
-      (Lu.calendarDays, 'الإجازات', 'Leave', 'الأرصدة والطلبات', 'Balances and requests', (c) => PageFrame(title: L(c, 'الإجازات', 'Leave'), child: const LeaveScreen())),
+      (Lu.wallet, 'المالية', 'Finance', 'السيولة والحسابات', 'Cash and accounts', (c) => const FinanceScreen()),
+      (Lu.package, 'المخزون', 'Inventory', 'الأصناف والمستودعات', 'Items and warehouses', (c) => const InventoryScreen()),
+      (Lu.calendarDays, 'الإجازات', 'Leave', 'الأرصدة والطلبات', 'Balances and requests', (c) => const LeaveScreen()),
       (Lu.clock3, 'الحضور', 'Attendance', 'البصمة والساعات', 'Punches and hours', (c) => const AttendanceScreen()),
       (Lu.receiptText, 'قسائمي', 'Payslips', 'الرواتب الشهرية', 'Monthly pay', (c) => const PayslipsScreen()),
       (Lu.fileText, 'طلباتي', 'My requests', 'خطابات · سلف · أذونات', 'Letters · advances · permissions', (c) => const RequestsScreen()),
       (Lu.phoneCall, 'الاتصال الداخلي', 'Internal calls', 'صوت وفيديو داخل الشبكة', 'Voice and video on the network', (c) => const CallsScreen()),
       (Lu.history, 'سجل المكالمات', 'Call log', 'الفائتة والمسجّلة', 'Missed and recorded', (c) => const CallsScreen(tab: 1)),
-      (Lu.usersRound, 'فريق العمل', 'My team', 'الموظفون والهيكل', 'People and structure', (c) => PageFrame(title: L(c, 'الهيكل التنظيمي', 'Org structure'), child: const StructureScreen())),
+      (Lu.usersRound, 'فريق العمل', 'My team', 'الموظفون والهيكل', 'People and structure', (c) => const StructureScreen()),
     ];
     final modes = <(IconData, String, String, String, String, Widget Function(BuildContext))>[
       (Lu.scanBarcode, 'وضع أمين المخزن', 'Storekeeper mode', 'جرد بالمسح · تحويل', 'Scan counts · transfers', (c) => const StoreModeScreen()),

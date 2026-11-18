@@ -777,3 +777,95 @@ String whole(num v) => v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3
 String dayMonth(BuildContext context, DateTime d) => '${d.day} ${monthName(context, d.month)}';
 
 String ymd(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+// ------------------------------------------------------------------------------------------------ work modes
+/// The reference's scan box: a dashed-feel card with the barcode ring, a one-line instruction and the code field a
+/// handheld scanner types into (it presses Enter after the code).
+class ScanBox extends StatelessWidget {
+  final String text, hint;
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final ValueChanged<String> onSubmitted;
+  final ValueChanged<String>? onChanged;
+  final bool autofocus;
+  const ScanBox({super.key, required this.text, required this.hint, required this.controller, required this.onSubmitted, this.focusNode, this.onChanged, this.autofocus = false});
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        decoration: BoxDecoration(color: Brand.paper, border: Border.all(color: Brand.lineC), borderRadius: BorderRadius.circular(18)),
+        child: Column(children: [
+          Container(
+            width: 54, height: 54, alignment: Alignment.center,
+            decoration: BoxDecoration(color: Brand.soft, shape: BoxShape.circle, border: Border.all(color: const Color(0xFFD5DEEE))),
+            child: const Icon(Lu.scanBarcode, size: 22, color: Brand.blue),
+          ),
+          const SizedBox(height: 10),
+          Text(text, textAlign: TextAlign.center, style: T.sub),
+          const SizedBox(height: 10),
+          TextField(
+            controller: controller, focusNode: focusNode, autofocus: autofocus, textInputAction: TextInputAction.done,
+            onSubmitted: onSubmitted, onChanged: onChanged,
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(hintText: hint, isDense: true),
+          ),
+        ]),
+      );
+}
+
+/// − n + : the reference's step control for a counted or transferred quantity.
+class QtyStepper extends StatelessWidget {
+  final String value;
+  final VoidCallback? onMinus, onPlus, onTapValue;
+  const QtyStepper({super.key, required this.value, this.onMinus, this.onPlus, this.onTapValue});
+  @override
+  Widget build(BuildContext context) {
+    Widget b(IconData i, VoidCallback? f) => GestureDetector(
+          onTap: f,
+          child: Container(
+            width: 28, height: 28, alignment: Alignment.center,
+            decoration: BoxDecoration(color: Brand.paper, border: Border.all(color: Brand.lineC), borderRadius: BorderRadius.circular(9)),
+            child: Icon(i, size: 14, color: f == null ? Brand.lineC : Brand.support),
+          ),
+        );
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      b(Lu.minus, onMinus),
+      GestureDetector(
+        onTap: onTapValue,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 34), alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(value, textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Brand.inkC)),
+        ),
+      ),
+      b(Lu.plus, onPlus),
+    ]);
+  }
+}
+
+/// A choice from a short list, in a bottom sheet of item rows (the reference's field with a chevron opens this).
+Future<V?> pickFromSheet<V>(BuildContext context, {required String title, required List<(V, String, String?)> options, V? selected}) =>
+    showModalBottomSheet<V>(
+      context: context,
+      backgroundColor: Brand.page,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (c) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(c).size.height * .7),
+          child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(22, 18, 22, 18), children: [
+            Text(title, style: T.h2),
+            const SizedBox(height: 12),
+            DataList(children: [
+              for (final o in options)
+                ItemRow(
+                  leading: IconBox(icon: o.$1 == selected ? Lu.circleCheck : Lu.circle),
+                  title: o.$2,
+                  subtitle: o.$3,
+                  onTap: () => Navigator.of(c).pop(o.$1),
+                ),
+            ]),
+          ]),
+        ),
+      ),
+    );

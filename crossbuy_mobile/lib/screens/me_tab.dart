@@ -65,7 +65,7 @@ class _MeTabState extends State<MeTab> {
             ItemRow(leading: const IconBox(icon: Lu.badge), title: L(context, 'ملفي الشخصي', 'My profile'), subtitle: L(context, 'البيانات · الطوارئ · المستندات', 'Details · emergency · documents'), onTap: () => _open(const ProfileScreen())),
             ItemRow(leading: const IconBox(icon: Lu.receiptText), title: L(context, 'قسائمي', 'My payslips'), subtitle: L(context, 'الرواتب الشهرية', 'Monthly pay'), onTap: () => _open(const PayslipsScreen())),
             ItemRow(leading: const IconBox(icon: Lu.clock3), title: L(context, 'حضوري', 'My attendance'), subtitle: L(context, 'الشهر والبصمات', 'The month and punches'), onTap: () => _open(const AttendanceScreen())),
-            ItemRow(leading: const IconBox(icon: Lu.calendarDays), title: L(context, 'إجازاتي', 'My leave'), subtitle: L(context, 'الأرصدة والطلبات', 'Balances and requests'), onTap: () => _open(PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen()))),
+            ItemRow(leading: const IconBox(icon: Lu.calendarDays), title: L(context, 'إجازاتي', 'My leave'), subtitle: L(context, 'الأرصدة والطلبات', 'Balances and requests'), onTap: () => _open(const LeaveScreen())),
             ItemRow(leading: const IconBox(icon: Lu.fileText), title: L(context, 'طلباتي', 'My requests'), subtitle: L(context, 'خطابات · سلف · أذونات', 'Letters · advances · permissions'), onTap: () => _open(const RequestsScreen())),
           ]),
           const SizedBox(height: 18),

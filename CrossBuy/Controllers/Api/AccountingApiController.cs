@@ -115,12 +115,19 @@ namespace CrossBuy.Controllers.Api
 					amount = _context.JournalEntryLines.Where(l => l.JournalEntryId == e.ID).Sum(l => (decimal?)l.Debit) ?? 0
 				}).ToListAsync(cancellationToken);
 
+			// the company's own currency, so a client never shows a bare number or assumes one (the mobile finance card)
+			var currency = await (from co in _context.Companies.AsNoTracking()
+								  from cu in _context.Currencies.AsNoTracking()
+								  where co.CompanyID == companyId && cu.ID == co.DefaultCurrencyId
+								  select cu.Code).FirstOrDefaultAsync(cancellationToken) ?? "";
+
 			return Ok(new
 			{
 				success = true,
 				data = new
 				{
 					asOf = today,
+					currency,
 					cash = Math.Round(cash, 2),
 					arTotal = Math.Round(arRows.Sum(r => r.Total), 2),
 					apTotal = Math.Round(apRows.Sum(r => r.Total), 2),

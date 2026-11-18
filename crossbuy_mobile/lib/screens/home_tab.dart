@@ -100,10 +100,10 @@ class _HomeTabState extends State<HomeTab> {
             _financial(context, d, cur),
             SectionHeading(L(context, 'وصول سريع', 'Quick access'), action: L(context, 'كل الأقسام', 'All sections'), onAction: () => AppNav.tabIndex.value = AppNav.apps),
             Row(children: [
-              Expanded(child: QuickTile(icon: Lu.calendarPlus, label: L(context, 'طلب إجازة', 'Request leave'), onTap: () => _open(PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen())))),
+              Expanded(child: QuickTile(icon: Lu.calendarPlus, label: L(context, 'طلب إجازة', 'Request leave'), onTap: () => _open(const NewLeaveScreen()))),
               Expanded(child: QuickTile(icon: Lu.fingerprint, label: L(context, 'حضوري', 'Attendance'), onTap: () => _open(const AttendanceScreen()))),
               Expanded(child: QuickTile(icon: Lu.receiptText, label: L(context, 'قسيمتي', 'My payslip'), onTap: () => _open(const PayslipsScreen()))),
-              Expanded(child: QuickTile(icon: Lu.usersRound, label: L(context, 'فريق العمل', 'My team'), onTap: () => _open(PageFrame(title: L(context, 'الهيكل التنظيمي', 'Org structure'), child: const StructureScreen())))),
+              Expanded(child: QuickTile(icon: Lu.usersRound, label: L(context, 'فريق العمل', 'My team'), onTap: () => _open(const StructureScreen()))),
             ]),
             SectionHeading(L(context, 'يحتاج انتباهك', 'Needs your attention'), count: d.approvals.length,
                 action: L(context, 'عرض الكل', 'See all'), onAction: () => AppNav.tabIndex.value = AppNav.inbox),
@@ -118,10 +118,12 @@ class _HomeTabState extends State<HomeTab> {
   Widget _financial(BuildContext context, _HomeData d, String cur) {
     final f = d.finance;
     if (f != null) {
+      // the ledger's own currency when the summary gives it; the HR pack's otherwise
+      if (f.currency.isNotEmpty) cur = curLabel(f.currency, isAr(context));
       return FinancialCard(
         label: L(context, 'النقدية والبنوك', 'Cash & banks'),
         icon: Lu.wallet,
-        amount: Amount(money(f.cash, d.currency), cur),
+        amount: Amount(money(f.cash, f.currency.isNotEmpty ? f.currency : d.currency), cur),
         note: '${L(context, 'المركز المالي · ', 'Financial position · ')}${monthName(context, DateTime.now().month)} ${DateTime.now().year}',
         footer: [
           (L(context, 'مستحقات العملاء', 'Receivables'), whole(f.arTotal), cur),

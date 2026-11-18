@@ -125,7 +125,7 @@ namespace CrossBuy.Controllers.Api
 
 		public sealed class CreateRequestDto
 		{
-			public string RequestType { get; set; } = "Letter";   // Letter | Permission | Advance
+			public string RequestType { get; set; } = "Letter";   // Letter | Permission | Advance | ProfileChange
 			public string? LetterType { get; set; }
 			public string? Addressee { get; set; }
 			public DateTime? PermissionDate { get; set; }
@@ -134,6 +134,9 @@ namespace CrossBuy.Controllers.Api
 			public decimal? AdvanceAmount { get; set; }
 			public decimal? AdvanceInstallment { get; set; }
 			public string? Reason { get; set; }
+			/// ProfileChange only: field → new value (PhoneNumber, Address, EmergencyContact*, BankName, Iban). The service
+			/// keeps only its own self-service fields and applies them when the request is approved (HR9).
+			public Dictionary<string, string?>? Changes { get; set; }
 		}
 
 		// POST /api/ess/requests — raised FOR the caller (employee-request is self-only), routed by the approval path
@@ -143,7 +146,7 @@ namespace CrossBuy.Controllers.Api
 			var me = await MeAsync(); if (me == null || dto == null) return NotFound(NotAuthorised);
 			bool may = await _hrAccess.CanAsync(me, HrActions.EmployeeRequest, PermissionTarget.ForSubjectEmployee(me.EmployeeId!.Value, me.CompanyId), HttpContext.RequestAborted);
 			if (!may) return NotFound(NotAuthorised);
-			var type = dto.RequestType is "Permission" or "Advance" ? dto.RequestType : "Letter";
+			var type = dto.RequestType is "Permission" or "Advance" or "ProfileChange" ? dto.RequestType : "Letter";
 			var draft = new EmployeeRequest
 			{
 				CompanyID = me.CompanyId, EmployeeID = me.EmployeeId.Value, RequestType = type,
@@ -153,6 +156,7 @@ namespace CrossBuy.Controllers.Api
 				ToTime = type == "Permission" && TimeSpan.TryParse(dto.ToTime, out var tt) ? tt : null,
 				AdvanceAmount = type == "Advance" ? dto.AdvanceAmount : null, AdvanceInstallment = type == "Advance" ? dto.AdvanceInstallment : null,
 				Reason = dto.Reason,
+				ChangesJson = type == "ProfileChange" && dto.Changes != null ? System.Text.Json.JsonSerializer.Serialize(dto.Changes) : null,
 			};
 			var (ok, error, req) = await _requests.CreateAsync(draft);
 			if (!ok) return BadRequest(new { success = false, message = error });

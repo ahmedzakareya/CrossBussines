@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
 import '../models/finance_summary.dart';
 import '../services/api_service.dart';
 import '../services/app_nav.dart';
-import '../widgets/app_ui.dart';
+import '../theme/brand.dart';
+import '../widgets/ui.dart';
 
+/// FINANCE (the owner's reference): cash and banks on the financial card with the year's revenue, receivables and
+/// payables in its footer; the year's result as a data list; the latest posted entries. Figures come from the
+/// accounting summary of the signed-in user's company, in that company's currency.
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
   @override
@@ -13,20 +16,12 @@ class FinanceScreen extends StatefulWidget {
 }
 
 class _FinanceScreenState extends State<FinanceScreen> {
-  late Future<FinanceSummary> _future;
-
-  static const _monthsAr = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  static const _monthsEn = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  late Future<FinanceSummary> _future = ApiService.instance.getFinanceSummary();
 
   @override
   void initState() {
     super.initState();
-    _future = ApiService.instance.getFinanceSummary();
     AppNav.dataChanged.addListener(_reload);
-  }
-
-  void _reload() {
-    if (mounted) setState(() => _future = ApiService.instance.getFinanceSummary());
   }
 
   @override
@@ -35,149 +30,72 @@ class _FinanceScreenState extends State<FinanceScreen> {
     super.dispose();
   }
 
-  String _money(bool ar, double v) {
-    final neg = v < 0;
-    final s = v.abs().toStringAsFixed(2).replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
-    return neg ? '($s)' : s;
-  }
-
-  String _date(bool ar, DateTime? d) {
-    if (d == null) return '-';
-    final m = ar ? _monthsAr[d.month] : _monthsEn[d.month];
-    return '${d.day} $m ${d.year}';
+  void _reload() {
+    if (mounted) setState(() => _future = ApiService.instance.getFinanceSummary());
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    final ar = t.isAr;
-    return Container(
-      color: kBg,
-      child: Column(
-        children: [
-          AppHeader(title: t.t('finance')),
-          Expanded(
-            child: FutureBuilder<FinanceSummary>(
-              future: _future,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snap.hasError || !snap.hasData) {
-                  return Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.cloud_off, size: 54, color: kMuted),
-                      const SizedBox(height: 10),
-                      Text(t.t('noData')),
-                      const SizedBox(height: 10),
-                      FilledButton.tonal(onPressed: _reload, child: Text(t.t('retry'))),
-                    ]),
-                  );
-                }
-                final s = snap.data!;
-                final profit = s.netResult >= 0;
-                return RefreshIndicator(
-                  onRefresh: () async => _reload(),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
-                    children: [
-                      Row(children: [
-                        Expanded(child: _kpi(t.t('cash'), _money(ar, s.cash), Icons.account_balance_wallet, s.cash >= 0 ? kGreen : _red)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _kpi(profit ? t.t('netProfit') : t.t('netLoss'), _money(ar, s.netResult), Icons.trending_up, profit ? kGreen : _red)),
-                      ]),
-                      const SizedBox(height: 10),
-                      Row(children: [
-                        Expanded(child: _kpi(t.t('receivables'), _money(ar, s.arTotal), Icons.south_west, kPrimary)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _kpi(t.t('payables'), _money(ar, s.apTotal), Icons.north_east, _amber)),
-                      ]),
-                      const SizedBox(height: 14),
-                      SectionCard(
-                        icon: Icons.assessment_outlined,
-                        title: t.t('resultThisYear'),
-                        children: [
-                          _row(t.t('revenue'), _money(ar, s.revenue), kGreen),
-                          _row(t.t('expenses'), _money(ar, s.expense), _red),
-                          const Divider(height: 18),
-                          _row(profit ? t.t('netProfit') : t.t('netLoss'), _money(ar, s.netResult), profit ? kGreen : _red, bold: true),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      SectionCard(
-                        icon: Icons.groups_outlined,
-                        title: t.t('partners'),
-                        children: [
-                          _row(t.t('customers'), '${s.customers}', kInk),
-                          _row(t.t('vendors'), '${s.vendors}', kInk),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      SectionCard(
-                        icon: Icons.receipt_long_outlined,
-                        title: t.t('recentEntries'),
-                        children: [
-                          if (s.recent.isEmpty)
-                            Padding(padding: const EdgeInsets.all(8), child: Text(t.t('noData'), style: const TextStyle(color: kMuted)))
-                          else
-                            ...s.recent.map((e) => _entry(ar, e)),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+    return ExecFrame(
+      child: FutureBuilder<FinanceSummary>(
+        future: _future,
+        builder: (context, s) {
+          final head = [
+            if (Navigator.of(context).canPop()) BackLink(L(context, 'مساحات العمل', 'Workspaces')),
+            PageHead(L(context, 'المالية', 'Finance'), eyebrow: L(context, 'السيولة والحسابات', 'Cash and accounts')),
+          ];
+          if (s.hasError) {
+            return ExecBody(children: [...head, EmptyNote(icon: Lu.lock, title: L(context, 'تعذّر تحميل المالية', 'Could not load finance'), text: L(context, 'لا تملك عرض الحسابات، أو أن الاتصال انقطع.', 'You may not view the accounts, or the connection dropped.'))]);
+          }
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final f = s.data!;
+          final cur = f.currency;
+          final unit = curLabel(cur, isAr(context));
+          String m(double v) => v < 0 ? '(${money(-v, cur)})' : money(v, cur);
+          final profit = f.netResult >= 0;
+          return ExecBody(
+            onRefresh: () async => _reload(),
+            children: [
+              ...head,
+              FinancialCard(
+                label: L(context, 'النقدية والبنوك', 'Cash & banks'),
+                icon: Lu.wallet,
+                amount: Amount(m(f.cash), unit),
+                note: f.asOf == null ? '' : '${L(context, 'حتى ', 'As of ')}${dayMonth(context, f.asOf!)} ${f.asOf!.year}',
+                footer: [
+                  (L(context, 'إيرادات السنة', 'Revenue (year)'), whole(f.revenue), ''),
+                  (L(context, 'العملاء', 'Receivables'), whole(f.arTotal), ''),
+                  (L(context, 'الموردون', 'Payables'), whole(f.apTotal), ''),
+                ],
+              ),
+              SectionHeading(L(context, 'نتيجة السنة', "The year's result")),
+              DataList(children: [
+                KV(L(context, 'الإيرادات', 'Revenue'), '${m(f.revenue)} $unit'),
+                KV(L(context, 'المصروفات', 'Expenses'), '${m(f.expense)} $unit'),
+                KV(profit ? L(context, 'صافي الربح', 'Net profit') : L(context, 'صافي الخسارة', 'Net loss'), '${m(f.netResult)} $unit', total: true),
+              ]),
+              SectionHeading(L(context, 'الشركاء', 'Partners')),
+              DataList(children: [
+                KV(L(context, 'العملاء', 'Customers'), '${f.customers}'),
+                KV(L(context, 'الموردون', 'Vendors'), '${f.vendors}'),
+              ]),
+              SectionHeading(L(context, 'آخر القيود', 'Latest entries'), count: f.recent.length),
+              if (f.recent.isEmpty)
+                EmptyNote(icon: Lu.bookOpen, title: L(context, 'لا قيود مرحّلة', 'No posted entries'), text: L(context, 'تظهر هنا آخر القيود المرحّلة في دفتر الأستاذ.', 'The latest posted ledger entries show here.'))
+              else
+                DataList(children: [
+                  for (final e in f.recent)
+                    ItemRow(
+                      leading: const IconBox(icon: Lu.bookOpen),
+                      title: (e.description ?? '').trim().isNotEmpty ? e.description!.trim() : (e.entryNo ?? '—'),
+                      subtitle: [e.entryNo ?? '', if (e.entryDate != null) dayMonth(context, e.entryDate!)].where((x) => x.isNotEmpty).join(' · '),
+                      end: Text(money(e.amount, cur), textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Brand.inkC)),
+                    ),
+                ]),
+            ],
+          );
+        },
       ),
     );
   }
-
-  static const _red = Color(0xFFD9214E);
-  static const _amber = Color(0xFFF6C000);
-
-  Widget _kpi(String label, String value, IconData icon, Color color) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 4))],
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: kMuted)),
-        ]),
-      );
-
-  Widget _row(String label, String value, Color color, {bool bold = false}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: kInk, fontWeight: bold ? FontWeight.bold : FontWeight.w500))),
-          Text(value, style: TextStyle(fontSize: bold ? 15 : 13.5, fontWeight: FontWeight.bold, color: color)),
-        ]),
-      );
-
-  Widget _entry(bool ar, RecentEntry e) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(e.description ?? e.entryNo ?? '-', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: kInk)),
-              const SizedBox(height: 2),
-              Text('${e.entryNo ?? ''} · ${_date(ar, e.entryDate)}', style: const TextStyle(fontSize: 10.5, color: kMuted)),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          Text(_money(ar, e.amount), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: kInk)),
-        ]),
-      );
 }

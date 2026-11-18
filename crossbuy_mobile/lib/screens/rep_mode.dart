@@ -6,8 +6,21 @@ import '../services/api_service.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
 
-/// SALES-REP MODE — the prototype's "mode-rep": find the customer, see what they owe and how much credit is left, take
-/// an order (priced by the server for that customer) and collect a payment, from the same visit.
+/// SALES-REP MODE (the owner's reference, "mode-rep"): the navy band becomes the mode bar; the rep finds the
+/// customer, sees what they owe and how much credit is left, takes an order (priced by the server for that customer)
+/// and collects a payment, from the same visit.
+(IconData, String, String) _mode(BuildContext context, [String sub = '']) =>
+    (Lu.route, L(context, 'وضع المندوب', 'Sales-rep mode'), sub.isEmpty ? L(context, 'العملاء · الطلبيات · التحصيل', 'Customers · orders · collections') : sub);
+
+String _m(BuildContext context, double v, String cur) => '${money(v, cur)} ${curLabel(cur, isAr(context))}';
+
+/// A negative outstanding is money the customer has in credit (paid ahead / returns), not a debt.
+String balanceText(BuildContext context, double v, String cur) => v < 0
+    ? '${L(context, 'رصيد دائن له ', 'In credit ')}${_m(context, -v, cur)}'
+    : v == 0
+        ? L(context, 'لا مستحقات', 'Nothing owed')
+        : '${L(context, 'المستحق ', 'Owes ')}${_m(context, v, cur)}';
+
 class RepModeScreen extends StatefulWidget {
   const RepModeScreen({super.key});
   @override
@@ -27,6 +40,12 @@ class _RepModeScreenState extends State<RepModeScreen> {
     _load(reset: true);
   }
 
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
+
   Future<void> _load({bool reset = false}) async {
     if (_loading) return;
     setState(() { _loading = true; if (reset) { _page = 1; _rows.clear(); } });
@@ -43,53 +62,42 @@ class _RepModeScreenState extends State<RepModeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PageFrame(
-      title: L(context, 'وضع المندوب', 'Sales-rep mode'),
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-          child: TextField(
+    return ExecFrame(
+      mode: _mode(context),
+      child: ExecBody(
+        onRefresh: () => _load(reset: true),
+        children: [
+          PageHead(L(context, 'العملاء', 'Customers'), eyebrow: _total == 0 ? null : L(context, '$_total عميل', '$_total customers')),
+          TextField(
             controller: _q, textInputAction: TextInputAction.search, onSubmitted: (_) => _load(reset: true),
-            decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: L(context, 'ابحث عن عميل بالاسم أو الهاتف', 'Search a customer by name or phone')),
+            decoration: InputDecoration(prefixIcon: const Icon(Lu.search, size: 17), hintText: L(context, 'ابحث عن عميل بالاسم أو الهاتف', 'Search a customer by name or phone')),
           ),
-        ),
-        Expanded(
-          child: _failed && _rows.isEmpty
-              ? ListView(padding: const EdgeInsets.all(16), children: [SectionCard(child: EmptyNote(icon: Icons.lock_outline, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'لا تملك عرض العملاء أو أن الاتصال انقطع.', 'You may not view customers, or the connection dropped.')))])
-              : ListView(padding: const EdgeInsets.fromLTRB(16, 6, 16, 16), children: [
-                  if (_rows.isEmpty && !_loading) SectionCard(child: EmptyNote(icon: Icons.storefront_outlined, title: L(context, 'لا عملاء', 'No customers'), text: L(context, 'غيّر كلمة البحث.', 'Try another search.'))),
-                  if (_rows.isNotEmpty)
-                    SectionCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Column(children: [
-                        for (final c in _rows)
-                          RowItem(
-                            leading: const IconTile(Icons.storefront_outlined),
-                            title: c.name,
-                            subtitle: balanceText(context, c.outstanding, _cur),
-                            trailing: c.headroom != null && c.headroom! <= 0 ? Pill(L(context, 'تجاوز الحد', 'Over limit'), fg: Brand.bad, bg: Brand.badTint) : Icon(isAr(context) ? Icons.chevron_left : Icons.chevron_right, color: Brand.muted),
-                            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CustomerVisitScreen(id: c.id))),
-                          ),
-                      ]),
-                    ),
-                  if (_rows.length < _total)
-                    TextButton(onPressed: _loading ? null : _load, child: Text('${L(context, 'المزيد', 'More')} (${_rows.length}/$_total)')),
-                  if (_loading) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
-                ]),
-        ),
-      ]),
+          const SizedBox(height: 14),
+          if (_failed && _rows.isEmpty)
+            EmptyNote(icon: Lu.lock, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'لا تملك عرض العملاء أو أن الاتصال انقطع.', 'You may not view customers, or the connection dropped.'))
+          else if (_rows.isEmpty && !_loading)
+            EmptyNote(icon: Lu.store, title: L(context, 'لا عملاء', 'No customers'), text: L(context, 'غيّر كلمة البحث.', 'Try another search.'))
+          else if (_rows.isNotEmpty)
+            DataList(children: [
+              for (final c in _rows)
+                ItemRow(
+                  leading: const IconBox(icon: Lu.store),
+                  title: c.name,
+                  subtitle: balanceText(context, c.outstanding, _cur),
+                  end: c.headroom != null && c.headroom! <= 0 ? Tag.bad(L(context, 'تجاوز الحد', 'Over limit')) : null,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CustomerVisitScreen(id: c.id))),
+                ),
+            ]),
+          if (_rows.length < _total)
+            TextButton(onPressed: _loading ? null : _load, child: Text('${L(context, 'المزيد', 'More')} (${_rows.length}/$_total)')),
+          if (_loading) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+        ],
+      ),
     );
   }
 }
 
-/// A negative outstanding is money the customer has in credit (paid ahead / returns), not a debt.
-String balanceText(BuildContext context, double v, String cur) => v < 0
-    ? '${L(context, 'رصيد دائن له ', 'In credit ')}${money(-v, cur)} $cur'
-    : v == 0
-        ? L(context, 'لا مستحقات', 'Nothing owed')
-        : '${L(context, 'المستحق ', 'Owes ')}${money(v, cur)} $cur';
-
-/// The visit: the customer card with what they owe, and the two things a rep does there.
+/// The visit: what the customer owes on the financial card, credit left in its footer, then the visit's actions.
 class CustomerVisitScreen extends StatefulWidget {
   final int id;
   const CustomerVisitScreen({super.key, required this.id});
@@ -107,64 +115,64 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen> {
     return FutureBuilder<(RepCustomer, String, bool, bool)>(
       future: _f,
       builder: (context, s) {
-        if (s.hasError) return PageFrame(title: L(context, 'العميل', 'Customer'), child: Center(child: Text(L(context, 'تعذّر تحميل العميل', 'Could not load the customer'))));
-        if (!s.hasData) return PageFrame(title: L(context, 'العميل', 'Customer'), child: const Center(child: CircularProgressIndicator()));
+        final back = BackLink(L(context, 'العملاء', 'Customers'));
+        if (s.hasError) return ExecFrame(mode: _mode(context), child: ExecBody(children: [back, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل العميل', 'Could not load the customer'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]));
+        if (!s.hasData) return ExecFrame(mode: _mode(context), child: const Center(child: CircularProgressIndicator()));
         final (c, cur, canOrder, canCollect) = s.data!;
-        String m(double v) => '${money(v, cur)} $cur';
-        Widget kpi(String ar, String en, String v, {Color? color}) => Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(4), padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(L(context, ar, en), style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
-                  FittedBox(fit: BoxFit.scaleDown, child: Text(v, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: color ?? Brand.ink))),
-                ]),
+        final unit = curLabel(cur, isAr(context));
+        final credit = c.outstanding < 0;
+        return ExecFrame(
+          mode: _mode(context, c.name),
+          child: ExecBody(
+            onRefresh: () async => _reload(),
+            children: [
+              back,
+              PageHead(c.name, eyebrow: c.address),
+              FinancialCard(
+                label: credit ? L(context, 'رصيد دائن للعميل', 'Customer in credit') : L(context, 'المستحق على العميل', 'Owed by the customer'),
+                icon: Lu.store,
+                amount: Amount(money(credit ? -c.outstanding : c.outstanding, cur), unit),
+                note: c.outstanding == 0 ? L(context, 'لا مستحقات', 'Nothing owed') : '',
+                footer: [
+                  (L(context, 'الحد الائتماني', 'Credit limit'), c.creditLimit == null ? L(context, 'بلا حد', 'None') : money(c.creditLimit!, cur), c.creditLimit == null ? '' : unit),
+                  (L(context, 'المتاح', 'Available'), c.headroom == null ? '—' : money(c.headroom!, cur), c.headroom == null ? '' : unit),
+                ],
               ),
-            );
-        return PageFrame(
-          title: c.name,
-          child: ListView(padding: const EdgeInsets.all(12), children: [
-            Row(children: [
-              c.outstanding < 0
-                  ? kpi('رصيد دائن له', 'In credit', m(-c.outstanding), color: Brand.ok)
-                  : kpi('المستحق', 'Outstanding', m(c.outstanding), color: c.outstanding > 0 ? Brand.bad : Brand.ok),
-              kpi('المتاح من الحد', 'Credit left', c.headroom == null ? L(context, 'بلا حد', 'No limit') : m(c.headroom!), color: (c.headroom ?? 1) <= 0 ? Brand.bad : null),
-            ]),
-            if (c.phone != null || c.address != null)
-              SectionCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(children: [
-                  if (c.phone != null) RowItem(leading: const IconTile(Icons.phone_outlined), title: c.phone!),
-                  if (c.address != null) RowItem(leading: const IconTile(Icons.place_outlined), title: c.address!),
-                ]),
-              ),
-            SectionCard(
-              child: Row(children: [
+              if (c.headroom != null && c.headroom! <= 0) ...[const SizedBox(height: 10), Align(alignment: AlignmentDirectional.centerStart, child: Tag.bad(L(context, 'تجاوز الحد الائتماني', 'Over the credit limit')))],
+              SectionHeading(L(context, 'إجراءات الزيارة', 'Visit actions')),
+              Row(children: [
                 Expanded(
-                  child: FilledButton.icon(
-                    onPressed: canOrder ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepOrderScreen(customer: c, currency: cur))); _reload(); } : null,
-                    icon: const Icon(Icons.shopping_basket_outlined), label: Text(L(context, 'طلبية', 'Order')),
+                  child: QuickTile(
+                    icon: Lu.shoppingBasket,
+                    label: L(context, 'طلبية', 'Order'),
+                    onTap: canOrder ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepOrderScreen(customer: c, currency: cur))); _reload(); } : () => _no(context, L(context, 'أخذ الطلبيات لمدير المخزون أو أمين المخزن.', 'Orders are for an inventory manager or warehouse keeper.')),
                   ),
                 ),
-                const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: canCollect ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepCollectScreen(customer: c, currency: cur))); _reload(); } : null,
-                    icon: const Icon(Icons.payments_outlined), label: Text(L(context, 'تحصيل', 'Collect')),
+                  child: QuickTile(
+                    icon: Lu.handCoins,
+                    label: L(context, 'تحصيل', 'Collect'),
+                    onTap: canCollect ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepCollectScreen(customer: c, currency: cur))); _reload(); } : () => _no(context, L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.')),
                   ),
                 ),
+                const Expanded(child: SizedBox()),
+                const Expanded(child: SizedBox()),
               ]),
-            ),
-            if (!canOrder || !canCollect)
-              Text(
-                [if (!canOrder) L(context, 'أخذ الطلبيات لمدير المخزون أو أمين المخزن.', 'Orders are for an inventory manager or warehouse keeper.'), if (!canCollect) L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.')].join(' '),
-                style: const TextStyle(fontSize: 12, color: Brand.muted),
-              ),
-          ]),
+              if ((c.phone ?? '').isNotEmpty || (c.address ?? '').isNotEmpty) ...[
+                SectionHeading(L(context, 'التواصل', 'Contact')),
+                DataList(children: [
+                  if ((c.phone ?? '').isNotEmpty) KV(L(context, 'الهاتف', 'Phone'), c.phone!),
+                  if ((c.address ?? '').isNotEmpty) KV(L(context, 'العنوان', 'Address'), c.address!),
+                ]),
+              ],
+            ],
+          ),
         );
       },
     );
   }
+
+  void _no(BuildContext context, String why) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(why)));
 }
 
 /// The order: the rep picks items and quantities; every price comes from the server for THIS customer.
@@ -178,13 +186,16 @@ class RepOrderScreen extends StatefulWidget {
 
 class _RepOrderScreenState extends State<RepOrderScreen> {
   final Map<int, double> _qty = {};
-  final Map<int, String> _names = {};
   final _q = TextEditingController();
   List<InventoryItem> _found = [];
   OrderPreview? _preview;
   bool _busy = false;
 
-  String m(double v) => '${money(v, widget.currency)} ${widget.currency}';
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
 
   Future<void> _search(String q) async {
     if (q.trim().isEmpty) return setState(() => _found = []);
@@ -195,7 +206,7 @@ class _RepOrderScreenState extends State<RepOrderScreen> {
     setState(() => _found = r.take(8).toList());
   }
 
-  void _add(InventoryItem it) { _names[it.id] = it.name; _set(it.id, (_qty[it.id] ?? 0) + 1); }
+  void _add(InventoryItem it) => _set(it.id, (_qty[it.id] ?? 0) + 1);
 
   Future<void> _set(int id, double q) async {
     setState(() { q <= 0 ? _qty.remove(id) : _qty[id] = q; });
@@ -213,72 +224,85 @@ class _RepOrderScreenState extends State<RepOrderScreen> {
     if (ok) Navigator.of(context).pop();
   }
 
+  String _n(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+
   @override
   Widget build(BuildContext context) {
     final p = _preview;
-    return PageFrame(
-      title: '${L(context, 'طلبية — ', 'Order — ')}${widget.customer.name}',
+    final cur = widget.currency;
+    return ExecFrame(
+      mode: _mode(context, widget.customer.name),
       child: Column(children: [
         Expanded(
-          child: ListView(padding: const EdgeInsets.all(16), children: [
-            SectionCard(
-              child: Column(children: [
-                TextField(
-                  controller: _q, textInputAction: TextInputAction.search, onSubmitted: _search,
-                  decoration: InputDecoration(prefixIcon: const Icon(Icons.qr_code_scanner), hintText: L(context, 'امسح أو ابحث عن صنف ثم Enter', 'Scan or search an item, then Enter')),
-                ),
-                for (final it in _found)
-                  RowItem(leading: const IconTile(Icons.add, size: 36), title: it.name, subtitle: it.code, onTap: () { _add(it); setState(() { _found = []; _q.clear(); }); }),
-              ]),
+          child: ExecBody(children: [
+            BackLink(widget.customer.name),
+            PageHead(L(context, 'طلبية', 'Order'), eyebrow: L(context, 'بسعر هذا العميل من الخادم', "Priced by the server for this customer")),
+            ScanBox(
+              text: L(context, 'امسح الصنف — كل مسح يضيف قطعة', 'Scan the item — each scan adds one'),
+              hint: L(context, 'أو ابحث بالكود أو الاسم ثم Enter', 'or search by code or name, then Enter'),
+              controller: _q, onSubmitted: _search,
             ),
-            if (p != null && p.lines.isNotEmpty)
-              SectionCard(
-                title: L(context, 'الأصناف (بسعر العميل)', 'Items (customer price)'),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(children: [
-                  for (final l in p.lines)
-                    RowItem(
-                      leading: const IconTile(Icons.inventory_2_outlined, size: 36),
-                      title: l.name,
-                      // the price formula is left-to-right inside an Arabic line: isolate it (U+2066 … U+2069) so it reads in order
-                      subtitle: '\u2066${money(l.unitPrice, widget.currency)} × ${l.qty == l.qty.roundToDouble() ? l.qty.toInt() : l.qty}${l.discount > 0 ? ' − ${money(l.discount, widget.currency)}' : ''}${l.taxRate > 0 ? ' + ${l.taxRate.toStringAsFixed(0)}%' : ''}\u2069',
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        IconButton(visualDensity: VisualDensity.compact, onPressed: () => _set(l.itemId, (_qty[l.itemId] ?? 0) - 1), icon: const Icon(Icons.remove_circle_outline)),
-                        IconButton(visualDensity: VisualDensity.compact, onPressed: () => _set(l.itemId, (_qty[l.itemId] ?? 0) + 1), icon: const Icon(Icons.add_circle_outline)),
-                      ]),
-                    ),
-                ]),
-              ),
-            if (p != null && !p.ok) _Banner(text: p.message ?? L(context, 'تعذّر التسعير', 'Pricing failed'), bad: true),
-            if (p != null && p.warning != null) _Banner(text: p.warning!, bad: false),
-            if (p != null && p.overLimit)
-              _Banner(bad: true, text: L(context, 'المستحق + هذه الطلبية يتجاوز الحد الائتماني؛ ستُرفض الفاتورة عند الإصدار ما لم يُسدَّد.', 'Outstanding + this order exceeds the credit limit; invoicing will be refused unless it is paid down.')),
+            if (_found.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              DataList(children: [
+                for (final it in _found)
+                  ItemRow(leading: const IconBox(icon: Lu.plus), title: it.name, subtitle: it.code, onTap: () { _add(it); setState(() { _found = []; _q.clear(); }); }),
+              ]),
+            ],
+            SectionHeading(L(context, 'الأصناف', 'Items'), count: _qty.length),
+            if (p == null || p.lines.isEmpty)
+              EmptyNote(icon: Lu.shoppingBasket, title: L(context, 'الطلبية فارغة', 'The order is empty'), text: L(context, 'امسح صنفاً أو ابحث عنه ليُضاف بسعر العميل.', "Scan or search an item; it is added at the customer's price."))
+            else
+              DataList(children: [
+                for (final l in p.lines)
+                  ItemRow(
+                    leading: const IconBox(icon: Lu.package),
+                    title: l.name,
+                    // the price formula is left-to-right inside an Arabic line: isolate it (U+2066 … U+2069) so it reads in order
+                    subtitle: '\u2066${money(l.unitPrice, cur)} × ${_n(l.qty)}${l.discount > 0 ? ' − ${money(l.discount, cur)}' : ''}${l.taxRate > 0 ? ' + ${l.taxRate.toStringAsFixed(0)}%' : ''}\u2069',
+                    end: QtyStepper(value: _n(_qty[l.itemId] ?? l.qty), onMinus: () => _set(l.itemId, (_qty[l.itemId] ?? 0) - 1), onPlus: () => _set(l.itemId, (_qty[l.itemId] ?? 0) + 1)),
+                  ),
+              ]),
+            if (p != null && !p.ok) ...[const SizedBox(height: 10), _Notice(text: p.message ?? L(context, 'تعذّر التسعير', 'Pricing failed'), bad: true)],
+            if (p != null && p.warning != null) ...[const SizedBox(height: 10), _Notice(text: p.warning!, bad: false)],
+            if (p != null && p.overLimit) ...[
+              const SizedBox(height: 10),
+              _Notice(bad: true, text: L(context, 'المستحق + هذه الطلبية يتجاوز الحد الائتماني؛ ستُرفض الفاتورة عند الإصدار ما لم يُسدَّد.', 'Outstanding + this order exceeds the credit limit; invoicing will be refused unless it is paid down.')),
+            ],
           ]),
         ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(children: [
-              Expanded(child: Text(p == null ? '' : '${L(context, 'الإجمالي ', 'Total ')}${m(p.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Brand.deep))),
-              FilledButton.icon(onPressed: _busy || p == null || !p.ok ? null : _save, icon: const Icon(Icons.check), label: Text(L(context, 'حفظ الطلبية', 'Save order'))),
-            ]),
-          ),
+        Container(
+          padding: EdgeInsets.fromLTRB(22, 12, 22, MediaQuery.of(context).padding.bottom + 12),
+          decoration: const BoxDecoration(color: Brand.paper, border: Border(top: BorderSide(color: Brand.lineC))),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(L(context, 'الإجمالي', 'Total'), style: T.small),
+                Text(p == null ? '—' : _m(context, p.total, cur), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Brand.inkC)),
+              ]),
+            ),
+            FilledButton.icon(onPressed: _busy || p == null || !p.ok ? null : _save, icon: const Icon(Lu.check, size: 16), label: Text(L(context, 'حفظ الطلبية', 'Save order'))),
+          ]),
         ),
       ]),
     );
   }
 }
 
-class _Banner extends StatelessWidget {
+/// A short line from the server in the house treatment: red for a refusal, the soft brand colour otherwise.
+class _Notice extends StatelessWidget {
   final String text;
   final bool bad;
-  const _Banner({required this.text, required this.bad});
+  const _Notice({required this.text, required this.bad});
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: bad ? Brand.badTint : Brand.tint2, borderRadius: BorderRadius.circular(12), border: Border.all(color: bad ? const Color(0xFFFCA5A5) : const Color(0xFFA8C5FF))),
-        child: Text(text, style: TextStyle(fontSize: 12.5, color: bad ? Brand.bad : Brand.deep)),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(color: bad ? Brand.badSoft : Brand.soft, borderRadius: BorderRadius.circular(13)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(bad ? Lu.circleAlert : Lu.info, size: 15, color: bad ? Brand.badC : Brand.support),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: bad ? Brand.badC : Brand.inkC))),
+        ]),
       );
 }
 
@@ -298,9 +322,18 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
   int? _account;
   bool _busy = false;
 
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
   Future<void> _send() async {
     final a = double.tryParse(_amount.text.trim());
-    if (a == null || a <= 0 || _account == null) return;
+    if (a == null || a <= 0 || _account == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'أدخل مبلغاً واختر الحساب', 'Enter an amount and choose the account'))));
+      return;
+    }
     setState(() => _busy = true);
     final (ok, err) = await ApiService.instance.collect(widget.customer.id, a, _method, _account!);
     if (!mounted) return;
@@ -311,41 +344,46 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PageFrame(
-      title: '${L(context, 'تحصيل — ', 'Collect — ')}${widget.customer.name}',
+    final c = widget.customer;
+    return ExecFrame(
+      mode: _mode(context, c.name),
       child: FutureBuilder<List<CashAccount>>(
         future: _accounts,
         builder: (context, s) {
-          if (s.hasError) return Center(child: Text(L(context, 'لا تملك صلاحية التحصيل', 'You may not collect')));
+          final head = [BackLink(c.name), PageHead(L(context, 'تحصيل', 'Collect'), eyebrow: L(context, 'سند قبض', 'Receipt voucher'))];
+          if (s.hasError) return ExecBody(children: [...head, EmptyNote(icon: Lu.lock, title: L(context, 'لا تملك صلاحية التحصيل', 'You may not collect'), text: L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.'))]);
           if (!s.hasData) return const Center(child: CircularProgressIndicator());
           final accs = s.data!;
           _account ??= accs.isEmpty ? null : accs.first.id;
-          return ListView(padding: const EdgeInsets.all(16), children: [
-            SectionCard(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(balanceText(context, widget.customer.outstanding, widget.currency), style: const TextStyle(color: Brand.muted)),
-                const SizedBox(height: 12),
-                TextField(controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: L(context, 'المبلغ', 'Amount'), suffixText: widget.currency)),
-                const SizedBox(height: 12),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(value: 'Cash', icon: const Icon(Icons.payments_outlined), label: Text(L(context, 'نقد', 'Cash'))),
-                    ButtonSegment(value: 'Bank', icon: const Icon(Icons.account_balance_outlined), label: Text(L(context, 'بنك', 'Bank'))),
-                  ],
-                  selected: {_method},
-                  onSelectionChanged: (v) => setState(() => _method = v.first),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  initialValue: _account, isExpanded: true,
-                  decoration: InputDecoration(labelText: L(context, 'إلى حساب', 'Into account')),
-                  items: [for (final a in accs) DropdownMenuItem(value: a.id, child: Text('${a.name} · ${a.code}', overflow: TextOverflow.ellipsis))],
-                  onChanged: (v) => setState(() => _account = v),
-                ),
-                const SizedBox(height: 14),
-                FilledButton.icon(onPressed: _busy || _account == null ? null : _send, icon: const Icon(Icons.receipt_long_outlined), label: Text(L(context, 'إصدار سند قبض', 'Issue receipt'))),
+          final acc = accs.where((a) => a.id == _account).firstOrNull;
+          return ExecBody(children: [
+            ...head,
+            Align(alignment: AlignmentDirectional.centerStart, child: Tag.info(balanceText(context, c.outstanding, widget.currency))),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), textDirection: TextDirection.ltr,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Brand.inkC),
+              decoration: InputDecoration(labelText: L(context, 'المبلغ', 'Amount'), suffixText: curLabel(widget.currency, isAr(context))),
+            ),
+            const SizedBox(height: 12),
+            ChipTabs(items: [L(context, 'نقد', 'Cash'), L(context, 'تحويل بنكي', 'Bank transfer')], index: _method == 'Cash' ? 0 : 1, onTap: (i) => setState(() => _method = i == 0 ? 'Cash' : 'Bank')),
+            FieldBox(
+              label: L(context, 'إلى حساب', 'Into account'),
+              onTap: accs.length < 2
+                  ? null
+                  : () async {
+                      final id = await pickFromSheet<int>(context, title: L(context, 'إلى حساب', 'Into account'), selected: _account, options: [for (final a in accs) (a.id, a.name, a.code)]);
+                      if (id != null) setState(() => _account = id);
+                    },
+              child: Row(children: [
+                Expanded(child: Text(acc == null ? L(context, 'لا حساب نقدية متاح', 'No cash account available') : '${acc.name} · ${acc.code}', overflow: TextOverflow.ellipsis)),
+                if (accs.length > 1) const Icon(Lu.chevronDown, size: 15, color: Brand.support),
               ]),
             ),
+            const SizedBox(height: 14),
+            FilledButton.icon(onPressed: _busy || _account == null ? null : _send, icon: const Icon(Lu.receiptText, size: 16), label: Text(L(context, 'إصدار سند القبض', 'Issue the receipt'))),
+            const SizedBox(height: 10),
+            Text(L(context, 'يُرحَّل السند في الحسابات فور إصداره ويُخصم من مستحقات العميل.', "The voucher posts to the accounts at once and reduces what the customer owes."), textAlign: TextAlign.center, style: T.small),
           ]);
         },
       ),

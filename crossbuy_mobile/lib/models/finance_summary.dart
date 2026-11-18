@@ -28,6 +28,7 @@ class RecentEntry {
 
 class FinanceSummary {
   final DateTime? asOf;
+  final String currency;   // the company's own currency code (KWD, SAR…)
   final double cash;
   final double arTotal;
   final double apTotal;
@@ -40,6 +41,7 @@ class FinanceSummary {
 
   FinanceSummary({
     this.asOf,
+    this.currency = '',
     required this.cash,
     required this.arTotal,
     required this.apTotal,
@@ -53,6 +55,7 @@ class FinanceSummary {
 
   factory FinanceSummary.fromJson(Map<String, dynamic> j) => FinanceSummary(
         asOf: j['asOf'] != null ? DateTime.tryParse(j['asOf'].toString()) : null,
+        currency: j['currency']?.toString() ?? '',
         cash: (j['cash'] as num?)?.toDouble() ?? 0,
         arTotal: (j['arTotal'] as num?)?.toDouble() ?? 0,
         apTotal: (j['apTotal'] as num?)?.toDouble() ?? 0,

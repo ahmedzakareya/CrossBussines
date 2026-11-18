@@ -8,15 +8,15 @@ import '../providers/notification_provider.dart';
 import '../screens/login_screen.dart';
 import '../services/app_nav.dart';
 
-/// Shared visual identity, mirrored from the My Profile screen so every
-/// screen in the app speaks the same design language.
+/// The older screens' colour names, now pointing at the owner's reference palette (lib/theme/brand.dart) so anything
+/// still drawn with them speaks its colours — no Metronic blue, no bright green.
 
-const kPrimary = Color(0xFF1B84FF);
-const kInk = Color(0xFF181C32);
-const kMuted = Color(0xFF99A1B7);
-const kGreen = Color(0xFF17C653);
-const kBg = Color(0xFFEEF2F8);
-const kChipBg = Color(0xFFF5F7FB);
+const kPrimary = Color(0xFF3A5795);   // Brand.blue
+const kInk = Color(0xFF1F2D4D);       // Brand.inkC
+const kMuted = Color(0xFF738098);     // Brand.mutedC
+const kGreen = Color(0xFF1F7A4D);     // Brand.okC
+const kBg = Color(0xFFF5F7FB);        // Brand.page
+const kChipBg = Color(0xFFEDF1F8);    // Brand.soft
 
 /// The signature gradient header from My Profile (navy gradient + city skyline),
 /// reused across screens so the whole app shares one identity.
