@@ -115,6 +115,44 @@ namespace CrossBuy.Controllers.Api
 					amount = _context.JournalEntryLines.Where(l => l.JournalEntryId == e.ID).Sum(l => (decimal?)l.Debit) ?? 0
 				}).ToListAsync(cancellationToken);
 
+			// each cash / bank account (the postable 1101 leaves) with its posted balance, and the month's movement on all of
+			// them — the owner's finance screen lists the accounts under the cash card. A leaf is a BANK when a BankAccount
+			// record is linked to it (its number, masked to the last four digits, is the subtitle); otherwise it is cash.
+			var monthStart = new DateTime(today.Year, today.Month, 1);
+			var perAccount = await (from l in _context.JournalEntryLines.AsNoTracking()
+									join e in _context.JournalEntries.AsNoTracking() on l.JournalEntryId equals e.ID
+									where e.CompanyID == companyId && (e.Status == "Posted" || e.Status == "Reversed") && cashIds.Contains(l.AccountId)
+									group new { l, e } by l.AccountId into g
+									select new
+									{
+										AccountId = g.Key,
+										Balance = g.Sum(x => x.l.Debit - x.l.Credit),
+										Month = g.Sum(x => x.e.EntryDate >= monthStart ? x.l.Debit - x.l.Credit : 0m),
+									}).ToListAsync(cancellationToken);
+			var leafs = await _context.Accounts.AsNoTracking().Where(a => cashIds.Contains(a.ID) && a.IsPostable)
+				.Select(a => new { a.ID, a.Code, a.Name, a.NameEn }).ToListAsync(cancellationToken);
+			var banks = await _context.BankAccounts.AsNoTracking().Where(b => b.CompanyID == companyId && b.IsActive && cashIds.Contains(b.GlAccountId))
+				.Select(b => new { b.GlAccountId, b.AccountNumber, b.IBAN }).ToListAsync(cancellationToken);
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+				|| Request.Headers["Accept-Language"].ToString().StartsWith("ar");
+			var accounts = leafs.Select(a =>
+				{
+					var m = perAccount.FirstOrDefault(p => p.AccountId == a.ID);
+					var bank = banks.FirstOrDefault(b => b.GlAccountId == a.ID);
+					var no = (bank?.AccountNumber ?? bank?.IBAN ?? "").Trim();
+					return new
+					{
+						code = a.Code,
+						name = ar || string.IsNullOrWhiteSpace(a.NameEn) ? a.Name : a.NameEn,
+						balance = Math.Round(m?.Balance ?? 0, 3),
+						bank = bank != null,
+						accountNo = no.Length >= 4 ? no[^4..] : no,
+					};
+				})
+				.Where(a => a.balance != 0 || a.bank)
+				.OrderByDescending(a => Math.Abs(a.balance)).ToList();
+			var cashMonthChange = Math.Round(perAccount.Sum(p => p.Month), 3);
+
 			// the company's own currency, so a client never shows a bare number or assumes one (the mobile finance card)
 			var currency = await (from co in _context.Companies.AsNoTracking()
 								  from cu in _context.Currencies.AsNoTracking()
@@ -129,6 +167,8 @@ namespace CrossBuy.Controllers.Api
 					asOf = today,
 					currency,
 					cash = Math.Round(cash, 2),
+					cashMonthChange,
+					accounts,
 					arTotal = Math.Round(arRows.Sum(r => r.Total), 2),
 					apTotal = Math.Round(apRows.Sum(r => r.Total), 2),
 					revenue = pnl.Revenue.Total,

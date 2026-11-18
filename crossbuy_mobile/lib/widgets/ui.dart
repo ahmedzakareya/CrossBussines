@@ -253,7 +253,8 @@ class Amount extends StatelessWidget {
   final String value;   // already formatted ("734,203.090")
   final String unit;
   final double size;
-  const Amount(this.value, this.unit, {super.key, this.size = 36});
+  final bool center;   // the collection screen's large amount sits in the middle (the reference's detail-amount)
+  const Amount(this.value, this.unit, {super.key, this.size = 36, this.center = false});
   @override
   Widget build(BuildContext context) {
     final i = value.indexOf('.');
@@ -262,7 +263,7 @@ class Amount extends StatelessWidget {
     // the reference lays this row out left-to-right and pushes it to the right edge: "د.ك  734,203.090"
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Row(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+      child: Row(mainAxisAlignment: center ? MainAxisAlignment.center : MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
         Text(unit, style: const TextStyle(fontSize: 12, color: Brand.mutedC)),
         const SizedBox(width: 7),
         Flexible(

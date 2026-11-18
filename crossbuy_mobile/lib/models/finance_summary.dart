@@ -26,10 +26,27 @@ class RecentEntry {
       );
 }
 
+/// One cash or bank account under the cash card: its posted balance; a bank shows its number's last four digits.
+class CashAccountLine {
+  final String code, name, accountNo;
+  final double balance;
+  final bool bank;
+  CashAccountLine({required this.code, required this.name, required this.balance, this.bank = false, this.accountNo = ''});
+  factory CashAccountLine.fromJson(Map<String, dynamic> j) => CashAccountLine(
+        code: j['code']?.toString() ?? '',
+        name: j['name']?.toString() ?? '',
+        balance: (j['balance'] as num?)?.toDouble() ?? 0,
+        bank: j['bank'] == true,
+        accountNo: j['accountNo']?.toString() ?? '',
+      );
+}
+
 class FinanceSummary {
   final DateTime? asOf;
   final String currency;   // the company's own currency code (KWD, SAR…)
   final double cash;
+  final double cashMonthChange;   // this month's movement on cash and banks
+  final List<CashAccountLine> accounts;
   final double arTotal;
   final double apTotal;
   final double revenue;
@@ -43,6 +60,8 @@ class FinanceSummary {
     this.asOf,
     this.currency = '',
     required this.cash,
+    this.cashMonthChange = 0,
+    this.accounts = const [],
     required this.arTotal,
     required this.apTotal,
     required this.revenue,
@@ -57,6 +76,8 @@ class FinanceSummary {
         asOf: j['asOf'] != null ? DateTime.tryParse(j['asOf'].toString()) : null,
         currency: j['currency']?.toString() ?? '',
         cash: (j['cash'] as num?)?.toDouble() ?? 0,
+        cashMonthChange: (j['cashMonthChange'] as num?)?.toDouble() ?? 0,
+        accounts: [for (final a in (j['accounts'] as List? ?? [])) CashAccountLine.fromJson(a as Map<String, dynamic>)],
         arTotal: (j['arTotal'] as num?)?.toDouble() ?? 0,
         apTotal: (j['apTotal'] as num?)?.toDouble() ?? 0,
         revenue: (j['revenue'] as num?)?.toDouble() ?? 0,

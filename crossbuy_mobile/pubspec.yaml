@@ -23,6 +23,8 @@ dependencies:
   # H176 internal calls: WebRTC (same protocol as the browser) and the recording player; pinned, both 2+ weeks old
   flutter_webrtc: 1.6.3
   video_player: 2.14.1
+  # the rep's customer card: "call" opens the dialer, "location" opens the maps app; pinned, 2+ weeks old
+  url_launcher: 6.3.1
 
 dev_dependencies:
   flutter_lints: ^3.0.0

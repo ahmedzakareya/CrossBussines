@@ -92,7 +92,34 @@ namespace CrossBuy.Controllers.Api
 			var c = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == auth.CompanyId, ct);
 			if (c == null) return NotFound(new { success = false });
 			return Ok(new { success = true, currency = await CurrencyCodeAsync(auth.CompanyId), data = await CardAsync(auth.CompanyId, c), canOrder = await _access.CanAsync("doc"),
-				canCollect = (await _guard.AuthorizeAsync("pay", null, ct)).Ok });
+				canCollect = (await _guard.AuthorizeAsync("pay", null, ct)).Ok, openInvoices = await OpenInvoicesAsync(auth.CompanyId, c, ct) });
+		}
+
+		// The customer's open invoices, oldest first, with what is still open on each. Receipts are not allocated to
+		// invoices in this system, so every posted credit — receipts AND sales returns, the two things
+		// ReceivableService.CustomerOutstandingAsync subtracts — is applied to the oldest posted invoices first (FIFO), in
+		// the functional currency. The open parts therefore add up to the outstanding on the card. (AgingAsync applies
+		// receipts only, so for a customer with returns it ages more than is owed.) The due date is the invoice date plus
+		// the customer's payment terms (0 = due on the invoice date).
+		private async Task<List<object>> OpenInvoicesAsync(int companyId, Models.Context.Accounting.Customer c, CancellationToken ct)
+		{
+			var inv = await _db.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.CustomerId == c.ID && i.Status == "Posted")
+				.OrderBy(i => i.InvoiceDate).ThenBy(i => i.ID).Select(i => new { i.ID, i.InvoiceNo, i.InvoiceDate, Total = i.GrandTotalBase ?? i.GrandTotal }).ToListAsync(ct);
+			var paid = await _db.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.CustomerId == c.ID && r.Status == "Posted")
+				.SumAsync(r => (decimal?)(r.AmountBase ?? r.Amount), ct) ?? 0m;
+			paid += await _db.SalesReturns.AsNoTracking().Where(s => s.CompanyID == companyId && s.CustomerId == c.ID && s.Status == "Posted")
+				.SumAsync(s => (decimal?)(s.GrandTotalBase ?? s.GrandTotal), ct) ?? 0m;
+			var today = DateTime.Today;
+			var list = new List<object>();
+			foreach (var i in inv)
+			{
+				var open = i.Total;
+				if (paid > 0) { var used = Math.Min(paid, open); open -= used; paid -= used; }
+				if (open <= 0) continue;
+				var due = i.InvoiceDate.Date.AddDays(c.PaymentTermsDays ?? 0);
+				list.Add(new { id = i.ID, invoiceNo = i.InvoiceNo, invoiceDate = i.InvoiceDate, dueDate = due, open = Math.Round(open, 3), overdueDays = Math.Max(0, (today - due).Days) });
+			}
+			return list;
 		}
 
 		private async Task<decimal> DefaultVatAsync(int companyId) =>

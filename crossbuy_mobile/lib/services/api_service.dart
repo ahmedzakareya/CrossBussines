@@ -334,9 +334,15 @@ class ApiService {
   }
 
   /// (the card, currency, may I take an order, may I collect)
-  Future<(RepCustomer, String, bool, bool)> getRepCustomer(int id) async {
+  Future<(RepCustomer, String, bool, bool, List<OpenInvoice>)> getRepCustomer(int id) async {
     final res = await _dio.get('/api/rep/customers/$id');
-    return (RepCustomer.fromJson(res.data['data'] as Map<String, dynamic>), (res.data['currency'] as String?) ?? '', res.data['canOrder'] == true, res.data['canCollect'] == true);
+    return (
+      RepCustomer.fromJson(res.data['data'] as Map<String, dynamic>),
+      (res.data['currency'] as String?) ?? '',
+      res.data['canOrder'] == true,
+      res.data['canCollect'] == true,
+      [for (final i in (res.data['openInvoices'] as List? ?? [])) OpenInvoice.fromJson(i as Map<String, dynamic>)],
+    );
   }
 
   Map<String, dynamic> _order(int customerId, Map<int, double> qty, String? notes) => {

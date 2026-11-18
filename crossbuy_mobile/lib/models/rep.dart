@@ -20,6 +20,23 @@ class RepCustomer {
       );
 }
 
+/// An invoice still open on the customer's account: what is left on it after receipts are applied oldest first.
+class OpenInvoice {
+  final int id;
+  final String invoiceNo;
+  final DateTime? dueDate;
+  final double open;
+  final int overdueDays;
+  OpenInvoice({required this.id, required this.invoiceNo, this.dueDate, required this.open, this.overdueDays = 0});
+  factory OpenInvoice.fromJson(Map<String, dynamic> j) => OpenInvoice(
+        id: j['id'] ?? 0,
+        invoiceNo: j['invoiceNo']?.toString() ?? '',
+        dueDate: j['dueDate'] == null ? null : DateTime.tryParse(j['dueDate'].toString()),
+        open: _d(j['open']),
+        overdueDays: j['overdueDays'] ?? 0,
+      );
+}
+
 class PricedLine {
   final int itemId;
   final String name, code, priceSource;
