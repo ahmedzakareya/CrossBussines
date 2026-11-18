@@ -13,6 +13,8 @@
     // H168: stability by the clinic's protocol — the measurements, the loading, the approved thresholds
     var protocol = ViewBag.Protocol as HospitalImplantProtocol; string? protocolBy = ViewBag.ProtocolBy as string;
     var measures = ViewBag.Measures as ILookup<int, HospitalImplantMeasure> ?? Array.Empty<HospitalImplantMeasure>().ToLookup(x => x.ImplantId);
+    var reviews = ViewBag.Reviews as ILookup<int, HospitalImplantReview> ?? Array.Empty<HospitalImplantReview>().ToLookup(x => x.ImplantId);   // H186
+    string Peri(string s) => s switch { HospitalPeriImplantStatus.Health => "primary", HospitalPeriImplantStatus.Mucositis => "info", _ => "danger" };
     string Stg(string v) => v switch { HospitalImplantStage.Restored => "primary", HospitalImplantStage.Healing => "primary", HospitalImplantStage.Failed => "danger", _ => "secondary" };
     // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
     void Stat(string label, string value, object? sub, string icon, string tone)
@@ -90,7 +92,8 @@
                     <span class="card-label fw-bold text-gray-800">@T["Implant register"]</span>
                     <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each implant with its system, size and lot — any lot can be traced if the maker recalls it"]</span>
                 </h3>
-                <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search by patient or lot"]" data-filter /></div></div>
+                <div class="card-toolbar gap-2"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search by patient or lot"]" data-filter /></div>
+                    <button type="button" class="btn btn-sm btn-light-primary" data-lot-trace><i class="ki-outline ki-scan-barcode fs-4"></i>@T["Trace a lot"]</button></div>
             </div>
             <div class="card-body pt-2">
                 @if (Model.Count == 0)
@@ -108,15 +111,17 @@
                             @foreach (var r in Model)
                             {
                                 var m = r.Implant;
-                                <tr data-row="@m.ImplantNo @r.PatientName @r.PatientNameEn @r.Mrn @m.Lot @m.System">
+                                <tr data-row="@m.ImplantNo @r.PatientName @r.PatientNameEn @r.Mrn @m.Lot @m.GraftLot @m.AbutmentLot @m.Ref @m.System">
                                     <td class="ps-4"><a href="@Url.Action("DentalChart", new { patientId = m.PatientId })" class="d-flex align-items-center text-hover-primary">
                                         @{ Person(r.Photo, r.PatientNameEn, 40); }
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></a></td>
                                     <td><div class="d-flex align-items-center">
                                         <div class="symbol symbol-35px me-3 flex-shrink-0" title="@T["Tooth"]"><span class="symbol-label bg-light-primary text-primary fw-bold fs-6 hp-num">@m.Tooth</span></div>
                                         <bdi class="text-gray-900 fw-bold fs-7 hp-num">@m.ImplantNo</bdi></div></td>
-                                    <td><span class="text-gray-900 fw-bold d-block fs-7"><bdi>@m.System</bdi></span><span class="text-muted fw-semibold fs-7 hp-num">@m.Diameter.ToString("0.0", inv) × @m.Length.ToString("0.#", inv)&nbsp;mm</span></td>
-                                    <td>@if (m.Lot != null) {<span class="badge badge-light-primary fs-7 fw-bold hp-num">@m.Lot</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td><span class="text-gray-900 fw-bold d-block fs-7"><bdi>@m.System</bdi></span><span class="text-muted fw-semibold fs-7 hp-num">@m.Diameter.ToString("0.0", inv) × @m.Length.ToString("0.#", inv)&nbsp;mm</span>@if (m.Ref != null) {<span class="text-muted fs-8 d-block" dir="ltr">REF <bdi class="hp-num">@m.Ref</bdi></span>}</td>
+                                    <td>@if (m.Lot != null) {<span class="badge badge-light-primary fs-7 fw-bold hp-num">@m.Lot</span>} else {<span class="text-muted">—</span>}
+                                        @if (m.GraftLot != null) {<div class="fs-8 text-gray-700 mt-1" title="@m.GraftMaterial" data-bs-toggle="tooltip">@T["Graft"] <bdi class="hp-num text-nowrap" dir="ltr">@m.GraftLot</bdi></div>}
+                                        @if (m.AbutmentLot != null) {<div class="fs-8 text-gray-700 mt-1">@T["Abutment"] <bdi class="hp-num text-nowrap" dir="ltr">@m.AbutmentLot</bdi></div>}</td>
                                     <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@(m.PlacedOn?.ToString("yyyy-MM-dd") ?? "—")</span></td>
                                     <td>@{ var ms = measures[m.ID].ToList(); var last = ms.LastOrDefault(); }
                                         @if (last != null)
@@ -128,7 +133,10 @@
                                         else {<span class="text-muted">—</span>}</td>
                                     <td><span class="badge badge-light-@Stg(m.Stage) fs-7 fw-bold">@T["impl:" + m.Stage]</span>@if (m.FailureReason != null) {<div class="text-danger fs-8 mt-1">@m.FailureReason</div>}
                                         @if (m.LoadingKind != null) {<div class="fs-8 text-gray-700 mt-1">@T["load:" + m.LoadingKind] · @T["rest:" + (m.Restoration ?? "")]</div>}
-                                        @if (m.ExceptionReason != null) {<div class="fs-8 text-danger mt-1" title="@m.ExceptionReason" data-bs-toggle="tooltip">@T["Below the protocol — dentist's exception"]</div>}</td>
+                                        @if (m.ExceptionReason != null) {<div class="fs-8 text-danger mt-1" title="@m.ExceptionReason" data-bs-toggle="tooltip">@T["Below the protocol — dentist's exception"]</div>}
+                                        @{ var rv = reviews[m.ID].FirstOrDefault(); }
+                                        @if (rv != null) {<div class="mt-1"><span class="badge badge-light-@Peri(rv.Status) fs-8 fw-bold" title="@rv.ReviewedOn.ToString("yyyy-MM-dd") · @T["Deepest probing"] @rv.MaxProbingMm.ToString("0.#", inv) mm@(rv.BoneLossMm is decimal bl ? " · " + T["Bone loss"].Value + " " + bl.ToString("0.#", inv) + " mm" : "")" data-bs-toggle="tooltip">@T["peri:" + rv.Status]</span></div>}
+                                        @if (HospitalImplantReviewRules.Overdue(m.Stage, m.RestoredOn, rv?.ReviewedOn, DateTime.Now.Date)) {<div class="fs-8 text-danger fw-semibold mt-1">@T["Peri-implant review overdue"]</div>}</td>
                                     <td>@if (r.Surgeon != null) { <div class="d-flex align-items-center">@{ Person(r.Surgeon.Photo, r.Surgeon.NameEn, 30); }<span class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn)</span></div> } else {<span class="text-muted">—</span>}</td>
                                     <td class="text-end pe-4 text-nowrap">
                                         @if (canConsult)
@@ -136,6 +144,7 @@
                                             if (m.Stage == HospitalImplantStage.Planned) { <button type="button" class="btn btn-sm btn-light-primary" data-place="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-check fs-4"></i>@T["Implant placed"]</button> }
                                             if (m.Stage is HospitalImplantStage.Healing or HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" title="@T["Record a stability measurement"]" data-bs-toggle="tooltip" data-measure="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-chart-simple fs-3"></i></button> }
                                             if (m.Stage == HospitalImplantStage.Healing) { <button type="button" class="btn btn-sm btn-light-primary" data-restore="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-check-circle fs-4"></i>@T["Restoration fitted"]</button> }
+                                            if (m.Stage == HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-light-primary" data-review="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-shield-search fs-4"></i>@T["Peri-implant review"]</button> }
                                             if (m.Stage is HospitalImplantStage.Healing or HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Failed"]" data-bs-toggle="tooltip" data-fail="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-cross-circle fs-3"></i></button> }
                                         }
                                     </td>
@@ -182,6 +191,10 @@
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Placed"]</label><input class="form-control form-control-solid hp-num" data-pl="on" data-fp value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly /></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Stability ISQ"]</label><input type="number" min="1" max="100" class="form-control form-control-solid hp-num" dir="ltr" data-pl="isq" /></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Insertion torque (N·cm)"]</label><input type="number" min="1" max="150" class="form-control form-control-solid hp-num" dir="ltr" data-pl="torque" /></div>
+                @* H186: the catalogue reference, and a graft with its lot *@
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Catalogue reference (REF / UDI)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="60" data-pl="ref" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Bone graft"]</label><input class="form-control form-control-solid" maxlength="60" data-pl="graft" placeholder="@T["e.g. xenograft granules 0.5 g"]" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Graft lot"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-pl="graftLot" /></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Record"]</button></div>
         </div>
@@ -216,6 +229,7 @@
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Restoration"]</label>
                     <select class="form-select form-select-solid" data-rs="restoration" data-control="select2" data-hide-search="true" data-dropdown-parent="#restoreModal">@foreach (var k in HospitalImplantRestoration.All) { <option value="@k" selected="@(k == HospitalImplantRestoration.Definitive)">@T["rest:" + k]</option> }</select></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Fitted on"]</label><input class="form-control form-control-solid hp-num" data-rs="on" data-fp value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Abutment lot"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-rs="abutment" /></div>
                 <div class="col-12"><div class="text-muted fs-7">@T["Immediate loading rests on the stability at placement; early and conventional on the latest measurement before loading."]</div></div>
                 <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Exception — only when below the clinic's protocol"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-rs="exception"></textarea></div>
             </div>
@@ -223,6 +237,36 @@
         </div>
     </div></div></div>
 }
+@* H186: the peri-implant review; who received a lot *@
+@if (canConsult)
+{
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Peri-implant review"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-rv-what></bdi></div></div>
+            <div class="row g-6">
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Reviewed on"]</label><input class="form-control form-control-solid hp-num" data-rv="on" data-fp value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Deepest probing (mm)"]</label><input type="number" min="1" max="15" step="0.5" class="form-control form-control-solid hp-num" dir="ltr" data-rv="probing" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Bone loss since the restoration (mm)"]</label><input type="number" min="0" max="15" step="0.5" class="form-control form-control-solid hp-num" dir="ltr" data-rv="bone" /><div class="text-muted fs-8 mt-1">@T["Empty when no radiograph was taken."]</div></div>
+                <div class="col-md-6 d-flex flex-column gap-3 pt-md-8">
+                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-rv="bleeding" /><span class="form-check-label fw-semibold text-gray-800">@T["Bleeds on probing"]</span></label>
+                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-rv="suppuration" /><span class="form-check-label fw-semibold text-gray-800">@T["Suppuration"]</span></label>
+                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-rv="mobility" /><span class="form-check-label fw-semibold text-gray-800">@T["Mobility"]</span></label></div>
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" data-rv="note" /></div>
+                <div class="col-12"><div class="text-muted fs-7">@T["Classified by the 2017 World Workshop: bleeding or suppuration with bone loss of 3 mm or more, or probing of 6 mm or more, is peri-implantitis."]</div></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rv-save>@T["Record"]</button></div>
+        </div>
+    </div></div></div>
+}
+<div class="modal fade" id="lotModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Trace a lot"]</h1><div class="text-muted fw-semibold fs-6">@T["Every implant, graft or abutment of the lot, and the patient who received it."]</div></div>
+        <div class="d-flex gap-3 mb-6"><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-lot-q placeholder="STR-24K118" /><button type="button" class="btn btn-primary text-nowrap" data-lot-go><i class="ki-outline ki-magnifier fs-4"></i>@T["Search"]</button></div>
+        <div data-lot-out></div>
+    </div>
+</div></div></div>
 @if (canManage)
 {
     <div class="modal fade" id="protoModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
@@ -249,6 +293,8 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental/Implants"));
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                 add: @Json.Serialize(T["Add this implant to the register?"].Value), place: @Json.Serialize(T["Record {0} as placed?"].Value),
+                review: @Json.Serialize(T["Record this peri-implant review of {0}?"].Value), none: @Json.Serialize(T["No implant, graft or abutment carries this lot."].Value),
+                lotHead: @Json.Serialize(new[] { T["Patient"].Value, T["No."].Value, T["Tooth"].Value, T["Part"].Value, T["Placed"].Value, T["Stage"].Value }),
                 proto: @Json.Serialize(T["Approve this loading protocol for the clinic?"].Value), restore: @Json.Serialize(T["Record the restoration of {0}?"].Value), fail: @Json.Serialize(T["Why did {0} fail?"].Value), num: @Json.Serialize(T["Enter a number"].Value) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             // a code inside an Arabic sentence keeps its own direction (first-strong isolate … pop)
@@ -270,8 +316,29 @@
             var loc = (document.documentElement.lang || '').indexOf('ar') === 0 && window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default';
             if (window.flatpickr) document.querySelectorAll('[data-fp]').forEach(function (el) { flatpickr(el, { dateFormat: 'Y-m-d', maxDate: 'today', disableMobile: true, static: true, locale: loc }); });
             function num(el) { var v = el.value.trim(); return v ? +v : null; }
+            var vw = document.getElementById('reviewModal'), lm = document.getElementById('lotModal');   // H186
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+            function lotTable(rows) {
+                var out = lm.querySelector('[data-lot-out]');
+                if (!rows.length) { out.innerHTML = '<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 fs-6 text-gray-700">' + esc(W.none) + '</div>'; return; }
+                var h = '<div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0"><thead><tr class="fs-7 fw-bold text-gray-500 border-bottom-0">' + W.lotHead.map(function (x) { return '<th>' + esc(x) + '</th>'; }).join('') + '</tr></thead><tbody>';
+                rows.forEach(function (r) { h += '<tr><td><a class="text-gray-900 fw-bold text-hover-primary" href="' + esc(r.chart) + '">' + esc(r.patient) + '</a><div class="text-muted fs-8"><bdi class="hp-num">' + esc(r.mrn) + '</bdi>' + (r.phone ? ' · <bdi class="hp-num" dir="ltr">' + esc(r.phone) + '</bdi>' : '') + '</div></td>'
+                    + '<td><bdi class="hp-num">' + esc(r.implantNo) + '</bdi></td><td class="hp-num">' + esc(r.tooth) + '</td><td>' + esc(r.what) + ' <bdi class="hp-num text-muted fs-8">' + esc(r.lot) + '</bdi></td><td class="hp-num">' + esc(r.placed || '—') + '</td><td>' + esc(r.stage) + '</td></tr>'; });
+                out.innerHTML = h + '</tbody></table></div>';
+            }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-imp-open],[data-im-save],[data-place],[data-pl-save],[data-restore],[data-fail],[data-measure],[data-ms-save],[data-rs-save],[data-proto-open],[data-pr-save]'); if (!t) return;
+                var t = e.target.closest('[data-imp-open],[data-im-save],[data-place],[data-pl-save],[data-restore],[data-fail],[data-measure],[data-ms-save],[data-rs-save],[data-proto-open],[data-pr-save],[data-review],[data-rv-save],[data-lot-trace],[data-lot-go]'); if (!t) return;
+                // H186: the peri-implant review, and who received a lot
+                if (t.hasAttribute('data-review')) { target = { id: t.getAttribute('data-review'), what: t.getAttribute('data-what') }; vw.querySelector('[data-rv-what]').textContent = target.what;
+                    ['probing', 'bone', 'note'].forEach(function (k) { vw.querySelector('[data-rv=' + k + ']').value = ''; }); ['bleeding', 'suppuration', 'mobility'].forEach(function (k) { vw.querySelector('[data-rv=' + k + ']').checked = false; });
+                    bootstrap.Modal.getOrCreateInstance(vw).show(); return; }
+                if (t.hasAttribute('data-rv-save')) { var rv = function (k) { return vw.querySelector('[data-rv=' + k + ']'); };
+                    if (num(rv('probing')) == null) { toast('warning', W.num); return; }
+                    cbConfirm(W.review.replace('{0}', iso(target.what))).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post(root + '/' + target.id + '/Review', { on: rv('on').value || null, maxProbingMm: num(rv('probing')), boneLossMm: num(rv('bone')), bleeding: rv('bleeding').checked, suppuration: rv('suppuration').checked, mobility: rv('mobility').checked, note: rv('note').value.trim() || null }).then(done(t, vw)); }); return; }
+                if (t.hasAttribute('data-lot-trace')) { lm.querySelector('[data-lot-q]').value = ''; lm.querySelector('[data-lot-out]').innerHTML = ''; bootstrap.Modal.getOrCreateInstance(lm).show(); return; }
+                if (t.hasAttribute('data-lot-go')) { var q = lm.querySelector('[data-lot-q]').value.trim(); if (!q) return; t.disabled = true;
+                    fetch(root + '/Lot?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (res) { t.disabled = false; lotTable(res.rows || []); }, function () { t.disabled = false; toast('error', W.failed); }); return; }
                 if (t.hasAttribute('data-proto-open')) { bootstrap.Modal.getOrCreateInstance(prm).show(); return; }
                 if (t.hasAttribute('data-pr-save')) { var pr = function (k) { return prm.querySelector('[data-pr=' + k + ']'); };
                     cbConfirm(W.proto).then(function (ok) { if (!ok) return; t.disabled = true;
@@ -282,7 +349,7 @@
                     post(root + '/' + target.id + '/Measure', { moment: ms('moment').value, on: ms('on').value || null, isq: num(ms('isq')), torqueNcm: num(ms('torque')), note: ms('note').value.trim() || null }).then(done(t, mm)); return; }
                 if (t.hasAttribute('data-rs-save')) { var rs = function (k) { return rm.querySelector('[data-rs=' + k + ']'); };
                     cbConfirm(W.restore.replace('{0}', iso(target.what))).then(function (ok) { if (!ok) return; t.disabled = true;
-                        post(root + '/' + target.id + '/Move', { to: 'Restored', on: rs('on').value || null, loadingKind: rs('loading').value, restoration: rs('restoration').value, exceptionReason: rs('exception').value.trim() || null }).then(done(t, rm)); }); return; }
+                        post(root + '/' + target.id + '/Move', { to: 'Restored', on: rs('on').value || null, loadingKind: rs('loading').value, restoration: rs('restoration').value, exceptionReason: rs('exception').value.trim() || null, abutmentLot: rs('abutment').value.trim() || null }).then(done(t, rm)); }); return; }
                 if (t.hasAttribute('data-imp-open')) { bootstrap.Modal.getOrCreateInstance(im).show(); return; }
                 if (t.hasAttribute('data-im-save')) {
                     var g = function (k) { return im.querySelector('[data-im=' + k + ']').value.trim(); };
@@ -290,14 +357,14 @@
                     cbConfirm(W.add).then(function (ok) { if (!ok) return; t.disabled = true; post(root, body).then(done(t, im)); });
                     return;
                 }
-                if (t.hasAttribute('data-place')) { placing = { id: t.getAttribute('data-place'), what: t.getAttribute('data-what') }; pm.querySelector('[data-pl-what]').textContent = placing.what; pm.querySelector('[data-pl=lot]').value = ''; pm.querySelector('[data-pl=isq]').value = ''; pm.querySelector('[data-pl=torque]').value = ''; bootstrap.Modal.getOrCreateInstance(pm).show(); return; }
+                if (t.hasAttribute('data-place')) { placing = { id: t.getAttribute('data-place'), what: t.getAttribute('data-what') }; pm.querySelector('[data-pl-what]').textContent = placing.what; pm.querySelector('[data-pl=lot]').value = ''; pm.querySelector('[data-pl=isq]').value = ''; pm.querySelector('[data-pl=torque]').value = ''; ['ref', 'graft', 'graftLot'].forEach(function (k) { pm.querySelector('[data-pl=' + k + ']').value = ''; }); bootstrap.Modal.getOrCreateInstance(pm).show(); return; }
                 if (t.hasAttribute('data-pl-save')) {
                     var p = function (k) { return pm.querySelector('[data-pl=' + k + ']').value.trim(); };
-                    cbConfirm(W.place.replace('{0}', iso(placing.what))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + placing.id + '/Move', { to: 'Healing', lot: p('lot'), on: p('on') || null, isq: p('isq') ? +p('isq') : null, torqueNcm: p('torque') ? +p('torque') : null }).then(done(t, pm)); });
+                    cbConfirm(W.place.replace('{0}', iso(placing.what))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + placing.id + '/Move', { to: 'Healing', lot: p('lot'), on: p('on') || null, isq: p('isq') ? +p('isq') : null, torqueNcm: p('torque') ? +p('torque') : null, ref: p('ref') || null, graftMaterial: p('graft') || null, graftLot: p('graftLot') || null }).then(done(t, pm)); });
                     return;
                 }
                 if (t.hasAttribute('data-restore')) { target = { id: t.getAttribute('data-restore'), what: t.getAttribute('data-what') }; rm.querySelector('[data-rs-what]').textContent = target.what;
-                    rm.querySelector('[data-rs=exception]').value = ''; bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
+                    rm.querySelector('[data-rs=exception]').value = ''; rm.querySelector('[data-rs=abutment]').value = ''; bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
                 cbPrompt(W.fail.replace('{0}', iso(t.getAttribute('data-what'))), { kind: 'danger', textarea: true }).then(function (why) { if (!why) return; t.disabled = true; post(root + '/' + t.getAttribute('data-fail') + '/Move', { to: 'Failed', reason: why }).then(done(t)); });
             });
             document.addEventListener('input', function (e) {

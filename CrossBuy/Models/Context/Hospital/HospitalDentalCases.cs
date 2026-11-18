@@ -155,6 +155,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? Restoration { get; set; }
 		public string? ExceptionReason { get; set; }
 		public int? ExceptionByEmployeeId { get; set; }
+		/// H186: the maker's catalogue reference (REF / UDI), the graft placed with it and its lot, and the abutment's lot.
+		public string? Ref { get; set; }
+		public string? GraftMaterial { get; set; }
+		public string? GraftLot { get; set; }
+		public string? AbutmentLot { get; set; }
 	}
 
 	public static class HospitalDentalCasesModel
@@ -162,6 +167,7 @@ namespace CrossBuy.Models.Context.Hospital
 		public static void Configure(ModelBuilder b)
 		{
 			// no DbSet for any of them: each names its table, or EF would look for the singular name
+			HospitalImplantReviewModel.Configure(b);   // H186: the peri-implant maintenance review
 			b.Entity<HospitalOrthoCase>(e =>
 			{
 				e.ToTable("HospitalOrthoCases");
@@ -207,6 +213,10 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalImplant>(e =>
 			{
 				e.ToTable("HospitalImplants");
+				e.Property(x => x.Ref).HasMaxLength(60);   // H186
+				e.Property(x => x.GraftMaterial).HasMaxLength(60);
+				e.Property(x => x.GraftLot).HasMaxLength(40);
+				e.Property(x => x.AbutmentLot).HasMaxLength(40);
 				e.Property(x => x.Tooth).HasColumnType("tinyint").HasConversion<byte>();
 				e.Property(x => x.Diameter).HasPrecision(4, 1);
 				e.Property(x => x.Length).HasPrecision(4, 1);

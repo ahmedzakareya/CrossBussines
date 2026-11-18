@@ -79,6 +79,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Protocol = protocol;
 			ViewBag.ProtocolBy = protocol == null ? null : await _db.Employee.AsNoTracking().Where(e => e.ID == protocol.ApprovedByEmployeeId && e.EmpCompanyID == ctx.CompanyId).Select(e => e.FullName).FirstOrDefaultAsync(ct);
 			ViewBag.Measures = await CasesSvc.MeasuresOfAsync(ctx, rows.Select(r => r.Implant.ID).ToList(), ct);
+			ViewBag.Reviews = await CasesSvc.ReviewsOfAsync(ctx, rows.Select(r => r.Implant.ID).ToList(), ct);   // H186
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			return View(rows);
 		}
@@ -89,6 +90,25 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await CasesSvc.PlanImplantAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Dental/Implants/{id:int}/Review"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]   // H186
+		public async Task<IActionResult> DentalImplantReview(int id, [FromBody] HospitalImplantReviewInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await CasesSvc.AddReviewAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, DateTime.Now.Date, ct));
+		}
+
+		[HttpGet("Dental/Implants/Lot")]   // H186: who received a lot
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> DentalImplantLot(string? q, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var rows = await CasesSvc.TraceLotAsync(ctx, q, ct);
+			return Json(new { ok = true, rows = rows.Select(r => new { r.ImplantNo, patient = DisplayName.Of(r.PatientName, r.PatientNameEn), r.Mrn, r.Phone, r.Tooth, what = _t["lotw:" + r.What].Value, r.Lot,
+				placed = r.PlacedOn?.ToString("yyyy-MM-dd"), stage = _t["impl:" + r.Stage].Value, chart = Url.Action("DentalChart", new { patientId = r.PatientId }) }) });
 		}
 
 		[HttpPost("Dental/Implants/{id:int}/Move"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

@@ -95,7 +95,7 @@ namespace CrossBuy.Tests
 
 		// ---------------- model and slice ----------------
 
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h17_dental_cases.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h167_ortho_payments.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h168_implant_stability.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h185_ortho_record.sql");   // H167 payment columns, H168 implant loading columns, H185 the ortho record
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h17_dental_cases.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h167_ortho_payments.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h168_implant_stability.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h185_ortho_record.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h186_implant_reviews.sql");   // H167 payment columns, H168 implant loading columns, H185 the ortho record, H186 implant traceability
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDentalCasesModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

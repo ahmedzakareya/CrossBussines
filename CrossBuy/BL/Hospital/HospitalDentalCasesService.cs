@@ -74,7 +74,27 @@ namespace CrossBuy.BL.Hospital
 		public string? LoadingKind { get; set; }
 		public string? Restoration { get; set; }
 		public string? ExceptionReason { get; set; }
+		/// H186: at placement the catalogue reference and the graft with its lot; at restoration the abutment's lot.
+		public string? Ref { get; set; }
+		public string? GraftMaterial { get; set; }
+		public string? GraftLot { get; set; }
+		public string? AbutmentLot { get; set; }
 	}
+
+	/// H186: a peri-implant maintenance review.
+	public sealed class HospitalImplantReviewInput
+	{
+		public DateTime? On { get; set; }
+		public decimal MaxProbingMm { get; set; }
+		public bool Bleeding { get; set; }
+		public bool Suppuration { get; set; }
+		public decimal? BoneLossMm { get; set; }
+		public bool Mobility { get; set; }
+		public string? Note { get; set; }
+	}
+
+	/// H186: an implant, graft or abutment carrying a lot — who received it.
+	public sealed record HospitalLotTraceRow(int ImplantId, string ImplantNo, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? Phone, int Tooth, string What, string Lot, DateTime? PlacedOn, string Stage);
 
 	public sealed class HospitalImplantMeasureInput
 	{
@@ -331,6 +351,54 @@ namespace CrossBuy.BL.Hospital
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return Array.Empty<HospitalImplantMeasure>().ToLookup(x => x.ImplantId); }
 		}
 
+		// ---------------- H186: peri-implant maintenance and lot traceability ----------------
+
+		private IQueryable<HospitalImplantReview> Reviews(BusinessContext ctx) => _db.Set<HospitalImplantReview>().Where(x => x.CompanyId == ctx.CompanyId);
+
+		public async Task<HospitalResult> AddReviewAsync(BusinessContext ctx, int implantId, HospitalImplantReviewInput input, int? employeeId, DateTime nowUtc, DateTime today, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var m = await Implants(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == implantId, ct);
+			if (m == null) return HospitalResult.Fail("not_found");
+			var on = (input.On ?? today).Date;
+			if (HospitalImplantReviewRules.Refusal(m.Stage, input.MaxProbingMm, input.BoneLossMm, on, today, m.RestoredOn) is string why) return HospitalResult.Fail(why);
+			var row = new HospitalImplantReview
+			{
+				CompanyId = ctx.CompanyId, ImplantId = m.ID, PatientId = m.PatientId, ReviewedOn = on, MaxProbingMm = input.MaxProbingMm, Bleeding = input.Bleeding, Suppuration = input.Suppuration,
+				BoneLossMm = input.BoneLossMm, Mobility = input.Mobility, Note = Clip(input.Note, 300), CreatedAt = nowUtc, CreatedByEmployeeId = employeeId,
+				Status = HospitalImplantReviewRules.Classify(input.Bleeding, input.Suppuration, input.MaxProbingMm, input.BoneLossMm, input.Mobility),
+			};
+			_db.Add(row);
+			var r = await SaveAsync(ct);
+			return r.Ok ? HospitalResult.Success(row.ID) : r;
+		}
+
+		/// The reviews of these implants, newest first.
+		public async Task<ILookup<int, HospitalImplantReview>> ReviewsOfAsync(BusinessContext ctx, IReadOnlyCollection<int> implantIds, CancellationToken ct = default)
+		{
+			try { return (await Reviews(ctx).AsNoTracking().Where(x => implantIds.Contains(x.ImplantId)).OrderByDescending(x => x.ReviewedOn).ThenByDescending(x => x.ID).ToListAsync(ct)).ToLookup(x => x.ImplantId); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return Array.Empty<HospitalImplantReview>().ToLookup(x => x.ImplantId); }
+		}
+
+		/// Every implant, graft or abutment of this lot, and the patient who received it — the whole register, not a page of it.
+		public async Task<IReadOnlyList<HospitalLotTraceRow>> TraceLotAsync(BusinessContext ctx, string? lot, CancellationToken ct = default)
+		{
+			var key = HospitalImplantReviewRules.LotKey(lot);
+			if (key == null) return Array.Empty<HospitalLotTraceRow>();
+			var rows = await (from m in Implants(ctx).AsNoTracking()
+							  join p in _db.HospitalPatients.AsNoTracking() on m.PatientId equals p.ID
+							  where (m.Lot != null && m.Lot.ToUpper() == key) || (m.GraftLot != null && m.GraftLot.ToUpper() == key) || (m.AbutmentLot != null && m.AbutmentLot.ToUpper() == key)
+							  orderby m.PlacedOn
+							  select new { m, p.Name, p.NameEn, p.Mrn, p.Phone }).Take(500).ToListAsync(ct);
+			var list = new List<HospitalLotTraceRow>();
+			foreach (var r in rows)
+			{
+				void Add(string what, string? l) { if (l != null && l.Trim().ToUpperInvariant() == key) list.Add(new HospitalLotTraceRow(r.m.ID, r.m.ImplantNo, r.m.PatientId, r.Name, r.NameEn ?? "", r.Mrn, r.Phone, r.m.Tooth, what, l, r.m.PlacedOn, r.m.Stage)); }
+				Add("Implant", r.m.Lot); Add("Graft", r.m.GraftLot); Add("Abutment", r.m.AbutmentLot);
+			}
+			return list;
+		}
+
 		public async Task<HospitalResult> MoveImplantAsync(BusinessContext ctx, int id, HospitalImplantMoveInput input, DateTime today, CancellationToken ct = default, int? employeeId = null)
 		{
 			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
@@ -345,7 +413,9 @@ namespace CrossBuy.BL.Hospital
 					var why = HospitalDentalCasesRules.PlaceRefusal(input.Lot, day, input.Isq, today);
 					if (why != null) return HospitalResult.Fail(why);
 					if (input.TorqueNcm is < 1 or > 150) return HospitalResult.Fail("The insertion torque is 1 to 150 N·cm");
+					if (HospitalImplantReviewRules.GraftRefusal(input.GraftMaterial, input.GraftLot) is string gw) return HospitalResult.Fail(gw);
 					m.Lot = Clip(input.Lot, 40); m.PlacedOn = day; m.Isq = input.Isq;
+					m.Ref = Clip(input.Ref, 60); m.GraftMaterial = Clip(input.GraftMaterial, 60); m.GraftLot = m.GraftMaterial == null ? null : Clip(input.GraftLot, 40);   // H186
 					// H168: the stability at placement is a measurement of its own, kept with its date
 					if (input.Isq != null || input.TorqueNcm != null)
 						_db.Add(new HospitalImplantMeasure { CompanyId = ctx.CompanyId, ImplantId = m.ID, PatientId = m.PatientId, MeasuredOn = day, Moment = HospitalImplantMoment.Placement,
@@ -361,6 +431,7 @@ namespace CrossBuy.BL.Hospital
 					bool below = HospitalImplantStabilityRules.BelowProtocol(protocol, input.LoadingKind, basis!);
 					m.Isq = basis!.Isq ?? m.Isq; m.RestoredOn = day; m.LoadingKind = input.LoadingKind; m.Restoration = input.Restoration;
 					m.ExceptionReason = below ? Clip(input.ExceptionReason, 300) : null; m.ExceptionByEmployeeId = below ? employeeId : null;
+					m.AbutmentLot = Clip(input.AbutmentLot, 40);   // H186
 					break;
 				case HospitalImplantStage.Failed:
 					var reason = Clip(input.Reason, 300);

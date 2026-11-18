@@ -1,0 +1,185 @@
+{
+ "unit": "H186 - implant traceability and peri-implant maintenance",
+ "strings": {
+  "A peri-implant review is of a restored implant": {
+   "ar": "مراجعة ما حول الغرسة تكون لغرسة رُكّبت عليها التعويضة",
+   "en": "A peri-implant review is of a restored implant",
+   "fr": "Un contrôle péri-implantaire porte sur un implant restauré"
+  },
+  "The deepest probing is 1 to 15 mm": {
+   "ar": "أعمق سبر من 1 إلى 15 مم",
+   "en": "The deepest probing is 1 to 15 mm",
+   "fr": "Le sondage le plus profond est de 1 à 15 mm"
+  },
+  "The bone loss is 0 to 15 mm": {
+   "ar": "الفقد العظمي من 0 إلى 15 مم",
+   "en": "The bone loss is 0 to 15 mm",
+   "fr": "La perte osseuse est de 0 à 15 mm"
+  },
+  "A review cannot be before the restoration was fitted": {
+   "ar": "لا تسبق المراجعة تركيب التعويضة",
+   "en": "A review cannot be before the restoration was fitted",
+   "fr": "Un contrôle ne peut précéder la pose de la restauration"
+  },
+  "A graft is recorded with its lot": {
+   "ar": "يُسجَّل الطُّعم العظمي مع رقم تشغيلته",
+   "en": "A graft is recorded with its lot",
+   "fr": "Une greffe est enregistrée avec son lot"
+  },
+  "Trace a lot": {
+   "ar": "تتبّع تشغيلة",
+   "en": "Trace a lot",
+   "fr": "Tracer un lot"
+  },
+  "Graft": {
+   "ar": "الطُّعم",
+   "en": "Graft",
+   "fr": "Greffe"
+  },
+  "Abutment": {
+   "ar": "الدعامة",
+   "en": "Abutment",
+   "fr": "Pilier"
+  },
+  "Deepest probing": {
+   "ar": "أعمق سبر",
+   "en": "Deepest probing",
+   "fr": "Sondage le plus profond"
+  },
+  "Bone loss": {
+   "ar": "الفقد العظمي",
+   "en": "Bone loss",
+   "fr": "Perte osseuse"
+  },
+  "peri:Health": {
+   "ar": "سليمة",
+   "en": "Healthy",
+   "fr": "Saine"
+  },
+  "peri:Mucositis": {
+   "ar": "التهاب الغشاء المخاطي حول الغرسة",
+   "en": "Peri-implant mucositis",
+   "fr": "Mucosite péri-implantaire"
+  },
+  "peri:Periimplantitis": {
+   "ar": "التهاب ما حول الغرسة",
+   "en": "Peri-implantitis",
+   "fr": "Péri-implantite"
+  },
+  "peri:Failing": {
+   "ar": "فشل محتمل (حركة)",
+   "en": "Failure suspected (mobile)",
+   "fr": "Échec suspecté (mobilité)"
+  },
+  "Peri-implant review overdue": {
+   "ar": "مراجعة ما حول الغرسة متأخرة",
+   "en": "Peri-implant review overdue",
+   "fr": "Contrôle péri-implantaire en retard"
+  },
+  "Peri-implant review": {
+   "ar": "مراجعة ما حول الغرسة",
+   "en": "Peri-implant review",
+   "fr": "Contrôle péri-implantaire"
+  },
+  "Catalogue reference (REF / UDI)": {
+   "ar": "الرقم المرجعي للمنتج (REF / UDI)",
+   "en": "Catalogue reference (REF / UDI)",
+   "fr": "Référence catalogue (REF / UDI)"
+  },
+  "Bone graft": {
+   "ar": "الطُّعم العظمي",
+   "en": "Bone graft",
+   "fr": "Greffe osseuse"
+  },
+  "e.g. xenograft granules 0.5 g": {
+   "ar": "مثال: حبيبات طُعم حيواني 0.5 غ",
+   "en": "e.g. xenograft granules 0.5 g",
+   "fr": "ex. granules de xénogreffe 0,5 g"
+  },
+  "Graft lot": {
+   "ar": "تشغيلة الطُّعم",
+   "en": "Graft lot",
+   "fr": "Lot de la greffe"
+  },
+  "Abutment lot": {
+   "ar": "تشغيلة الدعامة",
+   "en": "Abutment lot",
+   "fr": "Lot du pilier"
+  },
+  "Reviewed on": {
+   "ar": "تاريخ المراجعة",
+   "en": "Reviewed on",
+   "fr": "Contrôlé le"
+  },
+  "Deepest probing (mm)": {
+   "ar": "أعمق سبر (مم)",
+   "en": "Deepest probing (mm)",
+   "fr": "Sondage le plus profond (mm)"
+  },
+  "Bone loss since the restoration (mm)": {
+   "ar": "الفقد العظمي منذ التعويضة (مم)",
+   "en": "Bone loss since the restoration (mm)",
+   "fr": "Perte osseuse depuis la restauration (mm)"
+  },
+  "Empty when no radiograph was taken.": {
+   "ar": "يُترك فارغًا إن لم تُلتقط صورة شعاعية.",
+   "en": "Empty when no radiograph was taken.",
+   "fr": "Vide si aucune radiographie n'a été prise."
+  },
+  "Bleeds on probing": {
+   "ar": "نزف عند السبر",
+   "en": "Bleeding on probing",
+   "fr": "Saignement au sondage"
+  },
+  "Suppuration": {
+   "ar": "تقيّح",
+   "en": "Suppuration",
+   "fr": "Suppuration"
+  },
+  "Mobility": {
+   "ar": "حركة الغرسة",
+   "en": "Mobility",
+   "fr": "Mobilité"
+  },
+  "Classified by the 2017 World Workshop: bleeding or suppuration with bone loss of 3 mm or more, or probing of 6 mm or more, is peri-implantitis.": {
+   "ar": "يُصنَّف وفق ورشة العمل العالمية 2017: النزف أو التقيّح مع فقد عظمي 3 مم فأكثر، أو سبر 6 مم فأكثر، يعني التهاب ما حول الغرسة.",
+   "en": "Classified by the 2017 World Workshop: bleeding or suppuration with bone loss of 3 mm or more, or probing of 6 mm or more, is peri-implantitis.",
+   "fr": "Classé selon le World Workshop 2017 : saignement ou suppuration avec une perte osseuse de 3 mm ou plus, ou un sondage de 6 mm ou plus, est une péri-implantite."
+  },
+  "Every implant, graft or abutment of the lot, and the patient who received it.": {
+   "ar": "كل غرسة أو طُعم أو دعامة من التشغيلة، والمريض الذي تلقّاها.",
+   "en": "Every implant, graft or abutment of the lot, and the patient who received it.",
+   "fr": "Chaque implant, greffe ou pilier du lot, et le patient qui l'a reçu."
+  },
+  "Record this peri-implant review of {0}?": {
+   "ar": "هل تسجّل مراجعة ما حول الغرسة {0}؟",
+   "en": "Record this peri-implant review of {0}?",
+   "fr": "Enregistrer ce contrôle péri-implantaire de {0} ?"
+  },
+  "No implant, graft or abutment carries this lot.": {
+   "ar": "لا توجد غرسة أو طُعم أو دعامة بهذه التشغيلة.",
+   "en": "No implant, graft or abutment carries this lot.",
+   "fr": "Aucun implant, greffe ou pilier ne porte ce lot."
+  },
+  "Part": {
+   "ar": "الجزء",
+   "en": "Part",
+   "fr": "Élément"
+  },
+  "lotw:Implant": {
+   "ar": "الغرسة",
+   "en": "Implant",
+   "fr": "Implant"
+  },
+  "lotw:Graft": {
+   "ar": "الطُّعم",
+   "en": "Graft",
+   "fr": "Greffe"
+  },
+  "lotw:Abutment": {
+   "ar": "الدعامة",
+   "en": "Abutment",
+   "fr": "Pilier"
+  }
+ }
+}
