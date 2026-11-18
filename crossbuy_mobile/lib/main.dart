@@ -4,19 +4,26 @@ import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/calls_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/notification_provider.dart';
 import 'screens/shell.dart';
 import 'screens/login_screen.dart';
 import 'services/app_nav.dart';
+import 'services/dev_certificate.dart';
 import 'theme/brand.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  trustDevCertificate();   // debug builds only: the development server's own certificate (10.0.2.2 / localhost)
 
   final locale = LocaleProvider();
   final auth = AuthProvider();
   await Future.wait([locale.load(), auth.bootstrap()]);
+  final calls = CallsProvider()..lang = locale.locale.languageCode;
+  locale.addListener(() => calls.lang = locale.locale.languageCode);
+  // signed out anywhere (the account tab, a 401): leave any call and close the calls connection
+  auth.addListener(() { if (!auth.isLoggedIn) calls.reset(); });
 
   runApp(
     MultiProvider(
@@ -24,6 +31,7 @@ void main() async {
         ChangeNotifierProvider.value(value: locale),
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider.value(value: calls),
       ],
       child: const CrossBuyApp(),
     ),

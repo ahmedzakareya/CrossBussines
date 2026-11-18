@@ -39,6 +39,11 @@ namespace CrossBuy.Hubs
 		private static readonly ConcurrentDictionary<int, int> _company = new();         // employee → company
 		private static readonly ConcurrentDictionary<int, Live> _calls = new();          // call id → live call
 		private static readonly ConcurrentDictionary<int, int> _busy = new();            // employee → call id
+		/// Connections from the mobile app (it connects with ?client=app): a phone cannot record a call, so a recording it
+		/// asks for is recorded by the browser at the other end.
+		private static readonly ConcurrentDictionary<string, bool> _appConns = new();
+		private static bool IsApp(string? conn) => !string.IsNullOrEmpty(conn) && _appConns.ContainsKey(conn);
+		public const string NeedsComputer = "Recording needs one side on a computer: a phone cannot record the call";
 
 		/// "busy" also while someone's screen is ringing: a second caller is told at once instead of waiting out the ring.
 		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) || RingingInGroup(employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : "off";
@@ -75,6 +80,7 @@ namespace CrossBuy.Hubs
 				await Groups.AddToGroupAsync(Context.ConnectionId, Emp(emp));
 				await Groups.AddToGroupAsync(Context.ConnectionId, Co(co));
 				_company[emp] = co;
+				if (Context.GetHttpContext()?.Request.Query["client"].ToString() == "app") _appConns[Context.ConnectionId] = true;
 				StartWarden();
 				if (_online.AddOrUpdate(emp, 1, (_, n) => n + 1) == 1) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
 			}
@@ -96,6 +102,7 @@ namespace CrossBuy.Hubs
 					string other = caller ? live.CalleeConn! : live.CallerConn;
 					if (other.Length > 0) await Clients.Client(other).SendAsync("peeraway", new { callId = live.CallId });
 				}
+				_appConns.TryRemove(Context.ConnectionId, out _);
 				await DropFromGroupsAsync();   // H176 group calls
 				if (_online.AddOrUpdate(emp, 0, (_, n) => Math.Max(0, n - 1)) == 0) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
 			}
@@ -243,7 +250,14 @@ namespace CrossBuy.Hubs
 			if (await MeAsync() is not var (me, co) || !_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return new { ok = false, error = "failed" };
 			string? to = Other(live);
 			if (to == null) return new { ok = false, error = "failed" };
-			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture);
+			// from the app: the browser at the other end records (a phone cannot mix both sides); two phones cannot record
+			int? recorder = null;
+			if (IsApp(Context.ConnectionId))
+			{
+				if (IsApp(to)) return new { ok = false, error = NeedsComputer };
+				recorder = to == live.CallerConn ? live.CallerId : live.CalleeId;
+			}
+			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture, recorder);
 			if (row == null) return new { ok = false, error };
 			var s = await Svc.SettingsAsync(co);
 			var by = (await Svc.PeopleAsync(co, DateTime.UtcNow, new[] { me })).FirstOrDefault();
@@ -261,7 +275,7 @@ namespace CrossBuy.Hubs
 			if (row == null) return;
 			if (row.Status == HospitalCallRecordingStatus.Recording)
 			{
-				var msg = new { recId, callId = live.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, agreedAt = row.AgreedAt };
+				var msg = new { recId, callId = live.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, recorderId = HospitalCallRecordingRules.RecorderOf(row), agreedAt = row.AgreedAt };
 				await Clients.Client(live.CallerConn).SendAsync("recstart", msg);
 				await Clients.Client(live.CalleeConn!).SendAsync("recstart", msg);
 			}

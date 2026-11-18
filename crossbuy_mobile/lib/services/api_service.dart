@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app_config.dart';
 import 'app_nav.dart';
 import '../models/app_notification.dart';
+import '../models/calls.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
 import '../models/rep.dart';
@@ -420,4 +421,72 @@ class ApiService {
       await _dio.post('/api/notifications/read-all');
     } on DioException {/* ignore */}
   }
+
+  // ---------------------------------------------------------------- H176 internal calls (api/calls)
+  /// What this person can do with calls here; null when the hospital module or the calls are not available to them.
+  Future<CallsMe?> getCallsMe() async {
+    try {
+      final res = await _dio.get('/api/calls/me');
+      return CallsMe.fromJson(res.data as Map<String, dynamic>);
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// The directory: available first, then in a call, then offline.
+  Future<List<CallPerson>> getCallPeople({String? q}) async {
+    final res = await _dio.get('/api/calls/people', queryParameters: {if (q != null && q.isNotEmpty) 'q': q});
+    return (res.data['people'] as List? ?? []).map((e) => CallPerson.fromJson((e as Map).cast<String, dynamic>())).toList();
+  }
+
+  /// The hospital's STUN/TURN for the next call (a relay password valid 12 hours).
+  Future<List<Map<String, dynamic>>> getCallIce() async {
+    try {
+      final res = await _dio.get('/api/calls/ice');
+      return (res.data['iceServers'] as List? ?? []).map((e) => (e as Map).cast<String, dynamic>()).toList();
+    } on DioException {
+      return const [];
+    }
+  }
+
+  /// My call log, newest first. only = null | 'missed' | 'recorded'.
+  Future<(List<CallLogRow>, int)> getCallLog({int page = 1, String? only}) async {
+    final res = await _dio.get('/api/calls/log', queryParameters: {'page': page, if (only != null) 'only': only});
+    final rows = (res.data['rows'] as List? ?? []).map((e) => CallLogRow.fromJson((e as Map).cast<String, dynamic>())).toList();
+    return (rows, (res.data['total'] as num?)?.toInt() ?? rows.length);
+  }
+
+  /// The patient a group call is about (name or MRN, at least two letters).
+  Future<List<CallPatient>> getCallPatients(String q) async {
+    try {
+      final res = await _dio.get('/api/calls/patients', queryParameters: {'q': q});
+      return (res.data['patients'] as List? ?? []).map((e) => CallPatient.fromJson(e)).whereType<CallPatient>().toList();
+    } on DioException {
+      return const [];
+    }
+  }
+
+  /// A note written during the call (only a person in that call).
+  Future<bool> postCallNote(int callId, String note) async {
+    try {
+      final res = await _dio.post('/api/calls/$callId/note', data: {'note': note});
+      return res.data?['ok'] == true;
+    } on DioException {
+      return false;
+    }
+  }
+
+  /// The player's facts; null when it does not exist or is not mine to see.
+  Future<Map<String, dynamic>?> getCallRecording(int id) async {
+    try {
+      final res = await _dio.get('/api/calls/recording/$id');
+      return (res.data['recording'] as Map?)?.cast<String, dynamic>();
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// The recording's address (log=1 the first time: the opening is recorded) and the header that opens it.
+  String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
+  Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};
 }

@@ -43,7 +43,11 @@ class AppNav {
   }
 
   /// Route based on a notification type: anything waiting for me goes to the approvals filter, the rest to updates.
+  /// Opens the internal calls (0 people · 1 log); set by the shell.
+  static void Function(int tab)? openCalls;
+
   static void routeForNotification(String? type) {
+    if (type == 'hospital_missed_call') { openCalls?.call(1); return; }   // a missed call opens the call log
     if (type == 'leave_submitted' || type == 'emp_request_submitted') {
       goInbox(filter: 1);
     } else {

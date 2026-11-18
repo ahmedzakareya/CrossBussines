@@ -26,7 +26,7 @@ namespace CrossBuy.Hubs
 			public readonly ConcurrentDictionary<int, string> Joined = new();      // employee → connection ("" while their tab reconnects)
 			public readonly ConcurrentDictionary<int, DateTime> Away = new();      // employee → when their tab dropped
 			public readonly ConcurrentDictionary<int, DateTime> Ringing = new();   // employee → invited at
-			public int? RecId, RecBy;
+			public int? RecId, RecBy, RecorderId;   // RecBy asked; RecorderId's browser records (a browser, never a phone)
 			public readonly ConcurrentDictionary<int, bool> RecYes = new();
 			public bool Recording;
 		}
@@ -64,7 +64,7 @@ namespace CrossBuy.Hubs
 				// rebuilt after a restart: everyone in it is "away" until their tab comes back
 				foreach (var p in parts.Where(p => p.State == HospitalCallParticipantState.Host || p.State == HospitalCallParticipantState.Joined)) { g.Joined[p.EmployeeId] = ""; g.Away[p.EmployeeId] = DateTime.UtcNow; }
 				var rec = await _db.Set<HospitalCallRecording>().AsNoTracking().Where(r => r.CallId == callId && r.CompanyId == co && r.Status == HospitalCallRecordingStatus.Recording).FirstOrDefaultAsync();
-				if (rec != null) { g.RecId = rec.ID; g.RecBy = rec.RequestedByEmployeeId; g.Recording = true; }
+				if (rec != null) { g.RecId = rec.ID; g.RecBy = rec.RequestedByEmployeeId; g.RecorderId = HospitalCallRecordingRules.RecorderOf(rec); g.Recording = true; }
 			}
 			g.Joined[me] = Context.ConnectionId; g.Away.TryRemove(me, out _); _busy[me] = callId;
 			await PresenceOfAsync(co, me);
@@ -138,6 +138,9 @@ namespace CrossBuy.Hubs
 			var settings = await svc.SettingsAsync(co);
 			if (!settings.GroupEnabled) return new { ok = false, error = "Group calls are switched off (call settings)" };
 			if (video && !settings.VideoEnabled) video = false;
+			// the app's SignalR client cannot send a JSON null: 0 means "none" for both (no record has id 0)
+			if (fromCallId <= 0) fromCallId = null;
+			if (patientId <= 0) patientId = null;
 			int? peer = null; Live? from = null;
 			if (fromCallId is int fc)
 			{
@@ -251,7 +254,7 @@ namespace CrossBuy.Hubs
 			foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("groupleft", new { callId = g.CallId, employeeId = emp, removed = action == "remove" });
 			await PresenceOfAsync(g.CompanyId, emp);
 			// a group recording made in the leaver's browser stops with them (the file is kept)
-			if (g.Recording && g.RecBy == emp) await StopGroupRecordingAsync(g, emp);
+			if (g.Recording && (g.RecBy == emp || g.RecorderId == emp)) await StopGroupRecordingAsync(g, emp);
 			// the host role passes to the longest-standing person left
 			if (emp == g.HostId && g.Joined.Count > 0) { g.HostId = g.Joined.Keys.First(); foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("grouphost", new { callId = g.CallId, hostId = g.HostId }); }
 			await EndIfEmptyAsync(g);
@@ -327,9 +330,17 @@ namespace CrossBuy.Hubs
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || !g.Joined.ContainsKey(me)) return new { ok = false, error = "failed" };
 			if (g.RecId != null) return new { ok = false, error = "This call is already being recorded or asked to be" };
-			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture);
+			// from the app: a browser in the call records (a phone cannot mix everyone into one file)
+			int? recorder = null;
+			if (IsApp(g.Joined.TryGetValue(me, out var myConn) ? myConn : null))
+			{
+				var pc = g.Joined.Where(j => j.Key != me && j.Value.Length > 0 && !IsApp(j.Value)).Select(j => (int?)j.Key).FirstOrDefault();
+				if (pc == null) return new { ok = false, error = NeedsComputer };
+				recorder = pc;
+			}
+			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow, picture, recorder);
 			if (row == null) return new { ok = false, error };
-			g.RecId = row.ID; g.RecBy = me; g.RecYes.Clear();
+			g.RecId = row.ID; g.RecBy = me; g.RecorderId = recorder ?? me; g.RecYes.Clear();
 			var s = await Svc.SettingsAsync(co);
 			var by = (await Svc.PeopleAsync(co, DateTime.UtcNow, new[] { me })).FirstOrDefault();
 			var patient = g.PatientId is int pid ? await Svc.PatientCardAsync(co, pid) : null;
@@ -348,7 +359,7 @@ namespace CrossBuy.Hubs
 			{
 				await RecSvc.SettleGroupAsync(co, recId, false, now);
 				var who = (await Svc.PeopleAsync(co, now, new[] { me })).FirstOrDefault();
-				g.RecId = null; g.RecBy = null; g.RecYes.Clear();
+				g.RecId = null; g.RecBy = null; g.RecorderId = null; g.RecYes.Clear();
 				foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = true, byName = who == null ? null : DisplayName.Of(who.Name, who.NameEn) });
 				return;
 			}
@@ -359,7 +370,7 @@ namespace CrossBuy.Hubs
 			var row = await RecSvc.SettleGroupAsync(co, recId, true, now);
 			if (row == null) return;
 			g.Recording = true;
-			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recstart", new { recId, callId = g.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, group = true });
+			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recstart", new { recId, callId = g.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, recorderId = HospitalCallRecordingRules.RecorderOf(row), group = true });
 		}
 
 		public async Task GroupRecordStop(int recId)
@@ -371,7 +382,7 @@ namespace CrossBuy.Hubs
 			{
 				// withdrawn (or ended) before everyone answered
 				await RecSvc.SettleGroupAsync(co, recId, false, DateTime.UtcNow);
-				g.RecId = null; g.RecBy = null; g.RecYes.Clear();
+				g.RecId = null; g.RecBy = null; g.RecorderId = null; g.RecYes.Clear();
 				foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recclosed", new { recId, refused = false });
 				return;
 			}
@@ -384,7 +395,7 @@ namespace CrossBuy.Hubs
 			await RecSvc.MarkStoppedAsync(g.CompanyId, recId, by);
 			var msg = new { recId, byId = by };
 			foreach (var conn in Conns(g)) await Clients.Client(conn).SendAsync("recstop", msg);
-			g.Recording = false; g.RecId = null; g.RecBy = null; g.RecYes.Clear();
+			g.Recording = false; g.RecId = null; g.RecBy = null; g.RecorderId = null; g.RecYes.Clear();
 		}
 
 		/// A tab closing takes its person out of the group call.

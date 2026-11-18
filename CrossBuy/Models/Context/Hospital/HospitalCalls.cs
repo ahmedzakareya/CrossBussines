@@ -124,6 +124,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int CompanyId { get; set; }
 		public int CallId { get; set; }
 		public int RequestedByEmployeeId { get; set; }
+		/// Whose browser records and sends the file, when not the requester's: a phone cannot mix both sides into one
+		/// file, so when the request comes from the app the browser at the other end records it. Null = the requester.
+		public int? RecorderEmployeeId { get; set; }
 		public DateTime RequestedAt { get; set; }
 		public int? AgreedByEmployeeId { get; set; }
 		public DateTime? AgreedAt { get; set; }

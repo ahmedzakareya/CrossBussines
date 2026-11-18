@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/calls_provider.dart';
 import '../providers/notification_provider.dart';
 import '../services/api_service.dart';
 import '../services/app_nav.dart';
 import '../widgets/ui.dart';
 import 'apps_tab.dart';
+import 'calls/calls_screen.dart';
 import 'home_tab.dart';
 import 'inbox_tab.dart';
 import 'me_tab.dart';
@@ -30,6 +32,9 @@ class _ShellState extends State<Shell> {
       final notif = context.read<NotificationProvider>();
       notif.load();
       notif.connect();
+      // internal calls: ring on any screen of the app (H176)
+      context.read<CallsProvider>().connect();
+      AppNav.openCalls = (tab) => AppNav.navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => CallsScreen(tab: tab)));
       _loadSession();
     });
   }

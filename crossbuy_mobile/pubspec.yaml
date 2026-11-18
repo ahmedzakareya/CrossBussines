@@ -20,12 +20,17 @@ dependencies:
   fl_chart: ^0.69.0
   # the owner's reference design draws with Lucide (stroke 1.5); pinned to a release at least two weeks old
   lucide_icons_flutter: 4.0.1
+  # H176 internal calls: WebRTC (same protocol as the browser) and the recording player; pinned, both 2+ weeks old
+  flutter_webrtc: 1.6.3
+  video_player: 2.14.1
 
 dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/   # H176: the ring and the ringback, two plain tones made for this app
 
   # Cairo, the system's Arabic face (the same files the web uses: wwwroot/Backend-assets/fonts/cairo)
   fonts:

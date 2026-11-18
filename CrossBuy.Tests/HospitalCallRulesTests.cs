@@ -142,6 +142,15 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void A_recording_asked_from_a_phone_is_recorded_by_the_browser_named_for_it()
+		{
+			var own = new HospitalCallRecording { RequestedByEmployeeId = 7 };
+			Assert.Equal(7, HospitalCallRecordingRules.RecorderOf(own));   // the requester's browser records, as always
+			var fromPhone = new HospitalCallRecording { RequestedByEmployeeId = 7, RecorderEmployeeId = 9 };
+			Assert.Equal(9, HospitalCallRecordingRules.RecorderOf(fromPhone));   // the browser at the other end sends the file
+		}
+
+		[Fact]
 		public void A_screen_shown_in_a_voice_call_is_recorded_with_its_picture()
 		{
 			Assert.Equal("video", HospitalCallRecordingRules.KindFor(HospitalCallRecordingMode.Both, false, pictureNow: true));

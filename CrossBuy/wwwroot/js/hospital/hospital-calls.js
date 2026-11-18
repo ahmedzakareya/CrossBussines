@@ -524,14 +524,14 @@
 	function onRecStart(m) {
 		var c = current; if (!c || c.id !== m.callId) return;
 		if (c.rec && c.rec.overlay) c.rec.overlay.remove();
-		var mine = m.requesterId === (W.me || {}).id;
+		var mine = m.requesterId === (W.me || {}).id, records = (m.recorderId || m.requesterId) === (W.me || {}).id;
 		c.rec = { id: m.recId, state: 'on', kind: m.kind, mine: mine, secs: 0 };
 		if (mine) trail(c, 'ki-shield-tick', t('recAgreedBy', c.peer.name));
 		else trail(c, 'ki-shield-tick', t('recYouAgreed'));
 		trail(c, 'ki-notification-status', t('recStarted'), true);
 		c.rec.timer = setInterval(function () { c.rec.secs++; recChip(c); }, 1000);
 		recChip(c); paintBar(c);
-		if (mine) recStart(c);
+		if (records) recStart(c);   // a phone's request is recorded by this browser
 	}
 	function onRecStop(m) {
 		var c = current; if (!c || !c.rec || c.rec.id !== m.recId) return;

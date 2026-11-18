@@ -50,6 +50,9 @@ namespace CrossBuy.BL.Hospital
 		public static bool MayAsk(bool enabled, string? storedGroups, IEnumerable<string> personGroups)
 			=> enabled && personGroups.Any(g => ParseGroups(storedGroups).Contains(g));
 
+		/// Whose browser records the file (and alone may send its pieces): the named recorder, else the requester.
+		public static int RecorderOf(HospitalCallRecording r) => r.RecorderEmployeeId ?? r.RequestedByEmployeeId;
+
 		/// What the file holds: the picture only when the settings allow it AND there is a picture — a video call, or a
 		/// camera or shared screen live when recording is asked (a voice call where someone shows their screen).
 		public static string KindFor(string? mode, bool callIsVideo, bool pictureNow = false) => mode == HospitalCallRecordingMode.Both && (callIsVideo || pictureNow) ? "video" : "voice";
@@ -139,7 +142,7 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// A participant of an ANSWERED call asks to record it. Null + reason when it may not be asked now.
-		public async Task<(HospitalCallRecording? Row, string? Error)> AskAsync(int companyId, int callId, int employeeId, DateTime nowUtc, bool pictureNow = false, CancellationToken ct = default)
+		public async Task<(HospitalCallRecording? Row, string? Error)> AskAsync(int companyId, int callId, int employeeId, DateTime nowUtc, bool pictureNow = false, int? recorderId = null, CancellationToken ct = default)
 		{
 			try
 			{
@@ -157,7 +160,7 @@ namespace CrossBuy.BL.Hospital
 					return (null, "This call is already being recorded or asked to be");
 				var row = new HospitalCallRecording
 				{
-					CompanyId = companyId, CallId = callId, RequestedByEmployeeId = employeeId, RequestedAt = nowUtc,
+					CompanyId = companyId, CallId = callId, RequestedByEmployeeId = employeeId, RequestedAt = nowUtc, RecorderEmployeeId = recorderId == employeeId ? null : recorderId,
 					Status = HospitalCallRecordingStatus.Asked, Kind = HospitalCallRecordingRules.KindFor(s.RecordingMode, call.IsVideo, pictureNow),
 				};
 				_db.Add(row);
@@ -213,7 +216,7 @@ namespace CrossBuy.BL.Hospital
 			try
 			{
 				var row = await Recs(companyId).FirstOrDefaultAsync(r => r.ID == recId, ct);
-				if (row == null || row.RequestedByEmployeeId != employeeId || row.TempName == null) return HospitalResult.Fail("not_found");
+				if (row == null || HospitalCallRecordingRules.RecorderOf(row) != employeeId || row.TempName == null) return HospitalResult.Fail("not_found");
 				using var buffer = new MemoryStream();
 				var limited = new byte[81920]; int n; long total = 0;
 				while ((n = await body.ReadAsync(limited, ct)) > 0)
@@ -241,7 +244,7 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> FinishAsync(BusinessContext ctx, int recId, int seconds, string tempDir, DateTime nowUtc, CancellationToken ct = default)
 		{
 			var row = await Recs(ctx.CompanyId).FirstOrDefaultAsync(r => r.ID == recId, ct);
-			if (row == null || row.RequestedByEmployeeId != ctx.EmployeeId) return HospitalResult.Fail("not_found");
+			if (row == null || HospitalCallRecordingRules.RecorderOf(row) != ctx.EmployeeId) return HospitalResult.Fail("not_found");
 			if (row.Status == HospitalCallRecordingStatus.Saved) return HospitalResult.Success(row.ID);   // sent twice, done once
 			if (row.Status != HospitalCallRecordingStatus.Recording || row.TempName == null) return HospitalResult.Fail("This recording is not running");
 			var path = TempPath(tempDir, row.TempName);
@@ -363,10 +366,10 @@ namespace CrossBuy.BL.Hospital
 				var stale = await (from r in Recs(ctx.CompanyId)
 								   join c in _db.Set<HospitalCall>() on r.CallId equals c.ID
 								   where r.Status == HospitalCallRecordingStatus.Recording && c.CompanyId == ctx.CompanyId && c.Status != HospitalCallStatus.Answered && c.EndedAt < nowUtc.AddMinutes(-2)
-								   select new { r.ID, r.RequestedByEmployeeId, c.DurationSeconds }).ToListAsync(ct);
+								   select new { r.ID, Recorder = r.RecorderEmployeeId ?? r.RequestedByEmployeeId, c.DurationSeconds }).ToListAsync(ct);
 				foreach (var s in stale)
 				{
-					if (s.RequestedByEmployeeId == ctx.EmployeeId) { await FinishAsync(ctx, s.ID, s.DurationSeconds ?? 0, tempDir, nowUtc, ct); continue; }
+					if (s.Recorder == ctx.EmployeeId) { await FinishAsync(ctx, s.ID, s.DurationSeconds ?? 0, tempDir, nowUtc, ct); continue; }
 					var r = await Recs(ctx.CompanyId).FirstAsync(x => x.ID == s.ID, ct);
 					if (r.StartedAt < nowUtc.AddHours(-6))
 					{

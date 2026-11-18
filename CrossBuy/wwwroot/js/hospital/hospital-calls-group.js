@@ -498,7 +498,7 @@
 		g.rec = { id: m.recId, state: 'on', kind: m.kind, mine: m.requesterId === me, secs: 0 };
 		trail('ki-notification-status', t('grpRecStarted'), true);
 		recChip(); paintBar();
-		if (g.rec.mine) recStart();
+		if ((m.recorderId || m.requesterId) === me) recStart();   // a phone's request is recorded by a browser in the call
 	}
 	function onRecStop(m) {
 		if (!g || !g.rec || g.rec.id !== m.recId) return;
