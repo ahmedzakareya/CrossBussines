@@ -1,0 +1,205 @@
+{
+ "unit": "H201 - bedside monitors (HL7 vital signs)",
+ "strings": {
+  "Bedside monitors": {
+   "ar": "أجهزة المراقبة",
+   "en": "Bedside monitors",
+   "fr": "Moniteurs de chevet"
+  },
+  "{0} readings waiting": {
+   "ar": "{0} قراءة بانتظار المراجعة",
+   "en": "{0} readings waiting",
+   "fr": "{0} mesures en attente"
+  },
+  "A monitor's numbers reach the chart only when a nurse accepts them": {
+   "ar": "لا تدخل قراءات جهاز المراقبة ملف المريض إلا بعد أن تعتمدها الممرضة",
+   "en": "A monitor's numbers reach the chart only when a nurse accepts them",
+   "fr": "Les valeurs d'un moniteur n'entrent au dossier qu'une fois acceptées par l'infirmière"
+  },
+  "Each set (HL7 ORU^R01) is placed on the patient its bed and file number name; when they disagree it is refused. The nurse adds the level of consciousness and oxygen and accepts it — NEWS2 and its escalation follow, at the time it was measured — or discards it as an artefact, with the reason.": {
+   "ar": "تُنسب كل مجموعة قراءات (HL7 ORU^R01) إلى المريض الذي يحدده رقم السرير ورقم الملف، وتُرفض إذا تعارضا. تضيف الممرضة مستوى الوعي والأكسجين وتعتمدها، فيُحسب مؤشر NEWS2 وما يترتب عليه من تصعيد بوقت القياس الفعلي، أو تستبعدها كقراءة خاطئة مع ذكر السبب.",
+   "en": "Each set (HL7 ORU^R01) is placed on the patient its bed and file number name; when they disagree it is refused. The nurse adds the level of consciousness and oxygen and accepts it — NEWS2 and its escalation follow, at the time it was measured — or discards it as an artefact, with the reason.",
+   "fr": "Chaque série (HL7 ORU^R01) est attribuée au patient désigné par le lit et le numéro de dossier ; s'ils divergent, elle est refusée. L'infirmière ajoute le niveau de conscience et l'oxygène puis l'accepte — le NEWS2 et son escalade suivent, à l'heure de la mesure — ou l'écarte comme artefact, avec le motif."
+  },
+  "The monitors' table is not created yet (hospital_h201_device_vitals.sql).": {
+   "ar": "جدول أجهزة المراقبة غير منشأ بعد (hospital_h201_device_vitals.sql).",
+   "en": "The monitors' table is not created yet (hospital_h201_device_vitals.sql).",
+   "fr": "La table des moniteurs n'est pas encore créée (hospital_h201_device_vitals.sql)."
+  },
+  "Readings received": {
+   "ar": "القراءات الواردة",
+   "en": "Readings received",
+   "fr": "Mesures reçues"
+  },
+  "{0} readings": {
+   "ar": "{0} قراءة",
+   "en": "{0} readings",
+   "fr": "{0} mesures"
+  },
+  "Device, bed, patient": {
+   "ar": "الجهاز أو السرير أو المريض",
+   "en": "Device, bed, patient",
+   "fr": "Appareil, lit, patient"
+  },
+  "No reading received yet.": {
+   "ar": "لم تصل أي قراءة بعد.",
+   "en": "No reading received yet.",
+   "fr": "Aucune mesure reçue pour l'instant."
+  },
+  "Measured": {
+   "ar": "وقت القياس",
+   "en": "Measured",
+   "fr": "Mesuré"
+  },
+  "Chart it": {
+   "ar": "اعتمادها في الملف",
+   "en": "Chart it",
+   "fr": "L'inscrire au dossier"
+  },
+  "Discard reading": {
+   "ar": "استبعاد القراءة",
+   "en": "Discard reading",
+   "fr": "Écarter la mesure"
+  },
+  "Paste the monitor's HL7 message, or open the file its gateway wrote.": {
+   "ar": "الصق رسالة HL7 الصادرة عن جهاز المراقبة، أو افتح الملف الذي كتبته بوابة الأجهزة.",
+   "en": "Paste the monitor's HL7 message, or open the file its gateway wrote.",
+   "fr": "Collez le message HL7 du moniteur, ou ouvrez le fichier écrit par sa passerelle."
+  },
+  "Chart the monitor's reading": {
+   "ar": "اعتماد قراءة جهاز المراقبة",
+   "en": "Chart the monitor's reading",
+   "fr": "Inscrire la mesure du moniteur"
+  },
+  "SpO₂ scale 2 (hypercapnic respiratory failure)": {
+   "ar": "مقياس SpO₂ رقم 2 (فشل تنفسي مع احتباس ثاني أكسيد الكربون)",
+   "en": "SpO₂ scale 2 (hypercapnic respiratory failure)",
+   "fr": "Échelle SpO₂ 2 (insuffisance respiratoire hypercapnique)"
+  },
+  "Charted: NEWS2 {0} — {1}": {
+   "ar": "اعتُمدت: NEWS2 ‏{0} — {1}",
+   "en": "Charted: NEWS2 {0} — {1}",
+   "fr": "Inscrit : NEWS2 {0} — {1}"
+  },
+  "An urgent task went on the ward board": {
+   "ar": "أُضيفت مهمة عاجلة إلى لوحة القسم",
+   "en": "An urgent task went on the ward board",
+   "fr": "Une tâche urgente a été ajoutée au tableau du service"
+  },
+  "Why is this reading not charted (an artefact: probe off, patient moving…)?": {
+   "ar": "لماذا لا تُعتمد هذه القراءة (قراءة خاطئة: حساس منفصل، أو حركة المريض…)؟",
+   "en": "Why is this reading not charted (an artefact: probe off, patient moving…)?",
+   "fr": "Pourquoi cette mesure n'est-elle pas inscrite (artefact : capteur détaché, patient en mouvement…) ?"
+  },
+  "mv:Pending": {
+   "ar": "بانتظار الممرضة",
+   "en": "Waiting for a nurse",
+   "fr": "En attente de l'infirmière"
+  },
+  "mv:Accepted": {
+   "ar": "اعتُمدت",
+   "en": "Charted",
+   "fr": "Inscrite"
+  },
+  "mv:Discarded": {
+   "ar": "استُبعدت",
+   "en": "Discarded",
+   "fr": "Écartée"
+  },
+  "mv:Refused": {
+   "ar": "مرفوضة",
+   "en": "Refused",
+   "fr": "Refusée"
+  },
+  "mv:Duplicate": {
+   "ar": "مكررة",
+   "en": "Duplicate",
+   "fr": "En double"
+  },
+  "HR": {
+   "ar": "النبض",
+   "en": "HR",
+   "fr": "FC"
+  },
+  "RR": {
+   "ar": "التنفس",
+   "en": "RR",
+   "fr": "FR"
+  },
+  "{0}: in {1}": {
+   "ar": "{0}: بوحدة {1}",
+   "en": "{0}: in {1}",
+   "fr": "{0} : en {1}"
+  },
+  "{0}: {1} is out of range": {
+   "ar": "{0}: القيمة {1} خارج النطاق",
+   "en": "{0}: {1} is out of range",
+   "fr": "{0} : {1} hors limites"
+  },
+  "No vital sign in the message could be read": {
+   "ar": "تعذّرت قراءة أي علامة حيوية في الرسالة",
+   "en": "No vital sign in the message could be read",
+   "fr": "Aucun signe vital du message n'a pu être lu"
+  },
+  "The message holds no vital signs": {
+   "ar": "لا تحتوي الرسالة على علامات حيوية",
+   "en": "The message holds no vital signs",
+   "fr": "Le message ne contient aucun signe vital"
+  },
+  "The message names no bed (PV1-3) and no patient (PID-3)": {
+   "ar": "لا تحدد الرسالة سريرًا (PV1-3) ولا مريضًا (PID-3)",
+   "en": "The message names no bed (PV1-3) and no patient (PID-3)",
+   "fr": "Le message ne désigne ni lit (PV1-3) ni patient (PID-3)"
+  },
+  "No such bed: {0}": {
+   "ar": "لا يوجد سرير بالرمز {0}",
+   "en": "No such bed: {0}",
+   "fr": "Lit inexistant : {0}"
+  },
+  "Nobody is in bed {0}": {
+   "ar": "لا يوجد مريض على السرير {0}",
+   "en": "Nobody is in bed {0}",
+   "fr": "Personne n'occupe le lit {0}"
+  },
+  "No patient has the file number {1}": {
+   "ar": "لا يوجد مريض برقم الملف {1}",
+   "en": "No patient has the file number {1}",
+   "fr": "Aucun patient n'a le numéro de dossier {1}"
+  },
+  "The patient {1} is not admitted": {
+   "ar": "المريض {1} غير منوَّم",
+   "en": "The patient {1} is not admitted",
+   "fr": "Le patient {1} n'est pas hospitalisé"
+  },
+  "The patient in bed {0} is not {1}: the monitor may have moved": {
+   "ar": "المريض على السرير {0} ليس {1}: ربما نُقل جهاز المراقبة",
+   "en": "The patient in bed {0} is not {1}: the monitor may have moved",
+   "fr": "Le patient du lit {0} n'est pas {1} : le moniteur a peut-être été déplacé"
+  },
+  "The reading is dated in the future": {
+   "ar": "تاريخ القراءة في المستقبل",
+   "en": "The reading is dated in the future",
+   "fr": "La mesure est datée dans le futur"
+  },
+  "The message is too large": {
+   "ar": "الرسالة كبيرة جدًا",
+   "en": "The message is too large",
+   "fr": "Le message est trop volumineux"
+  },
+  "This reading was already decided": {
+   "ar": "سبق البت في هذه القراءة",
+   "en": "This reading was already decided",
+   "fr": "Cette mesure a déjà été traitée"
+  },
+  "A reading older than 12 hours is not charted: take a new set": {
+   "ar": "لا تُعتمد قراءة مضى عليها أكثر من 12 ساعة: خذ قياسًا جديدًا",
+   "en": "A reading older than 12 hours is not charted: take a new set",
+   "fr": "Une mesure de plus de 12 heures n'est pas inscrite : prenez une nouvelle série"
+  },
+  "Write why the reading is not charted": {
+   "ar": "اكتب سبب عدم اعتماد القراءة",
+   "en": "Write why the reading is not charted",
+   "fr": "Indiquez pourquoi la mesure n'est pas inscrite"
+  }
+ }
+}

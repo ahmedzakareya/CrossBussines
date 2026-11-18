@@ -187,7 +187,7 @@ namespace CrossBuy.BL.Hospital
 
 		/// Records a set of observations; when NEWS2 calls for a response, an urgent task goes on the ward board. The
 		/// result's id is the observation; the score and risk travel back for the nurse to see at once.
-		public async Task<(HospitalResult Result, int? News2, string? Risk, bool Escalated)> RecordAsync(BusinessContext ctx, HospitalObservationInput input, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		public async Task<(HospitalResult Result, int? News2, string? Risk, bool Escalated)> RecordAsync(BusinessContext ctx, HospitalObservationInput input, int? employeeId, DateTime nowUtc, CancellationToken ct = default, DateTime? takenAt = null)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Admit, null, ct)) return (HospitalResult.Fail("forbidden"), null, null, false);
 			if (HospitalNews2Rules.Refusal(input) is string why) return (HospitalResult.Fail(why), null, null, false);
@@ -199,7 +199,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				var row = new HospitalObservation
 				{
-					CompanyId = ctx.CompanyId, AdmissionId = input.AdmissionId, PatientId = stay.Value, TakenAt = nowUtc,
+					CompanyId = ctx.CompanyId, AdmissionId = input.AdmissionId, PatientId = stay.Value, TakenAt = takenAt ?? nowUtc,   // H201: a monitor's set keeps the time it was measured
 					RespRate = input.RespRate, SpO2 = input.SpO2, SpO2Scale2 = input.SpO2Scale2, OnOxygen = input.OnOxygen, SystolicBp = input.SystolicBp, DiastolicBp = input.DiastolicBp,
 					HeartRate = input.HeartRate, Consciousness = string.IsNullOrEmpty(input.Consciousness) ? null : input.Consciousness, TempC = input.TempC, PainScore = input.PainScore,
 					News2 = score?.Total, News2Risk = risk, Note = Clip(input.Note, 300), RecordedByEmployeeId = employeeId, RecordedAt = nowUtc,

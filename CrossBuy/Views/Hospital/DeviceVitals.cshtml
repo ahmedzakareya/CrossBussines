@@ -1,0 +1,205 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalDeviceVitalRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H201 — bedside monitors: every set of vital signs a monitor sent, placed on the patient its bed and file number name, waiting
+    for a nurse to chart it (adding the level of consciousness and oxygen; NEWS2 and its escalation follow) or to discard it
+    as an artefact; and a message received by hand (pasted, or the file the monitors' gateway wrote).
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Bedside monitors"].Value;
+    string q = ViewBag.Q as string ?? "", status = ViewBag.Status as string ?? "";
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total, waiting = (int)ViewBag.Waiting;
+    bool ready = ViewBag.Ready == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Tone(string s) => s switch { HospitalDeviceVitalStatus.Pending => "info", HospitalDeviceVitalStatus.Accepted => "primary", HospitalDeviceVitalStatus.Refused => "danger", _ => "secondary" };
+    string Link(int p) => Url.Action("DeviceVitals", new { q, status, page = p })!;
+    // the stored detail is a key with its values; a discard's detail is the nurse's own words
+    IEnumerable<string> Why(HospitalDeviceVital v)
+    {
+        if (string.IsNullOrEmpty(v.Detail)) yield break;
+        if (v.Status == HospitalDeviceVitalStatus.Discarded) { yield return v.Detail; yield break; }
+        foreach (var part in v.Detail.Split("; "))
+        {
+            var (key, args) = HospitalDeviceVitalRules.Unpack(part);
+            yield return args.Length == 0 ? T[key].Value : string.Format(T[key].Value, args.Select(a => (object)("\u2066" + a + "\u2069")).ToArray());   // each value isolated: "102-A" stays itself inside Arabic
+        }
+    }
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Bedside monitors"] @if (waiting > 0) {<span class="badge badge-info fs-7 fw-bold">@T["{0} readings waiting", waiting]</span>}</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Nursing")" class="text-muted text-hover-primary">@T["Nursing"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Bedside monitors"]</li>
+            </ul>
+        </div>
+        @if (ready) {<button type="button" class="btn btn-sm btn-primary" data-mv-open><i class="ki-outline ki-file-down fs-4"></i>@T["Receive a message"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A monitor's numbers reach the chart only when a nurse accepts them"]</h4>
+                <div class="fs-6 text-gray-700">@T["Each set (HL7 ORU^R01) is placed on the patient its bed and file number name; when they disagree it is refused. The nurse adds the level of consciousness and oxygen and accepts it — NEWS2 and its escalation follow, at the time it was measured — or discards it as an artefact, with the reason."]</div></div>
+        </div>
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The monitors' table is not created yet (hospital_h201_device_vitals.sql)."]</div></div>
+        }
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Readings received"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} readings", total]</span>
+                </h3>
+                <form class="card-toolbar gap-2" method="get" action="@Url.Action("DeviceVitals")">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Device, bed, patient"]" /></div>
+                    <div class="w-150px"><select name="status" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["All"]" onchange="this.form.submit()"><option value="">@T["All"]</option>@foreach (var s in HospitalDeviceVitalStatus.All) {<option value="@s" selected="@(s == status)">@T["mv:" + s]</option>}</select></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-heart-circle fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No reading received yet."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 min-w-125px rounded-start">@T["Measured"]</th><th class="min-w-125px">@T["Patient"]</th><th class="min-w-150px">@T["Readings"]</th><th class="min-w-90px">@T["Status"]</th><th class="min-w-125px">@T["Detail"]</th><th class="text-end pe-4 rounded-end"></th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var r in Model)
+                            {
+                                var v = r.Vital;
+                                <tr data-mv-row="@v.ID">
+                                    <td class="ps-4 text-nowrap"><span class="text-gray-800 fw-semibold hp-num" dir="ltr">@(v.TakenAt is DateTime tk ? HospitalNursingService.UtcToWard(tk).ToString("MM-dd HH:mm") : "—")</span>
+                                        <span class="text-gray-700 fs-8 d-block" dir="ltr">@v.Device</span><span class="text-muted fs-8 d-block hp-num" dir="ltr">@v.MessageId</span></td>
+                                    <td>@if (r.Patient != null) {<span class="text-gray-900 fw-bold d-block fs-7">@DisplayName.Of(r.Patient, r.PatientEn)</span>}
+                                        <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@(r.PatientMrn ?? v.Mrn ?? "—")</bdi>@if (v.BedCode != null) {<text> · @T["Bed"] </text><bdi class="hp-num" dir="ltr">@v.BedCode</bdi>}</span></td>
+                                    <td class="fs-7">
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (v.HeartRate is int hr) {<span class="badge badge-light fw-semibold"><span class="text-muted me-1">@T["HR"]</span><bdi class="hp-num" dir="ltr">@hr</bdi></span>}
+                                            @if (v.SpO2 is int o2) {<span class="badge badge-light fw-semibold"><span class="text-muted me-1">SpO₂</span><bdi class="hp-num" dir="ltr">@o2%</bdi></span>}
+                                            @if (v.RespRate is int rr) {<span class="badge badge-light fw-semibold"><span class="text-muted me-1">@T["RR"]</span><bdi class="hp-num" dir="ltr">@rr</bdi></span>}
+                                            @if (v.SystolicBp is int sb) {<span class="badge badge-light fw-semibold"><span class="text-muted me-1">@T["BP"]</span><bdi class="hp-num" dir="ltr">@sb/@v.DiastolicBp</bdi></span>}
+                                            @if (v.TempC is decimal tc) {<span class="badge badge-light fw-semibold"><span class="text-muted me-1">@T["Temp"]</span><bdi class="hp-num" dir="ltr">@tc.ToString("0.0", inv) °C</bdi></span>}
+                                        </div>
+                                    </td>
+                                    <td><span class="badge badge-light-@Tone(v.Status) fs-7 fw-bold">@T["mv:" + v.Status]</span>@if (r.DecidedBy != null) {<div class="text-muted fs-8 mt-1">@r.DecidedBy</div>}</td>
+                                    <td class="text-gray-700 fs-7">@foreach (var w in Why(v)) {<div>@w</div>}</td>
+                                    <td class="text-end pe-4 text-nowrap">
+                                        @if (v.Status == HospitalDeviceVitalStatus.Pending)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-icon btn-primary" title="@T["Chart it"]" data-bs-toggle="tooltip" data-mv-accept="@v.ID" data-who="@DisplayName.Of(r.Patient ?? "", r.PatientEn)"><i class="ki-outline ki-check fs-3"></i></button>
+                                            <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Discard reading"]" data-bs-toggle="tooltip" data-mv-discard="@v.ID"><i class="ki-outline ki-cross-circle fs-3"></i></button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++) {<li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Link(p)">@p</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="mvModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Receive a message"]</h1><div class="text-muted fw-semibold fs-6">@T["Paste the monitor's HL7 message, or open the file its gateway wrote."]</div></div>
+        <input type="file" class="form-control form-control-solid mb-4" accept=".hl7,.txt,.msg" data-mv-file />
+        <textarea class="form-control form-control-solid font-monospace fs-7" rows="9" dir="ltr" data-mv-raw placeholder="MSH|^~\&|MONITOR|ICU|..."></textarea>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Close"]</button><button type="button" class="btn btn-primary" data-mv-send>@T["Receive"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="acceptModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-6 text-center"><h1 class="mb-3">@T["Chart the monitor's reading"]</h1><div class="text-muted fw-semibold fs-6" data-acc-who></div></div>
+        <label class="fs-6 fw-semibold mb-2 required">@T["Consciousness (ACVPU)"]</label>
+        <div class="btn-group w-100 mb-5" data-acc-acvpu>
+            @foreach (var c in HospitalConsciousness.All) { <button type="button" class="btn btn-sm btn-light" data-acvpu="@c" title="@T["acvpu:" + c]">@c · @T["acvpu:" + c]</button> }
+        </div>
+        <label class="form-check form-switch form-check-custom form-check-solid mb-4"><input class="form-check-input" type="checkbox" data-acc-oxygen /><span class="form-check-label fw-semibold text-gray-800">@T["On oxygen"]</span></label>
+        <label class="form-check form-switch form-check-custom form-check-solid mb-5"><input class="form-check-input" type="checkbox" data-acc-scale2 /><span class="form-check-label fw-semibold text-gray-800">@T["SpO₂ scale 2 (hypercapnic respiratory failure)"]</span></label>
+        <label class="fs-6 fw-semibold mb-2">@T["Pain (0–10)"]</label>
+        <select class="form-select form-select-solid mb-5" data-control="select2" data-hide-search="true" data-dropdown-parent="#acceptModal" data-acc-pain><option value="">—</option>@for (int i = 0; i <= 10; i++) {<option value="@i">@i</option>}</select>
+        <label class="fs-6 fw-semibold mb-2">@T["Note"]</label>
+        <textarea class="form-control form-control-solid" rows="2" maxlength="250" data-acc-note></textarea>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-acc-save><i class="ki-outline ki-check fs-4"></i>@T["Chart it"]</button></div>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), received: @Json.Serialize(T["Received"].Value), charted: @Json.Serialize(T["Charted: NEWS2 {0} — {1}"].Value),
+                escalated: @Json.Serialize(T["An urgent task went on the ward board"].Value), acvpu: @Json.Serialize(T["Choose the level of consciousness"].Value),
+                discard: @Json.Serialize(T["Why is this reading not charted (an artefact: probe off, patient moving…)?"].Value) };
+            var root = @Json.Serialize(Url.Content("~/Hospital/Wards/Monitors/"));
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            var mv = document.getElementById('mvModal'), am = document.getElementById('acceptModal'), current = null, acvpu = null;
+            mv.querySelector('[data-mv-file]').addEventListener('change', function () { var f = this.files && this.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { mv.querySelector('[data-mv-raw]').value = r.result; }; r.readAsText(f); });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-mv-open],[data-mv-send],[data-mv-accept],[data-mv-discard],[data-acvpu],[data-acc-save]'); if (!t) return;
+                if (t.hasAttribute('data-mv-open')) { mv.querySelector('[data-mv-raw]').value = ''; mv.querySelector('[data-mv-file]').value = ''; bootstrap.Modal.getOrCreateInstance(mv).show(); return; }
+                if (t.hasAttribute('data-mv-send')) {
+                    t.disabled = true;
+                    post(root + 'Receive', { raw: mv.querySelector('[data-mv-raw]').value }).then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.received); setTimeout(function () { location.reload(); }, 500); });
+                    return;
+                }
+                if (t.hasAttribute('data-mv-accept')) {
+                    current = t.getAttribute('data-mv-accept'); acvpu = null;
+                    am.querySelector('[data-acc-who]').textContent = t.getAttribute('data-who');
+                    am.querySelectorAll('[data-acvpu]').forEach(function (b) { b.classList.remove('btn-primary'); b.classList.add('btn-light'); });
+                    am.querySelector('[data-acc-oxygen]').checked = false; am.querySelector('[data-acc-scale2]').checked = false; am.querySelector('[data-acc-note]').value = '';
+                    bootstrap.Modal.getOrCreateInstance(am).show(); return;
+                }
+                if (t.hasAttribute('data-acvpu')) {
+                    acvpu = t.getAttribute('data-acvpu');
+                    am.querySelectorAll('[data-acvpu]').forEach(function (b) { var on = b === t; b.classList.toggle('btn-primary', on); b.classList.toggle('btn-light', !on); });
+                    return;
+                }
+                if (t.hasAttribute('data-acc-save')) {
+                    if (!acvpu) { toastr.error(W.acvpu); return; }
+                    var pain = am.querySelector('[data-acc-pain]').value; t.disabled = true;
+                    post(root + current + '/Accept', { consciousness: acvpu, onOxygen: am.querySelector('[data-acc-oxygen]').checked, spO2Scale2: am.querySelector('[data-acc-scale2]').checked,
+                        painScore: pain === '' ? null : Number(pain), note: am.querySelector('[data-acc-note]').value }).then(function (res) {
+                        t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                        bootstrap.Modal.getOrCreateInstance(am).hide();
+                        toastr[res.escalated ? 'error' : 'success'](W.charted.replace('{0}', res.news2 == null ? '—' : res.news2).replace('{1}', res.riskText || '—') + (res.escalated ? ' · ' + W.escalated : ''));
+                        setTimeout(function () { location.reload(); }, 900);
+                    });
+                    return;
+                }
+                cbPrompt(W.discard, { kind: 'danger', textarea: true }).then(function (reason) {
+                    if (reason == null) return; t.disabled = true;
+                    post(root + t.getAttribute('data-mv-discard') + '/Discard', { reason: reason }).then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } setTimeout(function () { location.reload(); }, 300); });
+                });
+            });
+        })();
+    </script>
+}

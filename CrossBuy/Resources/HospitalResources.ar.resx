@@ -8943,4 +8943,44 @@
   <data name="No results" xml:space="preserve"><value>لا توجد نتائج</value></data>
   <data name="No conversations yet" xml:space="preserve"><value>لا توجد محادثات بعد</value></data>
   <data name="Answer (call)" xml:space="preserve"><value>رد</value></data>
+  <data name="A monitor's numbers reach the chart only when a nurse accepts them" xml:space="preserve"><value>لا تدخل قراءات جهاز المراقبة ملف المريض إلا بعد أن تعتمدها الممرضة</value></data>
+  <data name="A reading older than 12 hours is not charted: take a new set" xml:space="preserve"><value>لا تُعتمد قراءة مضى عليها أكثر من 12 ساعة: خذ قياسًا جديدًا</value></data>
+  <data name="An urgent task went on the ward board" xml:space="preserve"><value>أُضيفت مهمة عاجلة إلى لوحة القسم</value></data>
+  <data name="Bedside monitors" xml:space="preserve"><value>أجهزة المراقبة</value></data>
+  <data name="Chart it" xml:space="preserve"><value>اعتمادها في الملف</value></data>
+  <data name="Chart the monitor's reading" xml:space="preserve"><value>اعتماد قراءة جهاز المراقبة</value></data>
+  <data name="Charted: NEWS2 {0} — {1}" xml:space="preserve"><value>اعتُمدت: NEWS2 ‏{0} — {1}</value></data>
+  <data name="Device, bed, patient" xml:space="preserve"><value>الجهاز أو السرير أو المريض</value></data>
+  <data name="Discard reading" xml:space="preserve"><value>استبعاد القراءة</value></data>
+  <data name="Each set (HL7 ORU^R01) is placed on the patient its bed and file number name; when they disagree it is refused. The nurse adds the level of consciousness and oxygen and accepts it — NEWS2 and its escalation follow, at the time it was measured — or discards it as an artefact, with the reason." xml:space="preserve"><value>تُنسب كل مجموعة قراءات (HL7 ORU^R01) إلى المريض الذي يحدده رقم السرير ورقم الملف، وتُرفض إذا تعارضا. تضيف الممرضة مستوى الوعي والأكسجين وتعتمدها، فيُحسب مؤشر NEWS2 وما يترتب عليه من تصعيد بوقت القياس الفعلي، أو تستبعدها كقراءة خاطئة مع ذكر السبب.</value></data>
+  <data name="HR" xml:space="preserve"><value>النبض</value></data>
+  <data name="Measured" xml:space="preserve"><value>وقت القياس</value></data>
+  <data name="No patient has the file number {1}" xml:space="preserve"><value>لا يوجد مريض برقم الملف {1}</value></data>
+  <data name="No reading received yet." xml:space="preserve"><value>لم تصل أي قراءة بعد.</value></data>
+  <data name="No such bed: {0}" xml:space="preserve"><value>لا يوجد سرير بالرمز {0}</value></data>
+  <data name="No vital sign in the message could be read" xml:space="preserve"><value>تعذّرت قراءة أي علامة حيوية في الرسالة</value></data>
+  <data name="Nobody is in bed {0}" xml:space="preserve"><value>لا يوجد مريض على السرير {0}</value></data>
+  <data name="Paste the monitor's HL7 message, or open the file its gateway wrote." xml:space="preserve"><value>الصق رسالة HL7 الصادرة عن جهاز المراقبة، أو افتح الملف الذي كتبته بوابة الأجهزة.</value></data>
+  <data name="RR" xml:space="preserve"><value>التنفس</value></data>
+  <data name="Readings received" xml:space="preserve"><value>القراءات الواردة</value></data>
+  <data name="SpO₂ scale 2 (hypercapnic respiratory failure)" xml:space="preserve"><value>مقياس SpO₂ رقم 2 (فشل تنفسي مع احتباس ثاني أكسيد الكربون)</value></data>
+  <data name="The message holds no vital signs" xml:space="preserve"><value>لا تحتوي الرسالة على علامات حيوية</value></data>
+  <data name="The message is too large" xml:space="preserve"><value>الرسالة كبيرة جدًا</value></data>
+  <data name="The message names no bed (PV1-3) and no patient (PID-3)" xml:space="preserve"><value>لا تحدد الرسالة سريرًا (PV1-3) ولا مريضًا (PID-3)</value></data>
+  <data name="The monitors' table is not created yet (hospital_h201_device_vitals.sql)." xml:space="preserve"><value>جدول أجهزة المراقبة غير منشأ بعد (hospital_h201_device_vitals.sql).</value></data>
+  <data name="The patient in bed {0} is not {1}: the monitor may have moved" xml:space="preserve"><value>المريض على السرير {0} ليس {1}: ربما نُقل جهاز المراقبة</value></data>
+  <data name="The patient {1} is not admitted" xml:space="preserve"><value>المريض {1} غير منوَّم</value></data>
+  <data name="The reading is dated in the future" xml:space="preserve"><value>تاريخ القراءة في المستقبل</value></data>
+  <data name="This reading was already decided" xml:space="preserve"><value>سبق البت في هذه القراءة</value></data>
+  <data name="Why is this reading not charted (an artefact: probe off, patient moving…)?" xml:space="preserve"><value>لماذا لا تُعتمد هذه القراءة (قراءة خاطئة: حساس منفصل، أو حركة المريض…)؟</value></data>
+  <data name="Write why the reading is not charted" xml:space="preserve"><value>اكتب سبب عدم اعتماد القراءة</value></data>
+  <data name="mv:Accepted" xml:space="preserve"><value>اعتُمدت</value></data>
+  <data name="mv:Discarded" xml:space="preserve"><value>استُبعدت</value></data>
+  <data name="mv:Duplicate" xml:space="preserve"><value>مكررة</value></data>
+  <data name="mv:Pending" xml:space="preserve"><value>بانتظار الممرضة</value></data>
+  <data name="mv:Refused" xml:space="preserve"><value>مرفوضة</value></data>
+  <data name="{0} readings" xml:space="preserve"><value>{0} قراءة</value></data>
+  <data name="{0} readings waiting" xml:space="preserve"><value>{0} قراءة بانتظار المراجعة</value></data>
+  <data name="{0}: in {1}" xml:space="preserve"><value>{0}: بوحدة {1}</value></data>
+  <data name="{0}: {1} is out of range" xml:space="preserve"><value>{0}: القيمة {1} خارج النطاق</value></data>
 </root>
