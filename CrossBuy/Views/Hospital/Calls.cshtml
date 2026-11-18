@@ -23,6 +23,7 @@
     var log = Model.Log;
     int pages = Math.Max(1, (int)Math.Ceiling(log.Total / (double)log.PageSize));
     string Utc(DateTime d) => d.ToString("yyyy-MM-ddTHH:mm:ss", inv);
+    var recs = ViewBag.Recordings as Dictionary<int, HospitalCallRecording> ?? new Dictionary<int, HospitalCallRecording>();
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -34,6 +35,14 @@
     .hc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
     .hc-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .hc-scroll{max-height:640px;overflow-y:auto}
+    .hc-recbadge{display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:#B91C1C;border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:700}
+    .hc-recbadge i{width:7px;height:7px;border-radius:50%;background:#DC2626;display:inline-block}
+    .hc-recbadge.gone{background:var(--bs-gray-100);color:var(--bs-gray-600)}.hc-recbadge.gone i{background:var(--bs-gray-400)}
+    .hc-player{background:#0F172A;border-radius:.9rem;overflow:hidden}
+    .hc-player video{width:100%;max-height:420px;display:block;background:#0F172A}
+    .hc-player audio{width:100%;display:block}
+    .hc-fact{display:flex;padding:.5rem 0;border-bottom:1px solid var(--bs-gray-200);font-size:.9rem}
+    .hc-fact > span:first-child{width:150px;flex-shrink:0;color:var(--bs-gray-600)}
     .hc-shrink,.hc-row .min-w-0,.hc-log .min-w-0{min-width:0}
     .hc-log td{vertical-align:middle}
     .hc-log td:first-child{max-width:190px}
@@ -43,6 +52,8 @@
     {
         var p = k switch
         {
+            "play" => "<path d=\"M7 4l13 8-13 8z\" fill=\"currentColor\"/>",
+            "rec" => "<circle cx=\"12\" cy=\"12\" r=\"6\" fill=\"currentColor\"/><circle cx=\"12\" cy=\"12\" r=\"10\"/>",
             "cam" => "<rect x=\"3\" y=\"6\" width=\"13\" height=\"12\" rx=\"2\"/><path d=\"M16 10l5-3v10l-5-3z\"/>",
             _ => "<path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z\"/>",
         };
@@ -156,7 +167,7 @@
                 <div class="card mb-5 mb-xl-8" id="hcLogCard">
                     <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
                         <span class="card-label fw-bold text-gray-900 fs-4">@T["Call log"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Who called whom, when, how long and about which patient — no audio or video is recorded"]</span></div>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Who called whom, when, how long and about which patient — audio or video only when both sides agreed"]</span></div>
                         <div class="card-toolbar"><form method="get" action="@Url.Action("Calls")" class="d-flex align-items-center position-relative my-1">
                             <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
                             <input type="text" name="q" value="@Model.Q" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search the log…"]" autocomplete="off" /></form></div></div>
@@ -171,6 +182,7 @@
                                     var c = r.Call; bool missed = c.Status == HospitalCallStatus.Missed && !r.Outgoing;
                                     bool failed = c.Status is HospitalCallStatus.Missed or HospitalCallStatus.Declined or HospitalCallStatus.Cancelled;
                                     var dirIcon = missed || (failed && !r.Outgoing) ? "ki-cross-circle" : r.Outgoing ? "ki-arrow-up-right" : "ki-arrow-down-left";
+                                    recs.TryGetValue(c.ID, out var rec);
                                     <tr>
                                         <td><div class="d-flex align-items-center gap-3">
                                             <span class="hc-dir" style="background:@(missed ? "#FEE2E2" : "#E7F0FF")"><i class="ki-outline @dirIcon fs-3" style="color:@(missed ? "#DC2626" : "var(--cb-brand,#3A5795)")"></i></span>
@@ -187,6 +199,8 @@
                                             else if (c.Status is HospitalCallStatus.Cancelled or HospitalCallStatus.Missed) { <span class="text-gray-600 fw-semibold">@T["Not answered"]</span> }
                                             else if (c.Status == HospitalCallStatus.Answered) { <span class="text-primary fw-bold">@T["In progress"]</span> }
                                             else { <span class="text-gray-800">@(r.Outgoing ? T["Outgoing"] : T["Incoming"])</span> }
+                                            @if (rec?.Status == HospitalCallRecordingStatus.Saved) { <span class="hc-recbadge ms-1"><i></i>@T["Recorded"]</span> }
+                                            else if (rec?.Status == HospitalCallRecordingStatus.Deleted) { <span class="hc-recbadge gone ms-1" title="@T["Its retention ended; the record of it stays"]"><i></i>@T["Recording deleted"]</span> }
                                             <div class="text-muted fs-8 d-flex align-items-center gap-1">@Html.Raw(Svg(c.IsVideo ? "cam" : "phone", 13))@(c.IsVideo ? T["Video"] : T["Voice"])</div>
                                         </td>
                                         <td>
@@ -198,7 +212,7 @@
                                         </td>
                                         <td class="text-nowrap"><bdi class="hp-num fw-semibold" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("HH:mm", inv)</bdi>@if (c.StartedAt < DateTime.UtcNow.AddHours(-18)) { <div class="text-muted fs-8"><bdi class="hp-num" dir="ltr" data-fmt="auto" data-utc="@Utc(c.StartedAt)">@c.StartedAt.ToString("yyyy-MM-dd", inv)</bdi></div> }</td>
                                         <td>@if (c.DurationSeconds is int s) { <bdi class="hp-num" dir="ltr">@HospitalCallRules.Duration(s)</bdi> } else { <span class="text-muted">—</span> }</td>
-                                        <td class="text-end">@if (r.Other != null) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-call="@r.Other.EmployeeId" data-video="@(c.IsVideo ? 1 : 0)" data-patient="@c.PatientId" disabled>@Html.Raw(Svg("phone", 15)) @T["Call back"]</button> }</td>
+                                        <td class="text-end text-nowrap">@if (rec?.Status == HospitalCallRecordingStatus.Saved) { <button type="button" class="btn btn-sm btn-icon btn-light-primary me-2" title="@T["Play the recording"]" data-rec="@rec.ID">@Html.Raw(Svg("play", 14))</button> }@if (r.Other != null) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-call="@r.Other.EmployeeId" data-video="@(c.IsVideo ? 1 : 0)" data-patient="@c.PatientId" disabled>@Html.Raw(Svg("phone", 15)) @T["Call back"]</button> }</td>
                                     </tr>
                                 }
                             </tbody></table></div>
@@ -240,12 +254,25 @@
     </div>
 </div></div></div>
 
+<div class="modal fade" id="hcPlayer" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-700px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0 d-flex align-items-center gap-2"><span class="text-danger">@Html.Raw(Svg("rec", 20))</span>@T["Call recording"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10" id="hcPlayerBody"></div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Close"]</button></div>
+</div></div></div>
+
 @section Scripts {
 <script>
 (function () {
     var W = { on: @Json.Serialize(T["Available"].Value), busy: @Json.Serialize(T["In a call"].Value), off: @Json.Serialize(T["Offline"].Value),
               choosePatient: @Json.Serialize(T["Choose the patient"].Value), choosePerson: @Json.Serialize(T["Choose whom to call"].Value), noMatch: @Json.Serialize(T["No matching patient"].Value) };
     var searchUrl = @Json.Serialize(Url.Action("SearchPatients"));
+    var recUrl = @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/"));
+    var patientUrl = @Json.Serialize(Url.Content("~/Hospital/Patient/"));
+    var R = { call: @Json.Serialize(T["The call"].Value), recording: @Json.Serialize(T["Recording"].Value), consent: @Json.Serialize(T["Consent"].Value), patient: @Json.Serialize(T["Patient"].Value),
+              file: @Json.Serialize(T["File"].Value), deleted: @Json.Serialize(T["Deleted automatically on"].Value), never: @Json.Serialize(T["No automatic deletion"].Value),
+              opened: @Json.Serialize(T["Who opened it"].Value), nobody: @Json.Serialize(T["Nobody has opened it yet"].Value), outgoing: @Json.Serialize(T["Outgoing to {0}"].Value), incoming: @Json.Serialize(T["Incoming from {0}"].Value),
+              video: @Json.Serialize(T["Voice and video"].Value), voice: @Json.Serialize(T["Voice only (recording)"].Value), mb: @Json.Serialize(T["MB"].Value),
+              asked: @Json.Serialize(T["Recording asked by {0}"].Value), agreed: @Json.Serialize(T["agreed by {0}"].Value), folder: @Json.Serialize(T["Hospital / Calls"].Value), gone: @Json.Serialize(T["This recording was deleted when its retention ended"].Value) };
     var state = {};
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
@@ -303,7 +330,45 @@
         }, 800);
     });
 
+    // the player: the facts first, then the media — its first request is logged as an opening, the seeks are not
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function when(iso) { if (!iso) return ''; var d = new Date(String(iso).replace(/Z?$/, 'Z')); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    function num(x) { return '<bdi class="hp-num" dir="ltr">' + esc(x) + '</bdi>'; }
+    function face(p, size) { p = p || {}; return '<span class="hc-face" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * .36) + 'px">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="" onerror="this.remove()" />' : '') + '<span>' + esc(p.initials || '?') + '</span></span>'; }
+    function openPlayer(id) {
+        var body = document.getElementById('hcPlayerBody');
+        body.innerHTML = '<div class="text-center py-10"><span class="spinner-border text-primary"></span></div>';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('hcPlayer')).show();
+        fetch(recUrl + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (res) {
+            if (!res || !res.ok) { body.innerHTML = '<div class="text-muted text-center py-10">—</div>'; return; }
+            var x = res.recording, src = recUrl + id + '/Media';
+            var media = x.status !== 'Saved' ? '<div class="text-center text-white py-10 px-5">' + esc(R.gone) + '</div>'
+                : x.kind === 'video' ? '<video controls preload="metadata" src="' + src + '"></video>' : '<div class="p-5">' + '<audio controls preload="metadata" src="' + src + '"></audio></div>';
+            var mins = x.seconds != null ? pad(Math.floor(x.seconds / 60)) + ':' + pad(x.seconds % 60) : '—';
+            var facts = [
+                [R.call, (x.outgoing ? R.outgoing : R.incoming).replace('{0}', esc((x.other || {}).name || '')) + ' · ' + num(when(x.startedAt))],
+                [R.recording, (x.kind === 'video' ? R.video : R.voice) + ' · ' + num(mins) + (x.size ? ' · ' + num((x.size / 1048576).toFixed(1)) + ' ' + esc(R.mb) : '')],
+                [R.consent, R.asked.replace('{0}', esc((x.requestedBy || {}).name || '')) + ' ' + num(when(x.requestedAt).slice(11)) + (x.agreedBy ? ' · ' + R.agreed.replace('{0}', esc(x.agreedBy.name)) + ' ' + num(when(x.agreedAt).slice(11)) : '')],
+                [R.patient, x.patient ? '<a href="' + patientUrl + x.patient.id + '" class="fw-semibold">' + esc(x.patient.name) + '</a> · ' + num(x.patient.mrn) : '—'],
+                [R.file, num(R.folder + ' / ' + x.folder + ' / ' + x.file)],
+                [R.deleted, x.deleteAfter ? num(when(x.deleteAfter).slice(0, 10)) : esc(R.never)]
+            ].map(function (f) { return '<div class="hc-fact"><span>' + esc(f[0]) + '</span><span class="text-gray-900">' + f[1] + '</span></div>'; }).join('');
+            var views = (x.views || []).map(function (v) { return '<div class="d-flex align-items-center gap-3 mb-2">' + face(v.who, 28) + '<span class="fs-7 text-gray-800 flex-grow-1">' + esc((v.who || {}).name || '') + '</span><span class="fs-8 text-muted">' + num(when(v.at)) + '</span></div>'; }).join('') || '<div class="text-muted fs-7">' + esc(R.nobody) + '</div>';
+            body.innerHTML = '<div class="hc-player">' + media + '</div><div class="mt-5">' + facts + '</div><div class="fw-bold text-gray-900 mt-5 mb-2 fs-7">' + esc(R.opened) + '</div><div data-views>' + views + '</div>';
+            if (x.status === 'Saved') fetch(src + '?log=1', { headers: { Range: 'bytes=0-0' } }).catch(function () { });
+            // a browser-made WebM carries no duration: seek to the end once so the player can measure it, then back
+            var m = body.querySelector('video,audio');
+            if (m) m.addEventListener('loadedmetadata', function () {
+                if (m.duration !== Infinity) return;
+                var back = function () { m.removeEventListener('timeupdate', back); m.currentTime = 0; };
+                m.addEventListener('timeupdate', back); m.currentTime = 1e101;
+            });
+        });
+    }
+    document.getElementById('hcPlayer').addEventListener('hidden.bs.modal', function () { var m = this.querySelector('video,audio'); if (m) { m.pause(); m.removeAttribute('src'); m.load(); } });
+
     document.addEventListener('click', function (e) {
+        var pr = e.target.closest('[data-rec]'); if (pr) { openPlayer(pr.getAttribute('data-rec')); return; }
         var b = e.target.closest('[data-call]'); if (!b || b.disabled) return;
         var pid = b.getAttribute('data-patient');
         window.cbCalls.start(+b.getAttribute('data-call'), b.getAttribute('data-video') === '1', pid ? +pid : null, null);

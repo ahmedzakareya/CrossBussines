@@ -16,6 +16,7 @@
     var groups = HospitalCallGroups.All;
     string G(string g) => T["callgroup:" + g].Value;
     bool hasSecret = !string.IsNullOrEmpty(Model.TurnSecret);
+    var recGroups = HospitalCallRecordingRules.ParseGroups(Model.RecordingGroups);
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -99,7 +100,7 @@
                             ("hcVideo", "Video calls", "On with voice; can be limited to voice on weak networks", Model.VideoEnabled, false),
                             ("hcShare", "Screen sharing", "To show an image or a result during a consult", Model.ScreenShareEnabled, false),
                             ("hcGroup", "Group calls (up to 8 people)", "Needs an internal media server — phase two", false, true),
-                            ("hcRec", "Recording calls", "Off: no audio or video is kept; only the log and the note", false, true) })
+                            ("hcRec", "Recording calls", "Only with every side's consent — see the recording card", Model.RecordingEnabled, false) })
                         {
                             <div class="d-flex flex-stack py-4 border-bottom border-gray-200"><div class="me-5"><div class="fw-bold text-gray-900">@T[title]</div><div class="text-muted fs-7">@T[sub]</div></div>
                                 <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="@id" @(on ? "checked" : "") @(locked ? "disabled" : "") /></label></div>
@@ -115,6 +116,27 @@
             </div>
 
             <div class="col-xl-6">
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Recording calls"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Never starts without every side's consent inside the call — a fixed rule that cannot be switched off"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="row g-5">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["What is recorded"]</label>
+                                <select class="form-select form-select-solid" id="hcRecMode" data-control="select2" data-hide-search="true">
+                                    <option value="voice" selected="@(Model.RecordingMode == HospitalCallRecordingMode.Voice)">@T["Voice only (recording)"]</option>
+                                    <option value="both" selected="@(Model.RecordingMode != HospitalCallRecordingMode.Voice)">@T["Voice and video"]</option></select></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Kept for"]</label>
+                                <select class="form-select form-select-solid" id="hcRecDays" data-control="select2" data-hide-search="true">
+                                    @foreach (var d in HospitalCallRecordingRules.RetentionChoices) { <option value="@d" selected="@(Model.RecordingDays == d)">@(d == 0 ? T["No automatic deletion"].Value : d == 365 ? T["A year"].Value : T["{0} days", d].Value)</option> }</select></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-3 d-block">@T["Who may ask to record"]</label>
+                                <div class="d-flex flex-wrap gap-5">@foreach (var g in groups) { <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-recgroup="@g" @(recGroups.Contains(g) ? "checked" : "") /><span class="form-check-label text-gray-800 fs-7">@G(g)</span></label> }</div></div>
+                            <div class="col-12"><div class="rounded p-4 d-flex align-items-center gap-4" style="background:#E7F0FF"><i class="ki-outline ki-folder fs-2x text-primary"></i>
+                                <div class="fs-7 text-gray-800">@T["Kept in the File Manager on the call's record and linked to the call log and the patient file. Estimate: voice about 0.5 MB a minute, 720p video about 10 MB a minute."]</div></div></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mb-5 mb-xl-8">
                     <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
                         <span class="card-label fw-bold text-gray-900 fs-4">@T["Who may call whom"]</span>
@@ -136,7 +158,7 @@
                 <div class="card mb-5 mb-xl-8">
                     <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What is recorded"]</span></div></div>
                     <div class="card-body pt-4">
-                        @foreach (var (icon, text) in new[] { ("ki-time", "Start, end and length"), ("ki-people", "Caller, the person called"), ("ki-profile-user", "The linked patient and the reason"), ("ki-notepad", "The note written during the call"), ("ki-eye-slash", "No audio or video is kept") })
+                        @foreach (var (icon, text) in new[] { ("ki-time", "Start, end and length"), ("ki-people", "Caller, the person called"), ("ki-profile-user", "The linked patient and the reason"), ("ki-notepad", "The note written during the call"), ("ki-shield-tick", "Audio and video only when both agree, with who asked, who agreed and when") })
                         {
                             <div class="d-flex align-items-center gap-4 mb-4"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#E7F0FF"><i class="ki-outline @icon fs-3 text-primary"></i></span></span><span class="fw-semibold text-gray-800">@T[text]</span></div>
                         }
@@ -194,7 +216,10 @@
                 videoEnabled: document.getElementById('hcVideo').checked, screenShareEnabled: document.getElementById('hcShare').checked,
                 ringSeconds: +document.getElementById('hcRing').value, maxVideoHeight: +document.getElementById('hcHeight').value,
                 turnUrls: document.getElementById('hcUrls').value, turnSecret: clear && clear.checked ? '' : (secret ? secret : null),
-                policy: Array.prototype.filter.call(document.querySelectorAll('[data-pair]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-pair'); })
+                policy: Array.prototype.filter.call(document.querySelectorAll('[data-pair]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-pair'); }),
+                recordingEnabled: document.getElementById('hcRec').checked, recordingMode: document.getElementById('hcRecMode').value,
+                recordingDays: +document.getElementById('hcRecDays').value,
+                recordingGroups: Array.prototype.filter.call(document.querySelectorAll('[data-recgroup]'), function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-recgroup'); })
             };
             btn.disabled = true;
             fetch(saveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: JSON.stringify(body) })

@@ -136,6 +136,10 @@ namespace CrossBuy.BL.Hospital
 		/// Null = keep the stored secret; "" = remove it.
 		public string? TurnSecret { get; set; }
 		public List<string>? Policy { get; set; }
+		public bool RecordingEnabled { get; set; }
+		public string? RecordingMode { get; set; }
+		public int RecordingDays { get; set; } = 90;
+		public List<string>? RecordingGroups { get; set; }
 	}
 
 	public sealed class HospitalCallService
@@ -163,6 +167,8 @@ namespace CrossBuy.BL.Hospital
 		{
 			if (i.RingSeconds is < 10 or > 120) return HospitalResult.Fail("The ring time must be between 10 and 120 seconds");
 			if (i.MaxVideoHeight is not (480 or 720 or 1080)) return HospitalResult.Fail("Choose a video quality from the list");
+			if (!HospitalCallRecordingRules.RetentionChoices.Contains(i.RecordingDays)) return HospitalResult.Fail("Choose how long recordings are kept from the list");
+			if (i.RecordingMode is not (HospitalCallRecordingMode.Voice or HospitalCallRecordingMode.Both)) i.RecordingMode = HospitalCallRecordingMode.Both;
 			var urls = HospitalCallRules.ParseUrls(i.TurnUrls);
 			if (!string.IsNullOrWhiteSpace(i.TurnUrls) && urls.Count == 0) return HospitalResult.Fail("Write the relay address as turn:host:port or stun:host:port");
 			var pairs = (i.Policy ?? new()).Select(p => p.Split('>')).Where(a => a.Length == 2).Select(a => (a[0], a[1]));
@@ -174,7 +180,9 @@ namespace CrossBuy.BL.Hospital
 				row.TurnUrls = urls.Count == 0 ? null : string.Join(",", urls);
 				if (i.TurnSecret != null) row.TurnSecret = Clip(i.TurnSecret, 200);
 				var policy = HospitalCallRules.FormatPolicy(pairs);
-				row.Policy = policy.Length == 0 ? "-" : policy;   // nobody may call: stored explicitly, an empty value would mean the default
+				row.Policy = policy.Length == 0 ? "-" : policy;
+				row.RecordingEnabled = i.RecordingEnabled; row.RecordingMode = i.RecordingMode!; row.RecordingDays = i.RecordingDays;
+				row.RecordingGroups = HospitalCallRecordingRules.FormatGroups(i.RecordingGroups);   // nobody may call: stored explicitly, an empty value would mean the default
 				row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success();

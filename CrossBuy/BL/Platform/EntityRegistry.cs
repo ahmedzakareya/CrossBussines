@@ -57,6 +57,7 @@ namespace CrossBuy.BL.Platform
         public const string HospitalPatient = "HospitalPatient";
         public const string HospitalRadOrder = "HospitalRadOrder";
         public const string HospitalConsent = "HospitalConsent";   // H60: a signed consent, files only (its signature)
+        public const string HospitalCall = "HospitalCall";         // H176: an internal call, files only (its recordings)
         public const string JobApplication = "JobApplication";   // HR recruitment: an applicant, files only (2026-11-08)
 
         // Stage 2A Batch A. The grant store becomes an event PRODUCER: IPlatformGrantWriter records
@@ -648,6 +649,20 @@ namespace CrossBuy.BL.Platform
             },
             new EntityDefinition
             {
+                // Hospital H176. An internal call, FILES ONLY: its recordings (made with both sides' consent) live on the
+                // document platform, owned through HospitalCallDocumentOwnerResolver (only an administrator reads them
+                // through the platform; the two participants read them through the calls screen, which checks them).
+                Code = HospitalCall,
+                DisplayNameAr = "مكالمة داخلية", DisplayNameEn = "Internal call",
+                Module = "Hospital", Icon = "ki-outline ki-call", Color = "primary",
+                RouteTemplate = "/Hospital/Calls",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
                 // HR recruitment (2026-11-08). A job application, FILES ONLY: the applicant's photo and documents live on
                 // the document platform (owner rule — every file in the File Manager), owned through
                 // JobApplicationDocumentOwnerResolver. No search, comments or picker: an application is reached from the
@@ -1128,6 +1143,11 @@ namespace CrossBuy.BL.Platform
                     label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalConsent>().AsNoTracking()
                         .Where(c => c.ID == entityId && c.CompanyId == companyId)
                         .Select(c => c.ConsentNo + " — " + c.Title).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalCall:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalCall>().AsNoTracking()
+                        .Where(c => c.ID == entityId && c.CompanyId == companyId)
+                        .Select(c => "CALL-" + c.ID.ToString()).FirstOrDefaultAsync(cancellationToken);
                     break;
 
                 case JobApplication:

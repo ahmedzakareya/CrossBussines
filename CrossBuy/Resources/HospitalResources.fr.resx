@@ -8457,4 +8457,73 @@
   <data name="unc:Frequency" xml:space="preserve"><value>Fréquence du contrat</value></data>
   <data name="unc:PerYear" xml:space="preserve"><value>Plafond annuel atteint</value></data>
   <data name="unc:Waiting" xml:space="preserve"><value>Période d'attente</value></data>
+  <data name="Who called whom, when, how long and about which patient — audio or video only when both sides agreed" xml:space="preserve"><value>Qui a appelé qui, quand, combien de temps et pour quel patient — son ou image seulement si les deux ont accepté</value></data>
+  <data name="Its retention ended; the record of it stays" xml:space="preserve"><value>Sa durée de conservation est écoulée ; la trace de l&#x27;enregistrement reste</value></data>
+  <data name="Recording deleted" xml:space="preserve"><value>Enregistrement supprimé</value></data>
+  <data name="Play the recording" xml:space="preserve"><value>Écouter l&#x27;enregistrement</value></data>
+  <data name="Call recording" xml:space="preserve"><value>Enregistrement de l&#x27;appel</value></data>
+  <data name="Recording" xml:space="preserve"><value>Enregistrement</value></data>
+  <data name="Consent" xml:space="preserve"><value>Consentement</value></data>
+  <data name="Deleted automatically on" xml:space="preserve"><value>Supprimé automatiquement le</value></data>
+  <data name="No automatic deletion" xml:space="preserve"><value>Pas de suppression automatique</value></data>
+  <data name="Who opened it" xml:space="preserve"><value>Qui l&#x27;a ouvert</value></data>
+  <data name="Nobody has opened it yet" xml:space="preserve"><value>Personne ne l&#x27;a encore ouvert</value></data>
+  <data name="Outgoing to {0}" xml:space="preserve"><value>Sortant vers {0}</value></data>
+  <data name="Incoming from {0}" xml:space="preserve"><value>Entrant de {0}</value></data>
+  <data name="Voice and video" xml:space="preserve"><value>Voix et vidéo</value></data>
+  <data name="Voice only (recording)" xml:space="preserve"><value>Voix seulement</value></data>
+  <data name="The call" xml:space="preserve"><value>L&#x27;appel</value></data>
+  <data name="MB" xml:space="preserve"><value>Mo</value></data>
+  <data name="agreed by {0}" xml:space="preserve"><value>accepté par {0}</value></data>
+  <data name="Hospital / Calls" xml:space="preserve"><value>Hôpital / Appels</value></data>
+  <data name="This recording was deleted when its retention ended" xml:space="preserve"><value>Cet enregistrement a été supprimé à la fin de sa durée de conservation</value></data>
+  <data name="Never starts without every side&#x27;s consent inside the call — a fixed rule that cannot be switched off" xml:space="preserve"><value>Ne démarre jamais sans le consentement de chacun pendant l&#x27;appel — une règle fixe qui ne peut pas être désactivée</value></data>
+  <data name="Kept for" xml:space="preserve"><value>Conservé pendant</value></data>
+  <data name="A year" xml:space="preserve"><value>Un an</value></data>
+  <data name="Who may ask to record" xml:space="preserve"><value>Qui peut demander l&#x27;enregistrement</value></data>
+  <data name="Kept in the File Manager on the call&#x27;s record and linked to the call log and the patient file. Estimate: voice about 0.5 MB a minute, 720p video about 10 MB a minute." xml:space="preserve"><value>Conservé dans le gestionnaire de fichiers sur la fiche de l&#x27;appel, lié au journal des appels et au dossier du patient. Estimation : voix environ 0,5 Mo par minute, vidéo 720p environ 10 Mo par minute.</value></data>
+  <data name="Only with every side&#x27;s consent — see the recording card" xml:space="preserve"><value>Seulement avec le consentement de chacun — voir la carte d&#x27;enregistrement</value></data>
+  <data name="Audio and video only when both agree, with who asked, who agreed and when" xml:space="preserve"><value>Son et image seulement si les deux acceptent, avec qui a demandé, qui a accepté et quand</value></data>
+  <data name="The note joins the call record with your name and time. Audio and video are recorded only when both sides agree." xml:space="preserve"><value>La note rejoint le journal de l&#x27;appel avec votre nom et l&#x27;heure. Le son et l&#x27;image ne sont enregistrés que si les deux acceptent.</value></data>
+  <data name="Record the call — with the other side&#x27;s consent" xml:space="preserve"><value>Enregistrer l&#x27;appel — avec le consentement de l&#x27;autre</value></data>
+  <data name="Stop recording" xml:space="preserve"><value>Arrêter l&#x27;enregistrement</value></data>
+  <data name="Recording the call" xml:space="preserve"><value>Enregistrement de l&#x27;appel</value></data>
+  <data name="REC" xml:space="preserve"><value>REC</value></data>
+  <data name="Waiting for {0} to agree…" xml:space="preserve"><value>En attente de l&#x27;accord de {0}…</value></data>
+  <data name="You asked to record (voice and video)" xml:space="preserve"><value>Vous avez demandé l&#x27;enregistrement (voix et vidéo)</value></data>
+  <data name="You asked to record (voice)" xml:space="preserve"><value>Vous avez demandé l&#x27;enregistrement (voix)</value></data>
+  <data name="{0} asks to record this call" xml:space="preserve"><value>{0} demande à enregistrer cet appel</value></data>
+  <data name="It will not start unless you agree" xml:space="preserve"><value>Il ne démarrera que si vous acceptez</value></data>
+  <data name="Both sides&#x27; voice and picture, from your consent until either of you stops it" xml:space="preserve"><value>La voix et l&#x27;image des deux, de votre accord jusqu&#x27;à ce que l&#x27;un de vous l&#x27;arrête</value></data>
+  <data name="Both sides&#x27; voice, from your consent until either of you stops it" xml:space="preserve"><value>La voix des deux, de votre accord jusqu&#x27;à ce que l&#x27;un de vous l&#x27;arrête</value></data>
+  <data name="Where it is kept" xml:space="preserve"><value>Où il est conservé</value></data>
+  <data name="File Manager · the call log" xml:space="preserve"><value>Gestionnaire de fichiers · journal des appels</value></data>
+  <data name="the file of {0}" xml:space="preserve"><value>le dossier de {0}</value></data>
+  <data name="Who can see it" xml:space="preserve"><value>Qui peut le voir</value></data>
+  <data name="The two of you and the hospital&#x27;s administrators; every opening is logged" xml:space="preserve"><value>Vous deux et les administrateurs de l&#x27;hôpital ; chaque ouverture est consignée</value></data>
+  <data name="{0} days, then deleted automatically" xml:space="preserve"><value>{0} jours, puis supprimé automatiquement</value></data>
+  <data name="Do not record" xml:space="preserve"><value>Ne pas enregistrer</value></data>
+  <data name="I agree to record" xml:space="preserve"><value>J&#x27;accepte l&#x27;enregistrement</value></data>
+  <data name="Your consent is kept with your name and time, and you can stop the recording at any moment." xml:space="preserve"><value>Votre consentement est conservé avec votre nom et l&#x27;heure, et vous pouvez arrêter l&#x27;enregistrement à tout moment.</value></data>
+  <data name="{0} refused the recording" xml:space="preserve"><value>{0} a refusé l&#x27;enregistrement</value></data>
+  <data name="{0} refused — the call goes on unrecorded" xml:space="preserve"><value>{0} a refusé — l&#x27;appel continue sans enregistrement</value></data>
+  <data name="{0} agreed" xml:space="preserve"><value>{0} a accepté</value></data>
+  <data name="You agreed" xml:space="preserve"><value>Vous avez accepté</value></data>
+  <data name="Recording started — both sides see it" xml:space="preserve"><value>Enregistrement démarré — visible des deux côtés</value></data>
+  <data name="You stopped the recording" xml:space="preserve"><value>Vous avez arrêté l&#x27;enregistrement</value></data>
+  <data name="{0} stopped the recording" xml:space="preserve"><value>{0} a arrêté l&#x27;enregistrement</value></data>
+  <data name="The recording is saved in the File Manager and shows in the call log" xml:space="preserve"><value>L&#x27;enregistrement est conservé dans le gestionnaire de fichiers et figure au journal des appels</value></data>
+  <data name="This browser cannot record calls" xml:space="preserve"><value>Ce navigateur ne peut pas enregistrer les appels</value></data>
+  <data name="Recording starts only once the call is answered" xml:space="preserve"><value>L&#x27;enregistrement ne démarre qu&#x27;une fois l&#x27;appel décroché</value></data>
+  <data name="You may not ask to record calls (call settings)" xml:space="preserve"><value>Vous ne pouvez pas demander l&#x27;enregistrement des appels (paramètres des appels)</value></data>
+  <data name="This call is already being recorded or asked to be" xml:space="preserve"><value>Cet appel est déjà enregistré ou une demande est en cours</value></data>
+  <data name="Choose how long recordings are kept from the list" xml:space="preserve"><value>Choisissez la durée de conservation dans la liste</value></data>
+  <data name="A piece of the recording is too large" xml:space="preserve"><value>Un morceau de l&#x27;enregistrement est trop volumineux</value></data>
+  <data name="This recording is not running" xml:space="preserve"><value>Cet enregistrement n&#x27;est pas en cours</value></data>
+  <data name="Nothing of the recording arrived" xml:space="preserve"><value>Rien de l&#x27;enregistrement n&#x27;est arrivé</value></data>
+  <data name="A piece of the recording arrived out of order" xml:space="preserve"><value>Un morceau de l&#x27;enregistrement est arrivé dans le désordre</value></data>
+  <data name="The recording is too long" xml:space="preserve"><value>L&#x27;enregistrement est trop long</value></data>
+  <data name="The recording is not in a supported format" xml:space="preserve"><value>Le format de l&#x27;enregistrement n&#x27;est pas pris en charge</value></data>
+  <data name="Call recording is not installed yet (hospital_h176_call_recording.sql)." xml:space="preserve"><value>L&#x27;enregistrement des appels n&#x27;est pas encore installé (hospital_h176_call_recording.sql).</value></data>
+  <data name="Recording asked by {0}" xml:space="preserve"><value>Demandé par {0}</value></data>
 </root>

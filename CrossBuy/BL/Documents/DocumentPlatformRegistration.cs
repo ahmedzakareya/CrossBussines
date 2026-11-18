@@ -41,6 +41,7 @@ namespace CrossBuy.BL.Documents
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalPatientDocumentOwnerResolver>();
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalRadOrderDocumentOwnerResolver>();   // H35: imaging pictures
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalConsentDocumentOwnerResolver>();   // H60: consent signatures
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalCallDocumentOwnerResolver>();   // H176: call recordings
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.JobApplicationDocumentOwnerResolver>();   // HR: applicant photo + documents (2026-11-08)
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.LeaveRequestDocumentOwnerResolver>();    // HR3: medical certificates on leave requests (2026-11-08)
             services.AddScoped<IClientDocumentPublicationService, ClientDocumentPublicationService>();

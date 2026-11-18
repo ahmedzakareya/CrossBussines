@@ -69,8 +69,76 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? TurnSecret { get; set; }
 		/// Who may call whom: "caller>callee" pairs of HospitalCallGroups, comma separated. Null = the published default.
 		public string? Policy { get; set; }
+		/// Recording (with every side's consent inside the call). Off until the administrator turns it on.
+		public bool RecordingEnabled { get; set; }
+		/// "voice" or "both" (voice, and the picture when the call is a video call).
+		public string RecordingMode { get; set; } = HospitalCallRecordingMode.Both;
+		/// Days a recording is kept before it is deleted automatically; 0 = never deleted automatically.
+		public int RecordingDays { get; set; } = 90;
+		/// The staff groups that may ASK to record, comma separated. Null = doctors and administration.
+		public string? RecordingGroups { get; set; }
 		public DateTime? UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
+	}
+
+	public static class HospitalCallRecordingMode
+	{
+		public const string Voice = "voice";
+		public const string Both = "both";
+	}
+
+	public static class HospitalCallRecordingStatus
+	{
+		/// Asked; the other side has not answered yet.
+		public const string Asked = "Asked";
+		public const string Refused = "Refused";
+		/// Both agreed; the requester's browser is recording and sending it in pieces.
+		public const string Recording = "Recording";
+		/// The whole file is on the document platform.
+		public const string Saved = "Saved";
+		/// The browser never finished it (closed, crashed) and nothing usable arrived.
+		public const string Failed = "Failed";
+		/// Its retention ran out: the bytes are gone, the record of it stays.
+		public const string Deleted = "Deleted";
+	}
+
+	/// H176 — one recording of a call: who asked, who agreed and when, and where the file is. The audio and picture are
+	/// recorded in the REQUESTER's browser (it holds both sides), sent in pieces to a private temporary file, then kept as
+	/// a document on the HospitalCall record of the document platform.
+	public class HospitalCallRecording
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CallId { get; set; }
+		public int RequestedByEmployeeId { get; set; }
+		public DateTime RequestedAt { get; set; }
+		public int? AgreedByEmployeeId { get; set; }
+		public DateTime? AgreedAt { get; set; }
+		public string Status { get; set; } = HospitalCallRecordingStatus.Asked;
+		/// "voice" or "video" — what is really in the file.
+		public string Kind { get; set; } = "voice";
+		public DateTime? StartedAt { get; set; }
+		public DateTime? EndedAt { get; set; }
+		public int? StoppedByEmployeeId { get; set; }
+		public int? DurationSeconds { get; set; }
+		public long? SizeBytes { get; set; }
+		/// Pieces received so far (they must arrive in order).
+		public int Chunks { get; set; }
+		/// The private temporary file's name while recording (a GUID, never a path from the client).
+		public string? TempName { get; set; }
+		public long? DocumentId { get; set; }
+		public DateTime? DeleteAfter { get; set; }
+		public DateTime? DeletedAt { get; set; }
+	}
+
+	/// Every opening of a recording: who and when.
+	public class HospitalCallRecordingView
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int RecordingId { get; set; }
+		public int EmployeeId { get; set; }
+		public DateTime At { get; set; }
 	}
 
 	public static class HospitalCallModel
@@ -97,6 +165,22 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.TurnUrls).HasMaxLength(300);
 				e.Property(x => x.TurnSecret).HasMaxLength(200);
 				e.Property(x => x.Policy).HasMaxLength(600);
+				e.Property(x => x.RecordingMode).HasMaxLength(8);
+				e.Property(x => x.RecordingGroups).HasMaxLength(200);
+			});
+			b.Entity<HospitalCallRecording>(e =>
+			{
+				e.ToTable("HospitalCallRecordings");
+				e.Property(x => x.Status).HasMaxLength(12);
+				e.Property(x => x.Kind).HasMaxLength(8);
+				e.Property(x => x.TempName).HasMaxLength(40);
+				e.HasIndex(x => new { x.CompanyId, x.CallId });
+				e.HasIndex(x => new { x.CompanyId, x.Status, x.DeleteAfter });
+			});
+			b.Entity<HospitalCallRecordingView>(e =>
+			{
+				e.ToTable("HospitalCallRecordingViews");
+				e.HasIndex(x => new { x.CompanyId, x.RecordingId });
 			});
 		}
 	}

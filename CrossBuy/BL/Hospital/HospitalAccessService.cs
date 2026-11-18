@@ -62,7 +62,12 @@ namespace CrossBuy.BL
 		/// H10: review and dispense prescriptions from the pharmacy store. Pharmacists and administrators.
 		public const string Pharmacy = "pharmacy";
 
-		public static readonly IReadOnlyCollection<string> All = new[] { Read, ClinicalRead, ConfidentialView, Manage, Register, Admit, Book, Consult, Bill, Lab, LabVerify, Rad, RadReport, Pharmacy };
+		/// H176: open ANY call recording (the two participants open their own through the calls screen without it).
+		/// NEVER bootstrap-open: while no hospital role is configured every other action is open to everyone, and a
+		/// recording of other people's conversation must not be. Only an explicitly assigned administrator holds it.
+		public const string CallRecordings = "call-recordings";
+
+		public static readonly IReadOnlyCollection<string> All = new[] { Read, ClinicalRead, ConfidentialView, Manage, Register, Admit, Book, Consult, Bill, Lab, LabVerify, Rad, RadReport, Pharmacy, CallRecordings };
 	}
 
 	public static class HospitalRoles
@@ -102,7 +107,7 @@ namespace CrossBuy.BL
 			BusinessContext context, string action, PermissionTarget? target,
 			IReadOnlyList<RoleGrant> grants, bool bootstrapOpen, CancellationToken cancellationToken)
 		{
-			if (bootstrapOpen) return Task.FromResult(true);
+			if (bootstrapOpen) return Task.FromResult(action != HospitalActions.CallRecordings);   // H176: never open by default
 
 			bool admin = Holds(grants, HospitalRoles.HospitalAdministrator);
 			bool staff = Holds(grants, HospitalRoles.HospitalStaff);
@@ -133,6 +138,7 @@ namespace CrossBuy.BL
 				HospitalActions.Rad => admin || radiographer,
 				HospitalActions.RadReport => admin || radiologist,
 				HospitalActions.Pharmacy => admin || pharmacist,
+				HospitalActions.CallRecordings => admin,
 				_ => false,
 			});
 		}

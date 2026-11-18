@@ -8457,4 +8457,73 @@
   <data name="unc:Frequency" xml:space="preserve"><value>قبل مرور المدة المسموحة</value></data>
   <data name="unc:PerYear" xml:space="preserve"><value>تجاوز العدد السنوي</value></data>
   <data name="unc:Waiting" xml:space="preserve"><value>ضمن فترة الانتظار</value></data>
+  <data name="Who called whom, when, how long and about which patient — audio or video only when both sides agreed" xml:space="preserve"><value>من اتصل بمن ومتى وكم استمرت ولأي مريض — والتسجيل الصوتي أو المرئي فقط إذا وافق الطرفان</value></data>
+  <data name="Its retention ended; the record of it stays" xml:space="preserve"><value>انتهت مدة الاحتفاظ؛ ويبقى سجل التسجيل</value></data>
+  <data name="Recording deleted" xml:space="preserve"><value>حُذف التسجيل</value></data>
+  <data name="Play the recording" xml:space="preserve"><value>تشغيل التسجيل</value></data>
+  <data name="Call recording" xml:space="preserve"><value>تسجيل المكالمة</value></data>
+  <data name="Recording" xml:space="preserve"><value>التسجيل</value></data>
+  <data name="Consent" xml:space="preserve"><value>الموافقة</value></data>
+  <data name="Deleted automatically on" xml:space="preserve"><value>يُحذف تلقائيًا في</value></data>
+  <data name="No automatic deletion" xml:space="preserve"><value>دون حذف تلقائي</value></data>
+  <data name="Who opened it" xml:space="preserve"><value>من فتح التسجيل</value></data>
+  <data name="Nobody has opened it yet" xml:space="preserve"><value>لم يفتحه أحد بعد</value></data>
+  <data name="Outgoing to {0}" xml:space="preserve"><value>صادرة إلى {0}</value></data>
+  <data name="Incoming from {0}" xml:space="preserve"><value>واردة من {0}</value></data>
+  <data name="Voice and video" xml:space="preserve"><value>صوت وفيديو</value></data>
+  <data name="Voice only (recording)" xml:space="preserve"><value>صوت فقط</value></data>
+  <data name="The call" xml:space="preserve"><value>المكالمة</value></data>
+  <data name="MB" xml:space="preserve"><value>ميجابايت</value></data>
+  <data name="agreed by {0}" xml:space="preserve"><value>ووافق {0}</value></data>
+  <data name="Hospital / Calls" xml:space="preserve"><value>المستشفى / المكالمات</value></data>
+  <data name="This recording was deleted when its retention ended" xml:space="preserve"><value>حُذف هذا التسجيل عند انتهاء مدة الاحتفاظ به</value></data>
+  <data name="Never starts without every side&#x27;s consent inside the call — a fixed rule that cannot be switched off" xml:space="preserve"><value>لا يبدأ إلا بموافقة كل الأطراف داخل المكالمة — شرط ثابت لا يمكن تعطيله</value></data>
+  <data name="Kept for" xml:space="preserve"><value>مدة الاحتفاظ</value></data>
+  <data name="A year" xml:space="preserve"><value>سنة</value></data>
+  <data name="Who may ask to record" xml:space="preserve"><value>من يحق له طلب التسجيل</value></data>
+  <data name="Kept in the File Manager on the call&#x27;s record and linked to the call log and the patient file. Estimate: voice about 0.5 MB a minute, 720p video about 10 MB a minute." xml:space="preserve"><value>يُحفظ في مدير الملفات على سجل المكالمة، ويُربط بسجل المكالمات وملف المريض. التقدير: الصوت نحو 0.5 ميجابايت في الدقيقة، والفيديو بدقة 720p نحو 10 ميجابايت في الدقيقة.</value></data>
+  <data name="Only with every side&#x27;s consent — see the recording card" xml:space="preserve"><value>بموافقة كل الأطراف فقط — التفاصيل في بطاقة التسجيل</value></data>
+  <data name="Audio and video only when both agree, with who asked, who agreed and when" xml:space="preserve"><value>الصوت والصورة فقط عند موافقة الطرفين، مع من طلب ومن وافق ومتى</value></data>
+  <data name="The note joins the call record with your name and time. Audio and video are recorded only when both sides agree." xml:space="preserve"><value>تُضاف الملاحظة إلى سجل المكالمة باسمك ووقتك. ولا يُسجَّل الصوت والصورة إلا بموافقة الطرفين.</value></data>
+  <data name="Record the call — with the other side&#x27;s consent" xml:space="preserve"><value>تسجيل المكالمة — بموافقة الطرف الآخر</value></data>
+  <data name="Stop recording" xml:space="preserve"><value>إيقاف التسجيل</value></data>
+  <data name="Recording the call" xml:space="preserve"><value>تسجيل المكالمة</value></data>
+  <data name="REC" xml:space="preserve"><value>تسجيل</value></data>
+  <data name="Waiting for {0} to agree…" xml:space="preserve"><value>بانتظار موافقة {0}…</value></data>
+  <data name="You asked to record (voice and video)" xml:space="preserve"><value>طلبتَ تسجيل المكالمة (صوت وفيديو)</value></data>
+  <data name="You asked to record (voice)" xml:space="preserve"><value>طلبتَ تسجيل المكالمة (صوت)</value></data>
+  <data name="{0} asks to record this call" xml:space="preserve"><value>{0} يطلب تسجيل هذه المكالمة</value></data>
+  <data name="It will not start unless you agree" xml:space="preserve"><value>لن يبدأ التسجيل إلا إذا وافقت</value></data>
+  <data name="Both sides&#x27; voice and picture, from your consent until either of you stops it" xml:space="preserve"><value>الصوت والصورة من الطرفين، من لحظة موافقتك حتى يوقفه أحدكما</value></data>
+  <data name="Both sides&#x27; voice, from your consent until either of you stops it" xml:space="preserve"><value>الصوت من الطرفين، من لحظة موافقتك حتى يوقفه أحدكما</value></data>
+  <data name="Where it is kept" xml:space="preserve"><value>أين يُحفظ</value></data>
+  <data name="File Manager · the call log" xml:space="preserve"><value>مدير الملفات · سجل المكالمات</value></data>
+  <data name="the file of {0}" xml:space="preserve"><value>ملف المريض {0}</value></data>
+  <data name="Who can see it" xml:space="preserve"><value>من يراه</value></data>
+  <data name="The two of you and the hospital&#x27;s administrators; every opening is logged" xml:space="preserve"><value>أنتما فقط ومسؤولو المستشفى، ويُسجَّل كل من يفتحه</value></data>
+  <data name="{0} days, then deleted automatically" xml:space="preserve"><value>{0} يومًا ثم يُحذف تلقائيًا</value></data>
+  <data name="Do not record" xml:space="preserve"><value>لا أوافق</value></data>
+  <data name="I agree to record" xml:space="preserve"><value>أوافق على التسجيل</value></data>
+  <data name="Your consent is kept with your name and time, and you can stop the recording at any moment." xml:space="preserve"><value>تُحفظ موافقتك باسمك ووقتك، ويمكنك إيقاف التسجيل في أي لحظة.</value></data>
+  <data name="{0} refused the recording" xml:space="preserve"><value>رفض {0} التسجيل</value></data>
+  <data name="{0} refused — the call goes on unrecorded" xml:space="preserve"><value>رفض {0} — تستمر المكالمة دون تسجيل</value></data>
+  <data name="{0} agreed" xml:space="preserve"><value>وافق {0}</value></data>
+  <data name="You agreed" xml:space="preserve"><value>وافقتَ</value></data>
+  <data name="Recording started — both sides see it" xml:space="preserve"><value>بدأ التسجيل — يظهر للطرفين</value></data>
+  <data name="You stopped the recording" xml:space="preserve"><value>أوقفتَ التسجيل</value></data>
+  <data name="{0} stopped the recording" xml:space="preserve"><value>أوقف {0} التسجيل</value></data>
+  <data name="The recording is saved in the File Manager and shows in the call log" xml:space="preserve"><value>حُفظ التسجيل في مدير الملفات ويظهر في سجل المكالمات</value></data>
+  <data name="This browser cannot record calls" xml:space="preserve"><value>هذا المتصفح لا يدعم تسجيل المكالمات</value></data>
+  <data name="Recording starts only once the call is answered" xml:space="preserve"><value>لا يبدأ التسجيل إلا بعد الرد على المكالمة</value></data>
+  <data name="You may not ask to record calls (call settings)" xml:space="preserve"><value>لا تسمح إعدادات الاتصال لك بطلب تسجيل المكالمات</value></data>
+  <data name="This call is already being recorded or asked to be" xml:space="preserve"><value>هذه المكالمة قيد التسجيل أو هناك طلب تسجيل قائم</value></data>
+  <data name="Choose how long recordings are kept from the list" xml:space="preserve"><value>اختر مدة الاحتفاظ بالتسجيلات من القائمة</value></data>
+  <data name="A piece of the recording is too large" xml:space="preserve"><value>جزء من التسجيل أكبر من المسموح</value></data>
+  <data name="This recording is not running" xml:space="preserve"><value>هذا التسجيل غير قائم</value></data>
+  <data name="Nothing of the recording arrived" xml:space="preserve"><value>لم يصل أي جزء من التسجيل</value></data>
+  <data name="A piece of the recording arrived out of order" xml:space="preserve"><value>وصل جزء من التسجيل في غير ترتيبه</value></data>
+  <data name="The recording is too long" xml:space="preserve"><value>التسجيل أطول من المسموح</value></data>
+  <data name="The recording is not in a supported format" xml:space="preserve"><value>صيغة التسجيل غير مدعومة</value></data>
+  <data name="Call recording is not installed yet (hospital_h176_call_recording.sql)." xml:space="preserve"><value>تسجيل المكالمات غير مُثبّت بعد (hospital_h176_call_recording.sql).</value></data>
+  <data name="Recording asked by {0}" xml:space="preserve"><value>طلبه {0}</value></data>
 </root>

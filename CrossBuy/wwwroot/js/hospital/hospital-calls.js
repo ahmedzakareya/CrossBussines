@@ -31,6 +31,7 @@
 		micOff: '<path d="M3 3l18 18"/><path d="M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V6a3 3 0 0 0-5.7-1.3"/><path d="M19 11a7 7 0 0 1-1.1 3.8M5 11a7 7 0 0 0 10.6 6M12 18v3"/>',
 		cam: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
 		camOff: '<path d="M3 3l18 18"/><path d="M16 16H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1M10 6h4a2 2 0 0 1 2 2v3l5-3v10"/>',
+		rec: '<circle cx="12" cy="12" r="6" fill="currentColor"/><circle cx="12" cy="12" r="10"/>',
 		phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'
 	};
 	function ico(k, size) { return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SVG[k] + '</svg>'; }
@@ -69,6 +70,10 @@
 		conn.on('signal', onSignal);
 		conn.on('taken', function (m) { if (ring && ring.callId === m.callId) closeRing(); });
 		conn.on('missed', function () { toast(t('missedGeneric')); });
+		conn.on('recask', onRecAsk);
+		conn.on('recstart', onRecStart);
+		conn.on('recclosed', onRecClosed);
+		conn.on('recstop', onRecStop);
 		conn.on('presence', function (m) { presenceFns.forEach(function (f) { try { f(m); } catch (e) { } }); });
 		conn.onreconnected(function () { presenceFns.forEach(function (f) { try { f({ refresh: true }); } catch (e) { } }); });
 		conn.start().then(function () { document.dispatchEvent(new CustomEvent('cbcalls:ready')); }).catch(function () { });
@@ -122,7 +127,7 @@
 			closeRing();
 			conn.invoke('Answer', m.callId, withVideo).then(function (r) {
 				if (!r || !r.ok) { toast(t('failed'), 'error'); return; }
-				current = newCall({ id: m.callId, role: 'callee', video: withVideo, peer: m.caller, patient: m.patient, reason: m.reason, share: m.share, maxHeight: m.maxHeight });
+				current = newCall({ id: m.callId, role: 'callee', video: withVideo, peer: m.caller, patient: m.patient, reason: m.reason, share: m.share, maxHeight: m.maxHeight, canRecord: m.canRecord });
 				current.answered = true;
 				openStage(current); startClock(current);
 				current.pcReady = prepare(current);
@@ -140,7 +145,7 @@
 		if (!connected()) { toast(t('notConnected'), 'error'); return; }
 		conn.invoke('Invite', employeeId, !!video, patientId || null, reason || null).then(function (r) {
 			if (!r || !r.ok) { toast(t(r && r.error ? r.error : 'failed', r && r.name), r && r.name ? 'info' : 'error'); if (r && r.name) refreshLog(); return; }
-			current = newCall({ id: r.callId, role: 'caller', video: r.video, peer: r.callee, patient: r.patient, reason: reason, share: r.share, maxHeight: r.maxHeight });
+			current = newCall({ id: r.callId, role: 'caller', video: r.video, peer: r.callee, patient: r.patient, reason: reason, share: r.share, maxHeight: r.maxHeight, canRecord: r.canRecord });
 			openStage(current);
 			current.stopTone = tone(RINGBACK);
 			current.media = media(current);   // ask for the camera while it rings, so answering connects at once
@@ -159,7 +164,7 @@
 		var c = current; if (!c || c.id !== m.callId || c.role !== 'caller') return;
 		clearInterval(c.ringTimer); if (c.stopTone) c.stopTone();
 		c.answered = true; c.remote.cam = !!m.video;
-		paintRemote(c); startClock(c);
+		paintRemote(c); startClock(c); paintBar(c);
 		c.pcReady = prepare(c).then(function () {
 			return c.pc.createOffer().then(function (o) { return c.pc.setLocalDescription(o); }).then(function () { send(c, { t: 'offer', sdp: c.pc.localDescription }); });
 		});
@@ -271,6 +276,7 @@
 					'<div class="min-w-0"><div class="fw-bold fs-5 text-white text-truncate">' + esc(c.peer.name) + '</div><div class="fs-8 text-white opacity-75 text-truncate">' + esc([c.peer.title, c.peer.department].filter(Boolean).join(' · ')) + '</div></div>' +
 					'<span class="cbc-chip ms-3" data-q><span class="cbc-bars"><i style="height:5px"></i><i style="height:9px"></i><i style="height:14px"></i></span><span data-qt>' + esc(t('qExcellent')) + '</span></span>' +
 					'<span class="cbc-chip d-none d-md-inline-flex"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('hospitalOnly')) + '</span>' +
+					'<span class="cbc-chip d-none" data-recchip></span>' +
 					'<span class="cbc-chip d-none" data-net><span class="spinner-border spinner-border-sm"></span>' + esc(t('reconnecting')) + '</span>' +
 					'<span class="ms-auto fs-4 fw-bold cbc-num text-white" dir="ltr" data-clock></span>' +
 				'</div>' +
@@ -321,6 +327,7 @@
 			'<button type="button" class="cbc-ctl' + (c.mic ? '' : ' off') + '" data-k="mic" title="' + esc(c.mic ? t('mute') : t('unmute')) + '">' + ico(c.mic ? 'mic' : 'micOff', 22) + '</button>' +
 			'<button type="button" class="cbc-ctl' + (c.cam ? '' : ' off') + '" data-k="cam" title="' + esc(t('camera')) + '">' + ico(c.cam ? 'cam' : 'camOff', 22) + '</button>' +
 			(c.share !== false && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (c.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '"><i class="ki-outline ki-screen fs-2 ' + (c.sharing ? '' : 'text-white') + '"></i></button>' : '') +
+			(c.canRecord && window.MediaRecorder ? '<button type="button" class="cbc-ctl' + (c.rec && c.rec.state === 'on' ? ' rec-on' : '') + '" data-k="rec" title="' + esc(c.rec && c.rec.state === 'on' ? t('recStop') : t('recAsk')) + '"' + (c.answered ? '' : ' disabled') + '>' + ico('rec', 22) + '</button>' : '') +
 			'<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPhase2')) + '" disabled><i class="ki-outline ki-user-tick fs-2 text-white"></i></button>' +
 			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('end')) + '"><span style="display:inline-flex;transform:rotate(135deg)">' + ico('phone', 24) + '</span></button>';
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(c, b.getAttribute('data-k')); }; });
@@ -328,6 +335,7 @@
 
 	function control(c, k) {
 		if (k === 'end') { hangup(c); return; }
+		if (k === 'rec') { recControl(c); return; }
 		if (k === 'mic') { var a = c.local && c.local.getAudioTracks()[0]; if (!a) { toast(t('noMic'), 'error'); return; } c.mic = !c.mic; a.enabled = c.mic; }
 		if (k === 'cam') {
 			var v = c.local && c.local.getVideoTracks()[0];
@@ -378,7 +386,7 @@
 		var who = '<div class="p-6"><div class="fw-bold text-gray-900 mb-3">' + esc(t('inCall')) + '</div>' +
 			'<div class="d-flex align-items-center gap-3 mb-3">' + face(W.me || {}, 35) + '<div><div class="fw-bold text-gray-900 fs-7">' + esc((W.me || {}).name || '') + '</div><div class="text-muted fs-8">' + esc(t('you')) + '</div></div></div>' +
 			'<div class="d-flex align-items-center gap-3">' + face(c.peer, 35) + '<div><div class="fw-bold text-gray-900 fs-7">' + esc(c.peer.name) + '</div><div class="text-muted fs-8">' + esc(c.peer.title || '') + '</div></div></div></div>';
-		side.innerHTML = head + pat + note + who;
+		side.innerHTML = head + pat + note + '<div class="p-6 border-bottom' + (c.recTrail && c.recTrail.length ? '' : ' d-none') + '" data-rectrail>' + recTrailHtml(c) + '</div>' + who;
 		var ta = side.querySelector('[data-note]');
 		ta.addEventListener('input', function () { c.note = ta.value; c.noteDirty = true; });
 		ta.addEventListener('blur', function () { saveNote(c); });
@@ -423,12 +431,151 @@
 		if (!c || c.closed) return; c.closed = true;
 		clearInterval(c.ringTimer); clearInterval(c.clock); clearInterval(c.quality); if (c.stopTone) c.stopTone();
 		saveNote(c);
+		if (c.rec && c.rec.recorder) recFinish(c);
 		stopShare(c);
 		if (c.local) c.local.getTracks().forEach(function (x) { x.stop(); });
 		if (c.pc) try { c.pc.close(); } catch (e) { }
 		if (c.el) c.el.remove();
 		if (c.unload) window.removeEventListener('beforeunload', c.unload);
 		if (current === c) current = null;
+	}
+
+	/* ---------------- recording, with the other side's consent ---------------- */
+	function hm(d) { d = d ? new Date(d) : new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+	function recTrailHtml(c) {
+		var steps = (c.recTrail || []).map(function (x) {
+			return '<div class="d-flex align-items-center gap-3 mb-3"><span class="cbc-step' + (x.red ? ' red' : '') + '"><i class="ki-outline ' + x.icon + ' fs-5"></i></span><div class="flex-grow-1 fs-7 text-gray-800">' + esc(x.text) + '</div><span class="cbc-num fs-8 text-muted">' + x.at + '</span></div>';
+		}).join('');
+		return '<div class="fw-bold text-gray-900 mb-4">' + esc(t('recTitle')) + '</div>' + steps;
+	}
+	function trail(c, icon, text, red) {
+		c.recTrail = c.recTrail || []; c.recTrail.push({ icon: icon, text: text, at: hm(), red: !!red });
+		var box = c.el && c.el.querySelector('[data-rectrail]'); if (box) { box.classList.remove('d-none'); box.innerHTML = recTrailHtml(c); }
+	}
+	function recChip(c) {
+		var chip = c.el.querySelector('[data-recchip]'); if (!chip) return;
+		var r = c.rec;
+		if (!r || r.state === 'off') { chip.className = 'cbc-chip d-none'; chip.innerHTML = ''; return; }
+		if (r.state === 'asking') { chip.className = 'cbc-chip'; chip.innerHTML = '<span class="spinner-border spinner-border-sm"></span>' + esc(t('recWaiting', c.peer.name)); return; }
+		chip.className = 'cbc-chip cbc-rec'; chip.innerHTML = '<span class="cbc-recdot"></span>' + esc(t('recLabel')) + ' <bdi class="cbc-num" dir="ltr">' + mmss(r.secs || 0) + '</bdi>';
+	}
+	function recControl(c) {
+		var r = c.rec;
+		if (r && r.state === 'on') { conn.invoke('RecordStop', r.id).catch(function () { }); return; }
+		if (r && r.state === 'asking') { conn.invoke('RecordWithdraw', r.id).catch(function () { }); return; }
+		conn.invoke('RecordRequest', c.id).then(function (res) {
+			if (!res || !res.ok) { toast(t(res && res.error ? res.error : 'failed'), 'error'); return; }
+			c.rec = { id: res.recId, state: 'asking', kind: res.kind, mine: true };
+			trail(c, 'ki-send', t(res.kind === 'video' ? 'recAskedVideo' : 'recAskedVoice'));
+			recChip(c);
+		}).catch(function () { toast(t('failed'), 'error'); });
+	}
+	function onRecAsk(m) {
+		var c = current; if (!c || c.id !== m.callId) return;
+		c.rec = { id: m.recId, state: 'asking', kind: m.kind, mine: false };
+		var el = document.createElement('div'); el.className = 'cbc-overlay'; el.setAttribute('role', 'alertdialog'); el.style.zIndex = 2060;
+		var p = m.patient, by = m.by || c.peer;
+		var rows = [
+			['ki-screen', t('recWhat'), t(m.kind === 'video' ? 'recWhatVideo' : 'recWhatVoice')],
+			['ki-folder', t('recWhere'), t('recWhereText') + (p ? ' · ' + t('recPatientFile', p.name) : '')],
+			['ki-lock-2', t('recWho'), t('recWhoText')],
+			['ki-time', t('recKeep'), m.days > 0 ? t('recKeepDays', m.days) : t('recKeepForever')]
+		].map(function (r) { return '<div class="d-flex gap-3 mb-4"><span class="cbc-step"><i class="ki-outline ' + r[0] + ' fs-4"></i></span><div><div class="fw-bold text-gray-900 fs-7">' + esc(r[1]) + '</div><div class="text-muted fs-7">' + esc(r[2]) + '</div></div></div>'; }).join('');
+		el.innerHTML = '<div class="cbc-card">' +
+			'<div class="cbc-band cbc-band-rec"><div class="d-flex align-items-center justify-content-center gap-3 mb-4">' + face(by, 60) + '<span class="text-white">' + ico('rec', 34) + '</span></div>' +
+				'<div class="fs-3 fw-bolder">' + esc(t('recAsks', by.name)) + '</div><div class="fs-7 opacity-75 mt-1">' + esc(t('recOnlyIf')) + '</div></div>' +
+			'<div class="p-6 text-start">' + rows +
+				'<div class="d-flex gap-3 mt-6"><button type="button" class="btn btn-light flex-grow-1" data-no>' + esc(t('recRefuse')) + '</button>' +
+				'<button type="button" class="btn btn-danger flex-grow-1" data-yes>' + ico('rec', 16) + ' ' + esc(t('recAgree')) + '</button></div>' +
+				'<div class="text-muted fs-8 text-center mt-4">' + esc(t('recConsentNote')) + '</div></div></div>';
+		document.body.appendChild(el);
+		c.rec.overlay = el;
+		el.querySelector('[data-no]').onclick = function () { el.remove(); conn.invoke('RecordAnswer', m.recId, false).catch(function () { }); };
+		el.querySelector('[data-yes]').onclick = function () { el.remove(); conn.invoke('RecordAnswer', m.recId, true).catch(function () { }); };
+	}
+	function onRecClosed(m) {
+		var c = current; if (!c || !c.rec || c.rec.id !== m.recId) return;
+		if (c.rec.overlay) c.rec.overlay.remove();
+		if (c.rec.mine && m.refused) { trail(c, 'ki-cross-circle', t('recRefusedBy', c.peer.name), true); toast(t('recRefusedToast', c.peer.name)); }
+		c.rec = null; recChip(c);
+	}
+	function onRecStart(m) {
+		var c = current; if (!c || c.id !== m.callId) return;
+		if (c.rec && c.rec.overlay) c.rec.overlay.remove();
+		var mine = m.requesterId === (W.me || {}).id;
+		c.rec = { id: m.recId, state: 'on', kind: m.kind, mine: mine, secs: 0 };
+		if (mine) trail(c, 'ki-shield-tick', t('recAgreedBy', c.peer.name));
+		else trail(c, 'ki-shield-tick', t('recYouAgreed'));
+		trail(c, 'ki-notification-status', t('recStarted'), true);
+		c.rec.timer = setInterval(function () { c.rec.secs++; recChip(c); }, 1000);
+		recChip(c); paintBar(c);
+		if (mine) recStart(c);
+	}
+	function onRecStop(m) {
+		var c = current; if (!c || !c.rec || c.rec.id !== m.recId) return;
+		var byMe = m.byId === (W.me || {}).id;
+		trail(c, 'ki-check-circle', byMe ? t('recYouStopped') : t('recStoppedBy', c.peer.name));
+		if (c.rec.recorder) recFinish(c);
+		else { clearInterval(c.rec.timer); c.rec = null; }
+		recChip(c); paintBar(c);
+	}
+
+	// The requester's browser records BOTH sides: the voices mixed into one track, and (for a video recording) the two
+	// pictures drawn together — the other side full, mine in the corner, as the stage shows them.
+	function recStream(c) {
+		var ac = new (window.AudioContext || window.webkitAudioContext)(), dest = ac.createMediaStreamDestination();
+		[c.local, c.remoteStream].forEach(function (st) { if (st && st.getAudioTracks().length) ac.createMediaStreamSource(new MediaStream(st.getAudioTracks())).connect(dest); });
+		var tracks = dest.stream.getAudioTracks(), stop = [function () { ac.close(); }];
+		if (c.rec.kind === 'video') {
+			var cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720;
+			var g = cv.getContext('2d'), rv = c.el.querySelector('[data-rvideo]'), sv = document.createElement('video');
+			sv.muted = true; sv.playsInline = true; var lv = c.local && c.local.getVideoTracks()[0]; if (lv) { sv.srcObject = new MediaStream([lv]); sv.play().catch(function () { }); }
+			function cover(v, x, y, w, h) {
+				var vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return false;
+				var s = Math.max(w / vw, h / vh), dw = vw * s, dh = vh * s; g.drawImage(v, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); return true;
+			}
+			// a timer, not requestAnimationFrame: it keeps drawing when the tab is in the background
+			var draw = setInterval(function () {
+				g.fillStyle = '#0F172A'; g.fillRect(0, 0, 1280, 720);
+				if (!(rv && !rv.classList.contains('d-none') && cover(rv, 0, 0, 1280, 720))) { g.fillStyle = '#E7F0FF'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText(c.peer.name || '', 640, 370); }
+				if (c.cam && lv) { g.save(); g.beginPath(); g.rect(1280 - 320 - 24, 720 - 180 - 24, 320, 180); g.clip(); cover(sv, 1280 - 320 - 24, 720 - 180 - 24, 320, 180); g.restore(); }
+			}, 1000 / 20);
+			stop.push(function () { clearInterval(draw); sv.srcObject = null; });
+			tracks = tracks.concat(cv.captureStream(20).getVideoTracks());
+		}
+		return { stream: new MediaStream(tracks), stop: function () { stop.forEach(function (f) { try { f(); } catch (e) { } }); } };
+	}
+	function recStart(c) {
+		var mix = recStream(c), kinds = c.rec.kind === 'video' ? ['video/webm;codecs=vp8,opus', 'video/webm'] : ['audio/webm;codecs=opus', 'audio/webm'];
+		var type = kinds.filter(function (x) { return MediaRecorder.isTypeSupported(x); })[0];
+		if (!type) { toast(t('recUnsupported'), 'error'); conn.invoke('RecordStop', c.rec.id).catch(function () { }); mix.stop(); return; }
+		var rec = new MediaRecorder(mix.stream, { mimeType: type, videoBitsPerSecond: 1200000, audioBitsPerSecond: 64000 });
+		var r = c.rec, seq = 0, queue = Promise.resolve(), started = Date.now();
+		r.recorder = rec; r.mix = mix; r.started = started;
+		rec.ondataavailable = function (e) {
+			if (!e.data || !e.data.size) return;
+			var n = seq++, blob = e.data;
+			queue = queue.then(function () {
+				return fetch(U.recChunk.replace('__id__', r.id) + '?seq=' + n, { method: 'POST', headers: { 'RequestVerificationToken': token(), 'Content-Type': 'application/octet-stream' }, body: blob })
+					.then(function (x) { return x.json(); }).then(function (res) { if (!res.ok) { r.failed = res.error || t('failed'); } }).catch(function () { r.failed = t('lost'); });
+			});
+		};
+		rec.onstop = function () {
+			mix.stop();
+			queue.then(function () {
+				return post(U.recFinish.replace('__id__', r.id), { seconds: Math.round((Date.now() - started) / 1000) });
+			}).then(function (res) {
+				if (res && res.ok) toast(t('recSaved'), 'success'); else toast((res && res.error) || r.failed || t('failed'), 'error');
+				refreshLog();
+			});
+		};
+		rec.start(5000);   // a piece every five seconds: a closed tab loses at most the last few seconds
+	}
+	function recFinish(c) {
+		var r = c.rec; if (!r) return;
+		clearInterval(r.timer);
+		if (r.recorder && r.recorder.state !== 'inactive') { try { r.recorder.stop(); } catch (e) { } }
+		c.rec = null;
 	}
 
 	function refreshLog() { document.dispatchEvent(new CustomEvent('cbcalls:changed')); }

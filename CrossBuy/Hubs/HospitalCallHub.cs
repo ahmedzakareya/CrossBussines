@@ -52,6 +52,7 @@ namespace CrossBuy.Hubs
 		public HospitalCallHub(IServiceProvider sp, IEmployeeService employees, CrossBuy.Models.Context.CrossDbContext db) { _sp = sp; _employees = employees; _db = db; }
 
 		private HospitalCallService Svc => ActivatorUtilities.CreateInstance<HospitalCallService>(_sp);
+		private HospitalCallRecordingService RecSvc => ActivatorUtilities.CreateInstance<HospitalCallRecordingService>(_sp);
 
 		private async Task<(int Emp, int Company)?> MeAsync()
 		{
@@ -122,12 +123,15 @@ namespace CrossBuy.Hubs
 			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = me, state = "busy" });
 			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = calleeId, state = "busy" });   // ringing
 			var patient = patientId is int p2 ? await svc.PatientCardAsync(co, p2) : null;
+			var rec = RecSvc;
+			var (calleeMay, kind, _) = await rec.OptionsAsync(co, callee, video);
+			var (callerMay, _, _) = await rec.OptionsAsync(co, caller, video);
 			await Clients.Group(Emp(calleeId)).SendAsync("incoming", new
 			{
 				callId = row.ID, video, reason = row.Reason, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight,
-				caller = Card(caller), patient,
+				caller = Card(caller), patient, canRecord = calleeMay, recKind = kind,
 			});
-			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient };
+			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient, canRecord = callerMay, recKind = kind };
 		}
 
 		private static object Card(HospitalCallPerson p) => new
@@ -187,6 +191,65 @@ namespace CrossBuy.Hubs
 			if (!_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return;
 			string? to = Context.ConnectionId == live.CallerConn ? live.CalleeConn : Context.ConnectionId == live.CalleeConn ? live.CallerConn : null;
 			if (to != null) await Clients.Client(to).SendAsync("signal", new { callId, payload });
+		}
+
+		// ---- recording, with the other side's consent -------------------------------------------------------------
+
+		private async Task<(Live Live, HospitalCallRecording Row)?> LiveRecAsync(int recId, int co)
+		{
+			var row = await _db.Set<HospitalCallRecording>().AsNoTracking().FirstOrDefaultAsync(r => r.ID == recId && r.CompanyId == co);
+			return row != null && _calls.TryGetValue(row.CallId, out var live) && live.CalleeConn != null ? (live, row) : null;
+		}
+		private string? Other(Live live) => Context.ConnectionId == live.CallerConn ? live.CalleeConn : Context.ConnectionId == live.CalleeConn ? live.CallerConn : null;
+
+		/// A participant asks to record; the OTHER side gets the consent window. Nothing is recorded until it agrees.
+		public async Task<object> RecordRequest(int callId)
+		{
+			if (await MeAsync() is not var (me, co) || !_calls.TryGetValue(callId, out var live) || live.CalleeConn == null) return new { ok = false, error = "failed" };
+			string? to = Other(live);
+			if (to == null) return new { ok = false, error = "failed" };
+			var (row, error) = await RecSvc.AskAsync(co, callId, me, DateTime.UtcNow);
+			if (row == null) return new { ok = false, error };
+			var s = await Svc.SettingsAsync(co);
+			var by = (await Svc.PeopleAsync(co, DateTime.UtcNow, new[] { me })).FirstOrDefault();
+			var call = await _db.Set<HospitalCall>().AsNoTracking().FirstAsync(c => c.ID == callId);
+			var patient = call.PatientId is int pid ? await Svc.PatientCardAsync(co, pid) : null;
+			await Clients.Client(to).SendAsync("recask", new { recId = row.ID, callId, kind = row.Kind, days = s.RecordingDays, by = by == null ? null : Card(by), patient });
+			return new { ok = true, recId = row.ID, kind = row.Kind };
+		}
+
+		/// The other side answers. Agreeing starts it on BOTH screens (the requester's browser records); refusing tells the requester.
+		public async Task RecordAnswer(int recId, bool agree)
+		{
+			if (await MeAsync() is not var (me, co) || await LiveRecAsync(recId, co) is not var (live, _)) return;
+			var row = await RecSvc.AnswerAsync(co, recId, me, agree ? "agree" : "refuse", DateTime.UtcNow);
+			if (row == null) return;
+			if (row.Status == HospitalCallRecordingStatus.Recording)
+			{
+				var msg = new { recId, callId = live.CallId, kind = row.Kind, requesterId = row.RequestedByEmployeeId, agreedAt = row.AgreedAt };
+				await Clients.Client(live.CallerConn).SendAsync("recstart", msg);
+				await Clients.Client(live.CalleeConn!).SendAsync("recstart", msg);
+			}
+			else await Clients.Clients(new[] { live.CallerConn, live.CalleeConn! }).SendAsync("recclosed", new { recId, refused = true });
+		}
+
+		/// The requester withdraws the question before it is answered.
+		public async Task RecordWithdraw(int recId)
+		{
+			if (await MeAsync() is not var (me, co) || await LiveRecAsync(recId, co) is not var (live, _)) return;
+			if (await RecSvc.AnswerAsync(co, recId, me, "cancel", DateTime.UtcNow) == null) return;
+			await Clients.Clients(new[] { live.CallerConn, live.CalleeConn! }).SendAsync("recclosed", new { recId, refused = false });
+		}
+
+		/// Either side stops it; the requester's browser then sends the last piece and the file is kept.
+		public async Task RecordStop(int recId)
+		{
+			if (await MeAsync() is not var (me, co) || await LiveRecAsync(recId, co) is not var (live, row)) return;
+			if (Other(live) == null || row.Status != HospitalCallRecordingStatus.Recording) return;
+			await RecSvc.MarkStoppedAsync(co, recId, me);
+			var msg = new { recId, byId = me };
+			await Clients.Client(live.CallerConn).SendAsync("recstop", msg);
+			await Clients.Client(live.CalleeConn!).SendAsync("recstop", msg);
 		}
 
 		/// Presence of the people a screen shows (the directory asks once, then follows "presence" events).
