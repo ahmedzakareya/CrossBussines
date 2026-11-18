@@ -4,7 +4,6 @@ using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-                EntityRegistry.HospitalCall,   // H176: call recordings, files only
 namespace CrossBuy.Tests
 {
     // =============================================================================================
