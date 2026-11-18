@@ -205,10 +205,13 @@ namespace CrossBuy.BL.Hospital
 			var deps = await _db.Hierarchicals.AsNoTracking().Where(h => depIds.Contains(h.H_ID) && (h.CompanyID == null || h.CompanyID == companyId)).Select(h => new { h.H_ID, h.H_Name, h.H_NameEn }).ToDictionaryAsync(h => h.H_ID, ct);
 			var ctx = new BusinessContext { CompanyId = companyId };
 			var photos = await EmployeePhotos.ResolveAsync(_db, ctx, eids, ct);
-			var roleBy = new Dictionary<int, List<string>>();
-			foreach (var role in HospitalRoles.All)
-				foreach (var id in await _roles.EmployeeIdsForRoleAsync(companyId, EntityRegistry.ScopeHospital, role, ct))
-					(roleBy.TryGetValue(id, out var l) ? l : roleBy[id] = new()).Add(role);
+			// The hospital roles of these employees, read with the role directory's own rules (company first, the scope, an
+			// employee principal, active, inside its validity window) in ONE query for the whole list.
+			var grants = await _db.PlatformRoleAssignments.AsNoTracking()
+				.Where(r => r.CompanyID == companyId && r.Scope == EntityRegistry.ScopeHospital && r.PrincipalType == CrossBuy.Models.Context.Platform.PlatformPrincipalTypes.Employee
+						 && eids.Contains(r.PrincipalId) && r.IsActive && (r.ValidFrom == null || r.ValidFrom <= nowUtc) && (r.ValidTo == null || r.ValidTo >= nowUtc))
+				.Select(r => new { r.PrincipalId, r.Role }).ToListAsync(ct);
+			var roleBy = grants.GroupBy(g => g.PrincipalId).ToDictionary(g => g.Key, g => g.Select(x => x.Role).Distinct().ToList());
 			var onCall = await OnCallNowAsync(companyId, nowUtc, ct);
 			return emps.Select(e =>
 			{
