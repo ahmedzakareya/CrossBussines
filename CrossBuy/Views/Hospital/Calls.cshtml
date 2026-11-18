@@ -136,7 +136,7 @@
                         <span class="card-label fw-bold text-gray-900 fs-4">@T["On call now"]</span>
                         <span class="text-muted mt-1 fw-semibold fs-7">@T["From the on-call roster — call directly, no number to look up"]</span></div>
                         <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#hcConsult"><i class="ki-outline ki-profile-user fs-4"></i>@T["Consult about a patient"]</button></div></div>
-                    <div class="card-body pt-4">
+                    <div class="card-body pt-4" id="hcOnCall">
                         @if (onCall.Count == 0) { <div class="text-muted fs-6 py-4">@T["No one is on call at this moment"] — <a href="@Url.Action("OnCall")" class="fw-semibold">@T["On-call"]</a></div> }
                         @foreach (var p in onCall)
                         {
@@ -261,7 +261,23 @@
         var dirIds = Array.prototype.map.call(document.querySelectorAll('#hcDir [data-emp]'), function (r) { return r.getAttribute('data-emp'); });
         document.getElementById('hcAvail').textContent = dirIds.filter(function (k) { return state[k] === 'on'; }).length;
         document.getElementById('hcBusy').textContent = Object.keys(state).filter(function (k) { return state[k] === 'busy'; }).length;
+        sortSoon();
     }
+    // whoever is connected comes first, always: available, then in a call, then offline — each group keeps the name order
+    var RANK = { on: 0, busy: 1, off: 2 }, sortTimer = null;
+    function sortSoon() { clearTimeout(sortTimer); sortTimer = setTimeout(sortAll, 60); }
+    function sortIn(box) {
+        if (!box) return;
+        var rows = Array.prototype.filter.call(box.children, function (r) { return r.hasAttribute('data-emp'); });
+        rows.forEach(function (r, i) { if (!r.hasAttribute('data-i')) r.setAttribute('data-i', i); });
+        rows.sort(function (a, b) {
+            var d = RANK[state[a.getAttribute('data-emp')] || 'off'] - RANK[state[b.getAttribute('data-emp')] || 'off'];
+            return d || (+a.getAttribute('data-i') - +b.getAttribute('data-i'));
+        });
+        var tail = box.querySelector('#hcDirNone');
+        rows.forEach(function (r) { box.insertBefore(r, tail); });
+    }
+    function sortAll() { sortIn(document.getElementById('hcDir')); sortIn(document.getElementById('hcOnCall')); }
     function load() {
         var ids = Array.prototype.map.call(document.querySelectorAll('#hcDir [data-emp]'), function (r) { return +r.getAttribute('data-emp'); });
         window.cbCalls.presenceOf(ids).then(function (list) { (list || []).forEach(function (x) { state[x.employeeId] = x.state; }); ids.forEach(paint); });
