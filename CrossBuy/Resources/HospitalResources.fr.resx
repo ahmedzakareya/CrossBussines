@@ -8856,4 +8856,17 @@
   <data name="{0}: in {1}, not {2}" xml:space="preserve"><value>{0} : en {1}, pas {2}</value></data>
   <data name="{0}: not final" xml:space="preserve"><value>{0} : non final</value></data>
   <data name="{0}: unknown code" xml:space="preserve"><value>{0} : code inconnu</value></data>
+  <data name="Imaging archive (PACS)" xml:space="preserve"><value>Archive d'imagerie (PACS)</value></data>
+  <data name="Order message for the PACS worklist (HL7)" xml:space="preserve"><value>Message de demande pour la liste de travail PACS (HL7)</value></data>
+  <data name="Receiving system (HL7)" xml:space="preserve"><value>Système destinataire (HL7)</value></data>
+  <data name="The archive settings are not installed on this database yet." xml:space="preserve"><value>Les paramètres de l'archive ne sont pas encore installés sur cette base.</value></data>
+  <data name="The machines send their pictures to the archive; each order opens its study there by its accession number" xml:space="preserve"><value>Les appareils envoient leurs images à l'archive ; chaque demande y ouvre son examen par son numéro d'accession</value></data>
+  <data name="The name the order messages are addressed to" xml:space="preserve"><value>Le nom auquel les messages de demande sont adressés</value></data>
+  <data name="The receiving system's name may not hold HL7 delimiters" xml:space="preserve"><value>Le nom du système destinataire ne peut pas contenir de séparateurs HL7</value></data>
+  <data name="The viewer address is too long" xml:space="preserve"><value>L'adresse du visualiseur est trop longue</value></data>
+  <data name="The viewer address must be a web address (http or https)" xml:space="preserve"><value>L'adresse du visualiseur doit être une adresse web (http ou https)</value></data>
+  <data name="The viewer address must name the study by {0}" xml:space="preserve"><value>L'adresse du visualiseur doit désigner l'examen par {0}</value></data>
+  <data name="The viewer address names an unknown placeholder" xml:space="preserve"><value>L'adresse du visualiseur contient un paramètre inconnu</value></data>
+  <data name="Viewer address" xml:space="preserve"><value>Adresse du visualiseur</value></data>
+  <data name="Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect." xml:space="preserve"><value>Écrivez {0} à la place du numéro de l'examen ; {1} désigne le dossier du patient. Laissez vide pour déconnecter.</value></data>
 </root>

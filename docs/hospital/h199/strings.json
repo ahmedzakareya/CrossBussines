@@ -1,0 +1,70 @@
+{
+ "unit": "H199 - imaging archive (PACS)",
+ "strings": {
+  "Imaging archive (PACS)": {
+   "ar": "أرشيف الصور الطبية (PACS)",
+   "en": "Imaging archive (PACS)",
+   "fr": "Archive d'imagerie (PACS)"
+  },
+  "The machines send their pictures to the archive; each order opens its study there by its accession number": {
+   "ar": "ترسل الأجهزة صورها إلى الأرشيف، ويفتح كل طلب دراسته هناك برقم الطلب",
+   "en": "The machines send their pictures to the archive; each order opens its study there by its accession number",
+   "fr": "Les appareils envoient leurs images à l'archive ; chaque demande y ouvre son examen par son numéro d'accession"
+  },
+  "The archive settings are not installed on this database yet.": {
+   "ar": "إعدادات الأرشيف غير مثبتة على قاعدة البيانات هذه بعد.",
+   "en": "The archive settings are not installed on this database yet.",
+   "fr": "Les paramètres de l'archive ne sont pas encore installés sur cette base."
+  },
+  "Viewer address": {
+   "ar": "عنوان العارض",
+   "en": "Viewer address",
+   "fr": "Adresse du visualiseur"
+  },
+  "Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect.": {
+   "ar": "اكتب {0} في موضع رقم الدراسة، و{1} لرقم ملف المريض. اتركه فارغًا لفصل الربط.",
+   "en": "Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect.",
+   "fr": "Écrivez {0} à la place du numéro de l'examen ; {1} désigne le dossier du patient. Laissez vide pour déconnecter."
+  },
+  "Receiving system (HL7)": {
+   "ar": "النظام المستقبِل (HL7)",
+   "en": "Receiving system (HL7)",
+   "fr": "Système destinataire (HL7)"
+  },
+  "The name the order messages are addressed to": {
+   "ar": "الاسم الذي تُوجَّه إليه رسائل الطلبات",
+   "en": "The name the order messages are addressed to",
+   "fr": "Le nom auquel les messages de demande sont adressés"
+  },
+  "Order message for the PACS worklist (HL7)": {
+   "ar": "رسالة الطلب لقائمة عمل PACS ‏(HL7)",
+   "en": "Order message for the PACS worklist (HL7)",
+   "fr": "Message de demande pour la liste de travail PACS (HL7)"
+  },
+  "The viewer address is too long": {
+   "ar": "عنوان العارض طويل جدًا",
+   "en": "The viewer address is too long",
+   "fr": "L'adresse du visualiseur est trop longue"
+  },
+  "The viewer address must name the study by {0}": {
+   "ar": "يجب أن يحدد عنوان العارض الدراسة بـ ‎{0}",
+   "en": "The viewer address must name the study by {0}",
+   "fr": "L'adresse du visualiseur doit désigner l'examen par {0}"
+  },
+  "The viewer address names an unknown placeholder": {
+   "ar": "يحتوي عنوان العارض على متغير غير معروف",
+   "en": "The viewer address names an unknown placeholder",
+   "fr": "L'adresse du visualiseur contient un paramètre inconnu"
+  },
+  "The viewer address must be a web address (http or https)": {
+   "ar": "يجب أن يكون عنوان العارض عنوان ويب (http أو https)",
+   "en": "The viewer address must be a web address (http or https)",
+   "fr": "L'adresse du visualiseur doit être une adresse web (http ou https)"
+  },
+  "The receiving system's name may not hold HL7 delimiters": {
+   "ar": "لا يجوز أن يحتوي اسم النظام المستقبِل على فواصل HL7",
+   "en": "The receiving system's name may not hold HL7 delimiters",
+   "fr": "Le nom du système destinataire ne peut pas contenir de séparateurs HL7"
+  }
+ }
+}

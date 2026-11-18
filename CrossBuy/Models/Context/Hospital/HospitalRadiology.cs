@@ -120,6 +120,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalPacsModel.Configure(b);   // H199: the imaging archive's viewer and order address
 			b.Entity<HospitalRadExam>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
 			b.Entity<HospitalRadRoom>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalRadOrder>(e =>

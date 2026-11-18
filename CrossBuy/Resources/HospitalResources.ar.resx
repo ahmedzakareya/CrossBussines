@@ -8856,4 +8856,17 @@
   <data name="{0}: in {1}, not {2}" xml:space="preserve"><value>{0}: بوحدة {1} لا {2}</value></data>
   <data name="{0}: not final" xml:space="preserve"><value>{0}: نتيجة غير نهائية</value></data>
   <data name="{0}: unknown code" xml:space="preserve"><value>{0}: رمز غير معروف</value></data>
+  <data name="Imaging archive (PACS)" xml:space="preserve"><value>أرشيف الصور الطبية (PACS)</value></data>
+  <data name="Order message for the PACS worklist (HL7)" xml:space="preserve"><value>رسالة الطلب لقائمة عمل PACS ‏(HL7)</value></data>
+  <data name="Receiving system (HL7)" xml:space="preserve"><value>النظام المستقبِل (HL7)</value></data>
+  <data name="The archive settings are not installed on this database yet." xml:space="preserve"><value>إعدادات الأرشيف غير مثبتة على قاعدة البيانات هذه بعد.</value></data>
+  <data name="The machines send their pictures to the archive; each order opens its study there by its accession number" xml:space="preserve"><value>ترسل الأجهزة صورها إلى الأرشيف، ويفتح كل طلب دراسته هناك برقم الطلب</value></data>
+  <data name="The name the order messages are addressed to" xml:space="preserve"><value>الاسم الذي تُوجَّه إليه رسائل الطلبات</value></data>
+  <data name="The receiving system's name may not hold HL7 delimiters" xml:space="preserve"><value>لا يجوز أن يحتوي اسم النظام المستقبِل على فواصل HL7</value></data>
+  <data name="The viewer address is too long" xml:space="preserve"><value>عنوان العارض طويل جدًا</value></data>
+  <data name="The viewer address must be a web address (http or https)" xml:space="preserve"><value>يجب أن يكون عنوان العارض عنوان ويب (http أو https)</value></data>
+  <data name="The viewer address must name the study by {0}" xml:space="preserve"><value>يجب أن يحدد عنوان العارض الدراسة بـ ‎{0}</value></data>
+  <data name="The viewer address names an unknown placeholder" xml:space="preserve"><value>يحتوي عنوان العارض على متغير غير معروف</value></data>
+  <data name="Viewer address" xml:space="preserve"><value>عنوان العارض</value></data>
+  <data name="Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect." xml:space="preserve"><value>اكتب {0} في موضع رقم الدراسة، و{1} لرقم ملف المريض. اتركه فارغًا لفصل الربط.</value></data>
 </root>

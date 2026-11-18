@@ -52,6 +52,7 @@ namespace CrossBuy.Controllers
 			ViewBag.PortalRelease = await PortalRecordsSvc.ReleaseOfAsync(ctx, HospitalPortalResultSource.Radiology, id, ct);
 			// H31: the exam's pictures, and who may attach them
 			ViewBag.Images = (await RadImageSvc.OfOrdersAsync(ctx, new[] { id }, ct)).GetValueOrDefault(id) ?? Array.Empty<HospitalRadImageRow>();
+			ViewBag.PacsLink = HospitalPacsRules.ViewerLink((await PacsSvc.GetAsync(ctx, ct)).ViewerUrl, v.Order.AccessionNo, v.Patient.Mrn);   // H199
 			return View(v);
 		}
 
@@ -120,6 +121,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.CanRad = await _access.CanAsync(ctx, HospitalActions.Rad, null, ct);
 			ViewBag.Rooms = await _rad.RoomsAsync(ctx, ct);
+			ViewBag.Pacs = await PacsSvc.GetAsync(ctx, ct);   // H199
 			return View(await _rad.ExamsAsync(ctx, ct));
 		}
 

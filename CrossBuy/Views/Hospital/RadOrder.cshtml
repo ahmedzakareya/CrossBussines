@@ -16,6 +16,7 @@
     bool canAttach = (canRad || canReport) && o.Status != HospitalRadStatus.Signed;
     bool signed = o.Status == HospitalRadStatus.Signed;
     bool writing = canReport && o.Status == HospitalRadStatus.Reporting;
+    string? pacsLink = ViewBag.PacsLink as string;   // H199
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
     string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
     string Clock(DateTime? t) => t?.ToLocalTime().ToString("HH:mm") ?? "—";
@@ -42,6 +43,9 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @* H199: the study in the imaging archive's viewer (by its accession number) and the order for its worklist *@
+            @if (pacsLink != null) { <a href="@pacsLink" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0" data-pacs-open><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"]</a> }
+            @if (canRad) { <a href="@Url.Action("RadOrderHl7", new { id = o.ID })" class="btn btn-sm btn-icon btn-light" data-pacs-hl7 title="@T["Order message for the PACS worklist (HL7)"]" data-bs-toggle="tooltip"><i class="ki-outline ki-file-down fs-3"></i></a> }
             @if (canRad && o.Status == HospitalRadStatus.Scheduled)
             {
                 <select class="form-select form-select-sm form-select-solid w-175px" data-room data-control="select2" data-hide-search="true">
@@ -125,7 +129,7 @@
                                         <option value="">—</option>
                                         @foreach (var c in HospitalRadImpression.All) { <option value="@c" selected="@(o.ImpressionCategory == c)">@T["imp:" + c]</option> }
                                     </select></div>
-                                <div class="col-md-6 d-flex align-items-end"><button type="button" class="btn btn-light-primary w-100" disabled title="@T["Not connected yet"]"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"] <span class="text-muted fs-8 ms-1">— @T["Not connected yet"]</span></button></div>
+                                <div class="col-md-6 d-flex align-items-end">@if (pacsLink != null) {<a href="@pacsLink" target="_blank" rel="noopener noreferrer" class="btn btn-light-primary w-100"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"]</a>} else {<button type="button" class="btn btn-light-primary w-100" disabled title="@T["Not connected yet"]"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"] <span class="text-muted fs-8 ms-1">— @T["Not connected yet"]</span></button>}</div>
                             </div>
                             @* H33: the patient reads the report in their language — both are written; English is optional *@
                             <div class="row g-4">

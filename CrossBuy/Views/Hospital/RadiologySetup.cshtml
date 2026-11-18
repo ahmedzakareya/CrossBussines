@@ -10,6 +10,7 @@
     var rooms = (ViewBag.Rooms as IReadOnlyList<HospitalRadRoom>) ?? Array.Empty<HospitalRadRoom>();
     string ro = canManage ? "" : "disabled";
     bool empty = rooms.Count == 0 || Model.Any(m => m.Exam == null);
+    var pacs = (ViewBag.Pacs as HospitalPacsView) ?? new HospitalPacsView(null, null, false);   // H199
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -33,6 +34,34 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* H199: the imaging archive (PACS) — where the machines send their pictures; joined to us by the accession number *@
+        <div class="card card-flush mb-5" data-pacs>
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Imaging archive (PACS)"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The machines send their pictures to the archive; each order opens its study there by its accession number"]</span>
+                </h3>
+                <div class="card-toolbar gap-2">
+                    @if (pacs.Connected) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Connected"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Not connected yet"]</span>}
+                    @if (canManage && pacs.Ready) {<button type="button" class="btn btn-sm btn-light-primary" data-save-pacs><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button>}
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (!pacs.Ready) { <div class="text-muted fs-7">@T["The archive settings are not installed on this database yet."]</div> }
+                else
+                {
+                    <div class="row g-5">
+                        <div class="col-md-8"><label class="fs-6 fw-semibold mb-2">@T["Viewer address"]</label>
+                            <input class="form-control form-control-solid" dir="ltr" data-k="viewerUrl" maxlength="500" value="@pacs.ViewerUrl" placeholder="https://pacs.example/viewer?AccessionNumber={accession}" @ro />
+                            <div class="text-muted fs-8 mt-1">@T["Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect.", Html.Raw("<bdi dir=\"ltr\">" + HospitalPacsRules.Accession + "</bdi>"), Html.Raw("<bdi dir=\"ltr\">" + HospitalPacsRules.Mrn + "</bdi>")]</div></div>
+                        <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Receiving system (HL7)"]</label>
+                            <input class="form-control form-control-solid" dir="ltr" data-k="receivingApp" maxlength="60" value="@pacs.ReceivingApp" placeholder="PACS" @ro />
+                            <div class="text-muted fs-8 mt-1">@T["The name the order messages are addressed to"]</div></div>
+                    </div>
+                }
+            </div>
+        </div>
+
         @* H127: the machines — demo39 widgets/tables (table widget) *@
         <div class="card card-flush mb-5">
             <div class="card-header pt-5">
@@ -133,12 +162,13 @@
             }
             function done(btn) { return function (res) { btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-seed],[data-save-room],[data-save-exam]'); if (!t) return;
+                var t = e.target.closest('[data-seed],[data-save-room],[data-save-exam],[data-save-pacs]'); if (!t) return;
                 var msg = t.getAttribute('data-confirm');
                 if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }
                 t.removeAttribute('data-confirmed');
                 t.disabled = true;
                 if (t.hasAttribute('data-seed')) { post(root + '/SeedStandard').then(done(t)); return; }
+                if (t.hasAttribute('data-save-pacs')) { post(root + '/Pacs', read(t.closest('[data-pacs]'))).then(done(t)); return; }   // H199
                 if (t.hasAttribute('data-save-exam')) { post(root + '/Exam/' + t.getAttribute('data-save-exam'), read(t.closest('[data-exam]'))).then(done(t)); return; }
                 var tr = t.closest('tr'), body = read(tr);
                 body.id = tr.getAttribute('data-id') ? Number(tr.getAttribute('data-id')) : null;
