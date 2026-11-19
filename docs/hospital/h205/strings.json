@@ -1,0 +1,170 @@
+{
+ "unit": "H205 - bedside barcode verification",
+ "strings": {
+  "Bedside scanning": {
+   "ar": "المسح عند السرير",
+   "en": "Bedside scanning",
+   "fr": "Scan au chevet"
+  },
+  "Every dose is scanned at the bedside: the patient's wristband and the medicine's pack": {
+   "ar": "تُمسح كل جرعة عند السرير: سوار المريض وعبوة الدواء",
+   "en": "Every dose is scanned at the bedside: the patient's wristband and the medicine's pack",
+   "fr": "Chaque dose est scannée au chevet : le bracelet du patient et la boîte du médicament"
+  },
+  "A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%.": {
+   "ar": "يُوقف الجرعةَ مريضٌ خطأ أو دواءٌ خطأ أو عبوةٌ منتهية الصلاحية أو مسحوبة، ويُحفظ ذلك هنا. والجرعة المعطاة دون مسح تحتاج إلى سبب وتُحسب على القسم. المستهدف 95%.",
+   "en": "A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%.",
+   "fr": "Un mauvais patient, un mauvais médicament, une boîte périmée ou rappelée arrête la dose et est conservé ici. Une dose donnée sans scan exige un motif et compte contre le service. L'objectif est de 95 %."
+  },
+  "The bedside scanning table is not created yet (hospital_h205_bedside_scans.sql).": {
+   "ar": "جدول المسح عند السرير غير منشأ بعد (hospital_h205_bedside_scans.sql).",
+   "en": "The bedside scanning table is not created yet (hospital_h205_bedside_scans.sql).",
+   "fr": "La table du scan au chevet n'est pas encore créée (hospital_h205_bedside_scans.sql)."
+  },
+  "All wards": {
+   "ar": "كل الأقسام",
+   "en": "All wards",
+   "fr": "Tous les services"
+  },
+  "{0} stopped": {
+   "ar": "{0} أُوقفت",
+   "en": "{0} stopped",
+   "fr": "{0} arrêtées"
+  },
+  "{0} scanned · {1} without the scan": {
+   "ar": "{0} بالمسح · {1} دون مسح",
+   "en": "{0} scanned · {1} without the scan",
+   "fr": "{0} scannées · {1} sans scan"
+  },
+  "Scan log": {
+   "ar": "سجل المسح",
+   "en": "Scan log",
+   "fr": "Journal des scans"
+  },
+  "{0} scans": {
+   "ar": "{0} عملية مسح",
+   "en": "{0} scans",
+   "fr": "{0} scans"
+  },
+  "Patient or pack": {
+   "ar": "المريض أو العبوة",
+   "en": "Patient or pack",
+   "fr": "Patient ou boîte"
+  },
+  "No scan in this period.": {
+   "ar": "لا توجد عمليات مسح في هذه الفترة.",
+   "en": "No scan in this period.",
+   "fr": "Aucun scan sur cette période."
+  },
+  "Step": {
+   "ar": "الخطوة",
+   "en": "Step",
+   "fr": "Étape"
+  },
+  "Scanned": {
+   "ar": "ما تم مسحه",
+   "en": "Scanned",
+   "fr": "Scanné"
+  },
+  "Pack": {
+   "ar": "العبوة",
+   "en": "Pack",
+   "fr": "Boîte"
+  },
+  "Medicine pack": {
+   "ar": "عبوة الدواء",
+   "en": "Medicine pack",
+   "fr": "Boîte du médicament"
+  },
+  "Scan the wristband": {
+   "ar": "امسح السوار",
+   "en": "Scan the wristband",
+   "fr": "Scannez le bracelet"
+  },
+  "Scan the pack": {
+   "ar": "امسح العبوة",
+   "en": "Scan the pack",
+   "fr": "Scannez la boîte"
+  },
+  "The scan cannot be made": {
+   "ar": "تعذّر المسح",
+   "en": "The scan cannot be made",
+   "fr": "Le scan est impossible"
+  },
+  "Why the scan cannot be made": {
+   "ar": "سبب تعذّر المسح",
+   "en": "Why the scan cannot be made",
+   "fr": "Pourquoi le scan est impossible"
+  },
+  "e.g. the wristband is torn — a new one is being printed": {
+   "ar": "مثال: السوار ممزق، وتجري طباعة سوار جديد",
+   "en": "e.g. the wristband is torn — a new one is being printed",
+   "fr": "ex. le bracelet est déchiré — un nouveau est en impression"
+  },
+  "A dose given without the scan counts against the ward's scanning.": {
+   "ar": "الجرعة المعطاة دون مسح تُحسب على نسبة المسح في القسم.",
+   "en": "A dose given without the scan counts against the ward's scanning.",
+   "fr": "Une dose donnée sans scan compte contre le scan du service."
+  },
+  "bso:Matched": {
+   "ar": "مطابق",
+   "en": "Matched",
+   "fr": "Conforme"
+  },
+  "bso:Override": {
+   "ar": "دون مسح",
+   "en": "Without the scan",
+   "fr": "Sans scan"
+  },
+  "bso:Refused": {
+   "ar": "أُوقف",
+   "en": "Stopped",
+   "fr": "Arrêté"
+  },
+  "bsk:Medication": {
+   "ar": "دواء",
+   "en": "Medicine",
+   "fr": "Médicament"
+  },
+  "bsk:Specimen": {
+   "ar": "عينة",
+   "en": "Specimen",
+   "fr": "Prélèvement"
+  },
+  "bsk:Blood": {
+   "ar": "وحدة دم",
+   "en": "Blood unit",
+   "fr": "Unité de sang"
+  },
+  "bsk:Baby": {
+   "ar": "سوار المولود",
+   "en": "Baby's band",
+   "fr": "Bracelet du bébé"
+  },
+  "This wristband is not this patient's: stop and check who the patient is": {
+   "ar": "هذا السوار ليس لهذا المريض: توقّف وتحقّق من هوية المريض",
+   "en": "This wristband is not this patient's: stop and check who the patient is",
+   "fr": "Ce bracelet n'est pas celui de ce patient : arrêtez et vérifiez son identité"
+  },
+  "This pack is not the ordered medicine: stop and check the order": {
+   "ar": "هذه العبوة ليست الدواء المطلوب: توقّف وراجع الأمر",
+   "en": "This pack is not the ordered medicine: stop and check the order",
+   "fr": "Cette boîte n'est pas le médicament prescrit : arrêtez et vérifiez la prescription"
+  },
+  "The pack's code could not be read": {
+   "ar": "تعذّرت قراءة رمز العبوة",
+   "en": "The pack's code could not be read",
+   "fr": "Le code de la boîte n'a pas pu être lu"
+  },
+  "This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan": {
+   "ar": "هذا الأمر لا يحدد دواءً من قائمة الأدوية، فلا يمكن مطابقة عبوته: اكتب سبب إعطائه دون مسح",
+   "en": "This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan",
+   "fr": "Cette prescription ne nomme aucun médicament de la liste, sa boîte ne peut être vérifiée : indiquez pourquoi elle est donnée sans scan"
+  },
+  "Scan the patient's wristband and the medicine, or write why they cannot be scanned": {
+   "ar": "امسح سوار المريض والدواء، أو اكتب سبب تعذّر المسح",
+   "en": "Scan the patient's wristband and the medicine, or write why they cannot be scanned",
+   "fr": "Scannez le bracelet du patient et le médicament, ou indiquez pourquoi c'est impossible"
+  }
+ }
+}

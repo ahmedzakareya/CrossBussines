@@ -278,6 +278,16 @@
         <div class="d-flex gap-2 mb-5">
             @foreach (var s in HospitalMarStatus.All) { <label class="flex-fill"><input type="radio" class="btn-check" name="d-status" value="@s" @(s == HospitalMarStatus.Given ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@T["mar:" + s]</span></label> }
         </div>
+        @* H205: the bedside scan — the wristband, then the pack; a scanner types the code and presses Enter *@
+        <div class="mb-4" data-d-scan-wrap>
+            <div class="row g-3">
+                <div class="col-6"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i>@T["Wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /></div>
+                <div class="col-6"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i>@T["Medicine pack"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /></div>
+            </div>
+            <a href="#" class="fs-7 fw-semibold d-inline-block mt-2" data-d-noscan>@T["The scan cannot be made"]</a>
+            <div class="mt-2 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
+                <div class="form-text text-danger">@T["A dose given without the scan counts against the ward's scanning."]</div></div>
+        </div>
         <div class="mb-4 d-none" data-d-reason-wrap><label class="form-label required">@T["Reason"]</label><input class="form-control form-control-solid" maxlength="300" data-d-reason placeholder="@T["e.g. BP 85/50, doctor informed"]" /></div>
         <div class="mb-2 d-none" data-d-witness-wrap><label class="form-label required">@T["Witness"]</label><select class="form-select form-select-solid" data-d-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
             <div class="form-text">@T["A controlled drug is given with a second signature."]</div></div>
@@ -494,7 +504,11 @@
             if (wardSel && window.CB && CB.onSelectChange) CB.onSelectChange(wardSel, function () { document.getElementById('wardForm').submit(); });
 
             var dEl = document.getElementById('doseModal'), dose = null;
-            function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value; dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
+            function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value; dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given'); dEl.querySelector('[data-d-scan-wrap]').classList.toggle('d-none', s !== 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
+            // H205: Enter from the scanner moves from the wristband to the pack; "cannot be scanned" opens the reason
+            dEl.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; if (e.target.hasAttribute('data-d-wrist')) { e.preventDefault(); dEl.querySelector('[data-d-pack]').focus(); } else if (e.target.hasAttribute('data-d-pack')) { e.preventDefault(); } });
+            dEl.addEventListener('click', function (e) { if (!e.target.closest('[data-d-noscan]')) return; e.preventDefault(); dEl.querySelector('[data-d-override-wrap]').classList.remove('d-none'); dEl.querySelector('[data-d-override]').focus(); });
+            dEl.addEventListener('shown.bs.modal', function () { var w = dEl.querySelector('[data-d-wrist]'); if (!dEl.querySelector('[data-d-scan-wrap]').classList.contains('d-none')) w.focus(); });
             dEl.addEventListener('change', function (e) { if (e.target.name === 'd-status') reasonShown(); });
             var oEl = document.getElementById('orderModal'), orderFor = null;
             document.addEventListener('click', function (e) {
@@ -503,6 +517,7 @@
                     dose = { orderId: Number(t.getAttribute('data-dose')), dueAt: t.getAttribute('data-due') || null, controlled: t.getAttribute('data-controlled') === '1', what: t.getAttribute('data-what') };
                     dEl.querySelector('[data-d-what]').textContent = dose.what;
                     dEl.querySelector('[name=d-status][value=Given]').checked = true; dEl.querySelector('[data-d-reason]').value = ''; $(dEl.querySelector('[data-d-witness]')).val(null).trigger('change');
+                    ['[data-d-wrist]', '[data-d-pack]', '[data-d-override]'].forEach(function (k) { dEl.querySelector(k).value = ''; }); dEl.querySelector('[data-d-override-wrap]').classList.add('d-none');
                     reasonShown(); bootstrap.Modal.getOrCreateInstance(dEl).show(); return;
                 }
                 if (t.hasAttribute('data-stop-order')) {
@@ -531,7 +546,8 @@
             dEl.querySelector('[data-d-save]').addEventListener('click', function (e) {
                 var btn = e.currentTarget, status = (dEl.querySelector('[name=d-status]:checked') || {}).value, label = dEl.querySelector('[name=d-status]:checked').nextElementSibling.textContent;
                 var w = dEl.querySelector('[data-d-witness]').value;
-                var body = { orderId: dose.orderId, dueAt: dose.dueAt, status: status, reason: dEl.querySelector('[data-d-reason]').value.trim() || null, witnessEmployeeId: w ? Number(w) : null };
+                var body = { orderId: dose.orderId, dueAt: dose.dueAt, status: status, reason: dEl.querySelector('[data-d-reason]').value.trim() || null, witnessEmployeeId: w ? Number(w) : null,
+                    wristband: dEl.querySelector('[data-d-wrist]').value.trim() || null, pack: dEl.querySelector('[data-d-pack]').value.trim() || null, scanOverride: dEl.querySelector('[data-d-override]').value.trim() || null };
                 cbConfirm(W.record.replace('{0}', dose.what).replace('{1}', label), { kind: status === 'Given' ? 'primary' : 'danger' }).then(function (ok) { if (!ok) return; btn.disabled = true; post(root + '/Record', body).then(done(btn, dEl)); });
             });
             // H73: an order that meets a stopping alert (a contraindication, a major interaction, a dose above its limit)

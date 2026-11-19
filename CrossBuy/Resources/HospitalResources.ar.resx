@@ -9162,4 +9162,37 @@
   <data name="The call is transferred" xml:space="preserve"><value>حُوّلت المكالمة</value></data>
   <data name="{0} asked not to be disturbed — it is recorded as a missed call so they call you back" xml:space="preserve"><value>{0} في وضع عدم الإزعاج — سُجّلت مكالمة فائتة ليعاود الاتصال بك</value></data>
   <data name="Turn on desktop notices" xml:space="preserve"><value>تفعيل إشعارات سطح المكتب</value></data>
+  <data name="A dose given without the scan counts against the ward's scanning." xml:space="preserve"><value>الجرعة المعطاة دون مسح تُحسب على نسبة المسح في القسم.</value></data>
+  <data name="A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%." xml:space="preserve"><value>يُوقف الجرعةَ مريضٌ خطأ أو دواءٌ خطأ أو عبوةٌ منتهية الصلاحية أو مسحوبة، ويُحفظ ذلك هنا. والجرعة المعطاة دون مسح تحتاج إلى سبب وتُحسب على القسم. المستهدف 95%.</value></data>
+  <data name="All wards" xml:space="preserve"><value>كل الأقسام</value></data>
+  <data name="Bedside scanning" xml:space="preserve"><value>المسح عند السرير</value></data>
+  <data name="Every dose is scanned at the bedside: the patient's wristband and the medicine's pack" xml:space="preserve"><value>تُمسح كل جرعة عند السرير: سوار المريض وعبوة الدواء</value></data>
+  <data name="Medicine pack" xml:space="preserve"><value>عبوة الدواء</value></data>
+  <data name="No scan in this period." xml:space="preserve"><value>لا توجد عمليات مسح في هذه الفترة.</value></data>
+  <data name="Pack" xml:space="preserve"><value>العبوة</value></data>
+  <data name="Patient or pack" xml:space="preserve"><value>المريض أو العبوة</value></data>
+  <data name="Scan the pack" xml:space="preserve"><value>امسح العبوة</value></data>
+  <data name="Scan the patient's wristband and the medicine, or write why they cannot be scanned" xml:space="preserve"><value>امسح سوار المريض والدواء، أو اكتب سبب تعذّر المسح</value></data>
+  <data name="Scan the wristband" xml:space="preserve"><value>امسح السوار</value></data>
+  <data name="Scanned" xml:space="preserve"><value>ما تم مسحه</value></data>
+  <data name="Step" xml:space="preserve"><value>الخطوة</value></data>
+  <data name="The bedside scanning table is not created yet (hospital_h205_bedside_scans.sql)." xml:space="preserve"><value>جدول المسح عند السرير غير منشأ بعد (hospital_h205_bedside_scans.sql).</value></data>
+  <data name="The pack's code could not be read" xml:space="preserve"><value>تعذّرت قراءة رمز العبوة</value></data>
+  <data name="The scan cannot be made" xml:space="preserve"><value>تعذّر المسح</value></data>
+  <data name="This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan" xml:space="preserve"><value>هذا الأمر لا يحدد دواءً من قائمة الأدوية، فلا يمكن مطابقة عبوته: اكتب سبب إعطائه دون مسح</value></data>
+  <data name="This pack is not the ordered medicine: stop and check the order" xml:space="preserve"><value>هذه العبوة ليست الدواء المطلوب: توقّف وراجع الأمر</value></data>
+  <data name="This wristband is not this patient's: stop and check who the patient is" xml:space="preserve"><value>هذا السوار ليس لهذا المريض: توقّف وتحقّق من هوية المريض</value></data>
+  <data name="Why the scan cannot be made" xml:space="preserve"><value>سبب تعذّر المسح</value></data>
+  <data name="bsk:Baby" xml:space="preserve"><value>سوار المولود</value></data>
+  <data name="bsk:Blood" xml:space="preserve"><value>وحدة دم</value></data>
+  <data name="bsk:Medication" xml:space="preserve"><value>دواء</value></data>
+  <data name="bsk:Specimen" xml:space="preserve"><value>عينة</value></data>
+  <data name="bso:Matched" xml:space="preserve"><value>مطابق</value></data>
+  <data name="bso:Override" xml:space="preserve"><value>دون مسح</value></data>
+  <data name="bso:Refused" xml:space="preserve"><value>أُوقف</value></data>
+  <data name="e.g. the wristband is torn — a new one is being printed" xml:space="preserve"><value>مثال: السوار ممزق، وتجري طباعة سوار جديد</value></data>
+  <data name="{0} scanned · {1} without the scan" xml:space="preserve"><value>{0} بالمسح · {1} دون مسح</value></data>
+  <data name="{0} scans" xml:space="preserve"><value>{0} عملية مسح</value></data>
+  <data name="{0} stopped" xml:space="preserve"><value>{0} أُوقفت</value></data>
+  <data name="Scan log" xml:space="preserve"><value>سجل المسح</value></data>
 </root>

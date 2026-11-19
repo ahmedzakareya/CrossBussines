@@ -42,6 +42,11 @@ namespace CrossBuy.BL.Hospital
 		public string Status { get; set; } = HospitalMarStatus.Given;
 		public string? Reason { get; set; }
 		public int? WitnessEmployeeId { get; set; }
+		/// H205: what the nurse scanned at the bedside — the patient's wristband and the medicine's pack — or, when that
+		/// cannot be done, why (the dose is then an override that counts against the ward's scanning compliance).
+		public string? Wristband { get; set; }
+		public string? Pack { get; set; }
+		public string? ScanOverride { get; set; }
 	}
 
 	public sealed record HospitalWardOption(int Id, string Code, string Name, string? NameEn);
@@ -192,6 +197,30 @@ namespace CrossBuy.BL.Hospital
 			var refusal = HospitalNursingRules.RecordRefusal(input.Status, input.Reason, o.Controlled, employeeId, input.WitnessEmployeeId, due, nowUtc);
 			if (refusal != null) return HospitalResult.Fail(refusal);
 			if (input.WitnessEmployeeId is int w && !await _db.Employee.AnyAsync(e => e.ID == w && e.EmpCompanyID == ctx.CompanyId && e.IsActive, ct)) return HospitalResult.Fail("not_found");
+			// H205: a dose GIVEN is scanned at the bedside (wristband + pack), or given with the reason it could not be
+			HospitalBedsideScan? scan = null;
+			if (input.Status == HospitalMarStatus.Given)
+			{
+				if (HospitalBedsideScanRules.Scanned(input.Wristband, input.Pack))
+				{
+					var mrn = await _db.HospitalPatients.AsNoTracking().Where(p => p.ID == o.PatientId && p.CompanyId == ctx.CompanyId).Select(p => p.Mrn).FirstAsync(ct);
+					var (why, args, code) = await HospitalBedsideScanCheck.MedicationAsync(_db, ctx, o, mrn, input.Wristband!, input.Pack!, nowUtc, ct);
+					if (why != null && !(why == HospitalBedsideScanRules.NoItem && !string.IsNullOrWhiteSpace(input.ScanOverride)))
+					{
+						// the scan that stopped the dose is kept: it is the near-miss the safety committee reads
+						_db.Add(HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Medication, o.PatientId, o.AdmissionId, o.ID, input.Wristband, input.Pack, code,
+							HospitalBedsideScanOutcome.Refused, HospitalBedsideScanCheck.Pack(why, args), employeeId, nowUtc));
+						try { await _db.SaveChangesAsync(ct); } catch (DbUpdateException) { }
+						return HospitalResult.Fail(why, args);
+					}
+					scan = why == null
+						? HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Medication, o.PatientId, o.AdmissionId, o.ID, input.Wristband, input.Pack, code, HospitalBedsideScanOutcome.Matched, null, employeeId, nowUtc)
+						: HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Medication, o.PatientId, o.AdmissionId, o.ID, input.Wristband, input.Pack, code, HospitalBedsideScanOutcome.Override, input.ScanOverride, employeeId, nowUtc);
+				}
+				else if (string.IsNullOrWhiteSpace(input.ScanOverride)) return HospitalResult.Fail(HospitalBedsideScanRules.ScanOrReason);
+				else scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Medication, o.PatientId, o.AdmissionId, o.ID, input.Wristband, input.Pack, null,
+					HospitalBedsideScanOutcome.Override, input.ScanOverride, employeeId, nowUtc);
+			}
 			var m = new HospitalMarEntry
 			{
 				CompanyId = ctx.CompanyId, OrderId = o.ID, PatientId = o.PatientId, DueAt = due, Status = input.Status, Reason = Clip(input.Reason, 300),
@@ -200,6 +229,14 @@ namespace CrossBuy.BL.Hospital
 			_db.Set<HospitalMarEntry>().Add(m);
 			try { await _db.SaveChangesAsync(ct); }
 			catch (DbUpdateException) { _db.Entry(m).State = EntityState.Detached; return HospitalResult.Fail("This dose is already recorded"); }
+			if (scan != null)
+			{
+				scan.DoneId = m.ID;
+				_db.Add(scan);
+				try { await _db.SaveChangesAsync(ct); }
+				catch (Microsoft.Data.SqlClient.SqlException) { _db.Entry(scan).State = EntityState.Detached; }   // the scan log not installed: the dose stands
+				catch (DbUpdateException) { _db.Entry(scan).State = EntityState.Detached; }
+			}
 			return HospitalResult.Success(m.ID);
 		}
 

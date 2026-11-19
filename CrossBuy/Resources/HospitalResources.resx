@@ -9116,4 +9116,37 @@
   <data name="{0} overdue" xml:space="preserve"><value>{0} overdue</value></data>
   <data name="{0} referrals" xml:space="preserve"><value>{0} referrals</value></data>
   <data name="Answer due by" xml:space="preserve"><value>Answer due by</value></data>
+  <data name="A dose given without the scan counts against the ward's scanning." xml:space="preserve"><value>A dose given without the scan counts against the ward's scanning.</value></data>
+  <data name="A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%." xml:space="preserve"><value>A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%.</value></data>
+  <data name="All wards" xml:space="preserve"><value>All wards</value></data>
+  <data name="Bedside scanning" xml:space="preserve"><value>Bedside scanning</value></data>
+  <data name="Every dose is scanned at the bedside: the patient's wristband and the medicine's pack" xml:space="preserve"><value>Every dose is scanned at the bedside: the patient's wristband and the medicine's pack</value></data>
+  <data name="Medicine pack" xml:space="preserve"><value>Medicine pack</value></data>
+  <data name="No scan in this period." xml:space="preserve"><value>No scan in this period.</value></data>
+  <data name="Pack" xml:space="preserve"><value>Pack</value></data>
+  <data name="Patient or pack" xml:space="preserve"><value>Patient or pack</value></data>
+  <data name="Scan the pack" xml:space="preserve"><value>Scan the pack</value></data>
+  <data name="Scan the patient's wristband and the medicine, or write why they cannot be scanned" xml:space="preserve"><value>Scan the patient's wristband and the medicine, or write why they cannot be scanned</value></data>
+  <data name="Scan the wristband" xml:space="preserve"><value>Scan the wristband</value></data>
+  <data name="Scanned" xml:space="preserve"><value>Scanned</value></data>
+  <data name="Step" xml:space="preserve"><value>Step</value></data>
+  <data name="The bedside scanning table is not created yet (hospital_h205_bedside_scans.sql)." xml:space="preserve"><value>The bedside scanning table is not created yet (hospital_h205_bedside_scans.sql).</value></data>
+  <data name="The pack's code could not be read" xml:space="preserve"><value>The pack's code could not be read</value></data>
+  <data name="The scan cannot be made" xml:space="preserve"><value>The scan cannot be made</value></data>
+  <data name="This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan" xml:space="preserve"><value>This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan</value></data>
+  <data name="This pack is not the ordered medicine: stop and check the order" xml:space="preserve"><value>This pack is not the ordered medicine: stop and check the order</value></data>
+  <data name="This wristband is not this patient's: stop and check who the patient is" xml:space="preserve"><value>This wristband is not this patient's: stop and check who the patient is</value></data>
+  <data name="Why the scan cannot be made" xml:space="preserve"><value>Why the scan cannot be made</value></data>
+  <data name="bsk:Baby" xml:space="preserve"><value>Baby's band</value></data>
+  <data name="bsk:Blood" xml:space="preserve"><value>Blood unit</value></data>
+  <data name="bsk:Medication" xml:space="preserve"><value>Medicine</value></data>
+  <data name="bsk:Specimen" xml:space="preserve"><value>Specimen</value></data>
+  <data name="bso:Matched" xml:space="preserve"><value>Matched</value></data>
+  <data name="bso:Override" xml:space="preserve"><value>Without the scan</value></data>
+  <data name="bso:Refused" xml:space="preserve"><value>Stopped</value></data>
+  <data name="e.g. the wristband is torn — a new one is being printed" xml:space="preserve"><value>e.g. the wristband is torn — a new one is being printed</value></data>
+  <data name="{0} scanned · {1} without the scan" xml:space="preserve"><value>{0} scanned · {1} without the scan</value></data>
+  <data name="{0} scans" xml:space="preserve"><value>{0} scans</value></data>
+  <data name="{0} stopped" xml:space="preserve"><value>{0} stopped</value></data>
+  <data name="Scan log" xml:space="preserve"><value>Scan log</value></data>
 </root>

@@ -117,6 +117,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalBedsideScanModel.Configure(b);   // H205: every bedside scan, the ones that stopped a step included
 			b.Entity<HospitalMedOrder>(e =>
 			{
 				e.ToTable("HospitalMedOrders");   // no DbSet: without this EF would look for dbo.HospitalMedOrder

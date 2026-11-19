@@ -85,6 +85,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalDeviceVital), "HospitalDeviceVitals"),         // H201: a monitor's readings follow the patient they were placed on
 			(typeof(HospitalAnaesthesia), "HospitalAnaesthesias"),         // H202: an operation's anaesthesia record follows its patient
 			(typeof(HospitalReferral), "HospitalReferrals"),         // H203: a referral follows its patient
+			(typeof(HospitalBedsideScan), "HospitalBedsideScans"),         // H205: a bedside scan follows its patient
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages
