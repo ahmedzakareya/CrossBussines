@@ -84,7 +84,8 @@
                                     <td class="fs-7"><span class="badge badge-@(row.Urgency == HospitalNotifiableUrgency.Immediate ? "danger" : "light") fw-semibold mb-1">@T["ntu:" + row.Urgency]</span>
                                         <div class="text-gray-800 fw-semibold">@DisplayName.Of(row.Disease, row.DiseaseEn)</div></td>
                                     <td class="fs-7"><bdi class="hp-num fw-bold" dir="ltr">@r.Code</bdi> <span class="text-gray-700">@DisplayName.Of(r.DiagnosisName, r.DiagnosisNameEn)</span>
-                                        <div class="text-muted fs-8"><span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.DiagnosedAt).ToString("yyyy-MM-dd HH:mm")</span>@if (row.Doctor != null) {<text> · @DisplayName.Of(row.Doctor, row.DoctorEn)</text>}</div></td>
+                                        <div class="text-muted fs-8"><span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.DiagnosedAt).ToString("yyyy-MM-dd HH:mm")</span></div>
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Doctor)</div></td>
                                     <td class="fs-7 text-nowrap"><span class="hp-num @(row.Overdue ? "text-danger fw-bold" : "text-gray-700")" dir="ltr">@HospitalNursingService.UtcToWard(r.DueAt).ToString("MM-dd HH:mm")</span>@if (row.Overdue) {<div class="text-danger fs-8 fw-bold">@T["Overdue"]</div>}</td>
                                     <td><span class="badge badge-light-@Tone(r.Status) fs-7 fw-bold">@T["ntf:" + r.Status]</span>
                                         @if (r.MohRef != null) {<div class="text-muted fs-8 mt-1">@T["Ministry reference"]: <bdi class="hp-num" dir="ltr">@r.MohRef</bdi></div>}

@@ -513,6 +513,10 @@
 				new() { LabelAr = "المختبر", LabelEn = "Laboratory", Action = "Lab", Controller = "Hospital" },
 				new() { LabelAr = "التحاليل ومؤشراتها", LabelEn = "Lab tests & analytes", Action = "LabTests", Controller = "Hospital" },
 				new() { LabelAr = "نتائج أجهزة المختبر", LabelEn = "Analyser results", Action = "LabDevices", Controller = "Hospital" },   // H198
+				new() { LabelAr = "علم الأمراض", LabelEn = "Pathology", Action = "Pathology", Controller = "Hospital" },   // H216
+				new() { LabelAr = "المناظير", LabelEn = "Endoscopy", Action = "Endoscopy", Controller = "Hospital" },   // H217
+				new() { LabelAr = "تخطيط القلب والصدى", LabelEn = "Cardiology", Action = "Cardiology", Controller = "Hospital" },   // H218
+				new() { LabelAr = "واجهات الأجهزة", LabelEn = "Machine interfaces", Action = "Interfaces", Controller = "Hospital" },   // H215
 				new() { LabelAr = "الأشعة", LabelEn = "Radiology", Action = "Radiology", Controller = "Hospital" },
 				new() { LabelAr = "الفحوصات والأجهزة", LabelEn = "Exams & rooms", Action = "RadiologySetup", Controller = "Hospital" },
 				new() { LabelAr = "بنك الدم", LabelEn = "Blood bank", Action = "BloodBank", Controller = "Hospital" },

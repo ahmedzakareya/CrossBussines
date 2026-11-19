@@ -247,6 +247,7 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HospitalSpecimenLabelSource>(); // H206
             services.AddScoped<IReportDataSource, HospitalDiseaseReportSource>(); // H209
             services.AddScoped<IReportDataSource, HospitalWardDowntimeSource>(); // H211
+            services.AddScoped<IReportDataSource, HospitalPathReportSource>(); // H216
             services.AddScoped<IReportDataSource, HospitalCompoundLabelSource>();      // H153
             services.AddScoped<IReportDataSource, HospitalPatientStatementSource>();   // H63
             services.AddScoped<IReportModuleAuthority, HospitalReportModuleAuthority>();

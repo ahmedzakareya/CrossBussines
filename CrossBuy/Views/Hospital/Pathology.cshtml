@@ -1,0 +1,195 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPathRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H216 — anatomic pathology, composed from the theme (demo39): two stat badges, the filter bar, each case with its
+    specimen, its step (a stepper of badges), the report once signed (malignant in red) and its amendments; the next
+    step opens its own modal; the signed report prints from Report Studio.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Pathology"].Value;
+    string q = ViewBag.Q as string ?? "", status = ViewBag.Status as string ?? ""; int? patient = ViewBag.Patient as int?;
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total, open = (int)ViewBag.Open, late = (int)ViewBag.Late;
+    bool ready = ViewBag.Ready == true, canLab = ViewBag.CanLab == true, canConsult = ViewBag.CanConsult == true;
+    var amendOf = (ViewBag.AmendmentsOf as Dictionary<int, IReadOnlyList<HospitalPathAmendment>>) ?? new();
+    string Link(int p) => Url.Action("Pathology", new { q, status, patient, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string At(DateTime? u) => u is DateTime d ? HospitalNursingService.UtcToWard(d).ToString("MM-dd HH:mm", inv) : "";
+    var steps = new[] { HospitalPathStatus.Requested, HospitalPathStatus.Received, HospitalPathStatus.Grossed, HospitalPathStatus.Reported };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Pathology"]
+                <span class="badge badge-light-primary fs-7 fw-bold">@T["{0} open", open]</span>
+                @if (late > 0) {<span class="badge badge-danger fs-7 fw-bold">@T["{0} past 3 days", late]</span>}</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Lab")" class="text-muted text-hover-primary">@T["Laboratory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Pathology"]</li>
+            </ul>
+        </div>
+        @if (ready && canConsult) {<button type="button" class="btn btn-sm btn-primary" data-pa-new><i class="ki-outline ki-plus fs-4"></i>@T["Request pathology"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The pathology tables are not created yet (hospital_h216_pathology.sql)."]</div></div>
+        }
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Cases"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} cases", total]</span></h3>
+                <form class="card-toolbar gap-2 flex-wrap" method="get" action="@Url.Action("Pathology")">
+                    @if (patient != null) {<input type="hidden" name="patient" value="@patient" />}
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Patient, case, specimen"]" /></div>
+                    <div class="w-150px"><select name="status" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["All"]" onchange="this.form.submit()"><option value="">@T["All"]</option>@foreach (var s in HospitalPathStatus.All) {<option value="@s" selected="@(s == status)">@T["pas:" + s]</option>}</select></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-microscope fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No pathology case here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-top gs-0 gy-4 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-175px rounded-start">@T["Patient"]</th><th class="min-w-200px">@T["Specimen"]</th><th class="min-w-200px">@T["Progress"]</th><th class="min-w-250px">@T["Pathology report"]</th><th class="text-end pe-4 rounded-end min-w-125px"></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                var c = row.Case; int at = Array.IndexOf(steps, c.Status);
+                                <tr>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = c.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                        <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@c.CaseNo</bdi></span></td>
+                                    <td class="fs-7"><div class="fw-semibold text-gray-800"><bdi>@c.Specimen</bdi></div>@if (c.Site != null) {<div class="text-muted fs-8"><bdi>@c.Site</bdi></div>}
+                                        <div class="text-muted fs-8">@T["pasrc:" + c.Source] · @T["{0} containers", c.Containers]</div>
+                                        @if (c.ClinicalHistory != null) {<div class="text-gray-600 fs-8 mt-1"><bdi>@c.ClinicalHistory</bdi></div>}
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Requester)</div></td>
+                                    <td class="fs-8">
+                                        @if (c.Status == HospitalPathStatus.Cancelled) {<span class="badge badge-light-secondary">@T["pas:Cancelled"]</span><div class="text-muted mt-1"><bdi>@c.CancelReason</bdi></div>}
+                                        else
+                                        {
+                                            <div class="d-flex flex-wrap gap-1">@for (int k = 0; k < steps.Length; k++) {<span class="badge @(k <= at ? "badge-light-primary" : "badge-light")">@T["pas:" + steps[k]]</span>}</div>
+                                            <div class="text-muted mt-1 hp-num" dir="ltr">@At(c.RequestedAt)@if (c.ReceivedAt != null) {<text> → @At(c.ReceivedAt)</text>}@if (c.ReportedAt != null) {<text> → @At(c.ReportedAt)</text>}</div>
+                                            @if (c.Blocks != null) {<div class="text-muted">@T["{0} blocks", c.Blocks]</div>}
+                                            @if (row.Late) {<div class="text-danger fw-bold">@T["Past 3 days"]</div>}
+                                        }
+                                    </td>
+                                    <td class="fs-7">@if (c.Status == HospitalPathStatus.Reported)
+                                    {
+                                        <div class="fw-bold @(c.Malignant ? "text-danger" : "text-gray-900")"><bdi>@c.Diagnosis</bdi></div>
+                                        @if (c.Malignant) {<span class="badge badge-danger fs-9 mt-1">@T["Malignant"]</span>}
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Pathologist)</div>
+                                        @foreach (var a in amendOf.GetValueOrDefault(c.ID) ?? Array.Empty<HospitalPathAmendment>())
+                                        {<div class="notice bg-light-info rounded border-info border border-dashed p-2 mt-2 fs-8"><span class="fw-bold">@T["Amendment"] <span class="hp-num" dir="ltr">@At(a.At)</span>:</span> <bdi>@a.Text</bdi><div class="text-muted"><bdi>@a.Reason</bdi></div></div>}
+                                    }
+                                    else if (c.Gross != null) {<div class="text-gray-700 fs-8"><span class="text-muted">@T["Grossing"]:</span> <bdi>@c.Gross</bdi></div>}</td>
+                                    <td class="text-end pe-4 text-nowrap">
+                                        @if (c.Status == HospitalPathStatus.Reported) {@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPathology, DocumentId = c.ID.ToString(), DocumentTitle = c.CaseNo })}
+                                        @if (ready && canLab && c.Status == HospitalPathStatus.Requested) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Received" data-id="@c.ID" data-no="@c.CaseNo" data-containers="@c.Containers">@T["Receive"]</button>}
+                                        @if (ready && canLab && c.Status == HospitalPathStatus.Received) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Grossed" data-id="@c.ID" data-no="@c.CaseNo">@T["Grossing"]</button>}
+                                        @if (ready && canLab && c.Status == HospitalPathStatus.Grossed) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Reported" data-id="@c.ID" data-no="@c.CaseNo">@T["Sign out the report"]</button>}
+                                        @if (ready && canLab && c.Status == HospitalPathStatus.Reported) {<button type="button" class="btn btn-sm btn-light-primary ms-1" data-pa-step="Amend" data-id="@c.ID" data-no="@c.CaseNo">@T["Amend"]</button>}
+                                        @if (ready && canConsult && c.Status == HospitalPathStatus.Requested) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Cancel the request"]" data-bs-toggle="tooltip" data-pa-cancel="@c.ID"><i class="ki-outline ki-trash fs-3"></i></button>}
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++) {<li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Link(p)">@p</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="paNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Request pathology"]</h1></div>
+        <div class="row g-4">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-pa="patient" data-placeholder="@T["Name, file number or phone"]"></select></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["From"]</label><select class="form-select form-select-solid" data-pa="source">@foreach (var s in HospitalPathSource.All) {<option value="@s">@T["pasrc:" + s]</option>}</select></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Containers"]</label><input type="number" min="1" max="50" value="1" class="form-control form-control-solid" data-pa="containers" /></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Specimen"]</label><input class="form-control form-control-solid" maxlength="200" data-pa="specimen" /></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Site"]</label><input class="form-control form-control-solid" maxlength="200" data-pa="site" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Clinical history"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" data-pa="history"></textarea></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pa-send>@T["Send the request"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="paStep" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3" data-ps-title></h1><div class="text-muted fw-semibold fs-6 hp-num" dir="ltr" data-ps-no></div></div>
+        <div class="d-flex flex-column gap-4">
+            <div data-ps-for="Received"><label class="fs-6 fw-semibold mb-2 required">@T["Containers received"]</label><input type="number" min="1" max="50" class="form-control form-control-solid" data-ps="containers" /></div>
+            <div data-ps-for="Grossed"><label class="fs-6 fw-semibold mb-2 required">@T["Gross description"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="2000" data-ps="gross"></textarea></div>
+            <div data-ps-for="Grossed"><label class="fs-6 fw-semibold mb-2 required">@T["Blocks"]</label><input type="number" min="1" max="200" class="form-control form-control-solid" data-ps="blocks" /></div>
+            <div data-ps-for="Reported"><label class="fs-6 fw-semibold mb-2 required">@T["Microscopic description"]</label><textarea class="form-control form-control-solid" rows="5" maxlength="4000" data-ps="microscopic"></textarea></div>
+            <div data-ps-for="Reported"><label class="fs-6 fw-semibold mb-2 required">@T["Diagnosis"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-ps="diagnosis"></textarea></div>
+            <div data-ps-for="Reported"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-ps="malignant" /><span class="form-check-label fw-semibold text-danger">@T["Malignant"]</span></label></div>
+            <div data-ps-for="Amend"><label class="fs-6 fw-semibold mb-2 required">@T["Amendment"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="2000" data-ps="text"></textarea></div>
+            <div data-ps-for="Amend"><label class="fs-6 fw-semibold mb-2 required">@T["Why amended"]</label><input class="form-control form-control-solid" maxlength="300" data-ps="reason" /></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ps-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Pathology")), mn = document.getElementById('paNew'), ms = document.getElementById('paStep'), id = null, to = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), cancel: @Json.Serialize(T["Why is the request cancelled?"].Value),
+                title: { Received: @Json.Serialize(T["Receive the specimen"].Value), Grossed: @Json.Serialize(T["Gross description"].Value), Reported: @Json.Serialize(T["Sign out the report"].Value), Amend: @Json.Serialize(T["Amend the report"].Value) } };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(t, m) { return function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } if (m) bootstrap.Modal.getOrCreateInstance(m).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
+            if (window.jQuery) jQuery(mn.querySelector('[data-pa=patient]')).select2({ width: '100%', dropdownParent: jQuery(mn), placeholder: mn.querySelector('[data-pa=patient]').getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")), delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: (d.results || d || []).map(function (x) { return { id: x.id, text: x.text || x.name }; }) }; } } });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-pa-new],[data-pa-send],[data-pa-step],[data-ps-save],[data-pa-cancel]'); if (!t) return;
+                if (t.hasAttribute('data-pa-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
+                if (t.hasAttribute('data-pa-send')) {
+                    var v = function (k) { return mn.querySelector('[data-pa="' + k + '"]').value; };
+                    t.disabled = true;
+                    post(root, { patientId: Number(v('patient')) || 0, source: v('source'), containers: Number(v('containers')) || 0, specimen: v('specimen'), site: v('site'), clinicalHistory: v('history') }).then(done(t, mn));
+                    return;
+                }
+                if (t.hasAttribute('data-pa-step')) {
+                    id = t.getAttribute('data-id'); to = t.getAttribute('data-pa-step');
+                    ms.querySelector('[data-ps-title]').textContent = W.title[to]; ms.querySelector('[data-ps-no]').textContent = t.getAttribute('data-no');
+                    ms.querySelectorAll('[data-ps-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-ps-for') !== to); });
+                    ms.querySelectorAll('[data-ps]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else i.value = ''; });
+                    bootstrap.Modal.getOrCreateInstance(ms).show(); return;
+                }
+                if (t.hasAttribute('data-ps-save')) {
+                    var f = function (k) { return ms.querySelector('[data-ps="' + k + '"]'); };
+                    t.disabled = true;
+                    if (to === 'Amend') { post(root + '/' + id + '/Amend', { text: f('text').value, reason: f('reason').value }).then(done(t, ms)); return; }
+                    post(root + '/' + id + '/Step', { to: to, containers: Number(f('containers').value) || null, gross: f('gross').value, blocks: Number(f('blocks').value) || null,
+                        microscopic: f('microscopic').value, diagnosis: f('diagnosis').value, malignant: f('malignant').checked }).then(done(t, ms));
+                    return;
+                }
+                cbPrompt(W.cancel, { kind: 'danger' }).then(function (why) { if (why == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-pa-cancel') + '/Step', { to: 'Cancelled', reason: why }).then(done(t)); });
+            });
+        })();
+    </script>
+}

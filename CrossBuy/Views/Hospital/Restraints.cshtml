@@ -76,7 +76,8 @@
                                     <td class="fs-7"><span class="badge badge-light-danger fw-bold me-1">@T["rsk:" + r.Kind]</span>@if (r.Device != null) {<span class="text-gray-700"><bdi>@r.Device</bdi></span>}
                                         <div class="text-gray-800 mt-1"><span class="text-muted">@T["Why restrained"]:</span> <bdi>@r.Reason</bdi></div>
                                         <div class="text-gray-700"><span class="text-muted">@T["Tried first"]:</span> <bdi>@r.Alternatives</bdi></div>
-                                        <div class="text-muted fs-8 mt-1">@T["Started"] <span class="hp-num" dir="ltr">@At(r.StartedAt)</span> · @(row.OrderedBy != null ? DisplayName.Of(row.OrderedBy, row.OrderedByEn) : "—")
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.OrderedBy)</div>
+                                        <div class="text-muted fs-8 mt-1">@T["Started"] <span class="hp-num" dir="ltr">@At(r.StartedAt)</span>
                                             · @T["Order valid until"] <span class="hp-num @(row.Expired ? "text-danger fw-bold" : "")" dir="ltr">@At(r.ExpiresAt)</span>@if (r.Renewals > 0) {<text> · @T["Renewed {0} times", r.Renewals]</text>}
                                             · @(r.FamilyInformed ? T["Family informed"] : T["Family not informed"])</div>
                                         @if (row.Expired) {<div class="badge badge-danger mt-1">@T["Order expired: renew or end it"]</div>}

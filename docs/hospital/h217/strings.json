@@ -1,0 +1,350 @@
+{
+ "unit": "H217 - Endoscopy and scope reprocessing",
+ "strings": {
+  "Endoscopy": {
+   "ar": "المناظير",
+   "en": "Endoscopy",
+   "fr": "Endoscopie"
+  },
+  "{0} scopes ready": {
+   "ar": "{0} مناظير جاهزة",
+   "en": "{0} scopes ready",
+   "fr": "{0} endoscopes prêts"
+  },
+  "Start a procedure": {
+   "ar": "بدء إجراء",
+   "en": "Start a procedure",
+   "fr": "Débuter un examen"
+  },
+  "The endoscopy tables are not created yet (hospital_h217_endoscopy.sql).": {
+   "ar": "جداول المناظير غير منشأة بعد (hospital_h217_endoscopy.sql).",
+   "en": "The endoscopy tables are not created yet (hospital_h217_endoscopy.sql).",
+   "fr": "Les tables d'endoscopie ne sont pas encore créées (hospital_h217_endoscopy.sql)."
+  },
+  "Scopes and reprocessing": {
+   "ar": "المناظير وإعادة التعقيم",
+   "en": "Scopes and reprocessing",
+   "fr": "Endoscopes et retraitement"
+  },
+  "{0} procedures": {
+   "ar": "{0} إجراءات",
+   "en": "{0} procedures",
+   "fr": "{0} examens"
+  },
+  "Patient, number, scope": {
+   "ar": "المريض أو الرقم أو المنظار",
+   "en": "Patient, number, scope",
+   "fr": "Patient, numéro, endoscope"
+  },
+  "ens:Started": {
+   "ar": "جارٍ",
+   "en": "In progress",
+   "fr": "En cours"
+  },
+  "ens:Completed": {
+   "ar": "مكتمل",
+   "en": "Completed",
+   "fr": "Terminé"
+  },
+  "No procedure here.": {
+   "ar": "لا يوجد إجراء هنا.",
+   "en": "No procedure here.",
+   "fr": "Aucun examen ici."
+  },
+  "Quality and biopsies": {
+   "ar": "الجودة والخزعات",
+   "en": "Quality and biopsies",
+   "fr": "Qualité et biopsies"
+  },
+  "enk:Gastroscopy": {
+   "ar": "منظار المعدة",
+   "en": "Gastroscopy",
+   "fr": "Gastroscopie"
+  },
+  "enk:Colonoscopy": {
+   "ar": "منظار القولون",
+   "en": "Colonoscopy",
+   "fr": "Coloscopie"
+  },
+  "enk:Bronchoscopy": {
+   "ar": "منظار القصبات",
+   "en": "Bronchoscopy",
+   "fr": "Bronchoscopie"
+  },
+  "enk:ERCP": {
+   "ar": "تصوير القنوات الصفراوية بالمنظار",
+   "en": "ERCP",
+   "fr": "CPRE"
+  },
+  "Scope": {
+   "ar": "المنظار",
+   "en": "Scope",
+   "fr": "Endoscope"
+  },
+  "ensed:None": {
+   "ar": "بلا تهدئة",
+   "en": "No sedation",
+   "fr": "Sans sédation"
+  },
+  "ensed:Moderate": {
+   "ar": "تهدئة متوسطة",
+   "en": "Moderate sedation",
+   "fr": "Sédation modérée"
+  },
+  "ensed:Deep": {
+   "ar": "تهدئة عميقة",
+   "en": "Deep sedation",
+   "fr": "Sédation profonde"
+  },
+  "Indication": {
+   "ar": "دواعي الإجراء",
+   "en": "Indication",
+   "fr": "Indication"
+  },
+  "Quality met": {
+   "ar": "حقق معيار الجودة",
+   "en": "Quality met",
+   "fr": "Qualité atteinte"
+  },
+  "Quality not met": {
+   "ar": "لم يحقق معيار الجودة",
+   "en": "Quality not met",
+   "fr": "Qualité non atteinte"
+  },
+  "Caecum reached": {
+   "ar": "بلغ الأعور",
+   "en": "Caecum reached",
+   "fr": "Caecum atteint"
+  },
+  "Caecum not reached": {
+   "ar": "لم يبلغ الأعور",
+   "en": "Caecum not reached",
+   "fr": "Caecum non atteint"
+  },
+  "Withdrawal {0} min": {
+   "ar": "السحب {0} دقيقة",
+   "en": "Withdrawal {0} min",
+   "fr": "Retrait {0} min"
+  },
+  "Boston {0}": {
+   "ar": "بوسطن {0}",
+   "en": "Boston {0}",
+   "fr": "Boston {0}"
+  },
+  "{0} biopsies": {
+   "ar": "{0} خزعات",
+   "en": "{0} biopsies",
+   "fr": "{0} biopsies"
+  },
+  "Complete the report": {
+   "ar": "إكمال التقرير",
+   "en": "Complete the report",
+   "fr": "Compléter le compte rendu"
+  },
+  "A scope is used only after a passed cycle, and within 7 days of it": {
+   "ar": "لا يُستخدم المنظار إلا بعد دورة تعقيم ناجحة، وخلال 7 أيام منها",
+   "en": "A scope is used only after a passed cycle, and within 7 days of it",
+   "fr": "Un endoscope n'est utilisé qu'après un cycle réussi, et dans les 7 jours"
+  },
+  "Serial or kind": {
+   "ar": "الرقم التسلسلي أو النوع",
+   "en": "Serial or kind",
+   "fr": "Numéro ou type"
+  },
+  "Add a scope": {
+   "ar": "إضافة منظار",
+   "en": "Add a scope",
+   "fr": "Ajouter un endoscope"
+  },
+  "Last reprocessing": {
+   "ar": "آخر إعادة تعقيم",
+   "en": "Last reprocessing",
+   "fr": "Dernier retraitement"
+  },
+  "Passed": {
+   "ar": "ناجحة",
+   "en": "Passed",
+   "fr": "Réussi"
+  },
+  "Ready for use": {
+   "ar": "جاهز للاستخدام",
+   "en": "Ready for use",
+   "fr": "Prêt à l'emploi"
+  },
+  "Not ready": {
+   "ar": "غير جاهز",
+   "en": "Not ready",
+   "fr": "Non prêt"
+  },
+  "Record reprocessing": {
+   "ar": "تسجيل إعادة التعقيم",
+   "en": "Record reprocessing",
+   "fr": "Enregistrer le retraitement"
+  },
+  "Only a scope that is ready can be chosen.": {
+   "ar": "لا يمكن اختيار إلا منظار جاهز.",
+   "en": "Only a scope that is ready can be chosen.",
+   "fr": "Seul un endoscope prêt peut être choisi."
+  },
+  "Sedation": {
+   "ar": "التهدئة",
+   "en": "Sedation",
+   "fr": "Sédation"
+  },
+  "Withdrawal time (minutes)": {
+   "ar": "زمن السحب (دقائق)",
+   "en": "Withdrawal time (minutes)",
+   "fr": "Temps de retrait (minutes)"
+  },
+  "Boston score (0-9)": {
+   "ar": "درجة بوسطن (0-9)",
+   "en": "Boston score (0-9)",
+   "fr": "Score de Boston (0-9)"
+  },
+  "Biopsy jars": {
+   "ar": "أوعية الخزعات",
+   "en": "Biopsy jars",
+   "fr": "Pots de biopsie"
+  },
+  "Biopsy sites": {
+   "ar": "مواضع الخزعات",
+   "en": "Biopsy sites",
+   "fr": "Sites des biopsies"
+  },
+  "Start the procedure": {
+   "ar": "بدء الإجراء",
+   "en": "Start the procedure",
+   "fr": "Débuter l'examen"
+  },
+  "Scope model": {
+   "ar": "الطراز",
+   "en": "Model",
+   "fr": "Modèle"
+  },
+  "Serial number": {
+   "ar": "الرقم التسلسلي",
+   "en": "Serial number",
+   "fr": "Numéro de série"
+  },
+  "Leak test passed": {
+   "ar": "نجح اختبار التسرب",
+   "en": "Leak test passed",
+   "fr": "Test d'étanchéité réussi"
+  },
+  "Manual cleaning done": {
+   "ar": "تم التنظيف اليدوي",
+   "en": "Manual cleaning done",
+   "fr": "Nettoyage manuel fait"
+  },
+  "High-level disinfectant": {
+   "ar": "مطهر عالي المستوى",
+   "en": "High-level disinfectant",
+   "fr": "Désinfectant de haut niveau"
+  },
+  "Contact time (minutes)": {
+   "ar": "زمن التلامس (دقائق)",
+   "en": "Contact time (minutes)",
+   "fr": "Temps de contact (minutes)"
+  },
+  "This scope has no reprocessing cycle: reprocess it before use": {
+   "ar": "لا توجد لهذا المنظار دورة تعقيم: أعد تعقيمه قبل الاستخدام",
+   "en": "This scope has no reprocessing cycle: reprocess it before use",
+   "fr": "Cet endoscope n'a aucun cycle : retraitez-le avant usage"
+  },
+  "The scope's last reprocessing failed: reprocess it again": {
+   "ar": "فشلت آخر دورة تعقيم للمنظار: أعد تعقيمه",
+   "en": "The scope's last reprocessing failed: reprocess it again",
+   "fr": "Le dernier retraitement a échoué : recommencez"
+  },
+  "The scope was used after its last reprocessing: reprocess it before the next patient": {
+   "ar": "استُخدم المنظار بعد آخر تعقيم: أعد تعقيمه قبل المريض التالي",
+   "en": "The scope was used after its last reprocessing: reprocess it before the next patient",
+   "fr": "L'endoscope a servi depuis son dernier retraitement : retraitez-le avant le patient suivant"
+  },
+  "The scope's reprocessing is older than 7 days: reprocess it before use": {
+   "ar": "مضى على تعقيم المنظار أكثر من 7 أيام: أعد تعقيمه قبل الاستخدام",
+   "en": "The scope's reprocessing is older than 7 days: reprocess it before use",
+   "fr": "Le retraitement date de plus de 7 jours : retraitez-le avant usage"
+  },
+  "Write the disinfectant used": {
+   "ar": "اكتب المطهر المستخدم",
+   "en": "Write the disinfectant used",
+   "fr": "Indiquez le désinfectant utilisé"
+  },
+  "Write the disinfection time in minutes": {
+   "ar": "اكتب زمن التطهير بالدقائق",
+   "en": "Write the disinfection time in minutes",
+   "fr": "Indiquez le temps de désinfection en minutes"
+  },
+  "Choose the procedure": {
+   "ar": "اختر الإجراء",
+   "en": "Choose the procedure",
+   "fr": "Choisissez l'examen"
+  },
+  "Choose the sedation": {
+   "ar": "اختر التهدئة",
+   "en": "Choose the sedation",
+   "fr": "Choisissez la sédation"
+  },
+  "Write the indication": {
+   "ar": "اكتب دواعي الإجراء",
+   "en": "Write the indication",
+   "fr": "Indiquez l'indication"
+  },
+  "This procedure is already completed": {
+   "ar": "هذا الإجراء مكتمل بالفعل",
+   "en": "This procedure is already completed",
+   "fr": "Cet examen est déjà terminé"
+  },
+  "Write the findings": {
+   "ar": "اكتب الموجودات",
+   "en": "Write the findings",
+   "fr": "Rédigez les constatations"
+  },
+  "The biopsies must be between 0 and 50": {
+   "ar": "يجب أن تكون الخزعات بين 0 و50",
+   "en": "The biopsies must be between 0 and 50",
+   "fr": "Les biopsies doivent être entre 0 et 50"
+  },
+  "Write where the biopsies were taken": {
+   "ar": "اكتب مواضع أخذ الخزعات",
+   "en": "Write where the biopsies were taken",
+   "fr": "Indiquez où les biopsies ont été prélevées"
+  },
+  "Say whether the caecum was reached": {
+   "ar": "حدد هل بلغ المنظار الأعور",
+   "en": "Say whether the caecum was reached",
+   "fr": "Indiquez si le caecum a été atteint"
+  },
+  "Write the Boston bowel preparation score (0 to 9)": {
+   "ar": "اكتب درجة بوسطن لتحضير الأمعاء (0 إلى 9)",
+   "en": "Write the Boston bowel preparation score (0 to 9)",
+   "fr": "Indiquez le score de Boston (0 à 9)"
+  },
+  "Write the withdrawal time in minutes": {
+   "ar": "اكتب زمن السحب بالدقائق",
+   "en": "Write the withdrawal time in minutes",
+   "fr": "Indiquez le temps de retrait en minutes"
+  },
+  "Write the scope's serial number": {
+   "ar": "اكتب الرقم التسلسلي للمنظار",
+   "en": "Write the scope's serial number",
+   "fr": "Indiquez le numéro de série"
+  },
+  "This serial number is already registered": {
+   "ar": "هذا الرقم التسلسلي مسجل",
+   "en": "This serial number is already registered",
+   "fr": "Ce numéro de série est déjà enregistré"
+  },
+  "Choose the scope": {
+   "ar": "اختر المنظار",
+   "en": "Choose the scope",
+   "fr": "Choisissez l'endoscope"
+  },
+  "Someone else changed this procedure: open it again": {
+   "ar": "غيّر شخص آخر هذا الإجراء: افتحه من جديد",
+   "en": "Someone else changed this procedure: open it again",
+   "fr": "Quelqu'un d'autre a modifié cet examen : rouvrez-le"
+  }
+ }
+}

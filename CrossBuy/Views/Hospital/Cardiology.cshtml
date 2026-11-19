@@ -1,0 +1,165 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCardioRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H218 — cardiology, composed from the theme (demo39): two stat badges, the filter bar, each study with its measurements
+    (the QTc calculated), the interpretation and a critical finding in red; a request modal and a report modal whose
+    fields follow the study.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Cardiology"].Value;
+    string q = ViewBag.Q as string ?? "", kind = ViewBag.Kind as string ?? "", status = ViewBag.Status as string ?? "";
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total, waiting = (int)ViewBag.Waiting, critical = (int)ViewBag.Critical;
+    bool ready = ViewBag.Ready == true, canConsult = ViewBag.CanConsult == true;
+    string Link(int p) => Url.Action("Cardiology", new { q, kind, status, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Cardiology"]
+                <span class="badge badge-light-primary fs-7 fw-bold">@T["{0} waiting to be read", waiting]</span>
+                @if (critical > 0) {<span class="badge badge-danger fs-7 fw-bold">@T["{0} critical", critical]</span>}</h1>
+        </div>
+        @if (ready && canConsult) {<button type="button" class="btn btn-sm btn-primary" data-cd-new><i class="ki-outline ki-plus fs-4"></i>@T["Request a study"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The cardiology table is not created yet (hospital_h218_cardiology.sql)."]</div></div>
+        }
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Studies"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} studies", total] · @T["QTc is calculated (Bazett)"]</span></h3>
+                <form class="card-toolbar gap-2 flex-wrap" method="get" action="@Url.Action("Cardiology")">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Patient or number"]" /></div>
+                    <div class="w-125px"><select name="kind" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["All"]" onchange="this.form.submit()"><option value="">@T["All"]</option>@foreach (var k in HospitalCardioKind.All) {<option value="@k" selected="@(k == kind)">@T["cdk:" + k]</option>}</select></div>
+                    <div class="w-150px"><select name="status" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["All"]" onchange="this.form.submit()"><option value="">@T["All"]</option>@foreach (var s in HospitalCardioStatus.All) {<option value="@s" selected="@(s == status)">@T["cds:" + s]</option>}</select></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-heart-circle fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No study here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-top gs-0 gy-4 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-175px rounded-start">@T["Patient"]</th><th class="min-w-125px">@T["Study"]</th><th class="min-w-200px">@T["Measurements"]</th><th class="min-w-250px">@T["Interpretation"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                var s = row.Study; bool ecg = s.Kind == HospitalCardioKind.Ecg;
+                                <tr>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = s.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                        <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@s.StudyNo</bdi></span></td>
+                                    <td class="fs-7"><span class="badge badge-light-primary fw-bold">@T["cdk:" + s.Kind]</span><div class="text-muted fs-8 mt-1"><bdi>@s.Indication</bdi></div>
+                                        <div class="text-muted fs-8 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(s.RequestedAt).ToString("MM-dd HH:mm", inv)</div>
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Requester)</div></td>
+                                    <td class="fs-8">@if (s.Status == HospitalCardioStatus.Reported)
+                                    {
+                                        if (ecg)
+                                        {
+                                            <div><span class="text-muted">@T["Heart rate"]</span> <span class="hp-num fw-bold">@s.HeartRate</span> · <bdi>@s.Rhythm</bdi></div>
+                                            <div class="hp-num" dir="ltr">PR @s.PrMs · QRS @s.QrsMs · QT @s.QtMs · <span class="fw-bold @(s.QtcMs >= 500 ? "text-danger" : "")">QTc @s.QtcMs</span> · @T["Axis"] @s.Axis°</div>
+                                        }
+                                        else
+                                        {
+                                            <div><span class="text-muted">@T["Ejection fraction"]</span> <span class="hp-num fw-bold @(s.EfPercent < 30 ? "text-danger" : "")">@s.EfPercent%</span></div>
+                                            @if (s.Valves != null) {<div><span class="text-muted">@T["Valves"]:</span> <bdi>@s.Valves</bdi></div>}
+                                            @if (s.WallMotion != null) {<div><span class="text-muted">@T["Wall motion"]:</span> <bdi>@s.WallMotion</bdi></div>}
+                                        }
+                                    } else {<span class="badge badge-light-info">@T["cds:Requested"]</span>}</td>
+                                    <td class="fs-7">@if (s.Interpretation != null) {<div class="fw-semibold text-gray-900"><bdi>@s.Interpretation</bdi></div>}
+                                        @if (s.Critical) {<span class="badge badge-danger mt-1">@T["Critical finding"]</span> @foreach (var w in (s.CriticalWhy ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-light-danger hp-num ms-1" dir="ltr">@w</span>}}
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Reader)</div></td>
+                                    <td class="text-end pe-4">@if (ready && canConsult && s.Status == HospitalCardioStatus.Requested) {<button type="button" class="btn btn-sm btn-primary" data-cd-report="@s.ID" data-kind="@s.Kind" data-no="@s.StudyNo">@T["Read the study"]</button>}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++) {<li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Link(p)">@p</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="cdNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1>@T["Request a study"]</h1></div>
+        <div class="d-flex flex-column gap-4">
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-cd="patient" data-placeholder="@T["Name, file number or phone"]"></select></div>
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Study"]</label><select class="form-select form-select-solid" data-cd="kind">@foreach (var k in HospitalCardioKind.All) {<option value="@k">@T["cdk:" + k]</option>}</select></div>
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Indication"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-cd="indication"></textarea></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cd-send>@T["Send the request"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="cdReport" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-6 text-center"><h1 class="mb-3">@T["Report the study"]</h1><div class="text-muted fw-semibold fs-6 hp-num" dir="ltr" data-cr-no></div></div>
+        <div class="row g-4">
+            <div class="col-md-4" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2 required">@T["Heart rate"]</label><input type="number" class="form-control form-control-solid" data-cr="heartRate" /></div>
+            <div class="col-md-8" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2 required">@T["Rhythm"]</label><input class="form-control form-control-solid" maxlength="100" data-cr="rhythm" /></div>
+            <div class="col-md-3" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2">PR (ms)</label><input type="number" class="form-control form-control-solid" data-cr="prMs" /></div>
+            <div class="col-md-3" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2">QRS (ms)</label><input type="number" class="form-control form-control-solid" data-cr="qrsMs" /></div>
+            <div class="col-md-3" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2">QT (ms)</label><input type="number" class="form-control form-control-solid" data-cr="qtMs" /></div>
+            <div class="col-md-3" data-cr-for="ECG"><label class="fs-6 fw-semibold mb-2">@T["Axis"] (°)</label><input type="number" class="form-control form-control-solid" data-cr="axis" /></div>
+            <div class="col-md-4" data-cr-for="Echo"><label class="fs-6 fw-semibold mb-2 required">@T["Ejection fraction"] (%)</label><input type="number" min="5" max="90" class="form-control form-control-solid" data-cr="efPercent" /></div>
+            <div class="col-md-8" data-cr-for="Echo"><label class="fs-6 fw-semibold mb-2">@T["Chambers"]</label><input class="form-control form-control-solid" maxlength="500" data-cr="chambers" /></div>
+            <div class="col-md-6" data-cr-for="Echo"><label class="fs-6 fw-semibold mb-2">@T["Valves"]</label><input class="form-control form-control-solid" maxlength="500" data-cr="valves" /></div>
+            <div class="col-md-6" data-cr-for="Echo"><label class="fs-6 fw-semibold mb-2">@T["Wall motion"]</label><input class="form-control form-control-solid" maxlength="500" data-cr="wallMotion" /></div>
+            <div class="col-12" data-cr-for="Echo"><label class="fs-6 fw-semibold mb-2">@T["Pericardium"]</label><input class="form-control form-control-solid" maxlength="200" data-cr="pericardium" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Interpretation"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="2000" data-cr="interpretation"></textarea></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cr-save>@T["Sign the report"]</button></div>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Cardiology")), mn = document.getElementById('cdNew'), mr = document.getElementById('cdReport'), id = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(t, m) { return function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
+            if (window.jQuery) jQuery(mn.querySelector('[data-cd=patient]')).select2({ width: '100%', dropdownParent: jQuery(mn), placeholder: mn.querySelector('[data-cd=patient]').getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")), delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: (d.results || d || []).map(function (x) { return { id: x.id, text: x.text || x.name }; }) }; } } });
+            function num(v) { return v === '' ? null : Number(v); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-cd-new],[data-cd-send],[data-cd-report],[data-cr-save]'); if (!t) return;
+                if (t.hasAttribute('data-cd-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
+                if (t.hasAttribute('data-cd-send')) { var v = function (k) { return mn.querySelector('[data-cd="' + k + '"]').value; }; t.disabled = true; post(root, { patientId: Number(v('patient')) || 0, kind: v('kind'), indication: v('indication') }).then(done(t, mn)); return; }
+                if (t.hasAttribute('data-cd-report')) {
+                    id = t.getAttribute('data-cd-report'); var k = t.getAttribute('data-kind'); mr.querySelector('[data-cr-no]').textContent = t.getAttribute('data-no');
+                    mr.querySelectorAll('[data-cr-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-cr-for') !== k); });
+                    mr.querySelectorAll('[data-cr]').forEach(function (i) { i.value = ''; });
+                    bootstrap.Modal.getOrCreateInstance(mr).show(); return;
+                }
+                var f = function (k) { return mr.querySelector('[data-cr="' + k + '"]').value; }; t.disabled = true;
+                post(root + '/' + id + '/Report', { heartRate: num(f('heartRate')), rhythm: f('rhythm'), prMs: num(f('prMs')), qrsMs: num(f('qrsMs')), qtMs: num(f('qtMs')), axis: num(f('axis')),
+                    efPercent: num(f('efPercent')), chambers: f('chambers'), valves: f('valves'), wallMotion: f('wallMotion'), pericardium: f('pericardium'), interpretation: f('interpretation') }).then(done(t, mr));
+            });
+        })();
+    </script>
+}

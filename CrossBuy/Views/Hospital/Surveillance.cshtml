@@ -87,7 +87,7 @@
                                         @if (a.Score != null) {<div class="text-muted fs-8">@T["Score"] <span class="hp-num fw-bold">@a.Score</span></div>}
                                     </td>
                                     <td class="fs-7 text-nowrap"><span class="hp-num @(row.Overdue ? "text-danger fw-bold" : "text-gray-700")" dir="ltr">@HospitalNursingService.UtcToWard(a.DueAt).ToString("MM-dd HH:mm", inv)</span>@if (row.Overdue) {<div class="text-danger fs-8 fw-bold">@T["Overdue"]</div>}</td>
-                                    <td class="fs-7">@if (a.Response != null) {<span class="badge badge-light-primary fw-bold">@T["svr:" + a.Response]</span>@if (a.Note != null) {<div class="text-muted fs-8 mt-1"><bdi>@a.Note</bdi></div>}} else {<span class="text-muted">—</span>}</td>
+                                    <td class="fs-7">@if (a.Response != null) {<span class="badge badge-light-primary fw-bold">@T["svr:" + a.Response]</span>@if (a.Note != null) {<div class="text-muted fs-8 mt-1"><bdi>@a.Note</bdi></div>}<div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.AnsweredBy)</div>} else {<span class="text-muted">—</span>}</td>
                                     <td class="text-end pe-4">@if (open && ready) {<button type="button" class="btn btn-sm btn-primary" data-sv-answer="@a.ID" data-kind="@a.Kind"><i class="ki-outline ki-check-square fs-4"></i>@T["Answer"]</button>}</td>
                                 </tr>
                             }

@@ -144,6 +144,10 @@ namespace CrossBuy.Models.Context.Hospital
 		{
 			HospitalReferralModel.Configure(b);   // H203: referrals between departments and to other facilities
 			HospitalTeleModel.Configure(b);   // H214: video visits and their call set-up messages
+			HospitalInterfaceModel.Configure(b);   // H215: the machines allowed to talk to the hospital
+			HospitalPathologyModel.Configure(b);   // H216: anatomic pathology cases and their amendments
+			HospitalEndoscopyModel.Configure(b);   // H217: scopes, their reprocessing, and the procedures
+			HospitalCardiologyModel.Configure(b);   // H218: ECG and echo studies
 			HospitalNotifiableModel.Configure(b);   // H209: notifiable diseases and the cases reported to the Ministry
 			b.Entity<HospitalDepartment>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalPractitioner>(e => e.HasIndex(x => new { x.CompanyId, x.DepartmentId }));

@@ -19,7 +19,7 @@
 <div class="card card-flush">
     <div class="card-header pt-7">
         <div class="card-title flex-column">
-            <span class="fs-4 fw-bold text-gray-900">@DisplayName.Of(Model.Doctor, Model.DoctorEn)</span>
+            @await Html.PartialAsync("~/Views/Hospital/_HospitalFace.cshtml", Model.DoctorFace)
             <span class="text-muted fs-7 mt-1"><bdi class="pp-num" dir="ltr">@Model.StartsAt.ToString("yyyy-MM-dd HH:mm", inv)</bdi> · @DisplayName.Of(Model.Patient, Model.PatientEn)</span>
         </div>
         <div class="card-toolbar"><a href="@Url.Action("Appointments")" class="btn btn-sm btn-light">@T["My appointments"]</a></div>

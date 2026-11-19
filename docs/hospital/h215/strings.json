@@ -1,0 +1,165 @@
+{
+ "unit": "H215 - Machine interfaces (HL7 channel)",
+ "strings": {
+  "Machine interfaces": {
+   "ar": "واجهات الأجهزة",
+   "en": "Machine interfaces",
+   "fr": "Interfaces machines"
+  },
+  "Add an interface": {
+   "ar": "إضافة واجهة",
+   "en": "Add an interface",
+   "fr": "Ajouter une interface"
+  },
+  "The interfaces table is not created yet (hospital_h215_interfaces.sql).": {
+   "ar": "جدول الواجهات غير منشأ بعد (hospital_h215_interfaces.sql).",
+   "en": "The interfaces table is not created yet (hospital_h215_interfaces.sql).",
+   "fr": "La table des interfaces n'est pas encore créée (hospital_h215_interfaces.sql)."
+  },
+  "How a machine connects": {
+   "ar": "كيف يتصل الجهاز",
+   "en": "How a machine connects",
+   "fr": "Comment une machine se connecte"
+  },
+  "Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement.": {
+   "ar": "نتائج المختبر: يرسل جهاز التحليل أو محرك الربط كل رسالة نتائج HL7 ‏(ORU^R01) عبر HTTPS POST ويستلم إشعار الاستلام HL7.",
+   "en": "Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement.",
+   "fr": "Résultats de laboratoire : l'analyseur ou son moteur d'interface envoie chaque message HL7 (ORU^R01) par HTTPS POST et reçoit l'accusé HL7."
+  },
+  "Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages).": {
+   "ar": "قائمة عمل الأشعة: يقرأ وسيط قائمة العمل طلبات الأشعة المجدولة (أضف ?modality=CT أو format=hl7 لرسائل HL7).",
+   "en": "Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages).",
+   "fr": "Liste de travail imagerie : le courtier lit les examens programmés (ajoutez ?modality=CT, ou format=hl7 pour des messages HL7)."
+  },
+  "Every request carries the interface key in the header:": {
+   "ar": "يحمل كل طلب مفتاح الواجهة في الترويسة:",
+   "en": "Every request carries the interface key in the header:",
+   "fr": "Chaque requête porte la clé de l'interface dans l'en-tête :"
+  },
+  "A machine works with the rights of the person it acts for.": {
+   "ar": "يعمل الجهاز بصلاحيات الشخص الذي يعمل باسمه.",
+   "en": "A machine works with the rights of the person it acts for.",
+   "fr": "Une machine agit avec les droits de la personne qu'elle représente."
+  },
+  "Interfaces": {
+   "ar": "الواجهات",
+   "en": "Interfaces",
+   "fr": "Interfaces"
+  },
+  "{0} interfaces": {
+   "ar": "{0} واجهات",
+   "en": "{0} interfaces",
+   "fr": "{0} interfaces"
+  },
+  "Code or name": {
+   "ar": "الرمز أو الاسم",
+   "en": "Code or name",
+   "fr": "Code ou nom"
+  },
+  "No interface yet.": {
+   "ar": "لا توجد واجهة بعد.",
+   "en": "No interface yet.",
+   "fr": "Aucune interface pour l'instant."
+  },
+  "Interface": {
+   "ar": "الواجهة",
+   "en": "Interface",
+   "fr": "Interface"
+  },
+  "Acts for": {
+   "ar": "يعمل باسم",
+   "en": "Acts for",
+   "fr": "Agit pour"
+  },
+  "Last used": {
+   "ar": "آخر استخدام",
+   "en": "Last used",
+   "fr": "Dernière utilisation"
+  },
+  "Interface key": {
+   "ar": "المفتاح",
+   "en": "Key",
+   "fr": "Clé"
+  },
+  "ifk:LabResults": {
+   "ar": "نتائج المختبر (HL7)",
+   "en": "Lab results (HL7)",
+   "fr": "Résultats labo (HL7)"
+  },
+  "ifk:ImagingWorklist": {
+   "ar": "قائمة عمل الأشعة",
+   "en": "Imaging worklist",
+   "fr": "Liste de travail imagerie"
+  },
+  "{0} uses": {
+   "ar": "{0} مرات",
+   "en": "{0} uses",
+   "fr": "{0} utilisations"
+  },
+  "Never": {
+   "ar": "لم تُستخدم",
+   "en": "Never",
+   "fr": "Jamais"
+  },
+  "New key": {
+   "ar": "مفتاح جديد",
+   "en": "New key",
+   "fr": "Nouvelle clé"
+  },
+  "It will act with your rights; its key is shown once.": {
+   "ar": "ستعمل بصلاحياتك، ويظهر مفتاحها مرة واحدة فقط.",
+   "en": "It will act with your rights; its key is shown once.",
+   "fr": "Elle agira avec vos droits ; sa clé n'est affichée qu'une fois."
+  },
+  "Interface code": {
+   "ar": "الرمز",
+   "en": "Code",
+   "fr": "Code"
+  },
+  "The interface key": {
+   "ar": "مفتاح الواجهة",
+   "en": "The interface key",
+   "fr": "La clé de l'interface"
+  },
+  "Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops.": {
+   "ar": "انسخه إلى الجهاز الآن، فلن يظهر مرة أخرى. يمكن إنشاء مفتاح جديد في أي وقت، فيتوقف القديم.",
+   "en": "Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops.",
+   "fr": "Copiez-la dans la machine maintenant : elle ne sera plus affichée. Une nouvelle clé peut être créée à tout moment ; l'ancienne cesse alors."
+  },
+  "Copy": {
+   "ar": "نسخ",
+   "en": "Copy",
+   "fr": "Copier"
+  },
+  "Copied": {
+   "ar": "تم النسخ",
+   "en": "Copied",
+   "fr": "Copié"
+  },
+  "I have copied it": {
+   "ar": "نسختُه",
+   "en": "I have copied it",
+   "fr": "Je l'ai copiée"
+  },
+  "Make a new key for {0}? The current key stops at once.": {
+   "ar": "إنشاء مفتاح جديد لـ {0}؟ يتوقف المفتاح الحالي فورًا.",
+   "en": "Make a new key for {0}? The current key stops at once.",
+   "fr": "Créer une nouvelle clé pour {0} ? La clé actuelle cesse immédiatement."
+  },
+  "Write a code of letters, digits and dashes": {
+   "ar": "اكتب رمزًا من حروف وأرقام وشرطات",
+   "en": "Write a code of letters, digits and dashes",
+   "fr": "Saisissez un code de lettres, chiffres et tirets"
+  },
+  "Write the interface's name": {
+   "ar": "اكتب اسم الواجهة",
+   "en": "Write the interface's name",
+   "fr": "Saisissez le nom de l'interface"
+  },
+  "Choose what the interface does": {
+   "ar": "اختر عمل الواجهة",
+   "en": "Choose what the interface does",
+   "fr": "Choisissez le rôle de l'interface"
+  }
+ }
+}

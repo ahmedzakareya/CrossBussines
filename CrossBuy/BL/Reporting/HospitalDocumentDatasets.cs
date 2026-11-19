@@ -53,6 +53,8 @@ namespace CrossBuy.BL.Reporting
         public const string DiseaseReport = "Hospital.DiseaseReport";
         /// H211: a ward's downtime summary — every patient in a bed with the active medicines, one row per medicine.
         public const string WardDowntime = "Hospital.WardDowntime";
+        /// H216: a signed anatomic pathology report, as ONE row.
+        public const string PathReport = "Hospital.PathReport";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -123,6 +125,7 @@ namespace CrossBuy.BL.Reporting
             HospitalDocumentDatasetCodes.SpecimenLabel,    // H206
             HospitalDocumentDatasetCodes.DiseaseReport,    // H209
             HospitalDocumentDatasetCodes.WardDowntime,     // H211
+            HospitalDocumentDatasetCodes.PathReport,       // H216
         };
 
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
@@ -624,6 +627,29 @@ namespace CrossBuy.BL.Reporting
             },
             Params("WardId", "رقم القسم الداخلي", "Ward id")), "PatientName", "PatientMrn", "DocumentDate");
 
+        /// H216: the pathology report — the specimen, history, gross and microscopic descriptions, the diagnosis, the
+        /// pathologist's signature and every amendment.
+        public static ReportDatasetDefinition PathReport() => Show(Doc(HospitalDocumentDatasetCodes.PathReport,
+            "تقرير علم الأمراض", "Pathology report",
+            "تقرير علم أمراض موقَّع: العينة وموضعها، والتاريخ السريري، والوصف العياني والمجهري، والتشخيص، وتوقيع الطبيب الشرعي للأنسجة، وكل تعديل وسببه.",
+            "A signed pathology report: the specimen and its site, the clinical history, the gross and microscopic descriptions, the diagnosis, the pathologist's signature, and every amendment with its reason.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Specimen", "العينة", "Specimen", width: 80, visible: true),
+                F("Source", "المصدر", "Source", width: 30),
+                F("Received", "تاريخ الاستلام", "Received", ReportFieldType.DateTime),
+                F("ClinicalHistory", "التاريخ السريري", "Clinical history", width: 140),
+                F("Gross", "الوصف العياني", "Gross description", width: 140),
+                F("Microscopic", "الوصف المجهري", "Microscopic description", width: 140),
+                F("Diagnosis", "التشخيص", "Diagnosis", width: 140, visible: true),
+                F("Malignant", "خبيث", "Malignant", width: 30),
+                F("Pathologist", "أخصائي علم الأمراض", "Pathologist", width: 60),
+                F("SignedAt", "تاريخ التوقيع", "Signed", ReportFieldType.DateTime),
+                F("Amendments", "التعديلات", "Amendments", width: 140),
+            },
+            Params("PathCaseId", "رقم الحالة الداخلي", "Case id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
+
         public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
             "إشعار دائن", "Credit note",
             "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
@@ -690,6 +716,7 @@ namespace CrossBuy.BL.Reporting
             yield return SpecimenLabel();    // H206
             yield return DiseaseReport();    // H209
             yield return WardDowntime();     // H211
+            yield return PathReport();       // H216
             yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }

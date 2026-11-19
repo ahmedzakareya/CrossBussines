@@ -1,0 +1,244 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalEndoRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H217 — endoscopy, composed from the theme (demo39): the procedures (search, status, pages) with the scope and the
+    cycle that cleared it, the findings, the colonoscopy quality and the pathology case its biopsies opened; the scopes
+    tab shows each scope ready or why not, and records a reprocessing cycle.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Endoscopy"].Value;
+    string q = ViewBag.Q as string ?? "", status = ViewBag.Status as string ?? "";
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total;
+    bool ready = ViewBag.Ready == true, canConsult = ViewBag.CanConsult == true, canManage = ViewBag.CanManage == true, canNurse = ViewBag.CanNurse == true;
+    var scopes = (ViewBag.Scopes as IReadOnlyList<HospitalScopeRow>) ?? Array.Empty<HospitalScopeRow>();
+    string Link(int p) => Url.Action("Endoscopy", new { q, status, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string At(DateTime? u) => u is DateTime d ? HospitalNursingService.UtcToWard(d).ToString("MM-dd HH:mm", inv) : "—";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Endoscopy"]
+                <span class="badge badge-light-primary fs-7 fw-bold">@T["{0} scopes ready", scopes.Count(s => s.Ready)]</span></h1>
+        </div>
+        @if (ready && canConsult) {<button type="button" class="btn btn-sm btn-primary" data-en-new><i class="ki-outline ki-plus fs-4"></i>@T["Start a procedure"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The endoscopy tables are not created yet (hospital_h217_endoscopy.sql)."]</div></div>
+        }
+        <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mb-5">
+            <li class="nav-item"><a class="nav-link text-active-primary active" data-bs-toggle="tab" href="#en-procs">@T["Procedures"]</a></li>
+            <li class="nav-item"><a class="nav-link text-active-primary" data-bs-toggle="tab" href="#en-scopes">@T["Scopes and reprocessing"]</a></li>
+        </ul>
+        <div class="tab-content">
+        <div class="tab-pane fade show active" id="en-procs">
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Procedures"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} procedures", total]</span></h3>
+                <form class="card-toolbar gap-2 flex-wrap" method="get" action="@Url.Action("Endoscopy")">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Patient, number, scope"]" /></div>
+                    <div class="w-150px"><select name="status" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["All"]" onchange="this.form.submit()"><option value="">@T["All"]</option>@foreach (var s in HospitalEndoStatus.All) {<option value="@s" selected="@(s == status)">@T["ens:" + s]</option>}</select></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-scan-barcode fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No procedure here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-top gs-0 gy-4 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-175px rounded-start">@T["Patient"]</th><th class="min-w-150px">@T["Procedure"]</th><th class="min-w-250px">@T["Findings"]</th><th class="min-w-150px">@T["Quality and biopsies"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                var p = row.Proc; bool colon = p.Kind == HospitalEndoKind.Colonoscopy;
+                                <tr>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                        <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@p.ProcNo</bdi></span></td>
+                                    <td class="fs-7"><span class="badge badge-light-primary fw-bold">@T["enk:" + p.Kind]</span>
+                                        <div class="text-muted fs-8 mt-1">@T["Scope"] <bdi class="hp-num" dir="ltr">@row.Scope</bdi> · @T["Cycle"] <span class="hp-num">#@p.CycleId</span></div>
+                                        <div class="text-muted fs-8">@T["ensed:" + p.Sedation] · <span class="hp-num" dir="ltr">@At(p.StartedAt)</span></div>
+                                        <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Endoscopist)</div></td>
+                                    <td class="fs-7"><div class="text-gray-700"><span class="text-muted">@T["Indication"]:</span> <bdi>@p.Indication</bdi></div>
+                                        @if (p.Findings != null) {<div class="text-gray-900 mt-1"><bdi>@p.Findings</bdi></div>}
+                                        @if (p.Complications != null) {<div class="text-danger fs-8 mt-1"><bdi>@p.Complications</bdi></div>}</td>
+                                    <td class="fs-8">@if (p.Status == HospitalEndoStatus.Completed)
+                                    {
+                                        @if (colon) {<span class="badge badge-light-@(row.QualityMet ? "primary" : "danger")">@(row.QualityMet ? T["Quality met"] : T["Quality not met"])</span>
+                                            <div class="text-muted mt-1">@(p.CecumReached == true ? T["Caecum reached"] : T["Caecum not reached"])@if (p.WithdrawalMinutes != null) {<text> · @T["Withdrawal {0} min", p.WithdrawalMinutes]</text>} · @T["Boston {0}", p.BowelPrepScore]</div>}
+                                        @if (p.Biopsies > 0) {<div class="mt-1">@T["{0} biopsies", p.Biopsies] @if (row.PathCaseNo != null) {<a href="@Url.Action("Pathology", new { q = row.PathCaseNo })" class="badge badge-light-info hp-num" dir="ltr">@row.PathCaseNo</a>}</div>}
+                                    } else {<span class="badge badge-light-info">@T["ens:Started"]</span>}</td>
+                                    <td class="text-end pe-4">@if (ready && canConsult && p.Status == HospitalEndoStatus.Started) {<button type="button" class="btn btn-sm btn-primary" data-en-done="@p.ID" data-kind="@p.Kind" data-no="@p.ProcNo">@T["Complete the report"]</button>}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int pg = Math.Max(1, page - 3); pg <= Math.Min(pages, page + 3); pg++) {<li class="page-item @(pg == page ? "active" : "")"><a class="page-link" href="@Link(pg)">@pg</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+        </div>
+
+        <div class="tab-pane fade" id="en-scopes">
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Scopes and reprocessing"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A scope is used only after a passed cycle, and within 7 days of it"]</span></h3>
+                <div class="card-toolbar gap-2">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Serial or kind"]" data-sc-search /></div>
+                    @if (ready && canManage) {<button type="button" class="btn btn-sm btn-primary" data-sc-new><i class="ki-outline ki-plus fs-4"></i>@T["Add a scope"]</button>}
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 my-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Scope"]</th><th>@T["Last reprocessing"]</th><th>@T["Last used"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in scopes)
+                        {
+                            <tr data-sc-row data-text="@(s.Scope.Serial + " " + s.Scope.Kind + " " + s.Scope.Model)">
+                                <td class="ps-4"><bdi class="fw-bold hp-num" dir="ltr">@s.Scope.Serial</bdi><div class="text-muted fs-8">@T["enk:" + s.Scope.Kind]@if (s.Scope.Model != null) {<text> · @s.Scope.Model</text>}</div></td>
+                                <td class="fs-7">@if (s.LastCycle is { } c) {<span class="hp-num" dir="ltr">@At(c.At)</span> <span class="badge badge-light-@(c.Passed ? "primary" : "danger") fs-9">@(c.Passed ? T["Passed"] : T["Failed"])</span><div class="text-muted fs-8">@c.Agent · @T["{0} min", c.Minutes]</div>} else {<span class="text-muted">—</span>}</td>
+                                <td class="fs-7 hp-num" dir="ltr">@At(s.LastUsedAt)</td>
+                                <td>@if (s.Ready) {<span class="badge badge-light-primary">@T["Ready for use"]</span>} else {<span class="badge badge-light-danger">@T["Not ready"]</span><div class="text-muted fs-8 mt-1">@T[s.NotReady ?? ""]</div>}</td>
+                                <td class="text-end pe-4">@if (ready && canNurse) {<button type="button" class="btn btn-sm btn-light-primary" data-sc-cycle="@s.Scope.ID" data-serial="@s.Scope.Serial"><i class="ki-outline ki-arrows-circle fs-4"></i>@T["Record reprocessing"]</button>}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+                <ul class="pagination pt-6 justify-content-end" data-sc-pages></ul>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="enNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Start a procedure"]</h1><div class="text-muted fw-semibold fs-6">@T["Only a scope that is ready can be chosen."]</div></div>
+        <div class="row g-4">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-en="patient" data-placeholder="@T["Name, file number or phone"]"></select></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Procedure"]</label><select class="form-select form-select-solid" data-en="kind">@foreach (var k in HospitalEndoKind.All) {<option value="@k">@T["enk:" + k]</option>}</select></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Scope"]</label><select class="form-select form-select-solid" data-en="scope">@foreach (var s in scopes.Where(s => s.Ready)) {<option value="@s.Scope.ID" data-kind="@s.Scope.Kind">@s.Scope.Serial · @T["enk:" + s.Scope.Kind]</option>}</select></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Sedation"]</label><select class="form-select form-select-solid" data-en="sedation">@foreach (var s in HospitalEndoSedation.All) {<option value="@s">@T["ensed:" + s]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Indication"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-en="indication"></textarea></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-en-start>@T["Start the procedure"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="enDone" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10 scroll-y mh-650px">
+        <div class="mb-6 text-center"><h1 class="mb-3">@T["Complete the report"]</h1><div class="text-muted fw-semibold fs-6 hp-num" dir="ltr" data-ed-no></div></div>
+        <div class="row g-4">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Findings"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="4000" data-ed="findings"></textarea></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Interventions"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-ed="interventions"></textarea></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Complications"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-ed="complications"></textarea></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Recommendations"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-ed="recommendations"></textarea></div>
+            <div class="col-md-4" data-ed-colon><label class="form-check form-check-custom form-check-solid mt-8"><input class="form-check-input" type="checkbox" data-ed="cecum" /><span class="form-check-label fw-semibold">@T["Caecum reached"]</span></label></div>
+            <div class="col-md-4" data-ed-colon><label class="fs-6 fw-semibold mb-2">@T["Withdrawal time (minutes)"]</label><input type="number" min="1" max="120" class="form-control form-control-solid" data-ed="withdrawal" /></div>
+            <div class="col-md-4" data-ed-colon><label class="fs-6 fw-semibold mb-2">@T["Boston score (0-9)"]</label><input type="number" min="0" max="9" class="form-control form-control-solid" data-ed="prep" /></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Biopsy jars"]</label><input type="number" min="0" max="50" value="0" class="form-control form-control-solid" data-ed="biopsies" /></div>
+            <div class="col-md-8"><label class="fs-6 fw-semibold mb-2">@T["Biopsy sites"]</label><input class="form-control form-control-solid" maxlength="200" data-ed="sites" /></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ed-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="scNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1>@T["Add a scope"]</h1></div>
+        <div class="d-flex flex-column gap-4">
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Serial number"]</label><input class="form-control form-control-solid" maxlength="40" dir="ltr" data-sn="serial" /></div>
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Procedure"]</label><select class="form-select form-select-solid" data-sn="kind">@foreach (var k in HospitalEndoKind.All) {<option value="@k">@T["enk:" + k]</option>}</select></div>
+            <div><label class="fs-6 fw-semibold mb-2">@T["Scope model"]</label><input class="form-control form-control-solid" maxlength="100" dir="ltr" data-sn="model" /></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-sn-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="scCycle" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Record reprocessing"]</h1><div class="text-muted fw-semibold fs-6 hp-num" dir="ltr" data-cy-serial></div></div>
+        <div class="d-flex flex-column gap-4">
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-cy="leak" /><span class="form-check-label fw-semibold">@T["Leak test passed"]</span></label>
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-cy="manual" /><span class="form-check-label fw-semibold">@T["Manual cleaning done"]</span></label>
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["High-level disinfectant"]</label><input class="form-control form-control-solid" maxlength="60" data-cy="agent" placeholder="OPA 0.55%" dir="auto" /></div>
+            <div><label class="fs-6 fw-semibold mb-2 required">@T["Contact time (minutes)"]</label><input type="number" min="0" max="240" class="form-control form-control-solid" data-cy="minutes" /></div>
+            <div><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" data-cy="note" /></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cy-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Endoscopy")), id = null, kind = null, scope = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var mn = document.getElementById('enNew'), md = document.getElementById('enDone'), ms = document.getElementById('scNew'), mc = document.getElementById('scCycle');
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(t, m) { return function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } if (m) bootstrap.Modal.getOrCreateInstance(m).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
+            if (window.jQuery) jQuery(mn.querySelector('[data-en=patient]')).select2({ width: '100%', dropdownParent: jQuery(mn), placeholder: mn.querySelector('[data-en=patient]').getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")), delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: (d.results || d || []).map(function (x) { return { id: x.id, text: x.text || x.name }; }) }; } } });
+            // the scopes list: search and pages in the browser
+            var rows = Array.prototype.slice.call(document.querySelectorAll('[data-sc-row]')), pager = document.querySelector('[data-sc-pages]'), cur = 1, term = '', size = 15;
+            function paint() {
+                var hit = rows.filter(function (r) { return !term || r.getAttribute('data-text').toLowerCase().indexOf(term) >= 0; });
+                var n = Math.max(1, Math.ceil(hit.length / size)); if (cur > n) cur = n;
+                rows.forEach(function (r) { r.classList.add('d-none'); }); hit.slice((cur - 1) * size, cur * size).forEach(function (r) { r.classList.remove('d-none'); });
+                var h = ''; if (n > 1) for (var p = 1; p <= n; p++) h += '<li class="page-item' + (p === cur ? ' active' : '') + '"><a class="page-link" href="#" data-sc-page="' + p + '">' + p + '</a></li>';
+                pager.innerHTML = h;
+            }
+            var box = document.querySelector('[data-sc-search]'); box.addEventListener('input', function () { term = box.value.trim().toLowerCase(); cur = 1; paint(); }); paint();
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-en-new],[data-en-start],[data-en-done],[data-ed-save],[data-sc-new],[data-sn-save],[data-sc-cycle],[data-cy-save],[data-sc-page]'); if (!t) return;
+                if (t.hasAttribute('data-sc-page')) { e.preventDefault(); cur = Number(t.getAttribute('data-sc-page')); paint(); return; }
+                if (t.hasAttribute('data-en-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
+                if (t.hasAttribute('data-sc-new')) { bootstrap.Modal.getOrCreateInstance(ms).show(); return; }
+                if (t.hasAttribute('data-en-start')) {
+                    var v = function (k) { return mn.querySelector('[data-en="' + k + '"]').value; }; t.disabled = true;
+                    post(root, { patientId: Number(v('patient')) || 0, kind: v('kind'), scopeId: Number(v('scope')) || 0, sedation: v('sedation'), indication: v('indication') }).then(done(t, mn)); return;
+                }
+                if (t.hasAttribute('data-en-done')) {
+                    id = t.getAttribute('data-en-done'); kind = t.getAttribute('data-kind'); md.querySelector('[data-ed-no]').textContent = t.getAttribute('data-no');
+                    md.querySelectorAll('[data-ed-colon]').forEach(function (d) { d.classList.toggle('d-none', kind !== 'Colonoscopy'); });
+                    bootstrap.Modal.getOrCreateInstance(md).show(); return;
+                }
+                if (t.hasAttribute('data-ed-save')) {
+                    var f = function (k) { return md.querySelector('[data-ed="' + k + '"]'); }; var colon = kind === 'Colonoscopy'; t.disabled = true;
+                    post(root + '/' + id + '/Complete', { findings: f('findings').value, interventions: f('interventions').value, complications: f('complications').value, recommendations: f('recommendations').value,
+                        cecumReached: colon ? f('cecum').checked : null, withdrawalMinutes: colon && f('withdrawal').value !== '' ? Number(f('withdrawal').value) : null, bowelPrepScore: colon && f('prep').value !== '' ? Number(f('prep').value) : null,
+                        biopsies: Number(f('biopsies').value) || 0, biopsySites: f('sites').value }).then(done(t, md)); return;
+                }
+                if (t.hasAttribute('data-sn-save')) { var s = function (k) { return ms.querySelector('[data-sn="' + k + '"]').value; }; t.disabled = true; post(root + '/Scopes', { serial: s('serial'), kind: s('kind'), model: s('model') }).then(done(t, ms)); return; }
+                if (t.hasAttribute('data-sc-cycle')) { scope = t.getAttribute('data-sc-cycle'); mc.querySelector('[data-cy-serial]').textContent = t.getAttribute('data-serial'); bootstrap.Modal.getOrCreateInstance(mc).show(); return; }
+                var c = function (k) { return mc.querySelector('[data-cy="' + k + '"]'); }; t.disabled = true;
+                post(root + '/Scopes/' + scope + '/Cycle', { leakTestPassed: c('leak').checked, manualClean: c('manual').checked, agent: c('agent').value, minutes: Number(c('minutes').value) || 0, note: c('note').value }).then(done(t, mc));
+            });
+        })();
+    </script>
+}

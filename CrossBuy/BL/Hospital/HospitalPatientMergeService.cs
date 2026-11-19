@@ -91,6 +91,9 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalRestraint), "HospitalRestraints"),             // H213: a restraint episode follows its patient
 			(typeof(HospitalRestraintCheck), "HospitalRestraintChecks"),   // H213: and its checks
 			(typeof(HospitalTeleVisit), "HospitalTeleVisits"),             // H214: a video visit follows its patient
+			(typeof(HospitalPathCase), "HospitalPathCases"),               // H216: a pathology case follows its patient
+			(typeof(HospitalEndoscopy), "HospitalEndoscopies"),           // H217: an endoscopy follows its patient
+			(typeof(HospitalCardioStudy), "HospitalCardioStudies"),       // H218: a cardiac study follows its patient
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

@@ -54,7 +54,7 @@
                     <div class="separator separator-dashed my-5"></div>
                     <div class="text-muted fs-8 mb-1">@T["Appointment"]</div>
                     <div class="fw-bold hp-num" dir="ltr">@Model.StartsAt.ToString("yyyy-MM-dd HH:mm", inv)</div>
-                    <div class="text-gray-700 fs-7">@DisplayName.Of(Model.Doctor, Model.DoctorEn)</div>
+                    <div class="mt-2">@await Html.PartialAsync("_HospitalFace", Model.DoctorFace)</div>
                     <div class="separator separator-dashed my-5"></div>
                     <div class="text-muted fs-8">@T["The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit."]</div>
                 </div></div>

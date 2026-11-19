@@ -1,0 +1,180 @@
+{
+ "unit": "H218 - Cardiology: ECG and echo",
+ "strings": {
+  "Cardiology": {
+   "ar": "تخطيط القلب والصدى",
+   "en": "Cardiology",
+   "fr": "Cardiologie"
+  },
+  "{0} waiting to be read": {
+   "ar": "{0} بانتظار القراءة",
+   "en": "{0} waiting to be read",
+   "fr": "{0} en attente de lecture"
+  },
+  "{0} critical": {
+   "ar": "{0} حرجة",
+   "en": "{0} critical",
+   "fr": "{0} critiques"
+  },
+  "Request a study": {
+   "ar": "طلب فحص",
+   "en": "Request a study",
+   "fr": "Demander un examen"
+  },
+  "The cardiology table is not created yet (hospital_h218_cardiology.sql).": {
+   "ar": "جدول فحوص القلب غير منشأ بعد (hospital_h218_cardiology.sql).",
+   "en": "The cardiology table is not created yet (hospital_h218_cardiology.sql).",
+   "fr": "La table de cardiologie n'est pas encore créée (hospital_h218_cardiology.sql)."
+  },
+  "Studies": {
+   "ar": "الفحوص",
+   "en": "Studies",
+   "fr": "Examens"
+  },
+  "{0} studies": {
+   "ar": "{0} فحوص",
+   "en": "{0} studies",
+   "fr": "{0} examens"
+  },
+  "QTc is calculated (Bazett)": {
+   "ar": "يُحسب QTc تلقائيًا (بازيت)",
+   "en": "QTc is calculated (Bazett)",
+   "fr": "Le QTc est calculé (Bazett)"
+  },
+  "Patient or number": {
+   "ar": "المريض أو الرقم",
+   "en": "Patient or number",
+   "fr": "Patient ou numéro"
+  },
+  "cdk:ECG": {
+   "ar": "تخطيط القلب الكهربائي",
+   "en": "ECG",
+   "fr": "ECG"
+  },
+  "cdk:Echo": {
+   "ar": "صدى القلب",
+   "en": "Echocardiogram",
+   "fr": "Échocardiographie"
+  },
+  "cds:Requested": {
+   "ar": "بانتظار القراءة",
+   "en": "Waiting to be read",
+   "fr": "En attente"
+  },
+  "cds:Reported": {
+   "ar": "مقروء",
+   "en": "Reported",
+   "fr": "Interprété"
+  },
+  "No study here.": {
+   "ar": "لا يوجد فحص هنا.",
+   "en": "No study here.",
+   "fr": "Aucun examen ici."
+  },
+  "Study": {
+   "ar": "الفحص",
+   "en": "Study",
+   "fr": "Examen"
+  },
+  "Interpretation": {
+   "ar": "التفسير",
+   "en": "Interpretation",
+   "fr": "Interprétation"
+  },
+  "Axis": {
+   "ar": "المحور",
+   "en": "Axis",
+   "fr": "Axe"
+  },
+  "Ejection fraction": {
+   "ar": "الكسر القذفي",
+   "en": "Ejection fraction",
+   "fr": "Fraction d'éjection"
+  },
+  "Valves": {
+   "ar": "الصمامات",
+   "en": "Valves",
+   "fr": "Valves"
+  },
+  "Wall motion": {
+   "ar": "حركة الجدار",
+   "en": "Wall motion",
+   "fr": "Cinétique pariétale"
+  },
+  "Critical finding": {
+   "ar": "نتيجة حرجة",
+   "en": "Critical finding",
+   "fr": "Résultat critique"
+  },
+  "Read the study": {
+   "ar": "قراءة",
+   "en": "Report",
+   "fr": "Interpréter"
+  },
+  "Report the study": {
+   "ar": "قراءة الفحص",
+   "en": "Report the study",
+   "fr": "Interpréter l'examen"
+  },
+  "Rhythm": {
+   "ar": "النظم",
+   "en": "Rhythm",
+   "fr": "Rythme"
+  },
+  "Chambers": {
+   "ar": "حجرات القلب",
+   "en": "Chambers",
+   "fr": "Cavités"
+  },
+  "Pericardium": {
+   "ar": "التامور",
+   "en": "Pericardium",
+   "fr": "Péricarde"
+  },
+  "Sign the report": {
+   "ar": "توقيع التقرير",
+   "en": "Sign the report",
+   "fr": "Signer le compte rendu"
+  },
+  "Choose the study": {
+   "ar": "اختر الفحص",
+   "en": "Choose the study",
+   "fr": "Choisissez l'examen"
+  },
+  "This study is already reported": {
+   "ar": "هذا الفحص مقروء بالفعل",
+   "en": "This study is already reported",
+   "fr": "Cet examen est déjà interprété"
+  },
+  "Write the interpretation": {
+   "ar": "اكتب التفسير",
+   "en": "Write the interpretation",
+   "fr": "Rédigez l'interprétation"
+  },
+  "Write the heart rate": {
+   "ar": "اكتب معدل النبض",
+   "en": "Write the heart rate",
+   "fr": "Indiquez la fréquence cardiaque"
+  },
+  "Write the rhythm": {
+   "ar": "اكتب النظم",
+   "en": "Write the rhythm",
+   "fr": "Indiquez le rythme"
+  },
+  "A measurement is outside what an ECG can show": {
+   "ar": "قياس خارج ما يمكن أن يظهره تخطيط القلب",
+   "en": "A measurement is outside what an ECG can show",
+   "fr": "Une mesure est hors de ce qu'un ECG peut montrer"
+  },
+  "Write the ejection fraction (5 to 90%)": {
+   "ar": "اكتب الكسر القذفي (5 إلى 90%)",
+   "en": "Write the ejection fraction (5 to 90%)",
+   "fr": "Indiquez la fraction d'éjection (5 à 90 %)"
+  },
+  "Someone else reported this study: open it again": {
+   "ar": "قرأ شخص آخر هذا الفحص: افتحه من جديد",
+   "en": "Someone else reported this study: open it again",
+   "fr": "Quelqu'un d'autre a interprété cet examen : rouvrez-le"
+  }
+ }
+}

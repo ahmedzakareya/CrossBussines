@@ -1,0 +1,250 @@
+{
+ "unit": "H216 - Anatomic pathology",
+ "strings": {
+  "Pathology": {
+   "ar": "علم الأمراض",
+   "en": "Pathology",
+   "fr": "Anatomopathologie"
+  },
+  "{0} past 3 days": {
+   "ar": "{0} تجاوزت 3 أيام",
+   "en": "{0} past 3 days",
+   "fr": "{0} au-delà de 3 jours"
+  },
+  "Request pathology": {
+   "ar": "طلب فحص نسيجي",
+   "en": "Request pathology",
+   "fr": "Demander une anatomopathologie"
+  },
+  "The pathology tables are not created yet (hospital_h216_pathology.sql).": {
+   "ar": "جداول علم الأمراض غير منشأة بعد (hospital_h216_pathology.sql).",
+   "en": "The pathology tables are not created yet (hospital_h216_pathology.sql).",
+   "fr": "Les tables d'anatomopathologie ne sont pas encore créées (hospital_h216_pathology.sql)."
+  },
+  "Patient, case, specimen": {
+   "ar": "المريض أو الحالة أو العينة",
+   "en": "Patient, case, specimen",
+   "fr": "Patient, cas, prélèvement"
+  },
+  "pas:Requested": {
+   "ar": "مطلوبة",
+   "en": "Requested",
+   "fr": "Demandé"
+  },
+  "pas:Received": {
+   "ar": "مستلمة",
+   "en": "Received",
+   "fr": "Reçu"
+  },
+  "pas:Grossed": {
+   "ar": "موصوفة عيانيًا",
+   "en": "Grossed",
+   "fr": "Macroscopie faite"
+  },
+  "pas:Reported": {
+   "ar": "موقَّعة",
+   "en": "Signed out",
+   "fr": "Signé"
+  },
+  "pas:Cancelled": {
+   "ar": "ملغاة",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  },
+  "pasrc:Clinic": {
+   "ar": "العيادة",
+   "en": "Clinic",
+   "fr": "Consultation"
+  },
+  "pasrc:Theatre": {
+   "ar": "العمليات",
+   "en": "Theatre",
+   "fr": "Bloc opératoire"
+  },
+  "pasrc:Endoscopy": {
+   "ar": "المناظير",
+   "en": "Endoscopy",
+   "fr": "Endoscopie"
+  },
+  "pasrc:Ward": {
+   "ar": "القسم الداخلي",
+   "en": "Ward",
+   "fr": "Service"
+  },
+  "No pathology case here.": {
+   "ar": "لا توجد حالة نسيجية هنا.",
+   "en": "No pathology case here.",
+   "fr": "Aucun cas ici."
+  },
+  "{0} containers": {
+   "ar": "{0} أوعية",
+   "en": "{0} containers",
+   "fr": "{0} pots"
+  },
+  "{0} blocks": {
+   "ar": "{0} قوالب",
+   "en": "{0} blocks",
+   "fr": "{0} blocs"
+  },
+  "Past 3 days": {
+   "ar": "تجاوزت 3 أيام",
+   "en": "Past 3 days",
+   "fr": "Au-delà de 3 jours"
+  },
+  "Malignant": {
+   "ar": "ورم خبيث",
+   "en": "Malignant",
+   "fr": "Malin"
+  },
+  "Amendment": {
+   "ar": "تعديل",
+   "en": "Amendment",
+   "fr": "Addendum"
+  },
+  "Grossing": {
+   "ar": "الوصف العياني",
+   "en": "Grossing",
+   "fr": "Macroscopie"
+  },
+  "Pathology report": {
+   "ar": "تقرير علم الأمراض",
+   "en": "Pathology report",
+   "fr": "Compte rendu"
+  },
+  "Sign out the report": {
+   "ar": "توقيع التقرير",
+   "en": "Sign out the report",
+   "fr": "Signer le compte rendu"
+  },
+  "Amend": {
+   "ar": "تعديل",
+   "en": "Amend",
+   "fr": "Amender"
+  },
+  "Cancel the request": {
+   "ar": "إلغاء الطلب",
+   "en": "Cancel the request",
+   "fr": "Annuler la demande"
+  },
+  "Containers": {
+   "ar": "الأوعية",
+   "en": "Containers",
+   "fr": "Pots"
+  },
+  "Clinical history": {
+   "ar": "التاريخ السريري",
+   "en": "Clinical history",
+   "fr": "Renseignements cliniques"
+  },
+  "Containers received": {
+   "ar": "الأوعية المستلمة",
+   "en": "Containers received",
+   "fr": "Pots reçus"
+  },
+  "Gross description": {
+   "ar": "الوصف العياني",
+   "en": "Gross description",
+   "fr": "Description macroscopique"
+  },
+  "Blocks": {
+   "ar": "القوالب",
+   "en": "Blocks",
+   "fr": "Blocs"
+  },
+  "Microscopic description": {
+   "ar": "الوصف المجهري",
+   "en": "Microscopic description",
+   "fr": "Description microscopique"
+  },
+  "Why amended": {
+   "ar": "سبب التعديل",
+   "en": "Why amended",
+   "fr": "Raison de l'addendum"
+  },
+  "Receive the specimen": {
+   "ar": "استلام العينة",
+   "en": "Receive the specimen",
+   "fr": "Réceptionner le prélèvement"
+  },
+  "Amend the report": {
+   "ar": "تعديل التقرير",
+   "en": "Amend the report",
+   "fr": "Amender le compte rendu"
+  },
+  "Choose where the specimen comes from": {
+   "ar": "اختر مصدر العينة",
+   "en": "Choose where the specimen comes from",
+   "fr": "Choisissez la provenance du prélèvement"
+  },
+  "Write what the specimen is": {
+   "ar": "اكتب ما هي العينة",
+   "en": "Write what the specimen is",
+   "fr": "Indiquez le prélèvement"
+  },
+  "The containers must be between 1 and 50": {
+   "ar": "يجب أن تكون الأوعية بين 1 و50",
+   "en": "The containers must be between 1 and 50",
+   "fr": "Les pots doivent être entre 1 et 50"
+  },
+  "This case is already received": {
+   "ar": "هذه الحالة مستلمة بالفعل",
+   "en": "This case is already received",
+   "fr": "Ce cas est déjà reçu"
+  },
+  "The containers received do not match the request: count them again": {
+   "ar": "الأوعية المستلمة لا تطابق الطلب: أعد عدّها",
+   "en": "The containers received do not match the request: count them again",
+   "fr": "Les pots reçus ne correspondent pas à la demande : recomptez-les"
+  },
+  "Receive the specimen before describing it": {
+   "ar": "استلم العينة قبل وصفها",
+   "en": "Receive the specimen before describing it",
+   "fr": "Réceptionnez le prélèvement avant de le décrire"
+  },
+  "Write the gross description": {
+   "ar": "اكتب الوصف العياني",
+   "en": "Write the gross description",
+   "fr": "Rédigez la description macroscopique"
+  },
+  "Write how many blocks were cut": {
+   "ar": "اكتب عدد القوالب المقطوعة",
+   "en": "Write how many blocks were cut",
+   "fr": "Indiquez le nombre de blocs"
+  },
+  "Describe the specimen before signing the report": {
+   "ar": "صف العينة قبل توقيع التقرير",
+   "en": "Describe the specimen before signing the report",
+   "fr": "Décrivez le prélèvement avant de signer"
+  },
+  "Write the microscopic description": {
+   "ar": "اكتب الوصف المجهري",
+   "en": "Write the microscopic description",
+   "fr": "Rédigez la description microscopique"
+  },
+  "Only a request not yet received is cancelled": {
+   "ar": "لا يُلغى إلا طلب لم يُستلم بعد",
+   "en": "Only a request not yet received is cancelled",
+   "fr": "Seule une demande non reçue peut être annulée"
+  },
+  "Only a signed report is amended": {
+   "ar": "لا يُعدَّل إلا تقرير موقَّع",
+   "en": "Only a signed report is amended",
+   "fr": "Seul un compte rendu signé est amendé"
+  },
+  "Write the amendment": {
+   "ar": "اكتب التعديل",
+   "en": "Write the amendment",
+   "fr": "Rédigez l'addendum"
+  },
+  "Write why the report is amended": {
+   "ar": "اكتب سبب تعديل التقرير",
+   "en": "Write why the report is amended",
+   "fr": "Indiquez pourquoi le compte rendu est amendé"
+  },
+  "Someone else changed this case: open it again": {
+   "ar": "غيّر شخص آخر هذه الحالة: افتحها من جديد",
+   "en": "Someone else changed this case: open it again",
+   "fr": "Quelqu'un d'autre a modifié ce cas : rouvrez-le"
+  }
+ }
+}

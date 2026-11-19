@@ -1,0 +1,17 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalFace?
+@*
+    The owner's rule: a named member of staff is shown with their photo; with none, their initials on the brand tint.
+*@
+@if (Model != null && (Model.Name != null || Model.NameEn != null))
+{
+    var name = DisplayName.Of(Model.Name ?? "", Model.NameEn);
+    <div class="d-flex align-items-center gap-2">
+        <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+            @if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />}
+            else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-8">@HospitalUi.Initials(Model.NameEn ?? Model.Name)</span>}
+        </div>
+        <span class="text-gray-800 fs-8 fw-semibold">@name</span>
+    </div>
+}

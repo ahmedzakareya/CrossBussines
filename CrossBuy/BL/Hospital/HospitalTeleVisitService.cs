@@ -16,7 +16,7 @@ namespace CrossBuy.BL.Hospital
 	//     set-up message pass.
 	//   · The doctor ends the visit; the appointment's clinical record is the consultation as for any visit.
 	// ==========================================================================================
-	public sealed record HospitalTeleRoom(HospitalTeleVisit Visit, string Patient, string PatientEn, string Mrn, string Doctor, string DoctorEn, DateTime StartsAt, string AppointmentStatus);
+	public sealed record HospitalTeleRoom(HospitalTeleVisit Visit, string Patient, string PatientEn, string Mrn, string Doctor, string DoctorEn, DateTime StartsAt, string AppointmentStatus, HospitalFace? DoctorFace = null);
 
 	public static class HospitalTeleRules
 	{
@@ -74,7 +74,9 @@ namespace CrossBuy.BL.Hospital
 						   join d in _db.HospitalPractitioners.AsNoTracking() on v.PractitionerId equals d.ID
 						   where v.ID == visitId && a.CompanyId == companyId && p.CompanyId == companyId
 						   select new { v, a.AppointmentDate, a.StartMinute, a.Status, p.Name, p.NameEn, p.Mrn, Doc = d.Name, DocEn = d.NameEn }).FirstOrDefaultAsync(ct);
-			return r == null ? null : new HospitalTeleRoom(r.v, r.Name, r.NameEn, r.Mrn, r.Doc, r.DocEn, r.AppointmentDate.Date.AddMinutes(r.StartMinute), r.Status);
+			if (r == null) return null;
+			var face = (await HospitalFaces.OfPractitionersAsync(_db, companyId, new int?[] { r.v.PractitionerId }, ct)).GetValueOrDefault(r.v.PractitionerId);
+			return new HospitalTeleRoom(r.v, r.Name, r.NameEn, r.Mrn, r.Doc, r.DocEn, r.AppointmentDate.Date.AddMinutes(r.StartMinute), r.Status, face);
 		}
 
 		/// The video visits of these appointments (for the portal's list and the worklist).

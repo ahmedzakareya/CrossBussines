@@ -414,12 +414,12 @@ namespace CrossBuy.BL.Reporting
 			e.Add(Text("ملاحظات", "Notes", 0, y, L, Need(8), S(8, color: Muted)));
 			e.Add(Field("Note", L, y, W - L, Need(9), S(9))); y += Need(9);
 			Heading("الطبيب", "Doctor");
-			double doc = y;
-			Cell(0, Half - 2, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
-			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle"); y += Need(9.5);
-			Cell(0, Half - 2, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
-			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, doc, Half, Need(8), S(8, color: Muted)));
-			e.Add(Box(Half, doc + Need(8), Half, y - doc - Need(8), Rule));
+			// the name across the page (a doctor's name runs long), the box to sign and stamp beneath it
+			Cell(0, W, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
+			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle");
+			Cell(Half, Half, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, y, Half, Need(8), S(8, color: Muted))); y += Need(8);
+			e.Add(Box(Half, y, Half, 14, Rule)); y += 14;
 			y += 1;
 			Cell(0, W, "وزارة الصحة", "Ministry of Health", "MohAuth", pt: 8.5); y += Need(9.5);
 			e.Add(Text("امسح الرمز للتحقق من صحة هذه الشهادة", "Scan the code to verify this certificate", 0, y, W, Need(7.5), S(7.5, color: Muted, align: ReportTextAlign.Center))); y += Need(7.5);
@@ -463,12 +463,12 @@ namespace CrossBuy.BL.Reporting
 			Cell(Half, Half, "الجنس", "Sex", "PatientSex"); y += Need(9.5);
 			Cell(0, W, "الهاتف", "Phone", "PatientPhone"); y += Need(9.5);
 			Heading("الطبيب المبلِّغ", "Reporting doctor");
-			double doc = y;
-			Cell(0, Half - 2, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
-			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle"); y += Need(9.5);
-			Cell(0, Half - 2, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
-			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, doc, Half, Need(8), S(8, color: Muted)));
-			e.Add(Box(Half, doc + Need(8), Half, y - doc - Need(8), Rule));
+			// the name across the page (a doctor's name runs long), the box to sign and stamp beneath it
+			Cell(0, W, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
+			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle");
+			Cell(Half, Half, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, y, Half, Need(8), S(8, color: Muted))); y += Need(8);
+			e.Add(Box(Half, y, Half, 14, Rule)); y += 14;
 			y += 1;
 			Heading("الإبلاغ", "Report");
 			Cell(0, W, "الحالة", "State", "Status"); y += Need(9.5);
@@ -540,6 +540,64 @@ namespace CrossBuy.BL.Reporting
 			return layout;
 		}
 
+		/// H216 — the PATHOLOGY REPORT, one A4 page: the letterhead and title; the case and the dates; the patient and the
+		/// requesting doctor; the specimen and its source; the clinical history; the gross and microscopic descriptions
+		/// (long texts start at the top of their box); the DIAGNOSIS framed, with MALIGNANT in red when it is; the
+		/// pathologist's signature; the amendments, if any, beneath.
+		public static ReportVisualLayout PathReport()
+		{
+			const double W = 180, Half = 90, L = 30;
+			var e = new List<ReportElement>(); double y = 0;
+			ReportElementStyle Top(double pt, bool bold = false, string color = Ink) => new()
+			{
+				FontSizePt = pt, Bold = bold, Color = color, Align = ReportTextAlign.Start, VerticalAlign = ReportVerticalAlign.Top, PaddingMm = 0.5, BorderStyle = ReportBorderStyle.None,
+			};
+			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null, string color = Ink)
+			{
+				e.Add(Text(ar, en, x, y, L, Need(8.5), S(8.5, color: Muted)));
+				e.Add(Field(key, x + L, y, width - L, Need(10), S(10, bold, color, date: date)));
+			}
+			void Heading(string ar, string en) { y += 1.5; e.Add(Text(ar, en, 0, y, W, Need(10), S(10, true, Brand))); y += Need(10); e.Add(Line(0, y, W)); y += 1; }
+			void Block(string key, int lines, double pt = 9.5) { double h = Need(pt) * lines; e.Add(Field(key, 0, y, W, h, Top(pt))); y += h; }
+
+			e.Add(Field("CompanyName", 0, y, W, Need(14), S(14, true, align: ReportTextAlign.Center))); y += Need(14);
+			e.Add(Field("CompanyAddress", 0, y, Half - 1, Need(8.5), S(8.5, color: Muted, align: ReportTextAlign.End)));
+			e.Add(Field("CompanyPhone", Half + 1, y, Half - 1, Need(8.5), S(8.5, color: Muted))); y += Need(8.5) + 2;
+			e.Add(Text("تقرير علم الأمراض", "Pathology report", 0, y, W, Need(16), S(16, true, Brand, ReportTextAlign.Center))); y += Need(16);
+			e.Add(Line(0, y, W)); y += 2;
+			Cell(0, Half - 2, "رقم الحالة", "Case no.", "DocumentNo", true);
+			Cell(Half, Half, "تاريخ الاستلام", "Received", "Received", date: "yyyy-MM-dd HH:mm"); y += Need(10);
+			Cell(0, Half - 2, "الاسم", "Patient", "PatientName", true);
+			Cell(Half, Half, "رقم الملف", "File no.", "PatientMrn"); y += Need(10);
+			Cell(0, Half - 2, "السن", "Age", "PatientAge");
+			Cell(Half, Half, "النوع", "Sex", "PatientSex"); y += Need(10);
+			Cell(0, Half - 2, "الطبيب الطالب", "Requested by", "DoctorName");
+			Cell(Half, Half, "المصدر", "Source", "Source"); y += Need(10);
+			Heading("العينة", "Specimen");
+			Block("Specimen", 1, 10);
+			Heading("التاريخ السريري", "Clinical history");
+			Block("ClinicalHistory", 2);
+			Heading("الوصف العياني", "Gross description");
+			Block("Gross", 2);
+			Heading("الوصف المجهري", "Microscopic description");
+			Block("Microscopic", 4);
+			Heading("التشخيص", "Diagnosis");
+			double box = Need(11) * 2 + 2;
+			e.Add(Box(0, y, W, box, Brand));
+			e.Add(Field("Diagnosis", 2, y + 1, W - 40, Need(11) * 2, Top(11, true)));
+			e.Add(Field("Malignant", W - 36, y + 1, 34, Need(11), S(11, true, Alert, ReportTextAlign.End)));
+			y += box + 2;
+			double sig = y;
+			Cell(0, Half - 2, "أخصائي علم الأمراض", "Pathologist", "Pathologist", true); y += Need(10);
+			Cell(0, Half - 2, "تاريخ التوقيع", "Signed", "SignedAt", date: "yyyy-MM-dd HH:mm"); y += Need(10);
+			e.Add(Text("التوقيع", "Signature", Half, sig, Half, Need(8.5), S(8.5, color: Muted)));
+			e.Add(Box(Half, sig + Need(8.5), Half, y - sig - Need(8.5), Rule));
+			Heading("التعديلات", "Amendments");
+			Block("Amendments", 2, 9);
+			if (y + 1 > ReportPaper.ContentHeightMm(LetterPage)) throw new InvalidOperationException("The pathology report no longer fits one page: " + (y + 1) + " mm");
+			return OneBand(LetterPage, y + 1, e);
+		}
+
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
 		public static ReportVisualLayout? For(string code) => code switch
 		{
@@ -554,6 +612,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.SickLeave => SickLeave(),   // H208
 			HospitalDocumentDatasetCodes.DiseaseReport => DiseaseReport(),   // H209
 			HospitalDocumentDatasetCodes.WardDowntime => WardDowntime(),   // H211
+			HospitalDocumentDatasetCodes.PathReport => PathReport(),   // H216
 			_ => null,
 		};
 	}

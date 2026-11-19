@@ -1,0 +1,155 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalInterfaceRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H215 — the interface channel, composed from the theme (demo39): how a machine connects (the address and header), the
+    interfaces with their kind, the person each acts for, last use and key hint; a new one opens a modal and its key is
+    shown once in a second modal, with a copy button.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Machine interfaces"].Value;
+    string q = ViewBag.Q as string ?? "", bas = ViewBag.Base as string ?? "";
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total; bool ready = ViewBag.Ready == true;
+    string Link(int p) => Url.Action("Interfaces", new { q, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Machine interfaces"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Lab")" class="text-muted text-hover-primary">@T["Laboratory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Machine interfaces"]</li>
+            </ul>
+        </div>
+        @if (ready) {<button type="button" class="btn btn-sm btn-primary" data-if-new><i class="ki-outline ki-plus fs-4"></i>@T["Add an interface"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The interfaces table is not created yet (hospital_h215_interfaces.sql)."]</div></div>
+        }
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+            <i class="ki-outline ki-technology-2 fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold fs-7 text-gray-700">
+                <div class="fs-6 fw-bold text-gray-900 mb-2">@T["How a machine connects"]</div>
+                <div>@T["Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement."]</div>
+                <div class="mt-1"><code dir="ltr">POST @(bas){code}/hl7</code></div>
+                <div class="mt-2">@T["Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages)."]</div>
+                <div class="mt-1"><code dir="ltr">GET @(bas){code}/worklist</code></div>
+                <div class="mt-2">@T["Every request carries the interface key in the header:"] <code dir="ltr">X-Interface-Key</code>. @T["A machine works with the rights of the person it acts for."]</div>
+            </div>
+        </div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Interfaces"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} interfaces", total]</span></h3>
+                <form class="card-toolbar gap-2" method="get" action="@Url.Action("Interfaces")">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Code or name"]" /></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-technology-2 fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No interface yet."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Interface"]</th><th>@T["Kind"]</th><th>@T["Acts for"]</th><th>@T["Last used"]</th><th>@T["Interface key"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                var i = row.Interface;
+                                <tr class="@(i.IsActive ? "" : "opacity-50")">
+                                    <td class="ps-4"><span class="fw-bold text-gray-900 d-block">@i.Name</span><bdi class="text-muted fs-8 hp-num" dir="ltr">@i.Code</bdi></td>
+                                    <td><span class="badge badge-light-primary fs-8">@T["ifk:" + i.Kind]</span></td>
+                                    <td>@await Html.PartialAsync("_HospitalFace", row.ActsAs)</td>
+                                    <td class="fs-7">@if (i.LastUsedAt is DateTime lu) {<span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(lu).ToString("yyyy-MM-dd HH:mm", inv)</span><span class="text-muted fs-8"> · @T["{0} uses", i.Uses]</span>} else {<span class="text-muted">@T["Never"]</span>}</td>
+                                    <td><bdi class="hp-num text-muted" dir="ltr">…@i.KeyHint</bdi></td>
+                                    <td><span class="badge badge-light-@(i.IsActive ? "primary" : "secondary") fs-8">@(i.IsActive ? T["On"] : T["Off"])</span></td>
+                                    <td class="text-end pe-4 text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-light-primary" data-if-rotate="@i.ID" data-name="@i.Name"><i class="ki-outline ki-key fs-4"></i>@T["New key"]</button>
+                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary ms-1" title="@(i.IsActive ? T["Switch off"] : T["Switch on"])" data-bs-toggle="tooltip" data-if-toggle="@i.ID"><i class="ki-outline ki-switch fs-3"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++) {<li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Link(p)">@p</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="ifNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Add an interface"]</h1><div class="text-muted fw-semibold fs-6">@T["It will act with your rights; its key is shown once."]</div></div>
+        <div class="row g-4">
+            <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["Interface code"]</label><input class="form-control form-control-solid" maxlength="30" dir="ltr" data-if="code" placeholder="COBAS-1" /></div>
+            <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Kind"]</label><select class="form-select form-select-solid" data-if="kind">@foreach (var k in HospitalInterfaceKind.All) {<option value="@k">@T["ifk:" + k]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Name"]</label><input class="form-control form-control-solid" maxlength="100" data-if="name" /></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-if-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="ifKey" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-body px-10 py-10 text-center">
+        <i class="ki-outline ki-key fs-3x text-primary mb-5 d-block"></i>
+        <h2 class="mb-3">@T["The interface key"]</h2>
+        <div class="text-muted fw-semibold fs-7 mb-6">@T["Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops."]</div>
+        <div class="input-group"><input class="form-control form-control-solid font-monospace" dir="ltr" readonly data-if-key /><button type="button" class="btn btn-light-primary" data-if-copy><i class="ki-outline ki-copy fs-4"></i>@T["Copy"]</button></div>
+        <button type="button" class="btn btn-primary mt-8" data-if-done>@T["I have copied it"]</button>
+    </div>
+</div></div></div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Interfaces")), mn = document.getElementById('ifNew'), mk = document.getElementById('ifKey');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), copied: @Json.Serialize(T["Copied"].Value),
+                rotate: @Json.Serialize(T["Make a new key for {0}? The current key stops at once."].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function showKey(key) { mk.querySelector('[data-if-key]').value = key; bootstrap.Modal.getOrCreateInstance(mk).show(); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-if-new],[data-if-save],[data-if-rotate],[data-if-toggle],[data-if-copy],[data-if-done]'); if (!t) return;
+                if (t.hasAttribute('data-if-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
+                if (t.hasAttribute('data-if-copy')) { var k = mk.querySelector('[data-if-key]'); k.select(); (navigator.clipboard ? navigator.clipboard.writeText(k.value) : Promise.resolve(document.execCommand('copy'))).then(function () { toastr.success(W.copied); }); return; }
+                if (t.hasAttribute('data-if-done')) { location.reload(); return; }
+                if (t.hasAttribute('data-if-save')) {
+                    var v = function (n) { return mn.querySelector('[data-if="' + n + '"]').value; };
+                    t.disabled = true;
+                    post(root, { code: v('code'), name: v('name'), kind: v('kind') }).then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(mn).hide(); showKey(res.key); });
+                    return;
+                }
+                if (t.hasAttribute('data-if-rotate')) {
+                    cbConfirm(W.rotate.replace('{0}', t.getAttribute('data-name'))).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post(root + '/' + t.getAttribute('data-if-rotate') + '/Rotate').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } showKey(res.key); }); });
+                    return;
+                }
+                t.disabled = true;
+                post(root + '/' + t.getAttribute('data-if-toggle') + '/Toggle').then(function (res) { if (!res.ok) { t.disabled = false; toastr.error(res.error || W.failed); return; } location.reload(); });
+            });
+        })();
+    </script>
+}

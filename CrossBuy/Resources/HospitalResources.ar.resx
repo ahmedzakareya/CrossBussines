@@ -9413,4 +9413,189 @@
   <data name="tele:Ended" xml:space="preserve"><value>انتهت</value></data>
   <data name="tele:Live" xml:space="preserve"><value>جارية</value></data>
   <data name="tele:Scheduled" xml:space="preserve"><value>مجدولة</value></data>
+  <data name="A machine works with the rights of the person it acts for." xml:space="preserve"><value>يعمل الجهاز بصلاحيات الشخص الذي يعمل باسمه.</value></data>
+  <data name="Acts for" xml:space="preserve"><value>يعمل باسم</value></data>
+  <data name="Add an interface" xml:space="preserve"><value>إضافة واجهة</value></data>
+  <data name="Choose what the interface does" xml:space="preserve"><value>اختر عمل الواجهة</value></data>
+  <data name="Code or name" xml:space="preserve"><value>الرمز أو الاسم</value></data>
+  <data name="Copied" xml:space="preserve"><value>تم النسخ</value></data>
+  <data name="Copy" xml:space="preserve"><value>نسخ</value></data>
+  <data name="Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops." xml:space="preserve"><value>انسخه إلى الجهاز الآن، فلن يظهر مرة أخرى. يمكن إنشاء مفتاح جديد في أي وقت، فيتوقف القديم.</value></data>
+  <data name="Every request carries the interface key in the header:" xml:space="preserve"><value>يحمل كل طلب مفتاح الواجهة في الترويسة:</value></data>
+  <data name="How a machine connects" xml:space="preserve"><value>كيف يتصل الجهاز</value></data>
+  <data name="I have copied it" xml:space="preserve"><value>نسختُه</value></data>
+  <data name="Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages)." xml:space="preserve"><value>قائمة عمل الأشعة: يقرأ وسيط قائمة العمل طلبات الأشعة المجدولة (أضف ?modality=CT أو format=hl7 لرسائل HL7).</value></data>
+  <data name="Interface" xml:space="preserve"><value>الواجهة</value></data>
+  <data name="Interface code" xml:space="preserve"><value>الرمز</value></data>
+  <data name="Interface key" xml:space="preserve"><value>المفتاح</value></data>
+  <data name="Interfaces" xml:space="preserve"><value>الواجهات</value></data>
+  <data name="It will act with your rights; its key is shown once." xml:space="preserve"><value>ستعمل بصلاحياتك، ويظهر مفتاحها مرة واحدة فقط.</value></data>
+  <data name="Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement." xml:space="preserve"><value>نتائج المختبر: يرسل جهاز التحليل أو محرك الربط كل رسالة نتائج HL7 ‏(ORU^R01) عبر HTTPS POST ويستلم إشعار الاستلام HL7.</value></data>
+  <data name="Last used" xml:space="preserve"><value>آخر استخدام</value></data>
+  <data name="Machine interfaces" xml:space="preserve"><value>واجهات الأجهزة</value></data>
+  <data name="Make a new key for {0}? The current key stops at once." xml:space="preserve"><value>إنشاء مفتاح جديد لـ {0}؟ يتوقف المفتاح الحالي فورًا.</value></data>
+  <data name="Never" xml:space="preserve"><value>لم تُستخدم</value></data>
+  <data name="New key" xml:space="preserve"><value>مفتاح جديد</value></data>
+  <data name="No interface yet." xml:space="preserve"><value>لا توجد واجهة بعد.</value></data>
+  <data name="The interface key" xml:space="preserve"><value>مفتاح الواجهة</value></data>
+  <data name="The interfaces table is not created yet (hospital_h215_interfaces.sql)." xml:space="preserve"><value>جدول الواجهات غير منشأ بعد (hospital_h215_interfaces.sql).</value></data>
+  <data name="Write a code of letters, digits and dashes" xml:space="preserve"><value>اكتب رمزًا من حروف وأرقام وشرطات</value></data>
+  <data name="Write the interface's name" xml:space="preserve"><value>اكتب اسم الواجهة</value></data>
+  <data name="ifk:ImagingWorklist" xml:space="preserve"><value>قائمة عمل الأشعة</value></data>
+  <data name="ifk:LabResults" xml:space="preserve"><value>نتائج المختبر (HL7)</value></data>
+  <data name="{0} interfaces" xml:space="preserve"><value>{0} واجهات</value></data>
+  <data name="{0} uses" xml:space="preserve"><value>{0} مرات</value></data>
+  <data name="Amend" xml:space="preserve"><value>تعديل</value></data>
+  <data name="Amend the report" xml:space="preserve"><value>تعديل التقرير</value></data>
+  <data name="Amendment" xml:space="preserve"><value>تعديل</value></data>
+  <data name="Blocks" xml:space="preserve"><value>القوالب</value></data>
+  <data name="Cancel the request" xml:space="preserve"><value>إلغاء الطلب</value></data>
+  <data name="Choose where the specimen comes from" xml:space="preserve"><value>اختر مصدر العينة</value></data>
+  <data name="Clinical history" xml:space="preserve"><value>التاريخ السريري</value></data>
+  <data name="Containers" xml:space="preserve"><value>الأوعية</value></data>
+  <data name="Containers received" xml:space="preserve"><value>الأوعية المستلمة</value></data>
+  <data name="Describe the specimen before signing the report" xml:space="preserve"><value>صف العينة قبل توقيع التقرير</value></data>
+  <data name="Gross description" xml:space="preserve"><value>الوصف العياني</value></data>
+  <data name="Grossing" xml:space="preserve"><value>الوصف العياني</value></data>
+  <data name="Malignant" xml:space="preserve"><value>ورم خبيث</value></data>
+  <data name="Microscopic description" xml:space="preserve"><value>الوصف المجهري</value></data>
+  <data name="No pathology case here." xml:space="preserve"><value>لا توجد حالة نسيجية هنا.</value></data>
+  <data name="Only a request not yet received is cancelled" xml:space="preserve"><value>لا يُلغى إلا طلب لم يُستلم بعد</value></data>
+  <data name="Only a signed report is amended" xml:space="preserve"><value>لا يُعدَّل إلا تقرير موقَّع</value></data>
+  <data name="Past 3 days" xml:space="preserve"><value>تجاوزت 3 أيام</value></data>
+  <data name="Pathology" xml:space="preserve"><value>علم الأمراض</value></data>
+  <data name="Pathology report" xml:space="preserve"><value>تقرير علم الأمراض</value></data>
+  <data name="Patient, case, specimen" xml:space="preserve"><value>المريض أو الحالة أو العينة</value></data>
+  <data name="Receive the specimen" xml:space="preserve"><value>استلام العينة</value></data>
+  <data name="Receive the specimen before describing it" xml:space="preserve"><value>استلم العينة قبل وصفها</value></data>
+  <data name="Request pathology" xml:space="preserve"><value>طلب فحص نسيجي</value></data>
+  <data name="Sign out the report" xml:space="preserve"><value>توقيع التقرير</value></data>
+  <data name="Someone else changed this case: open it again" xml:space="preserve"><value>غيّر شخص آخر هذه الحالة: افتحها من جديد</value></data>
+  <data name="The containers must be between 1 and 50" xml:space="preserve"><value>يجب أن تكون الأوعية بين 1 و50</value></data>
+  <data name="The containers received do not match the request: count them again" xml:space="preserve"><value>الأوعية المستلمة لا تطابق الطلب: أعد عدّها</value></data>
+  <data name="The pathology tables are not created yet (hospital_h216_pathology.sql)." xml:space="preserve"><value>جداول علم الأمراض غير منشأة بعد (hospital_h216_pathology.sql).</value></data>
+  <data name="This case is already received" xml:space="preserve"><value>هذه الحالة مستلمة بالفعل</value></data>
+  <data name="Why amended" xml:space="preserve"><value>سبب التعديل</value></data>
+  <data name="Write how many blocks were cut" xml:space="preserve"><value>اكتب عدد القوالب المقطوعة</value></data>
+  <data name="Write the amendment" xml:space="preserve"><value>اكتب التعديل</value></data>
+  <data name="Write the gross description" xml:space="preserve"><value>اكتب الوصف العياني</value></data>
+  <data name="Write the microscopic description" xml:space="preserve"><value>اكتب الوصف المجهري</value></data>
+  <data name="Write what the specimen is" xml:space="preserve"><value>اكتب ما هي العينة</value></data>
+  <data name="Write why the report is amended" xml:space="preserve"><value>اكتب سبب تعديل التقرير</value></data>
+  <data name="pas:Cancelled" xml:space="preserve"><value>ملغاة</value></data>
+  <data name="pas:Grossed" xml:space="preserve"><value>موصوفة عيانيًا</value></data>
+  <data name="pas:Received" xml:space="preserve"><value>مستلمة</value></data>
+  <data name="pas:Reported" xml:space="preserve"><value>موقَّعة</value></data>
+  <data name="pas:Requested" xml:space="preserve"><value>مطلوبة</value></data>
+  <data name="pasrc:Clinic" xml:space="preserve"><value>العيادة</value></data>
+  <data name="pasrc:Endoscopy" xml:space="preserve"><value>المناظير</value></data>
+  <data name="pasrc:Theatre" xml:space="preserve"><value>العمليات</value></data>
+  <data name="pasrc:Ward" xml:space="preserve"><value>القسم الداخلي</value></data>
+  <data name="{0} blocks" xml:space="preserve"><value>{0} قوالب</value></data>
+  <data name="{0} containers" xml:space="preserve"><value>{0} أوعية</value></data>
+  <data name="{0} past 3 days" xml:space="preserve"><value>{0} تجاوزت 3 أيام</value></data>
+  <data name="A scope is used only after a passed cycle, and within 7 days of it" xml:space="preserve"><value>لا يُستخدم المنظار إلا بعد دورة تعقيم ناجحة، وخلال 7 أيام منها</value></data>
+  <data name="Add a scope" xml:space="preserve"><value>إضافة منظار</value></data>
+  <data name="Biopsy jars" xml:space="preserve"><value>أوعية الخزعات</value></data>
+  <data name="Biopsy sites" xml:space="preserve"><value>مواضع الخزعات</value></data>
+  <data name="Boston score (0-9)" xml:space="preserve"><value>درجة بوسطن (0-9)</value></data>
+  <data name="Boston {0}" xml:space="preserve"><value>بوسطن {0}</value></data>
+  <data name="Caecum not reached" xml:space="preserve"><value>لم يبلغ الأعور</value></data>
+  <data name="Caecum reached" xml:space="preserve"><value>بلغ الأعور</value></data>
+  <data name="Choose the procedure" xml:space="preserve"><value>اختر الإجراء</value></data>
+  <data name="Choose the scope" xml:space="preserve"><value>اختر المنظار</value></data>
+  <data name="Choose the sedation" xml:space="preserve"><value>اختر التهدئة</value></data>
+  <data name="Complete the report" xml:space="preserve"><value>إكمال التقرير</value></data>
+  <data name="Contact time (minutes)" xml:space="preserve"><value>زمن التلامس (دقائق)</value></data>
+  <data name="Endoscopy" xml:space="preserve"><value>المناظير</value></data>
+  <data name="High-level disinfectant" xml:space="preserve"><value>مطهر عالي المستوى</value></data>
+  <data name="Indication" xml:space="preserve"><value>دواعي الإجراء</value></data>
+  <data name="Last reprocessing" xml:space="preserve"><value>آخر إعادة تعقيم</value></data>
+  <data name="Leak test passed" xml:space="preserve"><value>نجح اختبار التسرب</value></data>
+  <data name="Manual cleaning done" xml:space="preserve"><value>تم التنظيف اليدوي</value></data>
+  <data name="No procedure here." xml:space="preserve"><value>لا يوجد إجراء هنا.</value></data>
+  <data name="Not ready" xml:space="preserve"><value>غير جاهز</value></data>
+  <data name="Only a scope that is ready can be chosen." xml:space="preserve"><value>لا يمكن اختيار إلا منظار جاهز.</value></data>
+  <data name="Passed" xml:space="preserve"><value>ناجحة</value></data>
+  <data name="Patient, number, scope" xml:space="preserve"><value>المريض أو الرقم أو المنظار</value></data>
+  <data name="Quality and biopsies" xml:space="preserve"><value>الجودة والخزعات</value></data>
+  <data name="Quality met" xml:space="preserve"><value>حقق معيار الجودة</value></data>
+  <data name="Quality not met" xml:space="preserve"><value>لم يحقق معيار الجودة</value></data>
+  <data name="Ready for use" xml:space="preserve"><value>جاهز للاستخدام</value></data>
+  <data name="Record reprocessing" xml:space="preserve"><value>تسجيل إعادة التعقيم</value></data>
+  <data name="Say whether the caecum was reached" xml:space="preserve"><value>حدد هل بلغ المنظار الأعور</value></data>
+  <data name="Scope" xml:space="preserve"><value>المنظار</value></data>
+  <data name="Scope model" xml:space="preserve"><value>الطراز</value></data>
+  <data name="Scopes and reprocessing" xml:space="preserve"><value>المناظير وإعادة التعقيم</value></data>
+  <data name="Sedation" xml:space="preserve"><value>التهدئة</value></data>
+  <data name="Serial number" xml:space="preserve"><value>الرقم التسلسلي</value></data>
+  <data name="Serial or kind" xml:space="preserve"><value>الرقم التسلسلي أو النوع</value></data>
+  <data name="Someone else changed this procedure: open it again" xml:space="preserve"><value>غيّر شخص آخر هذا الإجراء: افتحه من جديد</value></data>
+  <data name="Start a procedure" xml:space="preserve"><value>بدء إجراء</value></data>
+  <data name="Start the procedure" xml:space="preserve"><value>بدء الإجراء</value></data>
+  <data name="The biopsies must be between 0 and 50" xml:space="preserve"><value>يجب أن تكون الخزعات بين 0 و50</value></data>
+  <data name="The endoscopy tables are not created yet (hospital_h217_endoscopy.sql)." xml:space="preserve"><value>جداول المناظير غير منشأة بعد (hospital_h217_endoscopy.sql).</value></data>
+  <data name="The scope was used after its last reprocessing: reprocess it before the next patient" xml:space="preserve"><value>استُخدم المنظار بعد آخر تعقيم: أعد تعقيمه قبل المريض التالي</value></data>
+  <data name="The scope's last reprocessing failed: reprocess it again" xml:space="preserve"><value>فشلت آخر دورة تعقيم للمنظار: أعد تعقيمه</value></data>
+  <data name="The scope's reprocessing is older than 7 days: reprocess it before use" xml:space="preserve"><value>مضى على تعقيم المنظار أكثر من 7 أيام: أعد تعقيمه قبل الاستخدام</value></data>
+  <data name="This procedure is already completed" xml:space="preserve"><value>هذا الإجراء مكتمل بالفعل</value></data>
+  <data name="This scope has no reprocessing cycle: reprocess it before use" xml:space="preserve"><value>لا توجد لهذا المنظار دورة تعقيم: أعد تعقيمه قبل الاستخدام</value></data>
+  <data name="This serial number is already registered" xml:space="preserve"><value>هذا الرقم التسلسلي مسجل</value></data>
+  <data name="Withdrawal time (minutes)" xml:space="preserve"><value>زمن السحب (دقائق)</value></data>
+  <data name="Withdrawal {0} min" xml:space="preserve"><value>السحب {0} دقيقة</value></data>
+  <data name="Write the Boston bowel preparation score (0 to 9)" xml:space="preserve"><value>اكتب درجة بوسطن لتحضير الأمعاء (0 إلى 9)</value></data>
+  <data name="Write the disinfectant used" xml:space="preserve"><value>اكتب المطهر المستخدم</value></data>
+  <data name="Write the disinfection time in minutes" xml:space="preserve"><value>اكتب زمن التطهير بالدقائق</value></data>
+  <data name="Write the findings" xml:space="preserve"><value>اكتب الموجودات</value></data>
+  <data name="Write the indication" xml:space="preserve"><value>اكتب دواعي الإجراء</value></data>
+  <data name="Write the scope's serial number" xml:space="preserve"><value>اكتب الرقم التسلسلي للمنظار</value></data>
+  <data name="Write the withdrawal time in minutes" xml:space="preserve"><value>اكتب زمن السحب بالدقائق</value></data>
+  <data name="Write where the biopsies were taken" xml:space="preserve"><value>اكتب مواضع أخذ الخزعات</value></data>
+  <data name="enk:Bronchoscopy" xml:space="preserve"><value>منظار القصبات</value></data>
+  <data name="enk:Colonoscopy" xml:space="preserve"><value>منظار القولون</value></data>
+  <data name="enk:ERCP" xml:space="preserve"><value>تصوير القنوات الصفراوية بالمنظار</value></data>
+  <data name="enk:Gastroscopy" xml:space="preserve"><value>منظار المعدة</value></data>
+  <data name="ens:Completed" xml:space="preserve"><value>مكتمل</value></data>
+  <data name="ens:Started" xml:space="preserve"><value>جارٍ</value></data>
+  <data name="ensed:Deep" xml:space="preserve"><value>تهدئة عميقة</value></data>
+  <data name="ensed:Moderate" xml:space="preserve"><value>تهدئة متوسطة</value></data>
+  <data name="ensed:None" xml:space="preserve"><value>بلا تهدئة</value></data>
+  <data name="{0} biopsies" xml:space="preserve"><value>{0} خزعات</value></data>
+  <data name="{0} procedures" xml:space="preserve"><value>{0} إجراءات</value></data>
+  <data name="{0} scopes ready" xml:space="preserve"><value>{0} مناظير جاهزة</value></data>
+  <data name="A measurement is outside what an ECG can show" xml:space="preserve"><value>قياس خارج ما يمكن أن يظهره تخطيط القلب</value></data>
+  <data name="Axis" xml:space="preserve"><value>المحور</value></data>
+  <data name="Cardiology" xml:space="preserve"><value>تخطيط القلب والصدى</value></data>
+  <data name="Chambers" xml:space="preserve"><value>حجرات القلب</value></data>
+  <data name="Choose the study" xml:space="preserve"><value>اختر الفحص</value></data>
+  <data name="Critical finding" xml:space="preserve"><value>نتيجة حرجة</value></data>
+  <data name="Ejection fraction" xml:space="preserve"><value>الكسر القذفي</value></data>
+  <data name="Interpretation" xml:space="preserve"><value>التفسير</value></data>
+  <data name="No study here." xml:space="preserve"><value>لا يوجد فحص هنا.</value></data>
+  <data name="Patient or number" xml:space="preserve"><value>المريض أو الرقم</value></data>
+  <data name="Pericardium" xml:space="preserve"><value>التامور</value></data>
+  <data name="QTc is calculated (Bazett)" xml:space="preserve"><value>يُحسب QTc تلقائيًا (بازيت)</value></data>
+  <data name="Read the study" xml:space="preserve"><value>قراءة</value></data>
+  <data name="Report the study" xml:space="preserve"><value>قراءة الفحص</value></data>
+  <data name="Request a study" xml:space="preserve"><value>طلب فحص</value></data>
+  <data name="Rhythm" xml:space="preserve"><value>النظم</value></data>
+  <data name="Sign the report" xml:space="preserve"><value>توقيع التقرير</value></data>
+  <data name="Someone else reported this study: open it again" xml:space="preserve"><value>قرأ شخص آخر هذا الفحص: افتحه من جديد</value></data>
+  <data name="Studies" xml:space="preserve"><value>الفحوص</value></data>
+  <data name="Study" xml:space="preserve"><value>الفحص</value></data>
+  <data name="The cardiology table is not created yet (hospital_h218_cardiology.sql)." xml:space="preserve"><value>جدول فحوص القلب غير منشأ بعد (hospital_h218_cardiology.sql).</value></data>
+  <data name="This study is already reported" xml:space="preserve"><value>هذا الفحص مقروء بالفعل</value></data>
+  <data name="Valves" xml:space="preserve"><value>الصمامات</value></data>
+  <data name="Wall motion" xml:space="preserve"><value>حركة الجدار</value></data>
+  <data name="Write the ejection fraction (5 to 90%)" xml:space="preserve"><value>اكتب الكسر القذفي (5 إلى 90%)</value></data>
+  <data name="Write the heart rate" xml:space="preserve"><value>اكتب معدل النبض</value></data>
+  <data name="Write the interpretation" xml:space="preserve"><value>اكتب التفسير</value></data>
+  <data name="Write the rhythm" xml:space="preserve"><value>اكتب النظم</value></data>
+  <data name="cdk:ECG" xml:space="preserve"><value>تخطيط القلب الكهربائي</value></data>
+  <data name="cdk:Echo" xml:space="preserve"><value>صدى القلب</value></data>
+  <data name="cds:Reported" xml:space="preserve"><value>مقروء</value></data>
+  <data name="cds:Requested" xml:space="preserve"><value>بانتظار القراءة</value></data>
+  <data name="{0} critical" xml:space="preserve"><value>{0} حرجة</value></data>
+  <data name="{0} studies" xml:space="preserve"><value>{0} فحوص</value></data>
+  <data name="{0} waiting to be read" xml:space="preserve"><value>{0} بانتظار القراءة</value></data>
 </root>

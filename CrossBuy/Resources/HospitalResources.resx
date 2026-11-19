@@ -9362,4 +9362,189 @@
   <data name="tele:Ended" xml:space="preserve"><value>Ended</value></data>
   <data name="tele:Live" xml:space="preserve"><value>Live</value></data>
   <data name="tele:Scheduled" xml:space="preserve"><value>Scheduled</value></data>
+  <data name="A machine works with the rights of the person it acts for." xml:space="preserve"><value>A machine works with the rights of the person it acts for.</value></data>
+  <data name="Acts for" xml:space="preserve"><value>Acts for</value></data>
+  <data name="Add an interface" xml:space="preserve"><value>Add an interface</value></data>
+  <data name="Choose what the interface does" xml:space="preserve"><value>Choose what the interface does</value></data>
+  <data name="Code or name" xml:space="preserve"><value>Code or name</value></data>
+  <data name="Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops." xml:space="preserve"><value>Copy it into the machine now: it is not shown again. A new key can be made at any time; the old one then stops.</value></data>
+  <data name="Every request carries the interface key in the header:" xml:space="preserve"><value>Every request carries the interface key in the header:</value></data>
+  <data name="How a machine connects" xml:space="preserve"><value>How a machine connects</value></data>
+  <data name="I have copied it" xml:space="preserve"><value>I have copied it</value></data>
+  <data name="Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages)." xml:space="preserve"><value>Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages).</value></data>
+  <data name="Interface" xml:space="preserve"><value>Interface</value></data>
+  <data name="Interface code" xml:space="preserve"><value>Code</value></data>
+  <data name="Interface key" xml:space="preserve"><value>Key</value></data>
+  <data name="Interfaces" xml:space="preserve"><value>Interfaces</value></data>
+  <data name="It will act with your rights; its key is shown once." xml:space="preserve"><value>It will act with your rights; its key is shown once.</value></data>
+  <data name="Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement." xml:space="preserve"><value>Laboratory results: the analyser or its interface engine sends each HL7 result message (ORU^R01) by HTTPS POST and receives the HL7 acknowledgement.</value></data>
+  <data name="Last used" xml:space="preserve"><value>Last used</value></data>
+  <data name="Machine interfaces" xml:space="preserve"><value>Machine interfaces</value></data>
+  <data name="Make a new key for {0}? The current key stops at once." xml:space="preserve"><value>Make a new key for {0}? The current key stops at once.</value></data>
+  <data name="Never" xml:space="preserve"><value>Never</value></data>
+  <data name="New key" xml:space="preserve"><value>New key</value></data>
+  <data name="No interface yet." xml:space="preserve"><value>No interface yet.</value></data>
+  <data name="The interface key" xml:space="preserve"><value>The interface key</value></data>
+  <data name="The interfaces table is not created yet (hospital_h215_interfaces.sql)." xml:space="preserve"><value>The interfaces table is not created yet (hospital_h215_interfaces.sql).</value></data>
+  <data name="Write a code of letters, digits and dashes" xml:space="preserve"><value>Write a code of letters, digits and dashes</value></data>
+  <data name="Write the interface's name" xml:space="preserve"><value>Write the interface's name</value></data>
+  <data name="ifk:ImagingWorklist" xml:space="preserve"><value>Imaging worklist</value></data>
+  <data name="ifk:LabResults" xml:space="preserve"><value>Lab results (HL7)</value></data>
+  <data name="{0} interfaces" xml:space="preserve"><value>{0} interfaces</value></data>
+  <data name="{0} uses" xml:space="preserve"><value>{0} uses</value></data>
+  <data name="Amend" xml:space="preserve"><value>Amend</value></data>
+  <data name="Amend the report" xml:space="preserve"><value>Amend the report</value></data>
+  <data name="Amendment" xml:space="preserve"><value>Amendment</value></data>
+  <data name="Blocks" xml:space="preserve"><value>Blocks</value></data>
+  <data name="Cancel the request" xml:space="preserve"><value>Cancel the request</value></data>
+  <data name="Choose where the specimen comes from" xml:space="preserve"><value>Choose where the specimen comes from</value></data>
+  <data name="Clinical history" xml:space="preserve"><value>Clinical history</value></data>
+  <data name="Containers" xml:space="preserve"><value>Containers</value></data>
+  <data name="Containers received" xml:space="preserve"><value>Containers received</value></data>
+  <data name="Describe the specimen before signing the report" xml:space="preserve"><value>Describe the specimen before signing the report</value></data>
+  <data name="Gross description" xml:space="preserve"><value>Gross description</value></data>
+  <data name="Grossing" xml:space="preserve"><value>Grossing</value></data>
+  <data name="Malignant" xml:space="preserve"><value>Malignant</value></data>
+  <data name="Microscopic description" xml:space="preserve"><value>Microscopic description</value></data>
+  <data name="No pathology case here." xml:space="preserve"><value>No pathology case here.</value></data>
+  <data name="Only a request not yet received is cancelled" xml:space="preserve"><value>Only a request not yet received is cancelled</value></data>
+  <data name="Only a signed report is amended" xml:space="preserve"><value>Only a signed report is amended</value></data>
+  <data name="Past 3 days" xml:space="preserve"><value>Past 3 days</value></data>
+  <data name="Pathology" xml:space="preserve"><value>Pathology</value></data>
+  <data name="Pathology report" xml:space="preserve"><value>Pathology report</value></data>
+  <data name="Patient, case, specimen" xml:space="preserve"><value>Patient, case, specimen</value></data>
+  <data name="Receive the specimen" xml:space="preserve"><value>Receive the specimen</value></data>
+  <data name="Receive the specimen before describing it" xml:space="preserve"><value>Receive the specimen before describing it</value></data>
+  <data name="Request pathology" xml:space="preserve"><value>Request pathology</value></data>
+  <data name="Sign out the report" xml:space="preserve"><value>Sign out the report</value></data>
+  <data name="Someone else changed this case: open it again" xml:space="preserve"><value>Someone else changed this case: open it again</value></data>
+  <data name="The containers must be between 1 and 50" xml:space="preserve"><value>The containers must be between 1 and 50</value></data>
+  <data name="The containers received do not match the request: count them again" xml:space="preserve"><value>The containers received do not match the request: count them again</value></data>
+  <data name="The pathology tables are not created yet (hospital_h216_pathology.sql)." xml:space="preserve"><value>The pathology tables are not created yet (hospital_h216_pathology.sql).</value></data>
+  <data name="This case is already received" xml:space="preserve"><value>This case is already received</value></data>
+  <data name="Why amended" xml:space="preserve"><value>Why amended</value></data>
+  <data name="Write how many blocks were cut" xml:space="preserve"><value>Write how many blocks were cut</value></data>
+  <data name="Write the amendment" xml:space="preserve"><value>Write the amendment</value></data>
+  <data name="Write the gross description" xml:space="preserve"><value>Write the gross description</value></data>
+  <data name="Write the microscopic description" xml:space="preserve"><value>Write the microscopic description</value></data>
+  <data name="Write what the specimen is" xml:space="preserve"><value>Write what the specimen is</value></data>
+  <data name="Write why the report is amended" xml:space="preserve"><value>Write why the report is amended</value></data>
+  <data name="pas:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="pas:Grossed" xml:space="preserve"><value>Grossed</value></data>
+  <data name="pas:Received" xml:space="preserve"><value>Received</value></data>
+  <data name="pas:Reported" xml:space="preserve"><value>Signed out</value></data>
+  <data name="pas:Requested" xml:space="preserve"><value>Requested</value></data>
+  <data name="pasrc:Clinic" xml:space="preserve"><value>Clinic</value></data>
+  <data name="pasrc:Endoscopy" xml:space="preserve"><value>Endoscopy</value></data>
+  <data name="pasrc:Theatre" xml:space="preserve"><value>Theatre</value></data>
+  <data name="pasrc:Ward" xml:space="preserve"><value>Ward</value></data>
+  <data name="{0} blocks" xml:space="preserve"><value>{0} blocks</value></data>
+  <data name="{0} containers" xml:space="preserve"><value>{0} containers</value></data>
+  <data name="{0} past 3 days" xml:space="preserve"><value>{0} past 3 days</value></data>
+  <data name="A scope is used only after a passed cycle, and within 7 days of it" xml:space="preserve"><value>A scope is used only after a passed cycle, and within 7 days of it</value></data>
+  <data name="Add a scope" xml:space="preserve"><value>Add a scope</value></data>
+  <data name="Biopsy jars" xml:space="preserve"><value>Biopsy jars</value></data>
+  <data name="Biopsy sites" xml:space="preserve"><value>Biopsy sites</value></data>
+  <data name="Boston score (0-9)" xml:space="preserve"><value>Boston score (0-9)</value></data>
+  <data name="Boston {0}" xml:space="preserve"><value>Boston {0}</value></data>
+  <data name="Caecum not reached" xml:space="preserve"><value>Caecum not reached</value></data>
+  <data name="Caecum reached" xml:space="preserve"><value>Caecum reached</value></data>
+  <data name="Choose the procedure" xml:space="preserve"><value>Choose the procedure</value></data>
+  <data name="Choose the scope" xml:space="preserve"><value>Choose the scope</value></data>
+  <data name="Choose the sedation" xml:space="preserve"><value>Choose the sedation</value></data>
+  <data name="Complete the report" xml:space="preserve"><value>Complete the report</value></data>
+  <data name="Contact time (minutes)" xml:space="preserve"><value>Contact time (minutes)</value></data>
+  <data name="Endoscopy" xml:space="preserve"><value>Endoscopy</value></data>
+  <data name="High-level disinfectant" xml:space="preserve"><value>High-level disinfectant</value></data>
+  <data name="Indication" xml:space="preserve"><value>Indication</value></data>
+  <data name="Last reprocessing" xml:space="preserve"><value>Last reprocessing</value></data>
+  <data name="Leak test passed" xml:space="preserve"><value>Leak test passed</value></data>
+  <data name="Manual cleaning done" xml:space="preserve"><value>Manual cleaning done</value></data>
+  <data name="No procedure here." xml:space="preserve"><value>No procedure here.</value></data>
+  <data name="Not ready" xml:space="preserve"><value>Not ready</value></data>
+  <data name="Only a scope that is ready can be chosen." xml:space="preserve"><value>Only a scope that is ready can be chosen.</value></data>
+  <data name="Passed" xml:space="preserve"><value>Passed</value></data>
+  <data name="Patient, number, scope" xml:space="preserve"><value>Patient, number, scope</value></data>
+  <data name="Quality and biopsies" xml:space="preserve"><value>Quality and biopsies</value></data>
+  <data name="Quality met" xml:space="preserve"><value>Quality met</value></data>
+  <data name="Quality not met" xml:space="preserve"><value>Quality not met</value></data>
+  <data name="Ready for use" xml:space="preserve"><value>Ready for use</value></data>
+  <data name="Record reprocessing" xml:space="preserve"><value>Record reprocessing</value></data>
+  <data name="Say whether the caecum was reached" xml:space="preserve"><value>Say whether the caecum was reached</value></data>
+  <data name="Scope" xml:space="preserve"><value>Scope</value></data>
+  <data name="Scope model" xml:space="preserve"><value>Model</value></data>
+  <data name="Scopes and reprocessing" xml:space="preserve"><value>Scopes and reprocessing</value></data>
+  <data name="Sedation" xml:space="preserve"><value>Sedation</value></data>
+  <data name="Serial number" xml:space="preserve"><value>Serial number</value></data>
+  <data name="Serial or kind" xml:space="preserve"><value>Serial or kind</value></data>
+  <data name="Someone else changed this procedure: open it again" xml:space="preserve"><value>Someone else changed this procedure: open it again</value></data>
+  <data name="Start a procedure" xml:space="preserve"><value>Start a procedure</value></data>
+  <data name="Start the procedure" xml:space="preserve"><value>Start the procedure</value></data>
+  <data name="The biopsies must be between 0 and 50" xml:space="preserve"><value>The biopsies must be between 0 and 50</value></data>
+  <data name="The endoscopy tables are not created yet (hospital_h217_endoscopy.sql)." xml:space="preserve"><value>The endoscopy tables are not created yet (hospital_h217_endoscopy.sql).</value></data>
+  <data name="The scope was used after its last reprocessing: reprocess it before the next patient" xml:space="preserve"><value>The scope was used after its last reprocessing: reprocess it before the next patient</value></data>
+  <data name="The scope's last reprocessing failed: reprocess it again" xml:space="preserve"><value>The scope's last reprocessing failed: reprocess it again</value></data>
+  <data name="The scope's reprocessing is older than 7 days: reprocess it before use" xml:space="preserve"><value>The scope's reprocessing is older than 7 days: reprocess it before use</value></data>
+  <data name="This procedure is already completed" xml:space="preserve"><value>This procedure is already completed</value></data>
+  <data name="This scope has no reprocessing cycle: reprocess it before use" xml:space="preserve"><value>This scope has no reprocessing cycle: reprocess it before use</value></data>
+  <data name="This serial number is already registered" xml:space="preserve"><value>This serial number is already registered</value></data>
+  <data name="Withdrawal time (minutes)" xml:space="preserve"><value>Withdrawal time (minutes)</value></data>
+  <data name="Withdrawal {0} min" xml:space="preserve"><value>Withdrawal {0} min</value></data>
+  <data name="Write the Boston bowel preparation score (0 to 9)" xml:space="preserve"><value>Write the Boston bowel preparation score (0 to 9)</value></data>
+  <data name="Write the disinfectant used" xml:space="preserve"><value>Write the disinfectant used</value></data>
+  <data name="Write the disinfection time in minutes" xml:space="preserve"><value>Write the disinfection time in minutes</value></data>
+  <data name="Write the findings" xml:space="preserve"><value>Write the findings</value></data>
+  <data name="Write the indication" xml:space="preserve"><value>Write the indication</value></data>
+  <data name="Write the scope's serial number" xml:space="preserve"><value>Write the scope's serial number</value></data>
+  <data name="Write the withdrawal time in minutes" xml:space="preserve"><value>Write the withdrawal time in minutes</value></data>
+  <data name="Write where the biopsies were taken" xml:space="preserve"><value>Write where the biopsies were taken</value></data>
+  <data name="enk:Bronchoscopy" xml:space="preserve"><value>Bronchoscopy</value></data>
+  <data name="enk:Colonoscopy" xml:space="preserve"><value>Colonoscopy</value></data>
+  <data name="enk:ERCP" xml:space="preserve"><value>ERCP</value></data>
+  <data name="enk:Gastroscopy" xml:space="preserve"><value>Gastroscopy</value></data>
+  <data name="ens:Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="ens:Started" xml:space="preserve"><value>In progress</value></data>
+  <data name="ensed:Deep" xml:space="preserve"><value>Deep sedation</value></data>
+  <data name="ensed:Moderate" xml:space="preserve"><value>Moderate sedation</value></data>
+  <data name="ensed:None" xml:space="preserve"><value>No sedation</value></data>
+  <data name="{0} biopsies" xml:space="preserve"><value>{0} biopsies</value></data>
+  <data name="{0} procedures" xml:space="preserve"><value>{0} procedures</value></data>
+  <data name="{0} scopes ready" xml:space="preserve"><value>{0} scopes ready</value></data>
+  <data name="A measurement is outside what an ECG can show" xml:space="preserve"><value>A measurement is outside what an ECG can show</value></data>
+  <data name="Axis" xml:space="preserve"><value>Axis</value></data>
+  <data name="Cardiology" xml:space="preserve"><value>Cardiology</value></data>
+  <data name="Chambers" xml:space="preserve"><value>Chambers</value></data>
+  <data name="Choose the study" xml:space="preserve"><value>Choose the study</value></data>
+  <data name="Critical finding" xml:space="preserve"><value>Critical finding</value></data>
+  <data name="Ejection fraction" xml:space="preserve"><value>Ejection fraction</value></data>
+  <data name="Interpretation" xml:space="preserve"><value>Interpretation</value></data>
+  <data name="No study here." xml:space="preserve"><value>No study here.</value></data>
+  <data name="Patient or number" xml:space="preserve"><value>Patient or number</value></data>
+  <data name="Pericardium" xml:space="preserve"><value>Pericardium</value></data>
+  <data name="QTc is calculated (Bazett)" xml:space="preserve"><value>QTc is calculated (Bazett)</value></data>
+  <data name="Read the study" xml:space="preserve"><value>Report</value></data>
+  <data name="Report the study" xml:space="preserve"><value>Report the study</value></data>
+  <data name="Request a study" xml:space="preserve"><value>Request a study</value></data>
+  <data name="Rhythm" xml:space="preserve"><value>Rhythm</value></data>
+  <data name="Sign the report" xml:space="preserve"><value>Sign the report</value></data>
+  <data name="Someone else reported this study: open it again" xml:space="preserve"><value>Someone else reported this study: open it again</value></data>
+  <data name="Studies" xml:space="preserve"><value>Studies</value></data>
+  <data name="Study" xml:space="preserve"><value>Study</value></data>
+  <data name="The cardiology table is not created yet (hospital_h218_cardiology.sql)." xml:space="preserve"><value>The cardiology table is not created yet (hospital_h218_cardiology.sql).</value></data>
+  <data name="This study is already reported" xml:space="preserve"><value>This study is already reported</value></data>
+  <data name="Valves" xml:space="preserve"><value>Valves</value></data>
+  <data name="Wall motion" xml:space="preserve"><value>Wall motion</value></data>
+  <data name="Write the ejection fraction (5 to 90%)" xml:space="preserve"><value>Write the ejection fraction (5 to 90%)</value></data>
+  <data name="Write the heart rate" xml:space="preserve"><value>Write the heart rate</value></data>
+  <data name="Write the interpretation" xml:space="preserve"><value>Write the interpretation</value></data>
+  <data name="Write the rhythm" xml:space="preserve"><value>Write the rhythm</value></data>
+  <data name="cdk:ECG" xml:space="preserve"><value>ECG</value></data>
+  <data name="cdk:Echo" xml:space="preserve"><value>Echocardiogram</value></data>
+  <data name="cds:Reported" xml:space="preserve"><value>Reported</value></data>
+  <data name="cds:Requested" xml:space="preserve"><value>Waiting to be read</value></data>
+  <data name="{0} critical" xml:space="preserve"><value>{0} critical</value></data>
+  <data name="{0} studies" xml:space="preserve"><value>{0} studies</value></data>
+  <data name="{0} waiting to be read" xml:space="preserve"><value>{0} waiting to be read</value></data>
 </root>

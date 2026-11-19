@@ -15,7 +15,7 @@ namespace CrossBuy.BL.Hospital
 	// The list is seeded once per company with the Ministry's groups (an administrator may add, regroup or switch off a
 	// disease); the duty starts the day the list is set up — visits signed before it are not swept into the register.
 	// ==========================================================================================
-	public sealed record HospitalDiseaseReportRow(HospitalDiseaseReport Report, string Patient, string PatientEn, string Mrn, string? Doctor, string? DoctorEn,
+	public sealed record HospitalDiseaseReportRow(HospitalDiseaseReport Report, string Patient, string PatientEn, string Mrn, HospitalFace? Doctor,
 		string Disease, string? DiseaseEn, string Urgency, bool Overdue);
 
 	public sealed class HospitalNotifiableInput
@@ -219,7 +219,8 @@ namespace CrossBuy.BL.Hospital
 				page = Math.Max(1, page);
 				var rows = await query.OrderByDescending(x => x.r.Status == HospitalDiseaseReportStatus.Due).ThenBy(x => x.r.DueAt).ThenByDescending(x => x.r.ID)
 					.Skip((page - 1) * size).Take(size).ToListAsync(ct);
-				return (rows.Select(x => new HospitalDiseaseReportRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, x.x?.Name, x.x?.NameEn, x.d.Name, x.d.NameEn, x.d.Urgency,
+				var docs = await HospitalFaces.OfPractitionersAsync(_db, ctx.CompanyId, rows.Select(x => x.r.PractitionerId), ct);
+				return (rows.Select(x => new HospitalDiseaseReportRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, x.r.PractitionerId is int pr ? docs.GetValueOrDefault(pr) : null, x.d.Name, x.d.NameEn, x.d.Urgency,
 					HospitalNotifiableRules.Overdue(x.r, nowUtc))).ToList(), total, dueN, lateN, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalDiseaseReportRow>(), 0, 0, 0, false); }

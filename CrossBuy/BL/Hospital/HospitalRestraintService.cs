@@ -36,7 +36,7 @@ namespace CrossBuy.BL.Hospital
 		public string? Behaviour { get; set; }
 	}
 
-	public sealed record HospitalRestraintRow(HospitalRestraint Restraint, string Patient, string PatientEn, string Mrn, string? Bed, string? OrderedBy, string? OrderedByEn,
+	public sealed record HospitalRestraintRow(HospitalRestraint Restraint, string Patient, string PatientEn, string Mrn, string? Bed, HospitalFace? OrderedBy,
 		HospitalRestraintCheck? LastCheck, int Checks, DateTime NextCheckAt, bool CheckOverdue, bool Expired);
 
 	public static class HospitalRestraintRules
@@ -159,8 +159,7 @@ namespace CrossBuy.BL.Hospital
 				var beds = (await (from st in _db.HospitalBedStays.AsNoTracking() join b in _db.HospitalBeds.AsNoTracking() on st.BedId equals b.ID
 								   where st.CompanyId == ctx.CompanyId && st.EndedAt == null && adm.Contains(st.AdmissionId) select new { st.AdmissionId, b.Code }).ToListAsync(ct))
 					.GroupBy(x => x.AdmissionId).ToDictionary(g => g.Key, g => g.First().Code);
-				var empIds = rows.Where(x => x.r.OrderedByEmployeeId != null).Select(x => x.r.OrderedByEmployeeId!.Value).Distinct().ToList();
-				var emps = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID) && e.EmpCompanyID == ctx.CompanyId).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToDictionaryAsync(e => e.ID, ct);
+				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, rows.Select(x => x.r.OrderedByEmployeeId), ct);
 				// the counters cover every active episode, not only this page
 				var active = await Restraints(ctx).AsNoTracking().Where(r => r.EndedAt == null).Select(r => new { r.ID, r.StartedAt, r.CheckEveryMinutes, r.ExpiresAt }).ToListAsync(ct);
 				var activeIds = active.Select(a => a.ID).ToList();
@@ -171,8 +170,7 @@ namespace CrossBuy.BL.Hospital
 				{
 					var mine = checks.Where(c => c.RestraintId == x.r.ID).OrderByDescending(c => c.At).ToList();
 					var last = mine.FirstOrDefault();
-					var e = x.r.OrderedByEmployeeId is int oid ? emps.GetValueOrDefault(oid) : null;
-					return new HospitalRestraintRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, beds.GetValueOrDefault(x.r.AdmissionId), e?.FullName, e?.FullNameEn, last, mine.Count,
+					return new HospitalRestraintRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, beds.GetValueOrDefault(x.r.AdmissionId), x.r.OrderedByEmployeeId is int oid ? faces.GetValueOrDefault(oid) : null, last, mine.Count,
 						HospitalRestraintRules.NextCheckAt(x.r, last?.At), HospitalRestraintRules.CheckOverdue(x.r, last?.At, nowUtc), HospitalRestraintRules.Expired(x.r, nowUtc));
 				}).ToList(), total, active.Count, overdue, true);
 			}

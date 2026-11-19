@@ -18,7 +18,7 @@ namespace CrossBuy.BL.Hospital
 	// An alert past its time is OVERDUE. The evaluation runs after each observation is recorded and on each read of the
 	// surveillance list, so nothing depends on someone opening the right screen first.
 	// ==========================================================================================
-	public sealed record HospitalSurveillanceRow(HospitalSurveillanceAlert Alert, string Patient, string PatientEn, string Mrn, string? Bed, string? Ward, string? WardEn, bool Overdue);
+	public sealed record HospitalSurveillanceRow(HospitalSurveillanceAlert Alert, string Patient, string PatientEn, string Mrn, string? Bed, string? Ward, string? WardEn, bool Overdue, HospitalFace? AnsweredBy = null);
 
 	public static class HospitalSurveillanceRules
 	{
@@ -170,10 +170,12 @@ namespace CrossBuy.BL.Hospital
 								   where s.CompanyId == ctx.CompanyId && s.EndedAt == null && adm.Contains(s.AdmissionId)
 								   select new { s.AdmissionId, Bed = b.Code, w.Name, w.NameEn }).ToListAsync(ct))
 					.GroupBy(x => x.AdmissionId).ToDictionary(g => g.Key, g => g.First());
+				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, rows.Select(x => x.a.AnsweredByEmployeeId), ct);
 				return (rows.Select(x =>
 				{
 					var bd = beds.GetValueOrDefault(x.a.AdmissionId);
-					return new HospitalSurveillanceRow(x.a, x.p.Name, x.p.NameEn, x.p.Mrn, bd?.Bed, bd?.Name, bd?.NameEn, HospitalSurveillanceRules.Overdue(x.a, nowUtc));
+					return new HospitalSurveillanceRow(x.a, x.p.Name, x.p.NameEn, x.p.Mrn, bd?.Bed, bd?.Name, bd?.NameEn, HospitalSurveillanceRules.Overdue(x.a, nowUtc),
+						x.a.AnsweredByEmployeeId is int e ? faces.GetValueOrDefault(e) : null);
 				}).ToList(), total, sepsis, vte, late, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalSurveillanceRow>(), 0, 0, 0, 0, false); }
