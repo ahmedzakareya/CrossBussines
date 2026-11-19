@@ -187,6 +187,7 @@ namespace CrossBuy.BL.Communication
 			var pollIds = own.Where(x => x.AttachmentType == "poll").Select(x => x.ID).ToList();
 			var polls = new Dictionary<int, object>();
 			foreach (var pid in pollIds) { var p = await PollAsync(companyId, pid, meId); if (p != null) polls[pid] = p; }
+			var transcripts = await ChatTranscriber.StoredAsync(_db, own.Where(x => x.AttachmentType == "audio").Select(x => x.ID).ToList());
 			var names = await NamesAsync(threads.SelectMany(t => t.People).Concat(fwd.Select(f => f.SenderEmployeeId)).Concat(own.Where(o => o.PinnedByEmployeeId != null).Select(o => o.PinnedByEmployeeId!.Value)));
 			return own.Select(x =>
 			{
@@ -200,6 +201,7 @@ namespace CrossBuy.BL.Communication
 					pinned = x.PinnedAt != null, pinnedBy = x.PinnedByEmployeeId is int pb && names.TryGetValue(pb, out var pn) ? pn.name : null,
 					saved = saved.Contains(x.ID), reminded = reminded.Contains(x.ID),
 					poll = polls.TryGetValue(x.ID, out var po) ? po : null,
+					transcript = transcripts.TryGetValue(x.ID, out var tr) ? new { status = tr.Status, text = tr.Text, language = tr.Language } : null,
 				};
 			}).ToList();
 		}

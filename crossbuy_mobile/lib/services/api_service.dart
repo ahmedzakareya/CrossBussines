@@ -681,6 +681,16 @@ class ApiService {
     try { await _dio.post('/api/chat/react', queryParameters: {'id': id, 'emoji': emoji}); return true; } on DioException { return false; }
   }
 
+  /// The words of a voice message (transcribed once on the server). (status, text); status "none" = not available now.
+  Future<(String, String?)> transcribeChat(int id) async {
+    try {
+      final d = (await _dio.post('/api/chat/transcribe', queryParameters: {'id': id}, options: Options(receiveTimeout: const Duration(minutes: 3)))).data as Map;
+      return ('${d['status'] ?? 'none'}', d['text'] as String?);
+    } on DioException {
+      return ('none', null);
+    }
+  }
+
   Future<bool> voteChat(int id, List<int> options) async {
     try { return (await _dio.post('/api/chat/vote', queryParameters: {'id': id, 'options': options.join(',')})).data['ok'] == true; } on DioException { return false; }
   }

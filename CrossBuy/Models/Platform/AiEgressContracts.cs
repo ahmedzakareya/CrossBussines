@@ -33,6 +33,12 @@ namespace CrossBuy.Models.Platform
         // for — but the text itself is the sensitive part, so it must be approvable, refusable and
         // auditable on its own rather than riding on an analysis purpose someone approved earlier.
         QuestionUnderstanding,
+
+        // Turning a voice message into words (owner, 2026-11-19). Its own purpose because what leaves is a
+        // RECORDING OF A PERSON'S VOICE — personal data in the plainest sense — sent only because someone who may
+        // read that message asked for its text. Classified PersonalData, so the matrix keeps it Internal; added
+        // last so no stored purpose name or number is reinterpreted.
+        SpeechTranscription,
     }
 
     // WHERE it is going. Ownership of the code is not the question — hosting and onward transmission are.

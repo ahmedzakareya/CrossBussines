@@ -8,6 +8,23 @@ namespace CrossBuy.Models.Context.Chat
 	// governance of messages (retention, the sensitive-data rule, legal holds, compliance exports).
 	// Tables: deploy/sql/comm_messaging_v2.sql. Configured by CommunicationModel.Configure (from HospitalCallModel).
 	// ==========================================================================================
+	/// Speech to text (owner, 2026-11-19): the words of a voice message, transcribed once on request and shown to
+	/// everyone who may read the message (comm_transcripts.sql). Status: done | failed | too_long.
+	public class ChatTranscript
+	{
+		public int MessageId { get; set; }
+		public int CompanyId { get; set; }
+		public string Status { get; set; } = "done";
+		public string? Text { get; set; }
+		public string? Language { get; set; }
+		public string? Model { get; set; }
+		public decimal? AudioSeconds { get; set; }
+		public decimal? WorkSeconds { get; set; }
+		public string? Error { get; set; }
+		public int RequestedByEmployeeId { get; set; }
+		public DateTime CreatedAt { get; set; }
+	}
+
 	public class ChatSaved
 	{
 		public int ID { get; set; }
@@ -132,6 +149,7 @@ namespace CrossBuy.Models.Context.Chat
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			b.Entity<ChatTranscript>(e => { e.ToTable("ChatTranscripts"); e.HasKey(x => x.MessageId); e.Property(x => x.MessageId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(40); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.AudioSeconds).HasPrecision(9, 2); e.Property(x => x.WorkSeconds).HasPrecision(9, 2); });
 			b.Entity<ChatSaved>(e => { e.ToTable("ChatSaved"); e.HasIndex(x => new { x.EmployeeId, x.MessageId }).IsUnique(); });
 			b.Entity<ChatScheduled>(e => { e.ToTable("ChatScheduled"); e.Property(x => x.Body).HasMaxLength(4000); e.Property(x => x.Failure).HasMaxLength(200); });
 			b.Entity<ChatReminder>(e => e.ToTable("ChatReminders"));

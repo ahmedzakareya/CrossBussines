@@ -415,7 +415,8 @@
 			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(c.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>' +
 			'<button type="button" class="it" data-m="hold">' + ico(c.held ? 'play' : 'pause', 18) + '<span>' + esc(c.held ? t('cmResume') : t('cmHold')) + '</span></button>' +
 			(window.cbCallsGroup && window.cbCallsGroup.transfer ? '<button type="button" class="it" data-m="transfer">' + ico('phone-forwarded', 18) + '<span>' + esc(t('cmTransfer')) + '</span></button>' : '') +
-			'<button type="button" class="it" data-m="noise">' + ico('audio-lines', 18) + '<span>' + esc(t('cmNoise')) + '</span><b>' + esc(c.noiseOff ? t('cmOff') : t('cmOn')) + '</b></button>';
+			'<button type="button" class="it" data-m="noise">' + ico('audio-lines', 18) + '<span>' + esc(t('cmNoise')) + '</span><b>' + esc(c.noiseOff ? t('cmOff') : t('cmOn')) + '</b></button>' +
+			(window.cbBlur && window.cbBlur.supported() && (c.blur || (c.local && c.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(c.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
 		c.el.querySelector('.main').appendChild(m);
 		m.onclick = function (e) {
 			var b = e.target.closest('button'); if (!b) return;
@@ -425,6 +426,7 @@
 			if (k === 'hand') { c.hand = !c.hand; send(c, { t: 'hand', on: c.hand }); paintFlags(c); paintBar(c); }
 			if (k === 'hold') hold(c, !c.held, true);
 			if (k === 'transfer') window.cbCallsGroup.transfer(c);
+			if (k === 'blur') toggleBlur(c);
 			if (k === 'noise') {
 				c.noiseOff = !c.noiseOff;
 				var a = c.local && c.local.getAudioTracks()[0];
@@ -432,6 +434,24 @@
 				toast(c.noiseOff ? t('cmNoiseOff') : t('cmNoiseOn'), 'info');
 			}
 		};
+	}
+	// background blur: the camera track in c.local is swapped for the blurred one (and back), on the connection too
+	function swapVideo(c, nt) {
+		var old = c.local.getVideoTracks()[0]; if (old) c.local.removeTrack(old);
+		c.local.addTrack(nt);
+		if (c.videoTx && !c.sharing) c.videoTx.sender.replaceTrack(nt);
+		paintSelf(c);
+	}
+	function toggleBlur(c) {
+		if (c.blur) { var b = c.blur; c.blur = null; b.raw.enabled = c.cam; swapVideo(c, b.raw); b.stop(); toast(t('cmBlurOff'), 'info'); return; }
+		var raw = c.local && c.local.getVideoTracks()[0]; if (!raw || c.blurring) return;
+		c.blurring = true; toast(t('cmBlurStarting'), 'info');
+		window.cbBlur.create(raw).then(function (b) {
+			c.blurring = false;
+			if (c.closed) { b.stop(); return; }
+			b.raw = raw; c.blur = b; b.track.enabled = raw.enabled;
+			swapVideo(c, b.track); toast(t('cmBlurOn'), 'success');
+		}).catch(function () { c.blurring = false; toast(t('cmBlurFail'), 'error'); });
 	}
 	function hold(c, on, mine) {
 		if (mine) {
@@ -550,11 +570,14 @@
 		return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': token() }, body: fd }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
 	}
 	function chatMsg(m) {
-		var mine = m.senderId === (W.me || {}).id, d = new Date(m.createdAt);
+		// a server time without a zone is UTC (the database stores UtcNow); read as local it was three hours early
+		var ca = m.createdAt; if (typeof ca === 'string' && !/(Z|[+-]\d\d:?\d\d)$/i.test(ca)) ca += 'Z';
+		var mine = m.senderId === (W.me || {}).id, d = new Date(ca);
 		var at = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 		var body = m.deleted ? '<div class="tx">' + esc(t('cmDeleted')) + '</div>'
 			: (m.attachmentPath ? '<div class="cm-file"><span class="fi">' + ico(m.attachmentType === 'image' ? 'image' : m.attachmentType === 'audio' ? 'mic' : 'file', 18) + '</span><div class="fm"><div class="fn">' + esc(m.attachmentName || '') + '</div></div></div>' : '') +
-				(m.body ? '<div class="tx" dir="auto">' + esc(m.body) + '</div>' : '');
+				// formatted as the Communication page formats it (bold, code, lists, mentions) when that page is the host
+				(m.body ? '<div class="tx" dir="auto">' + (window.cbComm && window.cbComm.richText ? window.cbComm.richText(m.body) : esc(m.body)) + '</div>' : '');
 		return '<div class="cm-msg' + (mine ? ' mine' : '') + '" data-id="' + m.id + '">' + (mine ? '' : '<span class="cm-msg-face">' + face({ name: m.senderName, photo: m.senderAvatar, initials: (m.senderName || '?').charAt(0) }, 30) + '</span>') +
 			'<div class="cm-bwrap"><div class="cm-bubble">' + body + '<div class="cm-meta"><span class="num">' + at + '</span>' + (mine ? '<span class="cm-tick">' + ico('check-check', 14) + '</span>' : '') + '</div></div></div></div>';
 	}
@@ -612,6 +635,7 @@
 		saveNote(c);
 		if (c.rec && c.rec.recorder) recFinish(c);
 		stopShare(c);
+		if (c.blur) { c.blur.stop(); c.blur.raw.stop(); c.blur = null; }   // the camera behind the blur stops too
 		if (c.local) c.local.getTracks().forEach(function (x) { x.stop(); });
 		if (c.pc) try { c.pc.close(); } catch (e) { }
 		if (c.el) c.el.remove();

@@ -108,16 +108,8 @@ namespace CrossBuy.Controllers.Api
 			var me = await MeAsync(ct); if (me == null) return NotFound();
 			var m = await _db.ChatMessages.AsNoTracking().Where(x => x.ID == messageId && x.DeletedAt == null).Select(x => new { x.ConversationId, x.AttachmentPath, x.AttachmentName }).FirstOrDefaultAsync(ct);
 			if (m == null || m.AttachmentPath == null || !await _comm.CanAsync(me, CommunicationActions.Read, In(m.ConversationId), ct)) return NotFound();
-			string? rel = m.AttachmentPath;
-			var fid = System.Text.RegularExpressions.Regex.Match(rel, @"fileId=(\d+)");
-			if (fid.Success)
-			{
-				int id = int.Parse(fid.Groups[1].Value);
-				rel = await _db.Set<CrossBuy.Models.Context.Library.LibraryItem>().AsNoTracking().Where(i => i.Id == id && i.CompanyID == me.CompanyId).Select(i => i.StoredPath).FirstOrDefaultAsync(ct);
-			}
-			if (string.IsNullOrEmpty(rel) || !rel.StartsWith("/uploads/", StringComparison.Ordinal) || rel.Contains("..")) return NotFound();
-			var full = Path.GetFullPath(Path.Combine(_env.WebRootPath, rel.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
-			if (!full.StartsWith(Path.GetFullPath(_env.WebRootPath), StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(full)) return NotFound();
+			var full = await ChatAttachmentFiles.ResolveAsync(_db, _env, me.CompanyId, m.AttachmentPath, ct);
+			if (full == null) return NotFound();
 			var ext = Path.GetExtension(full).ToLowerInvariant();
 			var type = ext switch { ".png" => "image/png", ".jpg" or ".jpeg" or ".jfif" => "image/jpeg", ".gif" => "image/gif", ".webp" => "image/webp", ".webm" => "audio/webm", ".ogg" => "audio/ogg", ".m4a" => "audio/mp4", ".mp3" => "audio/mpeg", ".wav" => "audio/wav", ".pdf" => "application/pdf", _ => "application/octet-stream" };
 			Response.Headers.CacheControl = "private, max-age=3600";
@@ -185,6 +177,17 @@ namespace CrossBuy.Controllers.Api
 			var me = await MeAsync(ct); if (me == null || !await _comm.CanAsync(me, CommunicationActions.Read, In(c), ct)) return NotFound(Missing);
 			var list = (ids ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => int.TryParse(x, out var v) ? v : 0).Where(v => v > 0).Distinct().Take(200).ToList();
 			return Ok(await Plus.MetaAsync(me.CompanyId, c, me.EmployeeId!.Value, list));
+		}
+
+		/// POST /api/chat/transcribe?id= — the words of a voice message (transcribed once, on this machine).
+		[HttpPost("transcribe")]
+		public async Task<IActionResult> Transcribe([FromQuery] int id, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null) return NotFound(Missing);
+			int c = await _db.ChatMessages.AsNoTracking().Where(m => m.ID == id).Select(m => m.ConversationId).FirstOrDefaultAsync(ct);
+			if (c == 0 || !await _comm.CanAsync(me, CommunicationActions.Read, In(c), ct)) return NotFound(Missing);
+			var r = await ActivatorUtilities.CreateInstance<ChatTranscriber>(_sp).TranscribeAsync(me.CompanyId, me.EmployeeId!.Value, id, ct);
+			return Ok(new { ok = r.Ok, status = r.Status, text = r.Text, language = r.Language, code = r.Code });
 		}
 
 		/// GET /api/chat/pinned?c= — the conversation's pinned messages, newest first.

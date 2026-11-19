@@ -52,6 +52,16 @@ namespace CrossBuy.Controllers
 			return Json(await Plus.MetaAsync(me.Value.companyId, c, me.Value.empId, Ids(ids).Take(200).ToList()));
 		}
 
+		// ---------------- speech to text: the words of a voice message ----------------
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> Transcribe(int id)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync(); int c = await ConvOfAsync(id);
+			if (me == null || ctx == null || c == 0 || !await Comm.CanAsync(ctx, CommunicationActions.Read, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await ActivatorUtilities.CreateInstance<ChatTranscriber>(HttpContext.RequestServices).TranscribeAsync(me.Value.companyId, me.Value.empId, id, HttpContext.RequestAborted);
+			return Json(new { ok = r.Ok, status = r.Status, text = r.Text, language = r.Language, code = r.Code });
+		}
+
 		// ---------------- pinned and saved messages ----------------
 		[HttpPost, ValidateAntiForgeryToken]
 		public async Task<IActionResult> PinMessage(int id, bool on)

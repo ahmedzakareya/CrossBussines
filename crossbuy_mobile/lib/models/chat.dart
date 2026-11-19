@@ -79,11 +79,15 @@ class ChatMeta {
   final bool forwarded, pinned;
   final String? forwardedFrom;
   final ChatPoll? poll;
-  ChatMeta({this.threadCount = 0, this.forwarded = false, this.pinned = false, this.forwardedFrom, this.poll});
+  /// A voice message's words: status done | too_long | failed (null = not asked for yet).
+  String? transcriptStatus, transcriptText;
+  ChatMeta({this.threadCount = 0, this.forwarded = false, this.pinned = false, this.forwardedFrom, this.poll, this.transcriptStatus, this.transcriptText});
   factory ChatMeta.fromJson(Map<String, dynamic> j) => ChatMeta(
         threadCount: j['thread'] is Map ? _i((j['thread'] as Map)['count']) : 0,
         forwarded: j['forwarded'] == true, pinned: j['pinned'] == true, forwardedFrom: _n(j['forwardedFrom']),
         poll: j['poll'] is Map ? ChatPoll.fromJson((j['poll'] as Map).cast<String, dynamic>()) : null,
+        transcriptStatus: j['transcript'] is Map ? _n((j['transcript'] as Map)['status']) : null,
+        transcriptText: j['transcript'] is Map ? _n((j['transcript'] as Map)['text']) : null,
       );
 }
 

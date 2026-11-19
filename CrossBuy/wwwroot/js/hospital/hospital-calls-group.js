@@ -411,14 +411,35 @@
 		var old = g.el.querySelector('.cbc-more'); if (old) { old.remove(); return; }
 		var m = document.createElement('div'); m.className = 'cbc-more';
 		m.innerHTML = '<div class="rx">' + ['👍', '👏', '❤️', '😂', '🎉', '🙏'].map(function (e) { return '<button type="button" data-rx="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
-			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(g.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>';
+			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(g.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>' +
+			(window.cbBlur && window.cbBlur.supported() && (g.blur || (g.local && g.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(g.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
 		g.el.querySelector('.cbc-main').appendChild(m);
 		m.onclick = function (e) {
 			var b = e.target.closest('button'); if (!b) return; m.remove();
 			var rx = b.getAttribute('data-rx');
 			if (rx) { toAll({ t: 'react', e: rx }); floatOn('me', rx); return; }
+			if (b.getAttribute('data-m') === 'blur') { toggleBlur(); return; }
 			g.hand = !g.hand; toAll({ t: 'hand', on: g.hand }); paintTiles(); paintBar();
 		};
+	}
+	// background blur in a group call: the same swap, on every connection or on the media server
+	function swapVideo(nt) {
+		var old = g.local.getVideoTracks()[0]; if (old) g.local.removeTrack(old);
+		g.local.addTrack(nt);
+		if (!g.sharing) sendVideo(nt);
+		paintTiles();
+	}
+	function toggleBlur() {
+		if (!g) return;
+		if (g.blur) { var b = g.blur; g.blur = null; b.raw.enabled = g.cam; swapVideo(b.raw); b.stop(); toast(t('cmBlurOff'), 'info'); return; }
+		var raw = g.local && g.local.getVideoTracks()[0]; if (!raw || g.blurring) return;
+		var mine = g; g.blurring = true; toast(t('cmBlurStarting'), 'info');
+		window.cbBlur.create(raw).then(function (b) {
+			mine.blurring = false;
+			if (g !== mine) { b.stop(); return; }
+			b.raw = raw; g.blur = b; b.track.enabled = raw.enabled;
+			swapVideo(b.track); toast(t('cmBlurOn'), 'success');
+		}).catch(function () { mine.blurring = false; toast(t('cmBlurFail'), 'error'); });
 	}
 	// a transfer: the two-person call becomes a group with the new person, and I leave once they have joined
 	function transfer(c) {
@@ -452,6 +473,7 @@
 		clearInterval(x.clock); clearInterval(x.speak); clearInterval(x.ping);
 		if (x.rec && x.rec.recorder) recFinish(x);
 		if (x.screen) x.screen.getTracks().forEach(function (s) { s.stop(); });
+		if (x.blur) { x.blur.stop(); x.blur.raw.stop(); x.blur = null; }   // the camera behind the blur stops too
 		if (x.local) x.local.getTracks().forEach(function (s) { s.stop(); });
 		Object.keys(x.members).forEach(function (id) { if (x.members[id].pc) try { x.members[id].pc.close(); } catch (e) { } });
 		if (x.room) try { x.room.disconnect(); } catch (e) { }

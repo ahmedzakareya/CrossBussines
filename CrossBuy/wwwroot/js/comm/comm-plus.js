@@ -50,7 +50,33 @@
 		}
 		// poll
 		if (r.poll) paintPoll(el, r.poll);
+		// a voice message's words
+		paintTranscript(el, id, r.transcript);
 	}
+
+	/* ================================================================================================================
+	   SPEECH TO TEXT — «النص» under a voice message: transcribed once on this machine, then shown to every reader
+	   ================================================================================================================ */
+	function paintTranscript(el, id, tr) {
+		var vb = el.querySelector('.cm-voice'); if (!vb) return;
+		var box = el.querySelector('.cm-transcript'); if (box) box.remove();
+		var html;
+		if (tr && tr.status === 'done') html = tr.text ? '<div class="tx" dir="auto">' + esc(tr.text) + '</div>' : '<div class="nt">' + esc(t('No words were heard in this recording')) + '</div>';
+		else if (tr && tr.status === 'too_long') html = '<div class="nt">' + esc(t('Too long to turn into text (about a minute and a half at most)')) + '</div>';
+		else html = '<button type="button" class="go" data-transcribe="' + id + '">' + ico('captions', 14) + '<span>' + esc(t('Show the text')) + '</span></button>';
+		vb.insertAdjacentHTML('afterend', '<div class="cm-transcript">' + html + '</div>');
+	}
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest && e.target.closest('[data-transcribe]'); if (!b) return;
+		var id = +b.getAttribute('data-transcribe');
+		b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span><span>' + esc(t('Turning it into text…')) + '</span>';
+		post('/Chat/Transcribe', { id: id }).then(function (x) {
+			var el = msgEl(id); if (!el) return;
+			if (x && (x.ok || x.status === 'too_long')) { meta[id] = meta[id] || { id: id }; meta[id].transcript = { status: x.status, text: x.text, language: x.language }; paintTranscript(el, id, meta[id].transcript); return; }
+			toast('error', t('The text is not available right now — try again later'));
+			paintTranscript(el, id, null);
+		});
+	});
 
 	/* ================================================================================================================
 	   THE HOVER BAR and the "more" menu — reply in a thread, forward, pin, save, remind, make a task

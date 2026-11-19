@@ -430,3 +430,10 @@ button.cm-rec { border: 0; }
 .cm-appr .cm-grp { background: linear-gradient(135deg, #FFE7E7, #FFF4F4); color: var(--cm-red); }
 .cm-apcard, .cm-saved { max-width: 640px; cursor: pointer; }
 .cm-findsec mark { background: #FFF1B8; padding: 0; border-radius: 3px; }
+
+/* speech to text: a voice message's words */
+.cm-transcript { margin-top: 6px; max-width: 320px; }
+.cm-transcript .go { display: inline-flex; align-items: center; gap: 6px; border: 0; background: rgba(58,87,149,.08); color: var(--cm-brand2); border-radius: 8px; padding: 3px 9px; font-size: 11.5px; font-weight: 600; }
+.cm-msg.mine .cm-transcript .go { background: rgba(255,255,255,.16); color: #fff; }
+.cm-transcript .tx { font-size: 12.5px; line-height: 1.7; unicode-bidi: plaintext; border-inline-start: 2px solid currentColor; padding-inline-start: 8px; opacity: .92; }
+.cm-transcript .nt { font-size: 11.5px; opacity: .7; }

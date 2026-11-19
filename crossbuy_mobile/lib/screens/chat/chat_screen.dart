@@ -500,7 +500,10 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       case 'audio':
-        return _VoicePlayer(url: url, mine: mine);
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          _VoicePlayer(url: url, mine: mine),
+          _transcript(context, m, mine),
+        ]);
       default:
         return Container(
           margin: const EdgeInsets.only(bottom: 4),
@@ -513,6 +516,61 @@ class _ChatScreenState extends State<ChatScreen> {
           ]),
         );
     }
+  }
+
+  // ------------------------------------------------------------------------------------------ speech to text
+  final Set<int> _transcribing = {};
+
+  Future<void> _transcribe(ChatMsg m) async {
+    setState(() => _transcribing.add(m.id));
+    final (status, text) = await _api.transcribeChat(m.id);
+    if (!mounted) return;
+    setState(() {
+      _transcribing.remove(m.id);
+      if (status == 'done' || status == 'too_long') {
+        m.meta ??= ChatMeta();
+        m.meta!.transcriptStatus = status;
+        m.meta!.transcriptText = text;
+      }
+    });
+    if (status != 'done' && status != 'too_long') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'النص غير متاح الآن — حاول لاحقاً', 'The text is not available right now — try again later'))));
+    }
+  }
+
+  /// Under a voice message: «عرض النص», then the words (transcribed once on the server, for everyone).
+  Widget _transcript(BuildContext context, ChatMsg m, bool mine) {
+    final fg = mine ? Colors.white : Brand.navy;
+    final st = m.meta?.transcriptStatus;
+    if (st == 'done') {
+      final t = (m.meta!.transcriptText ?? '').trim();
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsetsDirectional.only(start: 8),
+        constraints: const BoxConstraints(maxWidth: 240),
+        decoration: BoxDecoration(border: BorderDirectional(start: BorderSide(color: fg.withValues(alpha: .6), width: 2))),
+        child: Text(t.isEmpty ? L(context, 'لم تُسمع كلمات في هذا التسجيل', 'No words were heard in this recording') : t,
+            style: TextStyle(fontSize: 11.5, height: 1.6, color: mine ? Colors.white : Brand.inkC, fontStyle: t.isEmpty ? FontStyle.italic : FontStyle.normal)),
+      );
+    }
+    if (st == 'too_long') {
+      return Padding(padding: const EdgeInsets.only(top: 6), child: Text(L(context, 'أطول من أن تُحوَّل إلى نص (دقيقة ونصف على الأكثر)', 'Too long to turn into text (a minute and a half at most)'), style: TextStyle(fontSize: 10.5, color: mine ? Colors.white70 : Brand.mutedC)));
+    }
+    final busy = _transcribing.contains(m.id);
+    return GestureDetector(
+      onTap: busy ? null : () => _transcribe(m),
+      child: Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: mine ? Colors.white.withValues(alpha: .16) : Brand.soft, borderRadius: BorderRadius.circular(8)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          busy ? SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5, color: fg)) : Icon(Lu.captions, size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(busy ? L(context, 'جارٍ تحويلها إلى نص…', 'Turning it into text…') : L(context, 'عرض النص', 'Show the text'),
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: fg)),
+        ]),
+      ),
+    );
   }
 
   Widget _composer(BuildContext context) {

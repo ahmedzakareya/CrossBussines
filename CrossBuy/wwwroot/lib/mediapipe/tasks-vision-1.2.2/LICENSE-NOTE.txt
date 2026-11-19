@@ -1,0 +1,4 @@
+@mediapipe/tasks-vision 1.2.2 (npm, published 2026-11-03) — Apache License 2.0, (c) Google LLC.
+selfie_segmenter.tflite (float16, MediaPipe models) — Apache License 2.0; served as selfie_segmenter.bin because the
+static-file map has no .tflite type. Vendored for background blur in calls (comm-blur.js): no CDN, works on the
+internal network. Only vision_bundle.js and the non-module wasm pair are needed.

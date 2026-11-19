@@ -191,6 +191,11 @@
         cmOff: @Json.Serialize(S("Off")),
         cmNoiseOn: @Json.Serialize(S("Noise suppression is on")),
         cmNoiseOff: @Json.Serialize(S("Noise suppression is off")),
+        cmBlur: @Json.Serialize(S("Blur the background")),
+        cmBlurOn: @Json.Serialize(S("The background is blurred")),
+        cmBlurOff: @Json.Serialize(S("The background is no longer blurred")),
+        cmBlurStarting: @Json.Serialize(S("Preparing the blur…")),
+        cmBlurFail: @Json.Serialize(S("The blur could not start on this device")),
         cmOnHoldMine: @Json.Serialize(S("You put the call on hold")),
         cmOnHoldTheirs: @Json.Serialize(S("On hold")),
         cmTransferring: @Json.Serialize(S("Transferring — the call is yours until they answer")),
@@ -372,5 +377,6 @@
 <script src="~/lib/lucide/lucide-0.469.0.min.js"></script>
 <script src="~/js/hospital/hospital-calls.js" asp-append-version="true"></script>
 <script src="~/js/hospital/hospital-calls-group.js" asp-append-version="true"></script>
+<script src="~/js/comm/comm-blur.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-everywhere.js" asp-append-version="true"></script>
 }

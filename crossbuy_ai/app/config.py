@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     # Service
     ai_service_port: int = 8000
 
+    # SPEECH TO TEXT (owner 2026-11-19). Which Whisper weights in models/whisper-<size>/ transcribe a voice
+    # message: "small", "medium", or "auto" — medium for a short message (reads Arabic far better), small for a
+    # longer one (twice as fast). On the processor only (int8); the route answers 503 when no weights are there.
+    whisper_model: str = "auto"
+
 
 @lru_cache
 def get_settings() -> Settings:

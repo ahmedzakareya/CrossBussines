@@ -11,3 +11,9 @@ httpx==0.28.1
 numpy==2.2.1
 pandas==2.2.3
 scikit-learn==1.6.1
+
+# Speech to text (owner 2026-11-19): Whisper on the processor, weights in models/whisper-small|medium (not in git;
+# fetch from huggingface.co/Systran/faster-whisper-<size>). av is pinned below 19: 19.x removed an argument
+# faster-whisper 1.2.1 passes.
+faster-whisper==1.2.1
+av==15.1.0

@@ -158,7 +158,14 @@ namespace CrossBuy.BL.Platform.Ai
                     $"size:{request.PayloadBytes}>{AiEgressLimits.MaxPayloadBytes}");
 
             // ---- the classification/destination matrix ----
-            if (!Permitted(request.Classification, request.Destination))
+            // ONE purpose-bound exception (owner, 2026-11-19): a voice message's recording is personal data, and
+            // it may go to an INTERNAL destination for one reason only — someone who may read that message asked
+            // for its words. Every other purpose still finds personal data refused everywhere, and an external
+            // destination still refuses it for this purpose too.
+            bool speechInside = request.Purpose == AiEgressPurpose.SpeechTranscription
+                && request.Classification == AiDataClassification.PersonalData
+                && request.Destination == AiEgressDestinationClass.Internal;
+            if (!speechInside && !Permitted(request.Classification, request.Destination))
                 return Deny(request, AiEgressDenyReason.ClassificationNotPermittedAtDestination,
                     $"matrix:{request.Classification}@{request.Destination}");
 
