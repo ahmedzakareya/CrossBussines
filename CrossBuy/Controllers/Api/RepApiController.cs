@@ -285,6 +285,24 @@ namespace CrossBuy.Controllers.Api
 			return ok ? Ok(new { success = true }) : BadRequest(new { success = false, message = err });
 		}
 
+		public sealed class ChequeDto { public int CustomerId { get; set; } public decimal Amount { get; set; } public string ChequeNo { get; set; } = ""; public DateTime DueDate { get; set; } public string? Bank { get; set; } public int? VisitId { get; set; } }
+
+		// POST /api/rep/cheque — a customer's cheque: a receipt voucher on 1106 «cheques under collection» with the cheque
+		// beside it (ChequeService), under the receipt's own gate, accounting "pay". At a visit, the visit records it.
+		[HttpPost("cheque")]
+		public async Task<IActionResult> Cheque([FromBody] ChequeDto dto, [FromServices] IJournalEntryService journals, CancellationToken ct = default)
+		{
+			var auth = await _guard.AuthorizeAsync("pay", null, ct);
+			if (!auth.Ok) return auth.Error!;
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
+			var (ok, err, rc) = await new ChequeService(_db, _ar, journals, _currency).ReceiveAsync(auth.CompanyId, dto.CustomerId, DateTime.Today, dto.Amount,
+				dto.ChequeNo, dto.DueDate, dto.Bank, null, auth.EmployeeId, User?.Identity?.Name, ct);
+			if (!ok) return BadRequest(new { success = false, message = err });
+			var (ctx, rep) = await RepAsync(ct);
+			if (dto.VisitId is int v && ctx != null) await new SalesRepRouteService(_db).RecordCollectionAsync(ctx.CompanyId, rep, v, dto.Amount, ct);
+			return Ok(new { success = true, receiptNo = rc!.ReceiptNo });
+		}
+
 		// GET /api/rep/cash-accounts — where a collection may be received (the same cash & bank accounts as the web
 		// receipt screen: postable accounts under 1101). Accounting "pay", as the receipt itself.
 		[HttpGet("cash-accounts")]

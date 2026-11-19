@@ -236,6 +236,14 @@
                         <input type="file" name="certificate" id="leave_cert_file" accept=".pdf,.png,.jpg,.jpeg,.webp,.avif,.doc,.docx" class="form-control form-control-solid" />
                         <div class="form-text">@(isAr ? "لائحة شركتك تشترطها لهذا النوع. PDF أو صورة، حتى 15 ميجابايت؛ تُحفظ في مدير الملفات ويراها المعتمِدون." : "Your company's policy requires it for this type. PDF or image, up to 15 MB; it is kept in the File Manager and your approvers can open it.")</div>
                     </div>
+                    @* the colleague who covers during the leave (optional) — the same field the mobile form has *@
+                    <div class="mb-7">
+                        <label class="fw-semibold fs-6 mb-2">@(isAr ? "البديل أثناء الغياب" : "Cover during the absence")</label>
+                        <select name="substituteEmployeeId" class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#kt_modal_new_leave">
+                            <option value="">@(isAr ? "بدون بديل" : "No cover")</option>
+                            @foreach (var (cid, cname) in (ViewBag.Colleagues as List<(int, string)> ?? new())) { <option value="@cid">@cname</option> }
+                        </select>
+                    </div>
                     <div class="mb-2">
                         <label class="fw-semibold fs-6 mb-2">@Localizer["Reason (optional)"]</label>
                         <textarea name="reason" class="form-control form-control-solid" rows="3"></textarea>

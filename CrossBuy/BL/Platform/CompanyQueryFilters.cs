@@ -64,6 +64,8 @@ namespace CrossBuy.BL.Platform
             nameof(LeavePolicies), nameof(AttendancePolicies), nameof(SalaryPolicies),
             // sales-rep routes and visits (2026-11-18): a rep's plan and day are their company's alone
             nameof(SalesRepRoute), nameof(SalesRepRouteStop), nameof(SalesRepVisit),
+            // cheques under collection (2026-11-19)
+            nameof(CrossBuy.Models.Context.Accounting.ReceiptCheque),
         };
 
         // The pilot membership test, used by B4's write guard so the read filter and the write guard cover exactly
@@ -155,6 +157,9 @@ namespace CrossBuy.BL.Platform
             builder.Entity<SalesRepRouteStop>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
             builder.Entity<SalesRepVisit>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            // A customer's cheque under collection (2026-11-19).
+            builder.Entity<CrossBuy.Models.Context.Accounting.ReceiptCheque>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
 
             // Quotation holds ZERO rows live, so it is the one pilot entity where the filter cannot change any

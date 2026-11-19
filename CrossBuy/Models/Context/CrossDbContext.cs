@@ -1002,6 +1002,8 @@ namespace CrossBuy.Models.Context
         public DbSet<Inventory.SalesRepRoute> SalesRepRoutes { get; set; }
         public DbSet<Inventory.SalesRepRouteStop> SalesRepRouteStops { get; set; }
         public DbSet<Inventory.SalesRepVisit> SalesRepVisits { get; set; }
+        // cheques under collection (deploy/sql/cheques_under_collection.sql)
+        public DbSet<Accounting.ReceiptCheque> ReceiptCheques { get; set; }
         public DbSet<Inventory.SalesOrderLine> SalesOrderLines { get; set; }
         public DbSet<Inventory.Quotation> Quotations { get; set; }
         public DbSet<Inventory.QuotationLine> QuotationLines { get; set; }

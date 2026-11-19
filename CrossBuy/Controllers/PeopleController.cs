@@ -280,13 +280,20 @@ namespace CrossBuy.Controllers
 				: await Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices)
 					.LeaveCertificatesAsync(ctxCert.CompanyId, vm.Mine.Concat(vm.Pending).Select(r => r.ID));
 
+			// who may cover the leave: active colleagues of my company, my department first (the mobile form offers the same)
+			ViewBag.Colleagues = ctxCert == null ? new List<(int, string)>()
+				: (await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == ctxCert.CompanyId && e.IsActive && e.ID != emp.ID)
+					.OrderByDescending(e => e.DepartmentID == emp.DepartmentID).ThenBy(e => e.FullName)
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync())
+					.Select(e => (e.ID, System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" || string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullName : e.FullNameEn!)).ToList();
+
 			return View(vm);
 		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequestSizeLimit(16 * 1024 * 1024)]
-		public async Task<IActionResult> CreateLeave(int leaveTypeId, DateTime startDate, DateTime endDate, string? reason, IFormFile? certificate)
+		public async Task<IActionResult> CreateLeave(int leaveTypeId, DateTime startDate, DateTime endDate, string? reason, IFormFile? certificate, int? substituteEmployeeId)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -305,8 +312,21 @@ namespace CrossBuy.Controllers
 			if (!hasCert && (await eligibility.CertificateTypesAsync(self.Value)).Contains(leaveTypeId))
 			{ TempData["LeaveErr"] = CrossBuy.BL.Hr.HrLeaveEligibility.CertificateMissing.Text; return RedirectToAction(nameof(Leaves)); }
 
+			// the colleague who covers: optional; an active colleague of the same company, never the requester
+			if (substituteEmployeeId is int sub && sub > 0)
+			{
+				var me = await _context.Employee.AsNoTracking().Where(e => e.ID == self.Value).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+				if (sub == self.Value || !await _context.Employee.AsNoTracking().AnyAsync(e => e.ID == sub && e.EmpCompanyID == me && e.IsActive))
+				{
+					TempData["LeaveErr"] = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "البديل يجب أن يكون زميلاً نشطاً في شركتك." : "The substitute must be an active colleague in your company.";
+					return RedirectToAction(nameof(Leaves));
+				}
+			}
+
 			var (ok, error, req) = await _workflow.CreateAsync(self.Value, leaveTypeId, startDate, endDate, reason);
 			if (!ok) { TempData["LeaveErr"] = error; return RedirectToAction(nameof(Leaves)); }
+			if (substituteEmployeeId is int chosen && chosen > 0 && req != null)
+				await _context.LeaveRequests.Where(r => r.ID == req.ID).ExecuteUpdateAsync(s => s.SetProperty(r => r.SubstituteEmployeeID, chosen));
 			TempData["LeaveMsg"] = L["Leave request submitted"].Value;
 			if (hasCert && req != null)
 			{

@@ -1,0 +1,36 @@
+@model List<CrossBuy.BL.ChequeService.ChequeRow>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var today = DateTime.Today;
+}
+@foreach (var c in Model)
+{
+    var due = c.Status == "InHand" && c.DueDate <= today;
+    <tr>
+        <td class="fw-bold text-gray-900" dir="ltr" style="text-align:start">@c.ChequeNo</td>
+        <td>@(c.Bank ?? "—")</td>
+        <td>@c.Customer</td>
+        <td class="text-muted fs-7">@c.ReceiptNo<div>@c.ReceiptDate.ToString("yyyy-MM-dd")</div></td>
+        <td>@c.DueDate.ToString("yyyy-MM-dd") @if (due) { <span class="badge badge-light-primary ms-1">@L("مستحق", "Due")</span> }</td>
+        <td class="text-end fw-bold" dir="ltr">@c.Amount.ToString("N3")</td>
+        <td class="text-center">
+            @switch (c.Status)
+            {
+                case "Cleared": <span class="badge badge-light-primary" title="@c.ClearedTo">@L("محصّل", "Cleared")</span>; break;
+                case "Bounced": <span class="badge badge-light-danger" title="@c.BounceReason">@L("مرتد", "Bounced")</span>; break;
+                default: <span class="badge badge-light">@L("في الخزينة", "In hand")</span>; break;
+            }
+        </td>
+        <td class="text-end text-nowrap">
+            @if (c.Status == "InHand")
+            {
+                <button type="button" class="btn btn-sm btn-light-primary me-1" data-cheque-action="clear" data-id="@c.Id" data-no="@c.ChequeNo"><i class="ki-outline ki-bank fs-5"></i>@L("تحصيل", "Clear")</button>
+            }
+            @if (c.Status != "Bounced")
+            {
+                <button type="button" class="btn btn-sm btn-light-danger" data-cheque-action="bounce" data-id="@c.Id" data-no="@c.ChequeNo"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@L("مرتد", "Bounced")</button>
+            }
+        </td>
+    </tr>
+}

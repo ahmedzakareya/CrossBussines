@@ -280,6 +280,8 @@
 				new() { LabelAr = "العملاء", LabelEn = "Customers", Action = "Customers", Controller = "Accounting" },
 				new() { LabelAr = "فواتير المبيعات", LabelEn = "Sales invoices", Action = "SalesInvoices", Controller = "Accounting" },
 				new() { LabelAr = "سندات القبض", LabelEn = "Receipts", Action = "Receipts", Controller = "Accounting" },
+				// a customer's cheque is a receipt on 1106 until the bank clears it (2026-11-19)
+				new() { LabelAr = "شيكات تحت التحصيل", LabelEn = "Cheques under collection", Action = "Index", Controller = "Cheques" },
 				new() { LabelAr = "مرتجعات البيع (إشعار دائن)", LabelEn = "Sales returns", Action = "SalesReturns", Controller = "Accounting" },
 				new() { LabelAr = "كشف حساب عميل", LabelEn = "Customer statement", Action = "CustomerStatement", Controller = "Accounting" },
 				new() { LabelAr = "أعمار ديون العملاء", LabelEn = "AR aging", Action = "ArAging", Controller = "Accounting" },

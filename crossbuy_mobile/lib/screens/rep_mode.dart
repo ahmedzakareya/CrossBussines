@@ -570,9 +570,19 @@ class RepCollectScreen extends StatefulWidget {
 class _RepCollectScreenState extends State<RepCollectScreen> {
   late final Future<List<CashAccount>> _accounts = ApiService.instance.getCashAccounts();
   late double _amount = widget.invoice?.open ?? (widget.customer.outstanding > 0 ? widget.customer.outstanding : 0);
-  String _method = 'Cash';
+  String _method = 'Cash';   // Cash | Cheque | Bank
   int? _account;
   bool _busy = false;
+  final _chequeNo = TextEditingController();
+  final _chequeBank = TextEditingController();
+  DateTime _chequeDue = DateTime.now();
+
+  @override
+  void dispose() {
+    _chequeNo.dispose();
+    _chequeBank.dispose();
+    super.dispose();
+  }
 
   Future<void> _editAmount() async {
     final c = TextEditingController(text: _amount > 0 ? money(_amount, widget.currency).replaceAll(',', '') : '');
@@ -588,17 +598,23 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
   }
 
   Future<void> _send() async {
-    if (_amount <= 0 || _account == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'أدخل مبلغاً واختر الحساب', 'Enter an amount and choose the account'))));
+    final cheque = _method == 'Cheque';
+    if (_amount <= 0 || (!cheque && _account == null) || (cheque && _chequeNo.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(cheque
+          ? L(context, 'أدخل المبلغ ورقم الشيك', 'Enter the amount and the cheque number')
+          : L(context, 'أدخل مبلغاً واختر الحساب', 'Enter an amount and choose the account'))));
       return;
     }
     setState(() => _busy = true);
-    final (ok, err) = await ApiService.instance.collect(widget.customer.id, _amount, _method, _account!);
+    // a cheque is not cash yet: it goes to cheques under collection on the server, and the visit records it there
+    final (ok, err) = cheque
+        ? await ApiService.instance.receiveCheque(widget.customer.id, _amount, _chequeNo.text.trim(), _chequeDue, _chequeBank.text.trim().isEmpty ? null : _chequeBank.text.trim(), visitId: widget.visitId)
+        : await ApiService.instance.collect(widget.customer.id, _amount, _method, _account!);
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? L(context, 'صدر سند القبض', 'Receipt issued') : (err ?? L(context, 'تعذّر إصدار السند', 'The receipt could not be issued')))));
     if (!ok) return;
-    if (widget.visitId != null) await ApiService.instance.visitCollected(widget.visitId!, _amount);
+    if (widget.visitId != null && !cheque) await ApiService.instance.visitCollected(widget.visitId!, _amount);
     if (!mounted) return;
     widget.onDone?.call();
     if (!widget.embedded) Navigator.of(context).pop();
@@ -635,7 +651,28 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
                 ]),
               ),
             ),
-            ChipTabs(items: [L(context, 'نقد', 'Cash'), L(context, 'تحويل بنكي', 'Bank transfer')], index: _method == 'Cash' ? 0 : 1, onTap: (i) => setState(() => _method = i == 0 ? 'Cash' : 'Bank')),
+            ChipTabs(
+              items: [L(context, 'نقد', 'Cash'), L(context, 'شيك', 'Cheque'), L(context, 'تحويل بنكي', 'Bank transfer')],
+              index: const ['Cash', 'Cheque', 'Bank'].indexOf(_method),
+              onTap: (i) => setState(() => _method = const ['Cash', 'Cheque', 'Bank'][i]),
+            ),
+            if (_method == 'Cheque') ...[
+              Row(children: [
+                Expanded(child: TextField(controller: _chequeNo, textDirection: TextDirection.ltr, decoration: InputDecoration(labelText: L(context, 'رقم الشيك', 'Cheque no.')))),
+                const SizedBox(width: 9),
+                Expanded(child: TextField(controller: _chequeBank, decoration: InputDecoration(labelText: L(context, 'البنك المسحوب عليه', 'Drawn on')))),
+              ]),
+              const SizedBox(height: 9),
+              FieldBox(
+                label: L(context, 'تاريخ الاستحقاق', 'Due date'),
+                onTap: () async {
+                  final d = await showDatePicker(context: context, initialDate: _chequeDue, firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now().add(const Duration(days: 365)));
+                  if (d != null) setState(() => _chequeDue = d);
+                },
+                child: Row(children: [Expanded(child: Text(dayMonth(context, _chequeDue))), const Icon(Lu.calendar, size: 15, color: Brand.support)]),
+              ),
+              SoftNote(L(context, 'يُسجَّل الشيك على حساب «شيكات تحت التحصيل» حتى يحصّله البنك.', 'The cheque is held in «cheques under collection» until the bank clears it.')),
+            ] else
             FieldBox(
               label: L(context, 'إلى حساب', 'Into account'),
               onTap: accs.length < 2

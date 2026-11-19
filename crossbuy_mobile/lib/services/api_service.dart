@@ -430,6 +430,21 @@ class ApiService {
     }
   }
 
+  /// A customer's cheque: a receipt on cheques under collection (1106) with the cheque beside it. (ok, receiptNo or error)
+  Future<(bool, String?)> receiveCheque(int customerId, double amount, String chequeNo, DateTime dueDate, String? bank, {int? visitId}) async {
+    try {
+      final res = await _dio.post('/api/rep/cheque', data: {
+        'customerId': customerId, 'amount': amount, 'chequeNo': chequeNo, 'dueDate': ymdIso(dueDate), 'bank': bank,
+        if (visitId != null) 'visitId': visitId,
+      });
+      AppNav.notifyDataChanged();
+      return (true, res.data?['receiptNo']?.toString());
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (false, d is Map ? d['message'] as String? : null);
+    }
+  }
+
   static String ymdIso(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   // ---------------- storekeeper mode (/api/store) ----------------
