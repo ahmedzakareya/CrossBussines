@@ -40,12 +40,14 @@ class AttendanceDay {
   final String status; // Present | Late | Absent | Holiday | RestDay | Leave
   final DateTime? checkIn, checkOut;
   final num workedHours;
+  final String? source;   // Web | Mobile | Device | Manual
   AttendanceDay.fromJson(Map<String, dynamic> j)
       : date = DateTime.parse(j['date']),
         status = j['status'] ?? '',
         checkIn = j['checkIn'] == null ? null : DateTime.tryParse(j['checkIn']),
         checkOut = j['checkOut'] == null ? null : DateTime.tryParse(j['checkOut']),
-        workedHours = _n(j['workedHours']);
+        workedHours = _n(j['workedHours']),
+        source = j['source']?.toString();
 }
 
 class AttendanceMonth {

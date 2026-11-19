@@ -374,6 +374,9 @@ namespace CrossBuy.Models.Context
 			// from the Communication call because these are not Communication tables - CommunicationSchemaParity
 			// asserts that model maps exactly its own slice, and it was right to fail when they were merged.
 			Documents.PlatformDocumentModel.Configure(builder);
+			// HR punch locations (2026-11-19): the pre-convention 19,4 outranks a [Precision] attribute, so the office's
+			// coordinates keep their 6 decimals (about 11 cm) only through the Fluent API.
+			builder.Entity<Admin.Branch>(e => { e.Property(x => x.Latitude).HasPrecision(9, 6); e.Property(x => x.Longitude).HasPrecision(9, 6); });
 			// ---- Stage 0 (Slice-003): CommMessage outbox dispatch index ----
 			// Structure ships in deploy/sql/comm_outbox_slice_003.sql; this mapping exists so EF generates the
 			// same index (and so a test host can materialise it from the model alone).

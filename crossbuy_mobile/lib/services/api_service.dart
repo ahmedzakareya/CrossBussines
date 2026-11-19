@@ -276,6 +276,18 @@ class ApiService {
     return AttendanceMonth.fromJson(Map<String, dynamic>.from(res.data));
   }
 
+  /// A punch from the phone: the server checks the position against the branch office. (ok, kind "in"/"out" or error)
+  Future<(bool, String?)> punch(double latitude, double longitude, double accuracy) async {
+    try {
+      final res = await _dio.post('/api/ess/punch', data: {'latitude': latitude, 'longitude': longitude, 'accuracy': accuracy});
+      AppNav.notifyDataChanged();
+      return (true, res.data?['kind']?.toString());
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (false, d is Map ? d['message'] as String? : null);
+    }
+  }
+
   /// (currency, my requests) — the currency is the company's, for the amount of an advance
   Future<(String, List<MyRequest>)> getMyRequests() async {
     final res = await _dio.get('/api/ess/requests');
@@ -598,7 +610,6 @@ class ApiService {
   /// The recording's address (log=1 the first time: the opening is recorded) and the header that opens it.
   String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
   Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};
-
   // ---------------------------------------------------------------- Communication v2: the chat (api/chat)
   List<Map<String, dynamic>> _rows(Object? d) => [for (final e in (d as List? ?? const [])) (e as Map).cast<String, dynamic>()];
 

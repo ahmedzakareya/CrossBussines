@@ -101,7 +101,7 @@ class _HomeTabState extends State<HomeTab> {
             SectionHeading(L(context, 'وصول سريع', 'Quick access'), action: L(context, 'كل الأقسام', 'All sections'), onAction: () => AppNav.tabIndex.value = AppNav.apps),
             Row(children: [
               Expanded(child: QuickTile(icon: Lu.calendarPlus, label: L(context, 'طلب إجازة', 'Request leave'), onTap: () => _open(const NewLeaveScreen()))),
-              Expanded(child: QuickTile(icon: Lu.fingerprint, label: L(context, 'حضوري', 'Attendance'), onTap: () => _open(const AttendanceScreen()))),
+              Expanded(child: QuickTile(icon: Lu.fingerprint, label: L(context, 'بصمة', 'Punch'), onTap: () => _open(const AttendanceScreen()))),
               Expanded(child: QuickTile(icon: Lu.receiptText, label: L(context, 'قسيمتي', 'My payslip'), onTap: () => _open(const PayslipsScreen()))),
               Expanded(child: QuickTile(icon: Lu.usersRound, label: L(context, 'فريق العمل', 'My team'), onTap: () => _open(const StructureScreen()))),
             ]),

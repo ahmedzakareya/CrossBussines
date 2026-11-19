@@ -110,6 +110,49 @@ namespace CrossBuy.Controllers.Api
 			});
 		}
 
+		public sealed class PunchDto { public double Latitude { get; set; } public double Longitude { get; set; } public double? Accuracy { get; set; } }
+
+		// POST /api/ess/punch — a punch from the phone, inside the office ("بصمة الآن · داخل نطاق المكتب").
+		// The phone reports where it is; the SERVER measures the distance to the employee's branch office and refuses a
+		// punch outside its radius, or at a branch with no location set (HR → Punch locations). The first punch of the
+		// day is the check-in, any later one the check-out (the latest wins); both go through AttendanceService.RecordAsync,
+		// the same arithmetic as a device import or an HR entry, with source "Mobile". The phone's own accuracy widens the
+		// radius by at most 50 m, so a coarse fix cannot stretch the office across town.
+		[HttpPost("punch")]
+		public async Task<IActionResult> Punch([FromBody] PunchDto dto)
+		{
+			var me = await MeAsync(); if (me == null || dto == null) return NotFound(NotAuthorised);
+			bool may = await _hrAccess.CanAsync(me, HrActions.EmployeeRequest, PermissionTarget.ForSubjectEmployee(me.EmployeeId!.Value, me.CompanyId), HttpContext.RequestAborted);
+			if (!may) return NotFound(NotAuthorised);
+			bool ar = Request.Headers["Accept-Language"].ToString().StartsWith("ar");
+			if (dto.Latitude is < -90 or > 90 || dto.Longitude is < -180 or > 180) return BadRequest(new { success = false, message = ar ? "موقع غير صالح" : "Invalid location" });
+			var branchId = await _db.Employee.AsNoTracking().Where(e => e.ID == me.EmployeeId.Value).Select(e => e.BranchID).FirstOrDefaultAsync();
+			var br = branchId == null ? null : await _db.Branches.AsNoTracking().Where(b => b.ID == branchId && b.CompanyID == me.CompanyId)
+				.Select(b => new { b.Latitude, b.Longitude, b.PunchRadiusMeters }).FirstOrDefaultAsync();
+			if (br?.Latitude == null || br.Longitude == null || br.PunchRadiusMeters == null)
+				return BadRequest(new { success = false, message = ar ? "لم تحدد الموارد البشرية موقع مكتب فرعك بعد؛ البصمة من الجوال غير متاحة." : "HR has not set your branch's office location yet; phone punches are not available." });
+			var meters = Haversine((double)br.Latitude.Value, (double)br.Longitude.Value, dto.Latitude, dto.Longitude);
+			var allowed = br.PunchRadiusMeters.Value + Math.Min(Math.Max(dto.Accuracy ?? 0, 0), 50);
+			if (meters > allowed)
+				return BadRequest(new { success = false, distance = Math.Round(meters), message = ar ? $"أنت على بعد {Math.Round(meters):N0} متر من المكتب؛ البصمة داخل {br.PunchRadiusMeters} متر فقط." : $"You are {Math.Round(meters):N0} m from the office; punches are accepted within {br.PunchRadiusMeters} m." });
+
+			var now = DateTime.Now;   // the server's local clock, as the device import and HR entry use
+			var today = now.Date;
+			var rec = await _db.AttendanceRecords.AsNoTracking().FirstOrDefaultAsync(r => r.CompanyID == me.CompanyId && r.EmployeeID == me.EmployeeId.Value && r.WorkDate == today);
+			bool isIn = rec?.CheckIn == null;
+			var (ok, err, saved) = await _attendance.RecordAsync(me.CompanyId, me.EmployeeId.Value, today, isIn ? now : rec!.CheckIn, isIn ? null : now, "Mobile", rec?.Notes, User?.Identity?.Name);
+			if (!ok || saved == null) return BadRequest(new { success = false, message = err });
+			return Ok(new { success = true, kind = isIn ? "in" : "out", at = now, checkIn = saved.CheckIn, checkOut = saved.CheckOut, distance = Math.Round(meters), status = saved.Status });
+		}
+
+		private static double Haversine(double lat1, double lon1, double lat2, double lon2)
+		{
+			const double R = 6371000;   // metres
+			double dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+			double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+			return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+		}
+
 		// ---------------- my requests (letters, permissions, advances) ----------------
 		// GET /api/ess/requests
 		[HttpGet("requests")]

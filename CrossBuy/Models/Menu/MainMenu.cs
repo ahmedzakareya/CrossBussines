@@ -633,6 +633,7 @@
 				new() { LabelAr = "السياسات", LabelEn = "Policies", Action = "Polices", Controller = "Admin" },
 				new() { LabelAr = "العطلات الرسمية", LabelEn = "Official holidays", Action = "HolidaysList", Controller = "Admin" },
 				new() { LabelAr = "الحضور والانصراف", LabelEn = "Attendance", Action = "Attendance", Controller = "Admin" },
+				new() { LabelAr = "مواقع البصمة", LabelEn = "Punch locations", Action = "PunchLocations", Controller = "Admin" },   // where a phone punch is accepted (2026-11-19)
 				new() { LabelAr = "بدل الإجازات ومخصصها", LabelEn = "Encashment & provision", Action = "LeaveAccrual", Controller = "Admin" },
 				new() { LabelAr = "ترحيل رصيد الإجازات", LabelEn = "Leave carry-over", Action = "LeaveCarryOver", Controller = "Admin" },
 					new() { LabelAr = "تقييم الأداء", LabelEn = "Performance appraisal", Action = "Appraisals", Controller = "Admin" },

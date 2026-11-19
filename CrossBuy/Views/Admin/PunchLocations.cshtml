@@ -1,0 +1,59 @@
+@model List<CrossBuy.Models.Context.Admin.Branch>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var staff = ViewBag.Staff as Dictionary<int, int> ?? new();
+    string nv(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("مواقع البصمة", "Punch locations")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Attendance","Admin")" class="text-muted text-hover-primary">@L("الحضور", "Attendance")</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@L("البصمة من الجوال", "Phone punch")</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+            <div class="fs-7 text-gray-700">@L("يبصم الموظف من تطبيق الجوال فقط إذا كان داخل نطاق مكتب فرعه. يقيس الخادم المسافة من موقع الجوال؛ الفرع بلا موقع لا يقبل بصمة من الجوال. استخدم «موقعي الآن» وأنت في المكتب لتسجيل إحداثياته.", "An employee can punch from the phone only inside their branch's office radius. The server measures the distance from the phone's position; a branch with no location accepts no phone punch. Use «My location now» while at the office to record its coordinates.")<div class="mt-2 fw-semibold">@L("النطاق المقترح 100–150 متراً: دقة GPS في الجوال 10–30 متراً في الخارج وأسوأ داخل المباني.", "Suggested radius 100–150 m: phone GPS is 10–30 m off outdoors and worse indoors.")</div></div></div>
+        <div class="row g-5">
+        @foreach (var b in Model)
+        {
+            var set = b.Latitude != null && b.Longitude != null && b.PunchRadiusMeters != null;
+            <div class="col-xl-6">
+                <form method="post" asp-action="SavePunchLocation" asp-controller="Admin" class="card card-flush h-100" data-cb-confirm data-cb-action="save" data-cb-text="@L("حفظ موقع البصمة لهذا الفرع؟", "Save this branch's punch location?")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="branchId" value="@b.ID" />
+                    <div class="card-header align-items-center">
+                        <div class="card-title d-flex flex-column"><h3 class="mb-0">@(isAr ? (string.IsNullOrWhiteSpace(b.NameAr) ? b.Name : b.NameAr) : (string.IsNullOrWhiteSpace(b.Name) ? b.NameAr : b.Name))</h3>
+                            <span class="text-muted fs-7">@L($"{(staff.TryGetValue(b.ID, out var n) ? n : 0)} موظف", $"{(staff.TryGetValue(b.ID, out var n2) ? n2 : 0)} employees") · @(b.Location ?? "")</span></div>
+                        <div class="card-toolbar"><span class="badge badge-light-@(set ? "primary" : "secondary")">@(set ? L("البصمة من الجوال مفعّلة", "Phone punch on") : L("لا بصمة من الجوال", "No phone punch"))</span></div>
+                    </div>
+                    <div class="card-body pt-2"><div class="row g-3 align-items-end">
+                        <div class="col-md-4"><label class="fw-semibold fs-7 mb-1">@L("خط العرض", "Latitude")</label><input name="latitude" class="form-control form-control-solid f-lat" value="@nv(b.Latitude)" dir="ltr" inputmode="decimal" placeholder="29.375859" /></div>
+                        <div class="col-md-4"><label class="fw-semibold fs-7 mb-1">@L("خط الطول", "Longitude")</label><input name="longitude" class="form-control form-control-solid f-lng" value="@nv(b.Longitude)" dir="ltr" inputmode="decimal" placeholder="47.977405" /></div>
+                        <div class="col-md-4"><label class="fw-semibold fs-7 mb-1">@L("النطاق (متر)", "Radius (m)")</label><input name="radius" type="number" min="50" max="5000" class="form-control form-control-solid" value="@(b.PunchRadiusMeters?.ToString() ?? "150")" dir="ltr" /></div>
+                    </div></div>
+                    <div class="card-footer d-flex flex-wrap gap-2 justify-content-between">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light-primary f-here"><i class="ki-outline ki-geolocation fs-4"></i>@L("موقعي الآن", "My location now")</button>
+                            @if (set) { <a class="btn btn-sm btn-light" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=@nv(b.Latitude),@nv(b.Longitude)"><i class="ki-outline ki-map fs-4"></i>@L("على الخريطة", "On the map")</a> }
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">@L("حفظ", "Save")</button>
+                    </div>
+                </form>
+            </div>
+        }
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.f-here'); if (!b || !navigator.geolocation) return;
+  var form = b.closest('form');
+  navigator.geolocation.getCurrentPosition(function (p) {
+    form.querySelector('.f-lat').value = p.coords.latitude.toFixed(6);
+    form.querySelector('.f-lng').value = p.coords.longitude.toFixed(6);
+  }, function () { if (window.toastr) toastr.error('@L("تعذّر قراءة الموقع — اسمح للمتصفح بالوصول إليه", "Could not read the location — allow the browser to use it")'); }, { enableHighAccuracy: true, timeout: 15000 });
+});
+</script>
+}

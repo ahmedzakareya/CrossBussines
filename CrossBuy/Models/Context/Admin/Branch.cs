@@ -40,6 +40,11 @@ namespace CrossBuy.Models.Context.Admin
 
 		// Operations platform: activity-type preset (Restaurant/Cafe/Hyper/Retail). Nullable = not an operations location.
 		public string? ActivityPresetCode { get; set; }
+
+		// HR (hr_punch_locations.sql): the office a phone punch must fall within. All null = phone punches refused here.
+		public decimal? Latitude { get; set; }
+		public decimal? Longitude { get; set; }
+		public int? PunchRadiusMeters { get; set; }
 	}
 
 }
