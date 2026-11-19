@@ -51,6 +51,7 @@ namespace CrossBuy.Tests
             services.AddSingleton(new CrossBuy.BL.Reporting.ReportScheduleWorkerOptions());
             services.AddHostedService<BusinessEventDispatchWorker>();
             services.AddHostedService<CrmReminderHostedService>();
+            services.AddHostedService<CrossBuy.BL.Communication.CommWorkerHostedService>();
             services.AddHostedService<IntegrityCheckHostedService>();
             services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
             services.AddHostedService<TaskGeneratorHostedService>();
@@ -63,7 +64,7 @@ namespace CrossBuy.Tests
             });
             var first = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
             var second = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
-            Assert.Equal(7, first.Length);
+            Assert.Equal(8, first.Length);
             for (var i = 0; i < first.Length; i++) Assert.Same(first[i], second[i]);
             // Constructing the production workers proves DI lifetime safety without
             // starting timers, sending messages or resolving a live database.

@@ -25,6 +25,9 @@ dependencies:
   video_player: 2.14.1
   # the rep's customer card: "call" opens the dialer, "location" opens the maps app; pinned, 2+ weeks old
   url_launcher: 6.3.1
+  # Communication v2: the chat sends a file or a picture, and records a voice message; pinned, both 2+ weeks old
+  file_picker: 13.3.2
+  record: 7.1.2
 
 dev_dependencies:
   flutter_lints: ^3.0.0

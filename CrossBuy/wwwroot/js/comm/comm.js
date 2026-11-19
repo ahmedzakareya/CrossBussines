@@ -11,6 +11,11 @@
 	var CFG = window.CB_COMM || {}, S = CFG.s || CFG.S || {},   // the view's serializer camel-cases S to s
 	 meId = CFG.meId, blank = CFG.blank || '';
 	function t(k) { return S[k] || k; }
+	// Communication v2: comm-plus.js adds threads, polls, forwarding, status… through these hooks (one page, two files)
+	var hooks = {};
+	function on(name, fn) { (hooks[name] = hooks[name] || []).push(fn); }
+	function fire(name) { var a = [].slice.call(arguments, 1); (hooks[name] || []).forEach(function (f) { try { f.apply(null, a); } catch (e) { if (window.console) console.error(e); } }); }
+	var sendFilters = [];   // each (body) -> Promise of the body to send, or null when it was handled (a slash command) or refused
 	var $ = function (id) { return document.getElementById(id); };
 	function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 	var LOCALE = document.documentElement.lang || 'en';
@@ -48,8 +53,10 @@
 	/* ---------------- time ---------------- */
 	function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
 	function hm(d) { try { return d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+	// a server time without a zone is UTC (the database stores UtcNow); a browser would read it as local time
+	function utc(v) { if (typeof v === 'string' && !/(Z|[+-]\d\d:?\d\d)$/i.test(v)) v += 'Z'; return new Date(v); }
 	function when(iso) {
-		var d = new Date(iso), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+		var d = utc(iso), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
 		if (sameDay(d, now)) return hm(d);
 		if (sameDay(d, y)) return t('Yesterday');
 		// built by hand: the locale's own short date carries a right-to-left mark that reorders inside an isolated number
@@ -142,7 +149,7 @@
 		return '<div class="cm-item' + (cur === c.id ? ' on' : '') + '" role="button" tabindex="0" data-conv="' + c.id + '">' +
 			(direct ? face(c.title, c.avatar, 44, st) : grpFace(44)) +
 			'<div class="cm-item-body">' +
-				'<div class="cm-line1"><span class="nm">' + esc(c.title) + '</span>' + (liveConvs[c.id] ? '<span class="live">' + ico('video', 11) + esc(t('Live')) + '</span>' : '') +
+				'<div class="cm-line1"><span class="nm">' + esc(c.title) + '</span>' + itemMarks(c) + (liveConvs[c.id] ? '<span class="live">' + ico('video', 11) + esc(t('Live')) + '</span>' : '') +
 					'<span class="when num' + (c.unread ? ' hot' : '') + '">' + esc(c.lastAt ? when(c.lastAt) : '') + '</span></div>' +
 				'<div class="cm-line2"><span class="last">' + tick + previewHtml(c) + '</span>' +
 					(c.pinned ? '<span class="cm-mini">' + ico('pin', 13) + '</span>' : '') + (c.muted ? '<span class="cm-mini">' + ico('bell-off', 13) + '</span>' : '') +
@@ -151,6 +158,8 @@
 			(direct ? '<span class="cm-quick">' + ib('phone', t('Voice call'), 'sm', 'data-call="0" data-emp="' + c.otherEmployeeId + '"') + ib('video', t('Video call'), 'sm', 'data-call="1" data-emp="' + c.otherEmployeeId + '"') + '</span>' : '') +
 			'</div>';
 	}
+	var itemDecor = [];
+	function itemMarks(c) { return itemDecor.map(function (f) { try { return f(c) || ''; } catch (e) { return ''; } }).join(''); }
 	function renderConvs() {
 		var s = q();
 		var list = convs.filter(function (c) {
@@ -170,7 +179,8 @@
 					'<div class="cm-item-body"><div class="cm-line1"><span class="nm">' + esc(d.name) + '</span></div><div class="cm-line2"><span class="last"><span class="tx">' + esc(t('New chat')) + '</span></span></div></div></div>';
 			}).join('');
 		}
-		items.innerHTML = html || '<div class="cm-empty">' + esc(s ? t('No results') : t('No conversations yet')) + '</div>';
+		items.innerHTML = html || (s ? '' : '<div class="cm-empty">' + esc(t('No conversations yet')) + '</div>');
+		fire('list', items, s, list.length);
 	}
 	items.addEventListener('click', function (e) {
 		var callBtn = e.target.closest('[data-call]');
@@ -295,7 +305,7 @@
 			var src = '/Chat/CallRecordingMedia/' + recId;
 			function who(p) { return p ? esc(p.name) : '—'; }
 			var facts = [
-				[t('Call'), (d.outgoing ? t('Outgoing to') + ' ' + who(d.callee) : t('Incoming from') + ' ' + who(d.caller)) + ' · ' + num(hm(new Date(d.startedAt.endsWith && !/Z$/.test(d.startedAt) ? d.startedAt + 'Z' : d.startedAt)))],
+				[t('Call'), (d.outgoing ? t('Outgoing to') + ' ' + who(d.callee) : t('Incoming from') + ' ' + who(d.caller)) + ' · ' + num(hm(utc(d.startedAt)))],
 				[t('Recording'), esc(video ? t('Voice and video') : t('Voice')) + ' · ' + num(dur(d.seconds) + (d.size ? ' · ' + (d.size / 1048576).toFixed(1) + ' MB' : ''))],
 				[t('Consent'), t('Asked by') + ' ' + who(d.requestedBy) + (d.agreedBy ? ' · ' + t('agreed by') + ' ' + who(d.agreedBy) : '')],
 				[t('File'), esc(t('File Manager')) + ' / ' + num(d.folder)],
@@ -340,12 +350,12 @@
 			: k.status === 'Declined' ? (k.outgoing ? t('Declined') : t('You declined')) + ' · ' + (k.video ? t('Video') : t('Voice'))
 			: k.status === 'Missed' || k.status === 'Cancelled' ? t('Not answered') + ' · ' + (k.video ? t('Video') : t('Voice'))
 			: (k.outgoing ? (k.video ? t('Outgoing video call') : t('Outgoing voice call')) : (k.video ? t('Incoming video call') : t('Incoming voice call')));
-		var sub = num(hm(new Date(k.at))) + (k.seconds ? ' · ' + num(dur(k.seconds)) : '') + (k.reply ? ' · «' + esc(k.reply) + '»' : '');
+		var sub = num(hm(utc(k.at))) + (k.seconds ? ' · ' + num(dur(k.seconds)) : '') + (k.reply ? ' · «' + esc(k.reply) + '»' : '');
 		var go = '';
 		if (k.recordingId) go += '<button type="button" class="cm-rec" data-rec="' + k.id + '">' + ico('circle-dot', 12) + esc(t('Recording')) + ' ' + ico('play', 11) + '</button>';
 		if (missed && k.other !== null) go += '<button type="button" class="cm-pill" data-callback="' + (k.video ? 1 : 0) + '"' + (k.other ? ' data-emp="' + k.other.id + '"' : '') + '>' + ico('phone', 14) + esc(t('Call back')) + '</button>';
 		if (missed && detail && k.other) go += '<button type="button" class="cm-pill light" data-chatwith="' + k.other.id + '">' + ico('message-circle', 14) + esc(t('Message')) + '</button>';
-		return '<div class="cm-call' + (missed ? ' missed' : '') + '" data-at="' + new Date(k.at).getTime() + '" data-callid="' + k.id + '"><span class="ic">' + ico(icn, 16) + '</span><div class="cm-call-tx"><div class="t">' + esc(title) + '</div><div class="s">' + sub + '</div></div><div class="go">' + go + '</div></div>';
+		return '<div class="cm-call' + (missed ? ' missed' : '') + '" data-at="' + utc(k.at).getTime() + '" data-callid="' + k.id + '"><span class="ic">' + ico(icn, 16) + '</span><div class="cm-call-tx"><div class="t">' + esc(title) + '</div><div class="s">' + sub + '</div></div><div class="go">' + go + '</div></div>';
 	}
 
 	/* ================================================================================================================
@@ -373,6 +383,7 @@
 			acts = ib('phone', t('Group voice call'), '', (members.length ? '' : 'disabled') + ' data-gcall="0"') + ib('video', t('Group video call'), 'fill', (members.length ? '' : 'disabled') + ' data-gcall="1"');
 		}
 		head.innerHTML += '<div class="acts">' + acts + '<span class="cm-sep"></span>' + ib('search', t('Search the chat'), 'ghost', 'data-find="1"') + ib('panel-right', t('Details'), 'ghost', 'data-info="1"') + '</div>';
+		fire('head', head, curHeader);
 	}
 	head.addEventListener('click', function (e) {
 		var b = e.target.closest('button'); if (!b || b.disabled) return;
@@ -425,6 +436,7 @@
 		}).join('') : '<div class="text-muted fs-7">' + esc(t('No files yet')) + '</div>') +
 			'<a class="cm-link" href="' + esc(CFG.fileManager || '/FileManager') + '">' + esc(t('Every file and recording in the File Manager')) + ' ' + ico(isRtl ? 'arrow-left' : 'arrow-right', 14) + '</a></div>';
 		info.innerHTML = html;
+		fire('info', info, curHeader);
 	}
 	function loadGroupCalls() {
 		var opened = cur;
@@ -487,9 +499,10 @@
 			msgs.forEach(function (m) { appendMsg(m, false); });
 			if (msgs.length) oldestId = msgs[0].id;
 			if (msgs.length < 30) noOlder = true;
+			fire('loaded', msgs.map(function (m) { return m.id; }), 'open');
 		});
 		var callsP = curHeader.other ? getJson('/Chat/CallsWith?other=' + curHeader.other).then(function (r) { if (cur === opened) calls = r || []; }) : Promise.resolve();
-		Promise.all([msgsP, callsP]).then(function () { if (cur !== opened) return; placeCalls(); regroup(); paintInfo(); scrollBottom(); setTimeout(scrollBottom, 150); });
+		Promise.all([msgsP, callsP]).then(function () { if (cur !== opened) return; placeCalls(); regroup(); paintInfo(); scrollBottom(); setTimeout(scrollBottom, 150); fire('ready', id, meta); });
 		getJson('/Chat/Header?c=' + id).then(function (h) {
 			if (!h || cur !== opened) return;
 			otherReadUpTo = h.otherReadMessageId || 0;
@@ -502,6 +515,7 @@
 		});
 		if (conn) { try { conn.invoke('JoinConversation', id); } catch (e) { } }
 		post('/Chat/MarkRead', { c: id }).then(function () { loadConvs(); if (window.__cbnbReload) window.__cbnbReload(); document.dispatchEvent(new CustomEvent('cbcomm:read')); });
+		fire('open', id, meta);
 	}
 
 	/* ---------------- messages ---------------- */
@@ -535,7 +549,7 @@
 		if (m.replyToId) body += '<div class="cm-quote" data-goto="' + m.replyToId + '"><b>' + esc(m.replyToSender || t('Message')) + '</b><span>' + esc(m.replyToBody != null ? m.replyToBody : t('Message deleted')) + '</span></div>';
 		body += fileHtml(m);
 		if (m.body) body += '<div class="tx" dir="auto">' + richText(m.body) + '</div>';
-		body += '<div class="cm-meta">' + (m.editedAt ? '<span>' + esc(t('edited')) + ' ·</span>' : '') + num(hm(new Date(m.createdAt))) + (mine ? '<span class="cm-tick">' + ico('check-check', 14) + '</span>' : '') + '</div>';
+		body += '<div class="cm-meta">' + (m.editedAt ? '<span>' + esc(t('edited')) + ' ·</span>' : '') + num(hm(utc(m.createdAt))) + (mine ? '<span class="cm-tick">' + ico('check-check', 14) + '</span>' : '') + '</div>';
 		return body;
 	}
 	// @mentions stand apart from the text (owner, 2026-11-18): each known person's full name after @ becomes its own
@@ -552,15 +566,16 @@
 	function reEsc(x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 	function richText(raw) {
 		var names = mentionNames();
-		if (!names.length || raw.indexOf('@') === -1) return linkify(esc(raw));
+		raw = String(raw).replace(/\s*#rec:[A-Za-z]+:\d+\s*$/, '');
+		if (!names.length || raw.indexOf('@') === -1) return fmtBlocks(fmtInline(linkify(esc(raw))));
 		var re = new RegExp('@(' + names.map(reEsc).join('|') + ')', 'g'), out = '', last = 0, m;
 		while ((m = re.exec(raw))) {
-			out += linkify(esc(raw.slice(last, m.index)));
+			out += fmtInline(linkify(esc(raw.slice(last, m.index))));
 			var me = m[1] === CFG.meName || m[1] === CFG.meAlt;
 			out += '<bdi class="cm-at' + (me ? ' me' : '') + '">@' + esc(m[1]) + '</bdi>';
 			last = m.index + m[0].length;
 		}
-		return out + linkify(esc(raw.slice(last)));
+		return fmtBlocks(out + fmtInline(linkify(esc(raw.slice(last)))));
 	}
 	// the people arrive after the first messages: paint the mentions again once they are known
 	function repaintBodies() {
@@ -569,11 +584,28 @@
 			var tx = el.querySelector('.cm-bubble > .tx'); if (tx) tx.innerHTML = richText(m.body);
 		});
 	}
+	function fmtInline(h) {
+		return h.replace(/`([^`\n]+)`/g, '<code class="cm-code">$1</code>')
+			.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s.,!?؟،)])/g, '$1<b>$2</b>')
+			.replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s.,!?؟،)])/g, '$1<i>$2</i>')
+			.replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s.,!?؟،)])/g, '$1<s>$2</s>');
+	}
+	function fmtBlocks(h) {
+		var out = [], list = false;
+		h.replace(/```([\s\S]*?)```/g, function (m, code) { return '\u0000' + code.replace(/\n/g, '\u0001') + '\u0000'; }).split('\n').forEach(function (line) {
+			var li = /^\s*[-•]\s+(.*)$/.exec(line), qt = /^&gt;\s?(.*)$/.exec(line);
+			if (li) { if (!list) { out.push('<ul class="cm-ul">'); list = true; } out.push('<li>' + li[1] + '</li>'); return; }
+			if (list) { out.push('</ul>'); list = false; }
+			out.push(qt ? '<span class="cm-bq">' + qt[1] + '</span>' : line);
+		});
+		if (list) out.push('</ul>');
+		return out.join('\n').replace(/\n?(<\/?ul[^>]*>)\n?/g, '$1').replace(/\n?(<li>)/g, '$1').replace(/\u0000([\s\S]*?)\u0000/g, function (m, code) { return '<pre class="cm-pre">' + code.replace(/^\u0001+|\u0001+$/g, '').replace(/\u0001/g, '\n') + '</pre>'; });
+	}
 	function linkify(h) { return h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">$1</a>'); }
 	function msgEl(m) {
 		var mine = m.senderId === meId, el = document.createElement('div');
 		el.className = 'cm-msg' + (mine ? ' mine' : '') + (m.deleted ? ' deleted' : '');
-		el.setAttribute('data-id', m.id); el.setAttribute('data-sender', m.senderId); el.setAttribute('data-at', new Date(m.createdAt).getTime());
+		el.setAttribute('data-id', m.id); el.setAttribute('data-sender', m.senderId); el.setAttribute('data-at', utc(m.createdAt).getTime());
 		el.setAttribute('data-body', m.body || ''); el.setAttribute('data-text', m.body || m.attachmentName || '');
 		el.setAttribute('data-name', mine ? t('You') : (m.senderName || ''));
 		if (m.attachmentPath && !m.deleted) { el.setAttribute('data-file', m.attachmentName || (isImg(m) ? t('Picture') : 'file')); el.setAttribute('data-kind', isImg(m) ? 'image' : isAudio(m) ? 'audio' : 'file'); el.setAttribute('data-href', m.attachmentPath); el.setAttribute('data-when', when(m.createdAt)); }
@@ -581,6 +613,7 @@
 		var bar = m.deleted ? '' : '<div class="cm-hover">' + ib('smile-plus', t('React'), 'xs', 'data-act="react"') + ib('reply', t('Reply'), 'xs', 'data-act="reply"') + ib('ellipsis', t('More'), 'xs', 'data-act="more"') + '</div>';
 		el.innerHTML = faceHtml + '<div class="cm-bwrap"><div class="cm-bubble">' + bubbleInner(m) + '</div>' + bar + reactsHtml(m) + '</div>';
 		msgCache[m.id] = m;
+		fire('message', el, m);
 		return el;
 	}
 	function appendMsg(m, prepend) {
@@ -596,7 +629,7 @@
 	function placeCalls() {
 		var floor = noOlder ? 0 : (function () { var f = thread.querySelector('.cm-msg'); return f ? +f.getAttribute('data-at') : Infinity; })();
 		calls.forEach(function (k) {
-			var at = new Date(k.at).getTime();
+			var at = utc(k.at).getTime();
 			if (callsShown[k.id] || at < floor) return;
 			callsShown[k.id] = 1;
 			var w = document.createElement('div'); w.innerHTML = callCard(k, curHeader ? curHeader.title : ''); var el = w.firstChild;
@@ -621,6 +654,7 @@
 			var w = el.querySelector('.who'); if (w) w.style.display = cont ? 'none' : '';
 		});
 		paintTicks();
+		fire('regroup');
 	}
 	function paintTicks() {
 		if (!curHeader) return;
@@ -645,6 +679,7 @@
 			if (!msgs.length) noOlder = true;
 			msgs.slice().reverse().forEach(function (m) { appendMsg(m, true); });
 			if (msgs.length) oldestId = msgs[0].id;
+			fire('loaded', msgs.map(function (m) { return m.id; }), 'older');
 			placeCalls(); regroup(); thread.scrollTop = thread.scrollHeight - keep;
 		});
 	});
@@ -721,11 +756,14 @@
 		var rows = [['copy', t('Copy'), 'copy']];
 		if (mine && el.getAttribute('data-body')) rows.push(['pencil', t('Edit'), 'edit']);
 		if (mine) rows.push(['trash-2', t('Delete'), 'delete']);
+		var extra = {}; fire('more', rows, el, id, extra);
+		rows.sort(function (a, b) { return (a[2] === 'delete') - (b[2] === 'delete'); });
 		pop.innerHTML = rows.map(function (r) { return '<button type="button" class="cm-item w-100 border-0 bg-transparent' + (r[2] === 'delete' ? ' cm-red' : '') + '" data-more="' + r[2] + '" style="padding:8px 12px">' + ico(r[0], 16) + '<span class="fs-7 fw-semibold">' + esc(r[1]) + '</span></button>'; }).join('');
 		popFor = function (what) {
 			if (what === 'copy') { try { navigator.clipboard.writeText(el.getAttribute('data-text') || ''); toast('success', t('Copied')); } catch (x) { } }
 			if (what === 'edit') openEdit(id, el.getAttribute('data-body'));
 			if (what === 'delete') ask(t('Delete message?'), t('Yes, delete')).then(function (ok) { if (ok) post('/Chat/Delete', { id: id }); });
+			rows.forEach(function (r) { if (r[2] === what && typeof r[3] === 'function') r[3](id, el); });
 		};
 		placePop(anchor);
 	}
@@ -835,15 +873,24 @@
 		fetch('/Chat/Send', { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': token() }, body: fd })
 			.then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
 			.then(function (dto) { if (!dto) throw new Error('empty'); appendMsg(dto, false); regroup(); scrollBottom(); paintInfo(); loadConvs(); })
-			.catch(function (err) { toast('error', t('Send failed') + ' (' + (err && err.message ? err.message : '') + ')'); })
+			.catch(function (err) {
+				// the text comes back into the box, ready to send again (a failed message is never lost)
+				if (body && !file && !input.value.trim()) { input.value = body; autoGrow(); }
+				toast('error', t('Send failed') + ' — ' + t('the message is back in the box, send it again') + (err && err.message ? ' (' + err.message + ')' : ''));
+			})
 			.then(function () { sendBtn.disabled = false; });
 	}
-	function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; autoGrow(); sendCore(b, null); }
+	function doSend() {
+		var b = input.value.trim(); if (!b) return;
+		var chain = Promise.resolve(b);
+		sendFilters.forEach(function (f) { chain = chain.then(function (x) { return x == null ? null : f(x); }); });
+		chain.then(function (x) { if (x == null) return; input.value = ''; autoGrow(); sendCore(x, null); });
+	}
 	sendBtn.addEventListener('click', doSend);
 
 	// a file or a picture opens a preview (with an optional caption) before it is sent
 	function pickFile(accept) { var f = $('cmFile'); f.accept = accept || ''; f.value = ''; f.click(); }
-	$('cmAttachBtn').addEventListener('click', function () { pickFile(''); });
+	$('cmAttachBtn').addEventListener('click', function (e) { if (hooks.plus && hooks.plus.length) { e.stopPropagation(); fire('plus', this); } else pickFile(''); });
 	$('cmImageBtn').addEventListener('click', function () { pickFile('image/*'); });
 	$('cmPaperBtn').addEventListener('click', function () { pickFile('.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rtf,.odt,.ods'); });
 	$('cmFile').addEventListener('change', function () {
@@ -1009,7 +1056,7 @@
 			'<span class="cm-stack">' + (x.joined || []).slice(0, 3).map(function (p) { return '<span class="symbol">' + av(p.name, p.photo, 28) + '</span>'; }).join('') + '</span>' +
 			(x.inIt ? '' : '<button type="button" class="cm-pill light" data-join="' + x.callId + '" data-video="' + (x.video ? 1 : 0) + '">' + esc(t('Join')) + '</button>');
 		b.classList.remove('d-none');
-		var since = new Date(x.since).getTime(), el = b.querySelector('[data-since]');
+		var since = utc(x.since).getTime(), el = b.querySelector('[data-since]');
 		function tick() { el.textContent = dur(Math.max(0, Math.round((Date.now() - since) / 1000))); }
 		tick(); bannerTimer = setInterval(tick, 1000);
 	}
@@ -1061,6 +1108,7 @@
 	function startHub() {
 		if (!window.signalR) return;
 		conn = new signalR.HubConnectionBuilder().withUrl('/hubs/chat').withAutomaticReconnect().build();
+		fire('hub', conn);
 		conn.on('message', function (m) {
 			if (m.conversationId === cur && m.senderId !== meId) {
 				var stick = nearBottom(); appendMsg(m, false); regroup(); paintInfo(); if (stick) scrollBottom();
@@ -1121,6 +1169,28 @@
 		});
 		conn.start().then(function () { if (cur) conn.invoke('JoinConversation', cur); }).catch(function () { });
 	}
+
+	/* ---------------- the API comm-plus.js builds on ---------------- */
+	window.cbComm = {
+		on: on, fire: fire, sendFilters: sendFilters, itemDecor: itemDecor,
+		t: t, esc: esc, ico: ico, ib: ib, av: av, face: face, num: num, when: when, utc: utc, hm: hm, dur: dur, dayLabel: dayLabel,
+		post: post, getJson: getJson, toast: toast, ask: ask, richText: richText,
+		cur: function () { return cur; }, header: function () { return curHeader; }, members: function () { return members; }, dir: function () { return dir; },
+		convs: function () { return convs; }, msg: function (id) { return msgCache[id]; }, meId: meId, cfg: CFG, presOf: presOf,
+		els: { thread: thread, info: info, head: head, input: input, items: items, shell: shell, compose: compose, blank: blankBox },
+		open: function (id, then) {
+			var c = convs.find(function (x) { return x.id === id; });
+			if (c) { openConversation(c.id, c); if (then) then(); return; }
+			loadConvs(function (l) { var m = l.find(function (x) { return x.id === id; }); if (m) { openConversation(m.id, m); if (then) then(); } });
+		},
+		appendMsg: function (m) { var el = appendMsg(m, false); regroup(); scrollBottom(); return el; },
+		regroup: regroup, scrollBottom: scrollBottom, gotoMsg: gotoMsg, loadConvs: loadConvs, paintInfo: paintInfo, paintHead: paintHead, renderConvs: renderConvs,
+		setReply: setReply, pickFile: pickFile, sendCore: sendCore, closePop: closePop, chatWith: chatWith, setTab: setTab, tab: function () { return tab; },
+		pop: function (anchor, html, onPick) { popFor = onPick; pop.innerHTML = html; placePop(anchor); return pop; },
+		showBlank: showBlank, isPhone: isPhone, setPane: setPane, startCall: startCall, conn: function () { return conn; },
+		detectMentions: detectMentions, autoGrow: autoGrow,
+		reads: function () { return { direct: otherReadUpTo, members: memberReads }; },
+	};
 
 	/* ================================================================================================================
 	   PHONE: one pane at a time; DESKTOP: the shell fills the screen

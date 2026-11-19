@@ -159,10 +159,115 @@
                 </div>
             </div>
         </div>
+
+        @* ---------------- Communication v2: the governance of messages (what Mattermost / Teams give an administrator) ---------------- *@
+        <div class="row g-5" id="govRow">
+            <div class="col-xl-6">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("archive"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Keeping messages"]</span><span class="text-muted fs-7 mt-1">@Localizer["How long a message keeps its content"]</span></div></div>
+                        <div class="card-toolbar"><button type="button" class="cm-pill" id="govSave">@Html.Raw(I("save", 14))@Localizer["Save"]</button></div></div>
+                    <div class="card-body pt-0">
+                        <div class="cm-set"><span class="cm-chip">@Html.Raw(I("timer", 16))</span><div class="flex-grow-1"><label class="fw-bold text-gray-900 mb-2 d-block" for="govRet">@Localizer["Remove a message's content after"]</label>
+                            <select id="govRet" class="form-select form-select-solid"><option value="0">@Localizer["Never — messages are kept"]</option><option value="90">@string.Format(Localizer["{0} days, then deleted"].Value, 90)</option><option value="180">@string.Format(Localizer["{0} days, then deleted"].Value, 180)</option><option value="365">@Localizer["A year"]</option><option value="730">@Localizer["Two years"]</option><option value="1825">@Localizer["Five years"]</option></select>
+                            <div class="text-muted fs-8 mt-1">@Localizer["Checked every hour. A legal hold keeps a person's or a conversation's messages whatever this says."]</div></div></div>
+                        <div class="cm-set"><span class="cm-chip red">@Html.Raw(I("shield-alert", 16))</span><div class="flex-grow-1"><label class="fw-bold text-gray-900 mb-2 d-block" for="govDlp">@Localizer["Sensitive data in messages"]</label>
+                            <select id="govDlp" class="form-select form-select-solid"><option value="off">@Localizer["Allowed"]</option><option value="warn">@Localizer["Warn the sender first"]</option><option value="block">@Localizer["Block the message"]</option></select>
+                            <div class="d-flex flex-wrap gap-5 mt-3">
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="govCards" /><span class="form-check-label fs-7">@Localizer["Payment card numbers"]</span></label>
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="govIban" /><span class="form-check-label fs-7">@Localizer["IBANs"]</span></label>
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="govId" /><span class="form-check-label fs-7">@Localizer["National ID numbers"]</span></label></div>
+                            <textarea id="govWords" class="form-control form-control-solid mt-3" rows="3" maxlength="1000" placeholder="@Localizer["Other words or phrases, one per line"]"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("chart-column"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Usage — the last 30 days"]</span></div></div></div>
+                    <div class="card-body pt-0" id="govUsage"><div class="text-muted">…</div></div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("lock-keyhole"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Legal holds"]</span><span class="text-muted fs-7 mt-1">@Localizer["Messages under a hold are never removed"]</span></div></div></div>
+                    <div class="card-body pt-0">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <select id="holdWho" class="form-select form-select-solid" style="max-width:260px"><option value="">@Localizer["A person…"]</option>@foreach (var pp in people) { <option value="@pp.EmployeeId">@DisplayName.Of(pp.Name, pp.NameEn)</option> }</select>
+                            <select id="holdConv" class="form-select form-select-solid" style="max-width:260px"><option value="">@Localizer["…or a group or channel"]</option></select>
+                            <input id="holdWhy" class="form-control form-control-solid" maxlength="300" placeholder="@Localizer["Reason"]" />
+                            <button type="button" class="cm-pill" id="holdAdd">@Html.Raw(I("plus", 14))@Localizer["Add the hold"]</button>
+                        </div>
+                        <div id="holdList"></div>
+                    </div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="cm-chip me-3">@Html.Raw(I("file-down"))</span><div class="d-flex flex-column"><span class="fs-4 fw-bold">@Localizer["Compliance export"]</span><span class="text-muted fs-7 mt-1">@Localizer["Every message of a person or a conversation, as a file; every export is recorded"]</span></div></div></div>
+                    <div class="card-body pt-0">
+                        <div class="row g-3">
+                            <div class="col-md-6"><select id="exWho" class="form-select form-select-solid"><option value="">@Localizer["A person…"]</option>@foreach (var pp in people) { <option value="@pp.EmployeeId">@DisplayName.Of(pp.Name, pp.NameEn)</option> }</select></div>
+                            <div class="col-md-6"><select id="exConv" class="form-select form-select-solid"><option value="">@Localizer["…or a group or channel"]</option></select></div>
+                            <div class="col-md-4"><input id="exFrom" type="date" class="form-control form-control-solid" title="@Localizer["From"]" /></div>
+                            <div class="col-md-4"><input id="exTo" type="date" class="form-control form-control-solid" title="@Localizer["To"]" /></div>
+                            <div class="col-md-4"><button type="button" class="cm-pill w-100 justify-content-center" id="exGo">@Html.Raw(I("download", 14))@Localizer["Export"]</button></div>
+                        </div>
+                        <div class="mt-4" id="exList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div></div>
 </div>
 
 @section Scripts {
+<script>
+(function () {
+    // Communication v2 — the governance of messages
+    var G = @(Json.Serialize(new {
+        saved = Localizer["Settings saved"].Value, failed = Localizer["Could not save"].Value, release = Localizer["Release"].Value, by = Localizer["by"].Value,
+        none = Localizer["No holds"].Value, noExports = Localizer["No exports yet"].Value, rows = Localizer["messages (count)"].Value, messages = Localizer["Messages"].Value,
+        people = Localizer["Active people"].Value, calls = Localizer["Calls"].Value, minutes = Localizer["Call minutes"].Value, busiest = Localizer["Busiest conversations"].Value,
+        choose = Localizer["Choose a person or a conversation"].Value, release2 = Localizer["Release this hold?"].Value, cancel = Localizer["Cancel"].Value }));
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+    var tok = function () { return document.querySelector('input[name="__RequestVerificationToken"]').value; };
+    function post(url, data) { var fd = new FormData(); for (var k in data) if (data[k] != null) fd.append(k, data[k]); return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { RequestVerificationToken: tok() }, body: fd }); }
+    function when(iso) { var d = new Date(iso); return d.toLocaleDateString(document.documentElement.lang || 'en') + ' ' + d.toTimeString().slice(0, 5); }
+    function load() {
+        fetch('@Url.Action("Governance")', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (g) {
+            if (!g) { $('govRow').classList.add('d-none'); return; }
+            $('govRet').value = String(g.retentionDays || 0); if ($('govRet').value === '') $('govRet').value = '0';
+            $('govDlp').value = g.dlpMode || 'off'; $('govCards').checked = g.dlpCards; $('govIban').checked = g.dlpIban; $('govId').checked = g.dlpNationalId; $('govWords').value = g.dlpWords || '';
+            $('holdList').innerHTML = (g.holds || []).map(function (h) { return '<div class="cm-set"><span class="cm-chip">' + (h.employee ? '👤' : '#') + '</span><div class="flex-grow-1 min-w-0"><div class="fw-bold fs-7">' + esc(h.employee || h.conversation || '') + '</div><div class="text-muted fs-8">' + esc(h.reason) + ' · ' + esc(G.by) + ' ' + esc(h.by || '') + ' · ' + esc(when(h.at)) + '</div></div><button type="button" class="cm-pill light sm" data-rel="' + h.id + '">' + esc(G.release) + '</button></div>'; }).join('') || '<div class="text-muted fs-7">' + esc(G.none) + '</div>';
+            document.querySelectorAll('[data-rel]').forEach(function (b) { b.onclick = function () {
+                Swal.fire({ text: G.release2, icon: 'warning', showCancelButton: true, buttonsStyling: false, confirmButtonText: G.release, cancelButtonText: G.cancel, customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } })
+                    .then(function (r) { if (r.isConfirmed) post('@Url.Action("ReleaseHold")', { id: b.getAttribute('data-rel') }).then(load); });
+            }; });
+            $('exList').innerHTML = (g.exports || []).map(function (x) { return '<div class="d-flex justify-content-between fs-8 text-muted py-1 border-top"><span>' + esc(x.by || '') + ' · ' + esc(x.scope) + '</span><span class="cm-num">' + x.rows + ' ' + esc(G.rows) + ' · ' + esc(when(x.at)) + '</span></div>'; }).join('') || '<div class="text-muted fs-8">' + esc(G.noExports) + '</div>';
+            var u = g.usage || {}, max = Math.max.apply(null, (u.days || []).map(function (d) { return d.n; }).concat([1]));
+            $('govUsage').innerHTML = '<div class="d-flex gap-6 mb-4">' + [[G.messages, u.total], [G.people, u.active], [G.calls, u.calls], [G.minutes, u.callMinutes]].map(function (k) { return '<div><div class="fs-2 fw-bold text-gray-900 cm-num">' + (k[1] || 0) + '</div><div class="text-muted fs-8">' + esc(k[0]) + '</div></div>'; }).join('') + '</div>' +
+                '<div class="d-flex align-items-end gap-1" style="height:80px;direction:ltr">' + (u.days || []).map(function (d) { return '<div title="' + d.day + ': ' + d.n + '" style="flex:1;border-radius:3px 3px 0 0;background:var(--cm-brand2);height:' + Math.max(2, Math.round(d.n * 80 / max)) + 'px;opacity:' + (d.n ? 1 : .25) + '"></div>'; }).join('') + '</div>' +
+                '<div class="mt-4 fw-bold fs-7 mb-2">' + esc(G.busiest) + '</div>' + (u.busiest || []).map(function (b) { return '<div class="d-flex justify-content-between fs-7 py-1"><span>' + esc(b.title || '-') + '</span><span class="cm-num text-muted">' + b.n + '</span></div>'; }).join('');
+        });
+        fetch('@Url.Action("AllConversations")', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).then(function (l) {
+            ['holdConv', 'exConv'].forEach(function (id) { var s = $(id); while (s.options.length > 1) s.remove(1); (l || []).forEach(function (c) { var o = document.createElement('option'); o.value = c.id; o.textContent = '# ' + c.title; s.appendChild(o); }); });
+        });
+    }
+    $('govSave').onclick = function () {
+        post('@Url.Action("SaveGovernance")', { retentionDays: $('govRet').value, dlpMode: $('govDlp').value, dlpCards: $('govCards').checked, dlpIban: $('govIban').checked, dlpNationalId: $('govId').checked, dlpWords: $('govWords').value })
+            .then(function (r) { if (r.ok) toastr.success(G.saved); else toastr.error(G.failed); });
+    };
+    $('holdAdd').onclick = function () {
+        var who = $('holdWho').value, conv = $('holdConv').value, why = $('holdWhy').value.trim();
+        if ((!who && !conv) || !why) { toastr.warning(G.choose); return; }
+        post('@Url.Action("AddHold")', { employeeId: who || null, conversationId: who ? null : conv, reason: why }).then(function () { $('holdWhy').value = ''; load(); });
+    };
+    $('exGo').onclick = function () {
+        var who = $('exWho').value, conv = $('exConv').value;
+        if (!who && !conv) { toastr.warning(G.choose); return; }
+        post('@Url.Action("Export")', { employeeId: who || null, conversationId: who ? null : conv, from: $('exFrom').value ? new Date($('exFrom').value).toISOString() : null, to: $('exTo').value ? new Date($('exTo').value).toISOString() : null })
+            .then(function (r) { if (!r.ok) throw 0; var name = (r.headers.get('content-disposition') || '').match(/filename="?([^";]+)/); return r.blob().then(function (b) { var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name ? name[1] : 'chat-export.csv'; a.click(); setTimeout(load, 500); }); })
+            .catch(function () { toastr.error(G.failed); });
+    };
+    load();
+})();
+</script>
 <script>
 (function () {
     var W = @(Json.Serialize(new {

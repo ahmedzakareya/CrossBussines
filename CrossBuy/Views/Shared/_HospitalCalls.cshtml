@@ -78,6 +78,18 @@
     html.cm-has-fab .cb-ai-fab{inset-block-end:calc(104px + env(safe-area-inset-bottom,0px)) !important}
     html.cm-has-fab .cb-ai-panel{inset-block-end:calc(176px + env(safe-area-inset-bottom,0px)) !important}
     .cm-fab{cursor:pointer}
+    /* Communication v2 in a call: the "more" menu, floating reactions, a call on hold */
+    .cbc-more{position:absolute;z-index:4;bottom:96px;left:50%;transform:translateX(-50%);min-width:250px;background:#0c1837f2;border:1px solid #ffffff1f;border-radius:16px;padding:8px;color:#fff;backdrop-filter:blur(10px);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+    .cbc-more .rx{display:flex;justify-content:space-between;gap:4px;padding:2px 2px 8px;border-bottom:1px solid #ffffff1a;margin-bottom:6px}
+    .cbc-more .rx button{width:36px;height:36px;border:0;border-radius:10px;background:transparent;font-size:20px;line-height:1}
+    .cbc-more .rx button:hover{background:#ffffff1a}
+    .cbc-more .it{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:10px;background:transparent;color:#fff;font-size:13px;text-align:start}
+    .cbc-more .it:hover{background:#ffffff14}
+    .cbc-more .it b{margin-inline-start:auto;font-weight:600;font-size:11px;opacity:.7}
+    .cbc-float{position:absolute;z-index:3;bottom:110px;font-size:36px;pointer-events:none;animation:cbcFloat 2.6s ease-out forwards}
+    .cbc-tile .cbc-float{bottom:30px;inset-inline-start:40%}
+    @@keyframes cbcFloat{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1;transform:translateY(-20px) scale(1.1)}100%{transform:translateY(-220px) scale(1);opacity:0}}
+    .cm-stage .vid.cbc-held::before{content:'';position:absolute;inset:0;z-index:2;background:rgba(12,24,55,.72);backdrop-filter:blur(6px)}
 
     .cbc-num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
     .cbc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
@@ -155,6 +167,7 @@
     window.cbCallsT = {
         me: { id: @me.ID, name: @Json.Serialize(DisplayName.Of(me.FullName ?? "", me.FullNameEn ?? me.FullName ?? "")), photo: @Json.Serialize(mePhoto), initials: @Json.Serialize(HospitalUi.Initials(me.FullNameEn ?? me.FullName)) },
         cmChats: @Json.Serialize(S("Chats")),
+        cmNotifyOn: @Json.Serialize(S("Turn on desktop notices")),
         cmCalls: @Json.Serialize(S("Calls")),
         cmCommunication: @Json.Serialize(S("Communication")),
         cmNewChat: @Json.Serialize(S("New chat")),
@@ -165,6 +178,24 @@
         cmPicture: @Json.Serialize(S("Picture")),
         cmNoResults: @Json.Serialize(S("No results")),
         cmNoChats: @Json.Serialize(S("No conversations yet")),
+        cmWaiting: @Json.Serialize(S("A call is waiting")),
+        cmEndAnswer: @Json.Serialize(S("End and answer")),
+        cmMore: @Json.Serialize(S("More")),
+        cmRaiseHand: @Json.Serialize(S("Raise your hand")),
+        cmLowerHand: @Json.Serialize(S("Lower your hand")),
+        cmHold: @Json.Serialize(S("Hold")),
+        cmResume: @Json.Serialize(S("Resume")),
+        cmTransfer: @Json.Serialize(S("Transfer to someone")),
+        cmNoise: @Json.Serialize(S("Noise suppression")),
+        cmOn: @Json.Serialize(S("On")),
+        cmOff: @Json.Serialize(S("Off")),
+        cmNoiseOn: @Json.Serialize(S("Noise suppression is on")),
+        cmNoiseOff: @Json.Serialize(S("Noise suppression is off")),
+        cmOnHoldMine: @Json.Serialize(S("You put the call on hold")),
+        cmOnHoldTheirs: @Json.Serialize(S("On hold")),
+        cmTransferring: @Json.Serialize(S("Transferring — the call is yours until they answer")),
+        cmTransferred: @Json.Serialize(S("The call is transferred")),
+        "{0} asked not to be disturbed — it is recorded as a missed call so they call you back": @Json.Serialize(S("{0} asked not to be disturbed — it is recorded as a missed call so they call you back")),
         cmRingLeft: @Json.Serialize(S("s, then a missed call is written into the chat")),
         cmIncomingVideo: @Json.Serialize(S("Incoming video call")),
         cmIncomingVoice: @Json.Serialize(S("Incoming voice call")),

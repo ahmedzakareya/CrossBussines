@@ -550,4 +550,505 @@
   <data name="Up to 4, up to 12 with the internal media server" xml:space="preserve">
     <value>حتى ٤ أشخاص، وحتى ١٢ مع خادم الوسائط الداخلي</value>
   </data>
+  <data name="/channel name — a new public channel" xml:space="preserve">
+    <value>/channel الاسم — قناة عامة جديدة</value>
+  </data>
+  <data name="/dnd 60 — do not disturb for 60 minutes (/dnd off)" xml:space="preserve">
+    <value>/dnd 60 — عدم الإزعاج ستين دقيقة (/dnd off للإيقاف)</value>
+  </data>
+  <data name="/find words — search every conversation" xml:space="preserve">
+    <value>/find كلمات — البحث في كل المحادثات</value>
+  </data>
+  <data name="/meeting — schedule a meeting with this group" xml:space="preserve">
+    <value>/meeting — جدولة اجتماع مع هذه المجموعة</value>
+  </data>
+  <data name="/poll Question | option | option — a poll" xml:space="preserve">
+    <value>/poll السؤال | خيار | خيار — استطلاع</value>
+  </data>
+  <data name="/schedule 14:30 text" xml:space="preserve">
+    <value>/schedule 14:30 النص</value>
+  </data>
+  <data name="/schedule 14:30 text — send it later today (or tomorrow)" xml:space="preserve">
+    <value>/schedule 14:30 النص — إرسالها لاحقاً اليوم (أو غداً)</value>
+  </data>
+  <data name="/status text — set your status" xml:space="preserve">
+    <value>/status نص — تعيين حالتك</value>
+  </data>
+  <data name="/task title — a task from the last message" xml:space="preserve">
+    <value>/task العنوان — مهمة من آخر رسالة</value>
+  </data>
+  <data name="2 hours" xml:space="preserve">
+    <value>ساعتان</value>
+  </data>
+  <data name="4 hours" xml:space="preserve">
+    <value>أربع ساعات</value>
+  </data>
+  <data name="A channel is public: anyone in the company can find it and join" xml:space="preserve">
+    <value>القناة عامة: يستطيع أي موظف في الشركة أن يجدها وينضم إليها</value>
+  </data>
+  <data name="A meeting is scheduled from a group" xml:space="preserve">
+    <value>يُجدول الاجتماع من مجموعة</value>
+  </data>
+  <data name="A question and at least two options" xml:space="preserve">
+    <value>سؤال وخياران على الأقل</value>
+  </data>
+  <data name="A record of the system" xml:space="preserve">
+    <value>سجل من النظام</value>
+  </data>
+  <data name="Add a note (optional)" xml:space="preserve">
+    <value>أضف ملاحظة (اختياري)</value>
+  </data>
+  <data name="Agenda (optional)" xml:space="preserve">
+    <value>جدول الأعمال (اختياري)</value>
+  </data>
+  <data name="An hour" xml:space="preserve">
+    <value>ساعة</value>
+  </data>
+  <data name="Anonymous — nobody sees who voted for what" xml:space="preserve">
+    <value>سري — لا يرى أحد من صوّت لأي خيار</value>
+  </data>
+  <data name="Approvals waiting for you" xml:space="preserve">
+    <value>موافقات بانتظارك</value>
+  </data>
+  <data name="Assign to" xml:space="preserve">
+    <value>إسناد إلى</value>
+  </data>
+  <data name="Channels" xml:space="preserve">
+    <value>القنوات</value>
+  </data>
+  <data name="Choose a time at least a minute from now" xml:space="preserve">
+    <value>اختر وقتاً بعد دقيقة على الأقل من الآن</value>
+  </data>
+  <data name="Choose a time in the future" xml:space="preserve">
+    <value>اختر وقتاً في المستقبل</value>
+  </data>
+  <data name="Choose at least one conversation" xml:space="preserve">
+    <value>اختر محادثة واحدة على الأقل</value>
+  </data>
+  <data name="Choose one" xml:space="preserve">
+    <value>اختر خياراً واحداً</value>
+  </data>
+  <data name="Choose one or more" xml:space="preserve">
+    <value>اختر خياراً أو أكثر</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="Clear after" xml:space="preserve">
+    <value>المسح بعد</value>
+  </data>
+  <data name="Close the poll" xml:space="preserve">
+    <value>إغلاق الاستطلاع</value>
+  </data>
+  <data name="Closes (optional)" xml:space="preserve">
+    <value>يُغلق في (اختياري)</value>
+  </data>
+  <data name="Commands" xml:space="preserve">
+    <value>الأوامر</value>
+  </data>
+  <data name="Could not forward" xml:space="preserve">
+    <value>تعذّرت إعادة التوجيه</value>
+  </data>
+  <data name="Could not pin it (at most 50)" xml:space="preserve">
+    <value>تعذّر التثبيت (خمسون رسالة على الأكثر)</value>
+  </data>
+  <data name="Create the task" xml:space="preserve">
+    <value>إنشاء المهمة</value>
+  </data>
+  <data name="Decisions" xml:space="preserve">
+    <value>القرارات</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>الوصف</value>
+  </data>
+  <data name="Do not disturb" xml:space="preserve">
+    <value>عدم الإزعاج</value>
+  </data>
+  <data name="Do not disturb is off" xml:space="preserve">
+    <value>أُوقف عدم الإزعاج</value>
+  </data>
+  <data name="Do not disturb is on" xml:space="preserve">
+    <value>فُعّل عدم الإزعاج</value>
+  </data>
+  <data name="Do not disturb — no ringing, no desktop notices" xml:space="preserve">
+    <value>عدم الإزعاج — بلا رنين ولا إشعارات على الشاشة</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>تم</value>
+  </data>
+  <data name="Due" xml:space="preserve">
+    <value>موعد الإنجاز</value>
+  </data>
+  <data name="Each opens on its own screen, where it is decided with that module’s rules" xml:space="preserve">
+    <value>كلٌّ منها يُفتح في شاشته ويُبتّ فيه وفق قواعد نظامه</value>
+  </data>
+  <data name="Edit the group" xml:space="preserve">
+    <value>تعديل المجموعة</value>
+  </data>
+  <data name="Every member of the group gets it in their calendar, with the way back to this conversation; at the time, start the group call from here" xml:space="preserve">
+    <value>يصل إلى تقويم كل أعضاء المجموعة مع رابط هذه المحادثة، وعند الموعد ابدأ المكالمة الجماعية من هنا</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>الملفات</value>
+  </data>
+  <data name="Find a channel" xml:space="preserve">
+    <value>ابحث عن قناة</value>
+  </data>
+  <data name="Focusing" xml:space="preserve">
+    <value>مُركّز</value>
+  </data>
+  <data name="Forward" xml:space="preserve">
+    <value>إعادة توجيه</value>
+  </data>
+  <data name="Forwarded" xml:space="preserve">
+    <value>مُعاد توجيهها</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>عالية</value>
+  </data>
+  <data name="I will remind you" xml:space="preserve">
+    <value>سأذكّرك</value>
+  </data>
+  <data name="In 20 minutes" xml:space="preserve">
+    <value>بعد عشرين دقيقة</value>
+  </data>
+  <data name="In 3 hours" xml:space="preserve">
+    <value>بعد ثلاث ساعات</value>
+  </data>
+  <data name="In a meeting" xml:space="preserve">
+    <value>في اجتماع</value>
+  </data>
+  <data name="In an hour" xml:space="preserve">
+    <value>بعد ساعة</value>
+  </data>
+  <data name="Links" xml:space="preserve">
+    <value>الروابط</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>منخفضة</value>
+  </data>
+  <data name="Make a task" xml:space="preserve">
+    <value>إنشاء مهمة</value>
+  </data>
+  <data name="Me" xml:space="preserve">
+    <value>أنا</value>
+  </data>
+  <data name="Meeting" xml:space="preserve">
+    <value>اجتماع</value>
+  </data>
+  <data name="Mentions of you" xml:space="preserve">
+    <value>ذكرك</value>
+  </data>
+  <data name="Messages" xml:space="preserve">
+    <value>الرسائل</value>
+  </data>
+  <data name="More than one answer" xml:space="preserve">
+    <value>أكثر من إجابة</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>أبداً</value>
+  </data>
+  <data name="New channel" xml:space="preserve">
+    <value>قناة جديدة</value>
+  </data>
+  <data name="No channels yet — create the first one" xml:space="preserve">
+    <value>لا توجد قنوات بعد — أنشئ أولاها</value>
+  </data>
+  <data name="No message matches" xml:space="preserve">
+    <value>لا توجد رسالة مطابقة</value>
+  </data>
+  <data name="No message to make a task from" xml:space="preserve">
+    <value>لا توجد رسالة لإنشاء مهمة منها</value>
+  </data>
+  <data name="No reminders" xml:space="preserve">
+    <value>لا توجد تذكيرات</value>
+  </data>
+  <data name="No replies yet — start the thread" xml:space="preserve">
+    <value>لا ردود بعد — ابدأ السلسلة</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>عادية</value>
+  </data>
+  <data name="Not available" xml:space="preserve">
+    <value>غير متاح</value>
+  </data>
+  <data name="Not sent" xml:space="preserve">
+    <value>لم تُرسل</value>
+  </data>
+  <data name="Not yet" xml:space="preserve">
+    <value>لم يقرأ بعد</value>
+  </data>
+  <data name="Nothing saved yet — “Save” in a message’s menu" xml:space="preserve">
+    <value>لا شيء محفوظ بعد — «حفظ» من قائمة الرسالة</value>
+  </data>
+  <data name="Nothing waits for you" xml:space="preserve">
+    <value>لا شيء بانتظارك</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>حسناً</value>
+  </data>
+  <data name="Off sick" xml:space="preserve">
+    <value>في إجازة مرضية</value>
+  </data>
+  <data name="On leave" xml:space="preserve">
+    <value>في إجازة</value>
+  </data>
+  <data name="On the way" xml:space="preserve">
+    <value>في الطريق</value>
+  </data>
+  <data name="Only the group admin can change it, and a picture must be an image under 5 MB" xml:space="preserve">
+    <value>يعدّلها مشرف المجموعة فقط، والصورة يجب أن تكون أقل من خمسة ميغابايت</value>
+  </data>
+  <data name="Only you see this" xml:space="preserve">
+    <value>لا يراها غيرك</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="Open and decide" xml:space="preserve">
+    <value>فتح واتخاذ القرار</value>
+  </data>
+  <data name="Options — one per line (2 to 12)" xml:space="preserve">
+    <value>الخيارات — خيار في كل سطر (من ٢ إلى ١٢)</value>
+  </data>
+  <data name="Pin in the conversation" xml:space="preserve">
+    <value>تثبيت في المحادثة</value>
+  </data>
+  <data name="Pinned by" xml:space="preserve">
+    <value>ثبّتها</value>
+  </data>
+  <data name="Pinned messages" xml:space="preserve">
+    <value>الرسائل المثبّتة</value>
+  </data>
+  <data name="Poll" xml:space="preserve">
+    <value>استطلاع</value>
+  </data>
+  <data name="Polls" xml:space="preserve">
+    <value>الاستطلاعات</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>الأولوية</value>
+  </data>
+  <data name="Private group" xml:space="preserve">
+    <value>مجموعة خاصة</value>
+  </data>
+  <data name="Public channel" xml:space="preserve">
+    <value>قناة عامة</value>
+  </data>
+  <data name="Public channel — anyone in the company can find and join it" xml:space="preserve">
+    <value>قناة عامة — يجدها أي موظف في الشركة وينضم إليها</value>
+  </data>
+  <data name="Question" xml:space="preserve">
+    <value>السؤال</value>
+  </data>
+  <data name="Questions" xml:space="preserve">
+    <value>الأسئلة</value>
+  </data>
+  <data name="Remind me" xml:space="preserve">
+    <value>ذكّرني</value>
+  </data>
+  <data name="Reminders" xml:space="preserve">
+    <value>التذكيرات</value>
+  </data>
+  <data name="Remove from saved" xml:space="preserve">
+    <value>إزالة من المحفوظات</value>
+  </data>
+  <data name="Remove the picture" xml:space="preserve">
+    <value>إزالة الصورة</value>
+  </data>
+  <data name="Removed from saved" xml:space="preserve">
+    <value>أُزيلت من المحفوظات</value>
+  </data>
+  <data name="Replies" xml:space="preserve">
+    <value>الردود</value>
+  </data>
+  <data name="Reply in a thread" xml:space="preserve">
+    <value>الرد في سلسلة</value>
+  </data>
+  <data name="Reply in the thread…" xml:space="preserve">
+    <value>اكتب ردك في السلسلة…</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>محفوظة</value>
+  </data>
+  <data name="Saved and reminders" xml:space="preserve">
+    <value>المحفوظات والتذكيرات</value>
+  </data>
+  <data name="Saved messages" xml:space="preserve">
+    <value>الرسائل المحفوظة</value>
+  </data>
+  <data name="Schedule" xml:space="preserve">
+    <value>جدولة</value>
+  </data>
+  <data name="Schedule a meeting" xml:space="preserve">
+    <value>جدولة اجتماع</value>
+  </data>
+  <data name="Schedule a message" xml:space="preserve">
+    <value>جدولة رسالة</value>
+  </data>
+  <data name="Scheduled" xml:space="preserve">
+    <value>تمت الجدولة</value>
+  </data>
+  <data name="Scheduled messages" xml:space="preserve">
+    <value>الرسائل المجدولة</value>
+  </data>
+  <data name="Search by number or name" xml:space="preserve">
+    <value>ابحث بالرقم أو الاسم</value>
+  </data>
+  <data name="Send anyway" xml:space="preserve">
+    <value>إرسال على أي حال</value>
+  </data>
+  <data name="Send it anyway?" xml:space="preserve">
+    <value>هل ترسلها رغم ذلك؟</value>
+  </data>
+  <data name="Send the poll" xml:space="preserve">
+    <value>إرسال الاستطلاع</value>
+  </data>
+  <data name="Sensitive data" xml:space="preserve">
+    <value>بيانات حساسة</value>
+  </data>
+  <data name="Set a status" xml:space="preserve">
+    <value>تعيين حالة</value>
+  </data>
+  <data name="Set the reminder" xml:space="preserve">
+    <value>ضبط التذكير</value>
+  </data>
+  <data name="Show" xml:space="preserve">
+    <value>عرض</value>
+  </data>
+  <data name="Status set" xml:space="preserve">
+    <value>عُيّنت الحالة</value>
+  </data>
+  <data name="That message is further up — scroll up to load it" xml:space="preserve">
+    <value>هذه الرسالة أقدم — مرّر لأعلى لتحميلها</value>
+  </data>
+  <data name="The channel could not be created" xml:space="preserve">
+    <value>تعذّر إنشاء القناة</value>
+  </data>
+  <data name="The company does not allow it in chat." xml:space="preserve">
+    <value>لا تسمح الشركة بذلك في المحادثات.</value>
+  </data>
+  <data name="The meeting could not be scheduled" xml:space="preserve">
+    <value>تعذّرت جدولة الاجتماع</value>
+  </data>
+  <data name="The meeting is in everyone’s calendar" xml:space="preserve">
+    <value>الاجتماع في تقويم الجميع</value>
+  </data>
+  <data name="The poll could not be sent" xml:space="preserve">
+    <value>تعذّر إرسال الاستطلاع</value>
+  </data>
+  <data name="The task could not be created" xml:space="preserve">
+    <value>تعذّر إنشاء المهمة</value>
+  </data>
+  <data name="The task is created and linked to the message" xml:space="preserve">
+    <value>أُنشئت المهمة ورُبطت بالرسالة</value>
+  </data>
+  <data name="This message contains" xml:space="preserve">
+    <value>تحتوي هذه الرسالة على</value>
+  </data>
+  <data name="This week" xml:space="preserve">
+    <value>هذا الأسبوع</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>السلسلة</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="Tomorrow at 9" xml:space="preserve">
+    <value>غداً الساعة التاسعة</value>
+  </data>
+  <data name="Unpin from the conversation" xml:space="preserve">
+    <value>إلغاء التثبيت</value>
+  </data>
+  <data name="Until I turn it off" xml:space="preserve">
+    <value>حتى أوقفه</value>
+  </data>
+  <data name="Until tomorrow" xml:space="preserve">
+    <value>حتى الغد</value>
+  </data>
+  <data name="Urgent" xml:space="preserve">
+    <value>عاجلة</value>
+  </data>
+  <data name="What is it for? (optional)" xml:space="preserve">
+    <value>ما الغرض منها؟ (اختياري)</value>
+  </data>
+  <data name="What is your status?" xml:space="preserve">
+    <value>ما حالتك؟</value>
+  </data>
+  <data name="What you missed" xml:space="preserve">
+    <value>ما فاتك</value>
+  </data>
+  <data name="Working from home" xml:space="preserve">
+    <value>أعمل من المنزل</value>
+  </data>
+  <data name="You may not assign tasks to others" xml:space="preserve">
+    <value>لا يحق لك إسناد مهام لغيرك</value>
+  </data>
+  <data name="You may not create tasks" xml:space="preserve">
+    <value>لا يحق لك إنشاء مهام</value>
+  </data>
+  <data name="Your status" xml:space="preserve">
+    <value>حالتك</value>
+  </data>
+  <data name="a national ID number" xml:space="preserve">
+    <value>رقم هوية وطنية</value>
+  </data>
+  <data name="a payment card number" xml:space="preserve">
+    <value>رقم بطاقة دفع</value>
+  </data>
+  <data name="a word the company listed" xml:space="preserve">
+    <value>كلمة حدّدتها الشركة</value>
+  </data>
+  <data name="an IBAN" xml:space="preserve">
+    <value>رقم آيبان</value>
+  </data>
+  <data name="anonymous" xml:space="preserve">
+    <value>سري</value>
+  </data>
+  <data name="closed" xml:space="preserve">
+    <value>مغلق</value>
+  </data>
+  <data name="closes" xml:space="preserve">
+    <value>يُغلق</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>أيام</value>
+  </data>
+  <data name="e.g. sales-team" xml:space="preserve">
+    <value>مثال: فريق-المبيعات</value>
+  </data>
+  <data name="last" xml:space="preserve">
+    <value>آخرها</value>
+  </data>
+  <data name="messages from" xml:space="preserve">
+    <value>رسالة من</value>
+  </data>
+  <data name="next (scheduled)" xml:space="preserve">
+    <value>التالية</value>
+  </data>
+  <data name="or a time of your choosing" xml:space="preserve">
+    <value>أو وقت تختاره</value>
+  </data>
+  <data name="pinned by (person)" xml:space="preserve">
+    <value>ثبّتها</value>
+  </data>
+  <data name="replies (count)" xml:space="preserve">
+    <value>ردود</value>
+  </data>
+  <data name="reply (count)" xml:space="preserve">
+    <value>رد</value>
+  </data>
+  <data name="scheduled (count)" xml:space="preserve">
+    <value>مجدولة</value>
+  </data>
+  <data name="the message is back in the box, send it again" xml:space="preserve">
+    <value>عادت الرسالة إلى مربع الكتابة، أرسلها مجدداً</value>
+  </data>
+  <data name="unread messages" xml:space="preserve">
+    <value>رسائل غير مقروءة</value>
+  </data>
+  <data name="voted" xml:space="preserve">
+    <value>صوّتوا</value>
+  </data>
 </root>

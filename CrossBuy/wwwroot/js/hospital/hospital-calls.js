@@ -67,6 +67,7 @@
 	}
 	var RING = [[880, 0, 0.35], [660, 0.4, 0.35], [880, 1.2, 0.35], [660, 1.6, 0.35]]; RING.period = 3200;
 	var RINGBACK = [[425, 0, 1]]; RINGBACK.period = 4000;
+	var WAIT = [[440, 0, 0.15], [440, 0.3, 0.15]]; WAIT.period = 4000;   // a call waiting: two soft beeps, not a ring over the call you are in
 
 	/* ---------------- hub ---------------- */
 	function connect() {
@@ -120,13 +121,15 @@
 	/* ---------------- incoming: the prototype's card (#/comm-ring), in the corner of whatever screen is open ---------------- */
 	function ringLeft(n) { return '<span class="num">' + Math.max(0, n) + '</span> ' + esc(t('cmRingLeft')); }
 	function onIncoming(m) {
-		if (current || ring || (window.cbCallsGroup && window.cbCallsGroup.busy())) { return; }   // the server already refuses a second call to someone busy; a second tab still answers only once
+		var inGroup = window.cbCallsGroup && window.cbCallsGroup.current && window.cbCallsGroup.current();
+		if (ring || ((current || (window.cbCallsGroup && window.cbCallsGroup.busy())) && !m.waiting)) { return; }   // a second tab still answers only once; a call while in one rings only as "waiting" (Communication v2)
+		var waiting = !!m.waiting && !!(current || inGroup);
 		var left = m.ringSeconds || 30, video = !!m.video, p = m.patient, who = m.caller || {};
 		var el = document.createElement('div'); el.className = 'cm-ring'; el.setAttribute('role', 'alertdialog');
 		var about = p ? '<div class="cm-lastmsg">' + ico('user-round', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('aboutPatient')) + '</div><span class="fw-bold">' + esc(p.name) + '</span> · ' + num(esc(p.mrn)) + (m.reason ? '<div>' + esc(m.reason) + '</div>' : '') + '</div></div>'
 			: m.reason ? '<div class="cm-lastmsg">' + ico('message-square-text', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('reason')) + '</div>' + esc(m.reason) + '</div></div>' : '';
 		el.innerHTML = '<div class="band"><span class="ring">' + face(who, 56) + '</span><div class="min-w-0">' +
-				'<div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico(video ? 'video' : 'phone', 13) + esc(video ? t('cmIncomingVideo') : t('cmIncomingVoice')) + '</div>' +
+				'<div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico(video ? 'video' : 'phone', 13) + esc(waiting ? t('cmWaiting') : video ? t('cmIncomingVideo') : t('cmIncomingVoice')) + '</div>' +
 				'<div class="fs-4 fw-bold text-truncate">' + esc(who.name) + '</div><div class="fs-8 opacity-75 text-truncate">' + esc([who.title, who.department].filter(Boolean).join(' · ')) + '</div></div></div>' +
 			'<div class="p-5">' + about +
 				'<div class="cm-lastmsg d-none" data-last>' + ico('message-circle', 16) + '<div class="fs-7 min-w-0"><div class="text-muted fs-8">' + esc(t('cmLastMsg')) + '</div><div class="text-truncate" dir="auto" data-lasttx></div></div></div>' +
@@ -134,7 +137,7 @@
 				'<div class="cm-ringbtns"' + (video ? '' : ' style="grid-template-columns:repeat(2,1fr)"') + '>' +
 					'<button type="button" class="no" data-decline>' + ico('phone-off', 20) + '<span>' + esc(t('decline')) + '</span></button>' +
 					(video ? '<button type="button" class="vo" data-voice>' + ico('phone', 20) + '<span>' + esc(t('cmByVoice')) + '</span></button>' : '') +
-					'<button type="button" class="yes" data-accept>' + ico(video ? 'video' : 'phone', 20) + '<span>' + esc(t('cmAnswer')) + '</span></button></div>' +
+					'<button type="button" class="yes" data-accept>' + ico(waiting ? 'phone-forwarded' : video ? 'video' : 'phone', 20) + '<span>' + esc(waiting ? t('cmEndAnswer') : t('cmAnswer')) + '</span></button></div>' +
 				'<div class="text-muted fs-8 text-center mt-3" data-left>' + ringLeft(left) + '</div>' +
 			'</div>';
 		document.body.appendChild(el);
@@ -143,7 +146,7 @@
 			if (!r || !r.body || !ring || ring.el !== el) return;
 			el.querySelector('[data-lasttx]').textContent = r.body; el.querySelector('[data-last]').classList.remove('d-none');
 		});
-		var stopTone = tone(RING);
+		var stopTone = waiting ? tone(WAIT) : tone(RING);
 		ring = { callId: m.callId, el: el, stopTone: stopTone, msg: m };
 		ring.timer = setInterval(function () {
 			left--; var l = el.querySelector('[data-left]'); if (l) l.innerHTML = ringLeft(left);
@@ -153,6 +156,9 @@
 		[].slice.call(el.querySelectorAll('[data-reply]')).forEach(function (b) { b.onclick = function () { conn.invoke('Decline', m.callId, b.textContent); closeRing(); toast(t('replySent', who.name), 'success'); }; });
 		function accept(withVideo) {
 			closeRing();
+			// waiting: the call I am in ends first (a group call: I leave it), then this one is answered
+			if (current) { var old = current; hangup(old); teardown(old); }
+			if (window.cbCallsGroup && window.cbCallsGroup.current && window.cbCallsGroup.current() && window.cbCallsGroup.leave) window.cbCallsGroup.leave();
 			conn.invoke('Answer', m.callId, withVideo).then(function (r) {
 				if (!r || !r.ok) { toast(t('failed'), 'error'); return; }
 				current = newCall({ id: m.callId, role: 'callee', video: withVideo, peer: who, patient: m.patient, reason: m.reason, share: m.share, maxHeight: m.maxHeight, canRecord: m.canRecord });
@@ -274,6 +280,9 @@
 			if (d.t === 'answer') return pc.setRemoteDescription(d.sdp).then(function () { flush(c); sendState(c); });
 			if (d.t === 'cand') { if (pc.remoteDescription) return pc.addIceCandidate(d.c).catch(function () { }); c.cands.push(d.c); return; }
 			if (d.t === 'state') { c.remote = { mic: d.mic, cam: d.cam, share: d.share }; paintRemote(c); return; }
+			if (d.t === 'hand') { c.peerHand = !!d.on; paintFlags(c); if (d.on) toast('✋ ' + c.peer.name, 'info'); return; }
+			if (d.t === 'react') { floatReact(c, String(d.e || '').slice(0, 4), false); return; }
+			if (d.t === 'hold') { hold(c, !!d.on, false); return; }
 			if (d.t === 'patient' && d.patient && !c.patient) { c.patient = d.patient; paintContext(c); return; }
 		}).catch(function () { });
 	}
@@ -360,6 +369,7 @@
 			cb('chat', 'message-circle', t('cmTheChat'), c.sideOpen ? 'on' : '') +
 			(c.canRecord && window.MediaRecorder ? cb('rec', recOn ? 'circle-stop' : 'circle-dot', recOn ? t('recStop') : t('recAsk'), recOn ? 'rec' : '', !c.answered) : '') +
 			cb('add', 'user-plus', t('addPeople'), '', !(c.answered && window.cbCallsGroup)) +
+			cb('more', 'ellipsis', t('cmMore'), c.hand || c.held ? 'on' : '', !c.answered) +
 			cb('end', 'phone-off', t('end'), 'red');
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(c, b.getAttribute('data-k')); }; });
 	}
@@ -368,6 +378,7 @@
 		if (k === 'end') { hangup(c); return; }
 		if (k === 'rec') { recControl(c); return; }
 		if (k === 'add') { if (window.cbCallsGroup) window.cbCallsGroup.fromCall(c); return; }
+		if (k === 'more') { moreMenu(c); return; }
 		if (k === 'chat') { c.sideOpen = !c.sideOpen; c.el.classList.toggle('no-side', !c.sideOpen); c.el.classList.toggle('side-open', c.sideOpen); paintBar(c); return; }
 		if (k === 'mic') { var a = c.local && c.local.getAudioTracks()[0]; if (!a) { toast(t('noMic'), 'error'); return; } c.mic = !c.mic; a.enabled = c.mic; }
 		if (k === 'cam') {
@@ -394,6 +405,57 @@
 			return;
 		}
 		paintSelf(c); paintBar(c); sendState(c);
+	}
+	// ---- Communication v2: what the leading call systems have in a call — raise a hand, react, hold, transfer, noise ----
+	var REACTS = ['👍', '👏', '❤️', '😂', '🎉', '🙏'];
+	function moreMenu(c) {
+		var old = c.el.querySelector('.cbc-more'); if (old) { old.remove(); return; }
+		var m = document.createElement('div'); m.className = 'cbc-more';
+		m.innerHTML = '<div class="rx">' + REACTS.map(function (e) { return '<button type="button" data-rx="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
+			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(c.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>' +
+			'<button type="button" class="it" data-m="hold">' + ico(c.held ? 'play' : 'pause', 18) + '<span>' + esc(c.held ? t('cmResume') : t('cmHold')) + '</span></button>' +
+			(window.cbCallsGroup && window.cbCallsGroup.transfer ? '<button type="button" class="it" data-m="transfer">' + ico('phone-forwarded', 18) + '<span>' + esc(t('cmTransfer')) + '</span></button>' : '') +
+			'<button type="button" class="it" data-m="noise">' + ico('audio-lines', 18) + '<span>' + esc(t('cmNoise')) + '</span><b>' + esc(c.noiseOff ? t('cmOff') : t('cmOn')) + '</b></button>';
+		c.el.querySelector('.main').appendChild(m);
+		m.onclick = function (e) {
+			var b = e.target.closest('button'); if (!b) return;
+			var rx = b.getAttribute('data-rx'), k = b.getAttribute('data-m');
+			m.remove();
+			if (rx) { send(c, { t: 'react', e: rx }); floatReact(c, rx, true); return; }
+			if (k === 'hand') { c.hand = !c.hand; send(c, { t: 'hand', on: c.hand }); paintFlags(c); paintBar(c); }
+			if (k === 'hold') hold(c, !c.held, true);
+			if (k === 'transfer') window.cbCallsGroup.transfer(c);
+			if (k === 'noise') {
+				c.noiseOff = !c.noiseOff;
+				var a = c.local && c.local.getAudioTracks()[0];
+				if (a && a.applyConstraints) a.applyConstraints({ noiseSuppression: !c.noiseOff, echoCancellation: true, autoGainControl: !c.noiseOff }).catch(function () { });
+				toast(c.noiseOff ? t('cmNoiseOff') : t('cmNoiseOn'), 'info');
+			}
+		};
+	}
+	function hold(c, on, mine) {
+		if (mine) {
+			c.held = on;
+			var a = c.local && c.local.getAudioTracks()[0], v = c.local && c.local.getVideoTracks()[0];
+			if (on) { c.preHold = { mic: c.mic, cam: c.cam }; if (a) a.enabled = false; if (v) v.enabled = false; }
+			else if (c.preHold) { if (a) a.enabled = c.preHold.mic; if (v) v.enabled = c.preHold.cam; }
+			send(c, { t: 'hold', on: on }); paintBar(c);
+		} else c.heldByPeer = on;
+		var ra = c.el.querySelector('[data-raudio]'); if (ra) ra.muted = !!(c.held || c.heldByPeer);
+		paintFlags(c);
+	}
+	function paintFlags(c) {
+		var top = c.el.querySelector('.top .ms-auto'); if (!top) return;
+		var f = top.querySelector('[data-flags]'); if (!f) { f = document.createElement('span'); f.setAttribute('data-flags', ''); f.className = 'd-flex gap-2'; top.insertBefore(f, top.firstChild); }
+		f.innerHTML = (c.peerHand ? '<span class="chip">✋ ' + esc(c.peer.name) + '</span>' : '') + (c.hand ? '<span class="chip">✋ ' + esc(t('you')) + '</span>' : '') +
+			(c.held || c.heldByPeer ? '<span class="chip">' + ico('pause', 13) + ' ' + esc(c.held ? t('cmOnHoldMine') : t('cmOnHoldTheirs')) + '</span>' : '');
+		var vid = c.el.querySelector('.vid'); if (vid) vid.classList.toggle('cbc-held', !!(c.held || c.heldByPeer));
+	}
+	function floatReact(c, e, mine) {
+		var main = c.el.querySelector('.main'); if (!main) return;
+		var f = document.createElement('div'); f.className = 'cbc-float'; f.textContent = e;
+		f.style.insetInlineStart = (mine ? 60 : 30) + Math.round(Math.random() * 25) + '%';
+		main.appendChild(f); setTimeout(function () { f.remove(); }, 2600);
 	}
 	function stopShare(c) {
 		if (!c.sharing) return;

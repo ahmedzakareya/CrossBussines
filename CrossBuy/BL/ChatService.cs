@@ -410,7 +410,7 @@ namespace CrossBuy.BL
             if (ctx == null || !await MayAsync(ctx, CommunicationActions.Read, conversationId)) return new();
             // Keep the take bounded even if a caller asks for more; history stays paged.
             if (take <= 0 || take > 100) take = 30;
-            var q = _db.ChatMessages.AsNoTracking().Where(m => m.ConversationId == conversationId);
+            var q = _db.ChatMessages.AsNoTracking().Where(m => m.ConversationId == conversationId && m.ThreadRootId == null);   // a thread's replies live in their thread (Communication v2)
             if (beforeId.HasValue) q = q.Where(m => m.ID < beforeId.Value);
             var msgs = await q.OrderByDescending(m => m.ID).Take(take).ToListAsync();
             msgs.Reverse();
@@ -483,6 +483,8 @@ namespace CrossBuy.BL
             // apply to the stored value.
             var trimmed = body?.Trim();
             if (trimmed != null && trimmed.Length > MaxMessageLength) return null;
+            // Communication v2: the company's sensitive-data rule — in "block" mode a matching message is refused here
+            if (trimmed != null && await CrossBuy.BL.Communication.ChatDlp.BlocksAsync(_db, ctx.CompanyId, trimmed)) return null;
 
             // F1 — A REPLY MAY ONLY QUOTE A MESSAGE IN THIS CONVERSATION.
             // replyToId arrives from the request body and was previously stored unchecked, which let a

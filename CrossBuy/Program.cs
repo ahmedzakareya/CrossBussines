@@ -868,6 +868,7 @@ builder.Services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHosted
 // HR approval SLA (2026-11-09): hourly; escalates a step that passed its path's limit once. Suppresses itself on a
 // certification runtime and parks on a lost lease, like the task escalation worker above.
 builder.Services.AddHostedService<CrossBuy.BL.Hr.HrApprovalEscalationHostedService>();
+builder.Services.AddHostedService<CrossBuy.BL.Communication.CommWorkerHostedService>();   // Communication v2: scheduled messages, reminders, message retention
 builder.Services.AddSignalR();
 
 

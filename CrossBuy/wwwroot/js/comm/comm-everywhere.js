@@ -85,7 +85,42 @@
 		document.querySelectorAll('[data-cm-unread]').forEach(function (n) { n.textContent = counts.unread > 0 ? (counts.unread > 99 ? '99+' : counts.unread) : ''; });
 		document.querySelectorAll('[data-cm-missed]').forEach(function (n) { n.textContent = counts.missed > 0 ? counts.missed : ''; });
 	}
-	function pulse() { get(base + '/Pulse').then(function (r) { if (r && r.ok) { counts.unread = r.unread || 0; counts.missed = r.missed || 0; paintCounts(); } }); }
+	function pulse() { get(base + '/Pulse').then(function (r) { if (r && r.ok) { counts.unread = r.unread || 0; counts.missed = r.missed || 0; paintCounts(); paintTitle(); } }); }
+
+	/* ---------------- Communication v2: the tab's title, and a notice on the desktop ---------------- */
+	// the browser tab carries the count, like every chat: "(3) Trial balance"
+	var baseTitle = document.title.replace(/^\(\d+\+?\)\s*/, '');
+	function paintTitle() { var n = counts.unread + counts.missed; document.title = (n > 0 ? '(' + (n > 99 ? '99+' : n) + ') ' : '') + baseTitle; }
+	// a desktop notice for a message while this tab is in the background — never in do-not-disturb, never for a muted
+	// conversation. (A notice with every tab closed needs a push service outside the company network; the system keeps
+	// its traffic inside, so it stays a notice of an open tab.)
+	var myDnd = false;
+	function refreshDnd() { get(base + '/Statuses').then(function (m) { var s = m && m[String((W.me || {}).id)]; myDnd = !!(s && s.dnd); }); }
+	var W = K.W || {};
+	function canNotify() { return 'Notification' in window && Notification.permission === 'granted'; }
+	function askPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().then(function () { paintAsk(); }); }
+	function paintAsk() {
+		document.querySelectorAll('[data-cm-ask]').forEach(function (b) { b.classList.toggle('d-none', !('Notification' in window) || Notification.permission !== 'default'); });
+	}
+	function onConversation(e) {
+		pulse();
+		if (!e || !document.hidden || !canNotify() || myDnd || e.from === (W.me || {}).id) return;
+		get(base + '/Conversations').then(function (list) {
+			var c = (list || []).filter(function (x) { return x.id === e.conversationId; })[0];
+			if (!c || c.muted) return;
+			try {
+				var n = new Notification(c.title || t('cmCommunication'), { body: e.preview || '', tag: 'cb-chat-' + e.conversationId, icon: c.avatar || undefined, silent: false });
+				n.onclick = function () { window.focus(); location.href = base + '?c=' + e.conversationId; n.close(); };
+			} catch (x) { }
+		});
+	}
+	function chatHub() {
+		if (!window.signalR) { setTimeout(chatHub, 1500); return; }
+		var hub = new signalR.HubConnectionBuilder().withUrl(base.replace(/\/Chat$/, '') + '/hubs/chat').withAutomaticReconnect().build();
+		hub.on('conversation', onConversation);
+		hub.on('status', function (e) { if (e && e.employeeId === (W.me || {}).id) myDnd = !!(e.status && e.status.dnd); });
+		hub.start().catch(function () { });
+	}
 
 	function boot() {
 		topbar();
@@ -94,6 +129,12 @@
 		setInterval(pulse, 30000);
 		document.addEventListener('cbcalls:changed', pulse);
 		document.addEventListener('cbcomm:read', pulse);
+		refreshDnd(); chatHub();
+		// the way to turn the notices on: in the floating panel's head, or on the Communication page's
+		var askHtml = '<button type="button" class="cm-ib ghost' + (onChat ? '' : ' xs') + '" data-cm-ask title="' + esc(t('cmNotifyOn')) + '">' + ico('bell-ring', onChat ? 18 : 16) + '</button>';
+		var spot = onChat ? document.querySelector('.cm-title .ms-auto') : (panel && panel.querySelector('.cm-fhead .ms-auto'));
+		if (spot) { spot.insertAdjacentHTML('afterbegin', askHtml); spot.querySelector('[data-cm-ask]').onclick = askPermission; }
+		paintAsk();
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

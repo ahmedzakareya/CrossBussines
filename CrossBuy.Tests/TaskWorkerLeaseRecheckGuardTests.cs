@@ -35,6 +35,7 @@ namespace CrossBuy.Tests
             { "CrossBuy/BL/TasksCalendar/TaskEscalationHostedService.cs", "TaskEscalationHostedService" },
             { "CrossBuy/BL/IntegrityCheckHostedService.cs", "IntegrityCheckHostedService" },
             { "CrossBuy/BL/CrmReminderHostedService.cs", "CrmReminderHostedService" },
+            { "CrossBuy/BL/Communication/CommWorkerHostedService.cs", "CommWorkerHostedService" },
             { "CrossBuy/BL/Platform/BusinessEventDispatchWorker.cs", "BusinessEventDispatchWorker" },
         };
 

@@ -246,6 +246,8 @@
 		if (!g || g.id !== m.callId) return;
 		var d; try { d = JSON.parse(m.payload); } catch (e) { return; }
 		var x = g.members[m.fromId]; if (!x) return;
+		if (d.t === 'hand') { x.hand = !!d.on; paintTiles(); if (d.on) toast('✋ ' + x.card.name, 'info'); return; }
+		if (d.t === 'react') { floatOn(String(m.fromId), String(d.e || '').slice(0, 4)); return; }
 		if (d.t === 'state' && g.room) { x.remote = { mic: d.mic, cam: d.cam, share: d.share }; paint(); return; }
 		if (d.t === 'offer') {
 			peer(m.fromId, false).then(function () {
@@ -302,7 +304,7 @@
 				var showMe = (lv && g.cam) || g.sharing;
 				if (showMe) { var src = g.sharing && g.screen ? g.screen : new MediaStream([lv]); if (v.srcObject !== src && !(v.srcObject && v.srcObject.getVideoTracks()[0] === src.getVideoTracks()[0])) v.srcObject = src; v.classList.remove('d-none'); v.classList.toggle('cbc-mirror', !g.sharing); v.classList.toggle('cbc-contain', !!g.sharing); f.innerHTML = ''; }
 				else { v.classList.add('d-none'); f.innerHTML = face(W.me || {}, 84); }
-				nm.innerHTML = (g.mic ? '' : '<span class="cbc-tmute">' + ico('micOff', 14) + '</span>') + esc(t('you'));
+				nm.innerHTML = (g.hand ? '✋ ' : '') + (g.mic ? '' : '<span class="cbc-tmute">' + ico('micOff', 14) + '</span>') + esc(t('you'));
 				stt.className = 'cbc-tstate d-none';
 				el.classList.remove('speaking', 'ringing');
 				return;
@@ -311,7 +313,7 @@
 			var show = x.state === 'joined' && vt && !vt.muted && (x.remote.cam || x.remote.share);
 			if (show) { if (v.srcObject !== x.stream) v.srcObject = x.stream; v.classList.remove('d-none'); v.classList.toggle('cbc-contain', !!x.remote.share); v.classList.remove('cbc-mirror'); f.innerHTML = ''; v.play().catch(function () { }); }
 			else { v.classList.add('d-none'); f.innerHTML = face(x.card, 84); }
-			nm.innerHTML = (x.state === 'joined' && x.remote.mic === false ? '<span class="cbc-tmute">' + ico('micOff', 14) + '</span>' : '') + esc(x.card.name);
+			nm.innerHTML = (x.hand ? '✋ ' : '') + (x.state === 'joined' && x.remote.mic === false ? '<span class="cbc-tmute">' + ico('micOff', 14) + '</span>' : '') + esc(x.card.name);
 			var label = x.state === 'ringing' ? t('grpRinging') : (x.away || x.net === 'connecting' || x.net === 'disconnected' ? t('reconnecting') : '');
 			stt.textContent = label; stt.className = 'cbc-tstate' + (label ? '' : ' d-none');
 			el.classList.toggle('ringing', x.state === 'ringing');
@@ -326,6 +328,7 @@
 			(g.share && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? '<button type="button" class="cbc-ctl' + (g.sharing ? ' off' : '') + '" data-k="share" title="' + esc(t('share')) + '">' + ico('monitor-up', 21) + '</button>' : '') +
 			(g.canRecord && window.MediaRecorder ? '<button type="button" class="cbc-ctl' + (r && r.state === 'on' ? ' rec-on' : '') + '" data-k="rec" title="' + esc(r && r.state === 'on' ? t('recStop') : t('grpRecAsk')) + '">' + ico('rec', 22) + '</button>' : '') +
 			(g.hostId === me ? '<button type="button" class="cbc-ctl" data-k="add" title="' + esc(t('addPeople')) + '">' + ico('user-plus', 21) + '</button>' : '') +
+			'<button type="button" class="cbc-ctl' + (g.hand ? ' off' : '') + '" data-k="more" title="' + esc(t('cmMore')) + '">' + ico('ellipsis', 21) + '</button>' +
 			'<button type="button" class="cbc-ctl end" data-k="end" title="' + esc(t('grpLeave')) + '">' + ico('phone-off', 21) + '</button>';
 		[].slice.call(bar.querySelectorAll('[data-k]')).forEach(function (b) { b.onclick = function () { control(b.getAttribute('data-k')); }; });
 	}
@@ -362,6 +365,7 @@
 		if (k === 'end') { leave(); return; }
 		if (k === 'add') { add(); return; }
 		if (k === 'rec') { recControl(); return; }
+		if (k === 'more') { more(); return; }
 		if (k === 'mic') { var a = g.local && g.local.getAudioTracks()[0]; if (!a) { toast(t('noMic'), 'error'); return; } g.mic = !g.mic; a.enabled = g.mic; if (g.pubA) (g.mic ? g.pubA.unmute() : g.pubA.mute()); }
 		if (k === 'cam') {
 			var v = g.local && g.local.getVideoTracks()[0];
@@ -397,6 +401,38 @@
 		paint(); sendState();
 	}
 
+	// Communication v2: raise a hand and react in a group call (to everyone joined, through the hub)
+	function toAll(obj) { Object.keys(g.members).forEach(function (id) { if (g.members[id].state === 'joined') send(+id, obj); }); }
+	function floatOn(key, e) {
+		var tile = g.el.querySelector('[data-tile="' + key + '"]'); if (!tile) return;
+		var f = document.createElement('div'); f.className = 'cbc-float'; f.textContent = e; tile.appendChild(f); setTimeout(function () { f.remove(); }, 2600);
+	}
+	function more() {
+		var old = g.el.querySelector('.cbc-more'); if (old) { old.remove(); return; }
+		var m = document.createElement('div'); m.className = 'cbc-more';
+		m.innerHTML = '<div class="rx">' + ['👍', '👏', '❤️', '😂', '🎉', '🙏'].map(function (e) { return '<button type="button" data-rx="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
+			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(g.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>';
+		g.el.querySelector('.cbc-main').appendChild(m);
+		m.onclick = function (e) {
+			var b = e.target.closest('button'); if (!b) return; m.remove();
+			var rx = b.getAttribute('data-rx');
+			if (rx) { toAll({ t: 'react', e: rx }); floatOn('me', rx); return; }
+			g.hand = !g.hand; toAll({ t: 'hand', on: g.hand }); paintTiles(); paintBar();
+		};
+	}
+	// a transfer: the two-person call becomes a group with the new person, and I leave once they have joined
+	function transfer(c) {
+		pick([c.peer.id], function (ids) {
+			ids = ids.slice(0, 1);
+			call('GroupInvite', ids, !!c.video, c.patient ? c.patient.id : null, c.reason || null, c.id).then(function (r) {
+				if (!r || !r.ok) { toast(t(r && r.error ? r.error : 'failed', r && r.name), 'error'); return; }
+				K.closeQuietly(c);
+				open(r, !!r.video, true);
+				g.transferTo = ids[0];
+				toast(t('cmTransferring'), 'info');
+			}).catch(function () { toast(t('failed'), 'error'); });
+		}, 1);
+	}
 	function add() {
 		var have = [me].concat(g.order.filter(function (id) { var s = g.members[id].state; return s === 'joined' || s === 'ringing'; }).map(Number));
 		var room = g.cap - have.length;
@@ -624,6 +660,7 @@
 		c.on('groupback', onBack);
 		c.on('groupincoming', onIncoming);
 		c.on('groupjoined', onJoined);
+		c.on('groupjoined', function (m) { if (g && g.transferTo && m && m.card && m.card.id === g.transferTo) { g.transferTo = null; setTimeout(function () { if (g) { leave(); toast(t('cmTransferred'), 'success'); } }, 1500); } });
 		c.on('groupleft', onLeft);
 		c.on('groupstate', onState);
 		c.on('groupmembers', onMembers);
@@ -640,5 +677,5 @@
 	(window.cbCallsHooks = window.cbCallsHooks || []).push(hook);
 	if (conn()) hook(conn());
 
-	window.cbCallsGroup = { start: start, startIn: startIn, joinIn: joinIn, fromCall: fromCall, busy: function () { return !!g || !!inv; }, current: function () { return g ? g.id : null; } };
+	window.cbCallsGroup = { start: start, startIn: startIn, joinIn: joinIn, fromCall: fromCall, transfer: transfer, leave: function () { leave(); }, busy: function () { return !!g || !!inv; }, current: function () { return g ? g.id : null; } };
 })();

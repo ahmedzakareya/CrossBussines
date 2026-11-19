@@ -209,6 +209,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			CrossBuy.Models.Context.Chat.CommunicationModel.Configure(b);   // Communication v2's tables (calls and chat are one feature)
 			b.Entity<HospitalCall>(e =>
 			{
 				e.ToTable("HospitalCalls");   // no DbSet: it names its table

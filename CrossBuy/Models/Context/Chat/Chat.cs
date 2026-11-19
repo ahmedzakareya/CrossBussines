@@ -12,6 +12,11 @@ namespace CrossBuy.Models.Context.Chat
         public int CreatedByEmployeeId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastMessageAt { get; set; }         // for sorting the conversation list
+        /// Communication v2 (comm_messaging_v2.sql): a public channel anyone in the company may find and join; a group's
+        /// description and picture.
+        public bool IsPublic { get; set; }
+        public string? Description { get; set; }
+        public string? AvatarPath { get; set; }
         public string? LastMessagePreview { get; set; }      // short snippet for the list
 
         // ---- Direct-conversation identity (F4) -------------------------------------------------
@@ -58,6 +63,11 @@ namespace CrossBuy.Models.Context.Chat
         public string? AttachmentName { get; set; }
         public string? AttachmentType { get; set; }          // image | file
         public int? ReplyToId { get; set; }
+        /// Communication v2: a reply inside a thread (the root message's id); forwarded from; pinned in its conversation.
+        public int? ThreadRootId { get; set; }
+        public int? ForwardedFromId { get; set; }
+        public DateTime? PinnedAt { get; set; }
+        public int? PinnedByEmployeeId { get; set; }
         public DateTime? EditedAt { get; set; }
         public DateTime? DeletedAt { get; set; }             // soft delete
         public DateTime CreatedAt { get; set; }

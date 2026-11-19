@@ -5,6 +5,7 @@ import '../app_config.dart';
 import 'app_nav.dart';
 import '../models/app_notification.dart';
 import '../models/calls.dart';
+import '../models/chat.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
 import '../models/rep.dart';
@@ -597,4 +598,90 @@ class ApiService {
   /// The recording's address (log=1 the first time: the opening is recorded) and the header that opens it.
   String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
   Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};
+
+  // ---------------------------------------------------------------- Communication v2: the chat (api/chat)
+  List<Map<String, dynamic>> _rows(Object? d) => [for (final e in (d as List? ?? const [])) (e as Map).cast<String, dynamic>()];
+
+  Future<List<ChatConv>> getChats() async => _rows((await _dio.get('/api/chat/conversations')).data).map(ChatConv.fromJson).toList();
+
+  Future<List<ChatMsg>> getChatMessages(int c, {int? before}) async =>
+      _rows((await _dio.get('/api/chat/messages', queryParameters: {'c': c, if (before != null) 'before': before})).data).map(ChatMsg.fromJson).toList();
+
+  Future<ChatHeader?> getChatHeader(int c) async {
+    try {
+      return ChatHeader.fromJson((await _dio.get('/api/chat/header', queryParameters: {'c': c})).data as Map<String, dynamic>);
+    } on DioException {
+      return null;
+    }
+  }
+
+  Future<Map<int, ChatMeta>> getChatMeta(int c, List<int> ids) async {
+    if (ids.isEmpty) return {};
+    try {
+      final rows = _rows((await _dio.get('/api/chat/meta', queryParameters: {'c': c, 'ids': ids.join(',')})).data);
+      return {for (final r in rows) (r['id'] as num).toInt(): ChatMeta.fromJson(r)};
+    } on DioException {
+      return {};
+    }
+  }
+
+  Future<List<ChatPinned>> getChatPinned(int c) async {
+    try {
+      return _rows((await _dio.get('/api/chat/pinned', queryParameters: {'c': c})).data).map(chatPinnedFromJson).toList();
+    } on DioException {
+      return const [];
+    }
+  }
+
+  /// Text, or a file (a picture, a document, a voice message). Returns the message, or the refusal's code.
+  Future<(ChatMsg?, String?)> sendChat(int c, {String? body, int? replyToId, String? filePath, String? fileName}) async {
+    try {
+      final form = FormData.fromMap({
+        'c': c,
+        if (body != null && body.isNotEmpty) 'body': body,
+        if (replyToId != null) 'replyToId': replyToId,
+        if (filePath != null) 'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final res = await _dio.post('/api/chat/send', data: form, options: Options(contentType: 'multipart/form-data', sendTimeout: const Duration(minutes: 2)));
+      return (ChatMsg.fromJson(res.data as Map<String, dynamic>), null);
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (null, d is Map ? (d['code'] as String? ?? 'refused') : 'network');
+    }
+  }
+
+  Future<void> readChat(int c) async {
+    try { await _dio.post('/api/chat/read', queryParameters: {'c': c}); } on DioException {/* the next read marks it */}
+  }
+
+  Future<bool> reactChat(int id, String emoji) async {
+    try { await _dio.post('/api/chat/react', queryParameters: {'id': id, 'emoji': emoji}); return true; } on DioException { return false; }
+  }
+
+  Future<bool> voteChat(int id, List<int> options) async {
+    try { return (await _dio.post('/api/chat/vote', queryParameters: {'id': id, 'options': options.join(',')})).data['ok'] == true; } on DioException { return false; }
+  }
+
+  Future<int?> chatWith(int otherId) async {
+    try { return ((await _dio.post('/api/chat/direct', queryParameters: {'otherId': otherId})).data['id'] as num?)?.toInt(); } on DioException { return null; }
+  }
+
+  Future<List<ChatPerson>> getChatPeople({String? q}) async =>
+      _rows((await _dio.get('/api/chat/directory', queryParameters: {if (q != null && q.isNotEmpty) 'q': q})).data).map(chatPersonFromJson).toList();
+
+  Future<List<ChatHit>> findChat(String q) async {
+    return _rows((await _dio.get('/api/chat/find', queryParameters: {'q': q})).data).map(chatHitFromJson).toList();
+  }
+
+  /// (my employee id, unread) — the badge.
+  Future<(int, int)> chatPulse() async {
+    try {
+      final d = (await _dio.get('/api/chat/pulse')).data as Map;
+      return ((d['me'] as num?)?.toInt() ?? 0, (d['unread'] as num?)?.toInt() ?? 0);
+    } on DioException {
+      return (0, 0);
+    }
+  }
+
+  String chatFileUrl(int messageId) => '${AppConfig.apiBaseUrl}/api/chat/file?messageId=$messageId';
 }

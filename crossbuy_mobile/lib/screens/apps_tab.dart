@@ -4,6 +4,7 @@ import '../theme/brand.dart';
 import '../widgets/ui.dart';
 import 'attendance_screen.dart';
 import 'calls/calls_screen.dart';
+import 'chat/chats_screen.dart';
 import 'finance_screen.dart';
 import 'inventory_screen.dart';
 import 'leave_screen.dart';
@@ -29,6 +30,7 @@ class AppsTab extends StatelessWidget {
       (Lu.clock3, 'الحضور', 'Attendance', 'البصمة والساعات', 'Punches and hours', (c) => const AttendanceScreen()),
       (Lu.receiptText, 'قسائمي', 'Payslips', 'الرواتب الشهرية', 'Monthly pay', (c) => const PayslipsScreen()),
       (Lu.fileText, 'طلباتي', 'My requests', 'خطابات · سلف · أذونات', 'Letters · advances · permissions', (c) => const RequestsScreen()),
+      (Lu.messageCircle, 'المحادثات', 'Chats', 'مجموعات وقنوات', 'Groups and channels', (c) => const ChatsScreen()),
       (Lu.phoneCall, 'الاتصال الداخلي', 'Internal calls', 'صوت وفيديو داخل الشبكة', 'Voice and video on the network', (c) => const CallsScreen()),
       (Lu.history, 'سجل المكالمات', 'Call log', 'الفائتة والمسجّلة', 'Missed and recorded', (c) => const CallsScreen(tab: 1)),
       (Lu.usersRound, 'فريق العمل', 'My team', 'الموظفون والهيكل', 'People and structure', (c) => const StructureScreen()),

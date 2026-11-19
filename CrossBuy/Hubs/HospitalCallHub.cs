@@ -125,8 +125,19 @@ namespace CrossBuy.Hubs
 			if (_busy.ContainsKey(me)) return new { ok = false, error = "You are already in a call" };
 			if (patientId is int pid && !await _db.HospitalPatients.AnyAsync(p => p.ID == pid && p.CompanyId == co)) patientId = null;
 
+			// Communication v2: someone in do-not-disturb is not rung — the call is recorded as missed, so it waits for a call back
+			if (await CrossBuy.BL.Communication.ChatPlusService.InDndAsync(_db, calleeId))
+			{
+				var quiet = await svc.OpenAsync(co, me, calleeId, video, patientId, reason, HospitalCallStatus.Missed, "dnd", now);
+				await Clients.Group(Emp(calleeId)).SendAsync("missed", new { callId = quiet.ID });
+				await NotifyMissedAsync(co, quiet.ID, calleeId, me, video, false);
+				return new { ok = false, error = "{0} asked not to be disturbed — it is recorded as a missed call so they call you back", name = DisplayName.Of(callee.Name, callee.NameEn) };
+			}
 			string state = Presence(calleeId);
-			if (state != "on")
+			// Communication v2, call waiting: someone IN a call (not merely ringing, and not rung by another call now) hears
+			// this one waiting, and may end theirs to answer it
+			bool waiting = state == "busy" && _busy.ContainsKey(calleeId) && !_calls.Values.Any(l => l.CalleeId == calleeId && l.CalleeConn == null);
+			if (state != "on" && !waiting)
 			{
 				// offline or in another call: recorded as a missed call so it waits for a call back
 				var missed = await svc.OpenAsync(co, me, calleeId, video, patientId, reason, HospitalCallStatus.Missed, state == "busy" ? "busy" : "offline", now);
@@ -140,7 +151,7 @@ namespace CrossBuy.Hubs
 			_calls[row.ID] = live;
 			_busy[me] = row.ID;
 			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = me, state = "busy" });
-			await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = calleeId, state = "busy" });   // ringing
+			if (!waiting) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = calleeId, state = "busy" });   // ringing
 			var patient = patientId is int p2 ? await svc.PatientCardAsync(co, p2) : null;
 			var rec = RecSvc;
 			var (calleeMay, kind, _) = await rec.OptionsAsync(co, callee, video);
@@ -148,7 +159,7 @@ namespace CrossBuy.Hubs
 			await Clients.Group(Emp(calleeId)).SendAsync("incoming", new
 			{
 				callId = row.ID, video, reason = row.Reason, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight,
-				caller = Card(caller), patient, canRecord = calleeMay, recKind = kind,
+				caller = Card(caller), patient, canRecord = calleeMay, recKind = kind, waiting,
 			});
 			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient, canRecord = callerMay, recKind = kind };
 		}
@@ -167,8 +178,8 @@ namespace CrossBuy.Hubs
 				string kindAr = group ? "مكالمة جماعية" : video ? "مكالمة فيديو داخلية" : "مكالمة صوتية داخلية";
 				string kindEn = group ? "Group call" : video ? "Internal video call" : "Internal voice call";
 				await notify.NotifyAsync(calleeId, "مكالمة فائتة من " + ar, "Missed call from " + en,
-					kindAr + " — يمكنك معاودة الاتصال من صفحة الاتصال الداخلي", kindEn + " — call back from the Internal calls page",
-					MissedNotificationType, callId, "/Hospital/Calls", companyId, callerId,
+					kindAr + " — يمكنك معاودة الاتصال من التواصل", kindEn + " — call back from Communication",
+					MissedNotificationType, callId, "/Chat?tab=calls", companyId, callerId,
 					priority: "High", category: "Hospital", dedupKey: $"hcall-missed-{callId}-{calleeId}", icon: "ki-call");
 			}
 			catch (Exception) { }   // a failed notice never breaks the call flow
