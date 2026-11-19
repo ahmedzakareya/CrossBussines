@@ -1,0 +1,50 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H206 — one bedside scan window for every step that needs two codes (the patient's wristband and the specimen's label,
+    the blood unit's bag, the baby's band): a scanner types into the first box and its Enter moves to the second; the
+    second Enter confirms. "The scan cannot be made" opens the reason instead. Theme modal; no browser dialogs.
+    Usage: hpScanPair({ title, first, second, firstHint, secondHint }).then(function (r) { r = null | { first, second, override } })
+*@
+<div class="modal fade" id="hpScanPair" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0 fs-4" data-sp-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        <div class="mb-4"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i><span data-sp-first-label></span></label>
+            <input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="120" data-sp-first /></div>
+        <div class="mb-3"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i><span data-sp-second-label></span></label>
+            <input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-sp-second /></div>
+        <a href="#" class="fs-7 fw-semibold" data-sp-noscan>@T["The scan cannot be made"]</a>
+        <div class="mt-3 d-none" data-sp-reason-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label>
+            <input class="form-control form-control-solid" maxlength="300" data-sp-reason />
+            <div class="form-text text-danger">@T["A step done without the scan counts against the ward's scanning."]</div></div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-sp-ok><i class="ki-outline ki-check fs-4"></i>@T["Confirm"]</button></div>
+</div></div></div>
+<script>
+    (function () {
+        var el = document.getElementById('hpScanPair'), settle = null;
+        function q(s) { return el.querySelector(s); }
+        window.hpScanPair = function (o) {
+            q('[data-sp-title]').textContent = o.title || '';
+            q('[data-sp-first-label]').textContent = o.first; q('[data-sp-second-label]').textContent = o.second;
+            q('[data-sp-first]').placeholder = o.firstHint || ''; q('[data-sp-second]').placeholder = o.secondHint || '';
+            ['[data-sp-first]', '[data-sp-second]', '[data-sp-reason]'].forEach(function (k) { q(k).value = ''; });
+            q('[data-sp-reason-wrap]').classList.add('d-none');
+            bootstrap.Modal.getOrCreateInstance(el).show();
+            return new Promise(function (resolve) { settle = resolve; });
+        };
+        function finish(v) { var s = settle; settle = null; if (s) s(v); }
+        el.addEventListener('shown.bs.modal', function () { q('[data-sp-first]').focus(); });
+        el.addEventListener('hidden.bs.modal', function () { finish(null); });
+        el.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            if (e.target.hasAttribute('data-sp-first')) { e.preventDefault(); q('[data-sp-second]').focus(); }
+            else if (e.target.hasAttribute('data-sp-second') || e.target.hasAttribute('data-sp-reason')) { e.preventDefault(); q('[data-sp-ok]').click(); }
+        });
+        el.addEventListener('click', function (e) {
+            if (e.target.closest('[data-sp-noscan]')) { e.preventDefault(); q('[data-sp-reason-wrap]').classList.remove('d-none'); q('[data-sp-reason]').focus(); return; }
+            if (!e.target.closest('[data-sp-ok]')) return;
+            var r = { first: q('[data-sp-first]').value.trim() || null, second: q('[data-sp-second]').value.trim() || null, override: q('[data-sp-reason]').value.trim() || null };
+            var s = settle; settle = null; bootstrap.Modal.getOrCreateInstance(el).hide(); if (s) s(r);
+        });
+    })();
+</script>

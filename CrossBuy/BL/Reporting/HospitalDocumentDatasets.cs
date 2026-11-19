@@ -47,6 +47,8 @@ namespace CrossBuy.BL.Reporting
         public const string CompoundLabel = "Hospital.CompoundLabel";
         /// H204: a referral's letter (to another department or another facility), as ONE row.
         public const string ReferralLetter = "Hospital.ReferralLetter";
+        /// H206: a specimen tube's label — the accession number as text and as the QR the bedside scan reads, as ONE row.
+        public const string SpecimenLabel = "Hospital.SpecimenLabel";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -114,6 +116,7 @@ namespace CrossBuy.BL.Reporting
             HospitalDocumentDatasetCodes.GlassesRx, HospitalDocumentDatasetCodes.EyeLetter, HospitalDocumentDatasetCodes.AllergyPlan,
             HospitalDocumentDatasetCodes.CanvasDrawing, HospitalDocumentDatasetCodes.RxLabel, HospitalDocumentDatasetCodes.CompoundLabel,
             HospitalDocumentDatasetCodes.ReferralLetter,   // H204
+            HospitalDocumentDatasetCodes.SpecimenLabel,    // H206
         };
 
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
@@ -549,6 +552,23 @@ namespace CrossBuy.BL.Reporting
             },
             Params("ReferralId", "رقم التحويل الداخلي", "Referral id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
 
+        /// H206: the specimen tube's label — the accession number (its QR is what the bedside scan reads), the patient, the
+        /// test, the specimen and its section, the priority, and when it was ordered and collected.
+        public static ReportDatasetDefinition SpecimenLabel() => Show(Doc(HospitalDocumentDatasetCodes.SpecimenLabel,
+            "ملصق عينة", "Specimen label",
+            "ملصق أنبوب العينة: رقم الطلب نصًا ورمز QR الذي يقرؤه المسح عند السرير، والمريض، والتحليل، ونوع العينة وقسمها، والأولوية، ووقت الطلب والسحب.",
+            "The specimen tube's label: the accession number as text and as the QR the bedside scan reads, the patient, the test, the specimen and its section, the priority, and when it was ordered and collected.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Test", "التحليل", "Test", width: 60, visible: true),
+                F("Specimen", "العينة", "Specimen", width: 30, visible: true),
+                F("Section", "القسم", "Section", width: 30),
+                F("Priority", "الأولوية", "Priority", width: 16, visible: true),
+                F("CollectedAt", "وقت السحب", "Collected", ReportFieldType.DateTime),
+            },
+            Params("LabOrderId", "رقم طلب التحليل الداخلي", "Lab order id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
+
         public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
             "إشعار دائن", "Credit note",
             "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
@@ -612,6 +632,7 @@ namespace CrossBuy.BL.Reporting
             yield return RxLabel();          // H147
             yield return CreditNote();       // H149
             yield return ReferralLetter();   // H204
+            yield return SpecimenLabel();    // H206
             yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }

@@ -14,6 +14,26 @@ namespace CrossBuy.Controllers
 		private HospitalBedsideScanService? _bedsideScanSvc;
 		private HospitalBedsideScanService BedsideScanSvc => _bedsideScanSvc ??= ActivatorUtilities.CreateInstance<HospitalBedsideScanService>(HttpContext.RequestServices);
 
+		public sealed class HospitalScanPairInput { public string? First { get; set; } public string? Second { get; set; } public string? ScanOverride { get; set; } }
+
+		/// H207: the transfusion starts at the bedside — the wristband and the bag scanned, or the reason written.
+		[HttpPost("BloodBank/Units/{id:int}/Transfuse"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Admit)]
+		public async Task<IActionResult> BloodTransfuse(int id, [FromBody] HospitalScanPairInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await BedsideScanSvc.TransfuseAsync(ctx, id, input?.First, input?.Second, input?.ScanOverride, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		/// H207: the mother's band and the baby's band, checked together.
+		[HttpPost("Vital/Births/{id:int}/Bands"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Admit)]
+		public async Task<IActionResult> BirthBands(int id, [FromBody] HospitalScanPairInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await BedsideScanSvc.MatchBabyAsync(ctx, id, input?.First, input?.Second, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
 		[HttpGet("Wards/Scanning")]
 		[HospitalPerm(HospitalActions.ClinicalRead)]
 		public async Task<IActionResult> BedsideScans(int? ward, string? kind, string? outcome, string? q, int days = 30, int page = 1, CancellationToken ct = default)

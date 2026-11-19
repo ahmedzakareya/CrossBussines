@@ -40,7 +40,9 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            @if (canLab && o.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-primary" data-step="Collect" data-confirm="@string.Format(T["Collect the specimen of {0} for {1} ({2})?"].Value, o.AccessionNo, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-syringe fs-4"></i>@T["Collect"]</button> }
+            @* H206: the tube's label (its QR is the accession number the bedside scan reads) — a Report Studio layout *@
+            @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalLabOrder, DocumentId = o.ID.ToString(), DocumentTitle = o.AccessionNo })
+            @if (canLab && o.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-primary" data-collect data-what="@o.AccessionNo — @name"><i class="ki-outline ki-syringe fs-4"></i>@T["Collect"]</button> }
             @if (canLab && o.Status == HospitalLabStatus.Collected) { <button type="button" class="btn btn-sm btn-primary" data-step="Receive" data-confirm="@string.Format(T["Receive the specimen of {0} for {1} ({2}) in the lab?"].Value, o.AccessionNo, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive"]</button> }
             @if (canEnter) { <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button> }
             @if (canVerify && o.Status == HospitalLabStatus.Resulted) { <button type="button" class="btn btn-sm btn-primary" data-step="Verify" data-confirm="@T["Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed."]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Verify result"]</button> }
@@ -205,6 +207,7 @@
 
 @section Scripts {
     <partial name="_HospitalPrompt" />
+    <partial name="_HospitalScanPair" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -234,6 +237,16 @@
                 if (!e.target.matches('[data-analyte]')) return;
                 var f = flagOf(e.target), cell = e.target.closest('tr').querySelector('[data-flag-cell]');
                 cell.innerHTML = f ? '<span class="hp-flag hp-flag-' + f + '">' + f + '</span>' : '<span class="text-gray-400">—</span>';
+            });
+            // H206: the specimen is collected with the wristband and the tube's label scanned, or with the reason
+            var SP = { title: @Json.Serialize(T["Collect the specimen"].Value), first: @Json.Serialize(T["Wristband"].Value), second: @Json.Serialize(T["Tube label"].Value),
+                firstHint: @Json.Serialize(T["Scan the wristband"].Value), secondHint: @Json.Serialize(T["Scan the tube's label"].Value) };
+            document.addEventListener('click', function (e) {
+                var c = e.target.closest('[data-collect]'); if (!c) return;
+                hpScanPair(Object.assign({}, SP, { title: SP.title + ' — ' + c.getAttribute('data-what') })).then(function (r) {
+                    if (!r) return; c.disabled = true;
+                    post('Collect', { wristband: r.first, tube: r.second, scanOverride: r.override }).then(done(c));
+                });
             });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-step],[data-save],[data-priority]'); if (!t) return;

@@ -9151,4 +9151,27 @@
   <data name="{0} scans" xml:space="preserve"><value>{0} scans</value></data>
   <data name="{0} stopped" xml:space="preserve"><value>{0} stopped</value></data>
   <data name="Scan log" xml:space="preserve"><value>Scan log</value></data>
+  <data name="A step done without the scan counts against the ward's scanning." xml:space="preserve"><value>A step done without the scan counts against the ward's scanning.</value></data>
+  <data name="Collect the specimen" xml:space="preserve"><value>Collect the specimen</value></data>
+  <data name="Scan the patient's wristband and the tube's label, or write why they cannot be scanned" xml:space="preserve"><value>Scan the patient's wristband and the tube's label, or write why they cannot be scanned</value></data>
+  <data name="Scan the tube's label" xml:space="preserve"><value>Scan the tube's label</value></data>
+  <data name="This label is not this order's specimen: stop and check the tube" xml:space="preserve"><value>This label is not this order's specimen: stop and check the tube</value></data>
+  <data name="Tube label" xml:space="preserve"><value>Tube label</value></data>
+  <data name="Baby's band" xml:space="preserve"><value>Baby's band</value></data>
+  <data name="Blood bag" xml:space="preserve"><value>Blood bag</value></data>
+  <data name="Check the mother's and the baby's bands" xml:space="preserve"><value>Check the mother's and the baby's bands</value></data>
+  <data name="Mother's band" xml:space="preserve"><value>Mother's band</value></data>
+  <data name="Only an issued bag is transfused" xml:space="preserve"><value>Only an issued bag is transfused</value></data>
+  <data name="Scan the baby's band" xml:space="preserve"><value>Scan the baby's band</value></data>
+  <data name="Scan the bag's number" xml:space="preserve"><value>Scan the bag's number</value></data>
+  <data name="Scan the mother's band" xml:space="preserve"><value>Scan the mother's band</value></data>
+  <data name="Scan the mother's band and the baby's band" xml:space="preserve"><value>Scan the mother's band and the baby's band</value></data>
+  <data name="Scan the patient's wristband and the bag, or write why they cannot be scanned" xml:space="preserve"><value>Scan the patient's wristband and the bag, or write why they cannot be scanned</value></data>
+  <data name="Start transfusion" xml:space="preserve"><value>Start transfusion</value></data>
+  <data name="The baby's band matches the mother" xml:space="preserve"><value>The baby's band matches the mother</value></data>
+  <data name="This baby's band does not belong to this mother: stop and check both bands" xml:space="preserve"><value>This baby's band does not belong to this mother: stop and check both bands</value></data>
+  <data name="This bag expired on {0}: do not transfuse it" xml:space="preserve"><value>This bag expired on {0}: do not transfuse it</value></data>
+  <data name="This bag is not the unit issued for this patient: stop and return it to the blood bank" xml:space="preserve"><value>This bag is not the unit issued for this patient: stop and return it to the blood bank</value></data>
+  <data name="This bag's transfusion was already started" xml:space="preserve"><value>This bag's transfusion was already started</value></data>
+  <data name="Transfusing since" xml:space="preserve"><value>Transfusing since</value></data>
 </root>

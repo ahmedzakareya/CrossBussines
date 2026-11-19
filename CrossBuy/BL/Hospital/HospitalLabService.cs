@@ -208,11 +208,33 @@ namespace CrossBuy.BL.Hospital
 			return o == null ? (null, HospitalResult.Fail("not_found")) : (o, null);
 		}
 
-		public async Task<HospitalResult> CollectAsync(BusinessContext ctx, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		/// H206: the specimen is collected at the bedside with the patient's wristband and the tube's label scanned (the label
+		/// prints the accession number) — or, when that cannot be done, with the reason written. A wrong patient or a wrong
+		/// tube stops the collection, and the refused scan is kept.
+		public async Task<HospitalResult> CollectAsync(BusinessContext ctx, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default,
+			string? wristband = null, string? tube = null, string? scanOverride = null)
 		{
 			var (o, fail) = await LoadAsync(ctx, id, HospitalActions.Lab, ct); if (fail != null) return fail;
 			if (o!.Status != HospitalLabStatus.Ordered) return HospitalResult.Fail("The specimen was already collected");
+			var mrn = await _db.HospitalPatients.AsNoTracking().Where(p => p.ID == o.PatientId && p.CompanyId == ctx.CompanyId).Select(p => p.Mrn).FirstAsync(ct);
+			HospitalBedsideScan scan;
+			if (HospitalBedsideScanRules.Scanned(wristband, tube))
+			{
+				if (HospitalBedsideScanRules.SpecimenRefusal(mrn, o.AccessionNo, wristband!, tube!) is string why)
+				{
+					// the refused scan is kept on its own; the order is not touched
+					_db.Entry(o).State = EntityState.Unchanged;
+					_db.Add(HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Specimen, o.PatientId, null, o.ID, wristband, tube, null, HospitalBedsideScanOutcome.Refused, why, employeeId, nowUtc));
+					try { await _db.SaveChangesAsync(ct); } catch (DbUpdateException) { }
+					return HospitalResult.Fail(why);
+				}
+				scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Specimen, o.PatientId, null, o.ID, wristband, tube, null, HospitalBedsideScanOutcome.Matched, null, employeeId, nowUtc);
+			}
+			else if (string.IsNullOrWhiteSpace(scanOverride)) return HospitalResult.Fail(HospitalBedsideScanRules.ScanOrReasonSpecimen);
+			else scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Specimen, o.PatientId, null, o.ID, wristband, tube, null, HospitalBedsideScanOutcome.Override, scanOverride, employeeId, nowUtc);
 			o.Status = HospitalLabStatus.Collected; o.CollectedAt = nowUtc; o.CollectedByEmployeeId = employeeId;
+			scan.DoneId = o.ID;
+			_db.Add(scan);
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);
 		}
 

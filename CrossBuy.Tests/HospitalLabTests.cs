@@ -100,7 +100,7 @@ namespace CrossBuy.Tests
 
 		private static async Task ReceiveAsync(World w, int id, int emp = 7)
 		{
-			Assert.True((await w.Lab.CollectAsync(Ctx(emp), id, emp, Now)).Ok);
+			Assert.True((await w.Lab.CollectAsync(Ctx(emp), id, emp, Now, scanOverride: "test: no scanner")).Ok);
 			Assert.True((await w.Lab.ReceiveAsync(Ctx(emp), id, emp, Now)).Ok);
 		}
 
@@ -147,7 +147,9 @@ namespace CrossBuy.Tests
 			var six = await ValuesAsync(w, cbc.ServiceId, "7.2", "4.8", "13.9", "41", "260", "58");
 
 			Assert.Equal("Collect the specimen before receiving it in the lab", (await w.Lab.ReceiveAsync(Ctx(), cbc.ID, 7, Now)).Error);
-			Assert.True((await w.Lab.CollectAsync(Ctx(), cbc.ID, 7, Now)).Ok);
+			// H206: a specimen is collected with the wristband and the tube's label scanned, or with the reason written
+			Assert.Equal(HospitalBedsideScanRules.ScanOrReasonSpecimen, (await w.Lab.CollectAsync(Ctx(), cbc.ID, 7, Now)).Error);
+			Assert.True((await w.Lab.CollectAsync(Ctx(), cbc.ID, 7, Now, scanOverride: "test: no scanner")).Ok);
 			Assert.Equal("The specimen was already collected", (await w.Lab.CollectAsync(Ctx(), cbc.ID, 7, Now)).Error);
 			Assert.Equal("Receive the specimen in the lab before entering results", (await w.Lab.SaveResultsAsync(Ctx(), cbc.ID, six, null, 7, Now)).Error);
 			Assert.True((await w.Lab.ReceiveAsync(Ctx(), cbc.ID, 7, Now)).Ok);

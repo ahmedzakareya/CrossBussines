@@ -1,0 +1,90 @@
+{
+ "unit": "H207 - transfusion and mother-baby bands scanned",
+ "strings": {
+  "Start transfusion": {
+   "ar": "بدء نقل الدم",
+   "en": "Start transfusion",
+   "fr": "Commencer la transfusion"
+  },
+  "Transfusing since": {
+   "ar": "يُنقل منذ",
+   "en": "Transfusing since",
+   "fr": "En transfusion depuis"
+  },
+  "Blood bag": {
+   "ar": "كيس الدم",
+   "en": "Blood bag",
+   "fr": "Poche de sang"
+  },
+  "Scan the bag's number": {
+   "ar": "امسح رقم الكيس",
+   "en": "Scan the bag's number",
+   "fr": "Scannez le numéro de la poche"
+  },
+  "Check the mother's and the baby's bands": {
+   "ar": "مطابقة سوار الأم وسوار المولود",
+   "en": "Check the mother's and the baby's bands",
+   "fr": "Vérifier les bracelets de la mère et du bébé"
+  },
+  "Mother's band": {
+   "ar": "سوار الأم",
+   "en": "Mother's band",
+   "fr": "Bracelet de la mère"
+  },
+  "Baby's band": {
+   "ar": "سوار المولود",
+   "en": "Baby's band",
+   "fr": "Bracelet du bébé"
+  },
+  "Scan the mother's band": {
+   "ar": "امسح سوار الأم",
+   "en": "Scan the mother's band",
+   "fr": "Scannez le bracelet de la mère"
+  },
+  "Scan the baby's band": {
+   "ar": "امسح سوار المولود",
+   "en": "Scan the baby's band",
+   "fr": "Scannez le bracelet du bébé"
+  },
+  "The baby's band matches the mother": {
+   "ar": "سوار المولود مطابق للأم",
+   "en": "The baby's band matches the mother",
+   "fr": "Le bracelet du bébé correspond à la mère"
+  },
+  "This bag is not the unit issued for this patient: stop and return it to the blood bank": {
+   "ar": "هذا الكيس ليس الوحدة المصروفة لهذا المريض: توقّف وأعده إلى بنك الدم",
+   "en": "This bag is not the unit issued for this patient: stop and return it to the blood bank",
+   "fr": "Cette poche n'est pas l'unité délivrée pour ce patient : arrêtez et rendez-la à la banque du sang"
+  },
+  "This bag expired on {0}: do not transfuse it": {
+   "ar": "انتهت صلاحية هذا الكيس في {0}: لا تنقله",
+   "en": "This bag expired on {0}: do not transfuse it",
+   "fr": "Cette poche a expiré le {0} : ne la transfusez pas"
+  },
+  "Scan the patient's wristband and the bag, or write why they cannot be scanned": {
+   "ar": "امسح سوار المريض والكيس، أو اكتب سبب تعذّر المسح",
+   "en": "Scan the patient's wristband and the bag, or write why they cannot be scanned",
+   "fr": "Scannez le bracelet du patient et la poche, ou indiquez pourquoi c'est impossible"
+  },
+  "This baby's band does not belong to this mother: stop and check both bands": {
+   "ar": "سوار هذا المولود لا يخص هذه الأم: توقّف وتحقّق من السوارين",
+   "en": "This baby's band does not belong to this mother: stop and check both bands",
+   "fr": "Le bracelet de ce bébé n'appartient pas à cette mère : arrêtez et vérifiez les deux bracelets"
+  },
+  "Scan the mother's band and the baby's band": {
+   "ar": "امسح سوار الأم وسوار المولود",
+   "en": "Scan the mother's band and the baby's band",
+   "fr": "Scannez le bracelet de la mère et celui du bébé"
+  },
+  "Only an issued bag is transfused": {
+   "ar": "لا يُنقل إلا كيس مصروف",
+   "en": "Only an issued bag is transfused",
+   "fr": "Seule une poche délivrée est transfusée"
+  },
+  "This bag's transfusion was already started": {
+   "ar": "بدأ نقل هذا الكيس بالفعل",
+   "en": "This bag's transfusion was already started",
+   "fr": "La transfusion de cette poche a déjà commencé"
+  }
+ }
+}

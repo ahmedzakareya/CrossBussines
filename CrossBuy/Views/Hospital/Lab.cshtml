@@ -117,7 +117,7 @@
                                     <td><span class="hp-num fw-bold text-gray-800" data-fmt data-utc="@r.OrderedAt.ToString("o")">@r.OrderedAt.ToLocalTime().ToString("HH:mm")</span></td>
                                     <td><span class="badge badge-light-@St(r.Status) fs-7 fw-bold">@T["lab:" + r.Status]</span>@if (r.CriticalOpen) {<span class="badge badge-danger fs-7 fw-bold ms-1">@T["Critical"]</span>}</td>
                                     <td class="text-end pe-4 text-nowrap">
-                                        @if (canLab && r.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-light-primary" data-step="Collect" data-id="@r.Id" data-confirm="@string.Format(T["Collect the specimen of {0} for {1} ({2})?"].Value, r.AccessionNo, DisplayName.Of(r.PatientName, r.PatientNameEn), DisplayName.Of(r.Name, r.NameEn))"><i class="ki-outline ki-syringe fs-5"></i>@T["Collect"]</button> }
+                                        @if (canLab && r.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-light-primary" data-collect="@r.Id" data-what="@r.AccessionNo — @DisplayName.Of(r.PatientName, r.PatientNameEn)"><i class="ki-outline ki-syringe fs-5"></i>@T["Collect"]</button> }
                                         else if (canLab && r.Status == HospitalLabStatus.Collected) { <button type="button" class="btn btn-sm btn-light-primary" data-step="Receive" data-id="@r.Id" data-confirm="@string.Format(T["Receive the specimen of {0} for {1} ({2}) in the lab?"].Value, r.AccessionNo, DisplayName.Of(r.PatientName, r.PatientNameEn), DisplayName.Of(r.Name, r.NameEn))"><i class="ki-outline ki-entrance-left fs-5"></i>@T["Receive"]</button> }
                                         else if (r.Status == HospitalLabStatus.Verified) { <a href="@Url.Action("LabOrder", new { id = r.Id })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["View"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a> }
                                         else if (r.Status == HospitalLabStatus.Resulted) { <a href="@Url.Action("LabOrder", new { id = r.Id })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-shield-tick fs-5"></i>@T["Verify"]</a> }
@@ -134,6 +134,7 @@
 </div>
 
 @section Scripts {
+    <partial name="_HospitalScanPair" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -147,6 +148,18 @@
                     if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
                 });
             }
+            // H206: the specimen is collected with the wristband and the tube's label scanned, or with the reason
+            var SP = { title: @Json.Serialize(T["Collect the specimen"].Value), first: @Json.Serialize(T["Wristband"].Value), second: @Json.Serialize(T["Tube label"].Value),
+                firstHint: @Json.Serialize(T["Scan the wristband"].Value), secondHint: @Json.Serialize(T["Scan the tube's label"].Value) };
+            document.addEventListener('click', function (e) {
+                var c = e.target.closest('[data-collect]'); if (!c) return;
+                hpScanPair(Object.assign({}, SP, { title: SP.title + ' — ' + c.getAttribute('data-what') })).then(function (r) {
+                    if (!r) return; c.disabled = true;
+                    fetch(base.replace(/0$/, c.getAttribute('data-collect')) + '/Collect', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ wristband: r.first, tube: r.second, scanOverride: r.override }) })
+                        .then(function (x) { return x.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { c.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); });
+                });
+            });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-step]'); if (!t) return;
                 var msg = t.getAttribute('data-confirm');

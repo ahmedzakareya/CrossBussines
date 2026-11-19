@@ -1,0 +1,35 @@
+{
+ "unit": "H206 - specimen collection scanned, and the tube label",
+ "strings": {
+  "Collect the specimen": {
+   "ar": "سحب العينة",
+   "en": "Collect the specimen",
+   "fr": "Prélever l'échantillon"
+  },
+  "Tube label": {
+   "ar": "ملصق الأنبوب",
+   "en": "Tube label",
+   "fr": "Étiquette du tube"
+  },
+  "Scan the tube's label": {
+   "ar": "امسح ملصق الأنبوب",
+   "en": "Scan the tube's label",
+   "fr": "Scannez l'étiquette du tube"
+  },
+  "A step done without the scan counts against the ward's scanning.": {
+   "ar": "الخطوة المنفّذة دون مسح تُحسب على نسبة المسح في القسم.",
+   "en": "A step done without the scan counts against the ward's scanning.",
+   "fr": "Une étape faite sans scan compte contre le scan du service."
+  },
+  "This label is not this order's specimen: stop and check the tube": {
+   "ar": "هذا الملصق ليس لعينة هذا الطلب: توقّف وتحقّق من الأنبوب",
+   "en": "This label is not this order's specimen: stop and check the tube",
+   "fr": "Cette étiquette n'est pas celle de cette demande : arrêtez et vérifiez le tube"
+  },
+  "Scan the patient's wristband and the tube's label, or write why they cannot be scanned": {
+   "ar": "امسح سوار المريض وملصق الأنبوب، أو اكتب سبب تعذّر المسح",
+   "en": "Scan the patient's wristband and the tube's label, or write why they cannot be scanned",
+   "fr": "Scannez le bracelet du patient et l'étiquette du tube, ou indiquez pourquoi c'est impossible"
+  }
+ }
+}

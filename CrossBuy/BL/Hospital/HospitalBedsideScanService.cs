@@ -31,6 +31,30 @@ namespace CrossBuy.BL.Hospital
 		public const string Recalled = "Batch {0} is under recall: put the pack aside";
 		public const string NoItem = "This order names no medicine of the drug list, so its pack cannot be matched: write why it is given without the scan";
 		public const string ScanOrReason = "Scan the patient's wristband and the medicine, or write why they cannot be scanned";
+		/// H206: the specimen — the tube's label carries the lab order's accession number (its QR, as the label prints it).
+		public const string WrongTube = "This label is not this order's specimen: stop and check the tube";
+		public const string ScanOrReasonSpecimen = "Scan the patient's wristband and the tube's label, or write why they cannot be scanned";
+
+		/// H207: the blood bag — its printed unit number is its barcode; it must be the bag issued for THIS patient.
+		public const string WrongBag = "This bag is not the unit issued for this patient: stop and return it to the blood bank";
+		public const string BagExpired = "This bag expired on {0}: do not transfuse it";
+		public const string ScanOrReasonBlood = "Scan the patient's wristband and the bag, or write why they cannot be scanned";
+		/// H207: the newborn's band carries the baby's file number; it must be the baby this mother gave birth to.
+		public const string WrongBaby = "This baby's band does not belong to this mother: stop and check both bands";
+		public const string ScanBothBands = "Scan the mother's band and the baby's band";
+
+		public static string? BloodRefusal(string mrn, string unitNo, string wristband, string bag) =>
+			!WristbandMatches(wristband, mrn) ? WrongPatient : !Same(bag, unitNo) ? WrongBag : null;
+
+		public static string? BabyRefusal(string motherMrn, string babyMrn, string motherBand, string babyBand) =>
+			!WristbandMatches(motherBand, motherMrn) ? WrongPatient : !Same(babyBand, babyMrn) ? WrongBaby : null;
+
+		/// A scanned code against the expected one: trimmed, case-blind (a scanner may add spaces or change case).
+		public static bool Same(string? scanned, string expected) => N(scanned).Length > 0 && N(scanned) == N(expected);
+
+		/// The specimen check: null = the wristband is the patient's and the label is the order's.
+		public static string? SpecimenRefusal(string mrn, string accession, string wristband, string tube) =>
+			!WristbandMatches(wristband, mrn) ? WrongPatient : !Same(tube, accession) ? WrongTube : null;
 
 		private static string N(string? s) => (s ?? "").Trim().ToUpperInvariant();
 
@@ -90,6 +114,64 @@ namespace CrossBuy.BL.Hospital
 		public HospitalBedsideScanService(CrossDbContext db, IHospitalAccessService access) { _db = db; _access = access; }
 
 		private IQueryable<HospitalBedsideScan> Scans(BusinessContext ctx) => _db.Set<HospitalBedsideScan>().Where(x => x.CompanyId == ctx.CompanyId);
+
+		private async Task<HospitalResult> RefuseAsync(BusinessContext ctx, string kind, int patientId, int refId, string? first, string? second, string why, object[] args, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		{
+			_db.Add(HospitalBedsideScanCheck.Row(ctx, kind, patientId, null, refId, first, second, null, HospitalBedsideScanOutcome.Refused, HospitalBedsideScanCheck.Pack(why, args), employeeId, nowUtc));
+			try { await _db.SaveChangesAsync(ct); } catch (DbUpdateException) { }
+			return HospitalResult.Fail(why, args);
+		}
+
+		/// H207: a transfusion starts at the bedside with the patient's wristband and the bag scanned — the bag issued for this
+		/// patient, not expired, not started before — or with the reason the scan cannot be made.
+		public async Task<HospitalResult> TransfuseAsync(BusinessContext ctx, int unitId, string? wristband, string? bag, string? scanOverride, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Admit, null, ct)) return HospitalResult.Fail("forbidden");
+			var u = await _db.Set<HospitalBloodUnit>().FirstOrDefaultAsync(x => x.ID == unitId && x.CompanyId == ctx.CompanyId, ct);
+			if (u == null || u.RequestId == null) return HospitalResult.Fail("not_found");
+			if (u.Status != HospitalBloodUnitStatus.Issued) return HospitalResult.Fail("Only an issued bag is transfused");
+			if (u.TransfusedAt != null) return HospitalResult.Fail("This bag's transfusion was already started");
+			var req = await _db.Set<HospitalTransfusionRequest>().AsNoTracking().FirstAsync(r => r.ID == u.RequestId && r.CompanyId == ctx.CompanyId, ct);
+			var mrn = await _db.HospitalPatients.AsNoTracking().Where(p => p.ID == req.PatientId && p.CompanyId == ctx.CompanyId).Select(p => p.Mrn).FirstAsync(ct);
+			if (u.ExpiresOn.Date < nowUtc.Date)
+				return await RefuseAsync(ctx, HospitalBedsideScanKind.Blood, req.PatientId, u.ID, wristband, bag, HospitalBedsideScanRules.BagExpired, new object[] { u.ExpiresOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) }, employeeId, nowUtc, ct);
+			HospitalBedsideScan scan;
+			if (HospitalBedsideScanRules.Scanned(wristband, bag))
+			{
+				if (HospitalBedsideScanRules.BloodRefusal(mrn, u.UnitNo, wristband!, bag!) is string why)
+				{
+					_db.Entry(u).State = EntityState.Unchanged;
+					return await RefuseAsync(ctx, HospitalBedsideScanKind.Blood, req.PatientId, u.ID, wristband, bag, why, Array.Empty<object>(), employeeId, nowUtc, ct);
+				}
+				scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Blood, req.PatientId, null, u.ID, wristband, bag, null, HospitalBedsideScanOutcome.Matched, null, employeeId, nowUtc);
+			}
+			else if (string.IsNullOrWhiteSpace(scanOverride)) return HospitalResult.Fail(HospitalBedsideScanRules.ScanOrReasonBlood);
+			else scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Blood, req.PatientId, null, u.ID, wristband, bag, null, HospitalBedsideScanOutcome.Override, scanOverride, employeeId, nowUtc);
+			u.TransfusedAt = nowUtc; u.TransfusedByEmployeeId = employeeId;
+			scan.DoneId = u.ID;
+			_db.Add(scan);
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(u.ID);
+		}
+
+		/// H207: the mother's band and the baby's band, scanned together (at the hand-over, before discharge): the baby must be
+		/// the one this mother gave birth to. A check, not a step — it has no override: both bands are scanned, or nothing.
+		public async Task<HospitalResult> MatchBabyAsync(BusinessContext ctx, int birthId, string? motherBand, string? babyBand, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Admit, null, ct)) return HospitalResult.Fail("forbidden");
+			var b = await _db.Set<HospitalBirth>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == birthId && x.CompanyId == ctx.CompanyId && x.VoidedAt == null, ct);
+			if (b == null || b.NewbornPatientId == null) return HospitalResult.Fail("not_found");
+			if (!HospitalBedsideScanRules.Scanned(motherBand, babyBand)) return HospitalResult.Fail(HospitalBedsideScanRules.ScanBothBands);
+			var mrns = await _db.HospitalPatients.AsNoTracking().Where(p => (p.ID == b.MotherPatientId || p.ID == b.NewbornPatientId) && p.CompanyId == ctx.CompanyId)
+				.Select(p => new { p.ID, p.Mrn }).ToDictionaryAsync(p => p.ID, p => p.Mrn, ct);
+			if (HospitalBedsideScanRules.BabyRefusal(mrns[b.MotherPatientId], mrns[b.NewbornPatientId.Value], motherBand!, babyBand!) is string why)
+				return await RefuseAsync(ctx, HospitalBedsideScanKind.Baby, b.MotherPatientId, b.ID, motherBand, babyBand, why, Array.Empty<object>(), employeeId, nowUtc, ct);
+			var scan = HospitalBedsideScanCheck.Row(ctx, HospitalBedsideScanKind.Baby, b.MotherPatientId, b.MotherAdmissionId, b.ID, motherBand, babyBand, null, HospitalBedsideScanOutcome.Matched, null, employeeId, nowUtc);
+			scan.DoneId = b.ID;
+			_db.Add(scan);
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(b.ID);
+		}
 
 		/// The scans of a ward (the room the patient lay in at the time) or of all wards, in a period.
 		private IQueryable<HospitalBedsideScan> InWard(BusinessContext ctx, int? wardId, DateTime fromUtc, DateTime toUtc)

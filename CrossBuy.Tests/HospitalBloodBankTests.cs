@@ -121,7 +121,7 @@ namespace CrossBuy.Tests
 		public void The_tables_match_their_slice()
 		{
 			HospitalSliceParity.NamesItsTable(Model(), Slice(), typeof(HospitalBloodUnit), "HospitalBloodUnits");
-			HospitalSliceParity.ColumnsMatch(Model(), Slice(), typeof(HospitalBloodUnit), "HospitalBloodUnits");
+			HospitalSliceParity.ColumnsMatch(Model(), Slice() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h207_transfusion_scan.sql"), typeof(HospitalBloodUnit), "HospitalBloodUnits");   // + H207's transfusion start
 			HospitalSliceParity.NamesItsTable(Model(), Slice(), typeof(HospitalTransfusionRequest), "HospitalTransfusionRequests");
 			HospitalSliceParity.ColumnsMatch(Model(), H51(), typeof(HospitalTransfusionRequest), "HospitalTransfusionRequests");   // + H51's BillLineId
 			HospitalSliceParity.NamesItsTable(Model(), H51(), typeof(HospitalBloodProductService), "HospitalBloodProductServices");

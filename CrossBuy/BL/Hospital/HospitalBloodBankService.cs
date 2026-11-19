@@ -17,7 +17,10 @@ namespace CrossBuy.BL.Hospital
 	// Nothing reaches a bill here yet.
 	// ==========================================================================================
 	public sealed record HospitalBloodRequestRow(HospitalTransfusionRequest Row, string Patient, string PatientEn, string Mrn, string? Photo, string? BloodGroup,
-		string? Place, string? PlaceEn, IReadOnlyList<string> UnitNos);
+		string? Place, string? PlaceEn, IReadOnlyList<string> UnitNos, IReadOnlyList<HospitalBloodBag>? Bags = null);
+
+	/// H207: one bag of a request — its number, and when its transfusion was started at the bedside (null = not yet).
+	public sealed record HospitalBloodBag(int Id, string UnitNo, string Status, DateTime? TransfusedAt);
 
 	public sealed record HospitalBloodBoard(IReadOnlyDictionary<string, int> Shelf, IReadOnlyList<string> Low, IReadOnlyList<HospitalBloodRequestRow> Requests,
 		IReadOnlyList<HospitalBloodUnit> Units, int Expired);
@@ -160,7 +163,7 @@ namespace CrossBuy.BL.Hospital
 				var reqs = await Requests(ctx).AsNoTracking().Where(r => r.Status == HospitalTransfusionStatus.Requested || r.Status == HospitalTransfusionStatus.CrossMatching || r.Status == HospitalTransfusionStatus.Compatible
 					|| r.RequestedAt >= since || r.IssuedAt >= since).OrderByDescending(r => r.ID).Take(50).ToListAsync(ct);
 				var rids = reqs.Select(r => r.ID).ToList();
-				var bags = await Units(ctx).AsNoTracking().Where(u => u.RequestId != null && rids.Contains(u.RequestId.Value)).Select(u => new { u.RequestId, u.UnitNo }).ToListAsync(ct);
+				var bags = await Units(ctx).AsNoTracking().Where(u => u.RequestId != null && rids.Contains(u.RequestId.Value)).Select(u => new { u.ID, u.RequestId, u.UnitNo, u.Status, u.TransfusedAt }).ToListAsync(ct);
 				var pids = reqs.Select(r => r.PatientId).Distinct().ToList();
 				var pats = await _db.HospitalPatients.AsNoTracking().Where(p => pids.Contains(p.ID) && p.CompanyId == ctx.CompanyId)
 					.Select(p => new { p.ID, p.Name, p.NameEn, p.Mrn, p.PhotoPath, p.BloodGroup }).ToDictionaryAsync(p => p.ID, ct);
@@ -175,7 +178,9 @@ namespace CrossBuy.BL.Hospital
 				{
 					var p = pats[r.PatientId]; var pl = places.FirstOrDefault(x => x.PatientId == r.PatientId);
 					string? place = pl == null ? null : pl.Kind == HospitalRoomKinds.Icu ? "ICU" : pl.Ward, placeEn = pl == null ? null : pl.Kind == HospitalRoomKinds.Icu ? "ICU" : pl.WardEn ?? pl.Ward;
-					return new HospitalBloodRequestRow(r, p.Name, p.NameEn, p.Mrn, p.PhotoPath, p.BloodGroup, place, placeEn, bags.Where(b => b.RequestId == r.ID).Select(b => b.UnitNo).OrderBy(x => x).ToList());
+					var mine = bags.Where(b => b.RequestId == r.ID).OrderBy(b => b.UnitNo).ToList();
+					return new HospitalBloodRequestRow(r, p.Name, p.NameEn, p.Mrn, p.PhotoPath, p.BloodGroup, place, placeEn, mine.Select(b => b.UnitNo).ToList(),
+						mine.Select(b => new HospitalBloodBag(b.ID, b.UnitNo, b.Status, b.TransfusedAt)).ToList());
 				}).ToList();
 				var expired = onShelf.Count(u => u.Status == HospitalBloodUnitStatus.Available && u.ExpiresOn.Date < today);
 				return (new HospitalBloodBoard(shelf, low, rows, onShelf, expired), true);

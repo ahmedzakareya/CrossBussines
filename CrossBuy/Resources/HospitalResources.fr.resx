@@ -9151,4 +9151,27 @@
   <data name="{0} scans" xml:space="preserve"><value>{0} scans</value></data>
   <data name="{0} stopped" xml:space="preserve"><value>{0} arrêtées</value></data>
   <data name="Scan log" xml:space="preserve"><value>Journal des scans</value></data>
+  <data name="A step done without the scan counts against the ward's scanning." xml:space="preserve"><value>Une étape faite sans scan compte contre le scan du service.</value></data>
+  <data name="Collect the specimen" xml:space="preserve"><value>Prélever l'échantillon</value></data>
+  <data name="Scan the patient's wristband and the tube's label, or write why they cannot be scanned" xml:space="preserve"><value>Scannez le bracelet du patient et l'étiquette du tube, ou indiquez pourquoi c'est impossible</value></data>
+  <data name="Scan the tube's label" xml:space="preserve"><value>Scannez l'étiquette du tube</value></data>
+  <data name="This label is not this order's specimen: stop and check the tube" xml:space="preserve"><value>Cette étiquette n'est pas celle de cette demande : arrêtez et vérifiez le tube</value></data>
+  <data name="Tube label" xml:space="preserve"><value>Étiquette du tube</value></data>
+  <data name="Baby's band" xml:space="preserve"><value>Bracelet du bébé</value></data>
+  <data name="Blood bag" xml:space="preserve"><value>Poche de sang</value></data>
+  <data name="Check the mother's and the baby's bands" xml:space="preserve"><value>Vérifier les bracelets de la mère et du bébé</value></data>
+  <data name="Mother's band" xml:space="preserve"><value>Bracelet de la mère</value></data>
+  <data name="Only an issued bag is transfused" xml:space="preserve"><value>Seule une poche délivrée est transfusée</value></data>
+  <data name="Scan the baby's band" xml:space="preserve"><value>Scannez le bracelet du bébé</value></data>
+  <data name="Scan the bag's number" xml:space="preserve"><value>Scannez le numéro de la poche</value></data>
+  <data name="Scan the mother's band" xml:space="preserve"><value>Scannez le bracelet de la mère</value></data>
+  <data name="Scan the mother's band and the baby's band" xml:space="preserve"><value>Scannez le bracelet de la mère et celui du bébé</value></data>
+  <data name="Scan the patient's wristband and the bag, or write why they cannot be scanned" xml:space="preserve"><value>Scannez le bracelet du patient et la poche, ou indiquez pourquoi c'est impossible</value></data>
+  <data name="Start transfusion" xml:space="preserve"><value>Commencer la transfusion</value></data>
+  <data name="The baby's band matches the mother" xml:space="preserve"><value>Le bracelet du bébé correspond à la mère</value></data>
+  <data name="This baby's band does not belong to this mother: stop and check both bands" xml:space="preserve"><value>Le bracelet de ce bébé n'appartient pas à cette mère : arrêtez et vérifiez les deux bracelets</value></data>
+  <data name="This bag expired on {0}: do not transfuse it" xml:space="preserve"><value>Cette poche a expiré le {0} : ne la transfusez pas</value></data>
+  <data name="This bag is not the unit issued for this patient: stop and return it to the blood bank" xml:space="preserve"><value>Cette poche n'est pas l'unité délivrée pour ce patient : arrêtez et rendez-la à la banque du sang</value></data>
+  <data name="This bag's transfusion was already started" xml:space="preserve"><value>La transfusion de cette poche a déjà commencé</value></data>
+  <data name="Transfusing since" xml:space="preserve"><value>En transfusion depuis</value></data>
 </root>

@@ -347,6 +347,31 @@ namespace CrossBuy.BL.Reporting
 			return OneBand(LetterPage, y + 1, e);
 		}
 
+		/// H206 — the SPECIMEN LABEL on the 100 × 60 mm label: the accession number large with its QR beside it (the code the
+		/// bedside scan reads), the patient and file number, the test, the specimen and section, the priority in red, and
+		/// when it was ordered and collected.
+		public static ReportVisualLayout SpecimenLabel()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.RxLabel, MarginTopMm = 1, MarginBottomMm = 1, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 96, H = 58, Qs = 30, Lw = W - Qs - 2;
+			double a = Need(7.5), b = Need(10), c = Need(14), d = Need(11), y = 0;
+			var e = new List<ReportElement>();
+			e.Add(Field("CompanyName", 0, y, W, a, S(7.5, true, Brand))); y += a + 0.4;
+			e.Add(Line(0, y, W)); y += 0.8;
+			double top = y;
+			e.Add(Field("PatientName", 0, y, Lw, b, S(10, true))); y += b;
+			e.Add(Field("PatientMrn", 0, y, Lw, b, S(10, true, Brand))); y += b;
+			e.Add(Field("DocumentNo", 0, y, Lw, c, S(14, true))); y += c;
+			e.Add(Field("Test", 0, y, Lw, d, S(11, true))); y += d;
+			e.Add(Field("Specimen", 0, y, Lw / 2, a, S(7.5, color: Muted)));
+			e.Add(Field("Priority", Lw / 2, y, Lw / 2, a, S(7.5, true, Alert, ReportTextAlign.End))); y += a;
+			e.Add(Text("طُلب", "Ordered", 0, y, 12, a, S(6.5, color: Muted)));
+			e.Add(Field("DocumentDate", 12, y, Lw - 12, a, S(7.5, date: "yyyy-MM-dd HH:mm"))); y += a;
+			e.Add(Qr("DocumentNo", W - Qs, top, Qs));
+			if (y > H) throw new InvalidOperationException("The specimen label no longer fits its label: " + y + " mm");
+			return OneBand(page, Math.Max(y, top + Qs) + 0.5, e);
+		}
+
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
 		public static ReportVisualLayout? For(string code) => code switch
 		{
@@ -357,6 +382,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.CreditNote => CreditNote(),   // H149
 			HospitalDocumentDatasetCodes.CompoundLabel => CompoundLabel(),   // H153
 			HospitalDocumentDatasetCodes.ReferralLetter => ReferralLetter(),   // H204
+			HospitalDocumentDatasetCodes.SpecimenLabel => SpecimenLabel(),   // H206
 			_ => null,
 		};
 	}

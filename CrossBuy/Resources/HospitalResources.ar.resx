@@ -9200,4 +9200,27 @@
   <data name="The background is no longer blurred" xml:space="preserve"><value>أُلغي تمويه الخلفية</value></data>
   <data name="Preparing the blur…" xml:space="preserve"><value>جارٍ تجهيز التمويه…</value></data>
   <data name="The blur could not start on this device" xml:space="preserve"><value>تعذّر تشغيل التمويه على هذا الجهاز</value></data>
+  <data name="A step done without the scan counts against the ward's scanning." xml:space="preserve"><value>الخطوة المنفّذة دون مسح تُحسب على نسبة المسح في القسم.</value></data>
+  <data name="Collect the specimen" xml:space="preserve"><value>سحب العينة</value></data>
+  <data name="Scan the patient's wristband and the tube's label, or write why they cannot be scanned" xml:space="preserve"><value>امسح سوار المريض وملصق الأنبوب، أو اكتب سبب تعذّر المسح</value></data>
+  <data name="Scan the tube's label" xml:space="preserve"><value>امسح ملصق الأنبوب</value></data>
+  <data name="This label is not this order's specimen: stop and check the tube" xml:space="preserve"><value>هذا الملصق ليس لعينة هذا الطلب: توقّف وتحقّق من الأنبوب</value></data>
+  <data name="Tube label" xml:space="preserve"><value>ملصق الأنبوب</value></data>
+  <data name="Baby's band" xml:space="preserve"><value>سوار المولود</value></data>
+  <data name="Blood bag" xml:space="preserve"><value>كيس الدم</value></data>
+  <data name="Check the mother's and the baby's bands" xml:space="preserve"><value>مطابقة سوار الأم وسوار المولود</value></data>
+  <data name="Mother's band" xml:space="preserve"><value>سوار الأم</value></data>
+  <data name="Only an issued bag is transfused" xml:space="preserve"><value>لا يُنقل إلا كيس مصروف</value></data>
+  <data name="Scan the baby's band" xml:space="preserve"><value>امسح سوار المولود</value></data>
+  <data name="Scan the bag's number" xml:space="preserve"><value>امسح رقم الكيس</value></data>
+  <data name="Scan the mother's band" xml:space="preserve"><value>امسح سوار الأم</value></data>
+  <data name="Scan the mother's band and the baby's band" xml:space="preserve"><value>امسح سوار الأم وسوار المولود</value></data>
+  <data name="Scan the patient's wristband and the bag, or write why they cannot be scanned" xml:space="preserve"><value>امسح سوار المريض والكيس، أو اكتب سبب تعذّر المسح</value></data>
+  <data name="Start transfusion" xml:space="preserve"><value>بدء نقل الدم</value></data>
+  <data name="The baby's band matches the mother" xml:space="preserve"><value>سوار المولود مطابق للأم</value></data>
+  <data name="This baby's band does not belong to this mother: stop and check both bands" xml:space="preserve"><value>سوار هذا المولود لا يخص هذه الأم: توقّف وتحقّق من السوارين</value></data>
+  <data name="This bag expired on {0}: do not transfuse it" xml:space="preserve"><value>انتهت صلاحية هذا الكيس في {0}: لا تنقله</value></data>
+  <data name="This bag is not the unit issued for this patient: stop and return it to the blood bank" xml:space="preserve"><value>هذا الكيس ليس الوحدة المصروفة لهذا المريض: توقّف وأعده إلى بنك الدم</value></data>
+  <data name="This bag's transfusion was already started" xml:space="preserve"><value>بدأ نقل هذا الكيس بالفعل</value></data>
+  <data name="Transfusing since" xml:space="preserve"><value>يُنقل منذ</value></data>
 </root>

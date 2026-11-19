@@ -92,6 +92,8 @@
                                             <td><span class="badge badge-light-primary fs-7 fw-bold">@T["dm:" + b.DeliveryMode]</span>@if (b.GestationWeeks is int gw) {<div class="text-muted fs-7 mt-1"><span class="hp-num">@gw</span>&nbsp;@T["weeks"]</div>}</td>
                                             <td class="text-end pe-4 text-nowrap"><div class="d-flex justify-content-end align-items-center gap-2">
                                                 @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalBirth, DocumentId = b.ID.ToString(), DocumentTitle = b.BirthNo })
+                                                @* H207: the mother's band and the baby's band, scanned together *@
+                                                @if (!isVoid && b.NewbornPatientId != null) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-birth-bands="@b.ID" data-what="@b.BirthNo" title="@T["Check the mother's and the baby's bands"]" data-bs-toggle="tooltip"><i class="ki-outline ki-scan-barcode fs-4"></i></button> }
                                                 @if (!isVoid && canVoid) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-birth-void="@b.ID" data-no="@b.BirthNo" title="@T["sl:voidAction"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-4"></i></button> }
                                             </div></td>
                                         </tr>
@@ -179,6 +181,7 @@
 
 @section Scripts {
     <partial name="_HospitalPrompt" />
+    <partial name="_HospitalScanPair" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -227,6 +230,17 @@
                     if (why == null) return; t.disabled = true;
                     post(D.voidUrl + t.getAttribute('data-death-void') + '/Void', { reason: why })
                         .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.voided); swapDeaths(); });
+                });
+            });
+            // H207: the bands of a mother and her baby, scanned together; a wrong pair is stopped and kept
+            var BB = { title: @Json.Serialize(T["Check the mother's and the baby's bands"].Value), first: @Json.Serialize(T["Mother's band"].Value), second: @Json.Serialize(T["Baby's band"].Value),
+                firstHint: @Json.Serialize(T["Scan the mother's band"].Value), secondHint: @Json.Serialize(T["Scan the baby's band"].Value), ok: @Json.Serialize(T["The baby's band matches the mother"].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-birth-bands]'); if (!b) return;
+                hpScanPair(Object.assign({}, BB, { title: BB.title + ' — ' + b.getAttribute('data-what') })).then(function (r) {
+                    if (!r) return;
+                    post(@Json.Serialize(Url.Content("~/Hospital/Vital/Births/")) + b.getAttribute('data-birth-bands') + '/Bands', { first: r.first, second: r.second })
+                        .then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', BB.ok); });
                 });
             });
             document.addEventListener('click', function (e) {

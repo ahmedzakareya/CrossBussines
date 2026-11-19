@@ -54,12 +54,15 @@ namespace CrossBuy.Controllers
 			return View(v);
 		}
 
+		public sealed class HospitalCollectScanInput { public string? Wristband { get; set; } public string? Tube { get; set; } public string? ScanOverride { get; set; } }
+
 		[HttpPost("Lab/{id:int}/Collect"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Lab)]
-		public async Task<IActionResult> LabCollect(int id, CancellationToken ct = default)
+		public async Task<IActionResult> LabCollect(int id, [FromBody] HospitalCollectScanInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await _lab.CollectAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+			// H206: the bedside scan (wristband + tube label) or the reason it cannot be made
+			return Result(await _lab.CollectAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct, input?.Wristband, input?.Tube, input?.ScanOverride));
 		}
 
 		[HttpPost("Lab/{id:int}/Receive"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Lab)]

@@ -69,6 +69,29 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void A_specimen_is_collected_only_with_the_patients_band_and_the_orders_label()
+		{
+			Assert.Null(HospitalBedsideScanRules.SpecimenRefusal("MRN-100008", "LAB-000016", "MRN-100008", " lab-000016"));
+			Assert.Equal(HospitalBedsideScanRules.WrongPatient, HospitalBedsideScanRules.SpecimenRefusal("MRN-100008", "LAB-000016", "MRN-100023", "LAB-000016"));
+			Assert.Equal(HospitalBedsideScanRules.WrongTube, HospitalBedsideScanRules.SpecimenRefusal("MRN-100008", "LAB-000016", "MRN-100008", "LAB-000017"));
+			Assert.False(HospitalBedsideScanRules.Same("", "LAB-1"));
+			// the label's QR carries the accession number it prints
+			var qr = CrossBuy.BL.Reporting.HospitalDeskLayouts.SpecimenLabel().Bands.SelectMany(b => b.Elements).Single(e => e.Kind == CrossBuy.BL.Reporting.ReportElementKind.QrCode);
+			Assert.Equal("DocumentNo", qr.FieldKey);
+		}
+
+		[Fact]
+		public void A_bag_is_hung_only_on_its_patient_and_a_baby_handed_only_to_its_mother()
+		{
+			Assert.Null(HospitalBedsideScanRules.BloodRefusal("MRN-100008", "BB-2026-0041", "MRN-100008", "bb-2026-0041"));
+			Assert.Equal(HospitalBedsideScanRules.WrongPatient, HospitalBedsideScanRules.BloodRefusal("MRN-100008", "BB-2026-0041", "MRN-100023", "BB-2026-0041"));
+			Assert.Equal(HospitalBedsideScanRules.WrongBag, HospitalBedsideScanRules.BloodRefusal("MRN-100008", "BB-2026-0041", "MRN-100008", "BB-2026-0042"));
+			Assert.Null(HospitalBedsideScanRules.BabyRefusal("MRN-100008", "MRN-100031", "MRN-100008", "MRN-100031"));
+			Assert.Equal(HospitalBedsideScanRules.WrongPatient, HospitalBedsideScanRules.BabyRefusal("MRN-100008", "MRN-100031", "MRN-100009", "MRN-100031"));
+			Assert.Equal(HospitalBedsideScanRules.WrongBaby, HospitalBedsideScanRules.BabyRefusal("MRN-100008", "MRN-100031", "MRN-100008", "MRN-100032"));
+		}
+
+		[Fact]
 		public void The_table_matches_its_slice()
 		{
 			var model = HospitalSliceParity.Model(HospitalBedsideScanModel.Configure);

@@ -12,7 +12,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Blood bank"].Value;
-    bool ready = ViewBag.Ready == true, canLab = ViewBag.CanLab == true, canConsult = ViewBag.CanConsult == true;
+    bool ready = ViewBag.Ready == true, canLab = ViewBag.CanLab == true, canConsult = ViewBag.CanConsult == true, canAdmit = ViewBag.CanAdmit == true;
     var b = Model;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Kind(string s) => s switch
@@ -112,7 +112,12 @@
                                             <span class="text-muted fw-semibold d-block fs-7">@if (r.Place != null) {<span>@(r.Place == "ICU" ? T["crumb:ICU"].Value : DisplayName.Of(r.Place, r.PlaceEn ?? r.Place))</span><text> · </text>}<bdi class="hp-num fw-bold text-danger" dir="ltr">@r.BloodGroup</bdi></span></div>
                                     </div></td>
                                     <td><span class="text-gray-900 fw-bold">@T["bp:" + r.Row.Product]</span>@if (r.Row.Note != null) {<div class="text-muted fs-7" dir="auto">@r.Row.Note</div>}</td>
-                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0) {<div class="text-muted fs-8 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}</td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0 && st != HospitalTransfusionStatus.Issued) {<div class="text-muted fs-8 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}
+                                        @* H207: each issued bag — its transfusion starts at the bedside with the wristband and the bag scanned *@
+                                        @if (st == HospitalTransfusionStatus.Issued && r.Bags != null) { foreach (var bg in r.Bags) {
+                                            <div class="d-flex justify-content-end align-items-center gap-2 mt-1"><bdi class="text-gray-700 fs-8 hp-num" dir="ltr">@bg.UnitNo</bdi>
+                                                @if (bg.TransfusedAt is DateTime tx) {<span class="badge badge-light-primary fs-8">@T["Transfusing since"] <span class="hp-num ms-1" dir="ltr">@HospitalNursingService.UtcToWard(tx).ToString("HH:mm")</span></span>}
+                                                else if (canAdmit) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-bb-transfuse="@bg.Id" data-what="@bg.UnitNo — @DisplayName.Of(r.Patient, r.PatientEn)"><i class="ki-outline ki-drop fs-6"></i>@T["Start transfusion"]</button>}</div> } }</td>
                                     <td><span class="badge badge-light-@Kind(st) fs-7 fw-bold">@T["tx:" + st]</span>@if (r.Row.Reason != null) {<div class="text-muted fs-7 mt-1" dir="auto">@r.Row.Reason</div>}
                                         @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-7 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-primary")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
                                     <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
@@ -210,6 +215,7 @@
 
 @section Scripts {
     <partial name="_HospitalPrompt" />
+    <partial name="_HospitalScanPair" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/BloodBank"));
@@ -230,6 +236,16 @@
                 });
             }
             function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
+            // H207: the transfusion starts at the bedside with the patient's wristband and the bag scanned, or the reason
+            var TX = { title: @Json.Serialize(T["Start transfusion"].Value), first: @Json.Serialize(T["Wristband"].Value), second: @Json.Serialize(T["Blood bag"].Value),
+                firstHint: @Json.Serialize(T["Scan the wristband"].Value), secondHint: @Json.Serialize(T["Scan the bag's number"].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-bb-transfuse]'); if (!b) return;
+                hpScanPair(Object.assign({}, TX, { title: TX.title + ' — ' + b.getAttribute('data-what') })).then(function (r) {
+                    if (!r) return; b.disabled = true;
+                    post('/Units/' + b.getAttribute('data-bb-transfuse') + '/Transfuse', { first: r.first, second: r.second, scanOverride: r.override }).then(done(b));
+                });
+            });
             shelf();
             var pp = document.querySelector('[data-bb-patient]');
             if (pp && window.jQuery) jQuery(pp).select2({ dropdownParent: jQuery('#bbNewModal'), placeholder: pp.getAttribute('data-placeholder'), allowClear: true,

@@ -36,6 +36,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Ready = ready;
 			ViewBag.CanLab = await _access.CanAsync(ctx, HospitalActions.Lab, null, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);   // H207: the nurse starts the transfusion
 			return View(board);
 		}
 

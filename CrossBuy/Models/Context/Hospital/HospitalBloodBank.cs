@@ -57,6 +57,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? ReceivedByEmployeeId { get; set; }
 		public DateTime? IssuedAt { get; set; }
 		public DateTime? DiscardedAt { get; set; }
+		/// H207: when the transfusion was started at the bedside, and by whom — after the wristband and the bag were scanned.
+		public DateTime? TransfusedAt { get; set; }
+		public int? TransfusedByEmployeeId { get; set; }
 	}
 
 	public class HospitalTransfusionRequest
