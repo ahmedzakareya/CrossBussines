@@ -142,6 +142,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalReferralModel.Configure(b);   // H203: referrals between departments and to other facilities
 			b.Entity<HospitalDepartment>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalPractitioner>(e => e.HasIndex(x => new { x.CompanyId, x.DepartmentId }));
 			b.Entity<HospitalAppointment>(e =>

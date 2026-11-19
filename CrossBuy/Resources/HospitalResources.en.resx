@@ -9063,4 +9063,59 @@
   <data name="tech:Sedation" xml:space="preserve"><value>Sedation</value></data>
   <data name="tech:Spinal" xml:space="preserve"><value>Spinal</value></data>
   <data name="Emergency — induction allowed on the written reason" xml:space="preserve"><value>Emergency — induction allowed on the written reason</value></data>
+  <data name="A doctor cannot refer a patient to themself" xml:space="preserve"><value>A doctor cannot refer a patient to themself</value></data>
+  <data name="Accept the referral before answering it" xml:space="preserve"><value>Accept the referral before answering it</value></data>
+  <data name="Accept this referral for your department?" xml:space="preserve"><value>Accept this referral for your department?</value></data>
+  <data name="Choose an internal or an external referral" xml:space="preserve"><value>Choose an internal or an external referral</value></data>
+  <data name="Choose the department you refer to" xml:space="preserve"><value>Choose the department you refer to</value></data>
+  <data name="Choose the urgency" xml:space="preserve"><value>Choose the urgency</value></data>
+  <data name="Clinical summary" xml:space="preserve"><value>Clinical summary</value></data>
+  <data name="Doctor (optional)" xml:space="preserve"><value>Doctor (optional)</value></data>
+  <data name="Emergency 2 h · urgent 24 h · routine 14 days" xml:space="preserve"><value>Emergency 2 h · urgent 24 h · routine 14 days</value></data>
+  <data name="Every department" xml:space="preserve"><value>Every department</value></data>
+  <data name="Facility" xml:space="preserve"><value>Facility</value></data>
+  <data name="Name the facility you refer to" xml:space="preserve"><value>Name the facility you refer to</value></data>
+  <data name="Name, file number or phone" xml:space="preserve"><value>Name, file number or phone</value></data>
+  <data name="New referral" xml:space="preserve"><value>New referral</value></data>
+  <data name="No referral here." xml:space="preserve"><value>No referral here.</value></data>
+  <data name="Only a referral within the hospital is accepted here" xml:space="preserve"><value>Only a referral within the hospital is accepted here</value></data>
+  <data name="Only a referral within the hospital is declined here" xml:space="preserve"><value>Only a referral within the hospital is declined here</value></data>
+  <data name="Patient, number, facility" xml:space="preserve"><value>Patient, number, facility</value></data>
+  <data name="Record the facility's reply" xml:space="preserve"><value>Record the facility's reply</value></data>
+  <data name="Record what the facility wrote back" xml:space="preserve"><value>Record what the facility wrote back</value></data>
+  <data name="Referrals" xml:space="preserve"><value>Referrals</value></data>
+  <data name="Referred to" xml:space="preserve"><value>Referred to</value></data>
+  <data name="Reply" xml:space="preserve"><value>Reply</value></data>
+  <data name="Send the referral" xml:space="preserve"><value>Send the referral</value></data>
+  <data name="Show all" xml:space="preserve"><value>Show all</value></data>
+  <data name="Someone else changed this referral: open it again" xml:space="preserve"><value>Someone else changed this referral: open it again</value></data>
+  <data name="The doctor is not of that department" xml:space="preserve"><value>The doctor is not of that department</value></data>
+  <data name="The referral was sent" xml:space="preserve"><value>The referral was sent</value></data>
+  <data name="The referrals table is not created yet (hospital_h203_referrals.sql)." xml:space="preserve"><value>The referrals table is not created yet (hospital_h203_referrals.sql).</value></data>
+  <data name="The text is too long" xml:space="preserve"><value>The text is too long</value></data>
+  <data name="The visit is not this patient's" xml:space="preserve"><value>The visit is not this patient's</value></data>
+  <data name="This referral is closed" xml:space="preserve"><value>This referral is closed</value></data>
+  <data name="This referral is no longer waiting" xml:space="preserve"><value>This referral is no longer waiting</value></data>
+  <data name="Urgency" xml:space="preserve"><value>Urgency</value></data>
+  <data name="What did the facility write back?" xml:space="preserve"><value>What did the facility write back?</value></data>
+  <data name="What is asked stays as it was sent; the answer comes back on the referral." xml:space="preserve"><value>What is asked stays as it was sent; the answer comes back on the referral.</value></data>
+  <data name="Why is the referral declined?" xml:space="preserve"><value>Why is the referral declined?</value></data>
+  <data name="Write the question for the doctor you refer to" xml:space="preserve"><value>Write the question for the doctor you refer to</value></data>
+  <data name="Write the reply to the referring doctor" xml:space="preserve"><value>Write the reply to the referring doctor</value></data>
+  <data name="Write why the referral is declined" xml:space="preserve"><value>Write why the referral is declined</value></data>
+  <data name="Your reply to the referring doctor:" xml:space="preserve"><value>Your reply to the referring doctor:</value></data>
+  <data name="refk:External" xml:space="preserve"><value>To another facility</value></data>
+  <data name="refk:Internal" xml:space="preserve"><value>Within the hospital</value></data>
+  <data name="refs:Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="refs:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="refs:Completed" xml:space="preserve"><value>Answered</value></data>
+  <data name="refs:Declined" xml:space="preserve"><value>Declined</value></data>
+  <data name="refs:Sent" xml:space="preserve"><value>Sent</value></data>
+  <data name="refu:Emergency" xml:space="preserve"><value>Emergency</value></data>
+  <data name="refu:Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="refu:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="{0} open" xml:space="preserve"><value>{0} open</value></data>
+  <data name="{0} overdue" xml:space="preserve"><value>{0} overdue</value></data>
+  <data name="{0} referrals" xml:space="preserve"><value>{0} referrals</value></data>
+  <data name="Answer due by" xml:space="preserve"><value>Answer due by</value></data>
 </root>

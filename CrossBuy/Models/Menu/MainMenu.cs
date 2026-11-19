@@ -449,6 +449,7 @@
 				new() { LabelAr = "العلاج الطبيعي", LabelEn = "Physiotherapy", Action = "Rehab", Controller = "Hospital" },   // H89
 				new() { LabelAr = "المشرحة", LabelEn = "Mortuary", Action = "Morgue", Controller = "Hospital" },   // H90
 				new() { LabelAr = "قائمة الطبيب", LabelEn = "Doctor worklist", Action = "Worklist", Controller = "Hospital" },
+				new() { LabelAr = "التحويلات", LabelEn = "Referrals", Action = "Referrals", Controller = "Hospital" },   // H203
 				new() { LabelAr = "طلبات تجديد الأدوية", LabelEn = "Refill requests", Action = "PortalRefills", Controller = "Hospital" },
 			}},
 			// H93 — the specialty clinics, built on one dictionary and clinician-built templates (the approved prototype)

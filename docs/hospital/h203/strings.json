@@ -1,0 +1,280 @@
+{
+ "unit": "H203 - referrals",
+ "strings": {
+  "Referrals": {
+   "ar": "التحويلات",
+   "en": "Referrals",
+   "fr": "Orientations"
+  },
+  "{0} open": {
+   "ar": "{0} مفتوحة",
+   "en": "{0} open",
+   "fr": "{0} ouvertes"
+  },
+  "{0} overdue": {
+   "ar": "{0} متأخرة",
+   "en": "{0} overdue",
+   "fr": "{0} en retard"
+  },
+  "New referral": {
+   "ar": "تحويل جديد",
+   "en": "New referral",
+   "fr": "Nouvelle orientation"
+  },
+  "The referrals table is not created yet (hospital_h203_referrals.sql).": {
+   "ar": "جدول التحويلات غير منشأ بعد (hospital_h203_referrals.sql).",
+   "en": "The referrals table is not created yet (hospital_h203_referrals.sql).",
+   "fr": "La table des orientations n'est pas encore créée (hospital_h203_referrals.sql)."
+  },
+  "{0} referrals": {
+   "ar": "{0} تحويل",
+   "en": "{0} referrals",
+   "fr": "{0} orientations"
+  },
+  "Emergency 2 h · urgent 24 h · routine 14 days": {
+   "ar": "الطارئ خلال ساعتين · العاجل خلال 24 ساعة · الروتيني خلال 14 يومًا",
+   "en": "Emergency 2 h · urgent 24 h · routine 14 days",
+   "fr": "Urgence 2 h · urgent 24 h · routine 14 jours"
+  },
+  "Patient, number, facility": {
+   "ar": "المريض أو الرقم أو الجهة",
+   "en": "Patient, number, facility",
+   "fr": "Patient, numéro, établissement"
+  },
+  "Every department": {
+   "ar": "كل الأقسام",
+   "en": "Every department",
+   "fr": "Tous les services"
+  },
+  "Show all": {
+   "ar": "عرض الكل",
+   "en": "Show all",
+   "fr": "Tout afficher"
+  },
+  "No referral here.": {
+   "ar": "لا توجد تحويلات هنا.",
+   "en": "No referral here.",
+   "fr": "Aucune orientation ici."
+  },
+  "Referred to": {
+   "ar": "محوَّل إلى",
+   "en": "Referred to",
+   "fr": "Adressé à"
+  },
+  "Answer due by": {
+   "ar": "موعد الرد",
+   "en": "Answer due by",
+   "fr": "Réponse attendue avant"
+  },
+  "Reply": {
+   "ar": "الرد",
+   "en": "Reply",
+   "fr": "Réponse"
+  },
+  "Record the facility's reply": {
+   "ar": "تسجيل رد الجهة",
+   "en": "Record the facility's reply",
+   "fr": "Enregistrer la réponse de l'établissement"
+  },
+  "What is asked stays as it was sent; the answer comes back on the referral.": {
+   "ar": "يبقى السؤال كما أُرسل، ويعود الرد على التحويل نفسه.",
+   "en": "What is asked stays as it was sent; the answer comes back on the referral.",
+   "fr": "La question reste telle qu'envoyée ; la réponse revient sur l'orientation."
+  },
+  "Name, file number or phone": {
+   "ar": "الاسم أو رقم الملف أو الهاتف",
+   "en": "Name, file number or phone",
+   "fr": "Nom, numéro de dossier ou téléphone"
+  },
+  "Doctor (optional)": {
+   "ar": "الطبيب (اختياري)",
+   "en": "Doctor (optional)",
+   "fr": "Médecin (facultatif)"
+  },
+  "Facility": {
+   "ar": "الجهة",
+   "en": "Facility",
+   "fr": "Établissement"
+  },
+  "Urgency": {
+   "ar": "درجة الاستعجال",
+   "en": "Urgency",
+   "fr": "Urgence"
+  },
+  "Clinical summary": {
+   "ar": "الملخص السريري",
+   "en": "Clinical summary",
+   "fr": "Résumé clinique"
+  },
+  "Send the referral": {
+   "ar": "إرسال التحويل",
+   "en": "Send the referral",
+   "fr": "Envoyer l'orientation"
+  },
+  "The referral was sent": {
+   "ar": "أُرسل التحويل",
+   "en": "The referral was sent",
+   "fr": "L'orientation a été envoyée"
+  },
+  "Accept this referral for your department?": {
+   "ar": "قبول هذا التحويل لقسمك؟",
+   "en": "Accept this referral for your department?",
+   "fr": "Accepter cette orientation pour votre service ?"
+  },
+  "Why is the referral declined?": {
+   "ar": "لماذا رُفض التحويل؟",
+   "en": "Why is the referral declined?",
+   "fr": "Pourquoi l'orientation est-elle refusée ?"
+  },
+  "Your reply to the referring doctor:": {
+   "ar": "ردك على الطبيب المحوِّل:",
+   "en": "Your reply to the referring doctor:",
+   "fr": "Votre réponse au médecin adresseur :"
+  },
+  "What did the facility write back?": {
+   "ar": "ماذا كان رد الجهة؟",
+   "en": "What did the facility write back?",
+   "fr": "Qu'a répondu l'établissement ?"
+  },
+  "refk:Internal": {
+   "ar": "داخل المستشفى",
+   "en": "Within the hospital",
+   "fr": "Interne"
+  },
+  "refk:External": {
+   "ar": "إلى جهة خارجية",
+   "en": "To another facility",
+   "fr": "Vers un autre établissement"
+  },
+  "refu:Routine": {
+   "ar": "روتيني",
+   "en": "Routine",
+   "fr": "Routine"
+  },
+  "refu:Urgent": {
+   "ar": "عاجل",
+   "en": "Urgent",
+   "fr": "Urgent"
+  },
+  "refu:Emergency": {
+   "ar": "طارئ",
+   "en": "Emergency",
+   "fr": "Urgence vitale"
+  },
+  "refs:Sent": {
+   "ar": "مرسَل",
+   "en": "Sent",
+   "fr": "Envoyée"
+  },
+  "refs:Accepted": {
+   "ar": "مقبول",
+   "en": "Accepted",
+   "fr": "Acceptée"
+  },
+  "refs:Declined": {
+   "ar": "مرفوض",
+   "en": "Declined",
+   "fr": "Refusée"
+  },
+  "refs:Completed": {
+   "ar": "تم الرد",
+   "en": "Answered",
+   "fr": "Répondue"
+  },
+  "refs:Cancelled": {
+   "ar": "ملغى",
+   "en": "Cancelled",
+   "fr": "Annulée"
+  },
+  "Choose an internal or an external referral": {
+   "ar": "اختر تحويلًا داخليًا أو خارجيًا",
+   "en": "Choose an internal or an external referral",
+   "fr": "Choisissez une orientation interne ou externe"
+  },
+  "Choose the urgency": {
+   "ar": "اختر درجة الاستعجال",
+   "en": "Choose the urgency",
+   "fr": "Choisissez l'urgence"
+  },
+  "Write the question for the doctor you refer to": {
+   "ar": "اكتب سؤالك للطبيب المحوَّل إليه",
+   "en": "Write the question for the doctor you refer to",
+   "fr": "Écrivez la question pour le médecin consulté"
+  },
+  "The text is too long": {
+   "ar": "النص طويل جدًا",
+   "en": "The text is too long",
+   "fr": "Le texte est trop long"
+  },
+  "Choose the department you refer to": {
+   "ar": "اختر القسم المحوَّل إليه",
+   "en": "Choose the department you refer to",
+   "fr": "Choisissez le service consulté"
+  },
+  "A doctor cannot refer a patient to themself": {
+   "ar": "لا يحوِّل الطبيب مريضًا إلى نفسه",
+   "en": "A doctor cannot refer a patient to themself",
+   "fr": "Un médecin ne peut s'adresser un patient à lui-même"
+  },
+  "Name the facility you refer to": {
+   "ar": "اكتب اسم الجهة المحوَّل إليها",
+   "en": "Name the facility you refer to",
+   "fr": "Indiquez l'établissement"
+  },
+  "Only a referral within the hospital is accepted here": {
+   "ar": "يُقبل هنا التحويل الداخلي فقط",
+   "en": "Only a referral within the hospital is accepted here",
+   "fr": "Seule une orientation interne s'accepte ici"
+  },
+  "This referral is no longer waiting": {
+   "ar": "لم يعد هذا التحويل بانتظار القرار",
+   "en": "This referral is no longer waiting",
+   "fr": "Cette orientation n'est plus en attente"
+  },
+  "Only a referral within the hospital is declined here": {
+   "ar": "يُرفض هنا التحويل الداخلي فقط",
+   "en": "Only a referral within the hospital is declined here",
+   "fr": "Seule une orientation interne se refuse ici"
+  },
+  "Write why the referral is declined": {
+   "ar": "اكتب سبب رفض التحويل",
+   "en": "Write why the referral is declined",
+   "fr": "Indiquez pourquoi l'orientation est refusée"
+  },
+  "This referral is closed": {
+   "ar": "هذا التحويل مغلق",
+   "en": "This referral is closed",
+   "fr": "Cette orientation est close"
+  },
+  "Accept the referral before answering it": {
+   "ar": "اقبل التحويل قبل الرد عليه",
+   "en": "Accept the referral before answering it",
+   "fr": "Acceptez l'orientation avant d'y répondre"
+  },
+  "Write the reply to the referring doctor": {
+   "ar": "اكتب الرد على الطبيب المحوِّل",
+   "en": "Write the reply to the referring doctor",
+   "fr": "Écrivez la réponse au médecin adresseur"
+  },
+  "Record what the facility wrote back": {
+   "ar": "سجّل رد الجهة",
+   "en": "Record what the facility wrote back",
+   "fr": "Enregistrez la réponse de l'établissement"
+  },
+  "The visit is not this patient's": {
+   "ar": "الزيارة لا تخص هذا المريض",
+   "en": "The visit is not this patient's",
+   "fr": "La consultation n'appartient pas à ce patient"
+  },
+  "The doctor is not of that department": {
+   "ar": "الطبيب لا ينتمي إلى هذا القسم",
+   "en": "The doctor is not of that department",
+   "fr": "Le médecin n'appartient pas à ce service"
+  },
+  "Someone else changed this referral: open it again": {
+   "ar": "عدّل شخص آخر هذا التحويل: افتحه من جديد",
+   "en": "Someone else changed this referral: open it again",
+   "fr": "Quelqu'un d'autre a modifié cette orientation : rouvrez-la"
+  }
+ }
+}
