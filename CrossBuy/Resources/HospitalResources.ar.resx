@@ -8983,4 +8983,111 @@
   <data name="{0} readings waiting" xml:space="preserve"><value>{0} قراءة بانتظار المراجعة</value></data>
   <data name="{0}: in {1}" xml:space="preserve"><value>{0}: بوحدة {1}</value></data>
   <data name="{0}: {1} is out of range" xml:space="preserve"><value>{0}: القيمة {1} خارج النطاق</value></data>
+  <data name="A fasting time cannot be in the future" xml:space="preserve"><value>لا يمكن أن يكون وقت الصيام في المستقبل</value></data>
+  <data name="ASA class" xml:space="preserve"><value>تصنيف ASA</value></data>
+  <data name="Aldrete {0}: 9 or more is needed to leave recovery" xml:space="preserve"><value>درجة Aldrete ‏{0}: المطلوب 9 أو أكثر لمغادرة الإفاقة</value></data>
+  <data name="An emergency with unknown fasting needs its reason written" xml:space="preserve"><value>حالة الطوارئ مجهولة الصيام تحتاج إلى كتابة السبب</value></data>
+  <data name="Anaesthesia record" xml:space="preserve"><value>سجل التخدير</value></data>
+  <data name="Arrived in recovery" xml:space="preserve"><value>وصل إلى الإفاقة</value></data>
+  <data name="Assessment, the record during the operation, and recovery" xml:space="preserve"><value>التقييم، والسجل أثناء العملية، والإفاقة</value></data>
+  <data name="By {0} at {1}" xml:space="preserve"><value>بواسطة {0} في {1}</value></data>
+  <data name="Choose the ASA class (1 to 6)" xml:space="preserve"><value>اختر تصنيف ASA (من 1 إلى 6)</value></data>
+  <data name="Choose the milestone" xml:space="preserve"><value>اختر المرحلة</value></data>
+  <data name="Choose the planned technique" xml:space="preserve"><value>اختر طريقة التخدير المخططة</value></data>
+  <data name="Close the operation before the patient goes to recovery" xml:space="preserve"><value>أغلق العملية قبل انتقال المريض إلى الإفاقة</value></data>
+  <data name="Difficult airway predicted" xml:space="preserve"><value>صعوبة متوقعة في مجرى الهواء</value></data>
+  <data name="Dose unit" xml:space="preserve"><value>وحدة الجرعة</value></data>
+  <data name="During the operation" xml:space="preserve"><value>أثناء العملية</value></data>
+  <data name="Emergency (E)" xml:space="preserve"><value>طوارئ (E)</value></data>
+  <data name="Emergency: why it cannot wait for fasting" xml:space="preserve"><value>طوارئ: لماذا لا يمكن انتظار اكتمال الصيام</value></data>
+  <data name="Enter both pressures" xml:space="preserve"><value>أدخل الضغطين الانقباضي والانبساطي</value></data>
+  <data name="Enter the unit" xml:space="preserve"><value>أدخل الوحدة</value></data>
+  <data name="EtCO₂ must be 0 to 100 mmHg" xml:space="preserve"><value>يجب أن يكون EtCO₂ بين 0 و100 ملم زئبق</value></data>
+  <data name="Fasting is complete" xml:space="preserve"><value>الصيام مكتمل</value></data>
+  <data name="Fasting is not complete: breast milk {0} h ago, 4 h needed" xml:space="preserve"><value>الصيام غير مكتمل: آخر رضاعة قبل {0} ساعة، والمطلوب 4 ساعات</value></data>
+  <data name="Fasting is not complete: clear fluids {0} h ago, 2 h needed" xml:space="preserve"><value>الصيام غير مكتمل: آخر سوائل صافية قبل {0} ساعة، والمطلوب ساعتان</value></data>
+  <data name="Fasting is not complete: solids {0} h ago, 6 h needed" xml:space="preserve"><value>الصيام غير مكتمل: آخر طعام صلب قبل {0} ساعة، والمطلوب 6 ساعات</value></data>
+  <data name="Induction is refused until it is written" xml:space="preserve"><value>لا يبدأ التخدير قبل كتابته</value></data>
+  <data name="Last breast milk" xml:space="preserve"><value>آخر رضاعة طبيعية</value></data>
+  <data name="Last clear fluids" xml:space="preserve"><value>آخر سوائل صافية</value></data>
+  <data name="Last solids" xml:space="preserve"><value>آخر طعام صلب</value></data>
+  <data name="Leaves recovery" xml:space="preserve"><value>مغادرة الإفاقة</value></data>
+  <data name="Leaving needs an Aldrete score of 9 or more" xml:space="preserve"><value>لا يغادر المريض إلا بدرجة Aldrete ‏9 أو أكثر</value></data>
+  <data name="Left recovery" xml:space="preserve"><value>غادر الإفاقة</value></data>
+  <data name="Mallampati is 1 to 4" xml:space="preserve"><value>درجة Mallampati من 1 إلى 4</value></data>
+  <data name="Milestone" xml:space="preserve"><value>المرحلة</value></data>
+  <data name="Milestones are recorded once the operation has started" xml:space="preserve"><value>تُسجَّل المراحل بعد بدء العملية</value></data>
+  <data name="Milestones, drugs, fluids and readings, each at its time" xml:space="preserve"><value>المراحل والأدوية والسوائل والقراءات، كلٌّ بوقته</value></data>
+  <data name="Mouth opening (cm)" xml:space="preserve"><value>فتحة الفم (سم)</value></data>
+  <data name="Name the drug" xml:space="preserve"><value>اكتب اسم الدواء</value></data>
+  <data name="Name the fluid" xml:space="preserve"><value>اكتب اسم المحلول</value></data>
+  <data name="Not written yet." xml:space="preserve"><value>لم يُكتب بعد.</value></data>
+  <data name="Only an emergency may start before fasting is complete" xml:space="preserve"><value>لا يبدأ قبل اكتمال الصيام إلا حالات الطوارئ</value></data>
+  <data name="Planned technique" xml:space="preserve"><value>طريقة التخدير المخططة</value></data>
+  <data name="Pre-anaesthetic assessment" xml:space="preserve"><value>تقييم ما قبل التخدير</value></data>
+  <data name="Record the arrival in recovery first" xml:space="preserve"><value>سجّل الوصول إلى الإفاقة أولًا</value></data>
+  <data name="Record the score" xml:space="preserve"><value>تسجيل الدرجة</value></data>
+  <data name="Record when the patient last ate and drank" xml:space="preserve"><value>سجّل آخر وقت أكل فيه المريض وشرب</value></data>
+  <data name="Recovery room" xml:space="preserve"><value>غرفة الإفاقة</value></data>
+  <data name="Score Aldrete before the patient leaves recovery" xml:space="preserve"><value>قيّم Aldrete قبل مغادرة المريض للإفاقة</value></data>
+  <data name="Score the five Aldrete items, 0 to 2 each" xml:space="preserve"><value>قيّم بنود Aldrete الخمسة، من 0 إلى 2 لكل بند</value></data>
+  <data name="The airway measurements are out of range" xml:space="preserve"><value>قياسات مجرى الهواء خارج النطاق</value></data>
+  <data name="The anaesthesia record is not installed yet (hospital_h202_anaesthesia.sql)" xml:space="preserve"><value>سجل التخدير غير مثبت بعد (hospital_h202_anaesthesia.sql)</value></data>
+  <data name="The arrival in recovery is already recorded" xml:space="preserve"><value>الوصول إلى الإفاقة مسجل بالفعل</value></data>
+  <data name="The assessment locks at induction" xml:space="preserve"><value>يُقفل التقييم عند بدء التخدير</value></data>
+  <data name="The patient already left recovery" xml:space="preserve"><value>غادر المريض الإفاقة بالفعل</value></data>
+  <data name="The patient arrived in recovery now?" xml:space="preserve"><value>هل وصل المريض إلى الإفاقة الآن؟</value></data>
+  <data name="The patient comes to recovery once the operation is closed." xml:space="preserve"><value>ينتقل المريض إلى الإفاقة بعد إغلاق العملية.</value></data>
+  <data name="The patient has not arrived in recovery" xml:space="preserve"><value>لم يصل المريض إلى الإفاقة</value></data>
+  <data name="The patient leaves recovery now?" xml:space="preserve"><value>هل يغادر المريض الإفاقة الآن؟</value></data>
+  <data name="The record closed when the patient left recovery" xml:space="preserve"><value>أُغلق السجل بمغادرة المريض للإفاقة</value></data>
+  <data name="The time cannot be in the future" xml:space="preserve"><value>لا يمكن أن يكون الوقت في المستقبل</value></data>
+  <data name="The time is before the assessment" xml:space="preserve"><value>الوقت سابق للتقييم</value></data>
+  <data name="The weight must be 0.3 to 400 kg" xml:space="preserve"><value>يجب أن يكون الوزن بين 0.3 و400 كغ</value></data>
+  <data name="This milestone is already recorded" xml:space="preserve"><value>هذه المرحلة مسجلة بالفعل</value></data>
+  <data name="Thyromental (cm)" xml:space="preserve"><value>المسافة الدرقية الذقنية (سم)</value></data>
+  <data name="Write the pre-anaesthetic assessment before induction" xml:space="preserve"><value>اكتب تقييم ما قبل التخدير قبل البدء</value></data>
+  <data name="ae:Aldrete" xml:space="preserve"><value>Aldrete</value></data>
+  <data name="ae:Drug" xml:space="preserve"><value>دواء</value></data>
+  <data name="ae:Event" xml:space="preserve"><value>مرحلة</value></data>
+  <data name="ae:Fluid" xml:space="preserve"><value>سوائل</value></data>
+  <data name="ae:Vitals" xml:space="preserve"><value>قراءات</value></data>
+  <data name="aev:Airway" xml:space="preserve"><value>تأمين مجرى الهواء</value></data>
+  <data name="aev:Emergence" xml:space="preserve"><value>الإفاقة من التخدير</value></data>
+  <data name="aev:Incision" xml:space="preserve"><value>الشق الجراحي</value></data>
+  <data name="aev:Induction" xml:space="preserve"><value>بدء التخدير</value></data>
+  <data name="aev:SurgeryEnd" xml:space="preserve"><value>نهاية الجراحة</value></data>
+  <data name="ald:Activity" xml:space="preserve"><value>النشاط الحركي</value></data>
+  <data name="ald:Activity:0" xml:space="preserve"><value>لا يتحرك</value></data>
+  <data name="ald:Activity:1" xml:space="preserve"><value>يحرك طرفين</value></data>
+  <data name="ald:Activity:2" xml:space="preserve"><value>يحرك الأطراف الأربعة</value></data>
+  <data name="ald:Circulation" xml:space="preserve"><value>الدورة الدموية</value></data>
+  <data name="ald:Circulation:0" xml:space="preserve"><value>الضغط ±50% أو أكثر</value></data>
+  <data name="ald:Circulation:1" xml:space="preserve"><value>الضغط ±20–49%</value></data>
+  <data name="ald:Circulation:2" xml:space="preserve"><value>الضغط ±20% من قبل التخدير</value></data>
+  <data name="ald:Consciousness" xml:space="preserve"><value>الوعي</value></data>
+  <data name="ald:Consciousness:0" xml:space="preserve"><value>لا يستجيب</value></data>
+  <data name="ald:Consciousness:1" xml:space="preserve"><value>يستيقظ عند النداء</value></data>
+  <data name="ald:Consciousness:2" xml:space="preserve"><value>واعٍ تمامًا</value></data>
+  <data name="ald:Respiration" xml:space="preserve"><value>التنفس</value></data>
+  <data name="ald:Respiration:0" xml:space="preserve"><value>انقطاع التنفس</value></data>
+  <data name="ald:Respiration:1" xml:space="preserve"><value>ضيق أو تنفس محدود</value></data>
+  <data name="ald:Respiration:2" xml:space="preserve"><value>يتنفس بعمق ويسعل</value></data>
+  <data name="ald:SpO2" xml:space="preserve"><value>تشبع الأكسجين</value></data>
+  <data name="ald:SpO2:0" xml:space="preserve"><value>أقل من 90% مع الأكسجين</value></data>
+  <data name="ald:SpO2:1" xml:space="preserve"><value>يحتاج أكسجين ليبقى فوق 90%</value></data>
+  <data name="ald:SpO2:2" xml:space="preserve"><value>أكثر من 92% على هواء الغرفة</value></data>
+  <data name="asa:1" xml:space="preserve"><value>سليم</value></data>
+  <data name="asa:2" xml:space="preserve"><value>مرض جهازي خفيف</value></data>
+  <data name="asa:3" xml:space="preserve"><value>مرض جهازي شديد</value></data>
+  <data name="asa:4" xml:space="preserve"><value>مرض شديد يهدد الحياة باستمرار</value></data>
+  <data name="asa:5" xml:space="preserve"><value>حالة حرجة لا يُتوقع بقاؤها دون الجراحة</value></data>
+  <data name="asa:6" xml:space="preserve"><value>متوفى دماغيًا (تبرع بالأعضاء)</value></data>
+  <data name="tech:Epidural" xml:space="preserve"><value>تخدير فوق الجافية</value></data>
+  <data name="tech:General" xml:space="preserve"><value>تخدير عام</value></data>
+  <data name="tech:Local" xml:space="preserve"><value>تخدير موضعي</value></data>
+  <data name="tech:Regional" xml:space="preserve"><value>إحصار عصبي موضعي</value></data>
+  <data name="tech:Sedation" xml:space="preserve"><value>تهدئة</value></data>
+  <data name="tech:Spinal" xml:space="preserve"><value>تخدير نخاعي</value></data>
+  <data name="Emergency — induction allowed on the written reason" xml:space="preserve"><value>طوارئ — يُسمح ببدء التخدير بناءً على السبب المكتوب</value></data>
 </root>

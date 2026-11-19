@@ -269,6 +269,8 @@ namespace CrossBuy.BL.Hospital
 			var checks = await _db.Set<HospitalSurgeryCheck>().AsNoTracking().Where(k => k.CompanyId == ctx.CompanyId && k.SurgeryId == surgeryId).Select(k => k.Item).ToListAsync(ct);
 			bool busy = input.To == HospitalSurgeryStatus.InProgress && await Cases(ctx).AnyAsync(s => s.RoomId == c.RoomId && s.Status == HospitalSurgeryStatus.InProgress && s.ID != surgeryId, ct);
 			if (HospitalTheatreRules.MoveRefusal(c.Status, input.To, checks, busy, input.Reason) is string why) return HospitalResult.Fail(why);
+			// H202: no induction without the pre-anaesthetic assessment, and fasting complete (or an emergency's written reason)
+			if (input.To == HospitalSurgeryStatus.InProgress && await HospitalAnaesthesiaService.StartRefusalAsync(_db, ctx, surgeryId, nowLocal, ct) is HospitalResult refused) return refused;
 			// H60: a tick made before consents existed (or a consent withdrawn since) does not start an operation
 			if (input.To == HospitalSurgeryStatus.InProgress && !await HasConsentAsync(ctx, surgeryId, ct)) return HospitalResult.Fail(HospitalConsentRules.NoCaseConsent);
 			if (input.To == HospitalSurgeryStatus.InProgress && !await HasSterileSetAsync(ctx, surgeryId, ct)) return HospitalResult.Fail(NoSterileSet);

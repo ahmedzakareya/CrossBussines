@@ -1,0 +1,540 @@
+{
+ "unit": "H202 - the anaesthesia record",
+ "strings": {
+  "Anaesthesia record": {
+   "ar": "سجل التخدير",
+   "en": "Anaesthesia record",
+   "fr": "Dossier d'anesthésie"
+  },
+  "Difficult airway predicted": {
+   "ar": "صعوبة متوقعة في مجرى الهواء",
+   "en": "Difficult airway predicted",
+   "fr": "Intubation difficile prévue"
+  },
+  "Pre-anaesthetic assessment": {
+   "ar": "تقييم ما قبل التخدير",
+   "en": "Pre-anaesthetic assessment",
+   "fr": "Consultation pré-anesthésique"
+  },
+  "Induction is refused until it is written": {
+   "ar": "لا يبدأ التخدير قبل كتابته",
+   "en": "Induction is refused until it is written",
+   "fr": "L'induction est refusée tant qu'elle n'est pas rédigée"
+  },
+  "By {0} at {1}": {
+   "ar": "بواسطة {0} في {1}",
+   "en": "By {0} at {1}",
+   "fr": "Par {0} à {1}"
+  },
+  "Emergency — induction allowed on the written reason": {
+   "ar": "طوارئ — يُسمح ببدء التخدير بناءً على السبب المكتوب",
+   "en": "Emergency — induction allowed on the written reason",
+   "fr": "Urgence — induction autorisée sur le motif écrit"
+  },
+  "Fasting is complete": {
+   "ar": "الصيام مكتمل",
+   "en": "Fasting is complete",
+   "fr": "Le jeûne est respecté"
+  },
+  "ASA class": {
+   "ar": "تصنيف ASA",
+   "en": "ASA class",
+   "fr": "Classe ASA"
+  },
+  "asa:1": {
+   "ar": "سليم",
+   "en": "Healthy",
+   "fr": "Patient sain"
+  },
+  "asa:2": {
+   "ar": "مرض جهازي خفيف",
+   "en": "Mild systemic disease",
+   "fr": "Maladie systémique légère"
+  },
+  "asa:3": {
+   "ar": "مرض جهازي شديد",
+   "en": "Severe systemic disease",
+   "fr": "Maladie systémique sévère"
+  },
+  "asa:4": {
+   "ar": "مرض شديد يهدد الحياة باستمرار",
+   "en": "Severe disease, a constant threat to life",
+   "fr": "Maladie sévère, menace vitale permanente"
+  },
+  "asa:5": {
+   "ar": "حالة حرجة لا يُتوقع بقاؤها دون الجراحة",
+   "en": "Moribund, not expected to survive without the operation",
+   "fr": "Moribond, survie improbable sans l'intervention"
+  },
+  "asa:6": {
+   "ar": "متوفى دماغيًا (تبرع بالأعضاء)",
+   "en": "Brain-dead (organ donation)",
+   "fr": "Mort encéphalique (don d'organes)"
+  },
+  "Emergency (E)": {
+   "ar": "طوارئ (E)",
+   "en": "Emergency (E)",
+   "fr": "Urgence (E)"
+  },
+  "Planned technique": {
+   "ar": "طريقة التخدير المخططة",
+   "en": "Planned technique",
+   "fr": "Technique prévue"
+  },
+  "tech:General": {
+   "ar": "تخدير عام",
+   "en": "General",
+   "fr": "Générale"
+  },
+  "tech:Spinal": {
+   "ar": "تخدير نخاعي",
+   "en": "Spinal",
+   "fr": "Rachianesthésie"
+  },
+  "tech:Epidural": {
+   "ar": "تخدير فوق الجافية",
+   "en": "Epidural",
+   "fr": "Péridurale"
+  },
+  "tech:Regional": {
+   "ar": "إحصار عصبي موضعي",
+   "en": "Regional block",
+   "fr": "Bloc régional"
+  },
+  "tech:Sedation": {
+   "ar": "تهدئة",
+   "en": "Sedation",
+   "fr": "Sédation"
+  },
+  "tech:Local": {
+   "ar": "تخدير موضعي",
+   "en": "Local",
+   "fr": "Locale"
+  },
+  "Mouth opening (cm)": {
+   "ar": "فتحة الفم (سم)",
+   "en": "Mouth opening (cm)",
+   "fr": "Ouverture de bouche (cm)"
+  },
+  "Thyromental (cm)": {
+   "ar": "المسافة الدرقية الذقنية (سم)",
+   "en": "Thyromental (cm)",
+   "fr": "Distance thyro-mentonnière (cm)"
+  },
+  "Last solids": {
+   "ar": "آخر طعام صلب",
+   "en": "Last solids",
+   "fr": "Derniers solides"
+  },
+  "Last breast milk": {
+   "ar": "آخر رضاعة طبيعية",
+   "en": "Last breast milk",
+   "fr": "Dernier lait maternel"
+  },
+  "Last clear fluids": {
+   "ar": "آخر سوائل صافية",
+   "en": "Last clear fluids",
+   "fr": "Derniers liquides clairs"
+  },
+  "Emergency: why it cannot wait for fasting": {
+   "ar": "طوارئ: لماذا لا يمكن انتظار اكتمال الصيام",
+   "en": "Emergency: why it cannot wait for fasting",
+   "fr": "Urgence : pourquoi le jeûne ne peut être attendu"
+  },
+  "Not written yet.": {
+   "ar": "لم يُكتب بعد.",
+   "en": "Not written yet.",
+   "fr": "Pas encore rédigée."
+  },
+  "Recovery room": {
+   "ar": "غرفة الإفاقة",
+   "en": "Recovery room",
+   "fr": "Salle de réveil"
+  },
+  "Leaving needs an Aldrete score of 9 or more": {
+   "ar": "لا يغادر المريض إلا بدرجة Aldrete ‏9 أو أكثر",
+   "en": "Leaving needs an Aldrete score of 9 or more",
+   "fr": "La sortie exige un score d'Aldrete de 9 ou plus"
+  },
+  "The patient comes to recovery once the operation is closed.": {
+   "ar": "ينتقل المريض إلى الإفاقة بعد إغلاق العملية.",
+   "en": "The patient comes to recovery once the operation is closed.",
+   "fr": "Le patient passe en salle de réveil une fois l'intervention clôturée."
+  },
+  "Arrived in recovery": {
+   "ar": "وصل إلى الإفاقة",
+   "en": "Arrived in recovery",
+   "fr": "Arrivé en salle de réveil"
+  },
+  "Left recovery": {
+   "ar": "غادر الإفاقة",
+   "en": "Left recovery",
+   "fr": "Sorti de la salle de réveil"
+  },
+  "ald:Activity": {
+   "ar": "النشاط الحركي",
+   "en": "Activity",
+   "fr": "Motricité"
+  },
+  "ald:Activity:2": {
+   "ar": "يحرك الأطراف الأربعة",
+   "en": "Moves four limbs",
+   "fr": "Bouge les quatre membres"
+  },
+  "ald:Activity:1": {
+   "ar": "يحرك طرفين",
+   "en": "Moves two limbs",
+   "fr": "Bouge deux membres"
+  },
+  "ald:Activity:0": {
+   "ar": "لا يتحرك",
+   "en": "No movement",
+   "fr": "Aucun mouvement"
+  },
+  "ald:Respiration": {
+   "ar": "التنفس",
+   "en": "Respiration",
+   "fr": "Respiration"
+  },
+  "ald:Respiration:2": {
+   "ar": "يتنفس بعمق ويسعل",
+   "en": "Breathes deeply, coughs",
+   "fr": "Respire profondément, tousse"
+  },
+  "ald:Respiration:1": {
+   "ar": "ضيق أو تنفس محدود",
+   "en": "Dyspnoea or limited breathing",
+   "fr": "Dyspnée ou respiration limitée"
+  },
+  "ald:Respiration:0": {
+   "ar": "انقطاع التنفس",
+   "en": "Apnoeic",
+   "fr": "Apnée"
+  },
+  "ald:Circulation": {
+   "ar": "الدورة الدموية",
+   "en": "Circulation",
+   "fr": "Circulation"
+  },
+  "ald:Circulation:2": {
+   "ar": "الضغط ±20% من قبل التخدير",
+   "en": "BP within 20% of before",
+   "fr": "PA à ±20 % de la valeur pré-anesthésique"
+  },
+  "ald:Circulation:1": {
+   "ar": "الضغط ±20–49%",
+   "en": "BP within 20–49%",
+   "fr": "PA à ±20–49 %"
+  },
+  "ald:Circulation:0": {
+   "ar": "الضغط ±50% أو أكثر",
+   "en": "BP 50% or more away",
+   "fr": "PA à ±50 % ou plus"
+  },
+  "ald:Consciousness": {
+   "ar": "الوعي",
+   "en": "Consciousness",
+   "fr": "Conscience"
+  },
+  "ald:Consciousness:2": {
+   "ar": "واعٍ تمامًا",
+   "en": "Fully awake",
+   "fr": "Bien réveillé"
+  },
+  "ald:Consciousness:1": {
+   "ar": "يستيقظ عند النداء",
+   "en": "Rousable on calling",
+   "fr": "Réveillable à l'appel"
+  },
+  "ald:Consciousness:0": {
+   "ar": "لا يستجيب",
+   "en": "Not responding",
+   "fr": "Ne répond pas"
+  },
+  "ald:SpO2": {
+   "ar": "تشبع الأكسجين",
+   "en": "SpO₂",
+   "fr": "SpO₂"
+  },
+  "ald:SpO2:2": {
+   "ar": "أكثر من 92% على هواء الغرفة",
+   "en": "Above 92% on room air",
+   "fr": "Plus de 92 % à l'air ambiant"
+  },
+  "ald:SpO2:1": {
+   "ar": "يحتاج أكسجين ليبقى فوق 90%",
+   "en": "Needs oxygen to stay above 90%",
+   "fr": "Oxygène nécessaire pour rester au-dessus de 90 %"
+  },
+  "ald:SpO2:0": {
+   "ar": "أقل من 90% مع الأكسجين",
+   "en": "Below 90% with oxygen",
+   "fr": "Moins de 90 % sous oxygène"
+  },
+  "Record the score": {
+   "ar": "تسجيل الدرجة",
+   "en": "Record the score",
+   "fr": "Enregistrer le score"
+  },
+  "Leaves recovery": {
+   "ar": "مغادرة الإفاقة",
+   "en": "Leaves recovery",
+   "fr": "Sortie de la salle de réveil"
+  },
+  "During the operation": {
+   "ar": "أثناء العملية",
+   "en": "During the operation",
+   "fr": "Pendant l'intervention"
+  },
+  "Milestones, drugs, fluids and readings, each at its time": {
+   "ar": "المراحل والأدوية والسوائل والقراءات، كلٌّ بوقته",
+   "en": "Milestones, drugs, fluids and readings, each at its time",
+   "fr": "Étapes, médicaments, solutés et mesures, chacun à son heure"
+  },
+  "ae:Event": {
+   "ar": "مرحلة",
+   "en": "Milestone",
+   "fr": "Étape"
+  },
+  "ae:Drug": {
+   "ar": "دواء",
+   "en": "Drug",
+   "fr": "Médicament"
+  },
+  "ae:Fluid": {
+   "ar": "سوائل",
+   "en": "Fluid",
+   "fr": "Soluté"
+  },
+  "ae:Vitals": {
+   "ar": "قراءات",
+   "en": "Readings",
+   "fr": "Mesures"
+  },
+  "ae:Aldrete": {
+   "ar": "Aldrete",
+   "en": "Aldrete",
+   "fr": "Aldrete"
+  },
+  "aev:Induction": {
+   "ar": "بدء التخدير",
+   "en": "Induction",
+   "fr": "Induction"
+  },
+  "aev:Airway": {
+   "ar": "تأمين مجرى الهواء",
+   "en": "Airway secured",
+   "fr": "Voies aériennes sécurisées"
+  },
+  "aev:Incision": {
+   "ar": "الشق الجراحي",
+   "en": "Incision",
+   "fr": "Incision"
+  },
+  "aev:SurgeryEnd": {
+   "ar": "نهاية الجراحة",
+   "en": "End of surgery",
+   "fr": "Fin de la chirurgie"
+  },
+  "aev:Emergence": {
+   "ar": "الإفاقة من التخدير",
+   "en": "Emergence",
+   "fr": "Réveil"
+  },
+  "Milestone": {
+   "ar": "المرحلة",
+   "en": "Milestone",
+   "fr": "Étape"
+  },
+  "Dose unit": {
+   "ar": "وحدة الجرعة",
+   "en": "Dose unit",
+   "fr": "Unité de dose"
+  },
+  "The patient arrived in recovery now?": {
+   "ar": "هل وصل المريض إلى الإفاقة الآن؟",
+   "en": "The patient arrived in recovery now?",
+   "fr": "Le patient est-il arrivé en salle de réveil maintenant ?"
+  },
+  "The patient leaves recovery now?": {
+   "ar": "هل يغادر المريض الإفاقة الآن؟",
+   "en": "The patient leaves recovery now?",
+   "fr": "Le patient quitte-t-il la salle de réveil maintenant ?"
+  },
+  "Assessment, the record during the operation, and recovery": {
+   "ar": "التقييم، والسجل أثناء العملية، والإفاقة",
+   "en": "Assessment, the record during the operation, and recovery",
+   "fr": "Évaluation, dossier peropératoire et réveil"
+  },
+  "Write the pre-anaesthetic assessment before induction": {
+   "ar": "اكتب تقييم ما قبل التخدير قبل البدء",
+   "en": "Write the pre-anaesthetic assessment before induction",
+   "fr": "Rédigez la consultation pré-anesthésique avant l'induction"
+  },
+  "Fasting is not complete: solids {0} h ago, 6 h needed": {
+   "ar": "الصيام غير مكتمل: آخر طعام صلب قبل {0} ساعة، والمطلوب 6 ساعات",
+   "en": "Fasting is not complete: solids {0} h ago, 6 h needed",
+   "fr": "Jeûne incomplet : solides il y a {0} h, 6 h requises"
+  },
+  "Fasting is not complete: breast milk {0} h ago, 4 h needed": {
+   "ar": "الصيام غير مكتمل: آخر رضاعة قبل {0} ساعة، والمطلوب 4 ساعات",
+   "en": "Fasting is not complete: breast milk {0} h ago, 4 h needed",
+   "fr": "Jeûne incomplet : lait maternel il y a {0} h, 4 h requises"
+  },
+  "Fasting is not complete: clear fluids {0} h ago, 2 h needed": {
+   "ar": "الصيام غير مكتمل: آخر سوائل صافية قبل {0} ساعة، والمطلوب ساعتان",
+   "en": "Fasting is not complete: clear fluids {0} h ago, 2 h needed",
+   "fr": "Jeûne incomplet : liquides clairs il y a {0} h, 2 h requises"
+  },
+  "An emergency with unknown fasting needs its reason written": {
+   "ar": "حالة الطوارئ مجهولة الصيام تحتاج إلى كتابة السبب",
+   "en": "An emergency with unknown fasting needs its reason written",
+   "fr": "Une urgence au jeûne inconnu exige un motif écrit"
+  },
+  "Choose the ASA class (1 to 6)": {
+   "ar": "اختر تصنيف ASA (من 1 إلى 6)",
+   "en": "Choose the ASA class (1 to 6)",
+   "fr": "Choisissez la classe ASA (1 à 6)"
+  },
+  "Choose the planned technique": {
+   "ar": "اختر طريقة التخدير المخططة",
+   "en": "Choose the planned technique",
+   "fr": "Choisissez la technique prévue"
+  },
+  "Mallampati is 1 to 4": {
+   "ar": "درجة Mallampati من 1 إلى 4",
+   "en": "Mallampati is 1 to 4",
+   "fr": "Le Mallampati va de 1 à 4"
+  },
+  "The airway measurements are out of range": {
+   "ar": "قياسات مجرى الهواء خارج النطاق",
+   "en": "The airway measurements are out of range",
+   "fr": "Les mesures des voies aériennes sont hors limites"
+  },
+  "The weight must be 0.3 to 400 kg": {
+   "ar": "يجب أن يكون الوزن بين 0.3 و400 كغ",
+   "en": "The weight must be 0.3 to 400 kg",
+   "fr": "Le poids doit être de 0,3 à 400 kg"
+  },
+  "A fasting time cannot be in the future": {
+   "ar": "لا يمكن أن يكون وقت الصيام في المستقبل",
+   "en": "A fasting time cannot be in the future",
+   "fr": "Une heure de jeûne ne peut être dans le futur"
+  },
+  "Record when the patient last ate and drank": {
+   "ar": "سجّل آخر وقت أكل فيه المريض وشرب",
+   "en": "Record when the patient last ate and drank",
+   "fr": "Indiquez quand le patient a mangé et bu pour la dernière fois"
+  },
+  "Only an emergency may start before fasting is complete": {
+   "ar": "لا يبدأ قبل اكتمال الصيام إلا حالات الطوارئ",
+   "en": "Only an emergency may start before fasting is complete",
+   "fr": "Seule une urgence peut démarrer avant la fin du jeûne"
+  },
+  "Score the five Aldrete items, 0 to 2 each": {
+   "ar": "قيّم بنود Aldrete الخمسة، من 0 إلى 2 لكل بند",
+   "en": "Score the five Aldrete items, 0 to 2 each",
+   "fr": "Cotez les cinq items d'Aldrete, de 0 à 2 chacun"
+  },
+  "The record closed when the patient left recovery": {
+   "ar": "أُغلق السجل بمغادرة المريض للإفاقة",
+   "en": "The record closed when the patient left recovery",
+   "fr": "Le dossier a été clos à la sortie de la salle de réveil"
+  },
+  "The time cannot be in the future": {
+   "ar": "لا يمكن أن يكون الوقت في المستقبل",
+   "en": "The time cannot be in the future",
+   "fr": "L'heure ne peut être dans le futur"
+  },
+  "The time is before the assessment": {
+   "ar": "الوقت سابق للتقييم",
+   "en": "The time is before the assessment",
+   "fr": "L'heure précède la consultation"
+  },
+  "Choose the milestone": {
+   "ar": "اختر المرحلة",
+   "en": "Choose the milestone",
+   "fr": "Choisissez l'étape"
+  },
+  "Milestones are recorded once the operation has started": {
+   "ar": "تُسجَّل المراحل بعد بدء العملية",
+   "en": "Milestones are recorded once the operation has started",
+   "fr": "Les étapes s'enregistrent une fois l'intervention commencée"
+  },
+  "This milestone is already recorded": {
+   "ar": "هذه المرحلة مسجلة بالفعل",
+   "en": "This milestone is already recorded",
+   "fr": "Cette étape est déjà enregistrée"
+  },
+  "Name the drug": {
+   "ar": "اكتب اسم الدواء",
+   "en": "Name the drug",
+   "fr": "Indiquez le médicament"
+  },
+  "Name the fluid": {
+   "ar": "اكتب اسم المحلول",
+   "en": "Name the fluid",
+   "fr": "Indiquez le soluté"
+  },
+  "Enter the unit": {
+   "ar": "أدخل الوحدة",
+   "en": "Enter the unit",
+   "fr": "Saisissez l'unité"
+  },
+  "EtCO₂ must be 0 to 100 mmHg": {
+   "ar": "يجب أن يكون EtCO₂ بين 0 و100 ملم زئبق",
+   "en": "EtCO₂ must be 0 to 100 mmHg",
+   "fr": "L'EtCO₂ doit être de 0 à 100 mmHg"
+  },
+  "Enter both pressures": {
+   "ar": "أدخل الضغطين الانقباضي والانبساطي",
+   "en": "Enter both pressures",
+   "fr": "Saisissez les deux pressions"
+  },
+  "Record the arrival in recovery first": {
+   "ar": "سجّل الوصول إلى الإفاقة أولًا",
+   "en": "Record the arrival in recovery first",
+   "fr": "Enregistrez d'abord l'arrivée en salle de réveil"
+  },
+  "The patient has not arrived in recovery": {
+   "ar": "لم يصل المريض إلى الإفاقة",
+   "en": "The patient has not arrived in recovery",
+   "fr": "Le patient n'est pas arrivé en salle de réveil"
+  },
+  "The patient already left recovery": {
+   "ar": "غادر المريض الإفاقة بالفعل",
+   "en": "The patient already left recovery",
+   "fr": "Le patient a déjà quitté la salle de réveil"
+  },
+  "Score Aldrete before the patient leaves recovery": {
+   "ar": "قيّم Aldrete قبل مغادرة المريض للإفاقة",
+   "en": "Score Aldrete before the patient leaves recovery",
+   "fr": "Cotez l'Aldrete avant la sortie de la salle de réveil"
+  },
+  "Aldrete {0}: 9 or more is needed to leave recovery": {
+   "ar": "درجة Aldrete ‏{0}: المطلوب 9 أو أكثر لمغادرة الإفاقة",
+   "en": "Aldrete {0}: 9 or more is needed to leave recovery",
+   "fr": "Aldrete {0} : 9 ou plus est requis pour sortir"
+  },
+  "The anaesthesia record is not installed yet (hospital_h202_anaesthesia.sql)": {
+   "ar": "سجل التخدير غير مثبت بعد (hospital_h202_anaesthesia.sql)",
+   "en": "The anaesthesia record is not installed yet (hospital_h202_anaesthesia.sql)",
+   "fr": "Le dossier d'anesthésie n'est pas encore installé (hospital_h202_anaesthesia.sql)"
+  },
+  "The assessment locks at induction": {
+   "ar": "يُقفل التقييم عند بدء التخدير",
+   "en": "The assessment locks at induction",
+   "fr": "La consultation se verrouille à l'induction"
+  },
+  "Close the operation before the patient goes to recovery": {
+   "ar": "أغلق العملية قبل انتقال المريض إلى الإفاقة",
+   "en": "Close the operation before the patient goes to recovery",
+   "fr": "Clôturez l'intervention avant le passage en salle de réveil"
+  },
+  "The arrival in recovery is already recorded": {
+   "ar": "الوصول إلى الإفاقة مسجل بالفعل",
+   "en": "The arrival in recovery is already recorded",
+   "fr": "L'arrivée en salle de réveil est déjà enregistrée"
+  }
+ }
+}

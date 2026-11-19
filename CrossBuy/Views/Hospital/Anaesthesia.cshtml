@@ -1,0 +1,289 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalAnaesthesiaView?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H202 — an operation's anaesthesia record, composed from the theme (demo39): the case header, the pre-anaesthetic
+    assessment (a form until induction, then a summary), the record during the operation (milestones, drugs, fluids,
+    readings — a table widget) and the recovery room (Aldrete, leaving at 9 or more).
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Anaesthesia record"].Value;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    bool canConsult = ViewBag.CanConsult == true;
+    DateTime now = ViewBag.Now is DateTime n ? n : DateTime.Now;
+    var c = Model?.Case; var a = Model?.Record;
+    bool planned = c?.Status == HospitalSurgeryStatus.Planned;
+    bool editable = canConsult && planned;
+    bool closed = a?.PacuOutAt != null;
+    var shortfall = a == null ? null : HospitalAnaesthesiaRules.FastingShortfall(a.LastSolidsAt, a.LastMilkAt, a.LastClearAt, now);
+    var done = Model?.Entries.Where(e => e.Kind == HospitalAnaesthesiaEntryKind.Event).Select(e => e.Code).ToHashSet() ?? new HashSet<string?>();
+    string Dt(DateTime? d) => d?.ToString("yyyy-MM-dd HH:mm", inv) ?? "";
+    string Who(int? id) => id is int i && Model!.People.TryGetValue(i, out var s) ? s : "—";
+    string KindTone(string k) => k switch { HospitalAnaesthesiaEntryKind.Event => "primary", HospitalAnaesthesiaEntryKind.Drug => "info", HospitalAnaesthesiaEntryKind.Aldrete => "primary", _ => "secondary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Anaesthesia record"] @if (c != null) {<bdi class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">@c.CaseNo</bdi>}</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Theatre", new { day = c?.CaseDate.ToString("yyyy-MM-dd"), @case = c?.ID })" class="text-muted text-hover-primary">@T["Theatre schedule"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Anaesthesia record"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (Model == null)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The anaesthesia record is not installed yet (hospital_h202_anaesthesia.sql)"]</div></div>
+        }
+        else
+        {
+            <div class="card card-flush mb-5"><div class="card-body py-5 d-flex flex-wrap align-items-center gap-6">
+                <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = c!.PatientId })" class="text-gray-900 text-hover-primary fw-bold fs-5">@DisplayName.Of(Model.PatientName, Model.PatientNameEn)</a><bdi class="text-gray-500 fw-semibold fs-7 hp-num">@Model.Mrn</bdi></div>
+                <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(c.Name, c.NameEn)</span><span class="text-gray-500 fs-7"><bdi class="hp-num" dir="ltr">@c.CaseDate.ToString("yyyy-MM-dd", inv) @HospitalUi.Clock(c.StartMinute)</bdi> · @T["or:" + c.Status]</span></div>
+                @if (a != null) {<span class="badge badge-light-primary fs-6 fw-bold">ASA @a.Asa@(a.Emergency ? "E" : "")</span>}
+                @if (a?.DifficultAirway == true) {<span class="badge badge-danger fs-7 fw-bold"><i class="ki-outline ki-information-5 fs-6 text-white me-1"></i>@T["Difficult airway predicted"]</span>}
+                @if (!string.IsNullOrWhiteSpace(Model.Allergies)) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Allergies"]: <bdi class="ms-1">@Model.Allergies</bdi></span>}
+            </div></div>
+
+            <div class="row g-5">
+                <div class="col-xl-6">
+                    @* the pre-anaesthetic assessment — a form until induction *@
+                    <div class="card card-flush mb-5" data-assess>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-800">@T["Pre-anaesthetic assessment"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@(a == null ? T["Induction is refused until it is written"].Value : string.Format(T["By {0} at {1}"].Value, Who(a.AssessedByEmployeeId), Dt(a.AssessedAt)))</span>
+                            </h3>
+                            @if (editable) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-assess-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>}
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (a != null && planned)
+                            {
+                                @if (shortfall is var (why, hrs)) {<div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-5"><div class="fs-7 fw-semibold text-gray-800">@T[why, hrs.ToString("0.0", inv)]@if (a.Emergency && !string.IsNullOrWhiteSpace(a.FastingOverride)) {<div class="text-gray-600 mt-1">@T["Emergency — induction allowed on the written reason"]</div>}</div></div>}
+                                else {<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><div class="fs-7 fw-semibold text-gray-800">@T["Fasting is complete"]</div></div>}
+                            }
+                            @if (editable)
+                            {
+                                <div class="row g-4">
+                                    <div class="col-6"><label class="fs-7 fw-semibold mb-1 required">@T["ASA class"]</label>
+                                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-k="asa">@for (int i = 1; i <= 6; i++) {<option value="@i" selected="@(a?.Asa == i)">ASA @i — @T["asa:" + i]</option>}</select></div>
+                                    <div class="col-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-k="emergency" @(a?.Emergency == true ? "checked" : "") /><span class="form-check-label fw-semibold text-gray-800">@T["Emergency (E)"]</span></label></div>
+                                    <div class="col-6"><label class="fs-7 fw-semibold mb-1 required">@T["Planned technique"]</label>
+                                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-k="technique">@foreach (var t in HospitalAnaesthesiaTechnique.All) {<option value="@t" selected="@(a?.Technique == t)">@T["tech:" + t]</option>}</select></div>
+                                    <div class="col-6"><label class="fs-7 fw-semibold mb-1">@T["Weight (kg)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="weightKg" value="@a?.WeightKg?.ToString(inv)" /></div>
+                                    <div class="col-4"><label class="fs-7 fw-semibold mb-1">Mallampati</label>
+                                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-k="mallampati"><option value="">—</option>@for (int i = 1; i <= 4; i++) {<option value="@i" selected="@(a?.Mallampati == i)">@i</option>}</select></div>
+                                    <div class="col-4"><label class="fs-7 fw-semibold mb-1">@T["Mouth opening (cm)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="mouthOpeningCm" value="@a?.MouthOpeningCm?.ToString(inv)" /></div>
+                                    <div class="col-4"><label class="fs-7 fw-semibold mb-1">@T["Thyromental (cm)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="thyromentalCm" value="@a?.ThyromentalCm?.ToString(inv)" /></div>
+                                    <div class="col-sm-6"><label class="fs-7 fw-semibold mb-1">@T["Last solids"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-dt data-k="lastSolidsAt" value="@Dt(a?.LastSolidsAt)" /></div>
+                                    <div class="col-sm-6"><label class="fs-7 fw-semibold mb-1">@T["Last breast milk"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-dt data-k="lastMilkAt" value="@Dt(a?.LastMilkAt)" /></div>
+                                    <div class="col-sm-6"><label class="fs-7 fw-semibold mb-1">@T["Last clear fluids"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-dt data-k="lastClearAt" value="@Dt(a?.LastClearAt)" /></div>
+                                    <div class="col-12"><label class="fs-7 fw-semibold mb-1">@T["Emergency: why it cannot wait for fasting"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-k="fastingOverride">@a?.FastingOverride</textarea></div>
+                                    <div class="col-12"><label class="fs-7 fw-semibold mb-1">@T["Plan"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" data-k="plan">@a?.PlanText</textarea></div>
+                                </div>
+                            }
+                            else if (a != null)
+                            {
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <span class="badge badge-light fs-7">@T["tech:" + a.Technique]</span>
+                                    @if (a.WeightKg != null) {<span class="badge badge-light fs-7 hp-num" dir="ltr">@a.WeightKg.Value.ToString("0.#", inv) kg</span>}
+                                    @if (a.Mallampati != null) {<span class="badge badge-light fs-7">Mallampati @a.Mallampati</span>}
+                                </div>
+                                <table class="table table-row-dashed fs-7 gy-2 mb-0"><tbody>
+                                    <tr><td class="text-muted">@T["Last solids"]</td><td class="hp-num" dir="ltr">@(Dt(a.LastSolidsAt) is { Length: > 0 } s1 ? s1 : "—")</td></tr>
+                                    <tr><td class="text-muted">@T["Last breast milk"]</td><td class="hp-num" dir="ltr">@(Dt(a.LastMilkAt) is { Length: > 0 } s2 ? s2 : "—")</td></tr>
+                                    <tr><td class="text-muted">@T["Last clear fluids"]</td><td class="hp-num" dir="ltr">@(Dt(a.LastClearAt) is { Length: > 0 } s3 ? s3 : "—")</td></tr>
+                                </tbody></table>
+                                @if (!string.IsNullOrWhiteSpace(a.FastingOverride)) {<div class="text-gray-700 fs-7 mt-3"><span class="text-muted">@T["Emergency: why it cannot wait for fasting"]:</span> <bdi>@a.FastingOverride</bdi></div>}
+                                @if (!string.IsNullOrWhiteSpace(a.PlanText)) {<div class="text-gray-700 fs-7 mt-3"><bdi>@a.PlanText</bdi></div>}
+                            }
+                            else {<div class="text-muted fs-7">@T["Not written yet."]</div>}
+                        </div>
+                    </div>
+
+                    @* the recovery room *@
+                    <div class="card card-flush mb-5" data-pacu>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-800">@T["Recovery room"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Leaving needs an Aldrete score of 9 or more"]</span>
+                            </h3>
+                            <div class="card-toolbar">@if (Model.LastAldrete is int la) {<span class="badge badge-@(la >= HospitalAnaesthesiaRules.AldreteToLeave ? "primary" : "danger") fs-5 fw-bold hp-num">Aldrete @la/10</span>}</div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (a == null || c.Status != HospitalSurgeryStatus.Done) {<div class="text-muted fs-7">@T["The patient comes to recovery once the operation is closed."]</div>}
+                            else if (a.PacuInAt == null) { if (canConsult) {<button type="button" class="btn btn-sm btn-primary" data-pacu-in><i class="ki-outline ki-entrance-left fs-4"></i>@T["Arrived in recovery"]</button>} }
+                            else
+                            {
+                                <div class="text-gray-700 fs-7 mb-4">@T["Arrived"] <bdi class="hp-num" dir="ltr">@Dt(a.PacuInAt)</bdi>@if (closed) {<text> · @T["Left recovery"] </text><bdi class="hp-num" dir="ltr">@Dt(a.PacuOutAt)</bdi><text> · @Who(a.PacuOutByEmployeeId)</text>}</div>
+                                @if (!closed && canConsult)
+                                {
+                                    <div class="row g-3" data-aldrete>
+                                        @foreach (var item in new[] { "Activity", "Respiration", "Circulation", "Consciousness", "SpO2" })
+                                        {
+                                            <div class="col-6"><label class="fs-8 fw-semibold mb-1">@T["ald:" + item]</label>
+                                                <select class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true" data-ald>@for (int i = 2; i >= 0; i--) {<option value="@i">@i — @T["ald:" + item + ":" + i]</option>}</select></div>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-2 mt-4">
+                                        <button type="button" class="btn btn-sm btn-light-primary" data-ald-save><i class="ki-outline ki-check fs-4"></i>@T["Record the score"]</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-pacu-out><i class="ki-outline ki-exit-right fs-4"></i>@T["Leaves recovery"]</button>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-6">
+                    @* during the operation — the theme's table widget *@
+                    <div class="card card-flush mb-5" data-record>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-800">@T["During the operation"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Milestones, drugs, fluids and readings, each at its time"]</span>
+                            </h3>
+                            @if (canConsult && a != null && !closed)
+                            {
+                                <div class="card-toolbar gap-2">
+                                    @foreach (var k in new[] { HospitalAnaesthesiaEntryKind.Event, HospitalAnaesthesiaEntryKind.Drug, HospitalAnaesthesiaEntryKind.Fluid, HospitalAnaesthesiaEntryKind.Vitals })
+                                    {<button type="button" class="btn btn-sm btn-light-primary" data-entry-open="@k"><i class="ki-outline ki-plus fs-4"></i>@T["ae:" + k]</button>}
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex flex-wrap gap-2 mb-5">
+                                @foreach (var ev in HospitalAnaesthesiaEvent.All)
+                                {
+                                    var at = Model.Entries.FirstOrDefault(e => e.Kind == HospitalAnaesthesiaEntryKind.Event && e.Code == ev)?.At;
+                                    <span class="badge @(at != null ? "badge-light-primary" : "badge-light text-muted") fs-7 fw-semibold">@T["aev:" + ev]@if (at != null) {<bdi class="hp-num ms-1" dir="ltr">@at.Value.ToString("HH:mm", inv)</bdi>}</span>
+                                }
+                            </div>
+                            @if (Model.Entries.Count == 0) {<div class="text-center py-8 text-muted fs-7">@T["Nothing recorded yet."]</div>}
+                            else
+                            {
+                                <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-2 fs-7 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-3 rounded-start w-60px">@T["Time"]</th><th class="w-90px">@T["Kind"]</th><th>@T["Detail"]</th><th class="pe-3 rounded-end min-w-100px">@T["Recorded by"]</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var e in Model.Entries)
+                                        {
+                                            <tr>
+                                                <td class="ps-3 hp-num" dir="ltr">@e.At.ToString("HH:mm", inv)</td>
+                                                <td><span class="badge badge-light-@KindTone(e.Kind) fw-semibold">@T["ae:" + e.Kind]</span></td>
+                                                <td class="text-gray-800">
+                                                    @switch (e.Kind)
+                                                    {
+                                                        case HospitalAnaesthesiaEntryKind.Event: <text>@T["aev:" + e.Code]</text> break;
+                                                        case HospitalAnaesthesiaEntryKind.Vitals:
+                                                            <span class="d-inline-flex flex-wrap gap-1">
+                                                                @if (e.HeartRate != null) {<span class="badge badge-light"><span class="text-muted me-1">@T["HR"]</span><bdi class="hp-num" dir="ltr">@e.HeartRate</bdi></span>}
+                                                                @if (e.SystolicBp != null) {<span class="badge badge-light"><span class="text-muted me-1">@T["BP"]</span><bdi class="hp-num" dir="ltr">@e.SystolicBp/@e.DiastolicBp</bdi></span>}
+                                                                @if (e.SpO2 != null) {<span class="badge badge-light"><span class="text-muted me-1">SpO₂</span><bdi class="hp-num" dir="ltr">@e.SpO2%</bdi></span>}
+                                                                @if (e.EtCo2 != null) {<span class="badge badge-light"><span class="text-muted me-1">EtCO₂</span><bdi class="hp-num" dir="ltr">@e.EtCo2</bdi></span>}
+                                                            </span>
+                                                            break;
+                                                        case HospitalAnaesthesiaEntryKind.Aldrete: <text>Aldrete </text><bdi class="hp-num fw-bold" dir="ltr">@e.Score/10</bdi> <span class="text-muted hp-num" dir="ltr">(@e.Code)</span> break;
+                                                        default: <bdi>@e.Code</bdi> <bdi class="hp-num fw-bold ms-1 text-nowrap" dir="ltr">@e.Dose?.ToString("0.###", inv) @e.Unit</bdi>@if (e.Route != null) {<span class="text-muted ms-1 text-nowrap">· <bdi dir="ltr">@e.Route</bdi></span>} break;
+                                                    }
+                                                    @if (e.Note != null) {<div class="text-muted fs-8"><bdi>@e.Note</bdi></div>}
+                                                </td>
+                                                <td class="pe-3 text-gray-600">@Who(e.RecordedByEmployeeId)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (Model?.Record != null && canConsult && !closed)
+{
+    <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <h1 class="mb-6 text-center" data-entry-title></h1>
+            <div class="row g-4">
+                <div class="col-6"><label class="fs-7 fw-semibold mb-1">@T["Time"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-dt data-e="at" /></div>
+                <div class="col-12" data-for="Event"><label class="fs-7 fw-semibold mb-1 required">@T["Milestone"]</label>
+                    <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#entryModal" data-e="event">@foreach (var ev in HospitalAnaesthesiaEvent.All) {<option value="@ev" disabled="@done.Contains(ev)">@T["aev:" + ev]</option>}</select></div>
+                <div class="col-12" data-for="Drug Fluid"><label class="fs-7 fw-semibold mb-1 required">@T["Name"]</label><input class="form-control form-control-solid" maxlength="100" data-e="code" /></div>
+                <div class="col-4" data-for="Drug Fluid"><label class="fs-7 fw-semibold mb-1 required">@T["Dose"]</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="decimal" data-e="dose" /></div>
+                <div class="col-4" data-for="Drug Fluid"><label class="fs-7 fw-semibold mb-1 required">@T["Dose unit"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="20" data-e="unit" placeholder="mg · mcg · mL" /></div>
+                <div class="col-4" data-for="Drug Fluid"><label class="fs-7 fw-semibold mb-1">@T["Route"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="20" data-e="route" placeholder="IV" /></div>
+                <div class="col-3" data-for="Vitals"><label class="fs-7 fw-semibold mb-1">@T["HR"]</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" data-e="heartRate" /></div>
+                <div class="col-3" data-for="Vitals"><label class="fs-7 fw-semibold mb-1">@T["BP"]</label><input class="form-control form-control-solid hp-num" dir="ltr" placeholder="120/80" data-e="bp" /></div>
+                <div class="col-3" data-for="Vitals"><label class="fs-7 fw-semibold mb-1">SpO₂</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" data-e="spO2" /></div>
+                <div class="col-3" data-for="Vitals"><label class="fs-7 fw-semibold mb-1">EtCO₂</label><input class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" data-e="etCo2" /></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-1">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" data-e="note" /></div>
+            </div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-entry-save><i class="ki-outline ki-check fs-4"></i>@T["Record"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Theatre/" + (Model?.Case.ID ?? 0) + "/Anaesthesia/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                kinds: { Event: @Json.Serialize(T["ae:Event"].Value), Drug: @Json.Serialize(T["ae:Drug"].Value), Fluid: @Json.Serialize(T["ae:Fluid"].Value), Vitals: @Json.Serialize(T["ae:Vitals"].Value) },
+                pacuIn: @Json.Serialize(T["The patient arrived in recovery now?"].Value), pacuOut: @Json.Serialize(T["The patient leaves recovery now?"].Value) };
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(t) { return function (res) { if (t) t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); setTimeout(function () { location.reload(); }, 500); }; }
+            function iso(v) { v = (v || '').trim(); return v ? v.replace(' ', 'T') + ':00' : null; }
+            function num(v) { v = (v || '').trim().replace(',', '.'); return v === '' ? null : Number(v); }
+            if (window.flatpickr) document.querySelectorAll('[data-dt]').forEach(function (el) { flatpickr(el, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true, disableMobile: true, maxDate: new Date(Date.now() + 5 * 60000) }); });
+            var kind = null, em = document.getElementById('entryModal');
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-assess-save],[data-entry-open],[data-entry-save],[data-pacu-in],[data-pacu-out],[data-ald-save]'); if (!t) return;
+                if (t.hasAttribute('data-assess-save')) {
+                    var f = document.querySelector('[data-assess]'), g = function (k) { return f.querySelector('[data-k="' + k + '"]'); };
+                    t.disabled = true;
+                    post('Assess', { asa: Number(g('asa').value), emergency: g('emergency').checked, technique: g('technique').value, weightKg: num(g('weightKg').value),
+                        mallampati: g('mallampati').value ? Number(g('mallampati').value) : null, mouthOpeningCm: num(g('mouthOpeningCm').value), thyromentalCm: num(g('thyromentalCm').value),
+                        lastSolidsAt: iso(g('lastSolidsAt').value), lastMilkAt: iso(g('lastMilkAt').value), lastClearAt: iso(g('lastClearAt').value),
+                        fastingOverride: g('fastingOverride').value, plan: g('plan').value }).then(done(t));
+                    return;
+                }
+                if (t.hasAttribute('data-entry-open')) {
+                    kind = t.getAttribute('data-entry-open');
+                    em.querySelector('[data-entry-title]').textContent = W.kinds[kind];
+                    em.querySelectorAll('[data-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-for').split(' ').indexOf(kind) < 0); });
+                    em.querySelectorAll('input[data-e]').forEach(function (i) { if (i._flatpickr) i._flatpickr.clear(); else i.value = ''; });
+                    if (kind === 'Fluid') em.querySelector('[data-e=unit]').value = 'mL';
+                    bootstrap.Modal.getOrCreateInstance(em).show(); return;
+                }
+                if (t.hasAttribute('data-entry-save')) {
+                    var v = function (k) { return em.querySelector('[data-e="' + k + '"]').value; }, bp = (v('bp') || '').split('/');
+                    var body = { kind: kind, at: iso(v('at')), note: v('note') };
+                    if (kind === 'Event') body.code = v('event');
+                    if (kind === 'Drug' || kind === 'Fluid') { body.code = v('code'); body.dose = num(v('dose')); body.unit = v('unit'); body.route = v('route'); }
+                    if (kind === 'Vitals') { body.heartRate = num(v('heartRate')); body.spO2 = num(v('spO2')); body.etCo2 = num(v('etCo2')); if (bp.length === 2) { body.systolicBp = num(bp[0]); body.diastolicBp = num(bp[1]); } }
+                    t.disabled = true; post('Entry', body).then(done(t)); return;
+                }
+                if (t.hasAttribute('data-ald-save')) {
+                    var items = Array.prototype.map.call(document.querySelectorAll('[data-ald]'), function (s) { return Number(s.value); });
+                    t.disabled = true; post('Entry', { kind: 'Aldrete', items: items }).then(done(t)); return;
+                }
+                var isIn = t.hasAttribute('data-pacu-in');
+                cbConfirm(isIn ? W.pacuIn : W.pacuOut).then(function (ok) { if (!ok) return; t.disabled = true; post(isIn ? 'PacuIn' : 'PacuOut').then(done(t)); });
+            });
+        })();
+    </script>
+}

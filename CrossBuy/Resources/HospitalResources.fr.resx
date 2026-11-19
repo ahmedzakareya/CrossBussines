@@ -8956,4 +8956,111 @@
   <data name="{0} readings waiting" xml:space="preserve"><value>{0} mesures en attente</value></data>
   <data name="{0}: in {1}" xml:space="preserve"><value>{0} : en {1}</value></data>
   <data name="{0}: {1} is out of range" xml:space="preserve"><value>{0} : {1} hors limites</value></data>
+  <data name="A fasting time cannot be in the future" xml:space="preserve"><value>Une heure de jeûne ne peut être dans le futur</value></data>
+  <data name="ASA class" xml:space="preserve"><value>Classe ASA</value></data>
+  <data name="Aldrete {0}: 9 or more is needed to leave recovery" xml:space="preserve"><value>Aldrete {0} : 9 ou plus est requis pour sortir</value></data>
+  <data name="An emergency with unknown fasting needs its reason written" xml:space="preserve"><value>Une urgence au jeûne inconnu exige un motif écrit</value></data>
+  <data name="Anaesthesia record" xml:space="preserve"><value>Dossier d'anesthésie</value></data>
+  <data name="Arrived in recovery" xml:space="preserve"><value>Arrivé en salle de réveil</value></data>
+  <data name="Assessment, the record during the operation, and recovery" xml:space="preserve"><value>Évaluation, dossier peropératoire et réveil</value></data>
+  <data name="By {0} at {1}" xml:space="preserve"><value>Par {0} à {1}</value></data>
+  <data name="Choose the ASA class (1 to 6)" xml:space="preserve"><value>Choisissez la classe ASA (1 à 6)</value></data>
+  <data name="Choose the milestone" xml:space="preserve"><value>Choisissez l'étape</value></data>
+  <data name="Choose the planned technique" xml:space="preserve"><value>Choisissez la technique prévue</value></data>
+  <data name="Close the operation before the patient goes to recovery" xml:space="preserve"><value>Clôturez l'intervention avant le passage en salle de réveil</value></data>
+  <data name="Difficult airway predicted" xml:space="preserve"><value>Intubation difficile prévue</value></data>
+  <data name="Dose unit" xml:space="preserve"><value>Unité de dose</value></data>
+  <data name="During the operation" xml:space="preserve"><value>Pendant l'intervention</value></data>
+  <data name="Emergency (E)" xml:space="preserve"><value>Urgence (E)</value></data>
+  <data name="Emergency: why it cannot wait for fasting" xml:space="preserve"><value>Urgence : pourquoi le jeûne ne peut être attendu</value></data>
+  <data name="Enter both pressures" xml:space="preserve"><value>Saisissez les deux pressions</value></data>
+  <data name="Enter the unit" xml:space="preserve"><value>Saisissez l'unité</value></data>
+  <data name="EtCO₂ must be 0 to 100 mmHg" xml:space="preserve"><value>L'EtCO₂ doit être de 0 à 100 mmHg</value></data>
+  <data name="Fasting is complete" xml:space="preserve"><value>Le jeûne est respecté</value></data>
+  <data name="Fasting is not complete: breast milk {0} h ago, 4 h needed" xml:space="preserve"><value>Jeûne incomplet : lait maternel il y a {0} h, 4 h requises</value></data>
+  <data name="Fasting is not complete: clear fluids {0} h ago, 2 h needed" xml:space="preserve"><value>Jeûne incomplet : liquides clairs il y a {0} h, 2 h requises</value></data>
+  <data name="Fasting is not complete: solids {0} h ago, 6 h needed" xml:space="preserve"><value>Jeûne incomplet : solides il y a {0} h, 6 h requises</value></data>
+  <data name="Induction is refused until it is written" xml:space="preserve"><value>L'induction est refusée tant qu'elle n'est pas rédigée</value></data>
+  <data name="Last breast milk" xml:space="preserve"><value>Dernier lait maternel</value></data>
+  <data name="Last clear fluids" xml:space="preserve"><value>Derniers liquides clairs</value></data>
+  <data name="Last solids" xml:space="preserve"><value>Derniers solides</value></data>
+  <data name="Leaves recovery" xml:space="preserve"><value>Sortie de la salle de réveil</value></data>
+  <data name="Leaving needs an Aldrete score of 9 or more" xml:space="preserve"><value>La sortie exige un score d'Aldrete de 9 ou plus</value></data>
+  <data name="Left recovery" xml:space="preserve"><value>Sorti de la salle de réveil</value></data>
+  <data name="Mallampati is 1 to 4" xml:space="preserve"><value>Le Mallampati va de 1 à 4</value></data>
+  <data name="Milestone" xml:space="preserve"><value>Étape</value></data>
+  <data name="Milestones are recorded once the operation has started" xml:space="preserve"><value>Les étapes s'enregistrent une fois l'intervention commencée</value></data>
+  <data name="Milestones, drugs, fluids and readings, each at its time" xml:space="preserve"><value>Étapes, médicaments, solutés et mesures, chacun à son heure</value></data>
+  <data name="Mouth opening (cm)" xml:space="preserve"><value>Ouverture de bouche (cm)</value></data>
+  <data name="Name the drug" xml:space="preserve"><value>Indiquez le médicament</value></data>
+  <data name="Name the fluid" xml:space="preserve"><value>Indiquez le soluté</value></data>
+  <data name="Not written yet." xml:space="preserve"><value>Pas encore rédigée.</value></data>
+  <data name="Only an emergency may start before fasting is complete" xml:space="preserve"><value>Seule une urgence peut démarrer avant la fin du jeûne</value></data>
+  <data name="Planned technique" xml:space="preserve"><value>Technique prévue</value></data>
+  <data name="Pre-anaesthetic assessment" xml:space="preserve"><value>Consultation pré-anesthésique</value></data>
+  <data name="Record the arrival in recovery first" xml:space="preserve"><value>Enregistrez d'abord l'arrivée en salle de réveil</value></data>
+  <data name="Record the score" xml:space="preserve"><value>Enregistrer le score</value></data>
+  <data name="Record when the patient last ate and drank" xml:space="preserve"><value>Indiquez quand le patient a mangé et bu pour la dernière fois</value></data>
+  <data name="Recovery room" xml:space="preserve"><value>Salle de réveil</value></data>
+  <data name="Score Aldrete before the patient leaves recovery" xml:space="preserve"><value>Cotez l'Aldrete avant la sortie de la salle de réveil</value></data>
+  <data name="Score the five Aldrete items, 0 to 2 each" xml:space="preserve"><value>Cotez les cinq items d'Aldrete, de 0 à 2 chacun</value></data>
+  <data name="The airway measurements are out of range" xml:space="preserve"><value>Les mesures des voies aériennes sont hors limites</value></data>
+  <data name="The anaesthesia record is not installed yet (hospital_h202_anaesthesia.sql)" xml:space="preserve"><value>Le dossier d'anesthésie n'est pas encore installé (hospital_h202_anaesthesia.sql)</value></data>
+  <data name="The arrival in recovery is already recorded" xml:space="preserve"><value>L'arrivée en salle de réveil est déjà enregistrée</value></data>
+  <data name="The assessment locks at induction" xml:space="preserve"><value>La consultation se verrouille à l'induction</value></data>
+  <data name="The patient already left recovery" xml:space="preserve"><value>Le patient a déjà quitté la salle de réveil</value></data>
+  <data name="The patient arrived in recovery now?" xml:space="preserve"><value>Le patient est-il arrivé en salle de réveil maintenant ?</value></data>
+  <data name="The patient comes to recovery once the operation is closed." xml:space="preserve"><value>Le patient passe en salle de réveil une fois l'intervention clôturée.</value></data>
+  <data name="The patient has not arrived in recovery" xml:space="preserve"><value>Le patient n'est pas arrivé en salle de réveil</value></data>
+  <data name="The patient leaves recovery now?" xml:space="preserve"><value>Le patient quitte-t-il la salle de réveil maintenant ?</value></data>
+  <data name="The record closed when the patient left recovery" xml:space="preserve"><value>Le dossier a été clos à la sortie de la salle de réveil</value></data>
+  <data name="The time cannot be in the future" xml:space="preserve"><value>L'heure ne peut être dans le futur</value></data>
+  <data name="The time is before the assessment" xml:space="preserve"><value>L'heure précède la consultation</value></data>
+  <data name="The weight must be 0.3 to 400 kg" xml:space="preserve"><value>Le poids doit être de 0,3 à 400 kg</value></data>
+  <data name="This milestone is already recorded" xml:space="preserve"><value>Cette étape est déjà enregistrée</value></data>
+  <data name="Thyromental (cm)" xml:space="preserve"><value>Distance thyro-mentonnière (cm)</value></data>
+  <data name="Write the pre-anaesthetic assessment before induction" xml:space="preserve"><value>Rédigez la consultation pré-anesthésique avant l'induction</value></data>
+  <data name="ae:Aldrete" xml:space="preserve"><value>Aldrete</value></data>
+  <data name="ae:Drug" xml:space="preserve"><value>Médicament</value></data>
+  <data name="ae:Event" xml:space="preserve"><value>Étape</value></data>
+  <data name="ae:Fluid" xml:space="preserve"><value>Soluté</value></data>
+  <data name="ae:Vitals" xml:space="preserve"><value>Mesures</value></data>
+  <data name="aev:Airway" xml:space="preserve"><value>Voies aériennes sécurisées</value></data>
+  <data name="aev:Emergence" xml:space="preserve"><value>Réveil</value></data>
+  <data name="aev:Incision" xml:space="preserve"><value>Incision</value></data>
+  <data name="aev:Induction" xml:space="preserve"><value>Induction</value></data>
+  <data name="aev:SurgeryEnd" xml:space="preserve"><value>Fin de la chirurgie</value></data>
+  <data name="ald:Activity" xml:space="preserve"><value>Motricité</value></data>
+  <data name="ald:Activity:0" xml:space="preserve"><value>Aucun mouvement</value></data>
+  <data name="ald:Activity:1" xml:space="preserve"><value>Bouge deux membres</value></data>
+  <data name="ald:Activity:2" xml:space="preserve"><value>Bouge les quatre membres</value></data>
+  <data name="ald:Circulation" xml:space="preserve"><value>Circulation</value></data>
+  <data name="ald:Circulation:0" xml:space="preserve"><value>PA à ±50 % ou plus</value></data>
+  <data name="ald:Circulation:1" xml:space="preserve"><value>PA à ±20–49 %</value></data>
+  <data name="ald:Circulation:2" xml:space="preserve"><value>PA à ±20 % de la valeur pré-anesthésique</value></data>
+  <data name="ald:Consciousness" xml:space="preserve"><value>Conscience</value></data>
+  <data name="ald:Consciousness:0" xml:space="preserve"><value>Ne répond pas</value></data>
+  <data name="ald:Consciousness:1" xml:space="preserve"><value>Réveillable à l'appel</value></data>
+  <data name="ald:Consciousness:2" xml:space="preserve"><value>Bien réveillé</value></data>
+  <data name="ald:Respiration" xml:space="preserve"><value>Respiration</value></data>
+  <data name="ald:Respiration:0" xml:space="preserve"><value>Apnée</value></data>
+  <data name="ald:Respiration:1" xml:space="preserve"><value>Dyspnée ou respiration limitée</value></data>
+  <data name="ald:Respiration:2" xml:space="preserve"><value>Respire profondément, tousse</value></data>
+  <data name="ald:SpO2" xml:space="preserve"><value>SpO₂</value></data>
+  <data name="ald:SpO2:0" xml:space="preserve"><value>Moins de 90 % sous oxygène</value></data>
+  <data name="ald:SpO2:1" xml:space="preserve"><value>Oxygène nécessaire pour rester au-dessus de 90 %</value></data>
+  <data name="ald:SpO2:2" xml:space="preserve"><value>Plus de 92 % à l'air ambiant</value></data>
+  <data name="asa:1" xml:space="preserve"><value>Patient sain</value></data>
+  <data name="asa:2" xml:space="preserve"><value>Maladie systémique légère</value></data>
+  <data name="asa:3" xml:space="preserve"><value>Maladie systémique sévère</value></data>
+  <data name="asa:4" xml:space="preserve"><value>Maladie sévère, menace vitale permanente</value></data>
+  <data name="asa:5" xml:space="preserve"><value>Moribond, survie improbable sans l'intervention</value></data>
+  <data name="asa:6" xml:space="preserve"><value>Mort encéphalique (don d'organes)</value></data>
+  <data name="tech:Epidural" xml:space="preserve"><value>Péridurale</value></data>
+  <data name="tech:General" xml:space="preserve"><value>Générale</value></data>
+  <data name="tech:Local" xml:space="preserve"><value>Locale</value></data>
+  <data name="tech:Regional" xml:space="preserve"><value>Bloc régional</value></data>
+  <data name="tech:Sedation" xml:space="preserve"><value>Sédation</value></data>
+  <data name="tech:Spinal" xml:space="preserve"><value>Rachianesthésie</value></data>
+  <data name="Emergency — induction allowed on the written reason" xml:space="preserve"><value>Urgence — induction autorisée sur le motif écrit</value></data>
 </root>
