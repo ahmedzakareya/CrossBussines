@@ -283,6 +283,49 @@ namespace CrossBuy.BL.Hospital
 			return (HospitalResult.Success(x.ID), b.BatchNo + ".fhir.json", json);
 		}
 
+		// ---- H210: the payer's claim sheet (a TPA's spreadsheet) ----
+
+		/// The payer's sheet, or the standard one while it has none.
+		public async Task<HospitalClaimSheetSetup?> SheetAsync(BusinessContext ctx, int payerId, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Bill, null, ct)) return null;
+			if (!await _db.Set<HospitalPayer>().AnyAsync(p => p.ID == payerId && p.CompanyId == ctx.CompanyId, ct)) return null;
+			var s = await _db.Set<HospitalPayerClaimSheet>().AsNoTracking().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.PayerId == payerId, ct);
+			if (s == null) return HospitalClaimSheets.Standard();
+			var cols = HospitalClaimSheets.Unpack(s.Columns);
+			return cols.Count == 0 ? HospitalClaimSheets.Standard() : new HospitalClaimSheetSetup(cols, s.Delimiter, s.DateFormat, true);
+		}
+
+		public async Task<HospitalResult> SaveSheetAsync(BusinessContext ctx, int payerId, HospitalClaimSheetInput input, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Bill, null, ct)) return HospitalResult.Fail("forbidden");
+			if (!await _db.Set<HospitalPayer>().AnyAsync(p => p.ID == payerId && p.CompanyId == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
+			if (HospitalClaimSheets.Refusal(input) is string why) return HospitalResult.Fail(why);
+			var s = await _db.Set<HospitalPayerClaimSheet>().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.PayerId == payerId, ct);
+			if (s == null) { s = new HospitalPayerClaimSheet { CompanyId = ctx.CompanyId, PayerId = payerId }; _db.Add(s); }
+			s.Columns = HospitalClaimSheets.Pack(input.Columns!.Select(c => c with { Header = c.Header.Trim() }));
+			s.Delimiter = input.Delimiter!; s.DateFormat = input.DateFormat!; s.UpdatedAt = nowUtc; s.UpdatedByEmployeeId = employeeId;
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(s.ID);
+		}
+
+		/// The batch's claims as the payer's sheet (kept as a sent file, like the FHIR one). Only a submitted batch goes out.
+		public async Task<(HospitalResult Result, string? FileName, string? Csv)> ExportSheetAsync(BusinessContext ctx, int batchId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Bill, null, ct)) return (HospitalResult.Fail("forbidden"), null, null);
+			var (b, payer) = await BatchAsync(ctx, batchId, ct);
+			if (b == null || payer == null) return (HospitalResult.Fail("not_found"), null, null);
+			if (b.Status == HospitalClaimBatchStatus.Draft) return (HospitalResult.Fail("Submit the batch before sending its file"), null, null);
+			var setup = (await SheetAsync(ctx, payer.ID, ct))!;
+			var claims = await ClaimsAsync(ctx, batchId, ct);
+			string currency = await CurrencyAsync(ctx, payer, ct);
+			string csv = HospitalClaimSheets.Render(setup, b.BatchNo, claims, currency);
+			var x = new HospitalClaimExchange { CompanyId = ctx.CompanyId, BatchId = b.ID, Direction = HospitalClaimExchangeDirection.Sent, Format = HospitalClaimSheets.Format, Raw = csv, Applied = claims.Sum(d => d.Lines.Count), At = nowUtc, ByEmployeeId = employeeId };
+			_db.Add(x);
+			await _db.SaveChangesAsync(ct);
+			return (HospitalResult.Success(x.ID), b.BatchNo + ".csv", csv);
+		}
+
 		private async Task<string> CurrencyAsync(BusinessContext ctx, HospitalPayer payer, CancellationToken ct)
 		{
 			if (_pricing == null) return "KWD";

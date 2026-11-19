@@ -82,6 +82,8 @@ namespace CrossBuy.Tests
             HospitalDocumentDatasetCodes.CompoundLabel,      // H153
             HospitalDocumentDatasetCodes.ReferralLetter,     // H204
             HospitalDocumentDatasetCodes.SpecimenLabel,      // H206
+            HospitalDocumentDatasetCodes.DiseaseReport,      // H209
+            HospitalDocumentDatasetCodes.WardDowntime,       // H211
         };
 
         // ---- the datasets are declared, and declared legally ------------------------------------

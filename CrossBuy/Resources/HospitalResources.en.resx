@@ -9174,4 +9174,90 @@
   <data name="This bag is not the unit issued for this patient: stop and return it to the blood bank" xml:space="preserve"><value>This bag is not the unit issued for this patient: stop and return it to the blood bank</value></data>
   <data name="This bag's transfusion was already started" xml:space="preserve"><value>This bag's transfusion was already started</value></data>
   <data name="Transfusing since" xml:space="preserve"><value>Transfusing since</value></data>
+  <data name="A sick leave cannot start before the visit it is issued at" xml:space="preserve"><value>A sick leave cannot start before the visit it is issued at</value></data>
+  <data name="A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours" xml:space="preserve"><value>A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours</value></data>
+  <data name="A void certificate is not authenticated" xml:space="preserve"><value>A void certificate is not authenticated</value></data>
+  <data name="Authenticated" xml:space="preserve"><value>Authenticated</value></data>
+  <data name="Awaiting MOH authentication" xml:space="preserve"><value>Awaiting MOH authentication</value></data>
+  <data name="MOH authenticated" xml:space="preserve"><value>MOH authenticated</value></data>
+  <data name="Ministry of Health" xml:space="preserve"><value>Ministry of Health</value></data>
+  <data name="No certificate has this code" xml:space="preserve"><value>No certificate has this code</value></data>
+  <data name="Not authenticated yet" xml:space="preserve"><value>Not authenticated yet</value></data>
+  <data name="Record MOH authentication" xml:space="preserve"><value>Record MOH authentication</value></data>
+  <data name="Sick leave verification" xml:space="preserve"><value>Sick leave verification</value></data>
+  <data name="The Ministry of Health's authentication reference for certificate {0}" xml:space="preserve"><value>The Ministry of Health's authentication reference for certificate {0}</value></data>
+  <data name="The Ministry's authentication is already recorded" xml:space="preserve"><value>The Ministry's authentication is already recorded</value></data>
+  <data name="The Ministry's authentication is recorded" xml:space="preserve"><value>The Ministry's authentication is recorded</value></data>
+  <data name="The reference is too long" xml:space="preserve"><value>The reference is too long</value></data>
+  <data name="This certificate is genuine" xml:space="preserve"><value>This certificate is genuine</value></data>
+  <data name="This certificate was cancelled" xml:space="preserve"><value>This certificate was cancelled</value></data>
+  <data name="Verification code" xml:space="preserve"><value>Verification code</value></data>
+  <data name="Write the Ministry's authentication reference" xml:space="preserve"><value>Write the Ministry's authentication reference</value></data>
+  <data name="A case opens by itself when a signed visit carries a diagnosis on the list." xml:space="preserve"><value>A case opens by itself when a signed visit carries a diagnosis on the list.</value></data>
+  <data name="A diagnosis whose code starts with one of these opens a case" xml:space="preserve"><value>A diagnosis whose code starts with one of these opens a case</value></data>
+  <data name="A notifiable disease" xml:space="preserve"><value>A notifiable disease</value></data>
+  <data name="Add a disease" xml:space="preserve"><value>Add a disease</value></data>
+  <data name="Cases to report" xml:space="preserve"><value>Cases to report</value></data>
+  <data name="Choose how fast the Ministry must be told" xml:space="preserve"><value>Choose how fast the Ministry must be told</value></data>
+  <data name="Disease" xml:space="preserve"><value>Disease</value></data>
+  <data name="Disease group" xml:space="preserve"><value>Group</value></data>
+  <data name="Disease or code" xml:space="preserve"><value>Disease or code</value></data>
+  <data name="Group A within 24 hours · group B within 7 days" xml:space="preserve"><value>Group A within 24 hours · group B within 7 days</value></data>
+  <data name="ICD-10 code" xml:space="preserve"><value>ICD-10 code</value></data>
+  <data name="Ministry reference" xml:space="preserve"><value>Ministry reference</value></data>
+  <data name="No case to report here." xml:space="preserve"><value>No case to report here.</value></data>
+  <data name="Not a case to report" xml:space="preserve"><value>Not a case to report</value></data>
+  <data name="Notifiable diseases" xml:space="preserve"><value>Notifiable diseases</value></data>
+  <data name="Patient, disease, code, number" xml:space="preserve"><value>Patient, disease, code, number</value></data>
+  <data name="Record the report to the Ministry" xml:space="preserve"><value>Record the report to the Ministry</value></data>
+  <data name="Report due by" xml:space="preserve"><value>Report due by</value></data>
+  <data name="Someone else closed this case: open it again" xml:space="preserve"><value>Someone else closed this case: open it again</value></data>
+  <data name="Switch off" xml:space="preserve"><value>Switch off</value></data>
+  <data name="Switch on" xml:space="preserve"><value>Switch on</value></data>
+  <data name="The Ministry's reference for case {0}:" xml:space="preserve"><value>The Ministry's reference for case {0}:</value></data>
+  <data name="The list of diseases" xml:space="preserve"><value>The list of diseases</value></data>
+  <data name="The most specific code wins: A05.1 before A05." xml:space="preserve"><value>The most specific code wins: A05.1 before A05.</value></data>
+  <data name="The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql)." xml:space="preserve"><value>The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql).</value></data>
+  <data name="This code is already on the list" xml:space="preserve"><value>This code is already on the list</value></data>
+  <data name="Why is case {0} not a case to report?" xml:space="preserve"><value>Why is case {0} not a case to report?</value></data>
+  <data name="Write the ICD-10 code the disease starts with (e.g. A00 or A05.1)" xml:space="preserve"><value>Write the ICD-10 code the disease starts with (e.g. A00 or A05.1)</value></data>
+  <data name="Write the Ministry's reference for this report" xml:space="preserve"><value>Write the Ministry's reference for this report</value></data>
+  <data name="Write the disease's name" xml:space="preserve"><value>Write the disease's name</value></data>
+  <data name="Write why this is not a case to report" xml:space="preserve"><value>Write why this is not a case to report</value></data>
+  <data name="ntf:Dismissed" xml:space="preserve"><value>Not a case</value></data>
+  <data name="ntf:Due" xml:space="preserve"><value>To report</value></data>
+  <data name="ntf:Reported" xml:space="preserve"><value>Reported</value></data>
+  <data name="ntu:Immediate" xml:space="preserve"><value>Group A — 24 hours</value></data>
+  <data name="ntu:Weekly" xml:space="preserve"><value>Group B — 7 days</value></data>
+  <data name="{0} cases" xml:space="preserve"><value>{0} cases</value></data>
+  <data name="{0} to report" xml:space="preserve"><value>{0} to report</value></data>
+  <data name="A column is chosen twice" xml:space="preserve"><value>A column is chosen twice</value></data>
+  <data name="Choose at least one column" xml:space="preserve"><value>Choose at least one column</value></data>
+  <data name="Choose the date format" xml:space="preserve"><value>Choose the date format</value></data>
+  <data name="Choose the separator" xml:space="preserve"><value>Choose the separator</value></data>
+  <data name="Claim sheet (Excel)" xml:space="preserve"><value>Claim sheet (Excel)</value></data>
+  <data name="Comma" xml:space="preserve"><value>Comma</value></data>
+  <data name="Date format" xml:space="preserve"><value>Date format</value></data>
+  <data name="Every column needs a header of at most 60 characters" xml:space="preserve"><value>Every column needs a header of at most 60 characters</value></data>
+  <data name="Field" xml:space="preserve"><value>Field</value></data>
+  <data name="Header in the sheet" xml:space="preserve"><value>Header in the sheet</value></data>
+  <data name="Semicolon" xml:space="preserve"><value>Semicolon</value></data>
+  <data name="Separator" xml:space="preserve"><value>Separator</value></data>
+  <data name="Standard sheet: not saved for this payer yet" xml:space="preserve"><value>Standard sheet: not saved for this payer yet</value></data>
+  <data name="Tab" xml:space="preserve"><value>Tab</value></data>
+  <data name="The payer's claim sheet" xml:space="preserve"><value>The payer's claim sheet</value></data>
+  <data name="The payer's claim sheet columns" xml:space="preserve"><value>The payer's claim sheet columns</value></data>
+  <data name="Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line." xml:space="preserve"><value>Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line.</value></data>
+  <data name="Active medicines" xml:space="preserve"><value>Active medicines</value></data>
+  <data name="Downtime copies" xml:space="preserve"><value>Downtime copies</value></data>
+  <data name="In isolation" xml:space="preserve"><value>In isolation</value></data>
+  <data name="No ward here." xml:space="preserve"><value>No ward here.</value></data>
+  <data name="Patients in beds" xml:space="preserve"><value>Patients in beds</value></data>
+  <data name="Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back." xml:space="preserve"><value>Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back.</value></data>
+  <data name="Ward name or code" xml:space="preserve"><value>Ward name or code</value></data>
+  <data name="Wards" xml:space="preserve"><value>Wards</value></data>
+  <data name="When the system is down, the ward works from paper" xml:space="preserve"><value>When the system is down, the ward works from paper</value></data>
+  <data name="{0} active medicines" xml:space="preserve"><value>{0} active medicines</value></data>
+  <data name="{0} patients in beds" xml:space="preserve"><value>{0} patients in beds</value></data>
+  <data name="{0} wards" xml:space="preserve"><value>{0} wards</value></data>
 </root>

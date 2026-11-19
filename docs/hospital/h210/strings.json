@@ -1,0 +1,90 @@
+{
+ "unit": "H210 - TPA claim sheet per payer",
+ "strings": {
+  "Claim sheet (Excel)": {
+   "ar": "كشف المطالبات (Excel)",
+   "en": "Claim sheet (Excel)",
+   "fr": "Bordereau de demandes (Excel)"
+  },
+  "The payer's claim sheet columns": {
+   "ar": "أعمدة كشف المطالبات لدى الجهة الدافعة",
+   "en": "The payer's claim sheet columns",
+   "fr": "Colonnes du bordereau du payeur"
+  },
+  "The payer's claim sheet": {
+   "ar": "كشف المطالبات لدى الجهة الدافعة",
+   "en": "The payer's claim sheet",
+   "fr": "Le bordereau du payeur"
+  },
+  "Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line.": {
+   "ar": "اختر الأعمدة التي تقبلها شركة إدارة المطالبات لدى الجهة الدافعة، ورتّبها بترتيبها، واكتب عناوينها. صف واحد لكل بند مطالبة.",
+   "en": "Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line.",
+   "fr": "Cochez les colonnes que le gestionnaire (TPA) du payeur accepte, mettez-les dans son ordre et saisissez ses en-têtes. Une ligne par ligne de demande."
+  },
+  "Standard sheet: not saved for this payer yet": {
+   "ar": "الكشف القياسي: لم يُحفظ لهذه الجهة بعد",
+   "en": "Standard sheet: not saved for this payer yet",
+   "fr": "Bordereau standard : pas encore enregistré pour ce payeur"
+  },
+  "Separator": {
+   "ar": "الفاصل",
+   "en": "Separator",
+   "fr": "Séparateur"
+  },
+  "Comma": {
+   "ar": "فاصلة",
+   "en": "Comma",
+   "fr": "Virgule"
+  },
+  "Semicolon": {
+   "ar": "فاصلة منقوطة",
+   "en": "Semicolon",
+   "fr": "Point-virgule"
+  },
+  "Tab": {
+   "ar": "مسافة جدولة",
+   "en": "Tab",
+   "fr": "Tabulation"
+  },
+  "Date format": {
+   "ar": "صيغة التاريخ",
+   "en": "Date format",
+   "fr": "Format de date"
+  },
+  "Field": {
+   "ar": "الحقل",
+   "en": "Field",
+   "fr": "Champ"
+  },
+  "Header in the sheet": {
+   "ar": "العنوان في الكشف",
+   "en": "Header in the sheet",
+   "fr": "En-tête dans le bordereau"
+  },
+  "Choose at least one column": {
+   "ar": "اختر عمودًا واحدًا على الأقل",
+   "en": "Choose at least one column",
+   "fr": "Choisissez au moins une colonne"
+  },
+  "A column is chosen twice": {
+   "ar": "اختير عمود مرتين",
+   "en": "A column is chosen twice",
+   "fr": "Une colonne est choisie deux fois"
+  },
+  "Every column needs a header of at most 60 characters": {
+   "ar": "يحتاج كل عمود إلى عنوان لا يزيد على 60 حرفًا",
+   "en": "Every column needs a header of at most 60 characters",
+   "fr": "Chaque colonne a besoin d'un en-tête de 60 caractères au plus"
+  },
+  "Choose the separator": {
+   "ar": "اختر الفاصل",
+   "en": "Choose the separator",
+   "fr": "Choisissez le séparateur"
+  },
+  "Choose the date format": {
+   "ar": "اختر صيغة التاريخ",
+   "en": "Choose the date format",
+   "fr": "Choisissez le format de date"
+  }
+ }
+}

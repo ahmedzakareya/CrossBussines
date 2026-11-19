@@ -402,9 +402,13 @@
                                                 <td><span class="hp-num" dir="ltr">@l.FromDate.ToString("yyyy-MM-dd") → @l.ToDate.ToString("yyyy-MM-dd")</span><div class="text-muted fs-8"><span class="hp-num">@l.Days</span> @T["days"]</div></td>
                                                 <td>@T["sl:" + l.Kind]@if (l.Diagnosis != null && canClinical) {<div class="text-muted fs-8" dir="auto">@l.Diagnosis @if (!l.ShowDiagnosis) {<span class="badge badge-light fs-9">@T["not printed"]</span>}</div>}</td>
                                                 <td>@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</td>
-                                                <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-primary">@T["sl:valid"]</span>}</td>
+                                                <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-primary">@T["sl:valid"]</span>}
+                                                    @* H208: the Ministry's authentication, and the code the QR carries *@
+                                                    @if (l.MohAuthAt != null) {<div class="mt-1"><span class="badge badge-light-info fs-9">@T["MOH authenticated"]</span> <bdi class="text-muted fs-9 hp-num" dir="ltr">@l.MohAuthRef</bdi></div>} else if (!isVoid) {<div class="mt-1"><span class="badge badge-light fs-9">@T["Awaiting MOH authentication"]</span></div>}
+                                                    @if (l.VerifyCode != null) {<div class="text-muted fs-9 mt-1">@T["Verification code"]: <bdi class="hp-num fw-bold" dir="ltr">@l.VerifyCode</bdi></div>}</td>
                                                 <td class="text-end"><div class="d-flex justify-content-end gap-2">
                                                     @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalSickLeave, DocumentId = l.ID.ToString(), DocumentTitle = l.LeaveNo })
+                                                    @if (!isVoid && l.MohAuthAt == null) { <button type="button" class="btn btn-sm btn-light-primary" data-sick-moh="@l.ID" data-no="@l.LeaveNo">@T["Record MOH authentication"]</button> }
                                                     @if (!isVoid && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-sick-void="@l.ID" data-no="@l.LeaveNo">@T["sl:voidAction"]</button> }
                                                 </div></td>
                                             </tr>
@@ -507,7 +511,8 @@
             (function () {
                 var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
                 var W = { issue: @Json.Serialize(T["Issue a sick leave of {0} days for this patient?"].Value), voidWhy: @Json.Serialize(T["Why is certificate {0} void?"].Value),
-                    issued: @Json.Serialize(T["The certificate is issued"].Value), voided: @Json.Serialize(T["The certificate is void"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+                    issued: @Json.Serialize(T["The certificate is issued"].Value), voided: @Json.Serialize(T["The certificate is void"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value),
+                    mohRef: @Json.Serialize(T["The Ministry of Health's authentication reference for certificate {0}"].Value), mohDone: @Json.Serialize(T["The Ministry's authentication is recorded"].Value) };
                 function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
                 function toast(k, m) { if (window.toastr) toastr[k](m); }
                 function swap() {
@@ -519,7 +524,16 @@
                     });
                 }
                 document.addEventListener('click', function (e) {
-                    var t = e.target.closest('[data-sick-issue],[data-sick-void]'); if (!t) return;
+                    var t = e.target.closest('[data-sick-issue],[data-sick-void],[data-sick-moh]'); if (!t) return;
+                    if (t.hasAttribute('data-sick-moh')) {   // H208
+                        var mid = t.getAttribute('data-sick-moh');
+                        cbPrompt(W.mohRef.replace('{0}', t.getAttribute('data-no'))).then(function (ref) {
+                            if (ref == null) return; t.disabled = true;
+                            post(@Json.Serialize(Url.Content("~/Hospital/SickLeaves/")) + mid + '/Moh', { reference: ref })
+                                .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.mohDone); swap(); });
+                        });
+                        return;
+                    }
                     if (t.hasAttribute('data-sick-issue')) {
                         var f = document.querySelector('[data-sick-form]'), v = function (k) { return f.querySelector('[data-s=' + k + ']'); };
                         var from = v('fromDate').value, to = v('toDate').value;

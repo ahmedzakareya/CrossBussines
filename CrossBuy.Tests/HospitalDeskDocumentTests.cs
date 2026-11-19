@@ -81,6 +81,9 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalDocumentDatasetCodes.CompoundLabel)]   // H153
 		[InlineData(HospitalDocumentDatasetCodes.ReferralLetter)]   // H204
 		[InlineData(HospitalDocumentDatasetCodes.SpecimenLabel)]   // H206
+		[InlineData(HospitalDocumentDatasetCodes.SickLeave)]   // H208
+		[InlineData(HospitalDocumentDatasetCodes.DiseaseReport)]   // H209
+		[InlineData(HospitalDocumentDatasetCodes.WardDowntime)]   // H211
 		public void Each_designed_paper_passes_the_studio_validator_whole_and_fits_its_paper(string code)
 		{
 			var dataset = HospitalDocumentDatasets.All().Single(d => d.DatasetCode == code);
@@ -104,6 +107,9 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalDocumentDatasetCodes.CompoundLabel)]   // H153
 		[InlineData(HospitalDocumentDatasetCodes.ReferralLetter)]   // H204
 		[InlineData(HospitalDocumentDatasetCodes.SpecimenLabel)]   // H206
+		[InlineData(HospitalDocumentDatasetCodes.SickLeave)]   // H208
+		[InlineData(HospitalDocumentDatasetCodes.DiseaseReport)]   // H209
+		[InlineData(HospitalDocumentDatasetCodes.WardDowntime)]   // H211
 		public void No_text_is_given_less_height_than_its_font_needs_and_nothing_overlaps_its_neighbour_below(string code)
 		{
 			// the owner's "النصوص مقصوصة": Arabic at 9.5pt in a 6 mm box loses its marks
@@ -112,9 +118,11 @@ namespace CrossBuy.Tests
 			Assert.All(texts, e => Assert.True(e.HeightMm >= HospitalDeskLayouts.Need(e.Style.FontSizePt) - 0.01,
 				$"{e.FieldKey ?? e.Text} at {e.Style.FontSizePt}pt has {e.HeightMm}mm, needs {HospitalDeskLayouts.Need(e.Style.FontSizePt)}mm"));
 			Assert.All(layout.Bands, b => Assert.All(b.Elements, e => Assert.True(e.YMm + e.HeightMm <= b.HeightMm + 0.01, $"{e.FieldKey ?? e.Text} runs out of its band")));
-			// two text boxes that share horizontal space never share vertical space
-			foreach (var a in texts)
-				foreach (var b in texts.Where(x => !ReferenceEquals(x, a)))
+			// two text boxes of the same band that share horizontal space never share vertical space (each band has its
+			// own coordinates: a page head and a group head both start at 0)
+			foreach (var band in layout.Bands)
+			foreach (var a in texts.Where(t => band.Elements.Contains(t)))
+				foreach (var b in texts.Where(x => !ReferenceEquals(x, a) && band.Elements.Contains(x)))
 				{
 					bool across = a.XMm < b.XMm + b.WidthMm - 0.01 && b.XMm < a.XMm + a.WidthMm - 0.01;
 					bool down = a.YMm < b.YMm + b.HeightMm - 0.01 && b.YMm < a.YMm + a.HeightMm - 0.01;

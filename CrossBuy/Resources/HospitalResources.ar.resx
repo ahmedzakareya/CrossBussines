@@ -9223,4 +9223,90 @@
   <data name="This bag is not the unit issued for this patient: stop and return it to the blood bank" xml:space="preserve"><value>هذا الكيس ليس الوحدة المصروفة لهذا المريض: توقّف وأعده إلى بنك الدم</value></data>
   <data name="This bag's transfusion was already started" xml:space="preserve"><value>بدأ نقل هذا الكيس بالفعل</value></data>
   <data name="Transfusing since" xml:space="preserve"><value>يُنقل منذ</value></data>
+  <data name="A sick leave cannot start before the visit it is issued at" xml:space="preserve"><value>لا يجوز أن تبدأ الإجازة المرضية قبل الزيارة التي تصدر فيها</value></data>
+  <data name="A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours" xml:space="preserve"><value>لا تصدر الإجازة المرضية إلا لمريض كُشف عليه حضوريًا: لا توجد زيارة خلال آخر 24 ساعة</value></data>
+  <data name="A void certificate is not authenticated" xml:space="preserve"><value>لا توثَّق شهادة ملغاة</value></data>
+  <data name="Authenticated" xml:space="preserve"><value>موثقة</value></data>
+  <data name="Awaiting MOH authentication" xml:space="preserve"><value>بانتظار توثيق وزارة الصحة</value></data>
+  <data name="MOH authenticated" xml:space="preserve"><value>موثقة من وزارة الصحة</value></data>
+  <data name="Ministry of Health" xml:space="preserve"><value>وزارة الصحة</value></data>
+  <data name="No certificate has this code" xml:space="preserve"><value>لا توجد شهادة بهذا الرمز</value></data>
+  <data name="Not authenticated yet" xml:space="preserve"><value>لم توثَّق بعد</value></data>
+  <data name="Record MOH authentication" xml:space="preserve"><value>تسجيل توثيق الوزارة</value></data>
+  <data name="Sick leave verification" xml:space="preserve"><value>التحقق من إجازة مرضية</value></data>
+  <data name="The Ministry of Health's authentication reference for certificate {0}" xml:space="preserve"><value>رقم توثيق وزارة الصحة للشهادة {0}</value></data>
+  <data name="The Ministry's authentication is already recorded" xml:space="preserve"><value>توثيق الوزارة مسجل مسبقًا</value></data>
+  <data name="The Ministry's authentication is recorded" xml:space="preserve"><value>سُجّل توثيق الوزارة</value></data>
+  <data name="The reference is too long" xml:space="preserve"><value>الرقم المرجعي طويل جدًا</value></data>
+  <data name="This certificate is genuine" xml:space="preserve"><value>هذه الشهادة صحيحة</value></data>
+  <data name="This certificate was cancelled" xml:space="preserve"><value>هذه الشهادة ملغاة</value></data>
+  <data name="Verification code" xml:space="preserve"><value>رمز التحقق</value></data>
+  <data name="Write the Ministry's authentication reference" xml:space="preserve"><value>اكتب رقم توثيق الوزارة</value></data>
+  <data name="A case opens by itself when a signed visit carries a diagnosis on the list." xml:space="preserve"><value>تُفتح الحالة تلقائيًا عندما تحمل زيارة موقَّعة تشخيصًا من القائمة.</value></data>
+  <data name="A diagnosis whose code starts with one of these opens a case" xml:space="preserve"><value>أي تشخيص يبدأ رمزه بأحد هذه الرموز يفتح حالة</value></data>
+  <data name="A notifiable disease" xml:space="preserve"><value>مرض واجب الإبلاغ</value></data>
+  <data name="Add a disease" xml:space="preserve"><value>إضافة مرض</value></data>
+  <data name="Cases to report" xml:space="preserve"><value>الحالات الواجب إبلاغها</value></data>
+  <data name="Choose how fast the Ministry must be told" xml:space="preserve"><value>اختر مدى سرعة إبلاغ الوزارة</value></data>
+  <data name="Disease" xml:space="preserve"><value>المرض</value></data>
+  <data name="Disease group" xml:space="preserve"><value>المجموعة</value></data>
+  <data name="Disease or code" xml:space="preserve"><value>المرض أو الرمز</value></data>
+  <data name="Group A within 24 hours · group B within 7 days" xml:space="preserve"><value>المجموعة (أ) خلال 24 ساعة · المجموعة (ب) خلال 7 أيام</value></data>
+  <data name="ICD-10 code" xml:space="preserve"><value>رمز ICD-10</value></data>
+  <data name="Ministry reference" xml:space="preserve"><value>رقم الوزارة</value></data>
+  <data name="No case to report here." xml:space="preserve"><value>لا توجد حالة للإبلاغ هنا.</value></data>
+  <data name="Not a case to report" xml:space="preserve"><value>ليست حالة واجبة الإبلاغ</value></data>
+  <data name="Notifiable diseases" xml:space="preserve"><value>الأمراض واجبة الإبلاغ</value></data>
+  <data name="Patient, disease, code, number" xml:space="preserve"><value>المريض أو المرض أو الرمز أو الرقم</value></data>
+  <data name="Record the report to the Ministry" xml:space="preserve"><value>تسجيل الإبلاغ للوزارة</value></data>
+  <data name="Report due by" xml:space="preserve"><value>موعد الإبلاغ</value></data>
+  <data name="Someone else closed this case: open it again" xml:space="preserve"><value>أغلق شخص آخر هذه الحالة: افتحها من جديد</value></data>
+  <data name="Switch off" xml:space="preserve"><value>إيقاف</value></data>
+  <data name="Switch on" xml:space="preserve"><value>تفعيل</value></data>
+  <data name="The Ministry's reference for case {0}:" xml:space="preserve"><value>رقم الوزارة للحالة {0}:</value></data>
+  <data name="The list of diseases" xml:space="preserve"><value>قائمة الأمراض</value></data>
+  <data name="The most specific code wins: A05.1 before A05." xml:space="preserve"><value>الرمز الأدق هو الذي يُعتمد: A05.1 قبل A05.</value></data>
+  <data name="The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql)." xml:space="preserve"><value>جداول الأمراض واجبة الإبلاغ غير منشأة بعد (hospital_h209_notifiable_diseases.sql).</value></data>
+  <data name="This code is already on the list" xml:space="preserve"><value>هذا الرمز موجود في القائمة</value></data>
+  <data name="Why is case {0} not a case to report?" xml:space="preserve"><value>لماذا ليست الحالة {0} واجبة الإبلاغ؟</value></data>
+  <data name="Write the ICD-10 code the disease starts with (e.g. A00 or A05.1)" xml:space="preserve"><value>اكتب رمز ICD-10 الذي يبدأ به المرض (مثل A00 أو A05.1)</value></data>
+  <data name="Write the Ministry's reference for this report" xml:space="preserve"><value>اكتب رقم الوزارة لهذا الإبلاغ</value></data>
+  <data name="Write the disease's name" xml:space="preserve"><value>اكتب اسم المرض</value></data>
+  <data name="Write why this is not a case to report" xml:space="preserve"><value>اكتب لماذا ليست هذه حالة واجبة الإبلاغ</value></data>
+  <data name="ntf:Dismissed" xml:space="preserve"><value>ليست حالة</value></data>
+  <data name="ntf:Due" xml:space="preserve"><value>للإبلاغ</value></data>
+  <data name="ntf:Reported" xml:space="preserve"><value>أُبلغت</value></data>
+  <data name="ntu:Immediate" xml:space="preserve"><value>المجموعة (أ) — 24 ساعة</value></data>
+  <data name="ntu:Weekly" xml:space="preserve"><value>المجموعة (ب) — 7 أيام</value></data>
+  <data name="{0} cases" xml:space="preserve"><value>{0} حالة</value></data>
+  <data name="{0} to report" xml:space="preserve"><value>{0} للإبلاغ</value></data>
+  <data name="A column is chosen twice" xml:space="preserve"><value>اختير عمود مرتين</value></data>
+  <data name="Choose at least one column" xml:space="preserve"><value>اختر عمودًا واحدًا على الأقل</value></data>
+  <data name="Choose the date format" xml:space="preserve"><value>اختر صيغة التاريخ</value></data>
+  <data name="Choose the separator" xml:space="preserve"><value>اختر الفاصل</value></data>
+  <data name="Claim sheet (Excel)" xml:space="preserve"><value>كشف المطالبات (Excel)</value></data>
+  <data name="Comma" xml:space="preserve"><value>فاصلة</value></data>
+  <data name="Date format" xml:space="preserve"><value>صيغة التاريخ</value></data>
+  <data name="Every column needs a header of at most 60 characters" xml:space="preserve"><value>يحتاج كل عمود إلى عنوان لا يزيد على 60 حرفًا</value></data>
+  <data name="Field" xml:space="preserve"><value>الحقل</value></data>
+  <data name="Header in the sheet" xml:space="preserve"><value>العنوان في الكشف</value></data>
+  <data name="Semicolon" xml:space="preserve"><value>فاصلة منقوطة</value></data>
+  <data name="Separator" xml:space="preserve"><value>الفاصل</value></data>
+  <data name="Standard sheet: not saved for this payer yet" xml:space="preserve"><value>الكشف القياسي: لم يُحفظ لهذه الجهة بعد</value></data>
+  <data name="Tab" xml:space="preserve"><value>مسافة جدولة</value></data>
+  <data name="The payer's claim sheet" xml:space="preserve"><value>كشف المطالبات لدى الجهة الدافعة</value></data>
+  <data name="The payer's claim sheet columns" xml:space="preserve"><value>أعمدة كشف المطالبات لدى الجهة الدافعة</value></data>
+  <data name="Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line." xml:space="preserve"><value>اختر الأعمدة التي تقبلها شركة إدارة المطالبات لدى الجهة الدافعة، ورتّبها بترتيبها، واكتب عناوينها. صف واحد لكل بند مطالبة.</value></data>
+  <data name="Active medicines" xml:space="preserve"><value>الأدوية الفعالة</value></data>
+  <data name="Downtime copies" xml:space="preserve"><value>نسخ وقت التوقف</value></data>
+  <data name="In isolation" xml:space="preserve"><value>في العزل</value></data>
+  <data name="No ward here." xml:space="preserve"><value>لا يوجد قسم هنا.</value></data>
+  <data name="Patients in beds" xml:space="preserve"><value>المرضى في الأسرّة</value></data>
+  <data name="Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back." xml:space="preserve"><value>اطبع ملخص كل قسم أو احفظه في بداية كل وردية وقبل أي توقف مخطط: كل مريض بحساسيته وعزله وتشخيصه، وكل دواء فعال بجرعته التالية، وخانات لتسجيل الجرعات المعطاة. أدخلها في النظام عند عودته.</value></data>
+  <data name="Ward name or code" xml:space="preserve"><value>اسم القسم أو رمزه</value></data>
+  <data name="Wards" xml:space="preserve"><value>الأقسام</value></data>
+  <data name="When the system is down, the ward works from paper" xml:space="preserve"><value>عند توقف النظام يعمل القسم من الورق</value></data>
+  <data name="{0} active medicines" xml:space="preserve"><value>{0} دواءً فعالًا</value></data>
+  <data name="{0} patients in beds" xml:space="preserve"><value>{0} مريضًا في الأسرّة</value></data>
+  <data name="{0} wards" xml:space="preserve"><value>{0} أقسام</value></data>
 </root>

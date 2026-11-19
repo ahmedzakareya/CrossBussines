@@ -1,0 +1,195 @@
+{
+ "unit": "H209 - Notifiable diseases: cases reported to the Ministry",
+ "strings": {
+  "Notifiable diseases": {
+   "ar": "الأمراض واجبة الإبلاغ",
+   "en": "Notifiable diseases",
+   "fr": "Maladies à déclaration obligatoire"
+  },
+  "{0} to report": {
+   "ar": "{0} للإبلاغ",
+   "en": "{0} to report",
+   "fr": "{0} à déclarer"
+  },
+  "The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql).": {
+   "ar": "جداول الأمراض واجبة الإبلاغ غير منشأة بعد (hospital_h209_notifiable_diseases.sql).",
+   "en": "The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql).",
+   "fr": "Les tables des maladies à déclaration obligatoire ne sont pas encore créées (hospital_h209_notifiable_diseases.sql)."
+  },
+  "Cases to report": {
+   "ar": "الحالات الواجب إبلاغها",
+   "en": "Cases to report",
+   "fr": "Cas à déclarer"
+  },
+  "The list of diseases": {
+   "ar": "قائمة الأمراض",
+   "en": "The list of diseases",
+   "fr": "La liste des maladies"
+  },
+  "{0} cases": {
+   "ar": "{0} حالة",
+   "en": "{0} cases",
+   "fr": "{0} cas"
+  },
+  "Group A within 24 hours · group B within 7 days": {
+   "ar": "المجموعة (أ) خلال 24 ساعة · المجموعة (ب) خلال 7 أيام",
+   "en": "Group A within 24 hours · group B within 7 days",
+   "fr": "Groupe A sous 24 heures · groupe B sous 7 jours"
+  },
+  "Patient, disease, code, number": {
+   "ar": "المريض أو المرض أو الرمز أو الرقم",
+   "en": "Patient, disease, code, number",
+   "fr": "Patient, maladie, code, numéro"
+  },
+  "ntf:Due": {
+   "ar": "للإبلاغ",
+   "en": "To report",
+   "fr": "À déclarer"
+  },
+  "ntf:Reported": {
+   "ar": "أُبلغت",
+   "en": "Reported",
+   "fr": "Déclaré"
+  },
+  "ntf:Dismissed": {
+   "ar": "ليست حالة",
+   "en": "Not a case",
+   "fr": "Pas un cas"
+  },
+  "No case to report here.": {
+   "ar": "لا توجد حالة للإبلاغ هنا.",
+   "en": "No case to report here.",
+   "fr": "Aucun cas à déclarer ici."
+  },
+  "A case opens by itself when a signed visit carries a diagnosis on the list.": {
+   "ar": "تُفتح الحالة تلقائيًا عندما تحمل زيارة موقَّعة تشخيصًا من القائمة.",
+   "en": "A case opens by itself when a signed visit carries a diagnosis on the list.",
+   "fr": "Un cas s'ouvre de lui-même quand une visite signée porte un diagnostic de la liste."
+  },
+  "Disease": {
+   "ar": "المرض",
+   "en": "Disease",
+   "fr": "Maladie"
+  },
+  "Report due by": {
+   "ar": "موعد الإبلاغ",
+   "en": "Report due by",
+   "fr": "À déclarer avant"
+  },
+  "ntu:Immediate": {
+   "ar": "المجموعة (أ) — 24 ساعة",
+   "en": "Group A — 24 hours",
+   "fr": "Groupe A — 24 heures"
+  },
+  "ntu:Weekly": {
+   "ar": "المجموعة (ب) — 7 أيام",
+   "en": "Group B — 7 days",
+   "fr": "Groupe B — 7 jours"
+  },
+  "Ministry reference": {
+   "ar": "رقم الوزارة",
+   "en": "Ministry reference",
+   "fr": "Référence du ministère"
+  },
+  "Record the report to the Ministry": {
+   "ar": "تسجيل الإبلاغ للوزارة",
+   "en": "Record the report to the Ministry",
+   "fr": "Enregistrer la déclaration au ministère"
+  },
+  "Not a case to report": {
+   "ar": "ليست حالة واجبة الإبلاغ",
+   "en": "Not a case to report",
+   "fr": "Pas un cas à déclarer"
+  },
+  "A diagnosis whose code starts with one of these opens a case": {
+   "ar": "أي تشخيص يبدأ رمزه بأحد هذه الرموز يفتح حالة",
+   "en": "A diagnosis whose code starts with one of these opens a case",
+   "fr": "Un diagnostic dont le code commence par l'un de ceux-ci ouvre un cas"
+  },
+  "Disease or code": {
+   "ar": "المرض أو الرمز",
+   "en": "Disease or code",
+   "fr": "Maladie ou code"
+  },
+  "Add a disease": {
+   "ar": "إضافة مرض",
+   "en": "Add a disease",
+   "fr": "Ajouter une maladie"
+  },
+  "ICD-10 code": {
+   "ar": "رمز ICD-10",
+   "en": "ICD-10 code",
+   "fr": "Code CIM-10"
+  },
+  "Disease group": {
+   "ar": "المجموعة",
+   "en": "Group",
+   "fr": "Groupe"
+  },
+  "Switch off": {
+   "ar": "إيقاف",
+   "en": "Switch off",
+   "fr": "Désactiver"
+  },
+  "Switch on": {
+   "ar": "تفعيل",
+   "en": "Switch on",
+   "fr": "Activer"
+  },
+  "A notifiable disease": {
+   "ar": "مرض واجب الإبلاغ",
+   "en": "A notifiable disease",
+   "fr": "Une maladie à déclaration obligatoire"
+  },
+  "The most specific code wins: A05.1 before A05.": {
+   "ar": "الرمز الأدق هو الذي يُعتمد: A05.1 قبل A05.",
+   "en": "The most specific code wins: A05.1 before A05.",
+   "fr": "Le code le plus précis l'emporte : A05.1 avant A05."
+  },
+  "The Ministry's reference for case {0}:": {
+   "ar": "رقم الوزارة للحالة {0}:",
+   "en": "The Ministry's reference for case {0}:",
+   "fr": "La référence du ministère pour le cas {0} :"
+  },
+  "Why is case {0} not a case to report?": {
+   "ar": "لماذا ليست الحالة {0} واجبة الإبلاغ؟",
+   "en": "Why is case {0} not a case to report?",
+   "fr": "Pourquoi le cas {0} n'est-il pas à déclarer ?"
+  },
+  "Write the Ministry's reference for this report": {
+   "ar": "اكتب رقم الوزارة لهذا الإبلاغ",
+   "en": "Write the Ministry's reference for this report",
+   "fr": "Saisissez la référence du ministère pour cette déclaration"
+  },
+  "Write why this is not a case to report": {
+   "ar": "اكتب لماذا ليست هذه حالة واجبة الإبلاغ",
+   "en": "Write why this is not a case to report",
+   "fr": "Indiquez pourquoi ce n'est pas un cas à déclarer"
+  },
+  "Write the ICD-10 code the disease starts with (e.g. A00 or A05.1)": {
+   "ar": "اكتب رمز ICD-10 الذي يبدأ به المرض (مثل A00 أو A05.1)",
+   "en": "Write the ICD-10 code the disease starts with (e.g. A00 or A05.1)",
+   "fr": "Saisissez le code CIM-10 par lequel commence la maladie (ex. A00 ou A05.1)"
+  },
+  "Write the disease's name": {
+   "ar": "اكتب اسم المرض",
+   "en": "Write the disease's name",
+   "fr": "Saisissez le nom de la maladie"
+  },
+  "Choose how fast the Ministry must be told": {
+   "ar": "اختر مدى سرعة إبلاغ الوزارة",
+   "en": "Choose how fast the Ministry must be told",
+   "fr": "Choisissez le délai de déclaration au ministère"
+  },
+  "This code is already on the list": {
+   "ar": "هذا الرمز موجود في القائمة",
+   "en": "This code is already on the list",
+   "fr": "Ce code est déjà dans la liste"
+  },
+  "Someone else closed this case: open it again": {
+   "ar": "أغلق شخص آخر هذه الحالة: افتحها من جديد",
+   "en": "Someone else closed this case: open it again",
+   "fr": "Quelqu'un d'autre a clos ce cas : rouvrez-le"
+  }
+ }
+}

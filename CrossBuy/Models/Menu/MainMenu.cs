@@ -495,8 +495,10 @@
 				new() { LabelAr = "محطة التمريض", LabelEn = "Nursing station", Action = "Nursing", Controller = "Hospital" },
 				new() { LabelAr = "أجهزة المراقبة", LabelEn = "Bedside monitors", Action = "DeviceVitals", Controller = "Hospital" },   // H201
 				new() { LabelAr = "المسح عند السرير", LabelEn = "Bedside scanning", Action = "BedsideScans", Controller = "Hospital" },   // H205
+				new() { LabelAr = "نسخ وقت التوقف", LabelEn = "Downtime copies", Action = "Downtime", Controller = "Hospital" },   // H211
 				new() { LabelAr = "العناية المركزة", LabelEn = "Intensive care", Action = "Icu", Controller = "Hospital" },
 				new() { LabelAr = "مكافحة العدوى", LabelEn = "Infection control", Action = "Infection", Controller = "Hospital" },   // H76
+				new() { LabelAr = "الأمراض واجبة الإبلاغ", LabelEn = "Notifiable diseases", Action = "Notifiable", Controller = "Hospital" },   // H209
 				new() { LabelAr = "الاستشارات", LabelEn = "Consultations", Action = "Consults", Controller = "Hospital" },   // H77
 				new() { LabelAr = "السجلات الطبية", LabelEn = "Medical records", Action = "Records", Controller = "Hospital" },   // H80
 				new() { LabelAr = "مؤشرات الجودة", LabelEn = "Quality indicators", Action = "Quality", Controller = "Hospital" },   // H81

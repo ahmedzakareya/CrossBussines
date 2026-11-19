@@ -1,0 +1,100 @@
+{
+ "unit": "H208 - Kuwait sick leave: QR verification and MOH authentication",
+ "strings": {
+  "MOH authenticated": {
+   "ar": "موثقة من وزارة الصحة",
+   "en": "MOH authenticated",
+   "fr": "Authentifié par le ministère"
+  },
+  "Awaiting MOH authentication": {
+   "ar": "بانتظار توثيق وزارة الصحة",
+   "en": "Awaiting MOH authentication",
+   "fr": "En attente d'authentification du ministère"
+  },
+  "Verification code": {
+   "ar": "رمز التحقق",
+   "en": "Verification code",
+   "fr": "Code de vérification"
+  },
+  "Record MOH authentication": {
+   "ar": "تسجيل توثيق الوزارة",
+   "en": "Record MOH authentication",
+   "fr": "Enregistrer l'authentification du ministère"
+  },
+  "The Ministry of Health's authentication reference for certificate {0}": {
+   "ar": "رقم توثيق وزارة الصحة للشهادة {0}",
+   "en": "The Ministry of Health's authentication reference for certificate {0}",
+   "fr": "La référence d'authentification du ministère de la Santé pour le certificat {0}"
+  },
+  "The Ministry's authentication is recorded": {
+   "ar": "سُجّل توثيق الوزارة",
+   "en": "The Ministry's authentication is recorded",
+   "fr": "L'authentification du ministère est enregistrée"
+  },
+  "A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours": {
+   "ar": "لا تصدر الإجازة المرضية إلا لمريض كُشف عليه حضوريًا: لا توجد زيارة خلال آخر 24 ساعة",
+   "en": "A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours",
+   "fr": "Un arrêt maladie n'est délivré qu'à un patient vu en personne : aucune visite au cours des dernières 24 heures"
+  },
+  "A sick leave cannot start before the visit it is issued at": {
+   "ar": "لا يجوز أن تبدأ الإجازة المرضية قبل الزيارة التي تصدر فيها",
+   "en": "A sick leave cannot start before the visit it is issued at",
+   "fr": "Un arrêt maladie ne peut pas commencer avant la visite où il est délivré"
+  },
+  "A void certificate is not authenticated": {
+   "ar": "لا توثَّق شهادة ملغاة",
+   "en": "A void certificate is not authenticated",
+   "fr": "Un certificat annulé n'est pas authentifié"
+  },
+  "The Ministry's authentication is already recorded": {
+   "ar": "توثيق الوزارة مسجل مسبقًا",
+   "en": "The Ministry's authentication is already recorded",
+   "fr": "L'authentification du ministère est déjà enregistrée"
+  },
+  "Write the Ministry's authentication reference": {
+   "ar": "اكتب رقم توثيق الوزارة",
+   "en": "Write the Ministry's authentication reference",
+   "fr": "Saisissez la référence d'authentification du ministère"
+  },
+  "The reference is too long": {
+   "ar": "الرقم المرجعي طويل جدًا",
+   "en": "The reference is too long",
+   "fr": "La référence est trop longue"
+  },
+  "Sick leave verification": {
+   "ar": "التحقق من إجازة مرضية",
+   "en": "Sick leave verification",
+   "fr": "Vérification d'un arrêt maladie"
+  },
+  "No certificate has this code": {
+   "ar": "لا توجد شهادة بهذا الرمز",
+   "en": "No certificate has this code",
+   "fr": "Aucun certificat ne porte ce code"
+  },
+  "This certificate was cancelled": {
+   "ar": "هذه الشهادة ملغاة",
+   "en": "This certificate was cancelled",
+   "fr": "Ce certificat a été annulé"
+  },
+  "This certificate is genuine": {
+   "ar": "هذه الشهادة صحيحة",
+   "en": "This certificate is genuine",
+   "fr": "Ce certificat est authentique"
+  },
+  "Ministry of Health": {
+   "ar": "وزارة الصحة",
+   "en": "Ministry of Health",
+   "fr": "Ministère de la Santé"
+  },
+  "Authenticated": {
+   "ar": "موثقة",
+   "en": "Authenticated",
+   "fr": "Authentifié"
+  },
+  "Not authenticated yet": {
+   "ar": "لم توثَّق بعد",
+   "en": "Not authenticated yet",
+   "fr": "Pas encore authentifié"
+  }
+ }
+}

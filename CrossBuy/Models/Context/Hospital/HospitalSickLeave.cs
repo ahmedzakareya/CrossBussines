@@ -40,6 +40,13 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? VoidedAt { get; set; }
 		public int? VoidedByEmployeeId { get; set; }
 		public string? VoidReason { get; set; }
+		/// H208: the code the certificate's QR carries — anyone holding the paper checks it on the public verification page.
+		public string? VerifyCode { get; set; }
+		/// H208 (Kuwait): a private hospital's sick leave counts only once the Ministry of Health authenticates it; the
+		/// authentication's reference, when, and who recorded it.
+		public string? MohAuthRef { get; set; }
+		public DateTime? MohAuthAt { get; set; }
+		public int? MohAuthByEmployeeId { get; set; }
 	}
 
 	public static class HospitalSickLeaveModel
@@ -56,6 +63,9 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Diagnosis).HasMaxLength(500);
 				e.Property(x => x.Note).HasMaxLength(500);
 				e.Property(x => x.VoidReason).HasMaxLength(300);
+				e.Property(x => x.VerifyCode).HasMaxLength(16);   // H208
+				e.Property(x => x.MohAuthRef).HasMaxLength(60);
+				e.HasIndex(x => x.VerifyCode).IsUnique().HasFilter("[VerifyCode] IS NOT NULL");
 				e.HasIndex(x => new { x.CompanyId, x.LeaveNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});

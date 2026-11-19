@@ -372,6 +372,174 @@ namespace CrossBuy.BL.Reporting
 			return OneBand(page, Math.Max(y, top + Qs) + 0.5, e);
 		}
 
+		/// H208 — the SICK LEAVE CERTIFICATE, one A5 page: the letterhead; the certificate's number and date with its QR (the
+		/// public verification address) beside them; the patient; the period and its days large; the recommendation; the
+		/// diagnosis only when the doctor chose to print it; the notes; the doctor beside a box to sign and stamp; the
+		/// Ministry's authentication line; a void certificate says so in red across its head.
+		public static ReportVisualLayout SickLeave()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.A5, MarginTopMm = 10, MarginBottomMm = 10, MarginLeftMm = 12, MarginRightMm = 12, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 124, Half = 62, L = 24, Q = 30;
+			var e = new List<ReportElement>(); double y = 0;
+			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null, double pt = 9.5, string color = Ink, string? number = null)
+			{
+				e.Add(Text(ar, en, x, y, L, Need(8), S(8, color: Muted)));
+				e.Add(Field(key, x + L, y, width - L, Need(pt), S(pt, bold, color, date: date, number: number)));
+			}
+			void Heading(string ar, string en) { y += 1; e.Add(Text(ar, en, 0, y, W, Need(9.5), S(9.5, true, Brand))); y += Need(9.5); e.Add(Line(0, y, W)); y += 1; }
+
+			e.Add(Field("CompanyName", 0, y, W - Q - 2, Need(13), S(13, true))); y += Need(13);
+			e.Add(Field("CompanyAddress", 0, y, W - Q - 2, Need(8), S(8, color: Muted))); y += Need(8);
+			e.Add(Field("CompanyPhone", 0, y, W - Q - 2, Need(8), S(8, color: Muted))); y += Need(8) + 1;
+			e.Add(Text("شهادة إجازة مرضية", "Sick leave certificate", 0, y, W - Q - 2, Need(14), S(14, true, Brand))); y += Need(14);
+			e.Add(Qr("VerifyUrl", W - Q, 0, Q));
+			e.Add(Field("VerifyCode", W - Q, Q + 0.5, Q, Need(7.5), S(7.5, true, Muted, ReportTextAlign.Center)));
+			y = Math.Max(y, Q + 0.5 + Need(7.5)) + 1;
+			e.Add(Field("Void", 0, y, W, Need(10), S(10, true, Alert, ReportTextAlign.Center))); y += Need(10);
+			e.Add(Line(0, y, W)); y += 1.5;
+			Cell(0, Half - 2, "رقم الشهادة", "Certificate no.", "DocumentNo", true);
+			Cell(Half, Half, "تاريخ الإصدار", "Issued", "DocumentDate", date: "yyyy-MM-dd HH:mm"); y += Need(9.5);
+			Heading("المريض", "Patient");
+			Cell(0, W, "الاسم", "Name", "PatientName", true); y += Need(9.5);
+			Cell(0, Half - 2, "رقم الملف", "File no.", "PatientMrn");
+			Cell(Half, Half, "السن", "Age", "PatientAge"); y += Need(9.5);
+			Heading("الإجازة", "Leave");
+			Cell(0, Half - 2, "من", "From", "FromDate", true, "yyyy-MM-dd");
+			Cell(Half, Half, "إلى", "To", "ToDate", true, "yyyy-MM-dd"); y += Need(9.5);
+			Cell(0, Half - 2, "عدد الأيام", "Days", "Days", true, pt: 12, color: Brand, number: "0");
+			y += Need(12);
+			Cell(0, W, "التوصية", "Recommendation", "Kind", true); y += Need(9.5);
+			e.Add(Text("التشخيص", "Diagnosis", 0, y, L, Need(8), S(8, color: Muted)));
+			e.Add(Field("Diagnosis", L, y, W - L, Need(9) * 2, S(9))); y += Need(9) * 2;
+			e.Add(Text("ملاحظات", "Notes", 0, y, L, Need(8), S(8, color: Muted)));
+			e.Add(Field("Note", L, y, W - L, Need(9), S(9))); y += Need(9);
+			Heading("الطبيب", "Doctor");
+			double doc = y;
+			Cell(0, Half - 2, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
+			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle"); y += Need(9.5);
+			Cell(0, Half - 2, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, doc, Half, Need(8), S(8, color: Muted)));
+			e.Add(Box(Half, doc + Need(8), Half, y - doc - Need(8), Rule));
+			y += 1;
+			Cell(0, W, "وزارة الصحة", "Ministry of Health", "MohAuth", pt: 8.5); y += Need(9.5);
+			e.Add(Text("امسح الرمز للتحقق من صحة هذه الشهادة", "Scan the code to verify this certificate", 0, y, W, Need(7.5), S(7.5, color: Muted, align: ReportTextAlign.Center))); y += Need(7.5);
+			return OneBand(page, y + 0.5, e);
+		}
+
+		/// H209 — the NOTIFIABLE DISEASE case form, one A5 page: the letterhead and the title; the case number and date; the
+		/// disease large with its group in red; the patient with civil id, age, sex and phone; the diagnosis and when, and the
+		/// time the report is due by; the diagnosing doctor beside a box to sign; the Ministry's reference and the state.
+		public static ReportVisualLayout DiseaseReport()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.A5, MarginTopMm = 10, MarginBottomMm = 10, MarginLeftMm = 12, MarginRightMm = 12, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 124, Half = 62, L = 26;
+			var e = new List<ReportElement>(); double y = 0;
+			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null, double pt = 9.5, string color = Ink)
+			{
+				e.Add(Text(ar, en, x, y, L, Need(8), S(8, color: Muted)));
+				e.Add(Field(key, x + L, y, width - L, Need(pt), S(pt, bold, color, date: date)));
+			}
+			void Heading(string ar, string en) { y += 1; e.Add(Text(ar, en, 0, y, W, Need(9.5), S(9.5, true, Brand))); y += Need(9.5); e.Add(Line(0, y, W)); y += 1; }
+
+			e.Add(Field("CompanyName", 0, y, W, Need(13), S(13, true))); y += Need(13);
+			e.Add(Field("CompanyAddress", 0, y, W, Need(8), S(8, color: Muted))); y += Need(8);
+			e.Add(Field("CompanyPhone", 0, y, W, Need(8), S(8, color: Muted))); y += Need(8) + 1;
+			e.Add(Text("إبلاغ عن مرض واجب الإبلاغ", "Notifiable disease report", 0, y, W, Need(14), S(14, true, Brand))); y += Need(14);
+			e.Add(Text("إلى: وزارة الصحة — إدارة الصحة العامة", "To: Ministry of Health — Public Health Department", 0, y, W, Need(9), S(9, color: Muted))); y += Need(9) + 1;
+			e.Add(Line(0, y, W)); y += 1.5;
+			Cell(0, Half - 2, "رقم الحالة", "Case no.", "DocumentNo", true);
+			Cell(Half, Half, "التاريخ", "Date", "DocumentDate", date: "yyyy-MM-dd HH:mm"); y += Need(9.5);
+			Heading("المرض", "Disease");
+			e.Add(Field("Disease", 0, y, W, Need(13), S(13, true))); y += Need(13);
+			e.Add(Field("Group", 0, y, W, Need(9.5), S(9.5, true, Alert))); y += Need(9.5);
+			Cell(0, W, "التشخيص", "Diagnosis", "Diagnosis"); y += Need(9.5);
+			Cell(0, Half - 2, "وقت التشخيص", "Diagnosed", "DiagnosedAt", date: "yyyy-MM-dd HH:mm");
+			Cell(Half, Half, "موعد الإبلاغ", "Report due by", "DueBy", true, "yyyy-MM-dd HH:mm", color: Alert); y += Need(9.5);
+			Heading("المريض", "Patient");
+			Cell(0, W, "الاسم", "Name", "PatientName", true); y += Need(9.5);
+			Cell(0, Half - 2, "رقم الملف", "File no.", "PatientMrn");
+			Cell(Half, Half, "الرقم المدني", "Civil id", "CivilId"); y += Need(9.5);
+			Cell(0, Half - 2, "السن", "Age", "PatientAge");
+			Cell(Half, Half, "الجنس", "Sex", "PatientSex"); y += Need(9.5);
+			Cell(0, W, "الهاتف", "Phone", "PatientPhone"); y += Need(9.5);
+			Heading("الطبيب المبلِّغ", "Reporting doctor");
+			double doc = y;
+			Cell(0, Half - 2, "الاسم", "Name", "DoctorName", true); y += Need(9.5);
+			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle"); y += Need(9.5);
+			Cell(0, Half - 2, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, doc, Half, Need(8), S(8, color: Muted)));
+			e.Add(Box(Half, doc + Need(8), Half, y - doc - Need(8), Rule));
+			y += 1;
+			Heading("الإبلاغ", "Report");
+			Cell(0, W, "الحالة", "State", "Status"); y += Need(9.5);
+			Cell(0, W, "رقم الوزارة", "Ministry reference", "MohRef", true); y += Need(9.5);
+			return OneBand(page, y + 0.5, e);
+		}
+
+		/// H211 — the DOWNTIME WARD SUMMARY, A4 landscape: on every page the facility, the title in red, the ward and the
+		/// time it was printed (a paper copy is only as good as its time) and how to use it; for each patient (grouped by
+		/// bed) a framed head with the bed large, the name, file, age, sex and blood group, the allergies and isolation in
+		/// red, the diagnosis and the attending doctor, then the medicine columns; one line per medicine with four empty
+		/// boxes to chart the doses given while the system is down.
+		public static ReportVisualLayout WardDowntime()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.A4, Orientation = ReportOrientation.Landscape, MarginTopMm = 10, MarginBottomMm = 10, MarginLeftMm = 12, MarginRightMm = 12, ShowHeader = false, ShowFooter = false, ShowPageNumbers = true };
+			const double W = 273;
+			// the page head
+			var head = new List<ReportElement>(); double y = 0;
+			head.Add(Field("CompanyName", 0, y, 140, Need(12), S(12, true)));
+			head.Add(Text("نسخة وقت التوقف — ملخص القسم", "DOWNTIME — ward summary", 140, y, W - 140, Need(12), S(12, true, Alert, ReportTextAlign.End))); y += Need(12);
+			head.Add(Text("القسم", "Ward", 0, y, 18, Need(9.5), S(8, color: Muted)));
+			head.Add(Field("Ward", 18, y, 110, Need(9.5), S(9.5, true, Brand)));
+			head.Add(Text("طُبع في", "Printed", 140, y, 25, Need(9.5), S(8, color: Muted)));
+			head.Add(Field("DocumentDate", 165, y, W - 165, Need(9.5), S(9.5, true, date: "yyyy-MM-dd HH:mm"))); y += Need(9.5);
+			head.Add(Text("نسخة للقراءة فقط: سجّل الجرعات المعطاة في الخانات ورقيًا، وأدخلها في النظام عند عودته.", "Read-only copy: chart the doses given in the boxes on paper, and enter them in the system when it is back.", 0, y, W, Need(8), S(8, color: Muted))); y += Need(8);
+			head.Add(Line(0, y + 0.5, W));
+			var pageHead = new ReportBand { Kind = ReportBandKind.PageHeader, HeightMm = y + 1.5 };
+			pageHead.Elements.AddRange(head);
+
+			// one patient's head
+			var g = new List<ReportElement>(); y = 1;
+			double h1 = Need(11), h2 = Need(9), h3 = Need(8.5), hc = Need(7.5);
+			g.Add(Box(0, 0.5, W, h1 + h2 + h3 + 1.5, Rule, "#F1F4F9"));
+			g.Add(Field("Bed", 1, y, 22, h1, S(11, true, Brand)));
+			g.Add(Field("PatientName", 24, y, 100, h1, S(11, true)));
+			g.Add(Field("PatientMrn", 126, y, 36, h1, S(9, true, Muted)));
+			g.Add(Field("PatientAge", 164, y, 24, h1, S(9)));
+			g.Add(Field("PatientSex", 190, y, 24, h1, S(9)));
+			g.Add(Text("الفصيلة", "Blood", 216, y, 18, h1, S(8, color: Muted)));
+			g.Add(Field("BloodGroup", 234, y, 38, h1, S(10, true, Alert))); y += h1;
+			g.Add(Field("Allergies", 1, y, 135, h2, S(9, true, Alert)));
+			g.Add(Field("Isolation", 138, y, 134, h2, S(9, true, Alert))); y += h2;
+			g.Add(Field("Diagnosis", 1, y, 180, h3, S(8.5)));
+			g.Add(Field("DoctorName", 183, y, 89, h3, S(8.5, color: Muted, align: ReportTextAlign.End))); y += h3 + 1.5;
+			(string Ar, string En, double X, double Wd)[] cols = { ("الدواء", "Medicine", 0, 70), ("الجرعة", "Dose", 70, 30), ("الطريقة", "Route", 100, 14), ("المواعيد", "Schedule", 114, 36), ("آخر إعطاء", "Last given", 150, 30), ("الجرعة التالية", "Next due", 180, 30) };
+			foreach (var c in cols) g.Add(Text(c.Ar, c.En, c.X + 1, y, c.Wd - 1, hc, S(7.5, true, Muted)));
+			g.Add(Text("أُعطيت (الوقت / التوقيع)", "Given (time / initials)", 211, y, W - 211, hc, S(7.5, true, Muted, ReportTextAlign.Center))); y += hc;
+			var group = new ReportBand { Kind = ReportBandKind.GroupHeader, GroupFieldKey = "PatientKey", HeightMm = y + 0.5 };
+			group.Elements.AddRange(g);
+
+			// one medicine
+			double hd = Need(8.5);
+			var d = new List<ReportElement>
+			{
+				Field("Drug", 1, 0, 69, hd, S(8.5, true)),
+				Field("Dose", 71, 0, 29, hd, S(8.5)),
+				Field("Route", 101, 0, 13, hd, S(8.5)),
+				Field("Schedule", 115, 0, 35, hd, S(8.5)),
+				Field("LastGiven", 151, 0, 29, hd, S(8, color: Muted, date: "MM-dd HH:mm")),
+				Field("NextDue", 181, 0, 29, hd, S(8.5, true, Brand, date: "MM-dd HH:mm")),
+			};
+			for (int k = 0; k < 4; k++) d.Add(Box(211 + k * 15.5, 0.5, 15, hd - 1, Rule));
+			d.Add(Line(0, hd + 0.3, W));
+			var detail = new ReportBand { Kind = ReportBandKind.Detail, HeightMm = hd + 0.8 };
+			detail.Elements.AddRange(d);
+
+			var layout = new ReportVisualLayout { Page = page, GridMm = 1, SnapToGrid = false };
+			layout.Bands.Add(pageHead); layout.Bands.Add(group); layout.Bands.Add(detail);
+			return layout;
+		}
+
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
 		public static ReportVisualLayout? For(string code) => code switch
 		{
@@ -383,6 +551,9 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.CompoundLabel => CompoundLabel(),   // H153
 			HospitalDocumentDatasetCodes.ReferralLetter => ReferralLetter(),   // H204
 			HospitalDocumentDatasetCodes.SpecimenLabel => SpecimenLabel(),   // H206
+			HospitalDocumentDatasetCodes.SickLeave => SickLeave(),   // H208
+			HospitalDocumentDatasetCodes.DiseaseReport => DiseaseReport(),   // H209
+			HospitalDocumentDatasetCodes.WardDowntime => WardDowntime(),   // H211
 			_ => null,
 		};
 	}

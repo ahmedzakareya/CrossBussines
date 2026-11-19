@@ -37,7 +37,40 @@ namespace CrossBuy.BL.Hospital
 			if ((i.Diagnosis?.Length ?? 0) > 500 || (i.Note?.Length ?? 0) > 500) return "A text is too long";
 			return null;
 		}
+
+		// ---- H208 (Kuwait, MOH charter of January 2026): a certificate only for a patient SEEN in person, never back-dated
+		// before that visit; a QR anyone can verify; the Ministry's authentication recorded on it. -----------------------
+		public const int SeenWithinHours = 24;
+		public const string NotSeen = "A sick leave is issued only to a patient seen in person: there is no visit in the last 24 hours";
+		public const string BeforeVisit = "A sick leave cannot start before the visit it is issued at";
+
+		/// Why the certificate cannot be issued at this visit (visitStartUtc null = no visit in the window), or null.
+		public static string? SeenRefusal(DateTime? visitStartUtc, DateTime fromDate, DateTime nowUtc)
+		{
+			if (visitStartUtc is not DateTime v || nowUtc - v > TimeSpan.FromHours(SeenWithinHours)) return NotSeen;
+			return fromDate.Date < HospitalNursingService.UtcToWard(v).Date ? BeforeVisit : null;
+		}
+
+		/// The QR's code: 10 characters from an alphabet without 0/O/1/I (read aloud or typed from the paper without doubt).
+		public static string NewVerifyCode()
+		{
+			const string A = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+			var b = System.Security.Cryptography.RandomNumberGenerator.GetBytes(10);
+			return new string(b.Select(x => A[x % A.Length]).ToArray());
+		}
+
+		public static string? MohRefusal(HospitalSickLeave l, string? reference)
+		{
+			if (l.VoidedAt != null) return "A void certificate is not authenticated";
+			if (l.MohAuthAt != null) return "The Ministry's authentication is already recorded";
+			if (string.IsNullOrWhiteSpace(reference)) return "Write the Ministry's authentication reference";
+			return reference.Trim().Length > 60 ? "The reference is too long" : null;
+		}
 	}
+
+	/// H208: what the public verification page shows — enough to know the paper is genuine, nothing of the illness.
+	public sealed record HospitalSickLeaveCheck(string LeaveNo, string Facility, string? FacilityEn, string Initials, DateTime From, DateTime To, int Days, DateTime IssuedAt,
+		bool Void, DateTime? MohAuthAt, string? MohAuthRef);
 
 	public sealed class HospitalSickLeaveService
 	{
@@ -78,6 +111,13 @@ namespace CrossBuy.BL.Hospital
 				return HospitalResult.Fail(why, why.Contains("{0}") ? (why.Contains("ago") ? HospitalSickLeaveRules.MaxBackDays : HospitalSickLeaveRules.MaxDays).ToString() : "");
 			if (!await _db.HospitalPatients.AnyAsync(p => p.ID == patientId && p.CompanyId == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
 			if (input.EncounterId is int eid && !await _db.HospitalEncounters.AnyAsync(e => e.ID == eid && e.CompanyId == ctx.CompanyId && e.PatientId == patientId, ct)) return HospitalResult.Fail("not_found");
+			// H208: the visit it is issued at — the one named, else the patient's latest in the last 24 hours; none = refused
+			var since = nowUtc.AddHours(-HospitalSickLeaveRules.SeenWithinHours);
+			var visit = await _db.HospitalEncounters.AsNoTracking()
+				.Where(e => e.CompanyId == ctx.CompanyId && e.PatientId == patientId && (input.EncounterId == null ? e.StartedAt >= since : e.ID == input.EncounterId))
+				.OrderByDescending(e => e.StartedAt).Select(e => new { e.ID, e.StartedAt }).FirstOrDefaultAsync(ct);
+			if (HospitalSickLeaveRules.SeenRefusal(visit?.StartedAt, input.FromDate!.Value, nowUtc) is string unseen) return HospitalResult.Fail(unseen);
+			input.EncounterId = visit!.ID;
 			var doctor = await _db.HospitalPractitioners.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.EmployeeId == me && p.IsActive).Select(p => (int?)p.ID).FirstOrDefaultAsync(ct);
 			try
 			{
@@ -89,6 +129,7 @@ namespace CrossBuy.BL.Hospital
 						CompanyId = ctx.CompanyId, LeaveNo = HospitalDentalPracticeRules.NextNo(nos, "SL-", 6), PatientId = patientId, EncounterId = input.EncounterId, PractitionerId = doctor,
 						FromDate = input.FromDate!.Value.Date, ToDate = input.ToDate!.Value.Date, Days = HospitalSickLeaveRules.Days(input.FromDate.Value, input.ToDate.Value),
 						Kind = input.Kind!, Diagnosis = Clip(input.Diagnosis, 500), ShowDiagnosis = input.ShowDiagnosis, Note = Clip(input.Note, 500), IssuedAt = nowUtc, IssuedByEmployeeId = me,
+						VerifyCode = HospitalSickLeaveRules.NewVerifyCode(),   // H208
 					};
 					_db.Add(row);
 					try { await _db.SaveChangesAsync(ct); return HospitalResult.Success(row.ID); }
@@ -98,6 +139,36 @@ namespace CrossBuy.BL.Hospital
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { _db.ChangeTracker.Clear(); return HospitalResult.Fail(NoTables); }
 		}
+
+		/// H208: the Ministry of Health's authentication of the certificate (the patient has it authenticated through the
+		/// Ministry; the desk records its reference). Once, and never on a void certificate.
+		public async Task<HospitalResult> MohAuthAsync(BusinessContext ctx, int id, string? reference, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Read, ct)) return HospitalResult.Fail("forbidden");
+			var l = await Leaves(ctx).FirstOrDefaultAsync(x => x.ID == id, ct);
+			if (l == null) return HospitalResult.Fail("not_found");
+			if (HospitalSickLeaveRules.MohRefusal(l, reference) is string why) return HospitalResult.Fail(why);
+			l.MohAuthRef = reference!.Trim(); l.MohAuthAt = nowUtc; l.MohAuthByEmployeeId = employeeId;
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(l.ID);
+		}
+
+		/// H208: the public check behind the QR — by its code alone (any company: the code is unique), minimal data only.
+		public static async Task<HospitalSickLeaveCheck?> CheckAsync(CrossDbContext db, string? code, CancellationToken ct = default)
+		{
+			code = code?.Trim().ToUpperInvariant();
+			if (string.IsNullOrEmpty(code) || code.Length > 16) return null;
+			var l = await db.Set<HospitalSickLeave>().AsNoTracking().FirstOrDefaultAsync(x => x.VerifyCode == code, ct);
+			if (l == null) return null;
+			var p = await db.HospitalPatients.AsNoTracking().Where(x => x.ID == l.PatientId && x.CompanyId == l.CompanyId).Select(x => new { x.Name, x.NameEn }).FirstOrDefaultAsync(ct);
+			var c = await db.Companies.AsNoTracking().Where(x => x.CompanyID == l.CompanyId).Select(x => new { Ar = x.ComoanyNameAr ?? x.CompanyName, En = x.CompanyName }).FirstOrDefaultAsync(ct);
+			return new HospitalSickLeaveCheck(l.LeaveNo, c?.Ar ?? "", c?.En, Initials(p?.NameEn ?? p?.Name), l.FromDate, l.ToDate, l.Days, l.IssuedAt,
+				l.VoidedAt != null, l.MohAuthAt, l.MohAuthRef);
+		}
+
+		/// The patient's initials only (the page proves the paper, not who is ill): "Mahmoud Saeed Osman" → "M. S. O."
+		public static string Initials(string? name) =>
+			string.Join(" ", (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(4).Select(w => char.ToUpperInvariant(w[0]) + "."));
 
 		/// Voids a certificate with its reason (a doctor or the administrator). It stays on the file, marked void.
 		public async Task<HospitalResult> VoidAsync(BusinessContext ctx, int id, string? reason, int? employeeId, DateTime nowUtc, CancellationToken ct = default)

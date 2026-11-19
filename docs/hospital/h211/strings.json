@@ -1,0 +1,65 @@
+{
+ "unit": "H211 - Downtime ward summary",
+ "strings": {
+  "Downtime copies": {
+   "ar": "نسخ وقت التوقف",
+   "en": "Downtime copies",
+   "fr": "Copies de secours"
+  },
+  "{0} patients in beds": {
+   "ar": "{0} مريضًا في الأسرّة",
+   "en": "{0} patients in beds",
+   "fr": "{0} patients alités"
+  },
+  "{0} active medicines": {
+   "ar": "{0} دواءً فعالًا",
+   "en": "{0} active medicines",
+   "fr": "{0} médicaments actifs"
+  },
+  "When the system is down, the ward works from paper": {
+   "ar": "عند توقف النظام يعمل القسم من الورق",
+   "en": "When the system is down, the ward works from paper",
+   "fr": "Quand le système est arrêté, le service travaille sur papier"
+  },
+  "Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back.": {
+   "ar": "اطبع ملخص كل قسم أو احفظه في بداية كل وردية وقبل أي توقف مخطط: كل مريض بحساسيته وعزله وتشخيصه، وكل دواء فعال بجرعته التالية، وخانات لتسجيل الجرعات المعطاة. أدخلها في النظام عند عودته.",
+   "en": "Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back.",
+   "fr": "Imprimez ou enregistrez le résumé de chaque service au début de chaque garde et avant toute interruption prévue : chaque patient avec ses allergies, son isolement et son diagnostic, chaque médicament actif avec sa prochaine dose, et des cases pour noter les doses données. Saisissez-les dans le système à son retour."
+  },
+  "Wards": {
+   "ar": "الأقسام",
+   "en": "Wards",
+   "fr": "Services"
+  },
+  "{0} wards": {
+   "ar": "{0} أقسام",
+   "en": "{0} wards",
+   "fr": "{0} services"
+  },
+  "Ward name or code": {
+   "ar": "اسم القسم أو رمزه",
+   "en": "Ward name or code",
+   "fr": "Nom ou code du service"
+  },
+  "No ward here.": {
+   "ar": "لا يوجد قسم هنا.",
+   "en": "No ward here.",
+   "fr": "Aucun service ici."
+  },
+  "Patients in beds": {
+   "ar": "المرضى في الأسرّة",
+   "en": "Patients in beds",
+   "fr": "Patients alités"
+  },
+  "Active medicines": {
+   "ar": "الأدوية الفعالة",
+   "en": "Active medicines",
+   "fr": "Médicaments actifs"
+  },
+  "In isolation": {
+   "ar": "في العزل",
+   "en": "In isolation",
+   "fr": "En isolement"
+  }
+ }
+}

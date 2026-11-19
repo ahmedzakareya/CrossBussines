@@ -1,0 +1,48 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalSickLeaveCheck?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H208 — the public page behind a sick leave certificate's QR: genuine or not, valid or void, authenticated by the
+    Ministry or not yet. It shows what proves the paper and nothing of the illness. No login; no layout chrome.
+*@
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var sfx = isAr ? ".rtl" : "";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var m = Model;
+    string tone = m == null ? "danger" : m.Void ? "danger" : "primary";
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>@T["Sick leave verification"]</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <style>html[lang="ar"] body { font-family: 'Cairo', sans-serif; } body { background: var(--bs-gray-100); min-height: 100vh; }</style>
+</head>
+<body class="d-flex align-items-center justify-content-center p-5">
+<div class="card shadow-sm mw-500px w-100"><div class="card-body p-10">
+    <div class="text-center mb-8">
+        <div class="symbol symbol-65px symbol-circle mb-5"><span class="symbol-label bg-light-@tone"><i class="ki-outline @(m == null || m.Void ? "ki-cross-circle" : "ki-shield-tick") fs-2x text-@tone"></i></span></div>
+        <h2 class="fw-bold mb-2">@(m == null ? T["No certificate has this code"] : m.Void ? T["This certificate was cancelled"] : T["This certificate is genuine"])</h2>
+        <div class="text-muted fs-6">@T["Sick leave verification"]</div>
+    </div>
+    @if (m != null)
+    {
+        <table class="table table-row-dashed fs-6 gy-3 mb-0"><tbody>
+            <tr><td class="text-muted">@T["Certificate"]</td><td class="fw-bold"><bdi class="hp-num" dir="ltr">@m.LeaveNo</bdi></td></tr>
+            <tr><td class="text-muted">@T["Issued by"]</td><td class="fw-bold">@(isAr ? m.Facility : (m.FacilityEn ?? m.Facility))</td></tr>
+            <tr><td class="text-muted">@T["Patient"]</td><td class="fw-bold" dir="ltr">@m.Initials</td></tr>
+            <tr><td class="text-muted">@T["Period"]</td><td class="fw-bold"><bdi dir="ltr">@m.From.ToString("yyyy-MM-dd", inv) → @m.To.ToString("yyyy-MM-dd", inv)</bdi> · @T["{0} days", m.Days]</td></tr>
+            <tr><td class="text-muted">@T["Issued"]</td><td><bdi dir="ltr">@m.IssuedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv)</bdi></td></tr>
+            <tr><td class="text-muted">@T["Ministry of Health"]</td><td>@if (m.MohAuthAt is DateTime a) {<span class="badge badge-light-primary fs-7">@T["Authenticated"]</span> <bdi class="text-muted fs-7 ms-1" dir="ltr">@m.MohAuthRef · @a.ToLocalTime().ToString("yyyy-MM-dd", inv)</bdi>} else {<span class="badge badge-light fs-7">@T["Not authenticated yet"]</span>}</td></tr>
+        </tbody></table>
+    }
+</div></div>
+</body>
+</html>

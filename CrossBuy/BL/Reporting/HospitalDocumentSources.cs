@@ -391,8 +391,12 @@ namespace CrossBuy.BL.Reporting
     public sealed class HospitalSickLeaveSource : IReportDataSource
     {
         private readonly CrossDbContext _db;
-        public HospitalSickLeaveSource(CrossDbContext db) { _db = db; }
+        private readonly Microsoft.Extensions.Configuration.IConfiguration? _config;
+        public HospitalSickLeaveSource(CrossDbContext db, Microsoft.Extensions.Configuration.IConfiguration? config = null) { _db = db; _config = config; }
         public string Key => HospitalDocumentDatasetCodes.SickLeave;
+
+        /// H208: the public verification address the QR carries (Hospital:PublicBaseUrl, else the site's own address).
+        public static string VerifyUrl(string? baseUrl, string code) => (string.IsNullOrWhiteSpace(baseUrl) ? "https://localhost:7183" : baseUrl.TrimEnd('/')) + "/verify/sl/" + code;
 
         public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
         {
@@ -420,6 +424,9 @@ namespace CrossBuy.BL.Reporting
             header["Diagnosis"] = l.ShowDiagnosis ? l.Diagnosis : null;   // the employer is owed the days, not the illness
             header["Note"] = l.Note;
             header["Void"] = l.VoidedAt == null ? null : (arabic ? "ملغاة: " : "VOID: ") + l.VoidReason;
+            header["VerifyCode"] = l.VerifyCode;
+            header["VerifyUrl"] = l.VerifyCode == null ? null : VerifyUrl(_config?["Hospital:PublicBaseUrl"], l.VerifyCode);
+            header["MohAuth"] = l.MohAuthAt == null ? (arabic ? "بانتظار توثيق وزارة الصحة" : "Awaiting the Ministry's authentication") : l.MohAuthRef;
             builder.AddRow(header);
             return builder.Build(totalRowCount: 1);
         }

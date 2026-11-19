@@ -70,8 +70,11 @@
             {
                 @* H200: the claims as the payer's system reads them (FHIR R4), and the payer's answer file *@
                 <a href="@Url.Action("ClaimBatchFhir", new { id = b.ID })" class="btn btn-sm btn-light-primary text-nowrap" data-fhir-out><i class="ki-outline ki-file-up fs-4"></i>@T["Claims file (FHIR)"]</a>
+                @* H210: the claims as the payer's TPA sheet (its columns, headers, separator and date format) *@
+                <a href="@Url.Action("ClaimBatchSheet", new { id = b.ID })" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-out><i class="ki-outline ki-file-sheet fs-4"></i>@T["Claim sheet (Excel)"]</a>
                 <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#hp_answer_modal" data-fhir-in><i class="ki-outline ki-file-down fs-4"></i>@T["Load the payer's answer"]</button>
             }
+            @if (canBill && files != null) {<button type="button" class="btn btn-sm btn-icon btn-light" title="@T["The payer's claim sheet columns"]" data-bs-toggle="tooltip" data-sheet-setup="@b.PayerId"><i class="ki-outline ki-setting-2 fs-3"></i></button>}
             @if (canBill && !draft && ledger is { } lr && lr.Item1 > 0)
             {
                 <button type="button" class="btn btn-sm btn-primary" data-remit data-owed="@Plain(lr.Item1)" data-ask="@string.Format(T["{0} still owes {1} {2} on this batch: enter the amount it paid."].Value, DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn), Money(lr.Item1), cur)" data-ask2="@T["And the payer's payment reference:"]"><i class="ki-outline ki-bank fs-4"></i>@T["Record payer payment"]</button>
@@ -202,7 +205,7 @@
                             {
                                 bool sent = x.Direction == HospitalClaimExchangeDirection.Sent;
                                 <tr>
-                                    <td class="ps-4"><span class="badge badge-light-@(sent ? "info" : "primary") fs-7 fw-bold">@(sent ? T["Sent to the payer"] : T["Payer's answer"])</span></td>
+                                    <td class="ps-4"><span class="badge badge-light-@(sent ? "info" : "primary") fs-7 fw-bold">@(sent ? T["Sent to the payer"] : T["Payer's answer"])</span> <span class="badge badge-light fs-8 fw-semibold">@(x.Format == HospitalClaimSheets.Format ? "CSV" : "FHIR")</span></td>
                                     <td><span class="hp-num" data-fmt data-utc="@x.At.ToString("o")">@x.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
                                     <td>@(by ?? "—")</td>
                                     <td class="hp-num">@(sent ? "—" : x.Applied.ToString())</td>
@@ -318,6 +321,26 @@
     </div></div></div>
 }
 
+@if (canBill && files != null)
+{
+    @* H210: the payer's claim sheet — which columns, in which order, under which headers *@
+    <div class="modal fade" id="hp_sheet_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold mb-0">@T["The payer's claim sheet"]</h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10">
+            <div class="text-muted fs-7 mb-5">@T["Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line."] <span class="badge badge-light-info fs-8 d-none" data-sheet-std>@T["Standard sheet: not saved for this payer yet"]</span></div>
+            <div class="row g-4 mb-5">
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Separator"]</label><select class="form-select form-select-solid" data-sheet="delimiter"><option value=",">@T["Comma"] ( , )</option><option value=";">@T["Semicolon"] ( ; )</option><option value="TAB">@T["Tab"]</option></select></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Date format"]</label><select class="form-select form-select-solid" data-sheet="dateFormat">@foreach (var f in HospitalClaimSheets.DateFormats) {<option value="@f">@f</option>}</select></div>
+            </div>
+            <div class="table-responsive mh-400px scroll-y"><table class="table table-row-dashed align-middle gs-0 gy-2 my-0">
+                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start w-50px"></th><th>@T["Field"]</th><th>@T["Header in the sheet"]</th><th class="text-end pe-4 rounded-end w-100px"></th></tr></thead>
+                <tbody data-sheet-rows></tbody>
+            </table></div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-sheet-save>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+}
+
 @section Scripts {
     <partial name="_HospitalPrompt" />
     <script>
@@ -401,6 +424,51 @@
                         post(root + '/Line/' + t.getAttribute('data-resubmit') + '/Resubmit', { justification: v }).then(done(t, function (res) { location.href = batch.replace(/0$/, res.id); }));
                     });
                 }
+            });
+        })();
+    </script>
+    <script>
+        // H210: the payer's claim sheet setup
+        (function () {
+            var m = document.getElementById('hp_sheet_modal'); if (!m) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, payer = null, body = m.querySelector('[data-sheet-rows]');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+            function row(f, on, header) {
+                return '<tr data-key="' + esc(f.key) + '"><td class="ps-4"><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox"' + (on ? ' checked' : '') + ' data-on /></div></td>'
+                    + '<td class="fs-7 fw-semibold text-gray-800">' + esc(f.name) + '</td>'
+                    + '<td><input class="form-control form-control-sm form-control-solid" maxlength="60" dir="auto" value="' + esc(header || f.en) + '" data-h /></td>'
+                    + '<td class="text-end pe-4 text-nowrap"><button type="button" class="btn btn-sm btn-icon btn-bg-light" data-up><i class="ki-outline ki-arrow-up fs-4"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light ms-1" data-down><i class="ki-outline ki-arrow-down fs-4"></i></button></td></tr>';
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-sheet-setup],[data-up],[data-down],[data-sheet-save]'); if (!t) return;
+                if (t.hasAttribute('data-sheet-setup')) {
+                    payer = t.getAttribute('data-sheet-setup');
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
+                        if (!d.ok) { toastr.error(W.failed); return; }
+                        var byKey = {}; d.fields.forEach(function (f) { byKey[f.key] = f; });
+                        var used = d.columns.map(function (c) { return c.key; }), h = '';
+                        d.columns.forEach(function (c) { if (byKey[c.key]) h += row(byKey[c.key], true, c.header); });
+                        d.fields.forEach(function (f) { if (used.indexOf(f.key) < 0) h += row(f, false, null); });
+                        body.innerHTML = h;
+                        m.querySelector('[data-sheet=delimiter]').value = d.delimiter; m.querySelector('[data-sheet=dateFormat]').value = d.dateFormat;
+                        m.querySelector('[data-sheet-std]').classList.toggle('d-none', !!d.saved);
+                        bootstrap.Modal.getOrCreateInstance(m).show();
+                    });
+                    return;
+                }
+                if (t.hasAttribute('data-up') || t.hasAttribute('data-down')) {
+                    var tr = t.closest('tr'), sib = t.hasAttribute('data-up') ? tr.previousElementSibling : tr.nextElementSibling;
+                    if (sib) { if (t.hasAttribute('data-up')) body.insertBefore(tr, sib); else body.insertBefore(sib, tr); }
+                    return;
+                }
+                var cols = Array.prototype.filter.call(body.querySelectorAll('tr'), function (r) { return r.querySelector('[data-on]').checked; })
+                    .map(function (r) { return { key: r.getAttribute('data-key'), header: r.querySelector('[data-h]').value }; });
+                t.disabled = true;
+                fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                    body: JSON.stringify({ columns: cols, delimiter: m.querySelector('[data-sheet=delimiter]').value, dateFormat: m.querySelector('[data-sheet=dateFormat]').value }) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(m).hide(); });
             });
         })();
     </script>

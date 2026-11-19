@@ -49,6 +49,10 @@ namespace CrossBuy.BL.Reporting
         public const string ReferralLetter = "Hospital.ReferralLetter";
         /// H206: a specimen tube's label — the accession number as text and as the QR the bedside scan reads, as ONE row.
         public const string SpecimenLabel = "Hospital.SpecimenLabel";
+        /// H209: a notifiable disease case — the form the Ministry of Health is told with, as ONE row.
+        public const string DiseaseReport = "Hospital.DiseaseReport";
+        /// H211: a ward's downtime summary — every patient in a bed with the active medicines, one row per medicine.
+        public const string WardDowntime = "Hospital.WardDowntime";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -117,6 +121,8 @@ namespace CrossBuy.BL.Reporting
             HospitalDocumentDatasetCodes.CanvasDrawing, HospitalDocumentDatasetCodes.RxLabel, HospitalDocumentDatasetCodes.CompoundLabel,
             HospitalDocumentDatasetCodes.ReferralLetter,   // H204
             HospitalDocumentDatasetCodes.SpecimenLabel,    // H206
+            HospitalDocumentDatasetCodes.DiseaseReport,    // H209
+            HospitalDocumentDatasetCodes.WardDowntime,     // H211
         };
 
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
@@ -252,6 +258,10 @@ namespace CrossBuy.BL.Reporting
                 F("Diagnosis", "التشخيص", "Diagnosis", width: 80),
                 F("Note", "ملاحظات", "Notes", width: 80),
                 F("Void", "ملغاة", "Void", width: 40),
+                // H208: the public check behind the QR, and the Ministry of Health's authentication
+                F("VerifyUrl", "رابط التحقق", "Verification link", width: 80),
+                F("VerifyCode", "رمز التحقق", "Verification code", width: 20),
+                F("MohAuth", "توثيق وزارة الصحة", "Ministry of Health", width: 40),
             },
             Params("SickLeaveId", "رقم الإجازة الداخلي", "Certificate id"));
 
@@ -569,6 +579,51 @@ namespace CrossBuy.BL.Reporting
             },
             Params("LabOrderId", "رقم طلب التحليل الداخلي", "Lab order id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
 
+        /// H209: the notifiable disease case form — the patient (with civil id and phone), the disease and its group, the
+        /// diagnosis and when, the time the report is due by, and the Ministry's reference once reported.
+        public static ReportDatasetDefinition DiseaseReport() => Show(Doc(HospitalDocumentDatasetCodes.DiseaseReport,
+            "إبلاغ عن مرض واجب الإبلاغ", "Notifiable disease report",
+            "حالة واحدة واجبة الإبلاغ لوزارة الصحة: المريض ورقمه المدني وهاتفه، والمرض ومجموعته، والتشخيص ووقته، وموعد الإبلاغ، ورقم الوزارة بعد الإبلاغ.",
+            "One case the Ministry of Health must be told of: the patient with civil id and phone, the disease and its group, the diagnosis and when, the time the report is due by, and the Ministry's reference once reported.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("CivilId", "الرقم المدني", "Civil id", width: 30),
+                F("Disease", "المرض", "Disease", width: 80, visible: true),
+                F("Group", "المجموعة", "Group", width: 50, visible: true),
+                F("Diagnosis", "التشخيص", "Diagnosis", width: 120, visible: true),
+                F("DiagnosedAt", "وقت التشخيص", "Diagnosed", ReportFieldType.DateTime),
+                F("DueBy", "موعد الإبلاغ", "Report due by", ReportFieldType.DateTime),
+                F("Status", "الحالة", "Status", width: 60),
+                F("MohRef", "رقم الوزارة", "Ministry reference", width: 40),
+            },
+            Params("DiseaseReportId", "رقم الحالة الداخلي", "Case id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
+
+        /// H211: the downtime ward summary — for the paper the ward works from while the system is down.
+        public static ReportDatasetDefinition WardDowntime() => Show(Doc(HospitalDocumentDatasetCodes.WardDowntime,
+            "ملخص القسم وقت التوقف", "Ward downtime summary",
+            "نسخة ورقية للقسم وقت توقف النظام: كل مريض في سريره مع الحساسية والفصيلة والعزل والتشخيص والطبيب المعالج، وكل دواء فعال بجرعته وطريقته وجدوله وآخر إعطاء والجرعة التالية، مع خانات فارغة لتسجيل الجرعات ورقيًا.",
+            "The ward's paper copy for when the system is down: every patient in a bed with allergies, blood group, isolation, diagnosis and attending doctor, and every active medicine with dose, route, schedule, last given and next due, with empty boxes to chart doses on paper.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Ward", "القسم", "Ward", width: 40),
+                new ReportDatasetField { Key = "PatientKey", TitleAr = "السرير والملف", TitleEn = "Bed and file", Type = ReportFieldType.String, WidthMm = 40, Groupable = true, Align = ReportAlign.Start },
+                F("Bed", "السرير", "Bed", width: 16, visible: true),
+                F("BloodGroup", "الفصيلة", "Blood group", width: 14),
+                F("Allergies", "الحساسية", "Allergies", width: 60),
+                F("Isolation", "العزل", "Isolation", width: 50),
+                F("Diagnosis", "التشخيص", "Diagnosis", width: 60),
+                F("Admitted", "تاريخ الدخول", "Admitted", ReportFieldType.DateTime),
+                F("Drug", "الدواء", "Medicine", width: 60, visible: true),
+                F("Dose", "الجرعة", "Dose", width: 24, visible: true),
+                F("Route", "الطريقة", "Route", width: 14, visible: true),
+                F("Schedule", "المواعيد", "Schedule", width: 30, visible: true),
+                F("LastGiven", "آخر إعطاء", "Last given", ReportFieldType.DateTime),
+                F("NextDue", "الجرعة التالية", "Next due", ReportFieldType.DateTime),
+            },
+            Params("WardId", "رقم القسم الداخلي", "Ward id")), "PatientName", "PatientMrn", "DocumentDate");
+
         public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
             "إشعار دائن", "Credit note",
             "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
@@ -633,6 +688,8 @@ namespace CrossBuy.BL.Reporting
             yield return CreditNote();       // H149
             yield return ReferralLetter();   // H204
             yield return SpecimenLabel();    // H206
+            yield return DiseaseReport();    // H209
+            yield return WardDowntime();     // H211
             yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }
