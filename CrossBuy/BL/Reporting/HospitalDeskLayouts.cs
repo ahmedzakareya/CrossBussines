@@ -379,7 +379,7 @@ namespace CrossBuy.BL.Reporting
 		public static ReportVisualLayout SickLeave()
 		{
 			var page = new ReportPageSetup { PageSize = ReportPageSize.A5, MarginTopMm = 10, MarginBottomMm = 10, MarginLeftMm = 12, MarginRightMm = 12, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
-			const double W = 124, Half = 62, L = 24, Q = 30;
+			const double W = 124, Half = 62, L = 24, Q = 26;
 			var e = new List<ReportElement>(); double y = 0;
 			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null, double pt = 9.5, string color = Ink, string? number = null)
 			{
@@ -389,8 +389,8 @@ namespace CrossBuy.BL.Reporting
 			void Heading(string ar, string en) { y += 1; e.Add(Text(ar, en, 0, y, W, Need(9.5), S(9.5, true, Brand))); y += Need(9.5); e.Add(Line(0, y, W)); y += 1; }
 
 			e.Add(Field("CompanyName", 0, y, W - Q - 2, Need(13), S(13, true))); y += Need(13);
-			e.Add(Field("CompanyAddress", 0, y, W - Q - 2, Need(8), S(8, color: Muted))); y += Need(8);
-			e.Add(Field("CompanyPhone", 0, y, W - Q - 2, Need(8), S(8, color: Muted))); y += Need(8) + 1;
+			e.Add(Field("CompanyAddress", 0, y, (W - Q - 2) / 2, Need(8), S(8, color: Muted)));
+			e.Add(Field("CompanyPhone", (W - Q - 2) / 2, y, (W - Q - 2) / 2, Need(8), S(8, color: Muted))); y += Need(8);
 			e.Add(Text("شهادة إجازة مرضية", "Sick leave certificate", 0, y, W - Q - 2, Need(14), S(14, true, Brand))); y += Need(14);
 			e.Add(Qr("VerifyUrl", W - Q, 0, Q));
 			e.Add(Field("VerifyCode", W - Q, Q + 0.5, Q, Need(7.5), S(7.5, true, Muted, ReportTextAlign.Center)));
@@ -407,8 +407,8 @@ namespace CrossBuy.BL.Reporting
 			Cell(0, Half - 2, "من", "From", "FromDate", true, "yyyy-MM-dd");
 			Cell(Half, Half, "إلى", "To", "ToDate", true, "yyyy-MM-dd"); y += Need(9.5);
 			Cell(0, Half - 2, "عدد الأيام", "Days", "Days", true, pt: 12, color: Brand, number: "0");
+			Cell(Half, Half, "التوصية", "Recommendation", "Kind", true);
 			y += Need(12);
-			Cell(0, W, "التوصية", "Recommendation", "Kind", true); y += Need(9.5);
 			e.Add(Text("التشخيص", "Diagnosis", 0, y, L, Need(8), S(8, color: Muted)));
 			e.Add(Field("Diagnosis", L, y, W - L, Need(9) * 2, S(9))); y += Need(9) * 2;
 			e.Add(Text("ملاحظات", "Notes", 0, y, L, Need(8), S(8, color: Muted)));
@@ -419,10 +419,10 @@ namespace CrossBuy.BL.Reporting
 			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle");
 			Cell(Half, Half, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
 			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, y, Half, Need(8), S(8, color: Muted))); y += Need(8);
-			e.Add(Box(Half, y, Half, 14, Rule)); y += 14;
-			y += 1;
+			e.Add(Box(Half, y, Half, 10, Rule)); y += 10.5;
 			Cell(0, W, "وزارة الصحة", "Ministry of Health", "MohAuth", pt: 8.5); y += Need(9.5);
 			e.Add(Text("امسح الرمز للتحقق من صحة هذه الشهادة", "Scan the code to verify this certificate", 0, y, W, Need(7.5), S(7.5, color: Muted, align: ReportTextAlign.Center))); y += Need(7.5);
+			if (y + 0.5 > ReportPaper.ContentHeightMm(page)) throw new InvalidOperationException("The sick leave certificate no longer fits A5: " + (y + 0.5) + " mm");
 			return OneBand(page, y + 0.5, e);
 		}
 
@@ -442,10 +442,10 @@ namespace CrossBuy.BL.Reporting
 			void Heading(string ar, string en) { y += 1; e.Add(Text(ar, en, 0, y, W, Need(9.5), S(9.5, true, Brand))); y += Need(9.5); e.Add(Line(0, y, W)); y += 1; }
 
 			e.Add(Field("CompanyName", 0, y, W, Need(13), S(13, true))); y += Need(13);
-			e.Add(Field("CompanyAddress", 0, y, W, Need(8), S(8, color: Muted))); y += Need(8);
-			e.Add(Field("CompanyPhone", 0, y, W, Need(8), S(8, color: Muted))); y += Need(8) + 1;
+			e.Add(Field("CompanyAddress", 0, y, Half - 2, Need(8), S(8, color: Muted)));
+			e.Add(Field("CompanyPhone", Half, y, Half, Need(8), S(8, color: Muted))); y += Need(8) + 1;
 			e.Add(Text("إبلاغ عن مرض واجب الإبلاغ", "Notifiable disease report", 0, y, W, Need(14), S(14, true, Brand))); y += Need(14);
-			e.Add(Text("إلى: وزارة الصحة — إدارة الصحة العامة", "To: Ministry of Health — Public Health Department", 0, y, W, Need(9), S(9, color: Muted))); y += Need(9) + 1;
+			e.Add(Text("إلى: وزارة الصحة — إدارة الصحة العامة", "To: Ministry of Health — Public Health Department", 0, y, W, Need(9), S(9, color: Muted))); y += Need(9);
 			e.Add(Line(0, y, W)); y += 1.5;
 			Cell(0, Half - 2, "رقم الحالة", "Case no.", "DocumentNo", true);
 			Cell(Half, Half, "التاريخ", "Date", "DocumentDate", date: "yyyy-MM-dd HH:mm"); y += Need(9.5);
@@ -468,11 +468,12 @@ namespace CrossBuy.BL.Reporting
 			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle");
 			Cell(Half, Half, "الترخيص", "Licence", "DoctorLicense"); y += Need(9.5);
 			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, y, Half, Need(8), S(8, color: Muted))); y += Need(8);
-			e.Add(Box(Half, y, Half, 14, Rule)); y += 14;
+			e.Add(Box(Half, y, Half, 9, Rule)); y += 9;
 			y += 1;
-			Heading("الإبلاغ", "Report");
-			Cell(0, W, "الحالة", "State", "Status"); y += Need(9.5);
-			Cell(0, W, "رقم الوزارة", "Ministry reference", "MohRef", true); y += Need(9.5);
+			e.Add(Line(0, y, W)); y += 1.5;
+			Cell(0, Half - 2, "الحالة", "State", "Status");
+			Cell(Half, Half, "رقم الوزارة", "Ministry reference", "MohRef", true); y += Need(9.5);
+			if (y + 0.5 > ReportPaper.ContentHeightMm(page)) throw new InvalidOperationException("The notifiable disease form no longer fits A5: " + (y + 0.5) + " mm");
 			return OneBand(page, y + 0.5, e);
 		}
 
