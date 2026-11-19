@@ -396,7 +396,7 @@ namespace CrossBuy.BL.Reporting
         public string Key => HospitalDocumentDatasetCodes.SickLeave;
 
         /// H208: the public verification address the QR carries (Hospital:PublicBaseUrl, else the site's own address).
-        public static string VerifyUrl(string? baseUrl, string code) => (string.IsNullOrWhiteSpace(baseUrl) ? "https://localhost:7183" : baseUrl.TrimEnd('/')) + "/verify/sl/" + code;
+        public static string VerifyUrl(string? baseUrl, string code) => (string.IsNullOrWhiteSpace(baseUrl) ? "https://localhost:7183" : baseUrl.TrimEnd('/')) + "/patientportal/verify/sl/" + code;
 
         public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
         {

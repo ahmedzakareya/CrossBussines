@@ -8,7 +8,9 @@ namespace CrossBuy.Controllers
 {
 	// HOSPITAL H208 — the public check behind a sick leave certificate's QR: an employer or the Ministry opens it from the
 	// paper, with no login, and sees whether the certificate is genuine and still valid — never the illness.
-	[Route("verify")]
+	// Under the patient portal prefix: the employee-session gate (SessionValidationMiddleware) leaves that lane alone,
+	// and this controller carries no portal authorization, so the page is reachable by anyone holding the paper.
+	[Route("patientportal/verify")]
 	public class HospitalVerifyController : Controller
 	{
 		private readonly CrossDbContext _db;

@@ -115,8 +115,8 @@ namespace CrossBuy.Tests
 		{
 			Assert.Equal("M. S. O.", HospitalSickLeaveService.Initials("Mahmoud Saeed Osman"));
 			Assert.Equal("", HospitalSickLeaveService.Initials(null));
-			Assert.Equal("https://clinic.example/verify/sl/ABC23", HospitalSickLeaveSource.VerifyUrl("https://clinic.example/", "ABC23"));
-			Assert.EndsWith("/verify/sl/ABC23", HospitalSickLeaveSource.VerifyUrl(null, "ABC23"));
+			Assert.Equal("https://clinic.example/patientportal/verify/sl/ABC23", HospitalSickLeaveSource.VerifyUrl("https://clinic.example/", "ABC23"));
+			Assert.EndsWith("/patientportal/verify/sl/ABC23", HospitalSickLeaveSource.VerifyUrl(null, "ABC23"));
 		}
 	}
 }

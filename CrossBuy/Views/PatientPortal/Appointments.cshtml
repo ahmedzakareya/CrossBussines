@@ -9,6 +9,7 @@
     var s = (HospitalPortalSettings)ViewBag.Settings;
     var requests = (ViewBag.Requests as IReadOnlyList<HospitalPortalRequestRow>) ?? Array.Empty<HospitalPortalRequestRow>();
     var now = DateTime.Now;
+    var tele = (ViewBag.Tele as Dictionary<int, CrossBuy.Models.Context.Hospital.HospitalTeleVisit>) ?? new();   // H214
     var upcoming = Model.Where(v => v.Status == HospitalAppointmentStatus.Booked && v.Date.AddMinutes(v.StartMinute) >= now).OrderBy(v => v.Date).ThenBy(v => v.StartMinute).ToList();
     var past = Model.Except(upcoming).OrderByDescending(v => v.Date).ThenByDescending(v => v.StartMinute).ToList();
     ViewData["Title"] = T["My appointments"].Value;
@@ -55,6 +56,11 @@
                             <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (v.DoctorPhoto != null) {<img src="@Url.Action("DoctorPhoto", new { id = v.PractitionerId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(v.DoctorEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(v.DoctorEn)</span>}</div>
                             <div><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(v.Doctor, v.DoctorEn)</div><div class="text-muted fs-8">@DisplayName.Of(v.Person.Name, v.Person.NameEn)</div></div></div></div>
                         <div class="col-md-4 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                            @* H214: a video visit opens from here, from 15 minutes before its time *@
+                            @if (tele.TryGetValue(v.AppointmentId, out var tv) && tv.Status != CrossBuy.Models.Context.Hospital.HospitalTeleStatus.Ended && v.Status != HospitalAppointmentStatus.Cancelled)
+                            {
+                                <a href="@Url.Action("Video", new { id = tv.ID })" class="btn btn-sm btn-primary"><i class="ki-outline ki-screen fs-4"></i>@T["Join the video visit"]</a>
+                            }
                             @if (canChange)
                             {
                                 <button type="button" class="btn btn-sm btn-light-danger" data-cancel="@v.AppointmentId">@T["Cancel"]</button>

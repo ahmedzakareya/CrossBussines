@@ -1,0 +1,240 @@
+{
+ "unit": "H213 - Restraint and seclusion",
+ "strings": {
+  "Restraint and seclusion": {
+   "ar": "التقييد والعزل الانفرادي",
+   "en": "Restraint and seclusion",
+   "fr": "Contention et isolement"
+  },
+  "{0} active": {
+   "ar": "{0} فعالة",
+   "en": "{0} active",
+   "fr": "{0} actives"
+  },
+  "{0} need attention": {
+   "ar": "{0} تحتاج متابعة",
+   "en": "{0} need attention",
+   "fr": "{0} à traiter"
+  },
+  "Order a restraint": {
+   "ar": "طلب تقييد",
+   "en": "Order a restraint",
+   "fr": "Prescrire une contention"
+  },
+  "The restraint tables are not created yet (hospital_h213_restraints.sql).": {
+   "ar": "جداول التقييد غير منشأة بعد (hospital_h213_restraints.sql).",
+   "en": "The restraint tables are not created yet (hospital_h213_restraints.sql).",
+   "fr": "Les tables de contention ne sont pas encore créées (hospital_h213_restraints.sql)."
+  },
+  "An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes).": {
+   "ar": "يسري الطلب 24 ساعة، والفحص كل ساعتين (العزل الانفرادي: كل 15 دقيقة).",
+   "en": "An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes).",
+   "fr": "Une prescription dure 24 heures. Contrôles toutes les 2 heures (isolement : toutes les 15 minutes)."
+  },
+  "{0} episodes": {
+   "ar": "{0} حالات",
+   "en": "{0} episodes",
+   "fr": "{0} épisodes"
+  },
+  "No restraint here.": {
+   "ar": "لا يوجد تقييد هنا.",
+   "en": "No restraint here.",
+   "fr": "Aucune contention ici."
+  },
+  "Restraint order": {
+   "ar": "أمر التقييد",
+   "en": "Order",
+   "fr": "Prescription"
+  },
+  "Issue the order": {
+   "ar": "إصدار الأمر",
+   "en": "Issue the order",
+   "fr": "Prescrire"
+  },
+  "Why restrained": {
+   "ar": "سبب التقييد",
+   "en": "Reason",
+   "fr": "Raison"
+  },
+  "Last check": {
+   "ar": "آخر فحص",
+   "en": "Last check",
+   "fr": "Dernier contrôle"
+  },
+  "Next check": {
+   "ar": "الفحص التالي",
+   "en": "Next check",
+   "fr": "Prochain contrôle"
+  },
+  "rsk:Physical": {
+   "ar": "تقييد جسدي",
+   "en": "Physical",
+   "fr": "Physique"
+  },
+  "rsk:Chemical": {
+   "ar": "تقييد دوائي",
+   "en": "Chemical",
+   "fr": "Chimique"
+  },
+  "rsk:Seclusion": {
+   "ar": "عزل انفرادي",
+   "en": "Seclusion",
+   "fr": "Isolement"
+  },
+  "Tried first": {
+   "ar": "ما جُرّب قبله",
+   "en": "Tried first",
+   "fr": "Essayé avant"
+  },
+  "Order valid until": {
+   "ar": "الطلب ساري حتى",
+   "en": "Order valid until",
+   "fr": "Prescription valable jusqu'à"
+  },
+  "Renewed {0} times": {
+   "ar": "جُدّد {0} مرات",
+   "en": "Renewed {0} times",
+   "fr": "Renouvelée {0} fois"
+  },
+  "Family informed": {
+   "ar": "أُبلغت الأسرة",
+   "en": "Family informed",
+   "fr": "Famille informée"
+  },
+  "Family not informed": {
+   "ar": "لم تُبلَّغ الأسرة",
+   "en": "Family not informed",
+   "fr": "Famille non informée"
+  },
+  "Order expired: renew or end it": {
+   "ar": "انتهت صلاحية الطلب: جدّده أو أنهِ التقييد",
+   "en": "Order expired: renew or end it",
+   "fr": "Prescription expirée : renouvelez-la ou terminez"
+  },
+  "No check yet": {
+   "ar": "لا فحص بعد",
+   "en": "No check yet",
+   "fr": "Aucun contrôle"
+  },
+  "Circulation": {
+   "ar": "الدورة الدموية",
+   "en": "Circulation",
+   "fr": "Circulation"
+  },
+  "Toilet": {
+   "ar": "الحمّام",
+   "en": "Toilet",
+   "fr": "Toilettes"
+  },
+  "Can end": {
+   "ar": "يمكن إنهاؤه",
+   "en": "Can end",
+   "fr": "Peut cesser"
+  },
+  "Record a check": {
+   "ar": "تسجيل فحص",
+   "en": "Record a check",
+   "fr": "Enregistrer un contrôle"
+  },
+  "Renew the order for 24 hours": {
+   "ar": "تجديد الطلب 24 ساعة",
+   "en": "Renew the order for 24 hours",
+   "fr": "Renouveler pour 24 heures"
+  },
+  "End the restraint": {
+   "ar": "إنهاء التقييد",
+   "en": "End the restraint",
+   "fr": "Mettre fin à la contention"
+  },
+  "The last resort: say why, and what was tried first. The order lasts 24 hours.": {
+   "ar": "الملاذ الأخير: اذكر السبب وما جُرّب قبله. يسري الطلب 24 ساعة.",
+   "en": "The last resort: say why, and what was tried first. The order lasts 24 hours.",
+   "fr": "Dernier recours : indiquez pourquoi et ce qui a été essayé. La prescription dure 24 heures."
+  },
+  "Device or drug": {
+   "ar": "الأداة أو الدواء",
+   "en": "Device or drug",
+   "fr": "Dispositif ou médicament"
+  },
+  "Circulation normal": {
+   "ar": "الدورة الدموية طبيعية",
+   "en": "Circulation normal",
+   "fr": "Circulation normale"
+  },
+  "Skin intact": {
+   "ar": "الجلد سليم",
+   "en": "Skin intact",
+   "fr": "Peau intacte"
+  },
+  "Fluids offered": {
+   "ar": "عُرضت السوائل",
+   "en": "Fluids offered",
+   "fr": "Hydratation proposée"
+  },
+  "Toilet offered": {
+   "ar": "عُرض الحمّام",
+   "en": "Toilet offered",
+   "fr": "Toilettes proposées"
+  },
+  "Still needed": {
+   "ar": "ما زال لازمًا",
+   "en": "Still needed",
+   "fr": "Toujours nécessaire"
+  },
+  "Behaviour / note": {
+   "ar": "السلوك / ملاحظة",
+   "en": "Behaviour / note",
+   "fr": "Comportement / note"
+  },
+  "Renew this order for another 24 hours?": {
+   "ar": "تجديد هذا الطلب 24 ساعة أخرى؟",
+   "en": "Renew this order for another 24 hours?",
+   "fr": "Renouveler cette prescription pour 24 heures ?"
+  },
+  "Why does the restraint end?": {
+   "ar": "لماذا ينتهي التقييد؟",
+   "en": "Why does the restraint end?",
+   "fr": "Pourquoi la contention prend-elle fin ?"
+  },
+  "Choose the kind of restraint": {
+   "ar": "اختر نوع التقييد",
+   "en": "Choose the kind of restraint",
+   "fr": "Choisissez le type de contention"
+  },
+  "Write why the restraint is needed": {
+   "ar": "اكتب سبب الحاجة إلى التقييد",
+   "en": "Write why the restraint is needed",
+   "fr": "Indiquez pourquoi la contention est nécessaire"
+  },
+  "Write what was tried before the restraint": {
+   "ar": "اكتب ما جُرّب قبل التقييد",
+   "en": "Write what was tried before the restraint",
+   "fr": "Indiquez ce qui a été essayé avant"
+  },
+  "This patient already has this restraint: renew or end it": {
+   "ar": "لدى هذا المريض هذا التقييد بالفعل: جدّده أو أنهِه",
+   "en": "This patient already has this restraint: renew or end it",
+   "fr": "Ce patient a déjà cette contention : renouvelez-la ou terminez-la"
+  },
+  "This restraint has ended": {
+   "ar": "انتهى هذا التقييد",
+   "en": "This restraint has ended",
+   "fr": "Cette contention est terminée"
+  },
+  "Describe the circulation or skin problem in the note": {
+   "ar": "صف مشكلة الدورة الدموية أو الجلد في الملاحظة",
+   "en": "Describe the circulation or skin problem in the note",
+   "fr": "Décrivez le problème de circulation ou de peau dans la note"
+  },
+  "Write why the restraint ends": {
+   "ar": "اكتب سبب إنهاء التقييد",
+   "en": "Write why the restraint ends",
+   "fr": "Indiquez pourquoi la contention prend fin"
+  },
+  "Someone else changed this restraint: open it again": {
+   "ar": "غيّر شخص آخر هذا التقييد: افتحه من جديد",
+   "en": "Someone else changed this restraint: open it again",
+   "fr": "Quelqu'un d'autre a modifié cette contention : rouvrez-la"
+  }
+ }
+}

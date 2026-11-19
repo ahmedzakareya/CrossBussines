@@ -1,0 +1,83 @@
+@model CrossBuy.Views.Hospital.HospitalTeleRoomModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H214 — the video room, shared by the doctor's page and the patient's portal page: the other side large, oneself small
+    in the corner, the state line, and mute / camera / leave. WebRTC peer to peer; the server only passes the set-up
+    messages (POST signal, GET poll every second). The doctor offers each time the patient says hello, so a patient who
+    reloads or joins late is always connected again.
+*@
+<div class="position-relative rounded overflow-hidden" style="background:#0b1220;min-height:420px" data-tele>
+    <video autoplay playsinline class="w-100 h-100" style="object-fit:cover;min-height:420px;max-height:70vh" data-remote></video>
+    <video autoplay playsinline muted class="position-absolute rounded shadow" style="width:180px;height:120px;object-fit:cover;bottom:16px;inset-inline-end:16px;background:#1e293b" data-local></video>
+    <div class="position-absolute top-0 start-0 end-0 p-4 d-flex align-items-center gap-3">
+        <span class="badge badge-light fs-7 fw-bold" data-state>@T["Waiting for the other side to join…"]</span>
+    </div>
+    <div class="position-absolute bottom-0 start-0 end-0 p-4 d-flex justify-content-center gap-3">
+        <button type="button" class="btn btn-icon btn-light rounded-circle w-50px h-50px" title="@T["Microphone"]" data-mute><i class="ki-outline ki-microphone fs-2"></i></button>
+        <button type="button" class="btn btn-icon btn-light rounded-circle w-50px h-50px" title="@T["Camera"]" data-cam><i class="ki-outline ki-screen fs-2"></i></button>
+        <button type="button" class="btn btn-icon btn-danger rounded-circle w-50px h-50px" title="@(Model.Side == "D" ? T["End the video visit"] : T["Leave the call"])" data-leave><i class="ki-outline ki-cross fs-2"></i></button>
+    </div>
+</div>
+<script>
+    (function () {
+        var C = @Json.Serialize(new { signal = Model.SignalUrl, poll = Model.PollUrl, end = Model.EndUrl, done = Model.DoneUrl, side = Model.Side, ice = Model.Ice, token = Model.Token });
+        var W = { waiting: @Json.Serialize(T["Waiting for the other side to join…"].Value), connecting: @Json.Serialize(T["Connecting…"].Value), live: @Json.Serialize(T["Connected"].Value),
+            left: @Json.Serialize(T["The other side left"].Value), ended: @Json.Serialize(T["The video visit has ended"].Value), nocam: @Json.Serialize(T["No camera or microphone: you can still see and hear the other side"].Value),
+            confirm: @Json.Serialize(T["End the video visit for both sides?"].Value) };
+        var root = document.querySelector('[data-tele]'), remote = root.querySelector('[data-remote]'), local = root.querySelector('[data-local]'), state = root.querySelector('[data-state]');
+        var pc = null, stream = null, after = 0, queued = [], stopped = false;
+        function say(t, tone) { state.textContent = t; state.className = 'badge fs-7 fw-bold badge-' + (tone || 'light'); }
+        function send(kind, payload) { return fetch(C.signal, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': C.token }, body: JSON.stringify({ kind: kind, payload: payload ? JSON.stringify(payload) : null }) }); }
+        function fresh() {
+            if (pc) { try { pc.close(); } catch (e) { } }
+            pc = new RTCPeerConnection({ iceServers: (C.ice || []).map(function (u) { return { urls: u }; }) });
+            if (stream) stream.getTracks().forEach(function (t) { pc.addTrack(t, stream); });
+            else { pc.addTransceiver('audio', { direction: 'recvonly' }); pc.addTransceiver('video', { direction: 'recvonly' }); }
+            pc.onicecandidate = function (e) { if (e.candidate) send('ice', e.candidate.toJSON()); };
+            pc.ontrack = function (e) { remote.srcObject = e.streams[0]; };
+            pc.onconnectionstatechange = function () { if (pc.connectionState === 'connected') say(W.live, 'primary'); else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') say(W.left, 'light'); };
+            queued = [];
+            return pc;
+        }
+        async function handle(s) {
+            var body = s.payload ? JSON.parse(s.payload) : null;
+            if (s.kind === 'bye') { stopped = true; say(W.ended, 'danger'); if (pc) pc.close(); if (C.done) setTimeout(function () { location.href = C.done; }, 2500); return; }
+            if (s.kind === 'hello') {
+                if (C.side === 'D') { fresh(); say(W.connecting, 'info'); var o = await pc.createOffer(); await pc.setLocalDescription(o); send('offer', pc.localDescription.toJSON()); }
+                else if (!pc || pc.connectionState !== 'connected') send('hello');   // the doctor joined after me: say hello again
+                return;
+            }
+            if (s.kind === 'offer' && C.side === 'P') {
+                fresh(); say(W.connecting, 'info');
+                await pc.setRemoteDescription(body); var a = await pc.createAnswer(); await pc.setLocalDescription(a); send('answer', pc.localDescription.toJSON());
+                queued.splice(0).forEach(function (c) { pc.addIceCandidate(c).catch(function () { }); });
+                return;
+            }
+            if (s.kind === 'answer' && C.side === 'D' && pc) { await pc.setRemoteDescription(body); queued.splice(0).forEach(function (c) { pc.addIceCandidate(c).catch(function () { }); }); return; }
+            if (s.kind === 'ice') { if (pc && pc.remoteDescription) pc.addIceCandidate(body).catch(function () { }); else queued.push(body); }
+        }
+        async function poll() {
+            if (stopped) return;
+            try {
+                var r = await fetch(C.poll + (C.poll.indexOf('?') < 0 ? '?' : '&') + 'after=' + after, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                var d = await r.json();
+                for (var i = 0; i < (d.signals || []).length; i++) { var s = d.signals[i]; after = Math.max(after, s.id); await handle(s); }
+                if (d.ended && !stopped) { stopped = true; say(W.ended, 'danger'); }
+            } catch (e) { }
+            if (!stopped) setTimeout(poll, 1000);
+        }
+        root.querySelector('[data-mute]').addEventListener('click', function () { if (!stream) return; stream.getAudioTracks().forEach(function (t) { t.enabled = !t.enabled; }); this.classList.toggle('btn-danger'); this.classList.toggle('btn-light'); });
+        root.querySelector('[data-cam]').addEventListener('click', function () { if (!stream) return; stream.getVideoTracks().forEach(function (t) { t.enabled = !t.enabled; }); this.classList.toggle('btn-danger'); this.classList.toggle('btn-light'); });
+        root.querySelector('[data-leave]').addEventListener('click', function () {
+            if (C.side === 'D' && C.end) {
+                (window.cbConfirm ? cbConfirm(W.confirm) : Promise.resolve(true)).then(function (ok) {
+                    if (!ok) return;
+                    fetch(C.end, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': C.token } }).then(function () { stopped = true; if (pc) pc.close(); say(W.ended, 'danger'); if (C.done) location.href = C.done; });
+                });
+            } else { stopped = true; if (pc) pc.close(); if (C.done) location.href = C.done; }
+        });
+        (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ audio: true, video: true }) : Promise.reject())
+            .then(function (s) { stream = s; local.srcObject = s; }, function () { say(W.nocam, 'light'); })
+            .then(function () { send('hello'); if (stream) say(W.waiting, 'light'); poll(); });
+    })();
+</script>

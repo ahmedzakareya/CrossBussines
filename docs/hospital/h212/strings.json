@@ -1,0 +1,180 @@
+{
+ "unit": "H212 - Clinical surveillance: sepsis and VTE",
+ "strings": {
+  "Clinical surveillance": {
+   "ar": "الرصد السريري",
+   "en": "Clinical surveillance",
+   "fr": "Surveillance clinique"
+  },
+  "{0} possible sepsis": {
+   "ar": "{0} اشتباه إنتان",
+   "en": "{0} possible sepsis",
+   "fr": "{0} sepsis possibles"
+  },
+  "{0} VTE assessments due": {
+   "ar": "{0} تقييمات خثار مستحقة",
+   "en": "{0} VTE assessments due",
+   "fr": "{0} évaluations MTEV dues"
+  },
+  "The surveillance table is not created yet (hospital_h212_surveillance.sql).": {
+   "ar": "جدول الرصد غير منشأ بعد (hospital_h212_surveillance.sql).",
+   "en": "The surveillance table is not created yet (hospital_h212_surveillance.sql).",
+   "fr": "La table de surveillance n'est pas encore créée (hospital_h212_surveillance.sql)."
+  },
+  "Alerts": {
+   "ar": "التنبيهات",
+   "en": "Alerts",
+   "fr": "Alertes"
+  },
+  "{0} alerts": {
+   "ar": "{0} تنبيهات",
+   "en": "{0} alerts",
+   "fr": "{0} alertes"
+  },
+  "Sepsis: answer within the hour · VTE: assess within 24 hours of admission": {
+   "ar": "الإنتان: الرد خلال ساعة · الخثار: التقييم خلال 24 ساعة من الدخول",
+   "en": "Sepsis: answer within the hour · VTE: assess within 24 hours of admission",
+   "fr": "Sepsis : répondre dans l'heure · MTEV : évaluer dans les 24 heures suivant l'admission"
+  },
+  "Patient name or file": {
+   "ar": "اسم المريض أو رقم ملفه",
+   "en": "Patient name or file",
+   "fr": "Nom ou dossier du patient"
+  },
+  "svk:Sepsis": {
+   "ar": "اشتباه إنتان",
+   "en": "Possible sepsis",
+   "fr": "Sepsis possible"
+  },
+  "svk:Vte": {
+   "ar": "تقييم الخثار الوريدي",
+   "en": "VTE assessment",
+   "fr": "Évaluation MTEV"
+  },
+  "svs:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouverte"
+  },
+  "svs:Answered": {
+   "ar": "مُجاب",
+   "en": "Answered",
+   "fr": "Traitée"
+  },
+  "No alert here.": {
+   "ar": "لا توجد تنبيهات هنا.",
+   "en": "No alert here.",
+   "fr": "Aucune alerte ici."
+  },
+  "The record is checked after every set of observations and on every visit to this screen.": {
+   "ar": "يُفحص السجل بعد كل مجموعة علامات حيوية وعند كل فتح لهذه الشاشة.",
+   "en": "The record is checked after every set of observations and on every visit to this screen.",
+   "fr": "Le dossier est vérifié après chaque série d'observations et à chaque ouverture de cet écran."
+  },
+  "What fired it": {
+   "ar": "سبب التنبيه",
+   "en": "What fired it",
+   "fr": "Déclencheur"
+  },
+  "svc:qSOFA": {
+   "ar": "qSOFA",
+   "en": "qSOFA",
+   "fr": "qSOFA"
+  },
+  "svc:SIRS": {
+   "ar": "SIRS",
+   "en": "SIRS",
+   "fr": "SIRS"
+  },
+  "svc:RR": {
+   "ar": "معدل التنفس",
+   "en": "Resp. rate",
+   "fr": "Fréq. resp."
+  },
+  "svc:SBP": {
+   "ar": "الضغط الانقباضي",
+   "en": "Systolic",
+   "fr": "Systolique"
+  },
+  "svc:AVPU": {
+   "ar": "الوعي",
+   "en": "Consciousness",
+   "fr": "Conscience"
+  },
+  "svc:T": {
+   "ar": "الحرارة",
+   "en": "Temp.",
+   "fr": "Temp."
+  },
+  "svc:HR": {
+   "ar": "النبض",
+   "en": "Pulse",
+   "fr": "Pouls"
+  },
+  "svc:INF": {
+   "ar": "عدوى مسجلة",
+   "en": "Infection on record",
+   "fr": "Infection au dossier"
+  },
+  "svc:ADM": {
+   "ar": "مريض منوَّم: التقييم خلال 24 ساعة من الدخول",
+   "en": "Admitted: assess within 24 hours of admission",
+   "fr": "Admis : évaluer dans les 24 heures"
+  },
+  "svr:BundleStarted": {
+   "ar": "بدأت حزمة علاج الإنتان",
+   "en": "Sepsis bundle started",
+   "fr": "Protocole sepsis démarré"
+  },
+  "svr:NotSepsis": {
+   "ar": "ليس إنتانًا",
+   "en": "Not sepsis",
+   "fr": "Pas un sepsis"
+  },
+  "svr:ProphylaxisOrdered": {
+   "ar": "طُلبت الوقاية",
+   "en": "Prophylaxis ordered",
+   "fr": "Prophylaxie prescrite"
+  },
+  "svr:NotIndicated": {
+   "ar": "الوقاية غير لازمة",
+   "en": "Not indicated",
+   "fr": "Non indiquée"
+  },
+  "svr:Contraindicated": {
+   "ar": "الوقاية ممنوعة",
+   "en": "Contraindicated",
+   "fr": "Contre-indiquée"
+  },
+  "Answer the alert": {
+   "ar": "الرد على التنبيه",
+   "en": "Answer the alert",
+   "fr": "Répondre à l'alerte"
+  },
+  "Your decision is kept with the alert; a \"no\" needs its reason.": {
+   "ar": "يُحفظ قرارك مع التنبيه، والرفض يحتاج إلى سببه.",
+   "en": "Your decision is kept with the alert; a \"no\" needs its reason.",
+   "fr": "Votre décision est conservée avec l'alerte ; un « non » demande sa raison."
+  },
+  "Reason / note": {
+   "ar": "السبب / ملاحظة",
+   "en": "Reason / note",
+   "fr": "Raison / note"
+  },
+  "This alert is already answered": {
+   "ar": "تم الرد على هذا التنبيه",
+   "en": "This alert is already answered",
+   "fr": "Cette alerte a déjà une réponse"
+  },
+  "Write the reason for this decision": {
+   "ar": "اكتب سبب هذا القرار",
+   "en": "Write the reason for this decision",
+   "fr": "Indiquez la raison de cette décision"
+  },
+  "Someone else answered this alert: open it again": {
+   "ar": "ردّ شخص آخر على هذا التنبيه: افتحه من جديد",
+   "en": "Someone else answered this alert: open it again",
+   "fr": "Quelqu'un d'autre a répondu à cette alerte : rouvrez-la"
+  }
+ }
+}

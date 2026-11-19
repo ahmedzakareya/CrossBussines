@@ -1,0 +1,115 @@
+{
+ "unit": "H214 - Video visits (telehealth)",
+ "strings": {
+  "Video visit": {
+   "ar": "زيارة بالفيديو",
+   "en": "Video visit",
+   "fr": "Consultation vidéo"
+  },
+  "tele:Scheduled": {
+   "ar": "مجدولة",
+   "en": "Scheduled",
+   "fr": "Planifiée"
+  },
+  "tele:Live": {
+   "ar": "جارية",
+   "en": "Live",
+   "fr": "En cours"
+  },
+  "tele:Ended": {
+   "ar": "انتهت",
+   "en": "Ended",
+   "fr": "Terminée"
+  },
+  "Patient file": {
+   "ar": "ملف المريض",
+   "en": "Patient file",
+   "fr": "Dossier du patient"
+  },
+  "Appointment": {
+   "ar": "الموعد",
+   "en": "Appointment",
+   "fr": "Rendez-vous"
+  },
+  "The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit.": {
+   "ar": "المكالمة بينكما فقط ولا تُسجَّل أبدًا. اكتب ملاحظات الزيارة في الاستشارة كأي زيارة.",
+   "en": "The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit.",
+   "fr": "L'appel est entre vous deux seulement : il n'est jamais enregistré. Rédigez les notes dans la consultation comme pour toute visite."
+  },
+  "Waiting for the other side to join…": {
+   "ar": "بانتظار انضمام الطرف الآخر…",
+   "en": "Waiting for the other side to join…",
+   "fr": "En attente de l'autre participant…"
+  },
+  "Connecting…": {
+   "ar": "جارٍ الاتصال…",
+   "en": "Connecting…",
+   "fr": "Connexion…"
+  },
+  "The other side left": {
+   "ar": "غادر الطرف الآخر",
+   "en": "The other side left",
+   "fr": "L'autre participant est parti"
+  },
+  "The video visit has ended": {
+   "ar": "انتهت الزيارة بالفيديو",
+   "en": "The video visit has ended",
+   "fr": "La consultation vidéo est terminée"
+  },
+  "No camera or microphone: you can still see and hear the other side": {
+   "ar": "لا توجد كاميرا أو ميكروفون: يمكنك مع ذلك رؤية الطرف الآخر وسماعه",
+   "en": "No camera or microphone: you can still see and hear the other side",
+   "fr": "Pas de caméra ni de micro : vous pouvez quand même voir et entendre l'autre participant"
+  },
+  "End the video visit for both sides?": {
+   "ar": "إنهاء الزيارة بالفيديو للطرفين؟",
+   "en": "End the video visit for both sides?",
+   "fr": "Terminer la consultation vidéo pour les deux participants ?"
+  },
+  "Microphone": {
+   "ar": "الميكروفون",
+   "en": "Microphone",
+   "fr": "Micro"
+  },
+  "End the video visit": {
+   "ar": "إنهاء الزيارة بالفيديو",
+   "en": "End the video visit",
+   "fr": "Terminer la consultation vidéo"
+  },
+  "Your doctor sees and hears you; the call is never recorded": {
+   "ar": "يراك طبيبك ويسمعك، ولا تُسجَّل المكالمة أبدًا",
+   "en": "Your doctor sees and hears you; the call is never recorded",
+   "fr": "Votre médecin vous voit et vous entend ; l'appel n'est jamais enregistré"
+  },
+  "Join the video visit": {
+   "ar": "الانضمام إلى الزيارة بالفيديو",
+   "en": "Join the video visit",
+   "fr": "Rejoindre la consultation vidéo"
+  },
+  "This video visit has ended": {
+   "ar": "انتهت هذه الزيارة بالفيديو",
+   "en": "This video visit has ended",
+   "fr": "Cette consultation vidéo est terminée"
+  },
+  "The video visit opens 15 minutes before its time": {
+   "ar": "تُفتح الزيارة بالفيديو قبل موعدها بـ15 دقيقة",
+   "en": "The video visit opens 15 minutes before its time",
+   "fr": "La consultation vidéo s'ouvre 15 minutes avant l'heure"
+  },
+  "This video visit's time has passed": {
+   "ar": "انقضى وقت هذه الزيارة بالفيديو",
+   "en": "This video visit's time has passed",
+   "fr": "L'heure de cette consultation vidéo est passée"
+  },
+  "A video visit is held on its own day": {
+   "ar": "تُعقد الزيارة بالفيديو في يومها",
+   "en": "A video visit is held on its own day",
+   "fr": "Une consultation vidéo a lieu le jour prévu"
+  },
+  "Only a booked appointment becomes a video visit": {
+   "ar": "لا يتحول إلى زيارة بالفيديو إلا موعد محجوز",
+   "en": "Only a booked appointment becomes a video visit",
+   "fr": "Seul un rendez-vous réservé devient une consultation vidéo"
+  }
+ }
+}

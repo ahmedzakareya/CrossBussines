@@ -9260,4 +9260,108 @@
   <data name="{0} active medicines" xml:space="preserve"><value>{0} active medicines</value></data>
   <data name="{0} patients in beds" xml:space="preserve"><value>{0} patients in beds</value></data>
   <data name="{0} wards" xml:space="preserve"><value>{0} wards</value></data>
+  <data name="Alerts" xml:space="preserve"><value>Alerts</value></data>
+  <data name="Answer the alert" xml:space="preserve"><value>Answer the alert</value></data>
+  <data name="Clinical surveillance" xml:space="preserve"><value>Clinical surveillance</value></data>
+  <data name="No alert here." xml:space="preserve"><value>No alert here.</value></data>
+  <data name="Patient name or file" xml:space="preserve"><value>Patient name or file</value></data>
+  <data name="Reason / note" xml:space="preserve"><value>Reason / note</value></data>
+  <data name="Sepsis: answer within the hour · VTE: assess within 24 hours of admission" xml:space="preserve"><value>Sepsis: answer within the hour · VTE: assess within 24 hours of admission</value></data>
+  <data name="Someone else answered this alert: open it again" xml:space="preserve"><value>Someone else answered this alert: open it again</value></data>
+  <data name="The record is checked after every set of observations and on every visit to this screen." xml:space="preserve"><value>The record is checked after every set of observations and on every visit to this screen.</value></data>
+  <data name="The surveillance table is not created yet (hospital_h212_surveillance.sql)." xml:space="preserve"><value>The surveillance table is not created yet (hospital_h212_surveillance.sql).</value></data>
+  <data name="This alert is already answered" xml:space="preserve"><value>This alert is already answered</value></data>
+  <data name="What fired it" xml:space="preserve"><value>What fired it</value></data>
+  <data name="Write the reason for this decision" xml:space="preserve"><value>Write the reason for this decision</value></data>
+  <data name="Your decision is kept with the alert; a &quot;no&quot; needs its reason." xml:space="preserve"><value>Your decision is kept with the alert; a "no" needs its reason.</value></data>
+  <data name="svc:ADM" xml:space="preserve"><value>Admitted: assess within 24 hours of admission</value></data>
+  <data name="svc:AVPU" xml:space="preserve"><value>Consciousness</value></data>
+  <data name="svc:HR" xml:space="preserve"><value>Pulse</value></data>
+  <data name="svc:INF" xml:space="preserve"><value>Infection on record</value></data>
+  <data name="svc:RR" xml:space="preserve"><value>Resp. rate</value></data>
+  <data name="svc:SBP" xml:space="preserve"><value>Systolic</value></data>
+  <data name="svc:SIRS" xml:space="preserve"><value>SIRS</value></data>
+  <data name="svc:T" xml:space="preserve"><value>Temp.</value></data>
+  <data name="svc:qSOFA" xml:space="preserve"><value>qSOFA</value></data>
+  <data name="svk:Sepsis" xml:space="preserve"><value>Possible sepsis</value></data>
+  <data name="svk:Vte" xml:space="preserve"><value>VTE assessment</value></data>
+  <data name="svr:BundleStarted" xml:space="preserve"><value>Sepsis bundle started</value></data>
+  <data name="svr:Contraindicated" xml:space="preserve"><value>Contraindicated</value></data>
+  <data name="svr:NotIndicated" xml:space="preserve"><value>Not indicated</value></data>
+  <data name="svr:NotSepsis" xml:space="preserve"><value>Not sepsis</value></data>
+  <data name="svr:ProphylaxisOrdered" xml:space="preserve"><value>Prophylaxis ordered</value></data>
+  <data name="svs:Answered" xml:space="preserve"><value>Answered</value></data>
+  <data name="svs:Open" xml:space="preserve"><value>Open</value></data>
+  <data name="{0} VTE assessments due" xml:space="preserve"><value>{0} VTE assessments due</value></data>
+  <data name="{0} alerts" xml:space="preserve"><value>{0} alerts</value></data>
+  <data name="{0} possible sepsis" xml:space="preserve"><value>{0} possible sepsis</value></data>
+  <data name="An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes)." xml:space="preserve"><value>An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes).</value></data>
+  <data name="Behaviour / note" xml:space="preserve"><value>Behaviour / note</value></data>
+  <data name="Can end" xml:space="preserve"><value>Can end</value></data>
+  <data name="Choose the kind of restraint" xml:space="preserve"><value>Choose the kind of restraint</value></data>
+  <data name="Circulation" xml:space="preserve"><value>Circulation</value></data>
+  <data name="Circulation normal" xml:space="preserve"><value>Circulation normal</value></data>
+  <data name="Describe the circulation or skin problem in the note" xml:space="preserve"><value>Describe the circulation or skin problem in the note</value></data>
+  <data name="Device or drug" xml:space="preserve"><value>Device or drug</value></data>
+  <data name="End the restraint" xml:space="preserve"><value>End the restraint</value></data>
+  <data name="Family informed" xml:space="preserve"><value>Family informed</value></data>
+  <data name="Family not informed" xml:space="preserve"><value>Family not informed</value></data>
+  <data name="Fluids offered" xml:space="preserve"><value>Fluids offered</value></data>
+  <data name="Issue the order" xml:space="preserve"><value>Issue the order</value></data>
+  <data name="Last check" xml:space="preserve"><value>Last check</value></data>
+  <data name="Next check" xml:space="preserve"><value>Next check</value></data>
+  <data name="No check yet" xml:space="preserve"><value>No check yet</value></data>
+  <data name="No restraint here." xml:space="preserve"><value>No restraint here.</value></data>
+  <data name="Order a restraint" xml:space="preserve"><value>Order a restraint</value></data>
+  <data name="Order expired: renew or end it" xml:space="preserve"><value>Order expired: renew or end it</value></data>
+  <data name="Order valid until" xml:space="preserve"><value>Order valid until</value></data>
+  <data name="Record a check" xml:space="preserve"><value>Record a check</value></data>
+  <data name="Renew the order for 24 hours" xml:space="preserve"><value>Renew the order for 24 hours</value></data>
+  <data name="Renew this order for another 24 hours?" xml:space="preserve"><value>Renew this order for another 24 hours?</value></data>
+  <data name="Renewed {0} times" xml:space="preserve"><value>Renewed {0} times</value></data>
+  <data name="Restraint and seclusion" xml:space="preserve"><value>Restraint and seclusion</value></data>
+  <data name="Restraint order" xml:space="preserve"><value>Order</value></data>
+  <data name="Skin intact" xml:space="preserve"><value>Skin intact</value></data>
+  <data name="Someone else changed this restraint: open it again" xml:space="preserve"><value>Someone else changed this restraint: open it again</value></data>
+  <data name="Still needed" xml:space="preserve"><value>Still needed</value></data>
+  <data name="The last resort: say why, and what was tried first. The order lasts 24 hours." xml:space="preserve"><value>The last resort: say why, and what was tried first. The order lasts 24 hours.</value></data>
+  <data name="The restraint tables are not created yet (hospital_h213_restraints.sql)." xml:space="preserve"><value>The restraint tables are not created yet (hospital_h213_restraints.sql).</value></data>
+  <data name="This patient already has this restraint: renew or end it" xml:space="preserve"><value>This patient already has this restraint: renew or end it</value></data>
+  <data name="This restraint has ended" xml:space="preserve"><value>This restraint has ended</value></data>
+  <data name="Toilet" xml:space="preserve"><value>Toilet</value></data>
+  <data name="Toilet offered" xml:space="preserve"><value>Toilet offered</value></data>
+  <data name="Tried first" xml:space="preserve"><value>Tried first</value></data>
+  <data name="Why does the restraint end?" xml:space="preserve"><value>Why does the restraint end?</value></data>
+  <data name="Why restrained" xml:space="preserve"><value>Reason</value></data>
+  <data name="Write what was tried before the restraint" xml:space="preserve"><value>Write what was tried before the restraint</value></data>
+  <data name="Write why the restraint ends" xml:space="preserve"><value>Write why the restraint ends</value></data>
+  <data name="Write why the restraint is needed" xml:space="preserve"><value>Write why the restraint is needed</value></data>
+  <data name="rsk:Chemical" xml:space="preserve"><value>Chemical</value></data>
+  <data name="rsk:Physical" xml:space="preserve"><value>Physical</value></data>
+  <data name="rsk:Seclusion" xml:space="preserve"><value>Seclusion</value></data>
+  <data name="{0} active" xml:space="preserve"><value>{0} active</value></data>
+  <data name="{0} episodes" xml:space="preserve"><value>{0} episodes</value></data>
+  <data name="{0} need attention" xml:space="preserve"><value>{0} need attention</value></data>
+  <data name="A video visit is held on its own day" xml:space="preserve"><value>A video visit is held on its own day</value></data>
+  <data name="Appointment" xml:space="preserve"><value>Appointment</value></data>
+  <data name="Connecting…" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="End the video visit" xml:space="preserve"><value>End the video visit</value></data>
+  <data name="End the video visit for both sides?" xml:space="preserve"><value>End the video visit for both sides?</value></data>
+  <data name="Join the video visit" xml:space="preserve"><value>Join the video visit</value></data>
+  <data name="Microphone" xml:space="preserve"><value>Microphone</value></data>
+  <data name="No camera or microphone: you can still see and hear the other side" xml:space="preserve"><value>No camera or microphone: you can still see and hear the other side</value></data>
+  <data name="Only a booked appointment becomes a video visit" xml:space="preserve"><value>Only a booked appointment becomes a video visit</value></data>
+  <data name="Patient file" xml:space="preserve"><value>Patient file</value></data>
+  <data name="The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit." xml:space="preserve"><value>The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit.</value></data>
+  <data name="The other side left" xml:space="preserve"><value>The other side left</value></data>
+  <data name="The video visit has ended" xml:space="preserve"><value>The video visit has ended</value></data>
+  <data name="The video visit opens 15 minutes before its time" xml:space="preserve"><value>The video visit opens 15 minutes before its time</value></data>
+  <data name="This video visit has ended" xml:space="preserve"><value>This video visit has ended</value></data>
+  <data name="This video visit's time has passed" xml:space="preserve"><value>This video visit's time has passed</value></data>
+  <data name="Video visit" xml:space="preserve"><value>Video visit</value></data>
+  <data name="Waiting for the other side to join…" xml:space="preserve"><value>Waiting for the other side to join…</value></data>
+  <data name="Your doctor sees and hears you; the call is never recorded" xml:space="preserve"><value>Your doctor sees and hears you; the call is never recorded</value></data>
+  <data name="tele:Ended" xml:space="preserve"><value>Ended</value></data>
+  <data name="tele:Live" xml:space="preserve"><value>Live</value></data>
+  <data name="tele:Scheduled" xml:space="preserve"><value>Scheduled</value></data>
 </root>

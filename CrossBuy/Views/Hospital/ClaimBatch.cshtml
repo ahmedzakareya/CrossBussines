@@ -451,7 +451,7 @@
                         d.columns.forEach(function (c) { if (byKey[c.key]) h += row(byKey[c.key], true, c.header); });
                         d.fields.forEach(function (f) { if (used.indexOf(f.key) < 0) h += row(f, false, null); });
                         body.innerHTML = h;
-                        m.querySelector('[data-sheet=delimiter]').value = d.delimiter; m.querySelector('[data-sheet=dateFormat]').value = d.dateFormat;
+                        [['delimiter', d.delimiter], ['dateFormat', d.dateFormat]].forEach(function (x) { var el = m.querySelector('[data-sheet=' + x[0] + ']'); el.value = x[1]; if (window.jQuery) jQuery(el).trigger('change'); });   // the theme makes these select2
                         m.querySelector('[data-sheet-std]').classList.toggle('d-none', !!d.saved);
                         bootstrap.Modal.getOrCreateInstance(m).show();
                     });

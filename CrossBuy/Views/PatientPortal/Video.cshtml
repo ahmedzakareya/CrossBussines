@@ -1,0 +1,41 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalTeleRoom
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Af
+@*
+    H214 — the patient's video visit in the portal: the doctor and the time, then the same room the doctor sees; outside
+    its window (more than 15 minutes early, 2 hours late, or ended) a notice says when it opens or that it has passed.
+*@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = T["Video visit"].Value;
+    ViewData["BandTitle"] = T["Video visit"].Value;
+    ViewData["BandDesc"] = T["Your doctor sees and hears you; the call is never recorded"].Value;
+    string? refusal = ViewBag.Refusal as string;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<div class="card card-flush">
+    <div class="card-header pt-7">
+        <div class="card-title flex-column">
+            <span class="fs-4 fw-bold text-gray-900">@DisplayName.Of(Model.Doctor, Model.DoctorEn)</span>
+            <span class="text-muted fs-7 mt-1"><bdi class="pp-num" dir="ltr">@Model.StartsAt.ToString("yyyy-MM-dd HH:mm", inv)</bdi> · @DisplayName.Of(Model.Patient, Model.PatientEn)</span>
+        </div>
+        <div class="card-toolbar"><a href="@Url.Action("Appointments")" class="btn btn-sm btn-light">@T["My appointments"]</a></div>
+    </div>
+    <div class="card-body pt-2">
+        @if (refusal != null)
+        {
+            <div class="notice d-flex bg-light rounded border border-dashed p-6"><i class="ki-outline ki-time fs-2tx text-gray-500 me-4"></i><div class="fs-6 fw-semibold text-gray-700">@T[refusal]</div></div>
+        }
+        else
+        {
+            @await Html.PartialAsync("~/Views/Hospital/_TeleRoom.cshtml", new CrossBuy.Views.Hospital.HospitalTeleRoomModel
+            {
+                SignalUrl = Url.Action("VideoSignal", new { id = Model.Visit.ID })!, PollUrl = Url.Action("VideoPoll", new { id = Model.Visit.ID })!,
+                DoneUrl = Url.Action("Appointments"), Side = HospitalTeleSide.Patient, Ice = (IReadOnlyList<string>)ViewBag.Ice, Token = Af.GetAndStoreTokens(Context).RequestToken ?? "",
+            })
+        }
+    </div>
+</div>

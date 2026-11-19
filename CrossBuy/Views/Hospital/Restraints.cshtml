@@ -1,0 +1,188 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalRestraintRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H213 — restraint and seclusion, composed from the theme (demo39): two stat badges, active / ended tabs with search and
+    pages, each episode with its order (reason, alternatives, expiry), its last check and the next one due (overdue in
+    red); a doctor orders and renews, a nurse records the checks and ends it.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Restraint and seclusion"].Value;
+    string q = ViewBag.Q as string ?? "";
+    bool ended = ViewBag.Ended == true, ready = ViewBag.Ready == true, canOrder = ViewBag.CanOrder == true, canNurse = ViewBag.CanNurse == true;
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total, active = (int)ViewBag.Active, overdue = (int)ViewBag.Overdue;
+    var inpatients = (ViewBag.Inpatients as IReadOnlyList<(int AdmissionId, string Bed, string Name, string NameEn, string Mrn)>) ?? Array.Empty<(int, string, string, string, string)>();
+    string Link(int p, bool? e = null) => Url.Action("Restraints", new { q, ended = e ?? ended, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string At(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("MM-dd HH:mm", inv);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Restraint and seclusion"]
+                <span class="badge badge-light-primary fs-7 fw-bold">@T["{0} active", active]</span>
+                @if (overdue > 0) {<span class="badge badge-danger fs-7 fw-bold">@T["{0} need attention", overdue]</span>}</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Nursing")" class="text-muted text-hover-primary">@T["Nursing station"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Restraint and seclusion"]</li>
+            </ul>
+        </div>
+        @if (ready && canOrder) {<button type="button" class="btn btn-sm btn-primary" data-rs-new><i class="ki-outline ki-plus fs-4"></i>@T["Order a restraint"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The restraint tables are not created yet (hospital_h213_restraints.sql)."]</div></div>
+        }
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                    <li class="nav-item"><a class="nav-link text-active-primary @(ended ? "" : "active")" href="@Link(1, false)">@T["Active"]</a></li>
+                    <li class="nav-item"><a class="nav-link text-active-primary @(ended ? "active" : "")" href="@Link(1, true)">@T["Ended"]</a></li>
+                </ul>
+                <form class="card-toolbar gap-2" method="get" action="@Url.Action("Restraints")">
+                    @if (ended) {<input type="hidden" name="ended" value="true" />}
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" name="q" value="@q" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Patient name or file"]" /></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                <div class="text-muted fs-7 mb-4">@T["An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes)."] · @T["{0} episodes", total]</div>
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-security-user fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No restraint here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-top gs-0 gy-4 my-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 min-w-175px rounded-start">@T["Patient"]</th><th class="min-w-250px">@T["Restraint order"]</th><th class="min-w-150px">@T["Last check"]</th><th class="min-w-125px">@(ended ? T["Ended"] : T["Next check"])</th><th class="text-end pe-4 rounded-end min-w-150px"></th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                var r = row.Restraint; var c = row.LastCheck;
+                                <tr>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                        <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi>@if (row.Bed != null) {<text> · <bdi class="hp-num" dir="ltr">@row.Bed</bdi></text>}</span></td>
+                                    <td class="fs-7"><span class="badge badge-light-danger fw-bold me-1">@T["rsk:" + r.Kind]</span>@if (r.Device != null) {<span class="text-gray-700"><bdi>@r.Device</bdi></span>}
+                                        <div class="text-gray-800 mt-1"><span class="text-muted">@T["Why restrained"]:</span> <bdi>@r.Reason</bdi></div>
+                                        <div class="text-gray-700"><span class="text-muted">@T["Tried first"]:</span> <bdi>@r.Alternatives</bdi></div>
+                                        <div class="text-muted fs-8 mt-1">@T["Started"] <span class="hp-num" dir="ltr">@At(r.StartedAt)</span> · @(row.OrderedBy != null ? DisplayName.Of(row.OrderedBy, row.OrderedByEn) : "—")
+                                            · @T["Order valid until"] <span class="hp-num @(row.Expired ? "text-danger fw-bold" : "")" dir="ltr">@At(r.ExpiresAt)</span>@if (r.Renewals > 0) {<text> · @T["Renewed {0} times", r.Renewals]</text>}
+                                            · @(r.FamilyInformed ? T["Family informed"] : T["Family not informed"])</div>
+                                        @if (row.Expired) {<div class="badge badge-danger mt-1">@T["Order expired: renew or end it"]</div>}
+                                        @if (r.EndReason != null) {<div class="notice bg-light rounded border border-dashed p-2 mt-2 fs-8"><bdi>@r.EndReason</bdi></div>}</td>
+                                    <td class="fs-7">@if (c == null) {<span class="text-muted">@T["No check yet"]</span>} else {
+                                        <span class="hp-num" dir="ltr">@At(c.At)</span> <span class="text-muted fs-8">(@row.Checks)</span>
+                                        <div class="mt-1">
+                                            <span class="badge badge-light-@(c.CirculationOk ? "primary" : "danger") fs-9">@T["Circulation"]</span>
+                                            <span class="badge badge-light-@(c.SkinOk ? "primary" : "danger") fs-9">@T["Skin"]</span>
+                                            @if (c.FluidsOffered) {<span class="badge badge-light fs-9">@T["Fluids"]</span>}
+                                            @if (c.ToiletOffered) {<span class="badge badge-light fs-9">@T["Toilet"]</span>}
+                                            @if (!c.StillNeeded) {<span class="badge badge-light-info fs-9">@T["Can end"]</span>}
+                                        </div>@if (c.Behaviour != null) {<div class="text-muted fs-8 mt-1"><bdi>@c.Behaviour</bdi></div>}}</td>
+                                    <td class="fs-7 text-nowrap">@if (ended) {<span class="hp-num" dir="ltr">@At(r.EndedAt!.Value)</span>} else {<span class="hp-num @(row.CheckOverdue ? "text-danger fw-bold" : "text-gray-700")" dir="ltr">@At(row.NextCheckAt)</span>@if (row.CheckOverdue) {<div class="text-danger fs-8 fw-bold">@T["Overdue"]</div>}}</td>
+                                    <td class="text-end pe-4 text-nowrap">@if (!ended && ready)
+                                    {
+                                        @if (canNurse) {<button type="button" class="btn btn-sm btn-primary" data-rs-check="@r.ID"><i class="ki-outline ki-check-square fs-4"></i>@T["Record a check"]</button>}
+                                        @if (canOrder) {<button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Renew the order for 24 hours"]" data-bs-toggle="tooltip" data-rs-renew="@r.ID"><i class="ki-outline ki-arrows-circle fs-3"></i></button>}
+                                        @if (canNurse) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["End the restraint"]" data-bs-toggle="tooltip" data-rs-end="@r.ID"><i class="ki-outline ki-lock-2 fs-3"></i></button>}
+                                    }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination pt-6 justify-content-end">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++) {<li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Link(p)">@p</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (ready && canOrder)
+{
+    <div class="modal fade" id="rsNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Order a restraint"]</h1><div class="text-muted fw-semibold fs-6">@T["The last resort: say why, and what was tried first. The order lasts 24 hours."]</div></div>
+            <div class="row g-4">
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
+                    <select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#rsNew" data-placeholder="@T["Choose"]" data-rs="admission"><option></option>@foreach (var p in inpatients) {<option value="@p.AdmissionId">@p.Bed · @DisplayName.Of(p.Name, p.NameEn) · @p.Mrn</option>}</select></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Kind"]</label><select class="form-select form-select-solid" data-rs="kind">@foreach (var k in HospitalRestraintKind.All) {<option value="@k">@T["rsk:" + k]</option>}</select></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Device or drug"]</label><input class="form-control form-control-solid" maxlength="100" data-rs="device" /></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Why restrained"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-rs="reason"></textarea></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Tried first"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-rs="alternatives"></textarea></div>
+                <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-rs="family" /><span class="form-check-label fw-semibold">@T["Family informed"]</span></label></div>
+            </div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rs-start>@T["Issue the order"]</button></div>
+        </div>
+    </div></div></div>
+}
+@if (ready && canNurse)
+{
+    <div class="modal fade" id="rsCheck" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Record a check"]</h1></div>
+            <div class="d-flex flex-column gap-4">
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" checked data-ck="circulationOk" /><span class="form-check-label fw-semibold">@T["Circulation normal"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" checked data-ck="skinOk" /><span class="form-check-label fw-semibold">@T["Skin intact"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-ck="fluidsOffered" /><span class="form-check-label fw-semibold">@T["Fluids offered"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-ck="toiletOffered" /><span class="form-check-label fw-semibold">@T["Toilet offered"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" checked data-ck="stillNeeded" /><span class="form-check-label fw-semibold">@T["Still needed"]</span></label>
+                <div><label class="fs-6 fw-semibold mb-2">@T["Behaviour / note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-ck="behaviour"></textarea></div>
+            </div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ck-save>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
+            var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Wards/Restraints")), id = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                renew: @Json.Serialize(T["Renew this order for another 24 hours?"].Value), end: @Json.Serialize(T["Why does the restraint end?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(t, modal) { return function (res) { if (t) t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
+            var mn = document.getElementById('rsNew'), mc = document.getElementById('rsCheck');
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-rs-new],[data-rs-start],[data-rs-check],[data-ck-save],[data-rs-renew],[data-rs-end]'); if (!t) return;
+                if (t.hasAttribute('data-rs-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
+                if (t.hasAttribute('data-rs-start')) {
+                    var v = function (k) { return mn.querySelector('[data-rs="' + k + '"]'); };
+                    t.disabled = true;
+                    post(root, { admissionId: Number(v('admission').value) || 0, kind: v('kind').value, device: v('device').value, reason: v('reason').value, alternatives: v('alternatives').value, familyInformed: v('family').checked }).then(done(t, mn));
+                    return;
+                }
+                if (t.hasAttribute('data-rs-check')) { id = t.getAttribute('data-rs-check'); bootstrap.Modal.getOrCreateInstance(mc).show(); return; }
+                if (t.hasAttribute('data-ck-save')) {
+                    var c = function (k) { return mc.querySelector('[data-ck="' + k + '"]'); };
+                    t.disabled = true;
+                    post(root + '/' + id + '/Check', { circulationOk: c('circulationOk').checked, skinOk: c('skinOk').checked, fluidsOffered: c('fluidsOffered').checked, toiletOffered: c('toiletOffered').checked, stillNeeded: c('stillNeeded').checked, behaviour: c('behaviour').value }).then(done(t, mc));
+                    return;
+                }
+                if (t.hasAttribute('data-rs-renew')) { cbConfirm(W.renew).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + t.getAttribute('data-rs-renew') + '/Renew').then(done(t)); }); return; }
+                cbPrompt(W.end, { textarea: true }).then(function (why) { if (why == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-rs-end') + '/End', { reason: why }).then(done(t)); });
+            });
+        })();
+    </script>
+}

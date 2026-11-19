@@ -9260,4 +9260,108 @@
   <data name="{0} active medicines" xml:space="preserve"><value>{0} médicaments actifs</value></data>
   <data name="{0} patients in beds" xml:space="preserve"><value>{0} patients alités</value></data>
   <data name="{0} wards" xml:space="preserve"><value>{0} services</value></data>
+  <data name="Alerts" xml:space="preserve"><value>Alertes</value></data>
+  <data name="Answer the alert" xml:space="preserve"><value>Répondre à l'alerte</value></data>
+  <data name="Clinical surveillance" xml:space="preserve"><value>Surveillance clinique</value></data>
+  <data name="No alert here." xml:space="preserve"><value>Aucune alerte ici.</value></data>
+  <data name="Patient name or file" xml:space="preserve"><value>Nom ou dossier du patient</value></data>
+  <data name="Reason / note" xml:space="preserve"><value>Raison / note</value></data>
+  <data name="Sepsis: answer within the hour · VTE: assess within 24 hours of admission" xml:space="preserve"><value>Sepsis : répondre dans l'heure · MTEV : évaluer dans les 24 heures suivant l'admission</value></data>
+  <data name="Someone else answered this alert: open it again" xml:space="preserve"><value>Quelqu'un d'autre a répondu à cette alerte : rouvrez-la</value></data>
+  <data name="The record is checked after every set of observations and on every visit to this screen." xml:space="preserve"><value>Le dossier est vérifié après chaque série d'observations et à chaque ouverture de cet écran.</value></data>
+  <data name="The surveillance table is not created yet (hospital_h212_surveillance.sql)." xml:space="preserve"><value>La table de surveillance n'est pas encore créée (hospital_h212_surveillance.sql).</value></data>
+  <data name="This alert is already answered" xml:space="preserve"><value>Cette alerte a déjà une réponse</value></data>
+  <data name="What fired it" xml:space="preserve"><value>Déclencheur</value></data>
+  <data name="Write the reason for this decision" xml:space="preserve"><value>Indiquez la raison de cette décision</value></data>
+  <data name="Your decision is kept with the alert; a &quot;no&quot; needs its reason." xml:space="preserve"><value>Votre décision est conservée avec l'alerte ; un « non » demande sa raison.</value></data>
+  <data name="svc:ADM" xml:space="preserve"><value>Admis : évaluer dans les 24 heures</value></data>
+  <data name="svc:AVPU" xml:space="preserve"><value>Conscience</value></data>
+  <data name="svc:HR" xml:space="preserve"><value>Pouls</value></data>
+  <data name="svc:INF" xml:space="preserve"><value>Infection au dossier</value></data>
+  <data name="svc:RR" xml:space="preserve"><value>Fréq. resp.</value></data>
+  <data name="svc:SBP" xml:space="preserve"><value>Systolique</value></data>
+  <data name="svc:SIRS" xml:space="preserve"><value>SIRS</value></data>
+  <data name="svc:T" xml:space="preserve"><value>Temp.</value></data>
+  <data name="svc:qSOFA" xml:space="preserve"><value>qSOFA</value></data>
+  <data name="svk:Sepsis" xml:space="preserve"><value>Sepsis possible</value></data>
+  <data name="svk:Vte" xml:space="preserve"><value>Évaluation MTEV</value></data>
+  <data name="svr:BundleStarted" xml:space="preserve"><value>Protocole sepsis démarré</value></data>
+  <data name="svr:Contraindicated" xml:space="preserve"><value>Contre-indiquée</value></data>
+  <data name="svr:NotIndicated" xml:space="preserve"><value>Non indiquée</value></data>
+  <data name="svr:NotSepsis" xml:space="preserve"><value>Pas un sepsis</value></data>
+  <data name="svr:ProphylaxisOrdered" xml:space="preserve"><value>Prophylaxie prescrite</value></data>
+  <data name="svs:Answered" xml:space="preserve"><value>Traitée</value></data>
+  <data name="svs:Open" xml:space="preserve"><value>Ouverte</value></data>
+  <data name="{0} VTE assessments due" xml:space="preserve"><value>{0} évaluations MTEV dues</value></data>
+  <data name="{0} alerts" xml:space="preserve"><value>{0} alertes</value></data>
+  <data name="{0} possible sepsis" xml:space="preserve"><value>{0} sepsis possibles</value></data>
+  <data name="An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes)." xml:space="preserve"><value>Une prescription dure 24 heures. Contrôles toutes les 2 heures (isolement : toutes les 15 minutes).</value></data>
+  <data name="Behaviour / note" xml:space="preserve"><value>Comportement / note</value></data>
+  <data name="Can end" xml:space="preserve"><value>Peut cesser</value></data>
+  <data name="Choose the kind of restraint" xml:space="preserve"><value>Choisissez le type de contention</value></data>
+  <data name="Circulation" xml:space="preserve"><value>Circulation</value></data>
+  <data name="Circulation normal" xml:space="preserve"><value>Circulation normale</value></data>
+  <data name="Describe the circulation or skin problem in the note" xml:space="preserve"><value>Décrivez le problème de circulation ou de peau dans la note</value></data>
+  <data name="Device or drug" xml:space="preserve"><value>Dispositif ou médicament</value></data>
+  <data name="End the restraint" xml:space="preserve"><value>Mettre fin à la contention</value></data>
+  <data name="Family informed" xml:space="preserve"><value>Famille informée</value></data>
+  <data name="Family not informed" xml:space="preserve"><value>Famille non informée</value></data>
+  <data name="Fluids offered" xml:space="preserve"><value>Hydratation proposée</value></data>
+  <data name="Issue the order" xml:space="preserve"><value>Prescrire</value></data>
+  <data name="Last check" xml:space="preserve"><value>Dernier contrôle</value></data>
+  <data name="Next check" xml:space="preserve"><value>Prochain contrôle</value></data>
+  <data name="No check yet" xml:space="preserve"><value>Aucun contrôle</value></data>
+  <data name="No restraint here." xml:space="preserve"><value>Aucune contention ici.</value></data>
+  <data name="Order a restraint" xml:space="preserve"><value>Prescrire une contention</value></data>
+  <data name="Order expired: renew or end it" xml:space="preserve"><value>Prescription expirée : renouvelez-la ou terminez</value></data>
+  <data name="Order valid until" xml:space="preserve"><value>Prescription valable jusqu'à</value></data>
+  <data name="Record a check" xml:space="preserve"><value>Enregistrer un contrôle</value></data>
+  <data name="Renew the order for 24 hours" xml:space="preserve"><value>Renouveler pour 24 heures</value></data>
+  <data name="Renew this order for another 24 hours?" xml:space="preserve"><value>Renouveler cette prescription pour 24 heures ?</value></data>
+  <data name="Renewed {0} times" xml:space="preserve"><value>Renouvelée {0} fois</value></data>
+  <data name="Restraint and seclusion" xml:space="preserve"><value>Contention et isolement</value></data>
+  <data name="Restraint order" xml:space="preserve"><value>Prescription</value></data>
+  <data name="Skin intact" xml:space="preserve"><value>Peau intacte</value></data>
+  <data name="Someone else changed this restraint: open it again" xml:space="preserve"><value>Quelqu'un d'autre a modifié cette contention : rouvrez-la</value></data>
+  <data name="Still needed" xml:space="preserve"><value>Toujours nécessaire</value></data>
+  <data name="The last resort: say why, and what was tried first. The order lasts 24 hours." xml:space="preserve"><value>Dernier recours : indiquez pourquoi et ce qui a été essayé. La prescription dure 24 heures.</value></data>
+  <data name="The restraint tables are not created yet (hospital_h213_restraints.sql)." xml:space="preserve"><value>Les tables de contention ne sont pas encore créées (hospital_h213_restraints.sql).</value></data>
+  <data name="This patient already has this restraint: renew or end it" xml:space="preserve"><value>Ce patient a déjà cette contention : renouvelez-la ou terminez-la</value></data>
+  <data name="This restraint has ended" xml:space="preserve"><value>Cette contention est terminée</value></data>
+  <data name="Toilet" xml:space="preserve"><value>Toilettes</value></data>
+  <data name="Toilet offered" xml:space="preserve"><value>Toilettes proposées</value></data>
+  <data name="Tried first" xml:space="preserve"><value>Essayé avant</value></data>
+  <data name="Why does the restraint end?" xml:space="preserve"><value>Pourquoi la contention prend-elle fin ?</value></data>
+  <data name="Why restrained" xml:space="preserve"><value>Raison</value></data>
+  <data name="Write what was tried before the restraint" xml:space="preserve"><value>Indiquez ce qui a été essayé avant</value></data>
+  <data name="Write why the restraint ends" xml:space="preserve"><value>Indiquez pourquoi la contention prend fin</value></data>
+  <data name="Write why the restraint is needed" xml:space="preserve"><value>Indiquez pourquoi la contention est nécessaire</value></data>
+  <data name="rsk:Chemical" xml:space="preserve"><value>Chimique</value></data>
+  <data name="rsk:Physical" xml:space="preserve"><value>Physique</value></data>
+  <data name="rsk:Seclusion" xml:space="preserve"><value>Isolement</value></data>
+  <data name="{0} active" xml:space="preserve"><value>{0} actives</value></data>
+  <data name="{0} episodes" xml:space="preserve"><value>{0} épisodes</value></data>
+  <data name="{0} need attention" xml:space="preserve"><value>{0} à traiter</value></data>
+  <data name="A video visit is held on its own day" xml:space="preserve"><value>Une consultation vidéo a lieu le jour prévu</value></data>
+  <data name="Appointment" xml:space="preserve"><value>Rendez-vous</value></data>
+  <data name="Connecting…" xml:space="preserve"><value>Connexion…</value></data>
+  <data name="End the video visit" xml:space="preserve"><value>Terminer la consultation vidéo</value></data>
+  <data name="End the video visit for both sides?" xml:space="preserve"><value>Terminer la consultation vidéo pour les deux participants ?</value></data>
+  <data name="Join the video visit" xml:space="preserve"><value>Rejoindre la consultation vidéo</value></data>
+  <data name="Microphone" xml:space="preserve"><value>Micro</value></data>
+  <data name="No camera or microphone: you can still see and hear the other side" xml:space="preserve"><value>Pas de caméra ni de micro : vous pouvez quand même voir et entendre l'autre participant</value></data>
+  <data name="Only a booked appointment becomes a video visit" xml:space="preserve"><value>Seul un rendez-vous réservé devient une consultation vidéo</value></data>
+  <data name="Patient file" xml:space="preserve"><value>Dossier du patient</value></data>
+  <data name="The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit." xml:space="preserve"><value>L'appel est entre vous deux seulement : il n'est jamais enregistré. Rédigez les notes dans la consultation comme pour toute visite.</value></data>
+  <data name="The other side left" xml:space="preserve"><value>L'autre participant est parti</value></data>
+  <data name="The video visit has ended" xml:space="preserve"><value>La consultation vidéo est terminée</value></data>
+  <data name="The video visit opens 15 minutes before its time" xml:space="preserve"><value>La consultation vidéo s'ouvre 15 minutes avant l'heure</value></data>
+  <data name="This video visit has ended" xml:space="preserve"><value>Cette consultation vidéo est terminée</value></data>
+  <data name="This video visit's time has passed" xml:space="preserve"><value>L'heure de cette consultation vidéo est passée</value></data>
+  <data name="Video visit" xml:space="preserve"><value>Consultation vidéo</value></data>
+  <data name="Waiting for the other side to join…" xml:space="preserve"><value>En attente de l'autre participant…</value></data>
+  <data name="Your doctor sees and hears you; the call is never recorded" xml:space="preserve"><value>Votre médecin vous voit et vous entend ; l'appel n'est jamais enregistré</value></data>
+  <data name="tele:Ended" xml:space="preserve"><value>Terminée</value></data>
+  <data name="tele:Live" xml:space="preserve"><value>En cours</value></data>
+  <data name="tele:Scheduled" xml:space="preserve"><value>Planifiée</value></data>
 </root>

@@ -334,7 +334,9 @@ namespace CrossBuy.BL.Reporting
 
                 if (pageHeader != null)
                 {
-                    Band(sb, ctx, pageHeader, null, null, y, contentW, p + 1, totalPages);
+                    // H211: a page head's fields read the document's header from the first row, as the report head
+                    // does (they rendered EMPTY before, so nothing that reads correctly today changes).
+                    Band(sb, ctx, pageHeader, rows.FirstOrDefault(), null, y, contentW, p + 1, totalPages);
                     y += pageHeader.HeightMm;
                 }
 
@@ -379,7 +381,9 @@ namespace CrossBuy.BL.Reporting
                     };
                     if (band == null) continue;
 
-                    Band(sb, ctx, band, row, grows, y, contentW, p + 1, totalPages, gkey);
+                    // H211: a group head or foot binds its fields to its OWN group's first row (the group's shared
+                    // values: the patient of a ward list, the customer of a statement); they rendered EMPTY before.
+                    Band(sb, ctx, band, kind is "gh" or "gf" ? row ?? grows?.FirstOrDefault() : row, grows, y, contentW, p + 1, totalPages, gkey);
                     y += band.HeightMm;
                 }
 

@@ -87,6 +87,10 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalReferral), "HospitalReferrals"),         // H203: a referral follows its patient
 			(typeof(HospitalBedsideScan), "HospitalBedsideScans"),         // H205: a bedside scan follows its patient
 			(typeof(HospitalDiseaseReport), "HospitalDiseaseReports"),     // H209: a notifiable case follows its patient
+			(typeof(HospitalSurveillanceAlert), "HospitalSurveillanceAlerts"),   // H212: a surveillance alert follows its patient
+			(typeof(HospitalRestraint), "HospitalRestraints"),             // H213: a restraint episode follows its patient
+			(typeof(HospitalRestraintCheck), "HospitalRestraintChecks"),   // H213: and its checks
+			(typeof(HospitalTeleVisit), "HospitalTeleVisits"),             // H214: a video visit follows its patient
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

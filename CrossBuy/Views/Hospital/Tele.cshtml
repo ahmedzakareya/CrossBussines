@@ -1,0 +1,68 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalTeleRoom
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Af
+@*
+    H214 — the doctor's video visit: the patient and the appointment, the room (shared partial), and the way to the
+    visit's notes; a refusal (another day, already ended) replaces the room.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Video visit"].Value;
+    var v = Model.Visit; string? refusal = ViewBag.Refusal as string;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3">@T["Video visit"]
+                <span class="badge badge-light-@(v.Status == HospitalTeleStatus.Ended ? "secondary" : "primary") fs-7 fw-bold">@T["tele:" + v.Status]</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Worklist")" class="text-muted text-hover-primary">@T["Doctor worklist"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Video visit"]</li>
+            </ul>
+        </div>
+        <a href="@Url.Action("Patient", new { id = v.PatientId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-folder fs-4"></i>@T["Patient file"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-xl-9">
+                @if (refusal != null)
+                {
+                    <div class="notice d-flex bg-light rounded border border-dashed p-6"><i class="ki-outline ki-information-5 fs-2tx text-gray-500 me-4"></i><div class="fs-6 fw-semibold text-gray-700">@T[refusal]</div></div>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_TeleRoom", new CrossBuy.Views.Hospital.HospitalTeleRoomModel
+                    {
+                        SignalUrl = Url.Action("TeleSignal", new { id = v.ID })!, PollUrl = Url.Action("TelePoll", new { id = v.ID })!, EndUrl = Url.Action("TeleEnd", new { id = v.ID }),
+                        DoneUrl = Url.Action("Worklist"), Side = HospitalTeleSide.Doctor, Ice = (IReadOnlyList<string>)ViewBag.Ice, Token = Af.GetAndStoreTokens(Context).RequestToken ?? "",
+                    })
+                }
+            </div>
+            <div class="col-xl-3">
+                <div class="card card-flush"><div class="card-body">
+                    <div class="text-muted fs-8 mb-1">@T["Patient"]</div>
+                    <a href="@Url.Action("Patient", new { id = v.PatientId })" class="fs-5 fw-bold text-gray-900 text-hover-primary d-block">@DisplayName.Of(Model.Patient, Model.PatientEn)</a>
+                    <bdi class="text-muted fs-7 hp-num" dir="ltr">@Model.Mrn</bdi>
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="text-muted fs-8 mb-1">@T["Appointment"]</div>
+                    <div class="fw-bold hp-num" dir="ltr">@Model.StartsAt.ToString("yyyy-MM-dd HH:mm", inv)</div>
+                    <div class="text-gray-700 fs-7">@DisplayName.Of(Model.Doctor, Model.DoctorEn)</div>
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="text-muted fs-8">@T["The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit."]</div>
+                </div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+}

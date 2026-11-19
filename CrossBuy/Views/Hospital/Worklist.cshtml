@@ -116,6 +116,8 @@
                                             else if (canConsult && a.Status is HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom)
                                             {
                                                 <button type="button" class="btn btn-sm btn-primary" data-start="@a.Id"><i class="ki-outline ki-entrance-left fs-5"></i>@T["Start"]</button>
+                                                @* H214: hold this appointment over video (the patient joins from the portal) *@
+                                                <button type="button" class="btn btn-sm btn-icon btn-light-primary" title="@T["Video visit"]" data-bs-toggle="tooltip" data-video="@a.Id"><i class="ki-outline ki-screen fs-3"></i></button>
                                             }
                                             else
                                             {
@@ -140,6 +142,17 @@
             if (sel) CB.onSelectChange(sel, function () { document.getElementById('docForm').submit(); });
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var urls = { open: @Json.Serialize(Url.Action("OpenConsultation", new { appointmentId = 0 })), consult: @Json.Serialize(Url.Action("Consult", new { id = 0 })) };
+            // H214: make the appointment a video visit (once) and open its room
+            document.addEventListener('click', function (e) {
+                var v = e.target.closest('[data-video]'); if (!v) return;
+                v.disabled = true;
+                fetch(@Json.Serialize(Url.Content("~/Hospital/Appointments/")) + v.getAttribute('data-video') + '/Video', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { v.disabled = false; if (window.toastr) toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); return; }
+                        location.href = @Json.Serialize(Url.Content("~/Hospital/Tele/")) + res.id;
+                    });
+            });
             document.addEventListener('click', function (e) {
                 var b = e.target.closest('[data-start]'); if (!b) return;
                 b.disabled = true;

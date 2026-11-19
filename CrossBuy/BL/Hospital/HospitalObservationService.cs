@@ -217,6 +217,7 @@ namespace CrossBuy.BL.Hospital
 					escalated = true;
 				}
 				await _db.SaveChangesAsync(ct);
+				await HospitalSurveillanceService.EvaluateAsync(_db, ctx.CompanyId, input.AdmissionId, nowUtc, ct);   // H212: the reading checked for possible sepsis
 				return (HospitalResult.Success(row.ID), score?.Total, risk, escalated);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (HospitalResult.Fail(NoTables), null, null, false); }

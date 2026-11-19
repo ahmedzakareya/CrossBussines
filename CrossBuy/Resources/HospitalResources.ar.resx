@@ -9309,4 +9309,108 @@
   <data name="{0} active medicines" xml:space="preserve"><value>{0} دواءً فعالًا</value></data>
   <data name="{0} patients in beds" xml:space="preserve"><value>{0} مريضًا في الأسرّة</value></data>
   <data name="{0} wards" xml:space="preserve"><value>{0} أقسام</value></data>
+  <data name="Alerts" xml:space="preserve"><value>التنبيهات</value></data>
+  <data name="Answer the alert" xml:space="preserve"><value>الرد على التنبيه</value></data>
+  <data name="Clinical surveillance" xml:space="preserve"><value>الرصد السريري</value></data>
+  <data name="No alert here." xml:space="preserve"><value>لا توجد تنبيهات هنا.</value></data>
+  <data name="Patient name or file" xml:space="preserve"><value>اسم المريض أو رقم ملفه</value></data>
+  <data name="Reason / note" xml:space="preserve"><value>السبب / ملاحظة</value></data>
+  <data name="Sepsis: answer within the hour · VTE: assess within 24 hours of admission" xml:space="preserve"><value>الإنتان: الرد خلال ساعة · الخثار: التقييم خلال 24 ساعة من الدخول</value></data>
+  <data name="Someone else answered this alert: open it again" xml:space="preserve"><value>ردّ شخص آخر على هذا التنبيه: افتحه من جديد</value></data>
+  <data name="The record is checked after every set of observations and on every visit to this screen." xml:space="preserve"><value>يُفحص السجل بعد كل مجموعة علامات حيوية وعند كل فتح لهذه الشاشة.</value></data>
+  <data name="The surveillance table is not created yet (hospital_h212_surveillance.sql)." xml:space="preserve"><value>جدول الرصد غير منشأ بعد (hospital_h212_surveillance.sql).</value></data>
+  <data name="This alert is already answered" xml:space="preserve"><value>تم الرد على هذا التنبيه</value></data>
+  <data name="What fired it" xml:space="preserve"><value>سبب التنبيه</value></data>
+  <data name="Write the reason for this decision" xml:space="preserve"><value>اكتب سبب هذا القرار</value></data>
+  <data name="Your decision is kept with the alert; a &quot;no&quot; needs its reason." xml:space="preserve"><value>يُحفظ قرارك مع التنبيه، والرفض يحتاج إلى سببه.</value></data>
+  <data name="svc:ADM" xml:space="preserve"><value>مريض منوَّم: التقييم خلال 24 ساعة من الدخول</value></data>
+  <data name="svc:AVPU" xml:space="preserve"><value>الوعي</value></data>
+  <data name="svc:HR" xml:space="preserve"><value>النبض</value></data>
+  <data name="svc:INF" xml:space="preserve"><value>عدوى مسجلة</value></data>
+  <data name="svc:RR" xml:space="preserve"><value>معدل التنفس</value></data>
+  <data name="svc:SBP" xml:space="preserve"><value>الضغط الانقباضي</value></data>
+  <data name="svc:SIRS" xml:space="preserve"><value>SIRS</value></data>
+  <data name="svc:T" xml:space="preserve"><value>الحرارة</value></data>
+  <data name="svc:qSOFA" xml:space="preserve"><value>qSOFA</value></data>
+  <data name="svk:Sepsis" xml:space="preserve"><value>اشتباه إنتان</value></data>
+  <data name="svk:Vte" xml:space="preserve"><value>تقييم الخثار الوريدي</value></data>
+  <data name="svr:BundleStarted" xml:space="preserve"><value>بدأت حزمة علاج الإنتان</value></data>
+  <data name="svr:Contraindicated" xml:space="preserve"><value>الوقاية ممنوعة</value></data>
+  <data name="svr:NotIndicated" xml:space="preserve"><value>الوقاية غير لازمة</value></data>
+  <data name="svr:NotSepsis" xml:space="preserve"><value>ليس إنتانًا</value></data>
+  <data name="svr:ProphylaxisOrdered" xml:space="preserve"><value>طُلبت الوقاية</value></data>
+  <data name="svs:Answered" xml:space="preserve"><value>مُجاب</value></data>
+  <data name="svs:Open" xml:space="preserve"><value>مفتوح</value></data>
+  <data name="{0} VTE assessments due" xml:space="preserve"><value>{0} تقييمات خثار مستحقة</value></data>
+  <data name="{0} alerts" xml:space="preserve"><value>{0} تنبيهات</value></data>
+  <data name="{0} possible sepsis" xml:space="preserve"><value>{0} اشتباه إنتان</value></data>
+  <data name="An order lasts 24 hours. Checks every 2 hours (seclusion: every 15 minutes)." xml:space="preserve"><value>يسري الطلب 24 ساعة، والفحص كل ساعتين (العزل الانفرادي: كل 15 دقيقة).</value></data>
+  <data name="Behaviour / note" xml:space="preserve"><value>السلوك / ملاحظة</value></data>
+  <data name="Can end" xml:space="preserve"><value>يمكن إنهاؤه</value></data>
+  <data name="Choose the kind of restraint" xml:space="preserve"><value>اختر نوع التقييد</value></data>
+  <data name="Circulation" xml:space="preserve"><value>الدورة الدموية</value></data>
+  <data name="Circulation normal" xml:space="preserve"><value>الدورة الدموية طبيعية</value></data>
+  <data name="Describe the circulation or skin problem in the note" xml:space="preserve"><value>صف مشكلة الدورة الدموية أو الجلد في الملاحظة</value></data>
+  <data name="Device or drug" xml:space="preserve"><value>الأداة أو الدواء</value></data>
+  <data name="End the restraint" xml:space="preserve"><value>إنهاء التقييد</value></data>
+  <data name="Family informed" xml:space="preserve"><value>أُبلغت الأسرة</value></data>
+  <data name="Family not informed" xml:space="preserve"><value>لم تُبلَّغ الأسرة</value></data>
+  <data name="Fluids offered" xml:space="preserve"><value>عُرضت السوائل</value></data>
+  <data name="Issue the order" xml:space="preserve"><value>إصدار الأمر</value></data>
+  <data name="Last check" xml:space="preserve"><value>آخر فحص</value></data>
+  <data name="Next check" xml:space="preserve"><value>الفحص التالي</value></data>
+  <data name="No check yet" xml:space="preserve"><value>لا فحص بعد</value></data>
+  <data name="No restraint here." xml:space="preserve"><value>لا يوجد تقييد هنا.</value></data>
+  <data name="Order a restraint" xml:space="preserve"><value>طلب تقييد</value></data>
+  <data name="Order expired: renew or end it" xml:space="preserve"><value>انتهت صلاحية الطلب: جدّده أو أنهِ التقييد</value></data>
+  <data name="Order valid until" xml:space="preserve"><value>الطلب ساري حتى</value></data>
+  <data name="Record a check" xml:space="preserve"><value>تسجيل فحص</value></data>
+  <data name="Renew the order for 24 hours" xml:space="preserve"><value>تجديد الطلب 24 ساعة</value></data>
+  <data name="Renew this order for another 24 hours?" xml:space="preserve"><value>تجديد هذا الطلب 24 ساعة أخرى؟</value></data>
+  <data name="Renewed {0} times" xml:space="preserve"><value>جُدّد {0} مرات</value></data>
+  <data name="Restraint and seclusion" xml:space="preserve"><value>التقييد والعزل الانفرادي</value></data>
+  <data name="Restraint order" xml:space="preserve"><value>أمر التقييد</value></data>
+  <data name="Skin intact" xml:space="preserve"><value>الجلد سليم</value></data>
+  <data name="Someone else changed this restraint: open it again" xml:space="preserve"><value>غيّر شخص آخر هذا التقييد: افتحه من جديد</value></data>
+  <data name="Still needed" xml:space="preserve"><value>ما زال لازمًا</value></data>
+  <data name="The last resort: say why, and what was tried first. The order lasts 24 hours." xml:space="preserve"><value>الملاذ الأخير: اذكر السبب وما جُرّب قبله. يسري الطلب 24 ساعة.</value></data>
+  <data name="The restraint tables are not created yet (hospital_h213_restraints.sql)." xml:space="preserve"><value>جداول التقييد غير منشأة بعد (hospital_h213_restraints.sql).</value></data>
+  <data name="This patient already has this restraint: renew or end it" xml:space="preserve"><value>لدى هذا المريض هذا التقييد بالفعل: جدّده أو أنهِه</value></data>
+  <data name="This restraint has ended" xml:space="preserve"><value>انتهى هذا التقييد</value></data>
+  <data name="Toilet" xml:space="preserve"><value>الحمّام</value></data>
+  <data name="Toilet offered" xml:space="preserve"><value>عُرض الحمّام</value></data>
+  <data name="Tried first" xml:space="preserve"><value>ما جُرّب قبله</value></data>
+  <data name="Why does the restraint end?" xml:space="preserve"><value>لماذا ينتهي التقييد؟</value></data>
+  <data name="Why restrained" xml:space="preserve"><value>سبب التقييد</value></data>
+  <data name="Write what was tried before the restraint" xml:space="preserve"><value>اكتب ما جُرّب قبل التقييد</value></data>
+  <data name="Write why the restraint ends" xml:space="preserve"><value>اكتب سبب إنهاء التقييد</value></data>
+  <data name="Write why the restraint is needed" xml:space="preserve"><value>اكتب سبب الحاجة إلى التقييد</value></data>
+  <data name="rsk:Chemical" xml:space="preserve"><value>تقييد دوائي</value></data>
+  <data name="rsk:Physical" xml:space="preserve"><value>تقييد جسدي</value></data>
+  <data name="rsk:Seclusion" xml:space="preserve"><value>عزل انفرادي</value></data>
+  <data name="{0} active" xml:space="preserve"><value>{0} فعالة</value></data>
+  <data name="{0} episodes" xml:space="preserve"><value>{0} حالات</value></data>
+  <data name="{0} need attention" xml:space="preserve"><value>{0} تحتاج متابعة</value></data>
+  <data name="A video visit is held on its own day" xml:space="preserve"><value>تُعقد الزيارة بالفيديو في يومها</value></data>
+  <data name="Appointment" xml:space="preserve"><value>الموعد</value></data>
+  <data name="Connecting…" xml:space="preserve"><value>جارٍ الاتصال…</value></data>
+  <data name="End the video visit" xml:space="preserve"><value>إنهاء الزيارة بالفيديو</value></data>
+  <data name="End the video visit for both sides?" xml:space="preserve"><value>إنهاء الزيارة بالفيديو للطرفين؟</value></data>
+  <data name="Join the video visit" xml:space="preserve"><value>الانضمام إلى الزيارة بالفيديو</value></data>
+  <data name="Microphone" xml:space="preserve"><value>الميكروفون</value></data>
+  <data name="No camera or microphone: you can still see and hear the other side" xml:space="preserve"><value>لا توجد كاميرا أو ميكروفون: يمكنك مع ذلك رؤية الطرف الآخر وسماعه</value></data>
+  <data name="Only a booked appointment becomes a video visit" xml:space="preserve"><value>لا يتحول إلى زيارة بالفيديو إلا موعد محجوز</value></data>
+  <data name="Patient file" xml:space="preserve"><value>ملف المريض</value></data>
+  <data name="The call is between the two of you only: it is never recorded. Write the visit's notes in the consultation as for any visit." xml:space="preserve"><value>المكالمة بينكما فقط ولا تُسجَّل أبدًا. اكتب ملاحظات الزيارة في الاستشارة كأي زيارة.</value></data>
+  <data name="The other side left" xml:space="preserve"><value>غادر الطرف الآخر</value></data>
+  <data name="The video visit has ended" xml:space="preserve"><value>انتهت الزيارة بالفيديو</value></data>
+  <data name="The video visit opens 15 minutes before its time" xml:space="preserve"><value>تُفتح الزيارة بالفيديو قبل موعدها بـ15 دقيقة</value></data>
+  <data name="This video visit has ended" xml:space="preserve"><value>انتهت هذه الزيارة بالفيديو</value></data>
+  <data name="This video visit's time has passed" xml:space="preserve"><value>انقضى وقت هذه الزيارة بالفيديو</value></data>
+  <data name="Video visit" xml:space="preserve"><value>زيارة بالفيديو</value></data>
+  <data name="Waiting for the other side to join…" xml:space="preserve"><value>بانتظار انضمام الطرف الآخر…</value></data>
+  <data name="Your doctor sees and hears you; the call is never recorded" xml:space="preserve"><value>يراك طبيبك ويسمعك، ولا تُسجَّل المكالمة أبدًا</value></data>
+  <data name="tele:Ended" xml:space="preserve"><value>انتهت</value></data>
+  <data name="tele:Live" xml:space="preserve"><value>جارية</value></data>
+  <data name="tele:Scheduled" xml:space="preserve"><value>مجدولة</value></data>
 </root>

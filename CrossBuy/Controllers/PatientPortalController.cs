@@ -258,7 +258,55 @@ namespace CrossBuy.Controllers
 			await PrepareAsync(me, "appointments", ct);
 			await Waitlist.RunAsync(me.Ctx.CompanyId, OfferMail, NowLocal, DateTime.UtcNow, null, ct);   // H48: no worker, so the pages move the line on
 			ViewBag.Requests = await Booking.MyRequestsAsync(me.Ctx, me.Account.ID, ct);
-			return View(await Booking.VisitsAsync(me.Ctx, me.Account.ID, NowLocal, ct));
+			var visits = await Booking.VisitsAsync(me.Ctx, me.Account.ID, NowLocal, ct);
+			ViewBag.Tele = await Tele.ForAppointmentsAsync(me.Ctx.CompanyId, visits.Select(v => v.AppointmentId).ToList(), ct);   // H214
+			return View(visits);
+		}
+
+		// ---- H214: the patient's side of a video visit -----------------------------------------------------------
+		private HospitalTeleVisitService? _tele;
+		private HospitalTeleVisitService Tele => _tele ??= new HospitalTeleVisitService(_db);
+		public sealed class PortalTeleSignalInput { public string? Kind { get; set; } public string? Payload { get; set; } }
+
+		/// The video visit, if it is one of this account's people's (else null: never another family's call).
+		private async Task<HospitalTeleRoom?> MyRoomAsync((HospitalPortalAccount Account, BusinessContext Ctx) me, int visitId, CancellationToken ct)
+		{
+			var room = await Tele.RoomAsync(me.Ctx.CompanyId, visitId, ct);
+			if (room == null) return null;
+			var mine = (await Booking.PeopleAsync(me.Ctx, me.Account.ID, ct)).Select(p => p.PatientId).ToHashSet();
+			return mine.Contains(room.Visit.PatientId) ? room : null;
+		}
+
+		[HttpGet("Video/{id:int}")]
+		public async Task<IActionResult> Video(int id, CancellationToken ct = default)
+		{
+			if (await MeAsync(ct) is not { } me) return NotAPatient();
+			var room = await MyRoomAsync(me, id, ct);
+			if (room == null) return NotFound();
+			await PrepareAsync(me, "appointments", ct);
+			var join = await Tele.JoinAsync(me.Ctx.CompanyId, id, HospitalTeleSide.Patient, DateTime.UtcNow, NowLocal, ct);
+			ViewBag.Refusal = join.Ok ? null : join.Error;
+			ViewBag.Ice = CrossBuy.Views.Hospital.HospitalTeleRoomModel.IceFrom(HttpContext.RequestServices.GetService<Microsoft.Extensions.Configuration.IConfiguration>());
+			return View(room);
+		}
+
+		[HttpPost("Video/{id:int}/Signal"), ValidateAntiForgeryToken]
+		public async Task<IActionResult> VideoSignal(int id, [FromBody] PortalTeleSignalInput input, CancellationToken ct = default)
+		{
+			if (await MeAsync(ct) is not { } me || input == null) return NotFound(new { ok = false });
+			if (await MyRoomAsync(me, id, ct) == null) return NotFound(new { ok = false });
+			var r = await Tele.SignalAsync(me.Ctx.CompanyId, id, HospitalTeleSide.Patient, input.Kind, input.Payload, DateTime.UtcNow, ct);
+			return Json(new { ok = r.Ok, error = r.Error == null ? null : _t[r.Error].Value });
+		}
+
+		[HttpGet("Video/{id:int}/Poll")]
+		public async Task<IActionResult> VideoPoll(int id, long after = 0, CancellationToken ct = default)
+		{
+			if (await MeAsync(ct) is not { } me) return NotFound(new { ok = false });
+			var room = await MyRoomAsync(me, id, ct);
+			if (room == null) return NotFound(new { ok = false });
+			var s = await Tele.PollAsync(me.Ctx.CompanyId, id, HospitalTeleSide.Patient, after, ct);
+			return Json(new { ok = true, ended = room.Visit.Status == HospitalTeleStatus.Ended, signals = s.Select(x => new { id = x.ID, kind = x.Kind, payload = x.Payload }) });
 		}
 
 		[HttpGet("Book")]

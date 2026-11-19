@@ -496,6 +496,8 @@
 				new() { LabelAr = "أجهزة المراقبة", LabelEn = "Bedside monitors", Action = "DeviceVitals", Controller = "Hospital" },   // H201
 				new() { LabelAr = "المسح عند السرير", LabelEn = "Bedside scanning", Action = "BedsideScans", Controller = "Hospital" },   // H205
 				new() { LabelAr = "نسخ وقت التوقف", LabelEn = "Downtime copies", Action = "Downtime", Controller = "Hospital" },   // H211
+				new() { LabelAr = "الرصد السريري", LabelEn = "Clinical surveillance", Action = "Surveillance", Controller = "Hospital" },   // H212
+				new() { LabelAr = "التقييد والعزل الانفرادي", LabelEn = "Restraint and seclusion", Action = "Restraints", Controller = "Hospital" },   // H213
 				new() { LabelAr = "العناية المركزة", LabelEn = "Intensive care", Action = "Icu", Controller = "Hospital" },
 				new() { LabelAr = "مكافحة العدوى", LabelEn = "Infection control", Action = "Infection", Controller = "Hospital" },   // H76
 				new() { LabelAr = "الأمراض واجبة الإبلاغ", LabelEn = "Notifiable diseases", Action = "Notifiable", Controller = "Hospital" },   // H209

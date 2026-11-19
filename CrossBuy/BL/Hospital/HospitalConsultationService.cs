@@ -208,6 +208,26 @@ namespace CrossBuy.BL.Hospital
 			("C18.9", "سرطان القولون", "Malignant neoplasm of colon, unspecified"),
 			("C34.90", "سرطان الرئة", "Malignant neoplasm of unspecified part of unspecified bronchus or lung"),
 			("Z51.11", "جلسة علاج كيميائي", "Encounter for antineoplastic chemotherapy"),
+			// H209: the notifiable diseases the Ministry of Health must be told of (Kuwait groups A and B)
+			("A00.9", "الكوليرا", "Cholera, unspecified"),
+			("A01.00", "حمى التيفوئيد", "Typhoid fever, unspecified"),
+			("A02.0", "التهاب الأمعاء بالسالمونيلا", "Salmonella enteritis"),
+			("A03.9", "داء الشيغيلات", "Shigellosis, unspecified"),
+			("A05.9", "تسمم غذائي جرثومي", "Bacterial foodborne intoxication, unspecified"),
+			("A15.0", "السل الرئوي", "Tuberculosis of lung"),
+			("A23.9", "داء البروسيلات", "Brucellosis, unspecified"),
+			("A37.90", "السعال الديكي", "Whooping cough, unspecified species without pneumonia"),
+			("A39.0", "التهاب السحايا بالمكورات السحائية", "Meningococcal meningitis"),
+			("A90", "حمى الضنك", "Dengue fever [classical dengue]"),
+			("B01.9", "جدري الماء", "Varicella without complication"),
+			("B05.9", "الحصبة", "Measles without complication"),
+			("B06.9", "الحصبة الألمانية", "Rubella without complication"),
+			("B15.9", "التهاب الكبد الفيروسي أ", "Hepatitis A without hepatic coma"),
+			("B16.9", "التهاب الكبد الفيروسي ب الحاد", "Acute hepatitis B without delta-agent and without hepatic coma"),
+			("B17.10", "التهاب الكبد الفيروسي ج الحاد", "Acute hepatitis C without hepatic coma"),
+			("B26.9", "النكاف", "Mumps without complication"),
+			("B54", "الملاريا", "Unspecified malaria"),
+			("U07.1", "كوفيد-19", "COVID-19"),
 		};
 
 		public async Task<HospitalResult> SeedDefaultCodesAsync(BusinessContext ctx, CancellationToken ct = default)
