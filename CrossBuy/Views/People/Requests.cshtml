@@ -5,7 +5,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutPeople.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    var statusBadge = new[] { "warning", "success", "danger", "primary" };   // 3 = returned for review (2026-11-19)
+    var statusBadge = new[] { "secondary", "primary", "danger", "info" };   // brand palette (no green/amber)
     var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value, SR["Returned for review"].Value };
     string letterName(string? lt) => lt switch {
         "Salary" => Localizer["Salary certificate"].Value,

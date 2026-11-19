@@ -106,7 +106,7 @@
                         <div class="card-toolbar"><span class="badge badge-light-@(mandDone == mandTotal ? "success" : "warning") fs-7">@Localizer["Mandatory"]: @mandDone / @mandTotal</span></div>
                     </div>
                     <div class="card-body pt-3">
-                        <div class="progress h-6px mb-6 bg-light-success"><div class="progress-bar bg-@(mandDone == mandTotal ? "success" : "warning")" style="width:@pct%"></div></div>
+                        <div class="progress h-6px mb-6 bg-light-primary"><div class="progress-bar bg-@(mandDone == mandTotal ? "primary" : "info")" style="width:@pct%"></div></div>
 
                         <div class="d-flex flex-column gap-3">
                             @foreach (var c in checklist)
@@ -203,7 +203,7 @@
                             @if (Model.Status == "Accepted")
                             {
                                 <div class="separator separator-dashed my-4"></div>
-                                <a href="@Url.Action("EmployeeData","Admin", new { fromApplication = Model.ID })" class="btn btn-success w-100"><i class="ki-outline ki-user-tick fs-3"></i>@Localizer["Hire (convert to employee)"]</a>
+                                <a href="@Url.Action("EmployeeData","Admin", new { fromApplication = Model.ID })" class="btn btn-primary w-100"><i class="ki-outline ki-user-tick fs-3"></i>@Localizer["Hire (convert to employee)"]</a>
                                 <div class="text-muted fs-8 mt-2 text-center">@Localizer["Opens the employee wizard prefilled; documents transfer on save."]</div>
                             }
                         </div>

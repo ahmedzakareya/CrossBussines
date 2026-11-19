@@ -11,9 +11,9 @@
        out - and a leave request waiting on somebody is a caution, which is what
        --cb-warning-strong is for. Approved stays `success` (complete) and rejected stays
        `danger` (the one that wants attention); both are already right. *@
-    var statusBadge = new[] { "warning-strong", "success", "danger", "primary" };   // 3 = returned for review (2026-11-19)
+    var statusBadge = new[] { "secondary", "primary", "danger", "info" };   // brand palette: pending·approved·rejected·returned (no green/amber)
     var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value, SR["Returned for review"].Value };
-    var stepColor = new[] { "warning-strong", "success", "danger", "primary" };
+    var stepColor = new[] { "secondary", "primary", "danger", "info" };
     var stepIcon = new[] { "ki-time", "ki-check", "ki-cross", "ki-arrow-circle-left" };
     var certs = ViewBag.Certs as Dictionary<int, long> ?? new();
     var certTypeIds = ViewBag.CertTypes as List<int> ?? new();
@@ -178,7 +178,7 @@
                                                        btn-light-danger, so the two choices the reviewer has to weigh were
                                                        drawn at different visual weights and the heavier one was "approve".
                                                        Colour and icon tell them apart; weight should not take a side. *@
-                                                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-light-success flex-shrink-0" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve this leave request?"]">
+                                                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-light-primary flex-shrink-0" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve this leave request?"]">
                                                         <i class="ki-outline ki-check fs-3"></i>@SR["Approve"]
                                                     </button>
                                                 </form>

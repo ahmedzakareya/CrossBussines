@@ -26,7 +26,7 @@
 <link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
 
 @functions {
-    static string ChipCls(int days) => days < 0 ? "badge-light-danger" : days <= 30 ? "badge-light-danger" : days <= 60 ? "badge-light-warning" : "badge-light-success";
+    static string ChipCls(int days) => days <= 30 ? "badge-light-danger" : days <= 60 ? "badge-light-primary" : "badge-light-secondary";   // urgent·soon·far (no green/amber)
 }
 
 @* One person: photo (or initials), name, and a second line. *@
@@ -190,7 +190,7 @@
                                     {
                                         <tr><td class="ps-0">@{ Person(p.Id, p.Name, Pick(p.TitleAr, p.TitleEn)); }</td>
                                             <td class="hr-num text-nowrap">@p.Date.ToString("yyyy-MM-dd")</td>
-                                            <td class="text-end">@if (p.Active) { <span class="badge badge-light-success fw-bold fs-8">@L("على رأس العمل", "Active")</span> } else { <span class="badge badge-light fw-bold fs-8">@L("غير نشط", "Inactive")</span> }</td></tr>
+                                            <td class="text-end">@if (p.Active) { <span class="badge badge-light-primary fw-bold fs-8">@L("على رأس العمل", "Active")</span> } else { <span class="badge badge-light fw-bold fs-8">@L("غير نشط", "Inactive")</span> }</td></tr>
                                     }
                                 </tbody>
                             </table>
@@ -212,10 +212,10 @@
                                             <td class="text-end">
                                                 @switch (r.Status)
                                                 {
-                                                    case 1: <span class="badge badge-light-success fw-bold fs-8">@L("معتمدة", "Approved")</span> break;
+                                                    case 1: <span class="badge badge-light-primary fw-bold fs-8">@L("معتمدة", "Approved")</span> break;
                                                     case 2: <span class="badge badge-light-danger fw-bold fs-8">@L("مرفوضة", "Rejected")</span> break;
-                                                    case 3: <span class="badge badge-light-primary fw-bold fs-8">@L("أُعيدت للمراجعة", "Returned for review")</span> break;
-                                                    default: <span class="badge badge-light-primary fw-bold fs-8">@L("معلّقة", "Pending")</span> break;
+                                                    case 3: <span class="badge badge-light-info fw-bold fs-8">@L("أُعيدت للمراجعة", "Returned for review")</span> break;
+                                                    default: <span class="badge badge-light-secondary fw-bold fs-8">@L("معلّقة", "Pending")</span> break;
                                                 }
                                             </td></tr>
                                     }

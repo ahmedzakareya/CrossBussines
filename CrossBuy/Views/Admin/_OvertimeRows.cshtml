@@ -27,7 +27,7 @@
         <td class="text-end hr-num">@(yearLeft is int yl ? Hm(yl) : L("بلا سقف", "No cap"))</td>
         <td>
             @if (d == null) { <span class="badge badge-light-primary fw-bold">@L("بانتظار الاعتماد", "Awaiting approval")</span> }
-            else if (d.Status == "Approved") { <span class="badge badge-light-success fw-bold">@L("معتمد", "Approved") <span class="hr-num ms-1">@Hm(d.TotalMinutes)</span></span>@if (d.TotalMinutes < d.RequestedMinutes) { <div class="text-muted fs-8 mt-1">@L("قُصّ بالسقف السنوي من ", "Clipped by the yearly cap from ")<span class="hr-num">@Hm(d.RequestedMinutes)</span></div> } }
+            else if (d.Status == "Approved") { <span class="badge badge-light-primary fw-bold">@L("معتمد", "Approved") <span class="hr-num ms-1">@Hm(d.TotalMinutes)</span></span>@if (d.TotalMinutes < d.RequestedMinutes) { <div class="text-muted fs-8 mt-1">@L("قُصّ بالسقف السنوي من ", "Clipped by the yearly cap from ")<span class="hr-num">@Hm(d.RequestedMinutes)</span></div> } }
             else { <span class="badge badge-light-danger fw-bold">@L("مرفوض", "Rejected")</span> }
         </td>
         <td class="pe-4 text-end text-nowrap">
@@ -36,7 +36,7 @@
                 <form asp-action="DecideOvertime" method="post" class="d-inline">
                     @Html.AntiForgeryToken()<input type="hidden" name="employeeId" value="@r.EmployeeId" /><input type="hidden" name="month" value="@month" />
                     <button type="submit" name="approve" value="false" class="btn btn-sm btn-light-danger" data-cb-confirm data-cb-action="reject" data-cb-text="@L("رفض العمل الإضافي لهذا الشهر؟ لن يُصرف.", "Reject this month's overtime? It will not be paid.")"><i class="ki-outline ki-cross fs-4"></i>@L("رفض", "Reject")</button>
-                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-light-success" data-cb-confirm data-cb-action="approve" data-cb-text="@L("اعتماد العمل الإضافي لهذا الشهر في حدود السقف السنوي؟", "Approve this month's overtime within the yearly cap?")"><i class="ki-outline ki-check fs-4"></i>@L("اعتماد", "Approve")</button>
+                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-light-primary" data-cb-confirm data-cb-action="approve" data-cb-text="@L("اعتماد العمل الإضافي لهذا الشهر في حدود السقف السنوي؟", "Approve this month's overtime within the yearly cap?")"><i class="ki-outline ki-check fs-4"></i>@L("اعتماد", "Approve")</button>
                 </form>
             }
             else if (Model.Posted) { <span class="text-muted fs-8">@L("الرواتب مرحّلة", "Payroll posted")</span> }
