@@ -10,6 +10,8 @@ namespace CrossBuy.BL
 	{
 		Task<(bool ok, string? error, EmployeeRequest? req)> CreateAsync(EmployeeRequest draft);
 		Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note);
+		/// Return for review: closed without approval, Status 3, the requester amends and sends again (note required).
+		Task<(bool ok, string? error)> ReturnAsync(int requestId, int approverEmployeeId, string? note);
 		/// Latest payslip figures for the salary certificate (net/gross/base), or null if none posted yet.
 		Task<Payslip?> LatestPayslipAsync(int employeeId);
 
@@ -365,7 +367,17 @@ namespace CrossBuy.BL
 			return me;
 		}
 
-		public async Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note)
+		public Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note) =>
+			DecideCoreAsync(requestId, approverEmployeeId, approve, note, returning: false);
+
+		// "Return for review" (2026-11-19, the approval detail's second button): ends this request without approval as a
+		// rejection does - the same terminal Rejected fact closes the level's work - but the row says Returned (3) and the
+		// requester is told to amend it and send it again. The note (what to review) is required.
+		public Task<(bool ok, string? error)> ReturnAsync(int requestId, int approverEmployeeId, string? note) =>
+			string.IsNullOrWhiteSpace(note) ? Task.FromResult<(bool ok, string? error)>((false, "Write what should be reviewed"))
+				: DecideCoreAsync(requestId, approverEmployeeId, false, note.Trim(), returning: true);
+
+		private async Task<(bool ok, string? error)> DecideCoreAsync(int requestId, int approverEmployeeId, bool approve, string? note, bool returning)
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 
@@ -404,7 +416,7 @@ namespace CrossBuy.BL
 					&& x.Level == req.CurrentLevel
 					&& x.ApproverEmployeeID == actor
 					&& x.Status == 0)
-				.ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, approve ? 1 : 2));
+				.ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, approve ? 1 : returning ? 3 : 2));
 			if (claimed != 1) return (false, "تم البتّ في الطلب مسبقًا");
 
 			// THE LEVEL BEING DECIDED, captured before anything moves it. The final branch zeroes
@@ -420,14 +432,18 @@ namespace CrossBuy.BL
 
 			if (!approve)
 			{
-				step.Status = 2; step.DecisionAt = now; step.DecisionNote = note; step.UpdatedAt = now; step.updatedBy = actor;
-				req.Status = 2; req.ApproverEmployeeID = actor; req.DecisionAt = now; req.DecisionNote = note;
+				step.Status = returning ? 3 : 2; step.DecisionAt = now; step.DecisionNote = note; step.UpdatedAt = now; step.updatedBy = actor;
+				req.Status = returning ? 3 : 2; req.ApproverEmployeeID = actor; req.DecisionAt = now; req.DecisionNote = note;
 				req.CurrentApproverEmployeeID = null; req.UpdatedAt = now; req.updatedBy = actor;
 				await _context.SaveChangesAsync();
 				// A rejection ends the WHOLE request, at whatever level it happened. One terminal fact.
 				await EmitAsync(req, CrossBuy.BL.Platform.EmployeeRequestEvents.Rejected,
 					level: decidedLevel, approver: actor, nextLevel: null, nextApprover: null, decidedBy: actor);
 				await tx.CommitAsync();
+				if (returning)
+					await _notifications.NotifyAsync(req.EmployeeID, $"أُعيد {lblAr} للمراجعة", $"Your {lblEn} was returned for review",
+						$"أعاد {aAr} طلب {lblAr} للمراجعة: {note}. عدّله وأرسله من جديد.", $"{aEn} returned your {lblEn} request for review: {note}. Amend it and send it again.", "emp_request_returned", req.ID);
+				else
 				await _notifications.NotifyAsync(req.EmployeeID, $"تم رفض {lblAr}", $"Your {lblEn} was rejected",
 					$"تم رفض طلب {lblAr} بواسطة {aAr}.", $"Your {lblEn} request was rejected by {aEn}.", "emp_request_rejected", req.ID);
 				return (true, null);

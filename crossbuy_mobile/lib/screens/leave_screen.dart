@@ -36,6 +36,7 @@ String _who(BuildContext context, LeaveRequest r) {
   final steps = [...r.approvals]..sort((a, b) => a.level.compareTo(b.level));
   final s = switch (r.status) {
     2 => steps.where((x) => x.status == 2).firstOrNull,
+    3 => steps.where((x) => x.status == 3).firstOrNull,
     1 => steps.where((x) => x.status == 1).lastOrNull,
     _ => steps.where((x) => x.status == 0).firstOrNull,
   };
@@ -44,6 +45,7 @@ String _who(BuildContext context, LeaveRequest r) {
   return switch (r.status) {
     1 => L(context, 'اعتمدها $name', 'Approved by $name'),
     2 => L(context, 'رفضها $name', 'Rejected by $name'),
+    3 => L(context, 'أعادها $name للمراجعة', 'Returned by $name for review'),
     _ => L(context, 'بانتظار $name', 'Waiting for $name'),
   };
 }
@@ -54,7 +56,9 @@ Widget _pill(BuildContext context, int status) => status == 1
     ? Tag.ok(L(context, 'معتمد', 'Approved'))
     : status == 2
         ? Tag.bad(L(context, 'مرفوض', 'Rejected'))
-        : Tag(L(context, 'قيد الاعتماد', 'Pending'));
+        : status == 3
+            ? Tag.info(L(context, 'أُعيد للمراجعة', 'Returned for review'))
+            : Tag(L(context, 'قيد الاعتماد', 'Pending'));
 
 /// The balances in the reference's order: the annual leave first (the country rule pack says which type it is), then
 /// sick and casual leave, then the rest as the server listed them.

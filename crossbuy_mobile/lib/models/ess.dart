@@ -91,6 +91,11 @@ class ApprovalItem {
   final DateTime? from, to, createdAt;
   final int? days;
   final num? amount;
+  // the requester's department, the balance now and after, the substitute, colleagues away, the next step and my title
+  final String? deptAr, deptEn, substituteAr, substituteEn, nextAr, nextEn, nextTitleAr, nextTitleEn, myTitleAr, myTitleEn;
+  final int? remaining, after;
+  final int away;
+  final List<String> awayAr, awayEn;
   ApprovalItem.fromJson(Map<String, dynamic> j)
       : kind = j['kind'] ?? 'leave',
         id = j['id'] ?? 0,
@@ -105,6 +110,22 @@ class ApprovalItem {
         to = j['to'] == null ? null : DateTime.tryParse(j['to']),
         createdAt = j['createdAt'] == null ? null : DateTime.tryParse(j['createdAt']),
         days = j['days'],
-        amount = j['amount'] == null ? null : _n(j['amount']);
+        amount = j['amount'] == null ? null : _n(j['amount']),
+        deptAr = j['deptAr'],
+        deptEn = j['deptEn'],
+        substituteAr = j['substituteAr'],
+        substituteEn = j['substituteEn'],
+        nextAr = j['nextAr'],
+        nextEn = j['nextEn'],
+        nextTitleAr = j['nextTitleAr'],
+        nextTitleEn = j['nextTitleEn'],
+        myTitleAr = j['myTitleAr'],
+        myTitleEn = j['myTitleEn'],
+        remaining = j['remaining'],
+        after = j['after'],
+        away = j['away'] ?? 0,
+        awayAr = ((j['awayAr'] as List?) ?? const []).map((e) => '$e').toList(),
+        awayEn = ((j['awayEn'] as List?) ?? const []).map((e) => '$e').toList();
   String requester(bool ar) => (ar ? requesterAr : (requesterEn ?? requesterAr)) ?? '';
+  String dept(bool ar) => (ar ? deptAr : (deptEn ?? deptAr)) ?? '';
 }

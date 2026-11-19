@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons_300.dart';
 
 import '../app_config.dart';
+import '../services/api_service.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/brand.dart';
 
@@ -19,8 +20,13 @@ typedef Lu = LucideIcons300;
 String L(BuildContext context, String ar, String en) => AppLocalizations.of(context).isAr ? ar : en;
 bool isAr(BuildContext context) => AppLocalizations.of(context).isAr;
 
-String mediaUrl(String? path) =>
-    (path == null || path.isEmpty) ? '' : (path.startsWith('http') ? path : '${AppConfig.mediaBaseUrl}$path');
+String mediaUrl(String? path) {
+  if (path == null || path.isEmpty) return '';
+  if (path.startsWith('http')) return path;
+  // People/Photo answers only the browser's cookie; /api/ess/photo serves the same photo to the app's token
+  final m = RegExp(r'^/People/Photo/(\d+)').firstMatch(path);
+  return '${AppConfig.mediaBaseUrl}${m == null ? path : '/api/ess/photo/${m.group(1)}'}';
+}
 
 /// "Back" in the reading direction.
 IconData backIcon(BuildContext context) => isAr(context) ? Lu.arrowRight : Lu.arrowLeft;
@@ -68,7 +74,7 @@ class PersonAvatar extends StatelessWidget {
         ? fallback
         : ClipRRect(
             borderRadius: br ?? BorderRadius.circular(size),
-            child: Image.network(url, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => fallback),
+            child: Image.network(url, headers: ApiService.instance.authHeaders, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => fallback),
           );
     if (!ring) return img;
     return Container(padding: const EdgeInsets.all(3), decoration: const BoxDecoration(color: Brand.paper, shape: BoxShape.circle), child: img);
@@ -257,7 +263,8 @@ class Amount extends StatelessWidget {
   const Amount(this.value, this.unit, {super.key, this.size = 36, this.center = false});
   @override
   Widget build(BuildContext context) {
-    final i = value.indexOf('.');
+    var i = value.indexOf('.');
+    if (i < 0) i = value.indexOf(':');   // hours as the attendance card sets them: "94" large, ":30" lighter
     final whole = i < 0 ? value : value.substring(0, i);
     final frac = i < 0 ? '' : value.substring(i);
     // the reference lays this row out left-to-right and pushes it to the right edge: "د.ك  734,203.090"

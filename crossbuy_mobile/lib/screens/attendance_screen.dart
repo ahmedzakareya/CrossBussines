@@ -115,7 +115,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               FinancialCard(
                 label: L(context, 'ساعات العمل هذا الشهر', 'Hours worked this month'),
                 icon: Lu.clock3,
-                amount: Amount('$wh.${wm.toString().padLeft(2, '0')}'.replaceFirst('.', ':'), L(context, 'ساعة', 'hours')),
+                amount: Amount('$wh:${wm.toString().padLeft(2, '0')}',L(context, 'ساعة', 'hours')),
                 note: todayNote,
                 footer: [
                   (L(context, 'حضور', 'Present'), '${a.presentDays}', L(context, 'أيام', 'days')),

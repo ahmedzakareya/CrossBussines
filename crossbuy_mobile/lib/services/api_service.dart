@@ -324,6 +324,18 @@ class ApiService {
     }
   }
 
+  /// "Return for review": the request goes back to its requester to amend and send again; the note says what.
+  Future<(bool, String?)> returnForReview(ApprovalItem item, String note) async {
+    try {
+      final res = await _dio.post('/api/ess/approvals/${item.kind}/${item.id}/return', data: {'note': note});
+      final ok = res.data?['success'] == true;
+      if (ok) AppNav.notifyDataChanged();
+      return (ok, null);
+    } on DioException catch (e) {
+      return (false, e.response?.data is Map ? e.response?.data['message'] as String? : null);
+    }
+  }
+
   /// Is the signed-in user allowed the company's financial summary? (drives the owner's KPI cards)
   Future<FinanceSummary?> tryFinanceSummary() async {
     try {

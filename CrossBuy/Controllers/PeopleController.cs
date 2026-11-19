@@ -343,7 +343,7 @@ namespace CrossBuy.Controllers
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> DecideLeave(int id, bool approve, string? note)
+		public async Task<IActionResult> DecideLeave(int id, bool approve, string? note, bool returnForReview = false)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -378,9 +378,10 @@ namespace CrossBuy.Controllers
 				return RedirectToAction(nameof(Leaves));
 			}
 
-			var (ok, error) = await _workflow.DecideAsync(id, emp.ID, approve, note);
+			// "return for review" (2026-11-19): closed without approval, the requester amends and sends again; the note is required
+			var (ok, error) = returnForReview ? await _workflow.ReturnAsync(id, emp.ID, note) : await _workflow.DecideAsync(id, emp.ID, approve, note);
 			if (!ok) TempData["LeaveErr"] = error;
-			else TempData["LeaveMsg"] = approve ? L["Request approved"].Value : L["Request rejected"].Value;
+			else TempData["LeaveMsg"] = returnForReview ? L["Returned for review"].Value : approve ? L["Request approved"].Value : L["Request rejected"].Value;
 			return RedirectToAction(nameof(Leaves));
 		}
 
@@ -489,7 +490,7 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> DecideRequest(int id, bool approve, string? note)
+		public async Task<IActionResult> DecideRequest(int id, bool approve, string? note, bool returnForReview = false)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -527,8 +528,8 @@ namespace CrossBuy.Controllers
 				return RedirectToAction(nameof(Requests));
 			}
 
-			var (ok, error) = await _requests.DecideAsync(id, emp.ID, approve, note);
-			TempData[ok ? "ReqMsg" : "ReqErr"] = ok ? (approve ? L["Request approved"].Value : L["Request rejected"].Value) : error;
+			var (ok, error) = returnForReview ? await _requests.ReturnAsync(id, emp.ID, note) : await _requests.DecideAsync(id, emp.ID, approve, note);
+			TempData[ok ? "ReqMsg" : "ReqErr"] = ok ? (returnForReview ? L["Returned for review"].Value : approve ? L["Request approved"].Value : L["Request rejected"].Value) : error;
 			return RedirectToAction(nameof(Requests));
 		}
 

@@ -162,7 +162,7 @@ Widget approvalCard(BuildContext context, ApprovalItem a, String currency, VoidC
   return RequestCard(
     leading: IconBox(photo: a.photo, name: a.requester(ar)),
     title: approvalTitle(context, a),
-    subtitle: a.requester(ar),
+    subtitle: [a.requester(ar), a.dept(ar)].where((x) => x.isNotEmpty).join(' · '),
     tag: Tag(L(context, 'بانتظار اعتمادك', 'Awaiting your approval')),
     amount: isLeave ? '${a.days ?? 0}' : (a.amount == null ? '' : money(a.amount!, currency)),
     unit: isLeave ? L(context, 'أيام', 'days') : (a.amount == null ? '' : curLabel(currency, ar)),

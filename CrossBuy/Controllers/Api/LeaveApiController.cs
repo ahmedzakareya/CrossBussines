@@ -37,8 +37,8 @@ namespace CrossBuy.Controllers.Api
 
 		private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-		private static readonly string[] StatusAr = { "معلّق", "موافَق عليه", "مرفوض" };
-		private static readonly string[] StatusEn = { "Pending", "Approved", "Rejected" };
+		private static readonly string[] StatusAr = { "معلّق", "موافَق عليه", "مرفوض", "أُعيد للمراجعة" };
+		private static readonly string[] StatusEn = { "Pending", "Approved", "Rejected", "Returned for review" };
 
 		// names of all approvers referenced by the given requests' steps
 		private async Task<Dictionary<int, (string? ar, string? en)>> ApproverNamesAsync(IEnumerable<LeaveRequest> reqs)

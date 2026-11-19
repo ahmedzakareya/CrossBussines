@@ -5,8 +5,8 @@
 @{
     Layout = "~/Views/Shared/_LayoutPeople.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    var statusBadge = new[] { "warning", "success", "danger" };
-    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
+    var statusBadge = new[] { "warning", "success", "danger", "primary" };   // 3 = returned for review (2026-11-19)
+    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value, SR["Returned for review"].Value };
     string letterName(string? lt) => lt switch {
         "Salary" => Localizer["Salary certificate"].Value,
         "Employment" => Localizer["Employment letter"].Value,
@@ -112,6 +112,7 @@
                                     <td>@(Model.Names.TryGetValue(r.EmployeeID, out var n) ? (isAr ? n.Ar : n.En) : ("#" + r.EmployeeID))</td>
                                     <td class="text-end">
                                         <form asp-action="DecideRequest" method="post" class="d-inline" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="approve" value="true" /><button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-5"></i>@SR["Approve"]</button></form>
+                                        <form asp-action="DecideRequest" method="post" class="d-inline-flex gap-2" data-cb-confirm data-cb-action="save" data-cb-text="@SR["Return this request to its requester for review? Write what should be reviewed in the note."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="returnForReview" value="true" /><input type="text" name="note" required class="form-control form-control-sm form-control-solid w-150px" placeholder="@SR["What to review"]" /><button class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@SR["Return for review"]</button></form>
                                         <form asp-action="DecideRequest" method="post" class="d-inline" data-cb-confirm data-cb-action="reject" data-cb-text="@Localizer["Reject?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="approve" value="false" /><button class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-5"></i>@SR["Reject"]</button></form>
                                     </td>
                                 </tr>

@@ -30,6 +30,8 @@ namespace CrossBuy.BL
 
 		/// Approve/reject the CURRENT level. Approval advances up the chain; rejection ends it.
 		Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note);
+		/// Return for review: closed without approval, Status 3, the requester amends and sends again (note required).
+		Task<(bool ok, string? error)> ReturnAsync(int requestId, int approverEmployeeId, string? note);
 	}
 
 	/// The approver chain plus an explicit defect signal.
@@ -576,7 +578,17 @@ namespace CrossBuy.BL
 			return true;
 		}
 
-		public async Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note)
+		public Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note) =>
+			DecideCoreAsync(requestId, approverEmployeeId, approve, note, returning: false);
+
+		// "Return for review" (2026-11-19, the approval detail's second button): ends this leave request without approval as a
+		// rejection does - the same terminal Rejected fact closes the level's work - but the row says Returned (3) and the
+		// requester is told to amend it and send it again. The note (what to review) is required.
+		public Task<(bool ok, string? error)> ReturnAsync(int requestId, int approverEmployeeId, string? note) =>
+			string.IsNullOrWhiteSpace(note) ? Task.FromResult<(bool ok, string? error)>((false, "Write what should be reviewed"))
+				: DecideCoreAsync(requestId, approverEmployeeId, false, note.Trim(), returning: true);
+
+		private async Task<(bool ok, string? error)> DecideCoreAsync(int requestId, int approverEmployeeId, bool approve, string? note, bool returning)
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 
@@ -622,7 +634,7 @@ namespace CrossBuy.BL
 			// immediately below, so the existing domain writes are left exactly as they were.
 			int claimed = await _context.LeaveApprovalSteps
 				.Where(x => x.ID == step.ID && x.Status == 0)
-				.ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, approve ? 1 : 2));
+				.ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, approve ? 1 : returning ? 3 : 2));
 			if (claimed != 1) return (false, "تم البتّ في الطلب مسبقًا");
 
 			var approver = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == approverEmployeeId);
@@ -636,9 +648,9 @@ namespace CrossBuy.BL
 			// ---- rejection: ends the whole request immediately ----
 			if (!approve)
 			{
-				step.Status = 2; step.DecisionAt = now; step.DecisionNote = note;
+				step.Status = returning ? 3 : 2; step.DecisionAt = now; step.DecisionNote = note;
 				step.UpdatedAt = now; step.updatedBy = approverEmployeeId;
-				req.Status = 2; req.ApproverEmployeeID = approverEmployeeId;
+				req.Status = returning ? 3 : 2; req.ApproverEmployeeID = approverEmployeeId;
 				req.DecisionAt = now; req.DecisionNote = note; req.CurrentApproverEmployeeID = null;
 				req.UpdatedAt = now; req.updatedBy = approverEmployeeId;
 				await _context.SaveChangesAsync();
@@ -649,6 +661,13 @@ namespace CrossBuy.BL
 					decidedBy: approverEmployeeId);
 				await tx.CommitAsync();
 
+				if (returning)
+					await _notifications.NotifyAsync(req.EmployeeID,
+						"أُعيد طلب إجازتك للمراجعة", "Your leave request was returned for review",
+						$"أعاد {aAr} طلب {typeAr} ({req.Days} يوم) للمراجعة: {note}. عدّله وأرسله من جديد.",
+						$"{aEn} returned your {typeEn} request ({req.Days} day(s)) for review: {note}. Amend it and send it again.",
+						"leave_returned", req.ID);
+				else
 				await _notifications.NotifyAsync(req.EmployeeID,
 					"تم رفض طلب إجازتك", "Your leave was rejected",
 					$"طلب {typeAr} ({req.Days} يوم) تم رفضه بواسطة {aAr}.",

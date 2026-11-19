@@ -33,10 +33,11 @@ namespace CrossBuy.Controllers.Api
 		private readonly IEmployeeRequestService _requests;
 		private readonly ILeaveWorkflowService _leave;
 		private readonly IAttendanceService _attendance;
+		private readonly ILeaveDashboardService _dashboard;
 
 		public EssApiController(CrossDbContext db, IHrAccessService hrAccess, CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
-			IEmployeeRequestService requests, ILeaveWorkflowService leave, IAttendanceService attendance)
-		{ _db = db; _hrAccess = hrAccess; _contexts = contexts; _requests = requests; _leave = leave; _attendance = attendance; }
+			IEmployeeRequestService requests, ILeaveWorkflowService leave, IAttendanceService attendance, ILeaveDashboardService dashboard)
+		{ _db = db; _hrAccess = hrAccess; _contexts = contexts; _requests = requests; _leave = leave; _attendance = attendance; _dashboard = dashboard; }
 
 		private static object NotAuthorised => new { success = false, message = "Not authorised" };
 
@@ -217,17 +218,107 @@ namespace CrossBuy.Controllers.Api
 			var leaves = await _db.LeaveRequests.AsNoTracking().Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == mine && company.Contains(r.EmployeeID))
 				.Select(r => new { kind = "leave", id = r.ID, type = r.LeaveType != null ? r.LeaveType.NameEn : null, typeAr = r.LeaveType != null ? r.LeaveType.NameAr : null,
 					requesterId = r.EmployeeID, requesterAr = r.Employee!.FullName, requesterEn = r.Employee.FullNameEn,
-					from = (DateTime?)r.StartDate, to = (DateTime?)r.EndDate, days = (int?)r.Days, amount = (decimal?)null, level = r.CurrentLevel, createdAt = r.CreatedAt }).ToListAsync();
+					from = (DateTime?)r.StartDate, to = (DateTime?)r.EndDate, days = (int?)r.Days, amount = (decimal?)null, level = r.CurrentLevel, createdAt = r.CreatedAt,
+					deptId = r.Employee.DepartmentID, typeId = (int?)r.LeaveTypeID, substituteId = r.SubstituteEmployeeID }).ToListAsync();
 			var reqs = await _db.EmployeeRequests.AsNoTracking().Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == mine && r.CompanyID == me.CompanyId)
 				.Join(_db.Employee.AsNoTracking(), r => r.EmployeeID, e => e.ID, (r, e) => new { kind = "request", id = r.ID, type = r.RequestType, typeAr = (string?)null,
 					requesterId = r.EmployeeID, requesterAr = e.FullName, requesterEn = e.FullNameEn,
-					from = r.PermissionDate, to = r.PermissionDate, days = (int?)null, amount = r.AdvanceAmount, level = r.CurrentLevel, createdAt = r.CreatedAt }).ToListAsync();
-			var all = leaves.Concat(reqs).OrderBy(x => x.createdAt).Select(x => new
+					from = r.PermissionDate, to = r.PermissionDate, days = (int?)null, amount = r.AdvanceAmount, level = r.CurrentLevel, createdAt = r.CreatedAt,
+					deptId = e.DepartmentID, typeId = (int?)null, substituteId = (int?)null }).ToListAsync();
+			var items = leaves.Concat(reqs).OrderBy(x => x.createdAt).ToList();
+
+			// what the reference's card and detail show beside the request: the requester's department, the next step of the
+			// chain after mine, and for a leave the balance now and after it, the substitute and who else in the department
+			// is away on those days
+			var deptIds = items.Where(x => x.deptId != null).Select(x => x.deptId!.Value).Distinct().ToList();
+			var depts = await _db.Hierarchicals.AsNoTracking().IgnoreQueryFilters().Where(h => deptIds.Contains(h.H_ID))
+				// the id is read from an employee I am already authorised to see, and only the node's NAME is shown (not the tree),
+				// so the HR company filter is bypassed for this label lookup; in correct data the node is in the employee's own company anyway
+				.Select(h => new { h.H_ID, h.H_Name, h.H_NameEn }).ToDictionaryAsync(h => h.H_ID);
+			var leaveIds = leaves.Select(x => x.id).ToList(); var reqIds = reqs.Select(x => x.id).ToList();
+			var leaveNext = await _db.LeaveApprovalSteps.AsNoTracking().Where(s => leaveIds.Contains(s.LeaveRequestID)).Select(s => new { id = s.LeaveRequestID, s.Level, s.ApproverEmployeeID }).ToListAsync();
+			var reqNext = await _db.EmployeeRequestSteps.AsNoTracking().Where(s => reqIds.Contains(s.EmployeeRequestID)).Select(s => new { id = s.EmployeeRequestID, s.Level, s.ApproverEmployeeID }).ToListAsync();
+			var peopleIds = leaveNext.Select(s => s.ApproverEmployeeID).Concat(reqNext.Select(s => s.ApproverEmployeeID))
+				.Concat(items.Where(x => x.substituteId != null).Select(x => x.substituteId!.Value)).Append(mine).Distinct().ToList();
+			var people = await _db.Employee.AsNoTracking().Where(e => peopleIds.Contains(e.ID) && e.EmpCompanyID == me.CompanyId)
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn, titleAr = e.JobTitle != null ? e.JobTitle.TitleAr : null, titleEn = e.JobTitle != null ? e.JobTitle.Title : null })
+				.ToDictionaryAsync(e => e.ID);
+			var myTitle = people.TryGetValue(mine, out var meRow) ? meRow : null;
+
+			var rows = new List<object>();
+			foreach (var x in items)
 			{
-				x.kind, x.id, x.type, x.typeAr, x.requesterId, x.requesterAr, x.requesterEn, x.from, x.to, x.days, x.amount, x.level, x.createdAt,
-				photo = $"/People/Photo/{x.requesterId}",
-			});
-			return Ok(new { success = true, currency = await CurrencyAsync(me.CompanyId), data = all });
+				var steps = x.kind == "leave" ? leaveNext.Where(s => s.id == x.id).Select(s => (s.Level, s.ApproverEmployeeID)) : reqNext.Where(s => s.id == x.id).Select(s => (s.Level, s.ApproverEmployeeID));
+				var nextStep = steps.Where(s => s.Level > x.level).OrderBy(s => s.Level).Select(s => (int?)s.ApproverEmployeeID).FirstOrDefault();
+				var next = nextStep is int nid && people.TryGetValue(nid, out var np) ? np : null;
+				var dept = x.deptId is int d && depts.TryGetValue(d, out var dr) ? dr : null;
+				int? remaining = null; List<string>? awayAr = null, awayEn = null; int away = 0;
+				if (x.kind == "leave" && x.typeId is int tid)
+				{
+					var bal = (await _dashboard.BuildAsync(x.requesterId)).Balances.FirstOrDefault(b => b.LeaveTypeId == tid);
+					remaining = bal?.Remaining;
+					if (x.deptId is int dep && x.from is DateTime f && x.to is DateTime t)
+					{
+						var others = await _db.LeaveRequests.AsNoTracking()
+							.Where(r => (r.Status == 0 || r.Status == 1) && r.EmployeeID != x.requesterId && r.StartDate <= t && r.EndDate >= f
+								&& r.Employee!.DepartmentID == dep && r.Employee.EmpCompanyID == me.CompanyId)
+							.Select(r => new { r.EmployeeID, r.Employee!.FullName, r.Employee.FullNameEn }).Distinct().ToListAsync();
+						away = others.Count;
+						awayAr = others.Take(3).Select(o => o.FullName).ToList();
+						awayEn = others.Take(3).Select(o => o.FullNameEn ?? o.FullName).ToList();
+					}
+				}
+				var sub = x.substituteId is int sid && people.TryGetValue(sid, out var sp) ? sp : null;
+				rows.Add(new
+				{
+					x.kind, x.id, x.type, x.typeAr, x.requesterId, x.requesterAr, x.requesterEn, x.from, x.to, x.days, x.amount, x.level, x.createdAt,
+					photo = $"/api/ess/photo/{x.requesterId}",
+					deptAr = dept?.H_Name, deptEn = dept?.H_NameEn ?? dept?.H_Name,
+					remaining, after = remaining is int rem && x.days is int dd ? rem - dd : (int?)null,
+					substituteAr = sub?.FullName, substituteEn = sub?.FullNameEn ?? sub?.FullName,
+					away, awayAr, awayEn,
+					nextAr = next?.FullName, nextEn = next?.FullNameEn ?? next?.FullName, nextTitleAr = next?.titleAr?.Trim(), nextTitleEn = (next?.titleEn ?? next?.titleAr)?.Trim(),
+					myTitleAr = myTitle?.titleAr?.Trim(), myTitleEn = (myTitle?.titleEn ?? myTitle?.titleAr)?.Trim(),
+				});
+			}
+			return Ok(new { success = true, currency = await CurrencyAsync(me.CompanyId), data = rows });
+		}
+
+		public sealed class ReturnDto { public string? Note { get; set; } }
+
+		// POST /api/ess/approvals/{kind}/{id}/return — "إعادة للمراجعة": the request goes back to its requester to amend and
+		// send again (Status 3, the note says what to review). The SAME gate as deciding: leave-approve on the subject, or
+		// it is my turn in the stored chain.
+		[HttpPost("approvals/{kind}/{id:int}/return")]
+		public async Task<IActionResult> ReturnForReview(string kind, int id, [FromBody] ReturnDto dto)
+		{
+			var me = await MeAsync(); if (me == null) return NotFound(NotAuthorised);
+			bool leave = kind == "leave";
+			if (!leave && kind != "request") return NotFound(NotAuthorised);
+			int? subject = leave
+				? await _db.LeaveRequests.AsNoTracking().Where(r => r.ID == id).Select(r => (int?)r.EmployeeID).FirstOrDefaultAsync(HttpContext.RequestAborted)
+				: await _db.EmployeeRequests.AsNoTracking().Where(r => r.ID == id).Select(r => (int?)r.EmployeeID).FirstOrDefaultAsync(HttpContext.RequestAborted);
+			if (subject == null) return NotFound(NotAuthorised);
+			bool mayDecide = await _hrAccess.CanAsync(me, HrActions.LeaveApprove, PermissionTarget.ForSubjectEmployee(subject.Value, me.CompanyId), HttpContext.RequestAborted)
+				|| (leave ? await CrossBuy.BL.Hr.HrApprovalTurn.HoldsLeaveTurnAsync(_db, id, me.EmployeeId!.Value, me.CompanyId, HttpContext.RequestAborted)
+						  : await CrossBuy.BL.Hr.HrApprovalTurn.HoldsRequestTurnAsync(_db, id, me.EmployeeId!.Value, me.CompanyId, HttpContext.RequestAborted));
+			if (!mayDecide) return NotFound(NotAuthorised);
+			var (ok, error) = leave ? await _leave.ReturnAsync(id, me.EmployeeId!.Value, dto?.Note) : await _requests.ReturnAsync(id, me.EmployeeId!.Value, dto?.Note);
+			return ok ? Ok(new { success = true }) : BadRequest(new { success = false, message = error });
+		}
+
+		// GET /api/ess/photo/{employeeId} — a colleague's photo for the phone, which signs in with a token, not the browser's
+		// cookie that People/Photo needs. The same rule: any member of the employee's own company; a foreign or missing
+		// employee and one without a photo answer the same bare 404.
+		[HttpGet("photo/{employeeId:int}")]
+		public async Task<IActionResult> Photo(int employeeId)
+		{
+			var me = await MeAsync(); if (me == null || employeeId <= 0) return NotFound();
+			var store = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices);
+			var photo = await store.OpenPhotoAsync(me.CompanyId, employeeId, HttpContext.RequestAborted);
+			if (photo is not { } p) return NotFound();
+			Response.Headers.CacheControl = "private, max-age=86400";
+			return File(p.Content, p.ContentType);
 		}
 
 		public sealed class DecisionDto { public bool? Approve { get; set; } public string? Note { get; set; } }

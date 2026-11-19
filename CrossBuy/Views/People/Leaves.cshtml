@@ -11,10 +11,10 @@
        out - and a leave request waiting on somebody is a caution, which is what
        --cb-warning-strong is for. Approved stays `success` (complete) and rejected stays
        `danger` (the one that wants attention); both are already right. *@
-    var statusBadge = new[] { "warning-strong", "success", "danger" };
-    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
-    var stepColor = new[] { "warning-strong", "success", "danger" };
-    var stepIcon = new[] { "ki-time", "ki-check", "ki-cross" };
+    var statusBadge = new[] { "warning-strong", "success", "danger", "primary" };   // 3 = returned for review (2026-11-19)
+    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value, SR["Returned for review"].Value };
+    var stepColor = new[] { "warning-strong", "success", "danger", "primary" };
+    var stepIcon = new[] { "ki-time", "ki-check", "ki-cross", "ki-arrow-circle-left" };
     var certs = ViewBag.Certs as Dictionary<int, long> ?? new();
     var certTypeIds = ViewBag.CertTypes as List<int> ?? new();
 }
@@ -167,6 +167,10 @@
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="id" value="@r.ID" />
                                                     <input type="text" name="note" class="form-control form-control-sm form-control-solid" placeholder="@Localizer["Note (optional)"]" />
+                                                    @* return for review: back to the requester to amend and send again; the note says what (required by the service) *@
+                                                    <button type="submit" name="returnForReview" value="true" class="btn btn-sm btn-light-primary flex-shrink-0" data-cb-confirm data-cb-action="save" data-cb-text="@SR["Return this request to its requester for review? Write what should be reviewed in the note."]">
+                                                        <i class="ki-outline ki-arrow-circle-left fs-3"></i>@SR["Return for review"]
+                                                    </button>
                                                     <button type="submit" name="approve" value="false" class="btn btn-sm btn-light-danger flex-shrink-0" data-cb-confirm data-cb-action="reject" data-cb-text="@Localizer["Reject this leave request?"]">
                                                         <i class="ki-outline ki-cross fs-3"></i>@SR["Reject"]
                                                     </button>
