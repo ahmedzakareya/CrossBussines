@@ -45,6 +45,8 @@ namespace CrossBuy.BL.Reporting
         public const string CreditNote = "Hospital.CreditNote";
         /// H153: a compounded preparation's bag label, as ONE row.
         public const string CompoundLabel = "Hospital.CompoundLabel";
+        /// H204: a referral's letter (to another department or another facility), as ONE row.
+        public const string ReferralLetter = "Hospital.ReferralLetter";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -111,6 +113,7 @@ namespace CrossBuy.BL.Reporting
             HospitalDocumentDatasetCodes.SickLeave, HospitalDocumentDatasetCodes.BirthNotice, HospitalDocumentDatasetCodes.DeathCertificate,
             HospitalDocumentDatasetCodes.GlassesRx, HospitalDocumentDatasetCodes.EyeLetter, HospitalDocumentDatasetCodes.AllergyPlan,
             HospitalDocumentDatasetCodes.CanvasDrawing, HospitalDocumentDatasetCodes.RxLabel, HospitalDocumentDatasetCodes.CompoundLabel,
+            HospitalDocumentDatasetCodes.ReferralLetter,   // H204
         };
 
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
@@ -525,6 +528,27 @@ namespace CrossBuy.BL.Reporting
             };
         }
 
+        /// H204: the referral letter — what the referring doctor asks, of whom, how urgently, with the clinical summary, the
+        /// visit's diagnoses and the allergies; the doctor's name, specialty and licence come from the shared header.
+        public static ReportDatasetDefinition ReferralLetter() => Show(Doc(HospitalDocumentDatasetCodes.ReferralLetter,
+            "خطاب تحويل", "Referral letter",
+            "خطاب تحويل واحد: إلى أي قسم أو جهة، ودرجة الاستعجال، والسؤال، والملخص السريري، وتشخيصات الزيارة، والحساسية، والطبيب المحوِّل، ومساحة لرد الطبيب المستقبِل.",
+            "One referral letter: to which department or facility, the urgency, the question, the clinical summary, the visit's diagnoses, the allergies, the referring doctor, and space for the receiving doctor's reply.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("ToWhom", "إلى", "To", width: 80, visible: true),
+                F("ToSpecialty", "التخصص المطلوب", "Specialty asked", width: 60),
+                F("Urgency", "درجة الاستعجال", "Urgency", width: 24, visible: true),
+                F("DueBy", "مطلوب الرد قبل", "Answer due by", ReportFieldType.DateTime),
+                F("Reason", "سبب التحويل", "Reason for referral", width: 140, visible: true),
+                F("Summary", "الملخص السريري", "Clinical summary", width: 140),
+                F("Diagnoses", "التشخيص", "Diagnosis", width: 140),
+                F("Allergies", "الحساسية", "Allergies", width: 80),
+                F("Reply", "الرد", "Reply", width: 140),
+            },
+            Params("ReferralId", "رقم التحويل الداخلي", "Referral id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
+
         public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
             "إشعار دائن", "Credit note",
             "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
@@ -587,6 +611,7 @@ namespace CrossBuy.BL.Reporting
             yield return DepositReceipt();   // H144
             yield return RxLabel();          // H147
             yield return CreditNote();       // H149
+            yield return ReferralLetter();   // H204
             yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }

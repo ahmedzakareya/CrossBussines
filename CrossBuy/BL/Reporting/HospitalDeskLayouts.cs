@@ -286,6 +286,67 @@ namespace CrossBuy.BL.Reporting
 			return layout;
 		}
 
+		/// H204 — the REFERRAL LETTER, ONE A4 page: the facility's letterhead; the letter's number, date, urgency and the
+		/// time the answer is due (two columns); to whom it goes; the patient with the allergies in red; the question, the
+		/// clinical summary and the visit's diagnoses (long texts start at the top of their box); the referring doctor
+		/// beside a line to sign and stamp. It never runs to a second page (HospitalReferralTests).
+		public static readonly ReportPageSetup LetterPage = new() { PageSize = ReportPageSize.A4, MarginTopMm = 12, MarginBottomMm = 12, MarginLeftMm = 15, MarginRightMm = 15, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+
+		public static ReportVisualLayout ReferralLetter()
+		{
+			const double W = 180, Half = 90, L = 30;
+			var e = new List<ReportElement>(); double y = 0;
+			ReportElementStyle Top(double pt, bool bold = false, string color = Ink) => new()
+			{
+				FontSizePt = pt, Bold = bold, Color = color, Align = ReportTextAlign.Start, VerticalAlign = ReportVerticalAlign.Top, PaddingMm = 0.5, BorderStyle = ReportBorderStyle.None,
+			};
+			// one labelled value in a column (x = 0 or Half), `lines` tall
+			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null, int lines = 1, string color = Ink)
+			{
+				double h = Need(10) * lines;
+				e.Add(Text(ar, en, x, y, L, Need(8.5), S(8.5, color: Muted)));
+				e.Add(Field(key, x + L, y, width - L, h, lines > 1 ? Top(10, bold, color) : S(10, bold, color, date: date)));
+			}
+			void Pair((string ar, string en, string key, bool bold, string? date) a, (string ar, string en, string key, bool bold, string? date)? b = null)
+			{
+				Cell(0, Half - 2, a.ar, a.en, a.key, a.bold, a.date);
+				if (b is { } c) Cell(Half, Half, c.ar, c.en, c.key, c.bold, c.date);
+				y += Need(10);
+			}
+			void Heading(string ar, string en) { y += 1.5; e.Add(Text(ar, en, 0, y, W, Need(10), S(10, true, Brand))); y += Need(10); e.Add(Line(0, y, W)); y += 1; }
+			void Block(string key, int lines, double pt = 10) { double h = Need(pt) * lines; e.Add(Field(key, 0, y, W, h, Top(pt))); y += h; }
+
+			e.Add(Field("CompanyName", 0, y, W, Need(14), S(14, true, align: ReportTextAlign.Center))); y += Need(14);
+			e.Add(Field("CompanyAddress", 0, y, Half - 1, Need(8.5), S(8.5, color: Muted, align: ReportTextAlign.End)));
+			e.Add(Field("CompanyPhone", Half + 1, y, Half - 1, Need(8.5), S(8.5, color: Muted))); y += Need(8.5) + 2;
+			e.Add(Text("خطاب تحويل", "Referral letter", 0, y, W, Need(16), S(16, true, Brand, ReportTextAlign.Center))); y += Need(16);
+			e.Add(Line(0, y, W)); y += 2;
+			Pair(("رقم التحويل", "Referral no.", "DocumentNo", true, null), ("التاريخ", "Date", "DocumentDate", false, "yyyy-MM-dd HH:mm"));
+			Cell(0, Half - 2, "درجة الاستعجال", "Urgency", "Urgency", true, color: Alert);
+			Cell(Half, Half, "مطلوب الرد قبل", "Answer due by", "DueBy", false, "yyyy-MM-dd HH:mm"); y += Need(10);
+			Heading("إلى", "To");
+			Pair(("الجهة / القسم", "Facility / department", "ToWhom", true, null));
+			Pair(("التخصص", "Specialty", "ToSpecialty", false, null));
+			Heading("المريض", "Patient");
+			Pair(("الاسم", "Name", "PatientName", true, null), ("رقم الملف", "File no.", "PatientMrn", false, null));
+			Pair(("السن", "Age", "PatientAge", false, null), ("النوع", "Sex", "PatientSex", false, null));
+			Cell(0, W, "الحساسية", "Allergies", "Allergies", true, lines: 2, color: Alert); y += Need(10) * 2;
+			Heading("سبب التحويل", "Reason for referral");
+			Block("Reason", 3);
+			Heading("الملخص السريري", "Clinical summary");
+			Block("Summary", 4, 9.5);
+			Heading("التشخيص", "Diagnosis");
+			Block("Diagnoses", 2, 9.5);
+			Heading("الطبيب المحوِّل", "Referring doctor");
+			double doc = y;
+			Cell(0, Half - 2, "الاسم", "Name", "DoctorName", true); y += Need(10);
+			Cell(0, Half - 2, "التخصص", "Specialty", "DoctorTitle"); y += Need(10);
+			Cell(0, Half - 2, "رقم الترخيص", "Licence no.", "DoctorLicense"); y += Need(10);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, doc, Half, Need(8.5), S(8.5, color: Muted)));
+			e.Add(Box(Half, doc + Need(8.5), Half, y - doc - Need(8.5), Rule));
+			return OneBand(LetterPage, y + 1, e);
+		}
+
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
 		public static ReportVisualLayout? For(string code) => code switch
 		{
@@ -295,6 +356,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.RxLabel => RxLabel(),   // H147
 			HospitalDocumentDatasetCodes.CreditNote => CreditNote(),   // H149
 			HospitalDocumentDatasetCodes.CompoundLabel => CompoundLabel(),   // H153
+			HospitalDocumentDatasetCodes.ReferralLetter => ReferralLetter(),   // H204
 			_ => null,
 		};
 	}

@@ -66,6 +66,16 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void The_letter_is_one_A4_page()
+		{
+			var layout = CrossBuy.BL.Reporting.HospitalDeskLayouts.ReferralLetter();
+			var page = layout.Page;
+			Assert.Equal(CrossBuy.BL.Reporting.ReportPageSize.A4, page.PageSize);
+			double usable = CrossBuy.BL.Reporting.ReportPaper.SizeOf(page.PageSize).HeightMm - page.MarginTopMm - page.MarginBottomMm;
+			Assert.True(layout.Bands.Sum(b => b.HeightMm) <= usable, $"the letter is {layout.Bands.Sum(b => b.HeightMm)} mm on a {usable} mm page");
+		}
+
+		[Fact]
 		public void The_table_matches_its_slice()
 		{
 			var model = HospitalSliceParity.Model(HospitalReferralModel.Configure);

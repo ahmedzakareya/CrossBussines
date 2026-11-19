@@ -90,6 +90,8 @@
                                     <td class="fs-7 text-nowrap"><span class="hp-num @(row.Overdue ? "text-danger fw-bold" : "text-gray-700")" dir="ltr">@HospitalNursingService.UtcToWard(r.DueAt).ToString("MM-dd HH:mm")</span>@if (row.Overdue) {<div class="text-danger fs-8 fw-bold">@T["Overdue"]</div>}</td>
                                     <td><span class="badge badge-light-@StatusTone(r.Status) fs-7 fw-bold">@T["refs:" + r.Status]</span></td>
                                     <td class="text-end pe-4 text-nowrap">
+                                        @* H204: the referral letter is a Report Studio layout of this referral — see _ReportPrintMenu *@
+                                        @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalReferral, DocumentId = r.ID.ToString(), DocumentTitle = r.ReferralNo })
                                         @if (canConsult && internalRef && r.Status == HospitalReferralStatus.Sent)
                                         {
                                             <button type="button" class="btn btn-sm btn-icon btn-primary" title="@T["Accept"]" data-bs-toggle="tooltip" data-ref-move="Accepted" data-id="@r.ID"><i class="ki-outline ki-check fs-3"></i></button>

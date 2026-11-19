@@ -80,6 +80,7 @@ namespace CrossBuy.Tests
             HospitalDocumentDatasetCodes.RxLabel,            // H147
             HospitalDocumentDatasetCodes.CreditNote,         // H149
             HospitalDocumentDatasetCodes.CompoundLabel,      // H153
+            HospitalDocumentDatasetCodes.ReferralLetter,     // H204
         };
 
         // ---- the datasets are declared, and declared legally ------------------------------------
