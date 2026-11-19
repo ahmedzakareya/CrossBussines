@@ -15,7 +15,7 @@
         <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["My appraisals"]</h1>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["ReqMsg"] != null) { <div class="alert alert-success">@TempData["ReqMsg"]</div> }
+        @if (TempData["ReqMsg"] != null) { <div class="alert alert-primary">@TempData["ReqMsg"]</div> }
         @if (TempData["ReqErr"] != null) { <div class="alert alert-danger">@TempData["ReqErr"]</div> }
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
             <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Cycle"]</th><th>@Localizer["Appraiser"]</th><th class="text-center">@Localizer["Score"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>

@@ -62,7 +62,7 @@
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("قيد الموافقة", "Pending approval"), Model.Pending, "ki-time", Model.Pending > 0 ? "text-primary" : "text-gray-900"),
                                            (L("في إجازة اليوم", "On leave today"), Model.OnLeaveToday, "ki-calendar-tick", "text-gray-900"),
-                                           (L("طلبات معتمدة هذا العام", "Approved this year"), Model.ApprovedThisYear, "ki-check-circle", "text-success"),
+                                           (L("طلبات معتمدة هذا العام", "Approved this year"), Model.ApprovedThisYear, "ki-check-circle", "text-primary"),
                                            (L("أيام إجازة معتمدة هذا العام", "Approved days this year"), Model.DaysThisYear, "ki-calendar", "text-gray-900") })
                 {
                     <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
@@ -185,7 +185,7 @@
                                                 {
                                                     <span class="hr-num text-muted me-1">@law.ToString("0.##")</span>
                                                     @if (l.Days < law) { <span class="badge badge-light-danger fw-bold fs-8" title="@l.LawReference">@L("أقل من القانون", "Below the law")</span> }
-                                                    else { <span class="badge badge-light-success fw-bold fs-8" title="@l.LawReference">@L("مطابق", "Compliant")</span> }
+                                                    else { <span class="badge badge-light-primary fw-bold fs-8" title="@l.LawReference">@L("مطابق", "Compliant")</span> }
                                                 }
                                                 else { <span class="text-gray-400 fs-8">@L("ليس في الحزمة", "Not in the pack")</span> }
                                             </td>

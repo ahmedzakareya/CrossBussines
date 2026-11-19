@@ -121,7 +121,7 @@
                             <span class="text-muted fs-7 mt-1"><span class="hr-num">@Model.AttWorkDays</span> @L("يوم عمل على مستوى الشركة", "company working days")</span></div>
                             <div class="card-toolbar"><a href="@Url.Action("Attendance", "Admin")" class="btn btn-sm btn-light-primary">@L("الكل", "All")</a></div></div>
                         <div class="card-body pt-4">
-                            @foreach (var a in new[] { (L("حضور", "Present"), Model.AttPresent, "bg-success"), (L("غياب", "Absent"), Model.AttAbsent, "bg-danger"), (L("إجازة", "Leave"), Model.AttLeave, "bg-primary") })
+                            @foreach (var a in new[] { (L("حضور", "Present"), Model.AttPresent, "bg-primary"), (L("غياب", "Absent"), Model.AttAbsent, "bg-danger"), (L("إجازة", "Leave"), Model.AttLeave, "bg-info") })
                             {
                                 <div class="d-flex align-items-center gap-3 mb-4">
                                     <span class="fw-semibold fs-6 w-75px">@a.Item1</span>

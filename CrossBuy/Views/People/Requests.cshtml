@@ -29,7 +29,7 @@
         <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["My Requests — letters & permissions"]</h1>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["ReqMsg"] != null) { <div class="alert alert-success">@TempData["ReqMsg"]</div> }
+        @if (TempData["ReqMsg"] != null) { <div class="alert alert-primary">@TempData["ReqMsg"]</div> }
         @if (TempData["ReqErr"] != null) { <div class="alert alert-danger">@TempData["ReqErr"]</div> }
 
         <div class="row g-5">

@@ -3916,8 +3916,8 @@ html[dir="ltr"] #kt_attendance_modal .att-final-card .form-label,
                                                                         </select>
                                                                     </div>
                                                                     <div class="d-flex align-items-center gap-4 flex-wrap">
-                                                                        <div class="d-flex align-items-center gap-2"><span class="w-8px h-8px bg-success rounded-circle d-inline-block"></span><span class="text-muted fs-8">@CrossBuy.Resources.SharedResources.TaxNotApplicable</span></div>
-                                                                        <div class="d-flex align-items-center gap-2"><span class="w-8px h-8px bg-warning rounded-circle d-inline-block"></span><span class="text-muted fs-8">@CrossBuy.Resources.SharedResources.TaxApplicable</span></div>
+                                                                        <div class="d-flex align-items-center gap-2"><span class="w-8px h-8px bg-primary rounded-circle d-inline-block"></span><span class="text-muted fs-8">@CrossBuy.Resources.SharedResources.TaxNotApplicable</span></div>
+                                                                        <div class="d-flex align-items-center gap-2"><span class="w-8px h-8px bg-info rounded-circle d-inline-block"></span><span class="text-muted fs-8">@CrossBuy.Resources.SharedResources.TaxApplicable</span></div>
                                                                         <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#kt_salary_modal" onclick="openSalaryModal(0,@item.ID)">
                                                                             <i class="ki-outline ki-plus fs-4 me-1"></i>@CrossBuy.Resources.SharedResources.New
                                                                         </button>
@@ -4101,7 +4101,7 @@ html[dir="ltr"] #kt_attendance_modal .att-final-card .form-label,
                                                                                         </td>
                                                                                         <td>
                                                                                             <div class="d-flex align-items-center gap-2">
-                                                                                                <div class="progress h-6px w-60px bg-light-warning"><div class="progress-bar bg-warning" style="width:@(Math.Min(att.WarningThresholdCount * 10, 100))%"></div></div>
+                                                                                                <div class="progress h-6px w-60px bg-light-primary"><div class="progress-bar bg-info" style="width:@(Math.Min(att.WarningThresholdCount * 10, 100))%"></div></div>
                                                                                                 <span class="fw-bold text-gray-800">@att.WarningThresholdCount @CrossBuy.Resources.SharedResources.Time</span>
                                                                                             </div>
                                                                                         </td>
@@ -4109,7 +4109,7 @@ html[dir="ltr"] #kt_attendance_modal .att-final-card .form-label,
                                                                                         <td class="text-center"><span class="badge badge-light-dark fw-bold fs-7">@att.UnexcusedAbsenceThreshold @CrossBuy.Resources.SharedResources.Day</span></td>
                                                                                         <td><span class="badge badge-light-primary fw-bold fs-7">@wStart — @wEnd</span></td>
                                                                                         <td class="text-end pe-6">
-                                                                                            <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-warning"
+                                                                                            <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-primary"
                                                                                                     data-bs-toggle="modal" data-bs-target="#kt_attendance_modal"
                                                                                                     onclick="openAttendanceModal(
                                                                                                         parseInt(this.closest('tr').dataset.attId),

@@ -39,7 +39,7 @@
 
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("الموظفون", "Headcount"), total, "ki-people", "text-gray-900", L("في شركتك", "in your company")),
-                                           (L("على رأس العمل", "Active"), active, "ki-check-circle", "text-success", ""),
+                                           (L("على رأس العمل", "Active"), active, "ki-check-circle", "text-primary", ""),
                                            (L("غير نشط", "Inactive"), total - active, "ki-minus-circle", "text-gray-600", ""),
                                            (L("معيّنون هذا العام", "Joined this year"), newThisYear, "ki-user-tick", "text-primary", today.Year.ToString()) })
                 {

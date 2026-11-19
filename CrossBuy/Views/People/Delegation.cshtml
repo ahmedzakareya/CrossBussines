@@ -12,7 +12,7 @@
         <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("تفويض الموافقة", "Approval delegation")</h1>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["ReqMsg"] is string msg) { <div class="alert alert-success">@msg</div> }
+        @if (TempData["ReqMsg"] is string msg) { <div class="alert alert-primary">@msg</div> }
         @if (TempData["ReqErr"] is string err) { <div class="alert alert-danger">@err</div> }
         <div class="hr-notice mb-5"><i class="ki-outline ki-arrows-loop fs-2"></i>
             <div class="fs-7">@L("إذا كنت ستغيب، فوّض موافقاتك لزميل خلال فترة محددة: طلبات الإجازة والطلبات الجديدة التي تصلك خلال الفترة تذهب إليه بدلاً منك. الطلبات المنتظرة لديك قبل التفويض تبقى عندك. لا يمكن أن يعتمد أحد طلبه بنفسه عبر التفويض.",
@@ -46,7 +46,7 @@
                             {
                                 <tr><td class="fw-semibold"><bdi>@(r.To ?? "—")</bdi>@if (!string.IsNullOrWhiteSpace(r.Reason)) { <div class="text-muted fs-8">@r.Reason</div> }</td>
                                     <td class="hr-num">@r.Start.ToString("yyyy-MM-dd") → @r.End.ToString("yyyy-MM-dd")</td>
-                                    <td>@if (r.Active) { <span class="badge badge-light-success">@L("سارٍ", "Active")</span> } else { <span class="badge badge-light">@L("منتهٍ", "Ended")</span> }</td>
+                                    <td>@if (r.Active) { <span class="badge badge-light-primary">@L("سارٍ", "Active")</span> } else { <span class="badge badge-light">@L("منتهٍ", "Ended")</span> }</td>
                                     <td class="text-end">@if (r.Active) { <form asp-action="EndDelegation" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إنهاء التفويض الآن؟", "End the delegation now?")">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.Id" /><button class="btn btn-sm btn-light-danger">@L("إنهاء", "End")</button></form> }</td></tr>
                             }
                         </tbody>

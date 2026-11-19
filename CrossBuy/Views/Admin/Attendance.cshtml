@@ -63,7 +63,7 @@
         <div class="app-container container-fluid">
 
             <div class="row g-5 g-xl-8 mb-5">
-                @foreach (var s in new[] { (L("أيام حضور", "Days present"), present.ToString(), "ki-check-circle", "text-success", L("من", "of") + " " + work + " " + L("يوم عمل مجدول", "scheduled work days")),
+                @foreach (var s in new[] { (L("أيام حضور", "Days present"), present.ToString(), "ki-check-circle", "text-primary", L("من", "of") + " " + work + " " + L("يوم عمل مجدول", "scheduled work days")),
                                            (L("أيام غياب", "Days absent"), absent.ToString(), "ki-cross-circle", absent > 0 ? "text-danger" : "text-gray-900", L("بلا إجازة أو عطلة", "without leave or holiday")),
                                            (L("حالات تأخير", "Late arrivals"), lateCount.ToString(), "ki-time", "text-gray-900", Hm(Model.Sum(r => r.LateMinutes)) + " " + L("ساعة إجمالاً", "hours in total")),
                                            (L("عمل إضافي", "Overtime"), Hm(otMin), "ki-timer", "text-primary", L("ساعة:دقيقة", "hours:minutes")) })
@@ -129,7 +129,7 @@
                                                     case "Late": <span class="badge badge-light-primary fw-bold fs-8">@(L("تأخير ", "Late ") + a.LateMinutes + L(" د", "m"))</span> break;
                                                     case "Leave": <span class="badge badge-light fw-bold fs-8">@L("إجازة", "Leave")</span> break;
                                                     case "Holiday": case "RestDay": <span class="badge badge-light fw-bold fs-8">@L("عطلة", "Day off")</span> break;
-                                                    default: <span class="badge badge-light-success fw-bold fs-8">@L("منتظم", "Regular")</span> break;
+                                                    default: <span class="badge badge-light-primary fw-bold fs-8">@L("منتظم", "Regular")</span> break;
                                                 }
                                             </td>
                                         </tr>

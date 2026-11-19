@@ -28,11 +28,11 @@
         <td class="text-end hr-num">@r.Installment.ToString("N3", inv)</td>
         <td>@if (r.PctOfWage is decimal pct) { <span class="hr-num fw-bold @(over ? "text-danger" : "")">@pct.ToString("0.0", inv)%</span> if (over) { <div><span class="badge badge-light-danger fs-9">@L("يتجاوز السقف", "Above the cap")</span></div> } } else { <span class="text-gray-400">—</span> }</td>
         <td><span class="hr-num">@r.Outstanding.ToString("N3", inv)</span>
-            <div class="h-5px w-100 bg-light rounded mt-1"><div class="bg-success rounded h-5px" style="width:@(donePct)%"></div></div></td>
+            <div class="h-5px w-100 bg-light rounded mt-1"><div class="bg-primary rounded h-5px" style="width:@(donePct)%"></div></div></td>
         <td class="hr-num">@($"{r.FirstYear}-{r.FirstMonth:00}")</td>
         <td class="pe-4 text-end">@switch (r.Status)
             {
-                case "Active": <span class="badge badge-light-success fw-bold">@L("نشط", "Active")</span> break;
+                case "Active": <span class="badge badge-light-primary fw-bold">@L("نشط", "Active")</span> break;
                 case "Settled": <span class="badge badge-light fw-bold">@L("مسدَّد", "Settled")</span> break;
                 default: <span class="badge badge-light-danger fw-bold">@L("ملغى", "Cancelled")</span> break;
             }</td>

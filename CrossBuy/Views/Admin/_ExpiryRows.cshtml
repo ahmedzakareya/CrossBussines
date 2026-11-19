@@ -27,11 +27,11 @@
         <td class="text-nowrap">
             @if (i.DaysLeft < 0) { <span class="badge badge-light-danger fw-bold">@(L("منتهية منذ ", "Expired ") + (-i.DaysLeft) + L(" يوم", " days ago"))</span> }
             else if (i.DaysLeft <= 30) { <span class="badge badge-light-danger fw-bold">@(i.DaysLeft + L(" يوم", " days"))</span> }
-            else if (i.DaysLeft <= 60) { <span class="badge badge-light-warning fw-bold">@(i.DaysLeft + L(" يوم", " days"))</span> }
-            else { <span class="badge badge-light-success fw-bold">@(i.DaysLeft + L(" يوم", " days"))</span> }
+            else if (i.DaysLeft <= 60) { <span class="badge badge-light-secondary fw-bold">@(i.DaysLeft + L(" يوم", " days"))</span> }
+            else { <span class="badge badge-light-primary fw-bold">@(i.DaysLeft + L(" يوم", " days"))</span> }
         </td>
         <td class="pe-4 text-end text-nowrap">
-            @if (i.FileCount > 0) { <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="@i.Kind" data-cb-id="@i.RefId" data-cb-title="@ItemName(i) — @i.EmployeeName" title="@L("المرفقات", "Attachments")"><i class="ki-outline ki-paper-clip fs-5"></i><span class="badge badge-circle badge-success position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@i.FileCount</span></button> }
+            @if (i.FileCount > 0) { <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="@i.Kind" data-cb-id="@i.RefId" data-cb-title="@ItemName(i) — @i.EmployeeName" title="@L("المرفقات", "Attachments")"><i class="ki-outline ki-paper-clip fs-5"></i><span class="badge badge-circle badge-primary position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@i.FileCount</span></button> }
             else { <button type="button" class="btn btn-icon btn-light btn-sm me-1" disabled title="@L("لا يوجد ملف مرفق", "No file attached")"><i class="ki-outline ki-paper-clip fs-5 text-gray-400"></i></button> }
             <a href="@Url.Action("HrDocuments", "Admin", new { employeeId = i.EmployeeId })" class="btn btn-icon btn-light btn-sm" title="@L("إدارة الوثائق", "Manage documents")"><i class="ki-outline ki-document fs-5"></i></a>
         </td>

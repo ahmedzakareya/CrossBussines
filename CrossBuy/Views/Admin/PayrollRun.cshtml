@@ -32,7 +32,7 @@
                 <a href="@Url.Action("PayrollRun", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
                 @if (p.AlreadyPosted)
                 {
-                    <span class="badge badge-light-success fw-bold fs-7 py-3 px-4"><i class="ki-outline ki-check-circle fs-5 me-1"></i>@L("مرحّل", "Posted") <span class="hr-num ms-1">@p.PostedEntryNo</span></span>
+                    <span class="badge badge-light-primary fw-bold fs-7 py-3 px-4"><i class="ki-outline ki-check-circle fs-5 me-1"></i>@L("مرحّل", "Posted") <span class="hr-num ms-1">@p.PostedEntryNo</span></span>
                 }
                 else if (Model.CanPost && p.Employees.Count > 0)
                 {
@@ -69,7 +69,7 @@
                         {
                             var s = Model.Stages[i];
                             if (i > 0) { <i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-3 text-gray-400"></i> }
-                            <span class="badge @(s.Done ? "badge-light-success" : "badge-light") fs-7 fw-bold py-3 px-4" title="@(isAr ? s.NoteAr : s.NoteEn)">
+                            <span class="badge @(s.Done ? "badge-light-primary" : "badge-light") fs-7 fw-bold py-3 px-4" title="@(isAr ? s.NoteAr : s.NoteEn)">
                                 @if (s.Done) { <i class="ki-outline ki-check fs-6 me-1"></i> }@L(s.Ar, s.En)
                                 @if (!string.IsNullOrEmpty(isAr ? s.NoteAr : s.NoteEn)) { <span class="text-muted fw-semibold ms-1 fs-8">· @(isAr ? s.NoteAr : s.NoteEn)</span> }
                             </span>

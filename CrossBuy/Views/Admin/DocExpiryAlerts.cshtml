@@ -58,7 +58,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
 
-            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-primary d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-primary"></i>@msg</div> }
 
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("منتهية", "Expired"), expired, "ki-cross-circle", expired > 0 ? "text-danger" : "text-gray-900"),

@@ -31,7 +31,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
             @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
-            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-primary d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-primary"></i>@msg</div> }
 
             <div class="hr-notice mb-5">
                 <i class="ki-outline ki-shield-tick fs-2"></i>

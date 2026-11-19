@@ -39,7 +39,7 @@
             @if (!string.IsNullOrWhiteSpace(e.PhoneNumber)) { <div class="text-muted hr-num">@e.PhoneNumber</div> }
         </td>
         <td>
-            @if (e.IsActive) { <span class="badge badge-light-success fw-bold fs-8">@L("على رأس العمل", "Active")</span> }
+            @if (e.IsActive) { <span class="badge badge-light-primary fw-bold fs-8">@L("على رأس العمل", "Active")</span> }
             else { <span class="badge badge-light fw-bold fs-8">@L("غير نشط", "Inactive")</span> }
         </td>
         <td class="pe-4 text-end text-nowrap">

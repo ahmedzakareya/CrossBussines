@@ -67,7 +67,7 @@
                             <span class="fw-bold text-gray-900 fs-4">@(isAr ? s.NameAr : s.NameEn)</span>
                             <span class="text-muted fs-7 mt-1"><span class="hr-num">@s.Employees</span> @L("موظفاً", "employees") · <span class="hr-num">@s.WeeklyHours.ToString("0.##", inv)</span> @L("ساعة أسبوعياً", "hours a week") · @L("الراحة: ", "Rest: ")@string.Join(isAr ? " و" : ", ", s.RestDays.Select(d => isAr ? dayNames[d].ar : dayNames[d].en))</span>
                         </div>
-                        <div class="card-toolbar">@if (s.WarningsEn.Count == 0) { <span class="badge badge-light-success fw-bold">@L("مطابق للحدود", "Within the limits")</span> } else { <span class="badge badge-light-danger fw-bold">@L("يحتاج مراجعة", "Needs review")</span> }</div>
+                        <div class="card-toolbar">@if (s.WarningsEn.Count == 0) { <span class="badge badge-light-primary fw-bold">@L("مطابق للحدود", "Within the limits")</span> } else { <span class="badge badge-light-danger fw-bold">@L("يحتاج مراجعة", "Needs review")</span> }</div>
                     </div>
                     <div class="card-body pt-2">
                         <div class="table-responsive">

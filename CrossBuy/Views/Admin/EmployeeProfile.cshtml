@@ -38,7 +38,7 @@
     {
         if (!expiry.HasValue) return ("", int.MaxValue);
         var days = (int)Math.Floor((expiry.Value.Date - DateTime.Today).TotalDays);
-        return (days < 0 ? "badge-light-danger" : days <= 30 ? "badge-light-danger" : days <= 60 ? "badge-light-warning" : "badge-light-success", days);
+        return (days < 0 ? "badge-light-danger" : days <= 30 ? "badge-light-danger" : days <= 60 ? "badge-light-secondary" : "badge-light-primary", days);
     }
 }
 
@@ -72,7 +72,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
             @if (TempData["HrErr"] is string hrErr) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@hrErr</div> }
-            @if (TempData["HrMsg"] is string hrMsg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@hrMsg</div> }
+            @if (TempData["HrMsg"] is string hrMsg) { <div class="alert alert-primary d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-primary"></i>@hrMsg</div> }
             @* open the tab named in the address (#emp_pay after a salary change) *@
             <script>document.addEventListener('DOMContentLoaded', function () { var h = location.hash; if (!h || !/^#emp_\w+$/.test(h)) return; var a = document.querySelector('a[data-bs-toggle="tab"][href="' + h + '"]'); if (a && window.bootstrap) bootstrap.Tab.getOrCreateInstance(a).show(); });</script>
 
@@ -92,7 +92,7 @@
                     <div class="flex-grow-1 min-w-0">
                         <div class="d-flex align-items-center flex-wrap gap-3 mb-1">
                             <span class="fs-2 fw-bold text-gray-900">@name</span>
-                            @if (m.Active) { <span class="badge badge-light-success fw-bold fs-8">@L("على رأس العمل", "Active")</span> }
+                            @if (m.Active) { <span class="badge badge-light-primary fw-bold fs-8">@L("على رأس العمل", "Active")</span> }
                             else { <span class="badge badge-light fw-bold fs-8">@L("غير نشط", "Inactive")</span> }
                         </div>
                         <div class="text-muted fw-semibold mb-3">@string.Join(" · ", new[] { Pick(m.Title, m.TitleEn), Pick(m.Branch, m.BranchEn), Pick(m.Company, m.CompanyEn) }.Where(s => !string.IsNullOrWhiteSpace(s)))</div>
@@ -163,7 +163,7 @@
                                         {
                                             string nm = isAr ? (string)c.Item.NameAr : (string)c.Item.NameEn;
                                             if (c.TaskId == null) { <span class="badge badge-light fs-8 fw-semibold py-2 px-3">@nm</span> }
-                                            else { <a href="@Url.Action("Detail", "Tasks", new { id = (int)c.TaskId })" class="badge @((bool)c.Done ? "badge-light-success" : "badge-light-primary") fs-8 fw-semibold py-2 px-3">@if ((bool)c.Done) { <i class="ki-outline ki-check fs-7 me-1"></i> }@nm</a> }
+                                            else { <a href="@Url.Action("Detail", "Tasks", new { id = (int)c.TaskId })" class="badge @((bool)c.Done ? "badge-light-primary" : "badge-light-primary") fs-8 fw-semibold py-2 px-3">@if ((bool)c.Done) { <i class="ki-outline ki-check fs-7 me-1"></i> }@nm</a> }
                                         }
                                     </div>
                                 </div>
@@ -219,7 +219,7 @@
                                             <td>@(relations.TryGetValue(d.Relation, out var rl) ? L(rl.ar, rl.en) : d.Relation)</td>
                                             <td class="hr-num">@D(d.DateOfBirth)</td>
                                             <td class="hr-num">@(d.CivilIdNumber ?? "—")</td>
-                                            <td>@if (d.IsSponsored) { <span class="badge badge-light-success fw-bold fs-8">@L("نعم", "Yes")</span> } else { <span class="text-gray-400">—</span> }</td>
+                                            <td>@if (d.IsSponsored) { <span class="badge badge-light-primary fw-bold fs-8">@L("نعم", "Yes")</span> } else { <span class="text-gray-400">—</span> }</td>
                                             <td class="pe-4 text-end">@if (m.CanEdit) { <form asp-action="DeleteDependant" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@L("حذف هذا المعال؟", "Remove this dependant?")">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="employeeId" value="@m.Id" /><button class="btn btn-icon btn-sm btn-light" style="opacity:.5"><i class="ki-outline ki-trash fs-5"></i></button></form> }</td>
                                         </tr>
                                     }

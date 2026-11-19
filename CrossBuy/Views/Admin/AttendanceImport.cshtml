@@ -35,7 +35,7 @@
                         @if (res.From is DateTime f && res.To is DateTime t) { <span class="text-muted fs-7 mt-1">@L("من ", "From ")<span class="hr-num">@f.ToString("yyyy-MM-dd")</span>@L(" إلى ", " to ")<span class="hr-num">@t.ToString("yyyy-MM-dd")</span></span> }</div></div>
                     <div class="card-body pt-2">
                         <div class="row g-4 mb-4">
-                            @foreach (var s in new[] { (L("أيام سُجّلت", "Days recorded"), res.DaysRecorded, "text-success"), (L("بصمات مقروءة", "Punches read"), res.Punches, "text-gray-900"),
+                            @foreach (var s in new[] { (L("أيام سُجّلت", "Days recorded"), res.DaysRecorded, "text-primary"), (L("بصمات مقروءة", "Punches read"), res.Punches, "text-gray-900"),
                                                        (L("أيام مصحّحة يدوياً لم تُمس", "Hand-corrected days kept"), res.DaysKeptManual, "text-gray-900"), (L("أسطر لم تُفهم", "Lines not understood"), res.BadLines, res.BadLines > 0 ? "text-danger" : "text-gray-900") })
                             {
                                 <div class="col-6 col-md-3"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-muted fs-8 mb-1">@s.Item1</div><div class="fw-bold fs-2 hr-num @s.Item3">@s.Item2</div></div></div>

@@ -20,7 +20,7 @@
             </div>
         </td>
         <td class="text-center hr-num fw-bold">@r.PresentDays<span class="text-muted fw-normal">/@r.WorkDays</span></td>
-        <td style="min-width:110px"><div class="d-flex align-items-center gap-2"><div class="progress h-6px w-100 bg-light"><div class="progress-bar @(pct >= 90 ? "bg-success" : pct >= 60 ? "bg-primary" : "bg-danger")" style="width:@(pct)%"></div></div><span class="text-muted fs-8 hr-num">@(pct)%</span></div></td>
+        <td style="min-width:110px"><div class="d-flex align-items-center gap-2"><div class="progress h-6px w-100 bg-light"><div class="progress-bar @(pct >= 90 ? "bg-primary" : pct >= 60 ? "bg-primary" : "bg-danger")" style="width:@(pct)%"></div></div><span class="text-muted fs-8 hr-num">@(pct)%</span></div></td>
         <td class="text-center hr-num @(r.LateCount > 0 ? "fw-bold text-gray-900" : "text-gray-400")">@r.LateCount@if (r.LateMinutes > 0) { <div class="text-muted fs-8">@Hm(r.LateMinutes)</div> }</td>
         <td class="text-center hr-num @(r.OvertimeMinutes > 0 ? "fw-bold text-primary" : "text-gray-400")">@Hm(r.OvertimeMinutes)</td>
         <td class="text-center hr-num text-muted">@r.LeaveDays</td>
