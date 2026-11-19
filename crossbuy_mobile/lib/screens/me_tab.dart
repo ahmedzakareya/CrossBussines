@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/api_service.dart';
 import '../services/app_nav.dart';
+import '../theme/brand.dart';
 import '../widgets/ui.dart';
 import 'attendance_screen.dart';
 import 'leave_screen.dart';
@@ -47,10 +48,11 @@ class _MeTabState extends State<MeTab> {
               Text([job, branch].where((x) => x.isNotEmpty).join(' · '), textAlign: TextAlign.center, style: T.sub),
             ]),
           ),
+          // the reference's identity card: company, staff number, workspace, language, currency
           DataList(children: [
             KV(L(context, 'الشركة', 'Company'), pick(me?.companyAr, me?.companyEn)),
-            KV(L(context, 'الإدارة', 'Department'), pick(me?.departmentAr, me?.departmentEn)),
-            KV(L(context, 'البريد', 'Email'), me?.email ?? ''),
+            if (me != null) KV(L(context, 'الرقم الوظيفي', 'Staff number'), 'EMP-${me.id.toString().padLeft(4, '0')}'),
+            if (pick(me?.departmentAr, me?.departmentEn).isNotEmpty) KV(L(context, 'مساحة العمل', 'Workspace'), pick(me?.departmentAr, me?.departmentEn)),
             KV(L(context, 'اللغة', 'Language'), '', trailing: GestureDetector(
               onTap: () => context.read<LocaleProvider>().toggle(),
               child: Row(children: [
@@ -59,6 +61,7 @@ class _MeTabState extends State<MeTab> {
                 Text(ar ? 'English ↔' : '↔ العربية', style: const TextStyle(fontSize: 10.5, color: Color(0xFF3A5795))),
               ]),
             )),
+            if ((me?.currency ?? '').isNotEmpty) KV(L(context, 'العملة', 'Currency'), curName(me!.currency!, ar)),
           ]),
           SectionHeading(L(context, 'خدماتي', 'My services')),
           DataList(children: [

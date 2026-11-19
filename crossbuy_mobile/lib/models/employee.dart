@@ -22,6 +22,7 @@ class Employee {
   final String? employmentType;
   final String? departmentAr;
   final String? departmentEn;
+  final String? currency;   // the company's currency code, for the profile card
 
   Employee({
     required this.id,
@@ -47,6 +48,7 @@ class Employee {
     this.employmentType,
     this.departmentAr,
     this.departmentEn,
+    this.currency,
   });
 
   static DateTime? _date(dynamic v) =>
@@ -76,5 +78,6 @@ class Employee {
         employmentType: j['employmentType'],
         departmentAr: j['departmentAr'],
         departmentEn: j['departmentEn'],
+        currency: j['currency'],
       );
 }

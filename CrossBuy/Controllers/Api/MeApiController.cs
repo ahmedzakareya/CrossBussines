@@ -175,9 +175,12 @@ namespace CrossBuy.Controllers.Api
 				: null;
 
 			// entity for the fields not on the view model (status, employment type, department)
+			var profCurrency = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(emp.EmpCompanyID ?? 0, HttpContext.RequestAborted))?.Rules.Currency ?? "";
 			var ent = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == emp.ID);
+			// IgnoreQueryFilters: the department id is the signed-in user's own and only its NAME is shown; some seed
+			// employees point at other companies' nodes, which the HR company filter would otherwise hide.
 			var dept = (ent != null && ent.DepartmentID.HasValue)
-				? await _context.Hierarchicals.AsNoTracking().FirstOrDefaultAsync(h => h.H_ID == ent.DepartmentID.Value)
+				? await _context.Hierarchicals.AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(h => h.H_ID == ent.DepartmentID.Value)
 				: null;
 
 			return Ok(new
@@ -210,7 +213,8 @@ namespace CrossBuy.Controllers.Api
 					companyEn = company?.CompanyName,
 					branchId = emp.BranchID,
 					branchAr = branch?.NameAr,
-					branchEn = branch?.Name
+					branchEn = branch?.Name,
+					currency = profCurrency
 				}
 			});
 		}

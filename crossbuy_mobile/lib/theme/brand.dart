@@ -124,3 +124,10 @@ String curLabel(String currency, bool ar) {
   if (!ar) return currency;
   return const {'KWD': 'د.ك', 'SAR': 'ر.س', 'AED': 'د.إ', 'EGP': 'ج.م', 'BHD': 'د.ب', 'OMR': 'ر.ع', 'QAR': 'ر.ق', 'JOD': 'د.أ'}[currency] ?? currency;
 }
+
+/// The currency's full name (the profile card shows "الدينار الكويتي", not the symbol).
+String curName(String currency, bool ar) {
+  const en = {'KWD': 'Kuwaiti Dinar', 'SAR': 'Saudi Riyal', 'AED': 'UAE Dirham', 'EGP': 'Egyptian Pound', 'BHD': 'Bahraini Dinar', 'OMR': 'Omani Rial', 'QAR': 'Qatari Riyal', 'JOD': 'Jordanian Dinar'};
+  const arr = {'KWD': 'الدينار الكويتي', 'SAR': 'الريال السعودي', 'AED': 'الدرهم الإماراتي', 'EGP': 'الجنيه المصري', 'BHD': 'الدينار البحريني', 'OMR': 'الريال العُماني', 'QAR': 'الريال القطري', 'JOD': 'الدينار الأردني'};
+  return (ar ? arr : en)[currency] ?? currency;
+}

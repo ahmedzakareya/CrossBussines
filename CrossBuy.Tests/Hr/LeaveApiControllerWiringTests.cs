@@ -181,6 +181,8 @@ namespace CrossBuy.Tests.Hr
             public Task<(bool ok, string? error)> DecideAsync(
                 int requestId, int approverEmployeeId, bool approve, string? note)
                 => throw new NotSupportedException();
+            public Task<(bool ok, string? error)> ReturnAsync(int requestId, int approverEmployeeId, string? note)
+                => throw new NotSupportedException();
         }
 
         private sealed class StubEmployees : IEmployeeService
