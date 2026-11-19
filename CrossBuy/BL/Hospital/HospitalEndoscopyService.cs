@@ -186,13 +186,22 @@ namespace CrossBuy.BL.Hospital
 				var r = await path.RequestAsync(ctx, new HospitalPathRequestInput
 				{
 					PatientId = p.PatientId, Source = HospitalPathSource.Endoscopy, SourceRefId = p.ID, Containers = input.Biopsies,
-					Specimen = (p.Kind + " biopsies").Length <= 200 ? p.Kind + " biopsies" : "Endoscopic biopsies", Site = Clip(input.BiopsySites, 200),
+					Specimen = BiopsyName(p.Kind), Site = Clip(input.BiopsySites, 200),
 					ClinicalHistory = Clip(p.Indication + (p.Findings == null ? "" : " — " + p.Findings), 1000),
 				}, employeeId, nowUtc, ct, trusted: true);
 				if (r.Ok) { p.PathCaseId = r.Id; await _db.SaveChangesAsync(ct); }
 			}
 			return HospitalResult.Success(p.ID);
 		}
+
+		/// The specimen as the pathology case names it, in both languages (the case is read on Arabic and English screens).
+		public static string BiopsyName(string kind) => kind switch
+		{
+			HospitalEndoKind.Gastroscopy => "خزعات منظار المعدة — Gastroscopy biopsies",
+			HospitalEndoKind.Colonoscopy => "خزعات منظار القولون — Colonoscopy biopsies",
+			HospitalEndoKind.Bronchoscopy => "خزعات منظار القصبات — Bronchoscopy biopsies",
+			_ => "خزعات بالمنظار — Endoscopic biopsies",
+		};
 
 		public async Task<IReadOnlyList<HospitalScopeRow>> ScopesAsync(BusinessContext ctx, DateTime nowUtc, CancellationToken ct = default)
 		{
