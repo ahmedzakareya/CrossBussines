@@ -1,0 +1,134 @@
+@model CrossBuy.Models.Context.Inventory.SalesRepRoute
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var reps = ViewBag.Reps as List<(int, string)> ?? new();
+    var customers = ViewBag.Customers as List<(int, string, string?)> ?? new();
+    bool isNew = Model.ID <= 0;
+    var days = isAr ? new[] { "أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت" } : new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+    var stops = Model.Stops.OrderBy(s => s.Seq).ToList();
+    string nv(decimal v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+<form id="routeForm" asp-action="SaveRoute" asp-controller="SalesRep" method="post" class="d-flex flex-column flex-column-fluid" data-cb-confirm data-cb-action="save" data-cb-text="@L("حفظ المسار؟", "Save the route?")">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.ID" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isNew ? L("مسار جديد", "New route") : L("تعديل المسار", "Edit route"))</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Routes","SalesRep")" class="text-muted text-hover-primary">@L("مسارات المندوبين", "Sales-rep routes")</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isNew ? L("جديد", "New") : Model.Name)</li></ul></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("Routes","SalesRep")" class="btn btn-light">@L("رجوع", "Back")</a><button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@L("حفظ", "Save")</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid"><div class="row g-5">
+        <div class="col-xl-4">
+            <div class="card card-flush">
+                <div class="card-header"><div class="card-title"><h2>@L("بيانات المسار", "Route details")</h2></div></div>
+                <div class="card-body pt-2">
+                    <div class="mb-5"><label class="required fw-semibold fs-6 mb-2">@L("اسم المسار", "Route name")</label><input name="name" class="form-control form-control-solid" value="@Model.Name" required placeholder="@L("مثال: خط سير السالمية", "e.g. Salmiya route")" /></div>
+                    <div class="mb-5"><label class="fw-semibold fs-6 mb-2">@L("الاسم بالإنجليزية", "Name (English)")</label><input name="nameEn" class="form-control form-control-solid" value="@Model.NameEn" dir="ltr" /></div>
+                    <div class="mb-5"><label class="required fw-semibold fs-6 mb-2">@L("المندوب", "Rep")</label>
+                        <select name="repEmployeeId" class="form-select form-select-solid" data-control="select2" required>
+                            <option value="">@L("اختر الموظف", "Choose the employee")</option>
+                            @foreach (var (id, name) in reps) { <option value="@id" selected="@(id == Model.RepEmployeeID)">@name</option> }
+                        </select></div>
+                    <div class="mb-5"><label class="fw-semibold fs-6 mb-2">@L("هدف المبيعات اليومي", "Daily sales target")</label><input name="dailyTarget" type="number" step="0.001" min="0" class="form-control form-control-solid" value="@nv(Model.DailyTarget)" dir="ltr" />
+                        <div class="form-text">@L("يُقاس اليوم بمجموع الطلبيات المأخوذة في زياراته.", "The day is measured by the orders taken at its visits.")</div></div>
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" checked="@Model.IsActive" />
+                        <input type="hidden" name="isActive" value="false" /><!-- after the checkbox: the binder takes the first value -->
+                        <label class="form-check-label fw-semibold" for="isActive">@L("نشط — تُولَّد منه زيارات كل يوم", "Active — visits are generated from it each day")</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-8">
+            <div class="card card-flush">
+                <div class="card-header align-items-center"><div class="card-title"><h2>@L("محطات المسار", "Route stops")</h2></div>
+                    <div class="card-toolbar"><button type="button" id="addStop" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-3"></i>@L("إضافة عميل", "Add customer")</button></div></div>
+                <div class="card-body pt-0">
+                    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                        <div class="fs-7 text-gray-700">@L("الترتيب هنا هو ترتيب الزيارة. تُولَّد زيارة كل محطة في الأيام المختارة لها فقط.", "The order here is the visiting order. Each stop becomes a visit only on the days ticked for it.")</div></div>
+                    <div class="table-responsive"><table class="table align-middle gy-3" id="stops">
+                        <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th style="width:40px">#</th><th>@L("العميل", "Customer")</th><th style="width:120px">@L("الوقت", "Time")</th><th>@L("الأيام", "Days")</th><th class="text-end" style="width:120px"></th></tr></thead>
+                        <tbody>
+                        @{ var rows = stops.Count > 0 ? stops.Select(s => (s.CustomerID, s.PlannedTime?.ToString(@"hh\:mm") ?? "", s.DaysMask)).ToList() : new List<(int, string, int)>(); }
+                        @foreach (var (cid, time, mask) in rows)
+                        {
+                            <tr class="stop-row">
+                                <td class="seq fw-bold text-gray-600"></td>
+                                <td><select class="form-select form-select-solid form-select-sm f-cust" data-control="select2">
+                                    @foreach (var (id, name, addr) in customers) { <option value="@id" selected="@(id == cid)">@name@(string.IsNullOrEmpty(addr) ? "" : " — " + addr)</option> }
+                                </select></td>
+                                <td><input type="text" class="form-control form-control-solid form-control-sm f-time" value="@time" dir="ltr" placeholder="--:--" /></td>
+                                <td><div class="d-flex flex-wrap gap-1">@for (var d = 0; d < 7; d++) { <label class="btn btn-sm px-2 py-1 fw-semibold @(((mask >> d) & 1) == 1 ? "btn-primary" : "btn-light text-gray-500")"><input type="checkbox" class="d-none f-day" value="@d" checked="@(((mask >> d) & 1) == 1)" />@days[d]</label> }</div></td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-icon btn-light up" title="@L("أعلى", "Up")"><i class="ki-outline ki-arrow-up fs-5"></i></button>
+                                    <button type="button" class="btn btn-sm btn-icon btn-light down" title="@L("أسفل", "Down")"><i class="ki-outline ki-arrow-down fs-5"></i></button>
+                                    <button type="button" class="btn btn-sm btn-icon btn-light-danger del" title="@L("حذف", "Remove")"><i class="ki-outline ki-trash fs-5"></i></button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    <div class="text-center text-muted py-8 @(rows.Count > 0 ? "d-none" : "")" id="noStops">@L("لا عملاء على المسار بعد — أضف أول عميل.", "No customers on the route yet — add the first one.")</div>
+                </div>
+            </div>
+        </div>
+    </div></div></div>
+</form>
+<template id="stopTpl">
+    <tr class="stop-row">
+        <td class="seq fw-bold text-gray-600"></td>
+        <td><select class="form-select form-select-solid form-select-sm f-cust"><option value="">@L("اختر العميل", "Choose the customer")</option>@foreach (var (id, name, addr) in customers) { <option value="@id">@name@(string.IsNullOrEmpty(addr) ? "" : " — " + addr)</option> }</select></td>
+        <td><input type="text" class="form-control form-control-solid form-control-sm f-time" dir="ltr" placeholder="--:--" /></td>
+        <td><div class="d-flex flex-wrap gap-1">@for (var d = 0; d < 7; d++) { <label class="btn btn-sm px-2 py-1 fw-semibold btn-primary"><input type="checkbox" class="d-none f-day" value="@d" checked />@days[d]</label> }</div></td>
+        <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-icon btn-light up"><i class="ki-outline ki-arrow-up fs-5"></i></button>
+            <button type="button" class="btn btn-sm btn-icon btn-light down"><i class="ki-outline ki-arrow-down fs-5"></i></button>
+            <button type="button" class="btn btn-sm btn-icon btn-light-danger del"><i class="ki-outline ki-trash fs-5"></i></button>
+        </td>
+    </tr>
+</template>
+@section Scripts {
+<script>
+(function () {
+  var body = document.querySelector('#stops tbody'), none = document.getElementById('noStops');
+  function renumber() {
+    var rows = body.querySelectorAll('tr.stop-row');
+    rows.forEach(function (tr, i) {
+      tr.querySelector('.seq').textContent = i + 1;
+      tr.querySelector('.f-cust').name = 'stops[' + i + '].CustomerId';
+      tr.querySelector('.f-time').name = 'stops[' + i + '].Time';
+      tr.querySelectorAll('.f-day').forEach(function (c) { c.name = 'stops[' + i + '].Days'; });
+    });
+    none.classList.toggle('d-none', rows.length > 0);
+  }
+  // the theme's calendar for the planned time (never the browser's own time control)
+  function timePicker(el) { if (window.flatpickr) flatpickr(el, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, allowInput: true }); }
+  body.querySelectorAll('.f-time').forEach(timePicker);
+  function wire(tr) {
+    timePicker(tr.querySelector('.f-time'));
+    if (window.jQuery && jQuery.fn.select2) jQuery(tr).find('.f-cust').select2();
+    tr.querySelectorAll('.f-day').forEach(function (c) {
+      c.closest('label').addEventListener('click', function (e) { e.preventDefault(); c.checked = !c.checked; var l = c.closest('label'); l.classList.toggle('btn-primary', c.checked); l.classList.toggle('btn-light', !c.checked); l.classList.toggle('text-gray-500', !c.checked); });
+    });
+  }
+  body.querySelectorAll('tr.stop-row').forEach(function (tr) {
+    tr.querySelectorAll('.f-day').forEach(function (c) {
+      c.closest('label').addEventListener('click', function (e) { e.preventDefault(); c.checked = !c.checked; var l = c.closest('label'); l.classList.toggle('btn-primary', c.checked); l.classList.toggle('btn-light', !c.checked); l.classList.toggle('text-gray-500', !c.checked); });
+    });
+  });
+  body.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return; var tr = b.closest('tr');
+    if (b.classList.contains('del')) tr.remove();
+    else if (b.classList.contains('up') && tr.previousElementSibling) body.insertBefore(tr, tr.previousElementSibling);
+    else if (b.classList.contains('down') && tr.nextElementSibling) body.insertBefore(tr.nextElementSibling, tr);
+    renumber();
+  });
+  document.getElementById('addStop').addEventListener('click', function () {
+    var tr = document.getElementById('stopTpl').content.firstElementChild.cloneNode(true);
+    body.appendChild(tr); wire(tr); renumber();
+  });
+  renumber();
+})();
+</script>
+}

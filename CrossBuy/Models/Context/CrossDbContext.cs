@@ -998,6 +998,10 @@ namespace CrossBuy.Models.Context
         public DbSet<Inventory.GoodsReceiptLine> GoodsReceiptLines { get; set; }
         // ---- Inventory Phase I4: sales ----
         public DbSet<Inventory.SalesOrder> SalesOrders { get; set; }
+        // sales-rep routes and visits (deploy/sql/sales_rep_routes.sql) — the mobile "today's visits"
+        public DbSet<Inventory.SalesRepRoute> SalesRepRoutes { get; set; }
+        public DbSet<Inventory.SalesRepRouteStop> SalesRepRouteStops { get; set; }
+        public DbSet<Inventory.SalesRepVisit> SalesRepVisits { get; set; }
         public DbSet<Inventory.SalesOrderLine> SalesOrderLines { get; set; }
         public DbSet<Inventory.Quotation> Quotations { get; set; }
         public DbSet<Inventory.QuotationLine> QuotationLines { get; set; }

@@ -1,0 +1,96 @@
+@model List<CrossBuy.BL.SalesRepRouteService.BoardRow>
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var reps = ViewBag.Reps as List<(int, string)> ?? new();
+    var customers = ViewBag.Customers as List<(int, string, string?)> ?? new();
+    var targets = ViewBag.Targets as Dictionary<int, decimal> ?? new();
+    DateTime day = ViewBag.Date;
+    int? repId = ViewBag.RepId;
+    string cur = ViewBag.Currency ?? "";
+    string status(string s) => s switch { "Done" => L("تمت", "Done"), "Arrived" => L("وصل", "Arrived"), "Skipped" => L("لم تتم", "Skipped"), _ => L("مخطّطة", "Planned") };
+    string badge(string s) => s switch { "Done" => "primary", "Arrived" => "info", "Skipped" => "danger", _ => "secondary" };
+    var groups = Model.GroupBy(v => v.RepEmployeeId).ToList();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("زيارات المندوبين", "Rep visits")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Routes","SalesRep")" class="text-muted text-hover-primary">@L("مسارات المندوبين", "Sales-rep routes")</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@day.ToString("yyyy-MM-dd")</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <form method="get" asp-action="Visits" asp-controller="SalesRep" class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@L("اليوم", "Day")</label><input type="date" name="date" class="form-control form-control-solid" value="@day.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1">@L("المندوب", "Rep")</label>
+                <select name="repId" class="form-select form-select-solid" data-control="select2"><option value="">@L("كل المندوبين", "All reps")</option>@foreach (var (id, name) in reps) { <option value="@id" selected="@(id == repId)">@name</option> }</select></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-filter fs-3"></i>@L("عرض", "Show")</button></div>
+            <div class="col-md-2"><a href="@Url.Action("Visits","SalesRep")" class="btn btn-light w-100">@L("اليوم", "Today")</a></div>
+        </div></div></form>
+
+        @if (groups.Count == 0)
+        {
+            <div class="card card-flush mb-5"><div class="card-body text-center py-15">
+                <i class="ki-outline ki-route fs-3x text-primary mb-4"></i>
+                <div class="fs-5 fw-bold text-gray-800 mb-2">@L("لا زيارات في هذا اليوم", "No visits on this day")</div>
+                <div class="text-muted fs-7">@L("تُولَّد الزيارات من المسارات النشطة لأيامها، أو أضف زيارة واحدة من الأسفل.", "Visits come from the active routes on their days, or add a single visit below.")</div>
+            </div></div>
+        }
+        @foreach (var g in groups)
+        {
+            var first = g.First();
+            var target = targets.TryGetValue(g.Key, out var t) ? t : 0m;
+            var achieved = g.Sum(v => v.OrderTotal);
+            var pct = target > 0 ? (int)Math.Min(100, Math.Round(achieved / target * 100)) : 0;
+            var done = g.Count(v => v.Status == "Done");
+            <div class="card card-flush mb-5">
+                <div class="card-header align-items-center py-4">
+                    <div class="card-title d-flex align-items-center gap-3">
+                        <div class="symbol symbol-40px symbol-circle">@if (!string.IsNullOrEmpty(first.RepPhoto)) { <img src="@Url.Content("~/People/Photo/" + g.Key)" alt="" /> } else { <span class="symbol-label bg-light-primary text-primary fw-bold">@(string.IsNullOrEmpty(first.Rep) ? "?" : first.Rep.Substring(0, 1))</span> }</div>
+                        <div><div class="fs-5 fw-bold text-gray-900">@first.Rep</div><div class="fs-7 text-muted">@(first.Route ?? L("زيارات منفردة", "One-off visits")) · @L($"{done} من {g.Count()} زيارات تمت", $"{done} of {g.Count()} visits done")</div></div>
+                    </div>
+                    <div class="card-toolbar" style="min-width:260px">
+                        <div class="w-100">
+                            <div class="d-flex justify-content-between fs-7 mb-1"><span class="text-muted">@L("الطلبيات مقابل الهدف", "Orders against target")</span><span class="fw-bold" dir="ltr">@achieved.ToString("N3") / @target.ToString("N3") @cur</span></div>
+                            <div class="progress h-6px bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@pct%"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                    <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th>@L("الوقت", "Time")</th><th>@L("العميل", "Customer")</th><th class="text-center">@L("الحالة", "Status")</th><th>@L("الوصول", "Arrived")</th><th class="text-end">@L("الطلبية", "Order")</th><th class="text-end">@L("المحصّل", "Collected")</th><th>@L("النتيجة", "Outcome")</th></tr></thead>
+                    <tbody>
+                    @foreach (var v in g)
+                    {
+                        <tr>
+                            <td dir="ltr" class="text-start">@(v.PlannedTime?.ToString(@"hh\:mm") ?? "—")</td>
+                            <td class="fw-semibold text-gray-900">@v.Customer</td>
+                            <td class="text-center"><span class="badge badge-light-@badge(v.Status)">@status(v.Status)</span></td>
+                            <td dir="ltr" class="text-start text-muted">@(v.ArrivedAt?.ToLocalTime().ToString("HH:mm") ?? "—")</td>
+                            <td class="text-end">@(v.OrderTotal > 0 ? v.OrderTotal.ToString("N3") : "—")</td>
+                            <td class="text-end">@(v.Collected > 0 ? v.Collected.ToString("N3") : "—")</td>
+                            <td class="text-muted fs-7">@(v.Outcome ?? "")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div></div>
+            </div>
+        }
+
+        <form method="post" asp-action="AddVisit" asp-controller="SalesRep" class="card card-flush" data-cb-confirm data-cb-action="save" data-cb-text="@L("إضافة الزيارة؟", "Add the visit?")">
+            @Html.AntiForgeryToken()
+            <div class="card-header"><div class="card-title"><h2>@L("زيارة منفردة", "Add a single visit")</h2></div></div>
+            <div class="card-body pt-2"><div class="row g-4 align-items-end">
+                <div class="col-md-3"><label class="required fw-semibold fs-7 mb-1">@L("المندوب", "Rep")</label><select name="repEmployeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@L("اختر", "Choose")</option>@foreach (var (id, name) in reps) { <option value="@id">@name</option> }</select></div>
+                <div class="col-md-4"><label class="required fw-semibold fs-7 mb-1">@L("العميل", "Customer")</label><select name="customerId" class="form-select form-select-solid" data-control="select2" required><option value="">@L("اختر", "Choose")</option>@foreach (var (id, name, addr) in customers) { <option value="@id">@name@(string.IsNullOrEmpty(addr) ? "" : " — " + addr)</option> }</select></div>
+                <div class="col-md-2"><label class="required fw-semibold fs-7 mb-1">@L("اليوم", "Day")</label><input type="date" name="date" class="form-control form-control-solid" value="@day.ToString("yyyy-MM-dd")" required /></div>
+                <div class="col-md-1"><label class="fw-semibold fs-7 mb-1">@L("الوقت", "Time")</label><input type="text" name="time" id="addTime" class="form-control form-control-solid" dir="ltr" placeholder="--:--" /></div>
+                <div class="col-md-2"><button type="submit" class="btn btn-light-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@L("إضافة", "Add")</button></div>
+            </div></div>
+        </form>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+if (window.flatpickr) flatpickr(document.getElementById('addTime'), { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, allowInput: true });
+</script>
+}

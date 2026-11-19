@@ -153,6 +153,9 @@
 				new() { LabelAr = "أوامر البيع", LabelEn = "Sales orders", Action = "SalesOrders", Controller = "Inventory" },
 				new() { LabelAr = "أذون الصرف", LabelEn = "Deliveries", Action = "Deliveries", Controller = "Inventory" },
 				new() { LabelAr = "فواتير المبيعات", LabelEn = "Sales invoices", Action = "SalesInvoices", Controller = "Accounting" },
+				// field sales (2026-11-18): the reps' routes and the day's visits — the web side of the mobile "today's visits"
+				new() { LabelAr = "مسارات المندوبين", LabelEn = "Sales-rep routes", Action = "Routes", Controller = "SalesRep", Perm = "manage", Aliases = new() { "RouteEditor" } },
+				new() { LabelAr = "زيارات المندوبين", LabelEn = "Rep visits", Action = "Visits", Controller = "SalesRep", Perm = "manage" },
 			}},
 			new() { LabelAr = "الحوكمة والإعداد", LabelEn = "Governance & setup", Icon = "ki-outline ki-shield-tick", Items = new()
 			{

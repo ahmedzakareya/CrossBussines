@@ -62,6 +62,8 @@ namespace CrossBuy.BL.Platform
             // HR0 (2026-11-11): the HR set-up tables, shared by every company until now.
             nameof(Hierarchical), nameof(JobTitle), nameof(LeaveTypes), nameof(Policies),
             nameof(LeavePolicies), nameof(AttendancePolicies), nameof(SalaryPolicies),
+            // sales-rep routes and visits (2026-11-18): a rep's plan and day are their company's alone
+            nameof(SalesRepRoute), nameof(SalesRepRouteStop), nameof(SalesRepVisit),
         };
 
         // The pilot membership test, used by B4's write guard so the read filter and the write guard cover exactly
@@ -145,6 +147,14 @@ namespace CrossBuy.BL.Platform
             builder.Entity<AttendancePolicies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
             builder.Entity<SalaryPolicies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+
+            // Sales-rep routes, their stops and the visits (2026-11-18).
+            builder.Entity<SalesRepRoute>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<SalesRepRouteStop>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<SalesRepVisit>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
 
             // Quotation holds ZERO rows live, so it is the one pilot entity where the filter cannot change any

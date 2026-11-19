@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/inventory_item.dart';
 import '../models/rep.dart';
 import '../services/api_service.dart';
+import '../services/app_nav.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
 
@@ -22,6 +23,8 @@ String balanceText(BuildContext context, double v, String cur) => v < 0
         ? L(context, 'لا مستحقات', 'Nothing owed')
         : '${L(context, 'المستحق ', 'Owes ')}${_m(context, v, cur)}';
 
+/// SALES-REP MODE (the owner's reference, "rep"): the mode bar with the route and the rep, and the mode's three tabs —
+/// today's visits, the customer at hand, and collecting from them.
 class RepModeScreen extends StatefulWidget {
   const RepModeScreen({super.key});
   @override
@@ -29,6 +32,144 @@ class RepModeScreen extends StatefulWidget {
 }
 
 class _RepModeScreenState extends State<RepModeScreen> {
+  late Future<RepDay> _day = ApiService.instance.getRepToday();
+  int _tab = 0;
+  int? _visitId;   // the visit the rep opened; otherwise the day's current one
+
+  void _reload() => setState(() => _day = ApiService.instance.getRepToday());
+
+  @override
+  void initState() {
+    super.initState();
+    AppNav.dataChanged.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    AppNav.dataChanged.removeListener(_reload);
+    super.dispose();
+  }
+
+  String _dayHead(BuildContext context, RepDay d) {
+    final n = DateTime.now();
+    final count = d.visits.length;
+    final visits = !isAr(context) ? '$count visits' : count == 1 ? 'زيارة واحدة' : count == 2 ? 'زيارتان' : count <= 10 ? '$count زيارات' : '$count زيارة';
+    return '${weekdayName(context, n.weekday)} ${dayMonth(context, n)} · $visits';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<RepDay>(
+      future: _day,
+      builder: (context, s) {
+        final d = s.data;
+        final sub = d == null ? '' : [d.routeName ?? L(context, 'بلا مسار اليوم', 'No route today'), d.rep].where((x) => x.isNotEmpty).join(' · ');
+        final current = d == null ? null : (d.visits.where((v) => v.id == _visitId).firstOrNull ?? d.current);
+        Widget body;
+        if (s.hasError) {
+          body = ExecBody(children: [EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل اليوم', 'Could not load the day'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+        } else if (d == null) {
+          body = const Center(child: CircularProgressIndicator());
+        } else if (_tab == 0) {
+          body = _visits(context, d);
+        } else if (current == null) {
+          body = ExecBody(children: [
+            EmptyNote(icon: Lu.store, title: L(context, 'لا زيارة مفتوحة', 'No open visit'), text: L(context, 'اختر زيارة من «زيارات اليوم»، أو ابحث عن عميل.', 'Pick a visit from "Today\'s visits", or search for a customer.')),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepCustomersScreen())), icon: const Icon(Lu.search, size: 16), label: Text(L(context, 'البحث عن عميل', 'Find a customer'))),
+          ]);
+        } else if (_tab == 1) {
+          body = CustomerVisitScreen(key: ValueKey('c${current.id}'), id: current.customerId, visitId: current.id, embedded: true, onChanged: _reload);
+        } else {
+          body = _CollectTab(key: ValueKey('k${current.id}'), visit: current, onDone: () { setState(() => _tab = 0); _reload(); });
+        }
+        return ExecFrame(
+          mode: _mode(context, sub),
+          bottomBar: ExecNav(
+            items: [(Lu.route, L(context, 'زيارات اليوم', "Today's visits")), (Lu.store, L(context, 'العميل', 'Customer')), (Lu.handCoins, L(context, 'تحصيل', 'Collect'))],
+            index: _tab,
+            onTap: (i) => setState(() => _tab = i),
+          ),
+          child: body,
+        );
+      },
+    );
+  }
+
+  Widget _visits(BuildContext context, RepDay d) {
+    final cur = d.currency;
+    final unit = curLabel(cur, isAr(context));
+    String leftText(int n) => !isAr(context) ? '$n left' : n == 0 ? 'لا زيارات متبقية' : n == 1 ? 'بقيت زيارة واحدة' : n == 2 ? 'بقيت زيارتان' : n <= 10 ? 'بقيت $n زيارات' : 'بقيت $n زيارة';
+    return ExecBody(
+      onRefresh: () async => _reload(),
+      children: [
+        PageHead(L(context, 'زيارات اليوم', "Today's visits"), eyebrow: _dayHead(context, d)),
+        FinancialCard(
+          label: L(context, 'هدف اليوم', "Today's target"),
+          icon: Lu.target,
+          amount: Amount(money(d.achieved, cur), unit),
+          note: [
+            if (d.target > 0) L(context, 'من ${money(d.target, cur)}', 'of ${money(d.target, cur)}') else L(context, 'لا هدف محدد', 'No target set'),
+            leftText(d.left),
+          ].join(' · '),
+        ),
+        SectionHeading(L(context, 'خط السير', 'The route')),
+        if (d.visits.isEmpty)
+          EmptyNote(icon: Lu.route, title: L(context, 'لا زيارات اليوم', 'No visits today'), text: L(context, 'يرتّب مديرك مسارك من شاشة «مسارات المندوبين»؛ ويمكنك البحث عن أي عميل.', 'Your manager plans your route in "Sales-rep routes"; you can still find any customer.'))
+        else
+          DataList(children: [
+            for (final v in d.visits)
+              ItemRow(
+                leading: IconBox(icon: v.status == 'Done' ? Lu.circleCheck : v.status == 'Skipped' ? Lu.circleX : Lu.mapPin, fg: v.status == 'Skipped' ? Brand.badC : Brand.support),
+                title: v.customer,
+                subtitle: [
+                  if ((v.address ?? '').isNotEmpty) v.address!,
+                  if (v.plannedTime != null) v.plannedTime!,
+                  if (v.status == 'Done') L(context, 'تمت', 'done')
+                  else if (v.status == 'Skipped') (v.outcome ?? L(context, 'لم تتم', 'skipped'))
+                  else if (v.outstanding > 0) L(context, 'مستحق ${money(v.outstanding, cur)}', 'owes ${money(v.outstanding, cur)}'),
+                ].join(' · '),
+                end: v.status == 'Done'
+                    ? Tag.ok(L(context, 'تمت', 'Done'))
+                    : v.status == 'Skipped'
+                        ? Tag.bad(L(context, 'لم تتم', 'Skipped'))
+                        : v.status == 'Arrived' ? Tag.info(L(context, 'هنا الآن', 'Here now')) : null,
+                onTap: v.open ? () => setState(() { _visitId = v.id; _tab = 1; }) : null,
+              ),
+          ]),
+        const SizedBox(height: 12),
+        TextButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepCustomersScreen())), icon: const Icon(Lu.search, size: 16), label: Text(L(context, 'البحث عن عميل خارج المسار', 'Find a customer off the route'))),
+      ],
+    );
+  }
+}
+
+/// The collect tab: the visit's customer loaded, then the collection screen in place.
+class _CollectTab extends StatelessWidget {
+  final RepVisit visit;
+  final VoidCallback onDone;
+  const _CollectTab({super.key, required this.visit, required this.onDone});
+  @override
+  Widget build(BuildContext context) => FutureBuilder<(RepCustomer, String, bool, bool, List<OpenInvoice>)>(
+        future: ApiService.instance.getRepCustomer(visit.customerId),
+        builder: (context, s) {
+          if (s.hasError) return ExecBody(children: [EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل العميل', 'Could not load the customer'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final (c, cur, _, canCollect, invoices) = s.data!;
+          if (!canCollect) return ExecBody(children: [EmptyNote(icon: Lu.lock, title: L(context, 'لا تملك صلاحية التحصيل', 'You may not collect'), text: L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.'))]);
+          return RepCollectScreen(customer: c, currency: cur, invoice: invoices.isEmpty ? null : invoices.first, visitId: visit.id, embedded: true, onDone: onDone);
+        },
+      );
+}
+
+/// Find any customer (off the route): search and paging; opening one shows the card.
+class RepCustomersScreen extends StatefulWidget {
+  const RepCustomersScreen({super.key});
+  @override
+  State<RepCustomersScreen> createState() => _RepCustomersScreenState();
+}
+
+class _RepCustomersScreenState extends State<RepCustomersScreen> {
   final _q = TextEditingController();
   final List<RepCustomer> _rows = [];
   String _cur = '';
@@ -68,6 +209,7 @@ class _RepModeScreenState extends State<RepModeScreen> {
       child: ExecBody(
         onRefresh: () => _load(reset: true),
         children: [
+          BackLink(L(context, 'زيارات اليوم', "Today's visits")),
           PageHead(L(context, 'العملاء', 'Customers'), eyebrow: _total == 0 ? null : L(context, '$_total عميل', '$_total customers')),
           TextField(
             controller: _q, textInputAction: TextInputAction.search, onSubmitted: (_) => _load(reset: true),
@@ -103,7 +245,10 @@ class _RepModeScreenState extends State<RepModeScreen> {
 /// collect, call, location) and the open invoices; tapping one collects against it.
 class CustomerVisitScreen extends StatefulWidget {
   final int id;
-  const CustomerVisitScreen({super.key, required this.id});
+  final int? visitId;          // opened from today's visits: the arrival is recorded, orders count toward the target
+  final bool embedded;         // shown inside the mode's "customer" tab (no frame, no back link)
+  final VoidCallback? onChanged;
+  const CustomerVisitScreen({super.key, required this.id, this.visitId, this.embedded = false, this.onChanged});
   @override
   State<CustomerVisitScreen> createState() => _CustomerVisitScreenState();
 }
@@ -111,7 +256,40 @@ class CustomerVisitScreen extends StatefulWidget {
 class _CustomerVisitScreenState extends State<CustomerVisitScreen> {
   late Future<(RepCustomer, String, bool, bool, List<OpenInvoice>)> _f = ApiService.instance.getRepCustomer(widget.id);
 
-  void _reload() => setState(() => _f = ApiService.instance.getRepCustomer(widget.id));
+  DateTime? _arrived;
+
+  void _reload() {
+    setState(() => _f = ApiService.instance.getRepCustomer(widget.id));
+    widget.onChanged?.call();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.visitId != null) {
+      ApiService.instance.arriveVisit(widget.visitId!).then((t) { if (mounted && t != null) setState(() => _arrived = t); });
+    }
+  }
+
+  Widget _frame(BuildContext context, Widget child, [String sub = '']) => widget.embedded ? child : ExecFrame(mode: _mode(context, sub), child: child);
+
+  Future<void> _close(BuildContext context, bool skipped) async {
+    final c = TextEditingController();
+    final note = await showDialog<String?>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(skipped ? L(context, 'لم تتم الزيارة', 'Visit not made') : L(context, 'إنهاء الزيارة', 'End the visit'), style: T.h2),
+        content: TextField(controller: c, autofocus: true, maxLines: 2, decoration: InputDecoration(labelText: skipped ? L(context, 'السبب', 'Reason') : L(context, 'ملاحظة (اختياري)', 'Note (optional)'))),
+        actions: [FilledButton(onPressed: () => Navigator.pop(d, c.text.trim()), child: Text(L(context, 'حفظ', 'Save')))],
+      ),
+    );
+    if (note == null) return;
+    final err = await ApiService.instance.closeVisit(widget.visitId!, skipped: skipped, outcome: note.isEmpty ? null : note);
+    if (!context.mounted) return;
+    if (err != null) return _no(context, skipped && note.isEmpty ? L(context, 'اذكر سبب عدم إتمام الزيارة', 'Say why the visit was not made') : err);
+    widget.onChanged?.call();
+    if (!widget.embedded) Navigator.of(context).maybePop();
+  }
 
   Future<void> _launch(Uri uri, String failAr, String failEn) async {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) => false);
@@ -123,26 +301,27 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen> {
     return FutureBuilder<(RepCustomer, String, bool, bool, List<OpenInvoice>)>(
       future: _f,
       builder: (context, s) {
-        final back = BackLink(L(context, 'العملاء', 'Customers'));
-        if (s.hasError) return ExecFrame(mode: _mode(context), child: ExecBody(children: [back, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل العميل', 'Could not load the customer'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]));
-        if (!s.hasData) return ExecFrame(mode: _mode(context), child: const Center(child: CircularProgressIndicator()));
+        final Widget back = widget.embedded ? const SizedBox.shrink() : BackLink(L(context, 'العملاء', 'Customers'));
+        if (s.hasError) return _frame(context, ExecBody(children: [back, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل العميل', 'Could not load the customer'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]));
+        if (!s.hasData) return _frame(context, const Center(child: CircularProgressIndicator()));
         final (c, cur, canOrder, canCollect, invoices) = s.data!;
         final unit = curLabel(cur, isAr(context));
         final credit = c.outstanding < 0;
         final late = invoices.where((i) => i.overdueDays > 0).toList()..sort((a, b) => b.overdueDays - a.overdueDays);
         Future<void> collect([OpenInvoice? inv]) async {
           if (!canCollect) return _no(context, L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.'));
-          await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepCollectScreen(customer: c, currency: cur, invoice: inv ?? (invoices.isEmpty ? null : invoices.first))));
+          await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepCollectScreen(customer: c, currency: cur, invoice: inv ?? (invoices.isEmpty ? null : invoices.first), visitId: widget.visitId)));
           _reload();
         }
 
-        return ExecFrame(
-          mode: _mode(context, c.name),
-          child: ExecBody(
+        final arrived = _arrived == null ? '' : L(context, 'وصلت ${_hm(_arrived!)}', 'arrived ${_hm(_arrived!)}');
+        return _frame(
+          context,
+          ExecBody(
             onRefresh: () async => _reload(),
             children: [
               back,
-              PageHead(c.name, eyebrow: c.address),
+              PageHead(c.name, eyebrow: [if ((c.address ?? '').isNotEmpty) c.address!, if (arrived.isNotEmpty) arrived].join(' · ')),
               FinancialCard(
                 label: credit ? L(context, 'رصيد دائن للعميل', 'Customer in credit') : L(context, 'المستحق على العميل', 'Owed by the customer'),
                 icon: Lu.store,
@@ -163,7 +342,7 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen> {
                   child: QuickTile(
                     icon: Lu.shoppingBasket,
                     label: L(context, 'طلبية', 'Order'),
-                    onTap: canOrder ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepOrderScreen(customer: c, currency: cur))); _reload(); } : () => _no(context, L(context, 'أخذ الطلبيات لمدير المخزون أو أمين المخزن.', 'Orders are for an inventory manager or warehouse keeper.')),
+                    onTap: canOrder ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RepOrderScreen(customer: c, currency: cur, visitId: widget.visitId))); _reload(); } : () => _no(context, L(context, 'أخذ الطلبيات لمدير المخزون أو أمين المخزن.', 'Orders are for an inventory manager or warehouse keeper.')),
                   ),
                 ),
                 Expanded(child: QuickTile(icon: Lu.handCoins, label: L(context, 'تحصيل', 'Collect'), onTap: () => collect())),
@@ -202,12 +381,23 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen> {
                       onTap: () => collect(i),
                     ),
                 ]),
+              if (widget.visitId != null) ...[
+                const SizedBox(height: 16),
+                Row(children: [
+                  Expanded(child: FilledButton(onPressed: () => _close(context, false), child: Text(L(context, 'إنهاء الزيارة', 'End the visit')))),
+                  const SizedBox(width: 9),
+                  Expanded(child: OutlinedButton(onPressed: () => _close(context, true), child: Text(L(context, 'لم تتم الزيارة', 'Visit not made')))),
+                ]),
+              ],
             ],
           ),
+          c.name,
         );
       },
     );
   }
+
+  String _hm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   void _no(BuildContext context, String why) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(why)));
 }
@@ -233,7 +423,8 @@ Widget _money(double v, String cur) {
 class RepOrderScreen extends StatefulWidget {
   final RepCustomer customer;
   final String currency;
-  const RepOrderScreen({super.key, required this.customer, required this.currency});
+  final int? visitId;   // taken at a visit: its value counts toward the day's target (recorded by the server)
+  const RepOrderScreen({super.key, required this.customer, required this.currency, this.visitId});
   @override
   State<RepOrderScreen> createState() => _RepOrderScreenState();
 }
@@ -271,7 +462,7 @@ class _RepOrderScreenState extends State<RepOrderScreen> {
 
   Future<void> _save() async {
     setState(() => _busy = true);
-    final (ok, msg, warn) = await ApiService.instance.saveOrder(widget.customer.id, _qty, notes: 'mobile');
+    final (ok, msg, warn) = await ApiService.instance.saveOrder(widget.customer.id, _qty, notes: 'mobile', visitId: widget.visitId);
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? '${L(context, 'حُفظت الطلبية ', 'Order saved ')}${msg ?? ''}${warn == null ? '' : ' — $warn'}' : (msg ?? L(context, 'تعذّر حفظ الطلبية', 'The order could not be saved')))));
@@ -368,7 +559,10 @@ class RepCollectScreen extends StatefulWidget {
   final RepCustomer customer;
   final String currency;
   final OpenInvoice? invoice;
-  const RepCollectScreen({super.key, required this.customer, required this.currency, this.invoice});
+  final int? visitId;          // collected at a visit: the visit records the amount and is done
+  final bool embedded;         // shown inside the mode's "collect" tab
+  final VoidCallback? onDone;
+  const RepCollectScreen({super.key, required this.customer, required this.currency, this.invoice, this.visitId, this.embedded = false, this.onDone});
   @override
   State<RepCollectScreen> createState() => _RepCollectScreenState();
 }
@@ -403,7 +597,11 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? L(context, 'صدر سند القبض', 'Receipt issued') : (err ?? L(context, 'تعذّر إصدار السند', 'The receipt could not be issued')))));
-    if (ok) Navigator.of(context).pop();
+    if (!ok) return;
+    if (widget.visitId != null) await ApiService.instance.visitCollected(widget.visitId!, _amount);
+    if (!mounted) return;
+    widget.onDone?.call();
+    if (!widget.embedded) Navigator.of(context).pop();
   }
 
   @override
@@ -411,12 +609,10 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
     final c = widget.customer;
     final cur = widget.currency;
     final unit = curLabel(cur, isAr(context));
-    return ExecFrame(
-      mode: _mode(context, c.name),
-      child: FutureBuilder<List<CashAccount>>(
+    final body = FutureBuilder<List<CashAccount>>(
         future: _accounts,
         builder: (context, s) {
-          final head = [BackLink(c.name), PageHead(L(context, 'تحصيل', 'Collect'), eyebrow: L(context, 'سند قبض', 'Receipt voucher'))];
+          final head = [if (!widget.embedded) BackLink(c.name), PageHead(L(context, 'تحصيل', 'Collect'), eyebrow: widget.embedded ? '${L(context, 'سند قبض', 'Receipt voucher')} · ${c.name}' : L(context, 'سند قبض', 'Receipt voucher'))];
           if (s.hasError) return ExecBody(children: [...head, EmptyNote(icon: Lu.lock, title: L(context, 'لا تملك صلاحية التحصيل', 'You may not collect'), text: L(context, 'التحصيل لمن يملك صلاحية الدفع في الحسابات.', 'Collections need the accounting pay permission.'))]);
           if (!s.hasData) return const Center(child: CircularProgressIndicator());
           final accs = s.data!;
@@ -459,7 +655,7 @@ class _RepCollectScreenState extends State<RepCollectScreen> {
             Text(L(context, 'يُرحَّل السند في الحسابات فور إصداره ويُخصم من مستحقات العميل.', 'The voucher posts to the accounts at once and reduces what the customer owes.'), textAlign: TextAlign.center, style: T.small),
           ]);
         },
-      ),
     );
+    return widget.embedded ? body : ExecFrame(mode: _mode(context, c.name), child: body);
   }
 }

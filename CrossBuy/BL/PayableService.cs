@@ -721,6 +721,10 @@ namespace CrossBuy.BL
 			var vendors = await _context.Vendors.AsNoTracking().Where(v => v.CompanyID == companyId).ToListAsync();
 			var invoices = await _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == "Posted").ToListAsync();
 			var payments = await _context.Payments.AsNoTracking().Where(p => p.CompanyID == companyId && p.Status == "Posted").ToListAsync();
+			// a posted purchase return is a credit from the vendor exactly like a payment: apply both, oldest invoice first,
+			// so the aging never shows as owed what has already been returned
+			var returns = await _context.PurchaseReturns.AsNoTracking().Where(s => s.CompanyID == companyId && s.Status == "Posted")
+				.Select(s => new { s.VendorId, Amount = s.GrandTotalBase ?? s.GrandTotal }).ToListAsync();
 
 			var rows = new List<AgingRow>();
 			foreach (var v in vendors)
@@ -728,7 +732,8 @@ namespace CrossBuy.BL
 				var venInv = invoices.Where(i => i.VendorId == v.ID).OrderBy(i => i.InvoiceDate).ToList();
 				if (venInv.Count == 0) continue;
 				// Multi-Currency: age in the functional currency (base columns)
-				var paid = payments.Where(p => p.VendorId == v.ID).Sum(p => p.AmountBase ?? p.Amount);
+				var paid = payments.Where(p => p.VendorId == v.ID).Sum(p => p.AmountBase ?? p.Amount)
+					+ returns.Where(s => s.VendorId == v.ID).Sum(s => s.Amount);
 				var row = new AgingRow { PartyId = v.ID, Name = (isEn && !string.IsNullOrWhiteSpace(v.NameEn)) ? v.NameEn! : v.Name };
 				foreach (var inv in venInv)
 				{

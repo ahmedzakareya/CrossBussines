@@ -868,6 +868,10 @@ namespace CrossBuy.BL
 			var customers = await _context.Customers.AsNoTracking().Where(c => c.CompanyID == companyId).ToListAsync();
 			var invoices = await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == "Posted").ToListAsync();
 			var receipts = await _context.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.Status == "Posted").ToListAsync();
+			// a posted sales return is a credit to the customer exactly like a receipt: CustomerOutstandingAsync subtracts both,
+			// so the aging applies both, oldest invoice first — otherwise a customer with returns is aged on more than is owed
+			var returns = await _context.SalesReturns.AsNoTracking().Where(s => s.CompanyID == companyId && s.Status == "Posted")
+				.Select(s => new { s.CustomerId, Amount = s.GrandTotalBase ?? s.GrandTotal }).ToListAsync();
 
 			var rows = new List<AgingRow>();
 			foreach (var c in customers)
@@ -875,7 +879,8 @@ namespace CrossBuy.BL
 				var custInv = invoices.Where(i => i.CustomerId == c.ID).OrderBy(i => i.InvoiceDate).ToList();
 				if (custInv.Count == 0) continue;
 				// Multi-Currency: age in the functional currency (base columns)
-				var paid = receipts.Where(r => r.CustomerId == c.ID).Sum(r => r.AmountBase ?? r.Amount);
+				var paid = receipts.Where(r => r.CustomerId == c.ID).Sum(r => r.AmountBase ?? r.Amount)
+					+ returns.Where(s => s.CustomerId == c.ID).Sum(s => s.Amount);
 
 				// FIFO: apply receipts to the oldest invoices first
 				var row = new AgingRow { PartyId = c.ID, Name = (isEn && !string.IsNullOrWhiteSpace(c.NameEn)) ? c.NameEn! : c.Name };

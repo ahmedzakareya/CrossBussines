@@ -2,6 +2,15 @@
 
 double _d(dynamic v) => (v as num?)?.toDouble() ?? 0;
 
+/// The server stores times in UTC and sends them back without a zone ("2026-11-19T04:43:10"); read such a value as
+/// UTC and show it in the phone's own time, so "arrived 07:43" is the time on the rep's watch.
+DateTime? utcFromServer(dynamic v) {
+  if (v == null) return null;
+  final s = v.toString();
+  final zoned = s.endsWith('Z') || RegExp(r'[+-]\d\d:\d\d$').hasMatch(s);
+  return DateTime.tryParse(zoned ? s : '${s}Z')?.toLocal();
+}
+
 class RepCustomer {
   final int id;
   final String name;
@@ -75,4 +84,37 @@ class CashAccount {
   final String code, name;
   CashAccount({required this.id, required this.code, required this.name});
   factory CashAccount.fromJson(Map<String, dynamic> j) => CashAccount(id: j['id'] ?? 0, code: j['code']?.toString() ?? '', name: j['name']?.toString() ?? '');
+}
+
+/// One stop of the rep's day (GET /api/rep/today).
+class RepVisit {
+  final int id, customerId;
+  final String customer, status;   // Planned | Arrived | Done | Skipped
+  final String? address, plannedTime, outcome;
+  final DateTime? arrivedAt;
+  final double orderTotal, collected, outstanding;
+  RepVisit({required this.id, required this.customerId, required this.customer, required this.status, this.address, this.plannedTime, this.outcome, this.arrivedAt, this.orderTotal = 0, this.collected = 0, this.outstanding = 0});
+  bool get open => status == 'Planned' || status == 'Arrived';
+  factory RepVisit.fromJson(Map<String, dynamic> j) => RepVisit(
+        id: j['id'] ?? 0, customerId: j['customerId'] ?? 0, customer: j['customer']?.toString() ?? '', status: j['status']?.toString() ?? 'Planned',
+        address: j['address']?.toString(), plannedTime: j['plannedTime']?.toString(), outcome: j['outcome']?.toString(),
+        arrivedAt: utcFromServer(j['arrivedAt']),
+        orderTotal: _d(j['orderTotal']), collected: _d(j['collected']), outstanding: _d(j['outstanding']));
+}
+
+/// The rep's day: the route and its target, what the day's orders achieved, and the visits in order.
+class RepDay {
+  final String currency, rep;
+  final String? routeName;
+  final double target, achieved, collected;
+  final int left;
+  final List<RepVisit> visits;
+  RepDay({required this.currency, required this.rep, this.routeName, this.target = 0, this.achieved = 0, this.collected = 0, this.left = 0, this.visits = const []});
+  factory RepDay.fromJson(Map<String, dynamic> j) => RepDay(
+        currency: j['currency']?.toString() ?? '', rep: j['rep']?.toString() ?? '',
+        routeName: (j['route'] as Map?)?['name']?.toString(), target: _d((j['route'] as Map?)?['target']),
+        achieved: _d(j['achieved']), collected: _d(j['collected']), left: j['left'] ?? 0,
+        visits: [for (final v in (j['visits'] as List? ?? [])) RepVisit.fromJson(v as Map<String, dynamic>)]);
+  /// The visit the rep is at, or the next one due.
+  RepVisit? get current => visits.where((v) => v.status == 'Arrived').firstOrNull ?? visits.where((v) => v.status == 'Planned').firstOrNull;
 }

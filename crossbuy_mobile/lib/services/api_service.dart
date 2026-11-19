@@ -345,8 +345,46 @@ class ApiService {
     );
   }
 
-  Map<String, dynamic> _order(int customerId, Map<int, double> qty, String? notes) => {
-        'customerId': customerId, 'notes': notes,
+  /// The rep's day: route, target, achievement and the visits (generated from the route on first read).
+  Future<RepDay> getRepToday() async {
+    final res = await _dio.get('/api/rep/today');
+    return RepDay.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// Mark the arrival at a visit (the first arrival is kept). Returns the arrival time, or null.
+  Future<DateTime?> arriveVisit(int visitId) async {
+    try {
+      final res = await _dio.post('/api/rep/visits/$visitId/arrive');
+      return utcFromServer(res.data?['arrivedAt']);
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// Record a collection made at a visit (the receipt itself is posted through the accounting API).
+  Future<void> visitCollected(int visitId, double amount) async {
+    try {
+      await _dio.post('/api/rep/visits/$visitId/collected', data: {'amount': amount});
+      AppNav.notifyDataChanged();
+    } on DioException {
+      // the receipt is posted; only the visit's tally is missing — the day reloads from the server anyway
+    }
+  }
+
+  /// End a visit (done, with an optional note) or skip it with the reason. Returns the server's refusal, or null.
+  Future<String?> closeVisit(int visitId, {required bool skipped, String? outcome}) async {
+    try {
+      await _dio.post('/api/rep/visits/$visitId/close', data: {'skipped': skipped, 'outcome': outcome});
+      AppNav.notifyDataChanged();
+      return null;
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return d is Map ? d['message'] as String? ?? 'error' : 'error';
+    }
+  }
+
+  Map<String, dynamic> _order(int customerId, Map<int, double> qty, String? notes, {int? visitId}) => {
+        'customerId': customerId, 'notes': notes, if (visitId != null) 'visitId': visitId,
         'lines': [for (final e in qty.entries) {'itemId': e.key, 'qty': e.value}],
       };
 
@@ -362,9 +400,9 @@ class ApiService {
   }
 
   /// (ok, order number or the refusal, a margin/discount warning)
-  Future<(bool, String?, String?)> saveOrder(int customerId, Map<int, double> qty, {String? notes}) async {
+  Future<(bool, String?, String?)> saveOrder(int customerId, Map<int, double> qty, {String? notes, int? visitId}) async {
     try {
-      final res = await _dio.post('/api/rep/order', data: _order(customerId, qty, notes));
+      final res = await _dio.post('/api/rep/order', data: _order(customerId, qty, notes, visitId: visitId));
       AppNav.notifyDataChanged();
       return (true, res.data['orderNo'] as String?, res.data['warning'] as String?);
     } on DioException catch (e) {

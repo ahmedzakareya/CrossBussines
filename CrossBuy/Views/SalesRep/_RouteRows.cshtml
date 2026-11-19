@@ -1,0 +1,26 @@
+@model List<CrossBuy.BL.SalesRepRouteService.RouteRow>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+}
+@foreach (var r in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-900">@r.Name</td>
+        <td>
+            <div class="d-flex align-items-center gap-2">
+                <div class="symbol symbol-30px symbol-circle">
+                    @if (!string.IsNullOrEmpty(r.RepPhoto)) { <img src="@Url.Content("~/People/Photo/" + r.RepId)" alt="" /> }
+                    else { <span class="symbol-label bg-light-primary text-primary fw-bold">@(string.IsNullOrEmpty(r.Rep) ? "?" : r.Rep.Substring(0, 1))</span> }
+                </div>
+                <span>@r.Rep</span>
+            </div>
+        </td>
+        <td class="text-center">@r.Stops</td>
+        <td class="text-end">@r.DailyTarget.ToString("N3")</td>
+        <td class="text-center"><span class="badge badge-light-@(r.IsActive ? "primary" : "secondary")">@(r.IsActive ? L("نشط", "Active") : L("موقوف", "Inactive"))</span></td>
+        <td class="text-end">
+            <a href="@Url.Action("RouteEditor","SalesRep", new { id = r.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@L("تعديل", "Edit")"><i class="ki-outline ki-pencil fs-5"></i></a>
+        </td>
+    </tr>
+}

@@ -1,6 +1,7 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context;
+using CrossBuy.Models.Context.Inventory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -127,7 +128,7 @@ namespace CrossBuy.Controllers.Api
 				.Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
 
 		public sealed class OrderLineDto { public int ItemId { get; set; } public decimal Qty { get; set; } }
-		public sealed class OrderDto { public int CustomerId { get; set; } public int? WarehouseId { get; set; } public string? Notes { get; set; } public List<OrderLineDto> Lines { get; set; } = new(); }
+		public sealed class OrderDto { public int CustomerId { get; set; } public int? WarehouseId { get; set; } public string? Notes { get; set; } public List<OrderLineDto> Lines { get; set; } = new(); public int? VisitId { get; set; } }
 
 		// Prices every line for the customer (server-side), so the preview and the saved order are the same computation.
 		private async Task<(List<SoLineInput> lines, List<object> view, decimal total, string? block, string? warn)> PriceAsync(int companyId, OrderDto dto)
@@ -189,7 +190,99 @@ namespace CrossBuy.Controllers.Api
 			if (block != null) return BadRequest(new { success = false, message = block });
 			var (ok, err, so) = await _sell.CreateSalesOrderAsync(ctx.CompanyId, dto.CustomerId, dto.WarehouseId, DateTime.Today, null, dto.Notes, lines, null);
 			if (!ok || so == null) return BadRequest(new { success = false, message = err });
+			// taken at a visit: the order's value is the visit's — and the day's achievement against the route's target
+			if (dto.VisitId is int visitId && ctx.EmployeeId is int rep)
+				await new SalesRepRouteService(_db).RecordOrderAsync(ctx.CompanyId, rep, visitId, so.ID, so.GrandTotal, ct);
 			return Ok(new { success = true, id = so.ID, orderNo = so.OrderNo, total = so.GrandTotal, warning = warn });
+		}
+
+		// ---------------- TODAY'S VISITS (the prototype's "rep" page) ----------------
+		// The signed-in rep's own day: their route, its daily target and what the day's orders achieved, and the visits in
+		// order — each with the customer's card facts. A rep only ever reads and moves THEIR visits (RepEmployeeID is the
+		// caller's employee); there is no visit id a caller can use to reach another rep's day.
+
+		private async Task<(CrossBuy.Models.Platform.BusinessContext? ctx, int rep)> RepAsync(CancellationToken ct)
+		{
+			var ctx = await _context.TryGetCurrentAsync(ct);
+			return ctx is { CompanyId: > 0, EmployeeId: int e } ? (ctx, e) : (null, 0);
+		}
+
+		// GET /api/rep/today?date= — the day (today by default), generated from the rep's active routes the first time
+		[HttpGet("today")]
+		public async Task<IActionResult> Today(DateTime? date = null, CancellationToken ct = default)
+		{
+			var auth = await _guard.AuthorizeAsync("read", null, ct);   // the same gate as the rest of the rep API
+			if (!auth.Ok) return auth.Error!;
+			var (ctx, rep) = await RepAsync(ct);
+			if (ctx == null) return StatusCode(403, new { success = false, message = "You do not have permission to perform this action" });
+			var svc = new SalesRepRouteService(_db);
+			var day = (date ?? DateTime.Today).Date;
+			var visits = await svc.DayAsync(ctx.CompanyId, rep, day, ct);
+			var route = await svc.RouteOfAsync(ctx.CompanyId, rep, ct);
+			var custIds = visits.Select(v => v.CustomerID).Distinct().ToList();
+			var custs = await _db.Customers.AsNoTracking().Where(c => custIds.Contains(c.ID) && c.CompanyID == ctx.CompanyId).ToDictionaryAsync(c => c.ID, ct);
+			var me = await _db.Employee.AsNoTracking().Where(e => e.ID == rep).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
+			var rows = new List<object>();
+			foreach (var v in visits)
+			{
+				var c = custs.GetValueOrDefault(v.CustomerID);
+				rows.Add(new
+				{
+					id = v.ID, customerId = v.CustomerID, customer = c == null ? "" : Pick(c.Name, c.NameEn), address = c?.Address,
+					plannedTime = v.PlannedTime?.ToString(@"hh\:mm"), status = v.Status, arrivedAt = v.ArrivedAt, completedAt = v.CompletedAt,
+					orderTotal = v.OrderTotal, collected = v.Collected, outcome = v.Outcome,
+					outstanding = c == null ? 0 : await _ar.CustomerOutstandingAsync(ctx.CompanyId, c.ID),
+				});
+			}
+			return Ok(new
+			{
+				success = true, currency = await CurrencyCodeAsync(ctx.CompanyId), date = day,
+				rep = me == null ? "" : Pick(me.FullName, me.FullNameEn),
+				route = route == null ? null : new { id = route.ID, name = Pick(route.Name, route.NameEn), target = route.DailyTarget },
+				achieved = visits.Sum(v => v.OrderTotal), collected = visits.Sum(v => v.Collected),
+				left = visits.Count(v => v.Status is SalesRepVisit.Planned or SalesRepVisit.Arrived),
+				visits = rows,
+			});
+		}
+
+		// POST /api/rep/visits/{id}/arrive — the rep reached the customer (the first arrival is kept)
+		[HttpPost("visits/{id:int}/arrive")]
+		public async Task<IActionResult> Arrive(int id, CancellationToken ct = default)
+		{
+			var auth = await _guard.AuthorizeAsync("read", null, ct);   // the same gate as the rest of the rep API
+			if (!auth.Ok) return auth.Error!;
+			var (ctx, rep) = await RepAsync(ct);
+			if (ctx == null) return StatusCode(403, new { success = false, message = "You do not have permission to perform this action" });
+			var (ok, err, v) = await new SalesRepRouteService(_db).ArriveAsync(ctx.CompanyId, rep, id, ct);
+			return ok ? Ok(new { success = true, arrivedAt = v!.ArrivedAt, status = v.Status }) : NotFound(new { success = false, message = err });
+		}
+
+		public sealed class CollectedDto { public decimal Amount { get; set; } }
+
+		// POST /api/rep/visits/{id}/collected — a collection made at the visit (the receipt was posted by the accounting API)
+		[HttpPost("visits/{id:int}/collected")]
+		public async Task<IActionResult> Collected(int id, [FromBody] CollectedDto dto, CancellationToken ct = default)
+		{
+			var auth = await _guard.AuthorizeAsync("read", null, ct);   // the same gate as the rest of the rep API
+			if (!auth.Ok) return auth.Error!;
+			var (ctx, rep) = await RepAsync(ct);
+			if (ctx == null || dto == null) return StatusCode(403, new { success = false, message = "You do not have permission to perform this action" });
+			var (ok, err) = await new SalesRepRouteService(_db).RecordCollectionAsync(ctx.CompanyId, rep, id, dto.Amount, ct);
+			return ok ? Ok(new { success = true }) : BadRequest(new { success = false, message = err });
+		}
+
+		public sealed class CloseDto { public bool Skipped { get; set; } public string? Outcome { get; set; } }
+
+		// POST /api/rep/visits/{id}/close — end the visit with what happened, or skip it with the reason
+		[HttpPost("visits/{id:int}/close")]
+		public async Task<IActionResult> Close(int id, [FromBody] CloseDto dto, CancellationToken ct = default)
+		{
+			var auth = await _guard.AuthorizeAsync("read", null, ct);   // the same gate as the rest of the rep API
+			if (!auth.Ok) return auth.Error!;
+			var (ctx, rep) = await RepAsync(ct);
+			if (ctx == null || dto == null) return StatusCode(403, new { success = false, message = "You do not have permission to perform this action" });
+			var (ok, err) = await new SalesRepRouteService(_db).CloseAsync(ctx.CompanyId, rep, id, dto.Skipped, dto.Outcome, ct);
+			return ok ? Ok(new { success = true }) : BadRequest(new { success = false, message = err });
 		}
 
 		// GET /api/rep/cash-accounts — where a collection may be received (the same cash & bank accounts as the web
