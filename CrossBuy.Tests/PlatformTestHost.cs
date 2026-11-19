@@ -68,6 +68,27 @@ namespace CrossBuy.Tests
             return new CrossBuy.Models.Context.CrossDbContext(options, scope ?? Holder);
         }
 
+        // SEEDS A ROW EF ITSELF REFUSES TO WRITE. Employee.EmpCompanyID is a non-nullable REQUIRED foreign
+        // key, so the change tracker reads 0 as "not yet known" and waits for a principal that never
+        // arrives: "The value of 'Employee.EmpCompanyID' is unknown when attempting to save changes."
+        // The orphan row the company guards exist for therefore cannot be created through EF at all, and
+        // nine tests across four files were failing on the SEEDING, never reaching what they assert.
+        //
+        // Referential integrity is already OFF on this connection (see the constructor), so the honest way
+        // to construct the state is to seed the employee legally and then break the column directly. That
+        // is what a real database holds after a company FK is added WITH NOCHECK: the constraint binds new
+        // rows while the existing violations stay behind it.
+        //
+        // Measured against CrossBuyDB2 on 2026-11-10: the FK is present and 0 of 21 employees are orphaned,
+        // so this is a legacy/defence-in-depth state rather than a routine one - which is the reason to keep
+        // the guards rather than delete them as unreachable.
+        public void MakeEmployeeCompanyless(int employeeId)
+        {
+            Db.Database.ExecuteSqlRaw("UPDATE Employee SET EmpCompanyID = 0 WHERE ID = {0}", employeeId);
+            Db.ChangeTracker.Clear();   // else the caller reads back the value it just tracked, not the broken one
+            _seed?.ChangeTracker.Clear();   // Seed is a second context over the SAME connection and tracks it too
+        }
+
         // B2 — a SECOND request scope over the same database: its own holder, its own filtered context.
         //
         // Before B2, a test could simulate "the same operation as company 2" by passing a BusinessContext naming

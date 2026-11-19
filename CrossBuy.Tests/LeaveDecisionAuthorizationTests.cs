@@ -219,9 +219,8 @@ namespace CrossBuy.Tests
 
             // the only row that carries this request's company loses it too, so the company predicate
             // alone would MATCH - which is exactly why the context guard has to exist on its own
-            var emp = await rig.Host.Db.Employee.FirstAsync(e => e.ID == Requester);
-            emp.EmpCompanyID = 0;
-            await rig.Host.Db.SaveChangesAsync();
+            // Through raw SQL, because EF refuses to persist a required FK set to 0 - see MakeEmployeeCompanyless.
+            rig.Host.MakeEmployeeCompanyless(Requester);
 
             var (ok, _) = await rig.DecideAs(Manager1, req.ID, Manager1, approve: true, companyOverride: 0);
 
@@ -457,15 +456,15 @@ namespace CrossBuy.Tests
             var db = rig.Host.Seed;
             foreach (var id in new[] { Requester, Manager1, Manager2, Outsider })
                 db.Employee.Add(Emp(id, CompanyA));
-            db.LeaveTypes.Add(new LeaveTypes { ID = LeaveType, NameAr = "سنوية", NameEn = "Annual" });
+            db.LeaveTypes.Add(new LeaveTypes { ID = LeaveType, CompanyID = CompanyA, NameAr = "سنوية", NameEn = "Annual" });
 
             // Requester -> Manager1 -> Manager2 (top), the exact shape the climb walks
             var ladder = new[] { Requester, Manager1, Manager2 };
             for (var i = 0; i < ladder.Length - 1; i++)
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
-                    new Hierarchical { H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
-            db.Hierarchicals.Add(new Hierarchical { H_ID = 100 + Manager2, H_Type = 5, H_ObjectID = Manager2, H_Parent = null });
+                    new Hierarchical { CompanyID = CompanyA, H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
+                    new Hierarchical { CompanyID = CompanyA, H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
+            db.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyA, H_ID = 100 + Manager2, H_Type = 5, H_ObjectID = Manager2, H_Parent = null });
 
             await db.SaveChangesAsync();
             return rig;

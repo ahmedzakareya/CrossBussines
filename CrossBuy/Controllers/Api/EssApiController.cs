@@ -237,9 +237,9 @@ namespace CrossBuy.Controllers.Api
 			// chain after mine, and for a leave the balance now and after it, the substitute and who else in the department
 			// is away on those days
 			var deptIds = items.Where(x => x.deptId != null).Select(x => x.deptId!.Value).Distinct().ToList();
-			var depts = await _db.Hierarchicals.AsNoTracking().IgnoreQueryFilters().Where(h => deptIds.Contains(h.H_ID))
-				// the id is read from an employee I am already authorised to see, and only the node's NAME is shown (not the tree),
-				// so the HR company filter is bypassed for this label lookup; in correct data the node is in the employee's own company anyway
+			// the department node is read company-scoped (the HR filter), so a department shows only when it belongs to
+			// the caller's company — which, for a correctly set-up company, is exactly where its employees' departments live
+			var depts = await _db.Hierarchicals.AsNoTracking().Where(h => deptIds.Contains(h.H_ID))
 				.Select(h => new { h.H_ID, h.H_Name, h.H_NameEn }).ToDictionaryAsync(h => h.H_ID);
 			var leaveIds = leaves.Select(x => x.id).ToList(); var reqIds = reqs.Select(x => x.id).ToList();
 			var leaveNext = await _db.LeaveApprovalSteps.AsNoTracking().Where(s => leaveIds.Contains(s.LeaveRequestID)).Select(s => new { id = s.LeaveRequestID, s.Level, s.ApproverEmployeeID }).ToListAsync();
