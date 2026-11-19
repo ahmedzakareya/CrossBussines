@@ -482,6 +482,10 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // the linked-entity check, so the provider and the entity registry it reads come with it.
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Platform.EntityRegistry>();
 
+// Global cross-entity search: fans out over the registry's per-type search, gated by each module's
+// IModuleAccessService (the kernel doc named Search as a planned reuser of that one permission engine).
+builder.Services.AddScoped<CrossBuy.BL.Platform.IGlobalSearchService, CrossBuy.BL.Platform.GlobalSearchService>();
+
 // ---- Central Document Platform: the SHARED SECURITY SPINE only ----
 //
 // No document schema, no versions, no metadata, no events - those belong to the document domain and are

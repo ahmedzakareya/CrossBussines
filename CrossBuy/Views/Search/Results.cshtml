@@ -1,0 +1,75 @@
+@model CrossBuy.BL.Platform.GlobalSearchResponse
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    ViewData["Title"] = L("نتائج البحث", "Search results");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("نتائج البحث", "Search results")</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@(string.IsNullOrWhiteSpace(Model.Term)
+                    ? L("اكتب كلمة للبحث", "Type a term to search")
+                    : L($"عن «{Model.Term}» · {Model.Total} نتيجة", $"for “{Model.Term}” · {Model.Total} result(s)"))</li>
+            </ul>
+        </div>
+        <form method="get" asp-action="Results" class="d-flex align-items-center position-relative">
+            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+            <input type="text" name="q" value="@Model.Term" class="form-control form-control-solid w-250px ps-12" placeholder="@L("ابحث في كل شيء…", "Search everything…")" autofocus />
+        </form>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (string.IsNullOrWhiteSpace(Model.Term) || Model.Term.Length < 2)
+        {
+            <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                <div class="fs-7 text-gray-700">@L("اكتب حرفين على الأقل للبحث عبر العملاء والموردين والفواتير والقيود والمهام والمشاريع وكل كيان لديك صلاحية رؤيته.", "Type at least two characters to search across customers, suppliers, invoices, journals, tasks, projects and every entity you may view.")</div>
+            </div>
+        }
+        else if (Model.Total == 0)
+        {
+            <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                <div class="fs-7 text-gray-700">@L($"لا نتائج لـ «{Model.Term}» ضمن ما تملك صلاحية رؤيته.", $"Nothing matched “{Model.Term}” within what you may view.")</div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-5">
+            @foreach (var g in Model.Groups)
+            {
+                <div class="col-xl-6">
+                    <div class="card card-flush h-100">
+                        <div class="card-header align-items-center pt-5">
+                            <div class="card-title d-flex align-items-center gap-3">
+                                <span class="symbol symbol-35px"><span class="symbol-label bg-light-primary"><i class="ki-outline @g.Icon fs-4 text-primary"></i></span></span>
+                                <h3 class="m-0 fs-5">@(isAr ? g.LabelAr : g.LabelEn)</h3>
+                                <span class="badge badge-light-primary">@g.Hits.Count</span>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @foreach (var h in g.Hits)
+                            {
+                                if (!string.IsNullOrEmpty(h.Url))
+                                {
+                                    <a href="@h.Url" class="d-flex align-items-center justify-content-between py-3 border-bottom border-gray-200 text-gray-800 text-hover-primary">
+                                        <span class="fw-semibold fs-7">@h.Label</span>
+                                        <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-5 text-muted"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center py-3 border-bottom border-gray-200 text-gray-800"><span class="fw-semibold fs-7">@h.Label</span></div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            </div>
+        }
+    </div></div>
+</div>
