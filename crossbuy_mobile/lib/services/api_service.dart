@@ -736,5 +736,51 @@ class ApiService {
     }
   }
 
+  // ---- Communication v2 in the app: threads, pin, save, forward, polls, scheduled, status, channels, catch-up ----
+  Future<Map<String, dynamic>?> _getMap(String path, [Map<String, dynamic>? q]) async {
+    try { final d = (await _dio.get(path, queryParameters: q)).data; return d is Map ? d.cast<String, dynamic>() : null; } on DioException { return null; }
+  }
+  Future<List<Map<String, dynamic>>> _getList(String path, [Map<String, dynamic>? q]) async {
+    try { return _rows((await _dio.get(path, queryParameters: q)).data); } on DioException { return const []; }
+  }
+  Future<Map<String, dynamic>?> _post(String path, {Map<String, dynamic>? q, Map<String, dynamic>? form}) async {
+    try {
+      final d = (await _dio.post(path, queryParameters: q, data: form == null ? null : FormData.fromMap(form))).data;
+      return d is Map ? d.cast<String, dynamic>() : <String, dynamic>{'ok': true};
+    } on DioException {
+      return null;
+    }
+  }
+
+  Future<List<ChatMsg>> chatThread(int c, int root) async => (await _getList('/api/chat/thread', {'c': c, 'root': root})).map(ChatMsg.fromJson).toList();
+  Future<ChatMsg?> chatThreadReply(int c, int root, String body) async {
+    final d = await _post('/api/chat/thread', form: {'c': c, 'root': root, 'body': body});
+    return d == null || d['id'] == null ? null : ChatMsg.fromJson(d);
+  }
+  Future<bool> chatPin(int id, bool on) async => (await _post('/api/chat/pin', q: {'id': id, 'on': on}))?['ok'] == true;
+  Future<bool> chatSave(int id, bool on) async => (await _post('/api/chat/save', q: {'id': id, 'on': on}))?['ok'] == true;
+  Future<Map<String, dynamic>?> chatSaved() => _getMap('/api/chat/saved');
+  Future<int> chatForward(int id, List<int> to, {String? note}) async =>
+      ((await _post('/api/chat/forward', form: {'id': id, 'to': to.join(','), if (note != null && note.isNotEmpty) 'note': note}))?['sent'] as num?)?.toInt() ?? 0;
+  Future<ChatMsg?> chatCreatePoll(int c, String question, List<String> options, {bool multi = false, bool anonymous = false}) async {
+    final d = await _post('/api/chat/poll', form: {'c': c, 'question': question, 'options': options.join('\n'), 'multi': multi, 'anonymous': anonymous});
+    return d == null || d['id'] == null ? null : ChatMsg.fromJson(d);
+  }
+  Future<bool> chatSchedule(int c, String body, DateTime at) async =>
+      (await _post('/api/chat/schedule', form: {'c': c, 'body': body, 'sendAt': at.toUtc().toIso8601String()}))?['ok'] == true;
+  Future<List<Map<String, dynamic>>> chatScheduled(int c) => _getList('/api/chat/scheduled', {'c': c});
+  Future<bool> chatCancelScheduled(int id) async => (await _post('/api/chat/scheduled/cancel', q: {'id': id}))?['ok'] == true;
+  Future<Map<String, dynamic>?> chatStatuses(List<int> ids) => _getMap('/api/chat/statuses', {'ids': ids.join(',')});
+  Future<bool> chatSetStatus({String? emoji, String? text, DateTime? until, bool dnd = false, DateTime? dndUntil}) async =>
+      (await _post('/api/chat/status', form: {
+        if (emoji != null) 'emoji': emoji, if (text != null) 'text': text, if (until != null) 'until': until.toUtc().toIso8601String(),
+        'dnd': dnd, if (dndUntil != null) 'dndUntil': dndUntil.toUtc().toIso8601String(),
+      }))?['ok'] == true;
+  Future<List<Map<String, dynamic>>> chatChannels({String? q}) => _getList('/api/chat/channels', {if (q != null && q.isNotEmpty) 'q': q});
+  Future<int?> chatCreateChannel(String title, {String? description}) async =>
+      ((await _post('/api/chat/channels', form: {'title': title, if (description != null && description.isNotEmpty) 'description': description}))?['id'] as num?)?.toInt();
+  Future<bool> chatJoinChannel(int c) async => (await _post('/api/chat/channels/join', q: {'c': c}))?['ok'] == true;
+  Future<Map<String, dynamic>?> chatCatchUp(int c, int since) => _getMap('/api/chat/catchup', {'c': c, 'since': since});
+
   String chatFileUrl(int messageId) => '${AppConfig.apiBaseUrl}/api/chat/file?messageId=$messageId';
 }

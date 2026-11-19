@@ -13,7 +13,9 @@ import '../../providers/calls_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/brand.dart';
 import '../../widgets/ui.dart';
+import '../../services/chat_hub.dart';
 import '../calls/calls_screen.dart';
+import 'chat_extras.dart';
 
 /// A conversation — exactly the approved prototype (design-output/executive-prototype, ?page=chat): the head (back,
 /// face, name and presence, voice and video), the pinned line, the thread by day (others white on the left of their
@@ -25,7 +27,9 @@ class ChatScreen extends StatefulWidget {
   final String? title;
   final int? otherId;
   final int? focusMessageId;
-  const ChatScreen({super.key, required this.id, this.title, this.otherId, this.focusMessageId});
+  /// How many were unread when it was opened: enough of them offers «ما فاتك».
+  final int unread;
+  const ChatScreen({super.key, required this.id, this.title, this.otherId, this.focusMessageId, this.unread = 0});
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -49,12 +53,70 @@ class _ChatScreenState extends State<ChatScreen> {
     _box.addListener(() => setState(() {}));
     _scroll.addListener(() { if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 60) _loadOlder(); });
     _first();
-    _tick = Timer.periodic(const Duration(seconds: 4), (_) => _refresh());
+    // live over the chat hub; the poll stays as the fallback (every 4 s while the hub is down, every 20 s while it is up)
+    _tick = Timer.periodic(const Duration(seconds: 4), (_) { if (!ChatHub.instance.connected || (_ticks++ % 5 == 0)) _refresh(); });
+    ChatHub.instance.join(widget.id);
+    ChatHub.instance.events.addListener(_onHub);
+    _box.addListener(_onTyping);
+  }
+
+  int _ticks = 0;
+  Timer? _hubDebounce, _typingOff;
+  DateTime _lastTypingSent = DateTime(2000);
+  String? _typingName;
+  List<ChatMember> _mentionHits = const [];
+  int? _catchUpSince;
+
+  void _onHub() {
+    final e = ChatHub.instance.events.value;
+    if (e == null || e.conversationId != widget.id) return;
+    if (e.name == 'typing') {
+      final who = (e.data['employeeId'] as num?)?.toInt();
+      final m = _head?.members.where((x) => x.id == who).toList();
+      setState(() => _typingName = (m != null && m.isNotEmpty) ? m.first.name : L(context, 'أحدهم', 'Someone'));
+      _typingOff?.cancel();
+      _typingOff = Timer(const Duration(seconds: 4), () { if (mounted) setState(() => _typingName = null); });
+      return;
+    }
+    if (e.name == 'pinned') { _api.getChatPinned(widget.id).then((p) { if (mounted) setState(() => _pinned = p); }); }
+    if (e.name == 'message') { _typingOff?.cancel(); _typingName = null; }
+    // several events arrive together (a message, then the read mark): one refresh for all of them
+    _hubDebounce?.cancel();
+    _hubDebounce = Timer(const Duration(milliseconds: 250), _refresh);
+  }
+
+  /// "is typing" to the others, at most every three seconds; and the @ suggestions.
+  void _onTyping() {
+    final t = _box.text;
+    if (t.trim().isNotEmpty && DateTime.now().difference(_lastTypingSent).inSeconds >= 3) {
+      _lastTypingSent = DateTime.now();
+      ChatHub.instance.typing(widget.id);
+    }
+    final at = RegExp(r'(?:^|\s)@([^\s@]{0,20})$').firstMatch(t);
+    final hits = at == null
+        ? const <ChatMember>[]
+        : (_head?.members ?? const <ChatMember>[]).where((m) {
+            final q = at.group(1)!.toLowerCase();
+            return q.isEmpty || m.name.toLowerCase().contains(q) || (m.altName ?? '').toLowerCase().contains(q);
+          }).take(5).toList();
+    if (hits.length != _mentionHits.length || !hits.every(_mentionHits.contains)) setState(() => _mentionHits = hits);
+  }
+
+  void _pickMention(ChatMember m) {
+    final t = _box.text;
+    final i = t.lastIndexOf('@');
+    _box.text = '${t.substring(0, i)}@${m.name} ';
+    _box.selection = TextSelection.collapsed(offset: _box.text.length);
+    setState(() => _mentionHits = const []);
   }
 
   @override
   void dispose() {
     _tick?.cancel();
+    _hubDebounce?.cancel();
+    _typingOff?.cancel();
+    ChatHub.instance.events.removeListener(_onHub);
+    ChatHub.instance.leave(widget.id);
     _recTick?.cancel();
     _rec.dispose();
     _draftPlayer?.dispose();
@@ -72,9 +134,36 @@ class _ChatScreenState extends State<ChatScreen> {
       _pinned = r[2] as List<ChatPinned>;
       _loading = false;
       _older = _msgs.length >= 30;
+      // «ما فاتك» when enough had piled up: from the last message I had read
+      if (widget.unread >= 5 && _msgs.length > widget.unread) _catchUpSince = _msgs[_msgs.length - widget.unread - 1].id;
     });
     _meta(_msgs);
     _api.readChat(widget.id);
+  }
+
+  Future<void> _openCatchUp() async {
+    final since = _catchUpSince; if (since == null) return;
+    final d = await _api.chatCatchUp(widget.id, since);
+    if (!mounted) return;
+    setState(() => _catchUpSince = null);
+    if (d != null) await showCatchUp(context, d);
+  }
+
+  Future<void> _showPinned() async {
+    await showModalBottomSheet<void>(context: context, backgroundColor: Brand.paper,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+        builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 6), child: Text(L(context, 'الرسائل المثبّتة', 'Pinned messages'), style: T.h2)),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(c).size.height * .5),
+                child: ListView(shrinkWrap: true, children: [
+                  for (final p in _pinned)
+                    ListTile(leading: const Icon(Lu.pin, size: 18, color: Brand.blue), title: Text(p.body, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5)),
+                        subtitle: p.sender == null ? null : Text(p.sender!, style: T.small),
+                        trailing: IconButton(icon: const Icon(Lu.pinOff, size: 16, color: Brand.mutedC), onPressed: () async { Navigator.pop(c); if (await _api.chatPin(p.id, false)) { final l = await _api.getChatPinned(widget.id); if (mounted) setState(() => _pinned = l); } })),
+                ]),
+              ),
+            ])));
   }
 
   /// The newest thirty again: new messages join, edits/reactions/deletions replace, the read marks move.
@@ -154,9 +243,16 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
               ListTile(leading: const Icon(Lu.image, color: Brand.blue), title: Text(L(context, 'صورة', 'Picture')), onTap: () => Navigator.pop(c, 1)),
               ListTile(leading: const Icon(Lu.paperclip, color: Brand.blue), title: Text(L(context, 'ملف', 'File')), onTap: () => Navigator.pop(c, 2)),
+              ListTile(leading: const Icon(Lu.chartBar, color: Brand.blue), title: Text(L(context, 'تصويت', 'Poll')), onTap: () => Navigator.pop(c, 3)),
+              ListTile(leading: const Icon(Lu.clock, color: Brand.blue), title: Text(L(context, 'جدولة رسالة', 'Schedule a message')), onTap: () => Navigator.pop(c, 4)),
             ])));
     if (pick == 1) _attach(picture: true);
     if (pick == 2) _attach();
+    if (pick == 3 && mounted) { final m = await showPollComposer(context, widget.id); if (m != null) _refresh(); }
+    if (pick == 4 && mounted) {
+      final ok = await showScheduleComposer(context, widget.id, _box.text.trim());
+      if (ok == true && mounted) { _box.clear(); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'جُدولت الرسالة', 'The message is scheduled')))); }
+    }
   }
 
   // A voice message is LISTENED TO BEFORE IT IS SENT (owner 2026-11-19): the microphone stops the recording, the
@@ -224,9 +320,24 @@ class _ChatScreenState extends State<ChatScreen> {
                 ]),
               ),
               ListTile(leading: const Icon(Lu.reply, color: Brand.blue), title: Text(L(context, 'رد', 'Reply')), onTap: () => Navigator.pop(c, '·reply')),
+              ListTile(leading: const Icon(Lu.messagesSquare, color: Brand.blue), title: Text(L(context, 'رد في سلسلة', 'Reply in a thread')), onTap: () => Navigator.pop(c, '·thread')),
+              ListTile(leading: Icon(m.meta?.pinned == true ? Lu.pinOff : Lu.pin, color: Brand.blue), title: Text(m.meta?.pinned == true ? L(context, 'إلغاء التثبيت', 'Unpin') : L(context, 'تثبيت في المحادثة', 'Pin in the conversation')), onTap: () => Navigator.pop(c, '·pin')),
+              ListTile(leading: Icon(m.meta?.saved == true ? Lu.bookmarkMinus : Lu.bookmark, color: Brand.blue), title: Text(m.meta?.saved == true ? L(context, 'إزالة من المحفوظات', 'Remove from saved') : L(context, 'حفظ', 'Save')), onTap: () => Navigator.pop(c, '·save')),
+              ListTile(leading: const Icon(Lu.forward, color: Brand.blue), title: Text(L(context, 'تحويل', 'Forward')), onTap: () => Navigator.pop(c, '·forward')),
             ])));
-    if (r == null) return;
+    if (r == null || !mounted) return;
     if (r == '·reply') { setState(() => _replyTo = m); return; }
+    if (r == '·thread') { await showThreadSheet(context, widget.id, m); _meta([m]); return; }
+    if (r == '·forward') { await showForwardPicker(context, m); return; }
+    if (r == '·pin') {
+      if (await _api.chatPin(m.id, m.meta?.pinned != true)) { _meta([m]); final p = await _api.getChatPinned(widget.id); if (mounted) setState(() => _pinned = p); }
+      return;
+    }
+    if (r == '·save') {
+      final on = m.meta?.saved != true;
+      if (await _api.chatSave(m.id, on)) { _meta([m]); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(on ? L(context, 'حُفظت', 'Saved') : L(context, 'أُزيلت من المحفوظات', 'Removed from saved')))); }
+      return;
+    }
     if (await _api.reactChat(m.id, r)) _refresh();
   }
 
@@ -262,7 +373,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final canCall = calls.me?.installed == true;
     final h = _head;
     final title = h?.title ?? widget.title ?? '';
-    final sub = h == null ? '' : h.isGroup ? L(context, '${h.memberCount} أعضاء', '${h.memberCount} members') : h.online ? L(context, 'متاح الآن', 'Available now') : L(context, 'غير متصل', 'Offline');
+    final sub = h == null ? '' : h.isGroup ? membersLabel(context, h.memberCount) : h.online ? L(context, 'متاح الآن', 'Available now') : L(context, 'غير متصل', 'Offline');
     return ExecFrame(
       bottomBar: const CallsNav(),
       child: Column(children: [
@@ -287,8 +398,22 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ]),
         ),
+        if (_catchUpSince != null)
+          InkWell(
+            onTap: _openCatchUp,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              color: Brand.soft,
+              child: Row(children: [
+                const Icon(Lu.sparkles, size: 14, color: Brand.blue), const SizedBox(width: 6),
+                Expanded(child: Text(L(context, 'ما فاتك · ${widget.unread} رسالة', 'What you missed · ${widget.unread} messages'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Brand.blue))),
+                GestureDetector(onTap: () => setState(() => _catchUpSince = null), child: const Icon(Lu.x, size: 14, color: Brand.mutedC)),
+              ]),
+            ),
+          ),
         if (_pinned.isNotEmpty)
-          Container(
+          GestureDetector(onTap: _showPinned, child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: const BoxDecoration(color: Color(0xFFFAFBFE), border: Border(bottom: BorderSide(color: Brand.lineC))),
@@ -298,7 +423,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(child: Text(_pinned.first.body, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9.5, color: Brand.mutedC))),
               if (_pinned.length > 1) Text(' +${_pinned.length - 1}', style: const TextStyle(fontSize: 9.5, color: Brand.blue)),
             ]),
-          ),
+          )),
         Expanded(
           child: _loading && _msgs.isEmpty
               ? const Center(child: CircularProgressIndicator())
@@ -423,7 +548,9 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mine) Padding(padding: const EdgeInsetsDirectional.only(start: 3), child: Icon(read ? Lu.checkCheck : Lu.check, size: 11, color: muted)),
     ]));
     if ((meta?.threadCount ?? 0) > 0) {
-      content.add(Container(
+      content.add(GestureDetector(
+        onTap: () => showThreadSheet(context, widget.id, m).then((_) => _meta([m])),
+        child: Container(
         margin: const EdgeInsets.only(top: 4),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
         decoration: BoxDecoration(color: mine ? Colors.white.withValues(alpha: .15) : Brand.soft, borderRadius: BorderRadius.circular(8)),
@@ -431,7 +558,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Icon(Lu.messagesSquare, size: 12, color: mine ? Colors.white : Brand.blue), const SizedBox(width: 4),
           Text(meta!.threadCount == 1 ? L(context, 'رد واحد', '1 reply') : meta.threadCount == 2 ? L(context, 'ردّان', '2 replies') : L(context, '${meta.threadCount} ردود', '${meta.threadCount} replies'), style: TextStyle(fontSize: 9.5, color: mine ? Colors.white : Brand.blue)),
         ]),
-      ));
+      )));
     }
     final bubble = Container(
       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * .76),
@@ -606,6 +733,21 @@ class _ChatScreenState extends State<ChatScreen> {
       color: Brand.page,
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (_typingName != null)
+          Padding(padding: const EdgeInsets.only(bottom: 4), child: Align(alignment: AlignmentDirectional.centerStart,
+              child: Text(L(context, '$_typingName يكتب…', '$_typingName is typing…'), style: const TextStyle(fontSize: 10.5, color: Brand.blue, fontStyle: FontStyle.italic)))),
+        if (_mentionHits.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(color: Brand.paper, borderRadius: BorderRadius.circular(12), border: Border.all(color: Brand.lineC)),
+            child: Column(children: [
+              for (final m in _mentionHits)
+                InkWell(onTap: () => _pickMention(m), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), child: Row(children: [
+                  PersonAvatar(photo: m.avatar, name: m.name, size: 26), const SizedBox(width: 8),
+                  Expanded(child: Text(m.name, style: const TextStyle(fontSize: 12))),
+                ]))),
+            ]),
+          ),
         if (_replyTo != null)
           Container(
             margin: const EdgeInsets.only(bottom: 6),

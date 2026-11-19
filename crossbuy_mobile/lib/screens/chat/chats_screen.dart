@@ -6,7 +6,9 @@ import '../../models/chat.dart';
 import '../../services/api_service.dart';
 import '../../theme/brand.dart';
 import '../../widgets/ui.dart';
+import '../../services/chat_hub.dart';
 import '../calls/calls_screen.dart';
+import 'chat_extras.dart';
 import 'chat_screen.dart';
 
 /// المحادثات — exactly the approved prototype (design-output/executive-prototype, ?page=chats): the back link, the
@@ -31,13 +33,37 @@ class _ChatsScreenState extends State<ChatsScreen> {
   void initState() {
     super.initState();
     _load();
-    _poll = Timer.periodic(const Duration(seconds: 10), (_) => _load());
+    // live: a new message anywhere of mine moves its conversation up at once; the poll is only the fallback
+    _poll = Timer.periodic(const Duration(seconds: 10), (_) { if (!ChatHub.instance.connected || (_ticks++ % 3 == 0)) _load(); });
+    ChatHub.instance.connect();
+    ChatHub.instance.events.addListener(_onHub);
+    _loadStatus();
+  }
+
+  int _ticks = 0;
+  Timer? _hubDebounce;
+  String? _myStatus;
+
+  void _onHub() {
+    final e = ChatHub.instance.events.value;
+    if (e == null || !(e.name == 'conversation' || e.name == 'message' || e.name == 'read' || e.name == 'members' || e.name == 'removed')) return;
+    _hubDebounce?.cancel();
+    _hubDebounce = Timer(const Duration(milliseconds: 300), _load);
+  }
+
+  Future<void> _loadStatus() async {
+    final d = await ApiService.instance.chatStatuses(const []);
+    if (!mounted || d == null) return;
+    final s = (d['statuses'] as Map?)?['${d['me']}'];
+    setState(() => _myStatus = s is Map ? [if (s['dnd'] == true) '⛔', s['emoji'], s['text']].where((x) => x != null && '$x'.isNotEmpty).join(' ') : null);
   }
 
   @override
   void dispose() {
     _poll?.cancel();
     _debounce?.cancel();
+    _hubDebounce?.cancel();
+    ChatHub.instance.events.removeListener(_onHub);
     super.dispose();
   }
 
@@ -62,10 +88,28 @@ class _ChatsScreenState extends State<ChatsScreen> {
     });
   }
 
-  Future<void> _open(int id, {String? title, int? otherId, int? at}) async {
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatScreen(id: id, title: title, otherId: otherId, focusMessageId: at)));
+  Future<void> _open(int id, {String? title, int? otherId, int? at, int unread = 0}) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatScreen(id: id, title: title, otherId: otherId, focusMessageId: at, unread: unread)));
     _load();
   }
+
+  Widget _action(IconData icon, String label, VoidCallback onTap) => Expanded(
+        child: Material(
+          color: Brand.paper,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Brand.lineC)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, size: 14, color: Brand.blue), const SizedBox(width: 5),
+                Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Brand.inkC))),
+              ]),
+            ),
+          ),
+        ),
+      );
 
   Future<void> _newChat() async {
     final person = await showModalBottomSheet<ChatPerson>(context: context, isScrollControlled: true, backgroundColor: Brand.page,
@@ -87,6 +131,16 @@ class _ChatsScreenState extends State<ChatsScreen> {
       child: ExecBody(onRefresh: _load, children: [
         BackLink(L(context, 'مساحات العمل', 'Workspaces')),
         PageHead(L(context, 'المحادثات', 'Chats'), eyebrow: L(context, 'داخل الشركة فقط', 'Inside the company only')),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(children: [
+            _action(Lu.smile, _myStatus?.isNotEmpty == true ? _myStatus! : L(context, 'حالتي', 'My status'), () async { if (await showStatusSheet(context) == true) _loadStatus(); }),
+            const SizedBox(width: 8),
+            _action(Lu.hash, L(context, 'القنوات', 'Channels'), () => Navigator.of(context).push(MaterialPageRoute(builder: (c) => ChannelsScreen(onOpen: (id, t) { Navigator.of(c).pop(); _open(id, title: t); })))),
+            const SizedBox(width: 8),
+            _action(Lu.bookmark, L(context, 'المحفوظات', 'Saved'), () => Navigator.of(context).push(MaterialPageRoute(builder: (c) => SavedScreen(onOpen: (id, t, m) { Navigator.of(c).pop(); _open(id, title: t, at: m); })))),
+          ]),
+        ),
         _SearchBox(hint: L(context, 'ابحث في المحادثات والرسائل والأشخاص', 'Search chats, messages and people'), onChanged: _search),
         ChipTabs(
           items: [L(context, 'الكل', 'All'), unread > 0 ? L(context, 'غير مقروءة · $unread', 'Unread · $unread') : L(context, 'غير مقروءة', 'Unread'), L(context, 'المجموعات', 'Groups'), L(context, 'المثبّتة', 'Pinned')],
@@ -134,12 +188,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
       ]);
 
   Widget _row(BuildContext context, ChatConv c) {
-    final p = c.preview ?? '';
+    var p = c.preview ?? '';
+    // a recorded voice message is stored with its file name as the preview; a person reads «voice message»
+    if (RegExp(r'^📎\s*voice-').hasMatch(p)) p = L(context, 'رسالة صوتية', 'Voice message');
     final missed = p.contains('فائتة') || p.toLowerCase().contains('missed');
     final voice = p.contains('صوتية') || p.toLowerCase().contains('voice');
     final lead = missed ? Lu.phoneMissed : voice ? Lu.mic : c.lastMine ? (c.lastSeen ? Lu.checkCheck : Lu.check) : null;
     return InkWell(
-      onTap: () => _open(c.id, title: c.title, otherId: c.otherId),
+      onTap: () => _open(c.id, title: c.title, otherId: c.otherId, unread: c.unread),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 11),
         child: Row(children: [

@@ -20,7 +20,7 @@ namespace CrossBuy.Controllers.Api
 	[Route("api/chat")]
 	[Produces("application/json")]
 	[Authorize(AuthenticationSchemes = "Identity.Application," + JwtBearerDefaults.AuthenticationScheme)]
-	public class ChatApiController : ControllerBase
+	public partial class ChatApiController : ControllerBase
 	{
 		private readonly IBusinessContextAccessor _contexts;
 		private readonly IChatService _chat;
