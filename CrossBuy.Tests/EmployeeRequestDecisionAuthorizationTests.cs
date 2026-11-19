@@ -1232,8 +1232,8 @@ namespace CrossBuy.Tests
             var ladder = new[] { Requester }.Concat(chain ?? new[] { Manager1, Manager2 }).ToArray();
             for (var i = 0; i < ladder.Length - 1; i++)
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
-                    new Hierarchical { H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
+                    new Hierarchical { CompanyID = companyId, H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
+                    new Hierarchical { CompanyID = companyId, H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
 
             if (breakHierarchy)
             {
@@ -1241,9 +1241,9 @@ namespace CrossBuy.Tests
                 // HierarchyDefect, and CreateAsync refuses rather than auto-approving
                 db.Employee.Add(Emp(99, CompanyB));
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 100 + Requester, H_Type = 5, H_ObjectID = Requester, H_Parent = 200 + Requester },
-                    new Hierarchical { H_ID = 200 + Requester, H_Type = 4, H_ObjectID = null, H_Parent = 199 },
-                    new Hierarchical { H_ID = 199, H_Type = 5, H_ObjectID = 99, H_Parent = null });
+                    new Hierarchical { CompanyID = companyId, H_ID = 100 + Requester, H_Type = 5, H_ObjectID = Requester, H_Parent = 200 + Requester },
+                    new Hierarchical { CompanyID = companyId, H_ID = 200 + Requester, H_Type = 4, H_ObjectID = null, H_Parent = 199 },
+                    new Hierarchical { CompanyID = CompanyB, H_ID = 199, H_Type = 5, H_ObjectID = 99, H_Parent = null });
             }
             else if (verifiedRoot)
             {
@@ -1252,9 +1252,9 @@ namespace CrossBuy.Tests
                 // anyone above. An unverified parentless node is seeded by passing verifiedRoot: false,
                 // and it is refused instead of approved.
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 900, H_Type = 1, H_ObjectID = null, H_Parent = null },
-                    new Hierarchical { H_ID = 200 + ladder[^1], H_Type = 4, H_ObjectID = null, H_Parent = 900 },
-                    new Hierarchical { H_ID = 100 + ladder[^1], H_Type = 5, H_ObjectID = ladder[^1], H_Parent = 200 + ladder[^1] });
+                    new Hierarchical { CompanyID = companyId, H_ID = 900, H_Type = 1, H_ObjectID = null, H_Parent = null },
+                    new Hierarchical { CompanyID = companyId, H_ID = 200 + ladder[^1], H_Type = 4, H_ObjectID = null, H_Parent = 900 },
+                    new Hierarchical { CompanyID = companyId, H_ID = 100 + ladder[^1], H_Type = 5, H_ObjectID = ladder[^1], H_Parent = 200 + ladder[^1] });
             }
 
             await db.SaveChangesAsync();
