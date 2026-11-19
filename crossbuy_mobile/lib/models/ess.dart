@@ -12,12 +12,15 @@ class PayslipSummary {
 class PayslipDetail {
   final int id, year, month, lateMinutes, absentDays;
   final String slipNo;
+  final String? bankName, ibanTail;   // where the net is paid
   final num basic, allowances, overtime, socialInsurance, tax, late, absence, loan, partPaidLeave, net, employerInsurance;
   PayslipDetail.fromJson(Map<String, dynamic> j)
       : id = j['id'] ?? 0,
         year = j['year'] ?? 0,
         month = j['month'] ?? 0,
         slipNo = j['slipNo'] ?? '',
+        bankName = j['bankName'],
+        ibanTail = j['ibanTail'],
         basic = _n(j['earnings']?['basic']),
         allowances = _n(j['earnings']?['allowances']),
         overtime = _n(j['earnings']?['overtime']),

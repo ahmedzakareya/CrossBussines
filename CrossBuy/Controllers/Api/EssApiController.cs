@@ -69,12 +69,18 @@ namespace CrossBuy.Controllers.Api
 			var me = await MeAsync(); if (me == null) return NotFound(NotAuthorised);
 			var p = await _db.Payslips.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.EmployeeID == me.EmployeeId && x.CompanyID == me.CompanyId);
 			if (p == null) return NotFound(NotAuthorised);
+			// where the net is paid: the employee's bank and the last four of their IBAN (the reference shows "… ···· 4471")
+			var _bank = await _db.Employee.AsNoTracking().Where(e => e.ID == me.EmployeeId).Select(e => new { e.BankName, e.Iban }).FirstOrDefaultAsync();
+			string? _bank_Name = _bank?.BankName;
+			var _ibanClean = (_bank?.Iban ?? "").Replace(" ", "");
+			string? _bank_Tail = _ibanClean.Length >= 4 ? _ibanClean[^4..] : null;
 			return Ok(new
 			{
 				success = true, currency = await CurrencyAsync(me.CompanyId),
 				data = new
 				{
 					id = p.ID, slipNo = $"PS-{p.Year}-{p.ID:D5}", year = p.Year, month = p.Month,
+					bankName = _bank_Name, ibanTail = _bank_Tail,
 					earnings = new { basic = p.BaseSalary, allowances = p.Allowances, overtime = p.OvertimePay },
 					deductions = new { socialInsurance = p.SiEmployee, tax = p.Tax, late = p.LatePenalty, lateMinutes = p.LateMinutes,
 						absence = p.AbsencePenalty, absentDays = p.AbsentDays, loan = p.LoanDeduction, partPaidLeave = p.SickLeaveDeduction },

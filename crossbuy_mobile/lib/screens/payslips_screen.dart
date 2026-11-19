@@ -100,6 +100,8 @@ class PayslipDetailScreen extends StatelessWidget {
               label: L(context, 'صافي الراتب', 'Net pay'),
               icon: Lu.receiptText,
               amount: Amount(m(p.net), unit),
+              // where it is paid, as the reference shows it: "بنك الكويت الوطني ···· 4471"
+              note: (p.bankName ?? '').isEmpty ? '' : '${p.bankName}${p.ibanTail == null ? '' : ' ···· ${p.ibanTail}'}',
               footer: [
                 (L(context, 'الاستحقاقات', 'Earnings'), m(p.earnings), ''),
                 (L(context, 'الاستقطاعات', 'Deductions'), m(p.deductions), ''),
