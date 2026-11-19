@@ -208,6 +208,26 @@ namespace CrossBuy.Controllers.Api
 			return d == null ? NotFound(Missing) : Ok(new { ok = true, recording = d });
 		}
 
+		/// GET /api/calls/recording/{id}/summary — the call's summary as it stands; POST starts making it (owner 2026-11-19).
+		[HttpGet("recording/{id:int}/summary")]
+		public async Task<IActionResult> Summary(int id, CancellationToken ct)
+		{
+			var me = await MeAsync(ct);
+			if (me == null) return NotFound(Missing);
+			var v = await ActivatorUtilities.CreateInstance<CrossBuy.BL.Communication.CallSummarizer>(_sp, RecSvc).GetAsync(me.CompanyId, me.EmployeeId!.Value, id, await ManagerAsync(me, ct), ct);
+			return v == null ? NotFound(Missing) : Ok(new { ok = true, summary = v });
+		}
+
+		[HttpPost("recording/{id:int}/summary")]
+		public async Task<IActionResult> SummaryStart(int id, CancellationToken ct)
+		{
+			var me = await MeAsync(ct);
+			var comm = _sp.GetRequiredService<ICommunicationAccessService>();
+			if (me == null || !await comm.CanAsync(me, CommunicationActions.Read, null, ct)) return NotFound(Missing);
+			var v = await ActivatorUtilities.CreateInstance<CrossBuy.BL.Communication.CallSummarizer>(_sp, RecSvc).StartAsync(me.CompanyId, me.EmployeeId!.Value, id, await ManagerAsync(me, ct), ct);
+			return v == null ? NotFound(Missing) : Ok(new { ok = v.Code == null, summary = v });
+		}
+
 		/// GET /api/calls/recording/{id}/media — the recording, seekable; the first request of a playback (log=1) is logged.
 		[HttpGet("recording/{id:int}/media")]
 		public async Task<IActionResult> Media(int id, int log = 0, CancellationToken ct = default)

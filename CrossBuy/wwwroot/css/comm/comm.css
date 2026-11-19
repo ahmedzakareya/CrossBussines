@@ -437,3 +437,23 @@ button.cm-rec { border: 0; }
 .cm-msg.mine .cm-transcript .go { background: rgba(255,255,255,.16); color: #fff; }
 .cm-transcript .tx { font-size: 12.5px; line-height: 1.7; unicode-bidi: plaintext; border-inline-start: 2px solid currentColor; padding-inline-start: 8px; opacity: .92; }
 .cm-transcript .nt { font-size: 11.5px; opacity: .7; }
+
+/* a recorded voice message, listened to before it is sent */
+.cm-vprev { display: flex; align-items: center; gap: 10px; color: var(--cm-brand2); border-inline-start-color: var(--cm-brand2); }
+.cm-vprev .pl { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--cm-brand); color: #fff; flex-shrink: 0; }
+.cm-vprev .prog { flex: 1; height: 5px; border-radius: 3px; background: #DCE3EF; position: relative; cursor: pointer; min-width: 60px; }
+.cm-vprev .prog i { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 3px; background: var(--cm-brand2); }
+.cm-vprev .cm-vp-send { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; border: 0; background: var(--cm-brand); color: #fff; flex-shrink: 0; }
+.cm-vprev .cm-num, .cm-vprev > span.fs-8 { white-space: nowrap; }
+
+/* the call's summary, under its recording */
+.cm-csum { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--cm-line, #E8ECF3); border-radius: 14px; background: #FBFCFE; }
+.cm-csum .hd { display: flex; align-items: center; gap: 8px; color: var(--cm-brand2); margin-bottom: 8px; }
+.cm-csum .ov { font-size: 13px; line-height: 1.8; color: var(--cm-ink, #1F2D4D); unicode-bidi: plaintext; }
+.cm-csum .sec { margin-top: 10px; } .cm-csum .st { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--cm-brand2); }
+.cm-csum ul { margin: 4px 0 0; padding-inline-start: 20px; font-size: 12.5px; line-height: 1.8; } .cm-csum li { unicode-bidi: plaintext; }
+.cm-csum .nt { font-size: 12px; color: var(--cm-muted, #738098); margin-bottom: 8px; } .cm-csum .nt.sm { font-size: 11px; margin: 10px 0 0; }
+.cm-csum .go { display: inline-flex; align-items: center; gap: 6px; border: 0; background: var(--cm-brand); color: #fff; border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 600; }
+.cm-csum .bar { height: 6px; border-radius: 3px; background: #DCE3EF; overflow: hidden; } .cm-csum .bar i { display: block; height: 100%; background: var(--cm-brand2); transition: width .6s; }
+.cm-csum details.tr { margin-top: 10px; font-size: 12px; } .cm-csum details.tr summary { cursor: pointer; color: var(--cm-brand2); font-weight: 600; }
+.cm-csum details.tr div { margin-top: 6px; white-space: pre-wrap; line-height: 1.8; color: var(--cm-ink, #1F2D4D); unicode-bidi: plaintext; max-height: 260px; overflow: auto; }

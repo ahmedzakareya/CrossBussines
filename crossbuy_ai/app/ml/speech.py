@@ -81,6 +81,20 @@ def _pick(size: str, seconds: float) -> str:
     return want if available(want) else ("small" if available("small") else "medium")
 
 
+def transcribe_samples(samples, size: str, language: str | None = None) -> Transcript:
+    """Already-decoded audio (16 kHz mono floats) — a window of a recorded call. Same lock, same settings."""
+    with _lock:
+        started = time.perf_counter()
+        chosen = _pick(size, len(samples) / 16000.0)
+        model = _load(chosen)
+        segments, info = model.transcribe(samples, language=language or None, beam_size=5, vad_filter=True,
+                                          condition_on_previous_text=False)
+        text = " ".join(s.text.strip() for s in segments).strip()
+        return Transcript(text=text, language=info.language, language_probability=round(float(info.language_probability), 3),
+                          duration=round(float(info.duration), 2), seconds=round(time.perf_counter() - started, 2),
+                          model=f"whisper-{chosen}")
+
+
 def transcribe(audio: bytes, size: str, language: str | None = None) -> Transcript:
     """The words in one recording. language=None lets Whisper detect it (Arabic and English both occur)."""
     from faster_whisper.audio import decode_audio

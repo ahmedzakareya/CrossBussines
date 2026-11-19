@@ -220,6 +220,32 @@ namespace CrossBuy.Controllers
 			return d == null ? NotFound(new { ok = false }) : Json(new { ok = true, recording = d });
 		}
 
+		// ---------------- call summaries: a recorded call's words and summary (owner 2026-11-19) ----------------
+		private CrossBuy.BL.Communication.CallSummarizer Summaries => ActivatorUtilities.CreateInstance<CrossBuy.BL.Communication.CallSummarizer>(HttpContext.RequestServices, RecSvc);
+
+		/// GET /Chat/CallSummary/{id} — the recording's summary as it stands (whoever may open the recording).
+		[HttpGet]
+		public async Task<IActionResult> CallSummary(int id)
+		{
+			var me = await MeAsync(); if (me == null) return NotFound(new { ok = false });
+			var v = await Summaries.GetAsync(me.Value.companyId, me.Value.empId, id, await RecordingManagerAsync(me.Value.companyId, me.Value.empId), HttpContext.RequestAborted);
+			return v == null ? NotFound(new { ok = false }) : Json(new { ok = true, summary = v });
+		}
+
+		/// POST /Chat/CallSummaryStart/{id} — make it: the recording goes to the internal AI service and the summary
+		/// appears when it is ready (minutes, in the background).
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> CallSummaryStart(int id)
+		{
+			var me = await MeAsync(); var ctx = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			var comm = HttpContext.RequestServices.GetRequiredService<ICommunicationAccessService>();
+			// the chat's own authority to read, then the recording's own rule (inside the summarizer: the call's people
+			// and the recording reviewers)
+			if (me == null || ctx == null || !await comm.CanAsync(ctx, CommunicationActions.Read, null, HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var v = await Summaries.StartAsync(me.Value.companyId, me.Value.empId, id, await RecordingManagerAsync(me.Value.companyId, me.Value.empId), HttpContext.RequestAborted);
+			return v == null ? NotFound(new { ok = false }) : Json(new { ok = v.Code == null, summary = v });
+		}
+
 		/// GET /Chat/CallRecordingMedia/{id}?log=1 — the recording, seekable; the first request of a playback is logged as an opening.
 		[HttpGet]
 		public async Task<IActionResult> CallRecordingMedia(int id, int log = 0)

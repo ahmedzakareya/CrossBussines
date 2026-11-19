@@ -39,6 +39,12 @@ namespace CrossBuy.Models.Platform
         // read that message asked for its text. Classified PersonalData, so the matrix keeps it Internal; added
         // last so no stored purpose name or number is reinterpreted.
         SpeechTranscription,
+
+        // Summarising a RECORDED call (owner, 2026-11-19). What leaves is the recording — both people's voices,
+        // recorded only because both agreed — and the names of the people in it, so it is PersonalData too, and like
+        // speech it may go Internal only. Its own purpose because a summary is a different use of the same
+        // recording from listening to it, and must be refusable and auditable on its own.
+        CallSummary,
     }
 
     // WHERE it is going. Ownership of the code is not the question — hosting and onward transmission are.

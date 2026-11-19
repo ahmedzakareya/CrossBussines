@@ -8,6 +8,28 @@ namespace CrossBuy.Models.Context.Chat
 	// governance of messages (retention, the sensitive-data rule, legal holds, compliance exports).
 	// Tables: deploy/sql/comm_messaging_v2.sql. Configured by CommunicationModel.Configure (from HospitalCallModel).
 	// ==========================================================================================
+	/// Call summaries (owner, 2026-11-19): the words and summary of a RECORDED call, made once in the background on this
+	/// machine (comm_call_summaries.sql). Status: working | done | failed.
+	public class CallSummary
+	{
+		public int RecordingId { get; set; }
+		public int CompanyId { get; set; }
+		public int CallId { get; set; }
+		public string Status { get; set; } = "working";
+		public string? JobId { get; set; }
+		public decimal? Progress { get; set; }
+		public string? Transcript { get; set; }
+		public string? SummaryJson { get; set; }
+		public string? Language { get; set; }
+		public string? Model { get; set; }
+		public decimal? AudioSeconds { get; set; }
+		public decimal? WorkSeconds { get; set; }
+		public string? Error { get; set; }
+		public int RequestedByEmployeeId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public DateTime UpdatedAt { get; set; }
+	}
+
 	/// Speech to text (owner, 2026-11-19): the words of a voice message, transcribed once on request and shown to
 	/// everyone who may read the message (comm_transcripts.sql). Status: done | failed | too_long.
 	public class ChatTranscript
@@ -149,6 +171,7 @@ namespace CrossBuy.Models.Context.Chat
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			b.Entity<CallSummary>(e => { e.ToTable("CallSummaries"); e.HasKey(x => x.RecordingId); e.Property(x => x.RecordingId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.JobId).HasMaxLength(32); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(120); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.Progress).HasPrecision(5, 3); e.Property(x => x.AudioSeconds).HasPrecision(9, 1); e.Property(x => x.WorkSeconds).HasPrecision(9, 1); });
 			b.Entity<ChatTranscript>(e => { e.ToTable("ChatTranscripts"); e.HasKey(x => x.MessageId); e.Property(x => x.MessageId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(40); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.AudioSeconds).HasPrecision(9, 2); e.Property(x => x.WorkSeconds).HasPrecision(9, 2); });
 			b.Entity<ChatSaved>(e => { e.ToTable("ChatSaved"); e.HasIndex(x => new { x.EmployeeId, x.MessageId }).IsUnique(); });
 			b.Entity<ChatScheduled>(e => { e.ToTable("ChatScheduled"); e.Property(x => x.Body).HasMaxLength(4000); e.Property(x => x.Failure).HasMaxLength(200); });

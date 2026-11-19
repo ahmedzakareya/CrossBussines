@@ -444,11 +444,113 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Map<String, dynamic>? _d;
   bool _missing = false;
   VideoPlayerController? _v;
+  Map<String, dynamic>? _sum;          // the call's summary (owner 2026-11-19)
+  bool _sumStarting = false;
+  Timer? _sumTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    _sumTimer?.cancel();
+    final s = await ApiService.instance.getCallSummary(widget.id);
+    if (!mounted) return;
+    setState(() => _sum = s);
+    // while it is being made, ask again every few seconds (the work happens on the server, not here)
+    if (s?['status'] == 'working') _sumTimer = Timer(const Duration(seconds: 6), _loadSummary);
+  }
+
+  Future<void> _startSummary() async {
+    setState(() => _sumStarting = true);
+    final (ok, s) = await ApiService.instance.startCallSummary(widget.id);
+    if (!mounted) return;
+    setState(() { _sumStarting = false; if (s != null && s['status'] != 'none') _sum = s; });
+    if (!ok) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'الملخص غير متاح الآن — حاول لاحقاً', 'The summary is not available right now — try again later'))));
+    if (_sum?['status'] == 'working') _loadSummary();
+  }
+
+  /// .csum in the prototype: the overview, key points, decisions, tasks, the full text, and where it came from.
+  Widget _summaryCard(BuildContext context) {
+    final s = _sum;
+    final st = s?['status'] ?? 'none';
+    Widget btn(String label, IconData icon) => Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: Brand.navy, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: _sumStarting ? null : _startSummary,
+            icon: _sumStarting ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.6, color: Colors.white)) : Icon(icon, size: 15),
+            label: Text(_sumStarting ? L(context, 'جارٍ إرسال التسجيل…', 'Sending the recording…') : label, style: const TextStyle(fontSize: 12)),
+          ),
+        );
+    final List<Widget> body;
+    if (st == 'working') {
+      final pc = (((s?['progress'] as num?) ?? 0) * 100).round();
+      body = [
+        Text('${pc < 75 ? L(context, 'جارٍ تحويل المكالمة إلى نص…', 'Turning the call into text…') : L(context, 'جارٍ كتابة الملخص…', 'Writing the summary…')} $pc%', style: T.sub),
+        const SizedBox(height: 8),
+        ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(value: pc.clamp(4, 100) / 100, minHeight: 5, backgroundColor: Brand.lineC, color: Brand.blue)),
+        const SizedBox(height: 8),
+        Text(L(context, 'يمكنك مغادرة الصفحة؛ سيكون الملخص هنا حين يجهز.', 'You can leave this page; the summary will be here when it is ready.'), style: T.small),
+      ];
+    } else if (st == 'done') {
+      final m = (s?['summary'] as Map?) ?? const {};
+      List<String> strs(dynamic x) => (x as List? ?? const []).map((e) => '$e').where((e) => e.trim().isNotEmpty).toList();
+      Widget sec(IconData icon, String title, List<Widget> rows) => rows.isEmpty
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [Icon(icon, size: 13, color: Brand.blue), const SizedBox(width: 5), Text(title, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Brand.blue))]),
+                const SizedBox(height: 3),
+                ...rows,
+              ]),
+            );
+      Widget li(InlineSpan span) => Padding(padding: const EdgeInsets.only(bottom: 2), child: Text.rich(TextSpan(children: [const TextSpan(text: '•  '), span]), style: const TextStyle(fontSize: 11.5, height: 1.7, color: Brand.inkC)));
+      final overview = '${m['overview'] ?? ''}'.trim();
+      final transcript = '${s?['transcript'] ?? ''}'.trim();
+      body = [
+        Text(overview.isEmpty
+                ? (m['tooShort'] == true || transcript.isNotEmpty
+                    ? L(context, 'لم يُقل في المكالمة ما يكفي لتلخيصها.', 'Too little was said in this call to summarise it.')
+                    : L(context, 'لم تُسمع كلمات في هذا التسجيل', 'No words were heard in this recording'))
+                : overview,
+            style: TextStyle(fontSize: 12, height: 1.8, color: overview.isEmpty ? Brand.mutedC : Brand.inkC)),
+        sec(Lu.list, L(context, 'أهم النقاط', 'Key points'), [for (final p in strs(m['points'])) li(TextSpan(text: p))]),
+        sec(Lu.circleCheck, L(context, 'القرارات', 'Decisions'), [for (final p in strs(m['decisions'])) li(TextSpan(text: p))]),
+        sec(Lu.listTodo, L(context, 'المهام', 'Tasks'), [
+          for (final a in (m['actions'] as List? ?? const []).whereType<Map>())
+            li(TextSpan(children: [TextSpan(text: '${a['owner'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: ' — ${a['task'] ?? ''}')])),
+        ]),
+        if (transcript.isNotEmpty)
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero, childrenPadding: const EdgeInsets.only(bottom: 6), dense: true,
+              title: Text(L(context, 'النص الكامل للمكالمة', 'The full text of the call'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Brand.blue)),
+              children: [Text(transcript, style: const TextStyle(fontSize: 11, height: 1.7, color: Brand.mutedC))],
+            ),
+          ),
+        Text(L(context, 'أُعدّ تلقائياً من التسجيل على خوادم الشركة — راجعه قبل الاعتماد عليه.', 'Made automatically from the recording on the company’s servers — check before relying on it.'), style: T.small),
+      ];
+    } else if (st == 'failed') {
+      body = [Text(L(context, 'تعذّر تلخيص هذه المكالمة.', 'This call could not be summarised.'), style: T.sub), const SizedBox(height: 8), btn(L(context, 'إعادة المحاولة', 'Try again'), Lu.rotateCcw)];
+    } else {
+      body = [
+        Text(L(context, 'يُحوَّل التسجيل إلى نص ويُلخَّص على خوادم الشركة نفسها، ويستغرق ذلك بضع دقائق.', 'The recording is turned into text and summarised on the company’s own servers; it takes a few minutes.'), style: T.sub),
+        const SizedBox(height: 10),
+        btn(L(context, 'تلخيص المكالمة', 'Summarise the call'), Lu.sparkles),
+      ];
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(color: Brand.paper, borderRadius: BorderRadius.circular(18), border: Border.all(color: Brand.lineC)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: body),
+    );
   }
 
   Future<void> _load() async {
@@ -466,6 +568,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
   @override
   void dispose() {
     _v?.dispose();
+    _sumTimer?.cancel();
     super.dispose();
   }
 
@@ -528,6 +631,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
           _Fact(L(context, 'المريض', 'Patient'), d['patient'] is Map ? '${_str((d['patient'] as Map)['name'])} · ${_str((d['patient'] as Map)['mrn'])}' : '—'),
           if (d['deleteAfter'] != null) _Fact(L(context, 'يُحذف تلقائياً في', 'Deleted automatically on'), _str(d['deleteAfter']).split('T').first),
         ]),
+        if (d['status'] != 'Deleted') ...[
+          SectionHeading(L(context, 'ملخص المكالمة', 'Call summary')),
+          _summaryCard(context),
+        ],
         SectionHeading(L(context, 'من فتح التسجيل', 'Who opened it')),
         DataList(children: [
           for (final w in (d['views'] as List? ?? []).whereType<Map>())

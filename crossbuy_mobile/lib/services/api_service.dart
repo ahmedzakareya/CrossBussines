@@ -619,6 +619,26 @@ class ApiService {
     }
   }
 
+  /// The call's summary as it stands (status none | working | done | failed); null = not open to me.
+  Future<Map<String, dynamic>?> getCallSummary(int id) async {
+    try {
+      final res = await _dio.get('/api/calls/recording/$id/summary');
+      return (res.data['summary'] as Map?)?.cast<String, dynamic>();
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// Start the call's summary (made in the background on the company's servers). (ok, summary)
+  Future<(bool, Map<String, dynamic>?)> startCallSummary(int id) async {
+    try {
+      final res = await _dio.post('/api/calls/recording/$id/summary', options: Options(sendTimeout: const Duration(minutes: 2), receiveTimeout: const Duration(minutes: 2)));
+      return (res.data['ok'] == true, (res.data['summary'] as Map?)?.cast<String, dynamic>());
+    } on DioException {
+      return (false, null);
+    }
+  }
+
   /// The recording's address (log=1 the first time: the opening is recorded) and the header that opens it.
   String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
   Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};

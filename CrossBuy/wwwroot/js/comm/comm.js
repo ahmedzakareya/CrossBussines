@@ -297,6 +297,64 @@
 		thread.innerHTML = html;
 		if (k.recordingId) loadPlayer(k.recordingId);
 	}
+	/* ---- the call's summary (owner 2026-11-19): a recorded call → its words → a short summary, made in the background
+	   on the company's own machine. Started on demand; while it works, asked again every few seconds while on screen ---- */
+	var sumTimer = null, sumWorking = {};
+	function loadSummary(recId) {
+		clearTimeout(sumTimer);
+		getJson('/Chat/CallSummary/' + recId).then(function (r) {
+			// a failed ask while it is being made (the server restarting, the network) is not an answer: keep showing the
+			// progress and ask again, rather than falling back to "not started" and stopping
+			if (!r && sumWorking[recId]) {
+				var box = document.querySelector('[data-csum="' + recId + '"]');
+				if (box) sumTimer = setTimeout(function () { if (document.body.contains(box)) loadSummary(recId); }, 10000);
+				return;
+			}
+			sumWorking[recId] = !!(r && r.summary && r.summary.status === 'working');
+			paintSummary(recId, r && r.summary);
+		});
+	}
+	function paintSummary(recId, v) {
+		var box = document.querySelector('[data-csum="' + recId + '"]'); if (!box) return;
+		var hd = '<div class="hd">' + ico('sparkles', 15) + '<b>' + esc(t('Call summary')) + '</b></div>';
+		if (!v || v.status === 'none') {
+			box.innerHTML = hd + '<div class="nt">' + esc(t('The recording is turned into text and summarised on the company’s own servers; it takes a few minutes.')) + '</div>' +
+				'<button type="button" class="go" data-csum-start="' + recId + '">' + ico('sparkles', 14) + '<span>' + esc(t('Summarise the call')) + '</span></button>';
+			return;
+		}
+		if (v.status === 'working') {
+			var pc = Math.round((v.progress || 0) * 100);
+			box.innerHTML = hd + '<div class="nt">' + esc(pc < 75 ? t('Turning the call into text…') : t('Writing the summary…')) + ' <span class="cm-num">' + num(pc + '%') + '</span></div>' +
+				'<div class="bar"><i style="width:' + Math.max(4, pc) + '%"></i></div><div class="nt sm">' + esc(t('You can leave this page; the summary will be here when it is ready.')) + '</div>';
+			sumTimer = setTimeout(function () { if (document.body.contains(box)) loadSummary(recId); }, 6000);
+			return;
+		}
+		if (v.status === 'failed') {
+			box.innerHTML = hd + '<div class="nt">' + esc(t('This call could not be summarised.')) + '</div>' +
+				'<button type="button" class="go" data-csum-start="' + recId + '">' + ico('rotate-ccw', 14) + '<span>' + esc(t('Try again')) + '</span></button>';
+			return;
+		}
+		var s = v.summary || {}, list = function (title, items, icon) {
+			return items && items.length ? '<div class="sec"><div class="st">' + ico(icon, 13) + esc(title) + '</div><ul>' + items.map(function (x) { return '<li dir="auto">' + x + '</li>'; }).join('') + '</ul></div>' : '';
+		};
+		box.innerHTML = hd +
+			(s.overview ? '<div class="ov" dir="auto">' + esc(s.overview) + '</div>' : '<div class="nt">' + esc(s.tooShort || v.transcript ? t('Too little was said in this call to summarise it.') : t('No words were heard in this recording')) + '</div>') +
+			list(t('Key points'), (s.points || []).map(esc), 'list') +
+			list(t('Decisions'), (s.decisions || []).map(esc), 'circle-check') +
+			list(t('Tasks'), (s.actions || []).map(function (a) { return '<b>' + esc(a.owner || '') + '</b> — ' + esc(a.task || ''); }), 'list-todo') +
+			(v.transcript ? '<details class="tr"><summary>' + esc(t('The full text of the call')) + '</summary><div dir="auto">' + esc(v.transcript) + '</div></details>' : '') +
+			'<div class="nt sm">' + esc(t('Made automatically from the recording — check before relying on it.')) + (v.requestedBy ? ' · ' + esc(t('requested by')) + ' ' + esc(v.requestedBy) : '') + '</div>';
+	}
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest && e.target.closest('[data-csum-start]'); if (!b) return;
+		var recId = +b.getAttribute('data-csum-start');
+		b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span><span>' + esc(t('Sending the recording…')) + '</span>';
+		post('/Chat/CallSummaryStart/' + recId, {}).then(function (r) {
+			if (!r || !r.ok) { toast('error', t('The summary is not available right now — try again later')); }
+			paintSummary(recId, r && r.summary && r.summary.status !== 'none' ? r.summary : null);
+			if (r && r.summary && r.summary.status === 'working') loadSummary(recId);
+		});
+	});
 	function loadPlayer(recId) {
 		getJson('/Chat/CallRecording/' + recId).then(function (r) {
 			var box = $('cmPlayer'); if (!box) return;
@@ -317,7 +375,9 @@
 					'<div class="ctl"><button type="button" data-pp title="' + esc(t('Play')) + '">' + ico('play', 16) + '</button><span class="prog" data-prog><i style="width:0%"></i></span>' +
 					'<span class="num" data-time>00:00 / ' + esc(dur(d.seconds)) + '</span><button type="button" data-vol title="' + esc(t('Sound')) + '">' + ico('volume-2', 16) + '</button>' +
 					(video ? '<button type="button" data-full title="' + esc(t('Full screen')) + '">' + ico('maximize', 16) + '</button>' : '') + '</div></div>' +
-				'<div class="facts">' + facts.map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + f[1] + '</b></div>'; }).join('') + '</div>';
+				'<div class="facts">' + facts.map(function (f) { return '<div><span>' + esc(f[0]) + '</span><b>' + f[1] + '</b></div>'; }).join('') + '</div>' +
+				'<div class="cm-csum" data-csum="' + recId + '"><div class="text-muted fs-8">…</div></div>';
+			loadSummary(recId);
 			var media = box.querySelector('video,audio'), logged = false;
 			media.src = src;
 			wirePlayer(box, media, d.seconds);
@@ -909,17 +969,19 @@
 	});
 	$('cmPreviewModal').addEventListener('hidden.bs.modal', function () { pendingFile = null; $('cmPreviewWrap').innerHTML = ''; $('cmCaption').value = ''; });
 
-	// a voice message: press the microphone, speak, press again to send (or the cross to drop it)
+	// a voice message: press the microphone, speak, press again to STOP — then listen to it, and send it or delete it
+	// (owner 2026-11-19: a voice message is previewed before it goes)
 	var recording = null, recChunks = [], recStart = 0, recTimer = null;
 	if (micBtn) micBtn.addEventListener('click', function () {
 		if (recording) { stopVoice(true); return; }
+		if (voiceDraft) return;   // one at a time: the one waiting for review is sent or deleted first
 		navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
 			var type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'].find(function (x) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(x); }) || '';
 			recording = new MediaRecorder(stream, type ? { mimeType: type } : undefined); recChunks = [];
 			recording.ondataavailable = function (ev) { if (ev.data && ev.data.size) recChunks.push(ev.data); };
 			recording.start(); recStart = Date.now();
 			$('cmVoiceBar').classList.remove('d-none'); compose.classList.add('recording');
-			micBtn.classList.add('recording'); micBtn.innerHTML = ico('square', 16); micBtn.title = t('Stop and send');
+			micBtn.classList.add('recording'); micBtn.innerHTML = ico('square', 16); micBtn.title = t('Stop and listen');
 			recTimer = setInterval(function () { $('cmVoiceTime').textContent = dur(Math.round((Date.now() - recStart) / 1000)); }, 500);
 		}).catch(function () { toast('error', t('Microphone unavailable')); });
 	});
@@ -936,10 +998,48 @@
 			if (ext === 'm4a') mime = 'audio/mp4';
 			var blob = new Blob(recChunks, { type: mime });
 			var file = new File([blob], 'voice-' + new Date().toISOString().replace(/[:.]/g, '-') + '.' + ext, { type: mime });
-			sendCore('', file);
+			showVoiceDraft(file, Math.round((Date.now() - recStart) / 1000));
 		};
 		try { r.stop(); } catch (e) { }
 	}
+
+	// the recording waiting for review: play it, then send it or delete it
+	var voiceDraft = null, vpAudio = $('cmVpAudio');
+	function showVoiceDraft(file, seconds) {
+		voiceDraft = { file: file, url: URL.createObjectURL(file), seconds: seconds };
+		vpAudio.src = voiceDraft.url;
+		$('cmVpTime').textContent = dur(seconds); $('cmVpProg').firstElementChild.style.width = '0%';
+		$('cmVpPlay').innerHTML = ico('play', 14);
+		$('cmVoicePreview').classList.remove('d-none'); compose.classList.add('recording');
+		micBtn.disabled = true;
+	}
+	function dropVoiceDraft() {
+		if (!voiceDraft) return;
+		try { vpAudio.pause(); } catch (e) { }
+		URL.revokeObjectURL(voiceDraft.url); voiceDraft = null; vpAudio.removeAttribute('src');
+		$('cmVoicePreview').classList.add('d-none'); compose.classList.remove('recording');
+		micBtn.disabled = false;
+	}
+	$('cmVpPlay').addEventListener('click', function () {
+		if (!voiceDraft) return;
+		if (vpAudio.paused) vpAudio.play().catch(function () { }); else vpAudio.pause();
+	});
+	vpAudio.addEventListener('play', function () { $('cmVpPlay').innerHTML = ico('pause', 14); });
+	vpAudio.addEventListener('pause', function () { $('cmVpPlay').innerHTML = ico('play', 14); });
+	vpAudio.addEventListener('ended', function () { $('cmVpPlay').innerHTML = ico('play', 14); $('cmVpProg').firstElementChild.style.width = '0%'; });
+	vpAudio.addEventListener('timeupdate', function () {
+		var total = isFinite(vpAudio.duration) && vpAudio.duration > 0 ? vpAudio.duration : (voiceDraft ? voiceDraft.seconds : 0);
+		if (!total) return;
+		$('cmVpProg').firstElementChild.style.width = Math.min(100, vpAudio.currentTime / total * 100) + '%';
+		$('cmVpTime').textContent = dur(Math.round(vpAudio.currentTime)) + ' / ' + dur(Math.round(total));
+	});
+	$('cmVpProg').addEventListener('click', function (e) {
+		var total = isFinite(vpAudio.duration) && vpAudio.duration > 0 ? vpAudio.duration : 0; if (!total) return;
+		var r = this.getBoundingClientRect(), x = (isRtl ? r.right - e.clientX : e.clientX - r.left) / r.width;
+		vpAudio.currentTime = Math.max(0, Math.min(1, x)) * total;
+	});
+	$('cmVpDelete').addEventListener('click', function () { dropVoiceDraft(); toast('info', t('The recording was deleted')); });
+	$('cmVpSend').addEventListener('click', function () { var f = voiceDraft && voiceDraft.file; dropVoiceDraft(); if (f) sendCore('', f); });
 
 	/* ---------------- edit ---------------- */
 	function openEdit(id, body) {

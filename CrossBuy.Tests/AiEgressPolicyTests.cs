@@ -166,6 +166,8 @@ namespace CrossBuy.Tests
         [Theory]
         [InlineData(AiEgressPurpose.SpeechTranscription, AiEgressDestinationClass.Internal, true)]
         [InlineData(AiEgressPurpose.SpeechTranscription, AiEgressDestinationClass.ApprovedExternalProcessor, false)]
+        [InlineData(AiEgressPurpose.CallSummary, AiEgressDestinationClass.Internal, true)]
+        [InlineData(AiEgressPurpose.CallSummary, AiEgressDestinationClass.ApprovedExternalProcessor, false)]
         [InlineData(AiEgressPurpose.QuestionUnderstanding, AiEgressDestinationClass.Internal, false)]
         [InlineData(AiEgressPurpose.CashflowForecast, AiEgressDestinationClass.Internal, false)]
         public async Task Personal_data_goes_only_inside_and_only_to_transcribe_speech(

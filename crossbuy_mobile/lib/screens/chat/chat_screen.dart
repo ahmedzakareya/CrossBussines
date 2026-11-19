@@ -57,6 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _tick?.cancel();
     _recTick?.cancel();
     _rec.dispose();
+    _draftPlayer?.dispose();
     _box.dispose();
     _scroll.dispose();
     super.dispose();
@@ -158,15 +159,27 @@ class _ChatScreenState extends State<ChatScreen> {
     if (pick == 2) _attach();
   }
 
+  // A voice message is LISTENED TO BEFORE IT IS SENT (owner 2026-11-19): the microphone stops the recording, the
+  // preview plays it, and only «send» sends it; the bin deletes it.
+  String? _draftPath;
+  int _draftSecs = 0;
+  VideoPlayerController? _draftPlayer;
+
   Future<void> _voice() async {
     if (_recording) {
       _recTick?.cancel();
       final path = await _rec.stop();
-      final long = _recStart != null && DateTime.now().difference(_recStart!).inMilliseconds > 700;
+      final ms = _recStart == null ? 0 : DateTime.now().difference(_recStart!).inMilliseconds;
       setState(() => _recording = false);
-      if (path != null && long) await _send(filePath: path, fileName: 'voice-${DateTime.now().millisecondsSinceEpoch}.m4a');
+      if (path == null) return;
+      if (ms < 700) { try { File(path).deleteSync(); } catch (_) {} return; }   // a tap, not a message
+      final player = VideoPlayerController.file(File(path));
+      player.addListener(() { if (mounted) setState(() {}); });
+      setState(() { _draftPath = path; _draftSecs = (ms / 1000).round(); _draftPlayer = player; });
+      try { await player.initialize(); } catch (_) {/* still sendable; only the preview is silent */}
       return;
     }
+    if (_draftPath != null) return;   // the one waiting for review is sent or deleted first
     if (!await _rec.hasPermission()) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'اسمح بالميكروفون لتسجيل رسالة صوتية', 'Allow the microphone to record a voice message'))));
       return;
@@ -176,6 +189,19 @@ class _ChatScreenState extends State<ChatScreen> {
     _recStart = DateTime.now();
     _recTick = Timer.periodic(const Duration(seconds: 1), (_) { if (mounted) setState(() {}); });
     setState(() => _recording = true);
+  }
+
+  void _dropDraft({bool delete = true}) {
+    final p = _draftPath, pl = _draftPlayer;
+    setState(() { _draftPath = null; _draftPlayer = null; });
+    pl?.dispose();
+    if (delete && p != null) { try { File(p).deleteSync(); } catch (_) {} }
+  }
+
+  Future<void> _sendDraft() async {
+    final p = _draftPath; if (p == null) return;
+    _dropDraft(delete: false);
+    await _send(filePath: p, fileName: 'voice-${DateTime.now().millisecondsSinceEpoch}.m4a');
   }
 
   Future<void> _cancelVoice() async {
@@ -594,8 +620,10 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(color: Brand.paper, borderRadius: BorderRadius.circular(14), border: Border.all(color: _recording ? Brand.badC : Brand.lineC)),
-              child: _recording
+              decoration: BoxDecoration(color: Brand.paper, borderRadius: BorderRadius.circular(14), border: Border.all(color: _recording ? Brand.badC : _draftPath != null ? Brand.blue : Brand.lineC)),
+              child: _draftPath != null
+                  ? _draftRow(context)
+                  : _recording
                   ? SizedBox(height: 42, child: Row(children: [
                       const Icon(Lu.mic, size: 17, color: Brand.badC),
                       const SizedBox(width: 6),
@@ -617,15 +645,42 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 6),
-          if (!typing)
-            _sendBtn(_recording ? Lu.square : Lu.mic, soft: !_recording, onTap: _voice),
-          if (typing || _recording) ...[
-            const SizedBox(width: 6),
-            _sendBtn(Lu.sendHorizontal, onTap: _recording ? _voice : () => _send()),
-          ],
+          if (_draftPath != null)
+            _sendBtn(Lu.sendHorizontal, onTap: _sendDraft)
+          else if (!typing)
+            _sendBtn(_recording ? Lu.square : Lu.mic, soft: !_recording, onTap: _voice)
+          else
+            _sendBtn(Lu.sendHorizontal, onTap: () => _send()),
         ]),
       ]),
     );
+  }
+
+  /// The recording waiting for review: delete · play/pause · progress · length.
+  Widget _draftRow(BuildContext context) {
+    final v = _draftPlayer?.value;
+    final total = (v != null && v.isInitialized && v.duration > Duration.zero) ? v.duration : Duration(seconds: _draftSecs);
+    final pos = v?.position ?? Duration.zero;
+    final playing = v?.isPlaying ?? false;
+    String t(Duration d) => '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+    return SizedBox(height: 42, child: Row(children: [
+      GestureDetector(onTap: () => _dropDraft(), child: const Padding(padding: EdgeInsets.all(4), child: Icon(Lu.trash2, size: 18, color: Brand.badC))),
+      const SizedBox(width: 6),
+      GestureDetector(
+        onTap: () async {
+          final p = _draftPlayer; if (p == null || !p.value.isInitialized) return;
+          if (p.value.isPlaying) { await p.pause(); } else { if (p.value.position >= p.value.duration) await p.seekTo(Duration.zero); await p.play(); }
+        },
+        child: Container(width: 30, height: 30, alignment: Alignment.center, decoration: const BoxDecoration(color: Brand.navy, shape: BoxShape.circle),
+            child: Icon(playing ? Lu.pause : Lu.play, size: 14, color: Colors.white)),
+      ),
+      const SizedBox(width: 8),
+      Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(2), child: LinearProgressIndicator(
+          value: total.inMilliseconds == 0 ? 0 : (pos.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0), minHeight: 4,
+          backgroundColor: Brand.lineC, color: Brand.blue))),
+      const SizedBox(width: 8),
+      Text(playing || pos > Duration.zero ? '${t(pos)} / ${t(total)}' : t(total), style: const TextStyle(fontSize: 10.5, color: Brand.mutedC)),
+    ]));
   }
 
   Widget _sendBtn(IconData i, {bool soft = false, required VoidCallback onTap}) => GestureDetector(
