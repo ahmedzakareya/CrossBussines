@@ -19,10 +19,16 @@ android {
         applicationId = "com.example.crossbuy_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // MediaPipe tasks-vision (background blur in calls) needs Android 7.0 (API 24) or newer
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // the selfie model is read straight from the APK: it must not be compressed
+    androidResources {
+        noCompress += "tflite"
     }
 
     buildTypes {
@@ -42,4 +48,12 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Background blur in calls (owner 2026-11-19). The same WebRTC build flutter_webrtc 1.6.3 uses (it declares it
+    // `implementation`, so the app names it to compile BlurProcessor against org.webrtc), and MediaPipe's vision tasks
+    // (Apache-2.0; 1.2.2, published 2026-11-03 — the browser uses the same version and the same selfie model).
+    implementation("io.github.webrtc-sdk:android:150.7871.04")
+    implementation("com.google.mediapipe:tasks-vision:1.2.2")
 }

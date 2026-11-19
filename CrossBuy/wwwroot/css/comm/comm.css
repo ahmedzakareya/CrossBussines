@@ -457,3 +457,6 @@ button.cm-rec { border: 0; }
 .cm-csum .bar { height: 6px; border-radius: 3px; background: #DCE3EF; overflow: hidden; } .cm-csum .bar i { display: block; height: 100%; background: var(--cm-brand2); transition: width .6s; }
 .cm-csum details.tr { margin-top: 10px; font-size: 12px; } .cm-csum details.tr summary { cursor: pointer; color: var(--cm-brand2); font-weight: 600; }
 .cm-csum details.tr div { margin-top: 6px; white-space: pre-wrap; line-height: 1.8; color: var(--cm-ink, #1F2D4D); unicode-bidi: plaintext; max-height: 260px; overflow: auto; }
+
+/* the chat drawer is open (crossbuy-chat-drawer.js marks the body): the floating button and its panel step aside */
+body[data-cb-chat-open] .cm-fab, body[data-cb-chat-open] .cm-fpanel { display: none !important; }

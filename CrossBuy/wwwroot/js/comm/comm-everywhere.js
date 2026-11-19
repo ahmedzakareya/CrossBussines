@@ -7,6 +7,10 @@
 (function () {
 	'use strict';
 	if (window.cbCommEverywhere) return; window.cbCommEverywhere = true;
+	// INSIDE THE CHAT DRAWER (crossbuy-chat-drawer.js loads /Chat?embed=1 in a frame) nothing of this belongs: the page
+	// around the drawer already has the floating button, the counts and the notices. A second button inside the drawer
+	// was the owner's "the slide opens the whole system".
+	if (window.self !== window.top) return;
 	var K = window.cbCallsKit; if (!K) return;
 	var t = K.t, esc = K.esc, ico = K.ico, face = K.face, get = K.get;
 	var base = (K.U && K.U.comm) || '/Chat';

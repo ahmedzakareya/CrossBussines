@@ -138,7 +138,7 @@ class CallsProvider extends ChangeNotifier {
 
   // ------------------------------------------------------------------------------------------ connection
   Future<void> connect() async {
-    if (_hub != null) return;
+    if (_hub != null) { if (!connected) _keepTrying(); return; }
     me = await ApiService.instance.getCallsMe();
     if (me == null || !me!.installed) { notifyListeners(); return; }
     final delays = <int>[0, 1000, 2000, 3000, 4000, ...List.filled(180, 5000)];   // a server restart takes minutes: a quarter of an hour
@@ -177,7 +177,7 @@ class CallsProvider extends ChangeNotifier {
     hub.onreconnecting(({error}) { connected = false; notifyListeners(); });
     hub.onclose(({error}) {
       connected = false; notifyListeners();
-      Future.delayed(const Duration(seconds: 5), () async { try { await _hub?.start(); connected = true; _resumeAll(); notifyListeners(); } catch (_) {} });
+      _keepTrying();
     });
     _hub = hub;
     try { await hub.start(); connected = true; } catch (_) {}
@@ -193,6 +193,23 @@ class CallsProvider extends ChangeNotifier {
 
   static Map<String, dynamic> _m(List<Object?>? a) => (a != null && a.isNotEmpty && a[0] is Map) ? (a[0] as Map).cast<String, dynamic>() : <String, dynamic>{};
   GMember? _gm(Map<String, dynamic> m) { final g = group; if (g == null || g.id != m['callId']) return null; return g.members[(m['employeeId'] as num?)?.toInt()]; }
+  // AFTER THE CONNECTION CLOSES, KEEP TRYING. It used to try once, five seconds later: a server restart takes a minute
+  // or two, so that one try failed and the app stayed "not connected to the call server" until it was reopened — every
+  // call from it refused. Now it tries again, waiting a little longer each time (up to 30 s), until it is back.
+  bool _retrying = false;
+  void _keepTrying() {
+    if (_retrying) return;
+    _retrying = true;
+    () async {
+      var wait = 5;
+      while (_hub != null && !connected) {
+        await Future.delayed(Duration(seconds: wait));
+        try { await _hub?.start(); connected = true; _resumeAll(); notifyListeners(); } catch (_) { wait = wait < 30 ? wait * 2 : 30; }
+      }
+      _retrying = false;
+    }();
+  }
+
   Future<Object?> _invoke(String method, List<Object> args) async { final h = _hub; if (h == null || !connected) throw StateError('not connected'); return h.invoke(method, args: args); }
   static Map<String, dynamic> _r(Object? o) => o is Map ? o.cast<String, dynamic>() : <String, dynamic>{};
 
@@ -494,6 +511,7 @@ class CallsProvider extends ChangeNotifier {
     current = null;
     c.clock?.cancel(); c.ringTimer?.cancel(); c.quality?.cancel();
     _stopTone();
+    _clearBlur();
     try { c.pc?.close(); } catch (_) {}
     for (final t in c.local?.getTracks() ?? <MediaStreamTrack>[]) { t.stop(); }
     c.localR.srcObject = null; c.remoteR.srcObject = null;
@@ -536,6 +554,31 @@ class CallsProvider extends ChangeNotifier {
       c.cam = !c.cam; for (final t in v) { t.enabled = c.cam; }
     }
     _sendState(c); notifyListeners();
+  }
+
+  // ---- background blur (owner 2026-11-19), Android: MainActivity's "crossbuy/blur" puts BlurProcessor (MediaPipe's
+  // selfie model, on the phone) on this call's camera track; the other side receives the blurred picture ----
+  static const _blurCh = MethodChannel('crossbuy/blur');
+  bool blurOn = false;
+  bool get blurSupported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> toggleBlur() async {
+    final s = group?.local ?? current?.local;
+    final v = s?.getVideoTracks() ?? [];
+    if (v.isEmpty || !blurSupported) { _say(L('لا توجد كاميرا لتمويه خلفيتها', 'There is no camera to blur')); return; }
+    final want = !blurOn;
+    bool ok = false;
+    try { ok = await _blurCh.invokeMethod<bool>('set', {'trackId': v.first.id, 'on': want}) == true; } catch (_) {}
+    if (!ok) { _say(L('تعذّر تشغيل التمويه على هذا الجهاز', 'The blur could not start on this device')); return; }
+    blurOn = want;
+    _say(want ? L('الخلفية مموّهة', 'The background is blurred') : L('أُلغي تمويه الخلفية', 'The background is no longer blurred'));
+    notifyListeners();
+  }
+
+  void _clearBlur() {
+    if (!blurOn) return;
+    blurOn = false;
+    _blurCh.invokeMethod('clear').catchError((_) => null);
   }
 
   Future<void> flipCamera() async {
@@ -854,6 +897,7 @@ class CallsProvider extends ChangeNotifier {
   void _closeGroup() {
     final g = group; if (g == null) return;
     group = null;
+    _clearBlur();
     g.clock?.cancel(); g.ping?.cancel();
     for (final x in g.members.values) {
       try { x.pc?.close(); } catch (_) {}

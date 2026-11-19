@@ -57,10 +57,22 @@ class _ChatScreenState extends State<ChatScreen> {
     _tick = Timer.periodic(const Duration(seconds: 4), (_) { if (!ChatHub.instance.connected || (_ticks++ % 5 == 0)) _refresh(); });
     ChatHub.instance.join(widget.id);
     ChatHub.instance.events.addListener(_onHub);
+    // the call buttons in the head need the calls hub: connect it here (it used to connect only on the calls screen,
+    // so a call from a conversation was refused silently) and show its notices in this screen
+    _calls = context.read<CallsProvider>();
+    _calls.connect();
+    _calls.notice.addListener(_onCallNotice);
     _box.addListener(_onTyping);
   }
 
   int _ticks = 0;
+  late final CallsProvider _calls;
+
+  void _onCallNotice() {
+    final v = _calls.notice.value;
+    if (v == null || !mounted || _calls.busy) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(v), behavior: SnackBarBehavior.floating));
+  }
   Timer? _hubDebounce, _typingOff;
   DateTime _lastTypingSent = DateTime(2000);
   String? _typingName;
@@ -116,6 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _hubDebounce?.cancel();
     _typingOff?.cancel();
     ChatHub.instance.events.removeListener(_onHub);
+    _calls.notice.removeListener(_onCallNotice);
     ChatHub.instance.leave(widget.id);
     _recTick?.cancel();
     _rec.dispose();
@@ -346,17 +359,25 @@ class _ChatScreenState extends State<ChatScreen> {
     final h = _head;
     if (h == null) return const [];
     final mine = context.read<CallsProvider>().myId;
+    if (h.members.isEmpty) {
+      // a direct conversation's header names the other person by its title only (members is sent empty)
+      final other = widget.otherId ?? h.memberIds.firstWhere((id) => id != mine, orElse: () => 0);
+      return other == 0 ? const [] : [CallPerson(id: other, name: h.title, nameEn: h.title, photo: h.avatar, state: h.online ? 'on' : 'off')];
+    }
     return [for (final m in h.members) if (m.id != mine) CallPerson(id: m.id, name: m.name, nameEn: m.altName ?? m.name, photo: m.avatar, state: m.online ? 'on' : 'off')];
   }
 
-  void _call({required bool video}) {
+  Future<void> _call({required bool video}) async {
     final p = context.read<CallsProvider>();
+    if (!p.connected) { await p.connect(); if (!p.connected) await Future.delayed(const Duration(seconds: 2)); }
     final h = _head;
     if (h == null) return;
     if (!h.isGroup) {
       final other = widget.otherId;
       final o = _others().where((x) => other == null || x.id == other).toList();
-      if (o.isNotEmpty) p.startCall(o.first, video: video);
+      if (o.isNotEmpty) { p.startCall(o.first, video: video); } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'لا يمكن الاتصال من هذه المحادثة الآن', 'A call cannot be made from this conversation now'))));
+      }
     } else {
       final o = _others();
       if (o.length >= 2) {

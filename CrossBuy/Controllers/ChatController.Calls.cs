@@ -47,6 +47,11 @@ namespace CrossBuy.Controllers
 		/// from, else the one remembered while moving inside Communication, else the back office.
 		private string CommLayout(string? m)
 		{
+			// THE CHAT DRAWER (crossbuy-chat-drawer.js) loads /Chat?embed=1: the chat alone, no header, menu or footer. Only
+			// the back-office layout knows embed mode, so a module's layout here put the WHOLE SYSTEM inside the drawer
+			// (owner, 2026-11-19: «ال slide دي مهزله كاملة … تفتح النظام بالكامل»). In the drawer no layout is seen, so
+			// the module does not matter — and the remembered module is left as it was.
+			if (Request.Query["embed"] == "1") { ViewBag.CommModule = "backend"; return Layouts["backend"]; }
 			string? module = m != null && Layouts.ContainsKey(m) ? m : null;
 			if (module == null && Uri.TryCreate(Request.Headers.Referer.ToString(), UriKind.Absolute, out var from) && from.Host == Request.Host.Host
 				&& !from.AbsolutePath.StartsWith("/chat", StringComparison.OrdinalIgnoreCase))

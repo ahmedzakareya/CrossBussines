@@ -33,7 +33,7 @@ class ChatHub {
   static Map<String, dynamic> _m(List<Object?>? a) => (a != null && a.isNotEmpty && a[0] is Map) ? (a[0] as Map).cast<String, dynamic>() : <String, dynamic>{};
 
   Future<void> connect() async {
-    if (_hub != null) return;
+    if (_hub != null) { if (!connected) _keepTrying(); return; }
     final hub = HubConnectionBuilder()
         .withUrl('${AppConfig.apiBaseUrl}/hubs/chat', options: HttpConnectionOptions(accessTokenFactory: () async => ApiService.instance.token ?? ''))
         .withAutomaticReconnect(retryDelays: [0, 2000, 5000, 10000, ...List.filled(120, 15000)])
@@ -46,15 +46,30 @@ class ChatHub {
     }
     hub.onreconnected(({connectionId}) { connected = true; for (final c in _joined) { _join(c); } });
     hub.onreconnecting(({error}) { connected = false; });
-    hub.onclose(({error}) { connected = false; });
+    hub.onclose(({error}) { connected = false; _keepTrying(); });
     _hub = hub;
     try {
       await hub.start();
       connected = true;
     } catch (_) {
-      connected = false;   // the screens still poll; the automatic reconnect does not cover a failed first start, so try once more later
-      Future.delayed(const Duration(seconds: 15), () async { try { await hub.start(); connected = true; for (final c in _joined) { _join(c); } } catch (_) {} });
+      connected = false;   // the screens still poll; the automatic reconnect does not cover a failed first start
+      _keepTrying();
     }
+  }
+
+  /// A closed connection (a server restart outlasts the automatic reconnect) is started again until it is back.
+  bool _retrying = false;
+  void _keepTrying() {
+    if (_retrying) return;
+    _retrying = true;
+    () async {
+      var wait = 5;
+      while (_hub != null && !connected) {
+        await Future.delayed(Duration(seconds: wait));
+        try { await _hub?.start(); connected = true; for (final c in _joined) { await _join(c); } } catch (_) { wait = wait < 30 ? wait * 2 : 30; }
+      }
+      _retrying = false;
+    }();
   }
 
   Future<void> _join(int c) async { try { await _hub?.invoke('JoinConversation', args: [c]); } catch (_) {} }

@@ -106,14 +106,16 @@ class ChatHeader {
   final String? avatar;
   final bool online;
   final List<ChatMember> members;
+  final List<int> memberIds;   // always sent; [members] is empty for a direct conversation
   final Map<int, int> reads;   // member → the last message they read
-  ChatHeader({required this.id, required this.kind, required this.title, this.avatar, this.online = false, this.memberCount = 0, this.otherReadMessageId = 0, this.members = const [], this.reads = const {}});
+  ChatHeader({required this.id, required this.kind, required this.title, this.avatar, this.online = false, this.memberCount = 0, this.otherReadMessageId = 0, this.members = const [], this.memberIds = const [], this.reads = const {}});
   bool get isGroup => kind != 'Direct';
   factory ChatHeader.fromJson(Map<String, dynamic> j) => ChatHeader(
         id: _i(j['id']), kind: _s(j['kind']), title: _s(j['title']), avatar: _n(j['avatar']), online: j['online'] == true,
         memberCount: _i(j['memberCount']), otherReadMessageId: _i(j['otherReadMessageId']),
         members: [for (final m in (j['members'] as List? ?? const [])) ChatMember(_i((m as Map)['id']), _s(m['name']), _n(m['avatar']), _n(m['altName']), m['online'] == true)],
         reads: {for (final r in (j['memberReads'] as List? ?? const [])) _i((r as Map)['employeeId']): _i(r['lastReadMessageId'])},
+        memberIds: [for (final m in (j['memberIds'] as List? ?? const [])) _i(m)],
       );
 }
 
