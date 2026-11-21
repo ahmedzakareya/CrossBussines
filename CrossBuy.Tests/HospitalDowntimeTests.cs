@@ -33,6 +33,17 @@ namespace CrossBuy.Tests
 		}
 	
 		[Fact]
+		public void Only_the_downtime_summary_may_be_scheduled_and_as_a_pdf()
+		{
+			// Found live: the shift copies were refused because no hospital document could be scheduled.
+			var defs = new HospitalReportDefinitionProvider().GetDefinitions().ToList();
+			var dt = defs.Single(d => d.Code == HospitalDocumentDatasetCodes.WardDowntime);
+			Assert.True(dt.Capabilities.AllowSchedule);
+			Assert.True(dt.Capabilities.SupportsFormat(ReportOutputFormat.Pdf));
+			Assert.All(defs.Where(d => d.Code != HospitalDocumentDatasetCodes.WardDowntime), d => Assert.False(d.Capabilities.AllowSchedule));
+		}
+
+		[Fact]
 		public void The_shift_copies_go_to_valid_addresses_at_valid_times()
 		{
 			var ok = HospitalDowntimeScheduleRules.Read(new() { Emails = "icu@hospital.example; charge.nurse@hospital.example" });

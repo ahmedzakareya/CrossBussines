@@ -820,7 +820,8 @@ namespace CrossBuy.BL.Reporting
                         Formats = new[] { ReportOutputFormat.Html, ReportOutputFormat.PrintHtml, ReportOutputFormat.Pdf },
                         MaxRows = dataset.MaxRows,
                         PreviewRows = 100,
-                        AllowSchedule = false,
+                        // H224: a document is printed from its record — except the ward's downtime summary, sent each shift
+                        AllowSchedule = dataset.DatasetCode == HospitalDocumentDatasetCodes.WardDowntime,
                         AllowArchive = true,
                         AllowShare = true,
                     },

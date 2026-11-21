@@ -83,6 +83,7 @@ namespace CrossBuy.BL.Hospital
 		public HospitalMohGatewayService(CrossDbContext db, IHospitalAccessService access, IHttpClientFactory? http = null, Microsoft.Extensions.Configuration.IConfiguration? config = null)
 		{ _db = db; _access = access; _http = http; _config = config; }
 
+		public const string NotConnected = "The hospital is not connected to the Ministry's system: record the reference by hand";
 		public bool Connected => !string.IsNullOrWhiteSpace(_config?["Hospital:MohGateway:Url"]);
 
 		public async Task<IReadOnlyList<HospitalMohSubmission>> HistoryAsync(BusinessContext ctx, string kind, IReadOnlyCollection<int> recordIds, CancellationToken ct = default)
@@ -95,6 +96,7 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> SendSickLeaveAsync(BusinessContext ctx, HospitalSickLeaveService leaves, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Read, null, ct)) return HospitalResult.Fail("forbidden");
+			if (!Connected) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
 			var l = await _db.Set<HospitalSickLeave>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
 			if (l == null) return HospitalResult.Fail("not_found");
 			if (HospitalSickLeaveRules.MohRefusal(l, "pending") is string why) return HospitalResult.Fail(why);
@@ -117,6 +119,7 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> SendDiseaseAsync(BusinessContext ctx, HospitalNotifiableService cases, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) return HospitalResult.Fail("forbidden");
+			if (!Connected) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
 			var r = await _db.Set<HospitalDiseaseReport>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
 			if (r == null) return HospitalResult.Fail("not_found");
 			if (r.Status != HospitalDiseaseReportStatus.Due) return HospitalResult.Fail("This case is closed");
@@ -137,7 +140,7 @@ namespace CrossBuy.BL.Hospital
 
 		private async Task<(bool Ok, string? Reference, string? Error, int? Status)> PostAsync(string path, object payload, CancellationToken ct)
 		{
-			if (!Connected || _http == null) return (false, null, "The hospital is not connected to the Ministry's system: record the reference by hand", null);
+			if (!Connected || _http == null) return (false, null, NotConnected, null);
 			try
 			{
 				var client = _http.CreateClient("hospital-moh");
