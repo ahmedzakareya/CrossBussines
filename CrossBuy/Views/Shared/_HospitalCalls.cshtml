@@ -196,6 +196,16 @@
         cmBlurOff: @Json.Serialize(S("The background is no longer blurred")),
         cmBlurStarting: @Json.Serialize(S("Preparing the blur…")),
         cmBlurFail: @Json.Serialize(S("The blur could not start on this device")),
+        cmDevTitle: @Json.Serialize(S("Devices")),
+        cmDevMic: @Json.Serialize(S("Microphone")),
+        cmDevCam: @Json.Serialize(S("Camera")),
+        cmDevSpk: @Json.Serialize(S("Speaker")),
+        cmDevTest: @Json.Serialize(S("Test the sound")),
+        cmDevDefault: @Json.Serialize(S("Default")),
+        cmDevSave: @Json.Serialize(S("Use these")),
+        cmDevCancel: @Json.Serialize(S("Cancel")),
+        cmDevSaved: @Json.Serialize(S("The devices are saved for your calls")),
+        cmDevNote: @Json.Serialize(S("Speak: the bar moves when your microphone hears you. The choice is kept on this device for every call.")),
         cmOnHoldMine: @Json.Serialize(S("You put the call on hold")),
         cmOnHoldTheirs: @Json.Serialize(S("On hold")),
         cmTransferring: @Json.Serialize(S("Transferring — the call is yours until they answer")),
@@ -378,5 +388,6 @@
 <script src="~/js/hospital/hospital-calls.js" asp-append-version="true"></script>
 <script src="~/js/hospital/hospital-calls-group.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-blur.js" asp-append-version="true"></script>
+<script src="~/js/comm/comm-devices.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-everywhere.js" asp-append-version="true"></script>
 }

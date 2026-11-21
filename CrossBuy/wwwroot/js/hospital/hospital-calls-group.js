@@ -152,8 +152,9 @@
 
 	function media() {
 		var v = g.video ? { height: { ideal: g.maxHeight }, facingMode: 'user' } : false;
-		var gum = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ audio: true, video: v }) : Promise.reject(new Error('none'));
-		return gum.catch(function (e) { if (!v) throw e; g.cam = false; return navigator.mediaDevices.getUserMedia({ audio: true, video: false }); })
+		var A = window.cbDevices ? window.cbDevices.audio() : true, V = window.cbDevices ? window.cbDevices.video(v) : v;
+		var gum = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ audio: A, video: V }) : Promise.reject(new Error('none'));
+		return gum.catch(function (e) { if (!v) throw e; g.cam = false; return navigator.mediaDevices.getUserMedia({ audio: A, video: false }); })
 			.then(function (s) { g.local = s; }).catch(function (e) { g.local = new MediaStream(); g.mic = false; g.cam = false; toast(t('noMedia', e && e.name ? e.name : ''), 'error'); });
 	}
 
@@ -412,13 +413,15 @@
 		var m = document.createElement('div'); m.className = 'cbc-more';
 		m.innerHTML = '<div class="rx">' + ['👍', '👏', '❤️', '😂', '🎉', '🙏'].map(function (e) { return '<button type="button" data-rx="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
 			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(g.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>' +
-			(window.cbBlur && window.cbBlur.supported() && (g.blur || (g.local && g.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(g.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
+			(window.cbBlur && window.cbBlur.supported() && (g.blur || (g.local && g.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(g.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '') +
+			(window.cbDevices ? '<button type="button" class="it" data-m="devices">' + ico('headphones', 18) + '<span>' + esc(t('cmDevTitle')) + '</span></button>' : '');
 		g.el.querySelector('.cbc-main').appendChild(m);
 		m.onclick = function (e) {
 			var b = e.target.closest('button'); if (!b) return; m.remove();
 			var rx = b.getAttribute('data-rx');
 			if (rx) { toAll({ t: 'react', e: rx }); floatOn('me', rx); return; }
 			if (b.getAttribute('data-m') === 'blur') { toggleBlur(); return; }
+			if (b.getAttribute('data-m') === 'devices') { window.cbDevices.open({ hasVideo: function () { return !!(g && g.local && g.local.getVideoTracks().length); }, videoBase: { height: { ideal: g.maxHeight } }, replace: replaceDevice }); return; }
 			g.hand = !g.hand; toAll({ t: 'hand', on: g.hand }); paintTiles(); paintBar();
 		};
 	}
@@ -427,6 +430,18 @@
 		var old = g.local.getVideoTracks()[0]; if (old) g.local.removeTrack(old);
 		g.local.addTrack(nt);
 		if (!g.sharing) sendVideo(nt);
+		paintTiles();
+	}
+	// a microphone or camera chosen during the group call: on every connection, or on the media server
+	function replaceDevice(kind, track) {
+		if (!g || !g.local) { track.stop(); return; }
+		if (kind === 'video' && g.blur) toggleBlur();
+		var old = kind === 'audio' ? g.local.getAudioTracks()[0] : g.local.getVideoTracks()[0];
+		if (old) { g.local.removeTrack(old); old.stop(); }
+		g.local.addTrack(track); track.enabled = kind === 'audio' ? g.mic !== false : g.cam !== false;
+		if (kind === 'video') { if (!g.sharing) sendVideo(track); }
+		else if (g.room) { if (g.pubA && g.pubA.track) g.pubA.track.replaceTrack(track).catch(function () { }); }
+		else Object.keys(g.members).forEach(function (id) { var x = g.members[id]; if (x.audioTx) x.audioTx.sender.replaceTrack(track); });
 		paintTiles();
 	}
 	function toggleBlur() {

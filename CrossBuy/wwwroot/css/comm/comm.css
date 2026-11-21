@@ -460,3 +460,57 @@ button.cm-rec { border: 0; }
 
 /* the chat drawer is open (crossbuy-chat-drawer.js marks the body): the floating button and its panel step aside */
 body[data-cb-chat-open] .cm-fab, body[data-cb-chat-open] .cm-fpanel { display: none !important; }
+
+/* the assistant: a summary of the conversation, or a question about it */
+.cm-assist .or { text-align: center; font-size: 11.5px; color: var(--cm-muted, #738098); margin: 10px 0; }
+.cm-assist .out { margin-top: 14px; } .cm-assist .wait { font-size: 12.5px; color: var(--cm-brand2); display: flex; gap: 8px; align-items: center; }
+.cm-assist .ov { font-size: 13px; line-height: 1.8; unicode-bidi: plaintext; color: var(--cm-ink, #1F2D4D); }
+.cm-assist .sec { margin-top: 10px; } .cm-assist .st { display: flex; gap: 6px; align-items: center; font-size: 11.5px; font-weight: 700; color: var(--cm-brand2); }
+.cm-assist ul { margin: 4px 0 0; padding-inline-start: 20px; font-size: 12.5px; line-height: 1.8; } .cm-assist li { unicode-bidi: plaintext; }
+.cm-assist .mk, .cm-assist .src button { border: 0; background: rgba(58,87,149,.08); color: var(--cm-brand2); border-radius: 7px; padding: 1px 7px; font-size: 11px; margin-inline-start: 4px; display: inline-flex; gap: 4px; align-items: center; }
+.cm-assist .src { margin-top: 8px; font-size: 11.5px; color: var(--cm-muted, #738098); }
+.cm-assist .nt { font-size: 11.5px; color: var(--cm-muted, #738098); margin-top: 10px; }
+/* a message's translation, under its text */
+.cm-translation { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(115,128,152,.35); }
+.cm-translation .lb { display: flex; gap: 5px; align-items: center; font-size: 10.5px; opacity: .75; }
+.cm-translation .tx { font-size: 12.5px; line-height: 1.7; unicode-bidi: plaintext; }
+
+/* video messages: recorded, watched, then sent; played in place */
+.cm-vid { display: block; width: 100%; max-width: 320px; border-radius: 12px; background: #000; margin-bottom: 4px; }
+.cm-vrec video { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px; background: #0c1837; }
+.cm-vrec .bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.cm-vrec .dot { width: 10px; height: 10px; border-radius: 50%; background: #C9CFDA; }
+.cm-vrec.on .dot { background: #D23C3C; animation: cmBlink 1s infinite; }
+@keyframes cmBlink { 50% { opacity: .2; } }
+
+/* the assistant's Ask button keeps to one line */
+.cm-assist [data-as="ask"] { white-space: nowrap; flex-shrink: 0; }
+/* incoming webhooks */
+.cm-hooks .nt { font-size: 12px; color: var(--cm-muted, #738098); line-height: 1.7; }
+.cm-hook { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--cm-line, #E4E8F0); border-radius: 12px; margin-bottom: 8px; }
+.cm-hook .ic { width: 32px; height: 32px; border-radius: 10px; background: rgba(58,87,149,.08); color: var(--cm-brand2); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cm-hook .nm { font-size: 13px; font-weight: 700; color: var(--cm-ink, #1F2D4D); } .cm-hook .sub { font-size: 11px; color: var(--cm-muted, #738098); margin-top: 2px; }
+.cm-hook.off { opacity: .6; } .cm-hook .tag { font-size: 10px; font-weight: 600; background: #EEF0F4; color: #5B6478; border-radius: 6px; padding: 1px 6px; margin-inline-start: 4px; }
+.cm-hooknew { margin-top: 12px; padding: 12px; border-radius: 12px; background: rgba(58,87,149,.06); border: 1px dashed rgba(58,87,149,.35); }
+.cm-hooknew .lb { font-size: 11.5px; font-weight: 700; color: var(--cm-brand2); display: flex; gap: 5px; align-items: center; margin-bottom: 6px; }
+.cm-hooknew code { font-size: 11px; word-break: break-all; background: #fff; border-radius: 8px; padding: 6px 8px; color: #1F2D4D; }
+.cm-via { font-size: 10.5px; color: var(--cm-muted, #738098); display: flex; gap: 4px; align-items: center; margin-bottom: 3px; }
+.cm-empty-sm { font-size: 12px; color: var(--cm-muted, #738098); text-align: center; padding: 14px 0; }
+
+/* a11y: a visible focus for the keyboard (never for the mouse), the message bar on focus, and less motion when asked */
+.cm-root :focus-visible, .cm-thread .cm-msg:focus-visible { outline: 2px solid var(--cm-brand2, #3A5795); outline-offset: 2px; }
+.cm-thread .cm-msg:focus-visible { border-radius: 14px; } .cm-thread:focus-visible { outline-offset: -2px; }
+.cm-msg:focus-within .cm-hover { display: flex; }
+@media (prefers-reduced-motion: reduce) { .cm-root *, .cm-root *::before, .cm-root *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+/* the theme caps a dialog's body at 200px: the assistant's answer, a video preview and the webhook list need room */
+.swal2-popup.cm-root .swal2-html-container { max-height: min(72vh, 680px); }
+.cm-quick .cm-ib { cursor: pointer; }
+/* the device check (comm-devices.js): a small mirrored preview, the choices, a level meter */
+.cm-dev .pv { position: relative; height: 190px; border-radius: 14px; overflow: hidden; background: #0c1837; margin-bottom: 6px; }
+.cm-dev .pv video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+.cm-dev .pv .nocam { display: none; position: absolute; inset: 0; place-items: center; color: #9AA6BF; }
+.cm-dev .pv.off .nocam { display: grid; } .cm-dev .pv.off video { display: none; }
+.cm-dev label { display: block; font-size: 12px; font-weight: 600; color: var(--cm-ink, #1F2D4D); margin: 12px 0 5px; }
+.cm-dev .lvl { height: 6px; border-radius: 4px; background: #EEF0F4; margin-top: 7px; overflow: hidden; }
+.cm-dev .lvl i { display: block; height: 100%; width: 0; background: var(--cm-brand2, #3A5795); transition: width .08s linear; }
+.cm-dev .nt { font-size: 11.5px; color: var(--cm-muted, #738098); margin-top: 12px; line-height: 1.7; }

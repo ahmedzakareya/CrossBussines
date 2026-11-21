@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -642,6 +644,25 @@ class ApiService {
   /// The recording's address (log=1 the first time: the opening is recorded) and the header that opens it.
   String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
   Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};
+
+  /// A voice or video message, or a call recording, as a local file for the native player. The player (ExoPlayer)
+  /// fetches on its own TLS stack, which does not know the development certificate that this client is told to trust
+  /// (dev_certificate.dart), so it failed with "trust anchor not found". Downloaded once into the app's cache, with the
+  /// sign-in header; null when it cannot be fetched.
+  Future<File?> mediaFile(String url) async {
+    try {
+      final ext = RegExp(r'\.(webm|mp4|m4a|aac|ogg|mp3|wav)(?=$|[?#])', caseSensitive: false).firstMatch(url)?.group(1)?.toLowerCase() ?? 'mp4';
+      final f = File('${Directory.systemTemp.path}/cb-media-${url.hashCode.toUnsigned(32).toRadixString(16)}.$ext');
+      if (await f.exists() && await f.length() > 0) return f;
+      final part = File('${f.path}.part');
+      await _dio.download(url, part.path, options: Options(headers: authHeaders, receiveTimeout: const Duration(minutes: 5)));
+      return await part.rename(f.path);
+    } on DioException {
+      return null;
+    } on FileSystemException {
+      return null;
+    }
+  }
   // ---------------------------------------------------------------- Communication v2: the chat (api/chat)
   List<Map<String, dynamic>> _rows(Object? d) => [for (final e in (d as List? ?? const [])) (e as Map).cast<String, dynamic>()];
 
@@ -781,6 +802,23 @@ class ApiService {
       ((await _post('/api/chat/channels', form: {'title': title, if (description != null && description.isNotEmpty) 'description': description}))?['id'] as num?)?.toInt();
   Future<bool> chatJoinChannel(int c) async => (await _post('/api/chat/channels/join', q: {'c': c}))?['ok'] == true;
   Future<Map<String, dynamic>?> chatCatchUp(int c, int since) => _getMap('/api/chat/catchup', {'c': c, 'since': since});
+
+  /// The assistant (owner 2026-11-19): start a summary or a question about the conversation → the job's id, or null.
+  Future<String?> chatAssist(int c, String mode, {String? question}) async {
+    final d = await _post('/api/chat/assist', form: {'c': c, 'mode': mode, if (question != null) 'question': question});
+    return d?['ok'] == true ? d!['job'] as String? : null;
+  }
+  /// The job as it stands: {status: working|done|failed, result}.
+  Future<Map<String, dynamic>?> chatAssistStatus(String job) => _getMap('/api/chat/assist', {'job': job});
+  /// One message in the other language (made once on the server and kept). (text, lang) or null.
+  Future<(String, String)?> chatTranslate(int id) async {
+    try {
+      final d = (await _dio.post('/api/chat/translate', queryParameters: {'id': id}, options: Options(receiveTimeout: const Duration(minutes: 2)))).data as Map;
+      return d['ok'] == true ? ('${d['text']}', '${d['lang']}') : null;
+    } on DioException {
+      return null;
+    }
+  }
 
   String chatFileUrl(int messageId) => '${AppConfig.apiBaseUrl}/api/chat/file?messageId=$messageId';
 }

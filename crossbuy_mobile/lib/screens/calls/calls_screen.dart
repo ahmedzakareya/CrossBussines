@@ -559,7 +559,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
     if (d == null) { setState(() => _missing = true); return; }
     setState(() => _d = d);
     if (d['status'] == 'Deleted') return;
-    final v = VideoPlayerController.networkUrl(Uri.parse(ApiService.instance.callRecordingMediaUrl(widget.id, log: true)), httpHeaders: ApiService.instance.authHeaders);
+    final f = await ApiService.instance.mediaFile(ApiService.instance.callRecordingMediaUrl(widget.id, log: true));   // see mediaFile
+    if (!mounted || f == null) return;
+    final v = VideoPlayerController.file(f);
     _v = v;
     v.addListener(() { if (mounted) setState(() {}); });
     try { await v.initialize(); if (mounted) setState(() {}); } catch (_) {}

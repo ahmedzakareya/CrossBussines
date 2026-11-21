@@ -48,10 +48,109 @@
 			wrap.insertAdjacentHTML('beforeend', '<button type="button" class="cm-thread-link" data-thread="' + id + '"><span class="cm-stackf">' + r.thread.people.map(function (p) { return av(p.name, p.avatar, 20); }).join('') + '</span>' +
 				'<b>' + num(r.thread.count) + ' ' + esc(r.thread.count === 1 ? t('reply (count)') : t('replies (count)')) + '</b><span>' + esc(t('last')) + ' ' + num(C.when(r.thread.last)) + '</span>' + ico(isRtl ? 'chevron-left' : 'chevron-right', 14) + '</button>');
 		}
+		// came in through a webhook
+		var vi = bub.querySelector('.cm-via'); if (vi) vi.remove();
+		if (r.via) bub.insertAdjacentHTML('afterbegin', '<div class="cm-via">' + ico('webhook', 12) + esc(t('via')) + ' <b dir="auto">' + esc(r.via) + '</b></div>');
 		// poll
 		if (r.poll) paintPoll(el, r.poll);
 		// a voice message's words
 		paintTranscript(el, id, r.transcript);
+		// its translation, once someone here asked for it
+		if (trShown[id] && r.translations) { var tr = r.translations.find(function (x) { return x.lang === trShown[id]; }); if (tr) paintTranslation(el, tr); }
+	}
+
+	/* ================================================================================================================
+	   TRANSLATION — «ترجمة» in a message's menu: into the other language (ar ↔ en), on this machine, kept for everyone
+	   ================================================================================================================ */
+	var trShown = {};
+	function paintTranslation(el, tr) {
+		var bub = el.querySelector('.cm-bubble'); if (!bub) return;
+		var old = bub.querySelector('.cm-translation'); if (old) old.remove();
+		var meta = bub.querySelector('.cm-meta');
+		var html = '<div class="cm-translation"><div class="lb">' + ico('languages', 12) + esc(t('Translation')) + '</div><div class="tx" dir="auto">' + esc(tr.text) + '</div></div>';
+		if (meta) meta.insertAdjacentHTML('beforebegin', html); else bub.insertAdjacentHTML('beforeend', html);
+	}
+	function translateMsg(id) {
+		var el = msgEl(id); if (!el) return;
+		var bub = el.querySelector('.cm-bubble');
+		var wait = document.createElement('div'); wait.className = 'cm-translation'; wait.innerHTML = '<div class="lb"><span class="spinner-border spinner-border-sm"></span> ' + esc(t('Translating…')) + '</div>';
+		var old = bub.querySelector('.cm-translation'); if (old) old.remove();
+		var meta = bub.querySelector('.cm-meta'); if (meta) bub.insertBefore(wait, meta); else bub.appendChild(wait);
+		post('/Chat/Translate', { id: id }).then(function (x) {
+			if (!x || !x.ok) { wait.remove(); toast('error', t('The assistant is not available right now — try again later')); return; }
+			trShown[id] = x.lang;
+			paintTranslation(msgEl(id) || el, { lang: x.lang, text: x.text });
+		});
+	}
+
+	/* ================================================================================================================
+	   THE ASSISTANT — «المساعد» in the conversation's head: a summary of it, or a question about it, answered from it
+	   alone by the company's own model. Every answer names the messages it rests on; nothing is made up.
+	   ================================================================================================================ */
+	C.on('head', function () {
+		var acts = E.head.querySelector('.acts'); if (!acts || acts.querySelector('[data-assist]')) return;
+		var find = acts.querySelector('[data-find]');
+		var html = ib('sparkles', t('Assistant'), 'ghost', 'data-assist="1"');
+		if (find) find.insertAdjacentHTML('beforebegin', html); else acts.insertAdjacentHTML('beforeend', html);
+	});
+	E.head.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-assist]')) openAssistant(); });
+	function newestId() { var all = E.thread.querySelectorAll('.cm-msg[data-id]'); return all.length ? +all[all.length - 1].getAttribute('data-id') : 0; }
+	function openAssistant() {
+		var c = C.cur(); if (!c) return;
+		var html = '<div class="cm-assist text-start">' +
+			'<div class="d-grid gap-2"><button type="button" class="btn btn-primary" data-as="summary">' + ico('sparkles', 15) + ' ' + esc(t('Summarise the conversation')) + '</button></div>' +
+			'<div class="or">' + esc(t('or')) + '</div>' +
+			'<div class="d-flex gap-2"><input id="asQ" class="form-control form-control-solid" maxlength="300" placeholder="' + esc(t('Ask about this conversation…')) + '" />' +
+			'<button type="button" class="btn btn-light-primary" data-as="ask">' + esc(t('Ask')) + '</button></div>' +
+			'<div id="asOut" class="out"></div>' +
+			'<div class="nt">' + esc(t('Answered from this conversation only, on the company’s own servers.')) + '</div></div>';
+		swal({ title: t('Assistant'), html: html, showConfirmButton: false, cancelButtonText: t('Close'), width: 620 });
+		var pop = document.querySelector('.swal2-popup');
+		pop.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-as]'); if (b) { run(b.getAttribute('data-as')); return; }
+			var g = e.target.closest('[data-goto-msg]'); if (g) { Swal.close(); C.gotoMsg(+g.getAttribute('data-goto-msg')); return; }
+			var k = e.target.closest('[data-as-task]'); if (k) { var title = k.getAttribute('data-as-task'); Swal.close(); makeTask(newestId(), title); }
+		});
+		pop.querySelector('#asQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run('ask'); } });
+		function out(h) { var o = pop.querySelector('#asOut'); if (o) o.innerHTML = h; }
+		function run(mode) {
+			var q = mode === 'ask' ? (pop.querySelector('#asQ').value || '').trim() : null;
+			if (mode === 'ask' && !q) { pop.querySelector('#asQ').focus(); return; }
+			pop.querySelectorAll('[data-as]').forEach(function (x) { x.disabled = true; });
+			out('<div class="wait"><span class="spinner-border spinner-border-sm"></span> ' + esc(mode === 'ask' ? t('Reading the conversation…') : t('Summarising the conversation… this can take a few minutes')) + '</div>');
+			post('/Chat/Assist', { c: c, mode: mode, question: q }).then(function (x) {
+				if (!x || !x.ok) { done(); out('<div class="nt">' + esc(x && x.code === 'nothing_to_summarise' ? t('There is nothing written here to read yet.') : t('The assistant is not available right now — try again later')) + '</div>'); return; }
+				poll(x.job, mode);
+			});
+		}
+		function done() { pop.querySelectorAll('[data-as]').forEach(function (x) { x.disabled = false; }); }
+		function poll(job, mode) {
+			setTimeout(function () {
+				if (!document.body.contains(pop)) return;
+				getJson('/Chat/AssistStatus?job=' + encodeURIComponent(job)).then(function (s) {
+					if (!s || s.status === 'working') { poll(job, mode); return; }
+					done();
+					if (s.status !== 'done' || !s.result) { out('<div class="nt">' + esc(t('The assistant is not available right now — try again later')) + '</div>'); return; }
+					out(mode === 'ask' ? askHtml(s.result) : summaryHtml(s.result));
+				});
+			}, 3000);
+		}
+		function list(title, icon, items) { return items && items.length ? '<div class="sec"><div class="st">' + ico(icon, 13) + esc(title) + '</div><ul>' + items.join('') + '</ul></div>' : ''; }
+		function cutNote(r) { return r.cut ? '<div class="nt">' + esc(t('Only the newest part of a long conversation was read.')) + '</div>' : ''; }
+		function summaryHtml(r) {
+			if (r.tooShort || !(r.overview || (r.points || []).length)) return '<div class="nt">' + esc(t('Too little was written here to summarise.')) + '</div>';
+			return (r.overview ? '<div class="ov" dir="auto">' + esc(r.overview) + '</div>' : '') +
+				list(t('Key points'), 'list', (r.points || []).map(function (p) { return '<li dir="auto">' + esc(p) + '</li>'; })) +
+				list(t('Decisions'), 'circle-check', (r.decisions || []).map(function (p) { return '<li dir="auto">' + esc(p) + '</li>'; })) +
+				list(t('Tasks'), 'list-todo', (r.actions || []).map(function (a) {
+					return '<li dir="auto"><b>' + esc(a.owner || '') + '</b> — ' + esc(a.task || '') + ' <button type="button" class="mk" data-as-task="' + esc(a.task || '') + '">' + ico('square-check', 12) + esc(t('Make it a task')) + '</button></li>';
+				})) + cutNote(r);
+		}
+		function askHtml(r) {
+			if (!r.found) return '<div class="nt">' + esc(t('There is no answer to this in the conversation.')) + '</div>' + cutNote(r);
+			return '<div class="ov" dir="auto">' + esc(r.answer) + '</div><div class="src">' + esc(t('From')) + ': ' +
+				(r.messageIds || []).map(function (id) { return '<button type="button" data-goto-msg="' + id + '">' + ico('corner-down-left', 12) + num('#' + id) + '</button>'; }).join(' ') + '</div>' + cutNote(r);
+		}
 	}
 
 	/* ================================================================================================================
@@ -95,6 +194,7 @@
 		rows.push([r.saved ? 'bookmark-x' : 'bookmark', r.saved ? t('Remove from saved') : t('Save'), 'save', function () { post('/Chat/SaveMessage', { id: id, on: !r.saved }).then(function () { loadMeta([id]); toast('success', r.saved ? t('Removed from saved') : t('Saved')); }); }]);
 		rows.push(['alarm-clock', t('Remind me'), 'remind', function () { remindMenu(id); }]);
 		rows.push(['square-check', t('Make a task'), 'task', function () { makeTask(id); }]);
+		if (m.body && m.attachmentType !== 'poll') rows.push(['languages', t('Translate'), 'translate', function () { translateMsg(id); }]);
 		if (m.attachmentType === 'poll' && el.classList.contains('mine') && r.poll && !r.poll.closed) rows.push(['lock', t('Close the poll'), 'closepoll', function () { post('/Chat/ClosePoll', { id: id }); }]);
 	});
 	E.thread.addEventListener('click', function (e) {
@@ -246,13 +346,76 @@
 	   THE PLUS — a file, a picture, a poll, a record of the system, a scheduled message, a meeting
 	   ================================================================================================================ */
 	C.on('plus', function (anchor) {
-		var rows = [['paperclip', t('File'), 'file'], ['image', t('Picture'), 'image'], ['chart-bar-big', t('Poll'), 'poll'], ['link-2', t('A record of the system'), 'record'], ['clock', t('Schedule a message'), 'schedule']];
+		var rows = [['paperclip', t('File'), 'file'], ['image', t('Picture'), 'image'], ['video', t('Video message'), 'video'], ['chart-bar-big', t('Poll'), 'poll'], ['link-2', t('A record of the system'), 'record'], ['clock', t('Schedule a message'), 'schedule']];
 		if (C.header() && C.header().kind === 'Group') rows.push(['calendar-plus', t('Schedule a meeting'), 'meeting']);
 		C.pop(anchor, rows.map(function (r) { return '<button type="button" class="cm-item w-100 border-0 bg-transparent" data-more="' + r[2] + '" style="padding:8px 12px">' + ico(r[0], 16) + '<span class="fs-7 fw-semibold">' + esc(r[1]) + '</span></button>'; }).join(''), function (k) {
 			if (k === 'file') C.pickFile(''); if (k === 'image') C.pickFile('image/*');
+			if (k === 'video') videoDialog();
 			if (k === 'poll') pollDialog(); if (k === 'record') recordDialog(); if (k === 'schedule') scheduleDialog(); if (k === 'meeting') meetingDialog();
 		});
 	});
+
+	/* ---------------- a video message: record, watch it, then send it (or record again) ---------------- */
+	function videoDialog() {
+		var c = C.cur(); if (!c) return;
+		if (!navigator.mediaDevices || !window.MediaRecorder) { toast('error', t('Video messages are not supported in this browser')); return; }
+		var stream = null, rec = null, chunks = [], blob = null, url = null, started = 0, timer = null, MAX = 180;
+		var html = '<div class="cm-vrec text-start"><video class="lv" autoplay muted playsinline></video><video class="pb d-none" controls playsinline></video>' +
+			'<div class="bar"><span class="dot"></span><span class="num" data-vt>0:00</span><span class="text-muted fs-8">/ 3:00</span>' +
+			'<span class="ms-auto d-flex gap-2"><button type="button" class="btn btn-sm btn-danger" data-vr="rec">' + ico('circle', 13) + ' ' + esc(t('Record')) + '</button>' +
+			'<button type="button" class="btn btn-sm btn-light d-none" data-vr="stop">' + ico('square', 13) + ' ' + esc(t('Stop')) + '</button>' +
+			'<button type="button" class="btn btn-sm btn-light d-none" data-vr="again">' + ico('rotate-ccw', 13) + ' ' + esc(t('Record again')) + '</button></span></div></div>';
+		swal({ title: t('Video message'), html: html, confirmButtonText: t('Send'), width: 560,
+			didOpen: function (pop) {
+				Swal.getConfirmButton().disabled = true;
+				var A = window.cbDevices ? window.cbDevices.audio() : true, V = window.cbDevices ? window.cbDevices.video({ height: { ideal: 480 } }) : { height: { ideal: 480 } };
+				navigator.mediaDevices.getUserMedia({ audio: A, video: V }).then(function (s) { stream = s; pop.querySelector('.lv').srcObject = s; })
+					.catch(function () { toast('error', t('The camera could not be opened')); Swal.close(); });
+				pop.addEventListener('click', function (e) {
+					var b = e.target.closest('[data-vr]'); if (!b) return;
+					var k = b.getAttribute('data-vr');
+					if (k === 'rec' || k === 'again') begin(pop); else if (k === 'stop') end(pop);
+				});
+			},
+			willClose: function () { clearInterval(timer); if (rec && rec.state !== 'inactive') try { rec.stop(); } catch (e) { } if (stream) stream.getTracks().forEach(function (x) { x.stop(); }); if (url) URL.revokeObjectURL(url); },
+			preConfirm: function () { return !!blob; }
+		}).then(function (r) {
+			if (!r.isConfirmed || !blob) return;
+			var type = (blob.type || 'video/webm').split(';')[0], ext = type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+			var fd = new FormData(); fd.append('c', c); fd.append('file', new File([blob], 'video-' + Date.now() + '.' + ext, { type: type }));
+			toast('info', t('Sending the video…'));
+			fetch('/Chat/SendVideo', { method: 'POST', credentials: 'same-origin', headers: { RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value }, body: fd })
+				.then(function (x) { if (!x.ok) toast('error', t('The video was not sent')); }).catch(function () { toast('error', t('The video was not sent')); });
+		});
+		function begin(pop) {
+			if (!stream) return;
+			blob = null; chunks = []; if (url) { URL.revokeObjectURL(url); url = null; }
+			pop.querySelector('.pb').classList.add('d-none'); pop.querySelector('.lv').classList.remove('d-none');
+			var mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(function (x) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(x); }) || '';
+			rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 900000 } : undefined);
+			rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
+			rec.onstop = function () {
+				blob = new Blob(chunks, { type: (rec.mimeType || 'video/webm').split(';')[0] }); url = URL.createObjectURL(blob);
+				var pb = pop.querySelector('.pb'); pb.src = url; pb.classList.remove('d-none'); pop.querySelector('.lv').classList.add('d-none');
+				Swal.getConfirmButton().disabled = false;
+			};
+			rec.start(1000); started = Date.now();
+			pop.querySelector('.cm-vrec').classList.add('on');
+			['rec', 'again'].forEach(function (k) { pop.querySelector('[data-vr="' + k + '"]').classList.add('d-none'); });
+			pop.querySelector('[data-vr="stop"]').classList.remove('d-none');
+			Swal.getConfirmButton().disabled = true;
+			timer = setInterval(function () {
+				var s = Math.round((Date.now() - started) / 1000); pop.querySelector('[data-vt]').textContent = C.dur(s);
+				if (s >= MAX) end(pop);
+			}, 500);
+		}
+		function end(pop) {
+			clearInterval(timer);
+			if (rec && rec.state !== 'inactive') rec.stop();
+			pop.querySelector('.cm-vrec').classList.remove('on');
+			pop.querySelector('[data-vr="stop"]').classList.add('d-none'); pop.querySelector('[data-vr="again"]').classList.remove('d-none');
+		}
+	}
 
 	/* ---------------- polls ---------------- */
 	function pollDialog(preset) {
@@ -502,17 +665,70 @@
 		var c = C.cur();
 		getJson('/Chat/GroupInfo?c=' + c).then(function (g) {
 			if (!g || C.cur() !== c || threadRoot != null) return;
+			var dup = box.querySelector('.cm-ginfo'); if (dup) dup.remove();   // two paints in a row answer twice: one card
 			var first = box.querySelector('.sect'); if (!first) return;
 			var top = '<div class="sect text-center cm-ginfo">' + (g.avatar ? '<img class="cm-av" src="' + esc(g.avatar) + '" style="width:76px;height:76px" alt="" />' : '<div class="cm-grp mx-auto" style="width:76px;height:76px">' + (g.isPublic ? '<b class="fs-1">#</b>' : ico('users-round', 32)) + '</div>') +
 				'<div class="fs-5 fw-bold text-gray-900 mt-3">' + (g.isPublic ? '#' : '') + esc(h.title) + '</div>' + (g.description ? '<div class="text-muted fs-7 mt-1" dir="auto">' + esc(g.description) + '</div>' : '') +
 				'<div class="fs-8 text-muted mt-1">' + esc(g.isPublic ? t('Public channel') : t('Private group')) + '</div>' +
-				'<div class="d-flex gap-2 justify-content-center mt-3">' + (h.isOwner ? '<button type="button" class="cm-pill light sm" data-gedit>' + ico('pencil', 13) + esc(t('Edit')) + '</button>' : '') +
+				'<div class="d-flex gap-2 justify-content-center flex-wrap mt-3">' + (h.isOwner ? '<button type="button" class="cm-pill light sm" data-gedit>' + ico('pencil', 13) + esc(t('Edit')) + '</button>' +
+					'<button type="button" class="cm-pill light sm" data-ghooks>' + ico('webhook', 13) + esc(t('Webhooks')) + '</button>' : '') +
 				'<button type="button" class="cm-pill light sm" data-gmeet>' + ico('calendar-plus', 13) + esc(t('Meeting')) + '</button></div></div>';
 			first.insertAdjacentHTML('beforebegin', top);
 			var ed = box.querySelector('[data-gedit]'); if (ed) ed.onclick = function () { editGroup(g, h); };
+			var hk = box.querySelector('[data-ghooks]'); if (hk) hk.onclick = function () { hooksDialog(h); };
 			box.querySelector('[data-gmeet]').onclick = meetingDialog;
 		});
 	});
+	/* ---------------- incoming webhooks (the group admin): another system posts into this conversation ---------------- */
+	function hooksDialog(h) {
+		var c = C.cur(); if (!c) return;
+		var html = '<div class="cm-hooks text-start">' +
+			'<div class="nt">' + esc(t('Another system (monitoring, a form, a script) can post messages here through a secret address. Messages go in your name, marked with the webhook\'s name.')) + '</div>' +
+			'<div class="d-flex gap-2 mt-4"><input id="hkN" class="form-control form-control-solid" maxlength="60" placeholder="' + esc(t('Webhook name, e.g. Server alerts')) + '" />' +
+			'<button type="button" class="btn btn-primary text-nowrap" data-hk="add">' + ico('plus', 14) + ' ' + esc(t('Add')) + '</button></div>' +
+			'<div id="hkNew"></div><div id="hkL" class="mt-4"></div></div>';
+		swal({ title: t('Webhooks') + ' · ' + h.title, html: html, showConfirmButton: false, cancelButtonText: t('Close'), width: 640 });
+		var pop = document.querySelector('.swal2-popup');
+		function load() {
+			getJson('/Chat/Webhooks?c=' + c).then(function (rows) {
+				var l = pop.querySelector('#hkL'); if (!l) return;
+				if (!rows || !rows.length) { l.innerHTML = '<div class="cm-empty-sm">' + esc(t('No webhooks yet')) + '</div>'; return; }
+				l.innerHTML = rows.map(function (r) {
+					return '<div class="cm-hook' + (r.revoked ? ' off' : '') + '"><span class="ic">' + ico('webhook', 16) + '</span><div class="flex-grow-1 min-w-0">' +
+						'<div class="nm" dir="auto">' + esc(r.name) + (r.revoked ? ' <span class="tag">' + esc(t('Revoked')) + '</span>' : '') + '</div>' +
+						'<div class="sub">' + esc(t('Made by')) + ' ' + esc(r.by) + ' · ' + num(C.when(r.createdAt)) + ' · ' + esc(t('Messages')) + ': ' + num(r.uses) +
+						(r.lastUsedAt ? ' · ' + esc(t('last')) + ' ' + num(C.when(r.lastUsedAt)) : '') + '</div></div>' +
+						(r.revoked ? '' : '<button type="button" class="btn btn-sm btn-light-danger text-nowrap" data-hk-revoke="' + r.id + '">' + esc(t('Revoke')) + '</button>') + '</div>';
+				}).join('');
+			});
+		}
+		load();
+		pop.addEventListener('click', function (e) {
+			var a = e.target.closest('[data-hk="add"]');
+			if (a) {
+				var n = (pop.querySelector('#hkN').value || '').trim(); if (!n) { pop.querySelector('#hkN').focus(); return; }
+				a.disabled = true;
+				post('/Chat/CreateWebhook', { c: c, name: n }).then(function (x) {
+					a.disabled = false;
+					if (!x || !x.ok) { toast('error', t('The webhook could not be made — only the group admin can, and at most 10 at a time')); return; }
+					pop.querySelector('#hkN').value = '';
+					var ex = 'curl -X POST "' + x.url + '" -H "Content-Type: application/json" -d "{\\"text\\": \\"Hello\\"}"';
+					pop.querySelector('#hkNew').innerHTML = '<div class="cm-hooknew"><div class="lb">' + ico('key-round', 13) + esc(t('Copy the address now — it will not be shown again')) + '</div>' +
+						'<div class="d-flex gap-2 align-items-center"><code dir="ltr" class="flex-grow-1">' + esc(x.url) + '</code><button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-hk-copy="' + esc(x.url) + '">' + ico('copy', 13) + ' ' + esc(t('Copy')) + '</button></div>' +
+						'<div class="lb mt-3">' + esc(t('Example')) + '</div><code dir="ltr" class="d-block">' + esc(ex) + '</code></div>';
+					load();
+				});
+				return;
+			}
+			var cp = e.target.closest('[data-hk-copy]');
+			if (cp) { try { navigator.clipboard.writeText(cp.getAttribute('data-hk-copy')); toast('success', t('Copied')); } catch (x) { } return; }
+			var rv = e.target.closest('[data-hk-revoke]');
+			if (rv) {
+				if (rv.getAttribute('data-sure') !== '1') { rv.setAttribute('data-sure', '1'); rv.textContent = t('Revoke — sure?'); return; }   // a second click confirms (no browser confirm())
+				post('/Chat/RevokeWebhook', { c: c, id: +rv.getAttribute('data-hk-revoke') }).then(function (x) { if (x && x.ok) { toast('success', t('Revoked')); load(); } });
+			}
+		});
+	}
 	function editGroup(g, h) {
 		var html = '<div class="text-start d-grid gap-3"><input id="geT" class="form-control form-control-solid" maxlength="100" value="' + esc(h.title) + '" /><textarea id="geD" class="form-control form-control-solid" rows="3" maxlength="400" placeholder="' + esc(t('Description')) + '">' + esc(g.description || '') + '</textarea>' +
 			'<div><label class="fs-7 fw-semibold mb-1">' + esc(t('Picture')) + '</label><input id="geP" type="file" accept="image/*" class="form-control form-control-solid" />' + (g.avatar ? '<label class="form-check form-check-custom form-check-solid mt-2"><input id="geR" class="form-check-input" type="checkbox" /><span class="form-check-label fs-7">' + esc(t('Remove the picture')) + '</span></label>' : '') + '</div>' +

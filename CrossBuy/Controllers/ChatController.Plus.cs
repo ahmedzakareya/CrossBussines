@@ -62,6 +62,59 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = r.Ok, status = r.Status, text = r.Text, language = r.Language, code = r.Code });
 		}
 
+		// ---------------- a video message (owner 2026-11-19: Zoom Clips / Teams video clips) ----------------
+		// Recorded in the browser (camera and microphone, at most three minutes), heard and seen before it is sent, then
+		// kept like every attachment: in the company's File Manager, served only to the company (PrivateFileGate).
+		[HttpPost, ValidateAntiForgeryToken]
+		[RequestSizeLimit(80 * 1024 * 1024)]
+		public async Task<IActionResult> SendVideo(int c, IFormFile? file, int? replyToId)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			if (file == null || file.Length == 0) return BadRequest(new { ok = false });
+			var ext = Path.GetExtension(file.FileName ?? "").ToLowerInvariant();
+			if (ext is not (".webm" or ".mp4") || !(file.ContentType ?? "").StartsWith("video/", StringComparison.OrdinalIgnoreCase) || file.Length > 75 * 1024 * 1024)
+				return BadRequest(new { ok = false, code = "video" });
+			var dir = Path.Combine(_env.WebRootPath, "uploads", "library", me.Value.companyId.ToString(), "chat");
+			System.IO.Directory.CreateDirectory(dir);
+			var stored = Guid.NewGuid().ToString("N") + ext;
+			using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
+			var path = "/uploads/library/" + me.Value.companyId + "/chat/" + stored;
+			var name = "video-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ext;   // the name people read: local time
+			var files = HttpContext.RequestServices.GetService(typeof(IFileManagerService)) as IFileManagerService;
+			if (files != null) { try { await files.AddFileAsync(me.Value.companyId, me.Value.empId, null, name, null, path, file.ContentType, file.Length); } catch { } }
+			var m = await Plus.PostAsync(me.Value.companyId, c, me.Value.empId, new ChatPlusService.PostInput { AttachmentPath = path, AttachmentName = name, AttachmentType = "video" });
+			if (m == null) { System.IO.File.Delete(Path.Combine(dir, stored)); return BadRequest(new { ok = false }); }
+			return Json(await Plus.DtoAsync(m, me.Value.empId));
+		}
+
+		// ---------------- the assistant: a summary of the conversation, a question about it, a message translated ----------------
+		private CrossBuy.BL.Communication.ChatAssistant Assistant => ActivatorUtilities.CreateInstance<CrossBuy.BL.Communication.ChatAssistant>(HttpContext.RequestServices);
+
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> Assist(int c, string mode, string? question, int? root, int? since)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Read, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await Assistant.StartAsync(me.Value.companyId, me.Value.empId, c, mode, question, root > 0 ? root : null, since > 0 ? since : null, HttpContext.RequestAborted);
+			return Json(new { ok = r.Ok, job = r.Job, code = r.Code });
+		}
+		[HttpGet]
+		public async Task<IActionResult> AssistStatus(string job)
+		{
+			var me = await MeAsync(); if (me == null || string.IsNullOrEmpty(job)) return NotFound(new { ok = false });
+			var s = await Assistant.StatusAsync(me.Value.companyId, me.Value.empId, job, HttpContext.RequestAborted);
+			return s == null ? NotFound(new { ok = false }) : Json(s);
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> Translate(int id, string? to)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync(); int c = await ConvOfAsync(id);
+			if (me == null || ctx == null || c == 0 || !await Comm.CanAsync(ctx, CommunicationActions.Read, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await Assistant.TranslateAsync(me.Value.companyId, me.Value.empId, id, to, HttpContext.RequestAborted);
+			return Json(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code });
+		}
+
 		// ---------------- pinned and saved messages ----------------
 		[HttpPost, ValidateAntiForgeryToken]
 		public async Task<IActionResult> PinMessage(int id, bool on)
@@ -215,6 +268,33 @@ namespace CrossBuy.Controllers
 			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Read, null, HttpContext.RequestAborted)) return NotFound(new { ok = false });
 			return Json(new { ok = await Plus.JoinChannelAsync(me.Value.companyId, me.Value.empId, c) });
 		}
+		// ---------------- incoming webhooks: the group admin's (ChatWebhookService) ----------------
+		private ChatWebhookService Hooks => new(_db);
+		[HttpGet]
+		public async Task<IActionResult> Webhooks(int c)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound();
+			var l = await Hooks.ListAsync(me.Value.companyId, c, me.Value.empId);
+			return l == null ? NotFound() : Json(l);
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateWebhook(int c, string? name)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await Hooks.CreateAsync(me.Value.companyId, c, me.Value.empId, name);
+			if (r == null) return BadRequest(new { ok = false });
+			return Json(new { ok = true, id = r.Value.id, url = $"{Request.Scheme}://{Request.Host}/api/hooks/chat/{r.Value.id}/{r.Value.token}" });
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> RevokeWebhook(int c, int id)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			return Json(new { ok = await Hooks.RevokeAsync(me.Value.companyId, c, me.Value.empId, id) });
+		}
+
 		[HttpGet]
 		public async Task<IActionResult> GroupInfo(int c)
 		{

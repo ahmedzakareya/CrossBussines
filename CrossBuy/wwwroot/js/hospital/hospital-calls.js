@@ -223,10 +223,12 @@
 	function media(c) {
 		if (c.local) return Promise.resolve(c.local);
 		var v = c.video ? { height: { ideal: c.maxHeight || 720 }, facingMode: 'user' } : false;
-		var tryGet = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ audio: true, video: v }) : Promise.reject(new Error('no media'));
+		// the microphone and camera chosen in the device check (comm-devices.js), else the defaults
+		var A = window.cbDevices ? window.cbDevices.audio() : true, V = window.cbDevices ? window.cbDevices.video(v) : v;
+		var tryGet = navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ audio: A, video: V }) : Promise.reject(new Error('no media'));
 		return tryGet.catch(function (e) {
 			if (!v) throw e;
-			c.cam = false; return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+			c.cam = false; return navigator.mediaDevices.getUserMedia({ audio: A, video: false });
 		}).then(function (s) { c.local = s; paintSelf(c); return s; })
 			.catch(function (e) { c.local = new MediaStream(); c.mic = false; c.cam = false; toast(t('noMedia', e && e.name ? e.name : ''), 'error'); paintBar(c); return c.local; });
 	}
@@ -239,7 +241,7 @@
 			pc.onicecandidate = function (e) { if (e.candidate) send(c, { t: 'cand', c: e.candidate }); };
 			pc.ontrack = function (e) {
 				if (c.remoteStream.getTracks().indexOf(e.track) < 0) c.remoteStream.addTrack(e.track);
-				if (e.track.kind === 'audio') { var a = c.el.querySelector('[data-raudio]'); a.srcObject = c.remoteStream; a.play().catch(function () { }); }
+				if (e.track.kind === 'audio') { var a = c.el.querySelector('[data-raudio]'); a.srcObject = c.remoteStream; if (window.cbDevices) window.cbDevices.applySpeaker(c.el); a.play().catch(function () { }); }
 				e.track.onunmute = function () { paintRemote(c); }; e.track.onmute = function () { paintRemote(c); };
 				paintRemote(c);
 			};
@@ -416,6 +418,7 @@
 			'<button type="button" class="it" data-m="hold">' + ico(c.held ? 'play' : 'pause', 18) + '<span>' + esc(c.held ? t('cmResume') : t('cmHold')) + '</span></button>' +
 			(window.cbCallsGroup && window.cbCallsGroup.transfer ? '<button type="button" class="it" data-m="transfer">' + ico('phone-forwarded', 18) + '<span>' + esc(t('cmTransfer')) + '</span></button>' : '') +
 			'<button type="button" class="it" data-m="noise">' + ico('audio-lines', 18) + '<span>' + esc(t('cmNoise')) + '</span><b>' + esc(c.noiseOff ? t('cmOff') : t('cmOn')) + '</b></button>' +
+			(window.cbDevices ? '<button type="button" class="it" data-m="devices">' + ico('headphones', 18) + '<span>' + esc(t('cmDevTitle')) + '</span></button>' : '') +
 			(window.cbBlur && window.cbBlur.supported() && (c.blur || (c.local && c.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(c.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
 		c.el.querySelector('.main').appendChild(m);
 		m.onclick = function (e) {
@@ -427,6 +430,7 @@
 			if (k === 'hold') hold(c, !c.held, true);
 			if (k === 'transfer') window.cbCallsGroup.transfer(c);
 			if (k === 'blur') toggleBlur(c);
+			if (k === 'devices') window.cbDevices.open({ hasVideo: function () { return !!(c.local && c.local.getVideoTracks().length); }, videoBase: { height: { ideal: c.maxHeight || 720 } }, replace: function (kind, tr) { replaceDevice(c, kind, tr); } });
 			if (k === 'noise') {
 				c.noiseOff = !c.noiseOff;
 				var a = c.local && c.local.getAudioTracks()[0];
@@ -440,6 +444,17 @@
 		var old = c.local.getVideoTracks()[0]; if (old) c.local.removeTrack(old);
 		c.local.addTrack(nt);
 		if (c.videoTx && !c.sharing) c.videoTx.sender.replaceTrack(nt);
+		paintSelf(c);
+	}
+	// a microphone or camera chosen during the call takes the old one's place, on the connection too (no renegotiation)
+	function replaceDevice(c, kind, track) {
+		if (!c.local || c.closed) { track.stop(); return; }
+		if (kind === 'video' && c.blur) toggleBlur(c);          // the blur ran on the old camera: off, then the swap
+		var old = kind === 'audio' ? c.local.getAudioTracks()[0] : c.local.getVideoTracks()[0];
+		if (old) { c.local.removeTrack(old); old.stop(); }
+		c.local.addTrack(track); track.enabled = kind === 'audio' ? c.mic !== false : c.cam !== false;
+		var tx = kind === 'audio' ? c.audioTx : c.videoTx;
+		if (tx && !(kind === 'video' && c.sharing)) tx.sender.replaceTrack(track);
 		paintSelf(c);
 	}
 	function toggleBlur(c) {

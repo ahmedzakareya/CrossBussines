@@ -155,9 +155,12 @@
 					(c.pinned ? '<span class="cm-mini">' + ico('pin', 13) + '</span>' : '') + (c.muted ? '<span class="cm-mini">' + ico('bell-off', 13) + '</span>' : '') +
 					(c.unread ? '<span class="unread num">' + c.unread + '</span>' : '') + '</div>' +
 			'</div>' +
-			(direct ? '<span class="cm-quick">' + ib('phone', t('Voice call'), 'sm', 'data-call="0" data-emp="' + c.otherEmployeeId + '"') + ib('video', t('Video call'), 'sm', 'data-call="1" data-emp="' + c.otherEmployeeId + '"') + '</span>' : '') +
+			// a11y: the row is the button; these are mouse shortcuts only (the conversation's header has the same calls for
+			// the keyboard and screen readers), so they stay out of the Tab order and the accessibility tree
+			(direct ? '<span class="cm-quick" aria-hidden="true">' + qb('phone', t('Voice call'), 'data-call="0" data-emp="' + c.otherEmployeeId + '"') + qb('video', t('Video call'), 'data-call="1" data-emp="' + c.otherEmployeeId + '"') + '</span>' : '') +
 			'</div>';
 	}
+	function qb(name, title, attrs) { return '<span class="cm-ib sm" title="' + esc(title) + '" ' + attrs + '>' + ico(name, 18) + '</span>'; }   // not a control: see above
 	var itemDecor = [];
 	function itemMarks(c) { return itemDecor.map(function (f) { try { return f(c) || ''; } catch (e) { return ''; } }).join(''); }
 	function renderConvs() {
@@ -552,6 +555,7 @@
 		paintHead(); renderConvs(); paintBanner();
 		if (isPhone()) setPane('thread');
 		seen = {}; otherReadUpTo = 0; memberReads = {}; thread.innerHTML = ''; typingEl.innerHTML = '';
+		thread.setAttribute('aria-busy', 'true');   // a11y: the history is not read aloud as it loads; only what arrives after
 		var opened = id;
 		var msgsP = getJson('/Chat/Messages?c=' + id).then(function (msgs) {
 			if (cur !== opened) return;
@@ -560,6 +564,7 @@
 			if (msgs.length) oldestId = msgs[0].id;
 			if (msgs.length < 30) noOlder = true;
 			fire('loaded', msgs.map(function (m) { return m.id; }), 'open');
+			setTimeout(function () { if (cur === opened) thread.setAttribute('aria-busy', 'false'); }, 300);
 		});
 		var callsP = curHeader.other ? getJson('/Chat/CallsWith?other=' + curHeader.other).then(function (r) { if (cur === opened) calls = r || []; }) : Promise.resolve();
 		Promise.all([msgsP, callsP]).then(function () { if (cur !== opened) return; placeCalls(); regroup(); paintInfo(); scrollBottom(); setTimeout(scrollBottom, 150); fire('ready', id, meta); });
@@ -586,6 +591,8 @@
 	function fileHtml(m) {
 		if (!m.attachmentPath) return '';
 		if (isImg(m)) return '<img class="cm-img" src="' + esc(m.attachmentPath) + '" alt="" data-zoom="1" />';
+		// a video message: plays in place (owner 2026-11-19)
+		if (m.attachmentType === 'video') return '<video class="cm-vid" controls preload="metadata" playsinline src="' + esc(m.attachmentPath) + '#t=0.1"></video>'   // #t: a first frame, not black;
 		if (isAudio(m)) {
 			var seed = m.id || 1, bars = '';
 			for (var i = 0; i < 20; i++) { seed = (seed * 9301 + 49297) % 233280; bars += '<i style="height:' + (5 + Math.round(seed / 233280 * 15)) + 'px"></i>'; }
@@ -668,6 +675,8 @@
 		el.setAttribute('data-id', m.id); el.setAttribute('data-sender', m.senderId); el.setAttribute('data-at', utc(m.createdAt).getTime());
 		el.setAttribute('data-body', m.body || ''); el.setAttribute('data-text', m.body || m.attachmentName || '');
 		el.setAttribute('data-name', mine ? t('You') : (m.senderName || ''));
+		// a11y: each message is one stop for the arrow keys (the list itself is the Tab stop), named by who and when
+		el.tabIndex = -1; el.setAttribute('role', 'article'); el.setAttribute('aria-label', (mine ? t('You') : (m.senderName || '')) + ' · ' + when(m.createdAt));
 		if (m.attachmentPath && !m.deleted) { el.setAttribute('data-file', m.attachmentName || (isImg(m) ? t('Picture') : 'file')); el.setAttribute('data-kind', isImg(m) ? 'image' : isAudio(m) ? 'audio' : 'file'); el.setAttribute('data-href', m.attachmentPath); el.setAttribute('data-when', when(m.createdAt)); }
 		var faceHtml = mine ? '' : '<span class="cm-msg-face">' + av(m.senderName, m.senderAvatar, 30) + '</span>';
 		var bar = m.deleted ? '' : '<div class="cm-hover">' + ib('smile-plus', t('React'), 'xs', 'data-act="react"') + ib('reply', t('Reply'), 'xs', 'data-act="reply"') + ib('ellipsis', t('More'), 'xs', 'data-act="more"') + '</div>';
@@ -732,7 +741,7 @@
 	// older messages when the top is reached
 	thread.addEventListener('scroll', function () {
 		if (!cur || thread.scrollTop > 40 || !oldestId || loading || noOlder) return;
-		loading = true; var keep = thread.scrollHeight, opened = cur;
+		loading = true; var keep = thread.scrollHeight, opened = cur; thread.setAttribute('aria-busy', 'true');
 		getJson('/Chat/Messages?c=' + cur + '&before=' + oldestId).then(function (msgs) {
 			loading = false; if (cur !== opened) return;
 			msgs = msgs || [];
@@ -741,6 +750,7 @@
 			if (msgs.length) oldestId = msgs[0].id;
 			fire('loaded', msgs.map(function (m) { return m.id; }), 'older');
 			placeCalls(); regroup(); thread.scrollTop = thread.scrollHeight - keep;
+			thread.setAttribute('aria-busy', 'false');
 		});
 	});
 
@@ -762,6 +772,23 @@
 		// a phone has no hover: a tap shows the bar
 		if (isPhone() && !b) { thread.querySelectorAll('.cm-msg.tools-open').forEach(function (x) { if (x !== el) x.classList.remove('tools-open'); }); el.classList.toggle('tools-open'); }
 	});
+	/* ---------------- the keyboard in the message list (a11y): Tab lands on the newest message; ↑/↓ move between messages,
+	   Home/End jump, Enter reaches the message's own buttons (react, reply, more), Esc goes back to writing ---------------- */
+	function msgs() { return Array.prototype.slice.call(thread.querySelectorAll('.cm-msg[data-id]')); }
+	thread.addEventListener('focus', function (e) { if (e.target !== thread) return; var l = msgs(); if (l.length) l[l.length - 1].focus(); });
+	thread.addEventListener('keydown', function (e) {
+		var el = e.target.closest && e.target.closest('.cm-msg[data-id]'); if (!el) return;
+		var onMsg = e.target === el, l = msgs(), i = l.indexOf(el), to = null;
+		if (e.key === 'Escape') { e.preventDefault(); if (onMsg) input.focus(); else el.focus(); return; }
+		if (!onMsg) return;
+		if (e.key === 'ArrowUp') to = l[Math.max(0, i - 1)];
+		else if (e.key === 'ArrowDown') to = l[Math.min(l.length - 1, i + 1)];
+		else if (e.key === 'Home') to = l[0];
+		else if (e.key === 'End') to = l[l.length - 1];
+		else if (e.key === 'Enter') { var b = el.querySelector('.cm-hover .cm-ib'); if (b) { e.preventDefault(); el.classList.add('tools-open'); b.focus(); } return; }
+		if (to) { e.preventDefault(); to.focus(); to.scrollIntoView({ block: 'nearest' }); }
+	});
+	thread.addEventListener('focusout', function (e) { var el = e.target.closest && e.target.closest('.cm-msg'); if (el && !el.contains(e.relatedTarget)) el.classList.remove('tools-open'); });
 	var myTaps = {};   // the reaction broadcast does not say who: my own tap flips my mark when it comes back
 	function react(id, emoji) { myTaps[id] = emoji; post('/Chat/React', { id: id, emoji: emoji }); }
 	var voicePlaying = null;
@@ -1210,10 +1237,12 @@
 		conn = new signalR.HubConnectionBuilder().withUrl('/hubs/chat').withAutomaticReconnect().build();
 		fire('hub', conn);
 		conn.on('message', function (m) {
-			if (m.conversationId === cur && m.senderId !== meId) {
-				var stick = nearBottom(); appendMsg(m, false); regroup(); paintInfo(); if (stick) scrollBottom();
-				typingEl.innerHTML = '';
-				post('/Chat/MarkRead', { c: cur });
+			// mine too: a message sent in my name from elsewhere (another device, or a webhook I made) belongs here as well;
+			// what this page sent itself is already shown, and appendMsg skips an id it has seen
+			if (m.conversationId === cur) {
+				var stick = nearBottom(), el = appendMsg(m, false);
+				if (el) { regroup(); paintInfo(); if (stick || m.senderId === meId) scrollBottom(); fire('loaded', [m.id], 'live'); }
+				if (m.senderId !== meId) { typingEl.innerHTML = ''; post('/Chat/MarkRead', { c: cur }); }
 			}
 			loadConvs();
 		});

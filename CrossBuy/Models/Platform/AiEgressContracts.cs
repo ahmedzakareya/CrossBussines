@@ -45,6 +45,12 @@ namespace CrossBuy.Models.Platform
         // speech it may go Internal only. Its own purpose because a summary is a different use of the same
         // recording from listening to it, and must be refusable and auditable on its own.
         CallSummary,
+
+        // The assistant in a conversation (owner, 2026-11-19): a summary of a conversation or thread, a question about it,
+        // or one message translated. What leaves is the conversation's own text — free text, which the matrix keeps
+        // Internal — sent only for someone who may read that conversation. Its own purpose so it is auditable apart
+        // from QuestionUnderstanding (the assistant's catalogue questions), which carries a person's question only.
+        ChatAssistance,
     }
 
     // WHERE it is going. Ownership of the code is not the question — hosting and onward transmission are.

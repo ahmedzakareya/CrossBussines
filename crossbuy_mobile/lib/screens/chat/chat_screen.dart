@@ -66,6 +66,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   int _ticks = 0;
+  /// Translations asked for here: message → its text in the other language (null while it is being made).
+  final Map<int, String?> _translations = {};
+
+  /// From the assistant's sources: a message already loaded is scrolled to; an older one is said to be further up.
+  void _goToMessage(int id) {
+    final i = _msgs.indexWhere((m) => m.id == id);
+    if (i < 0) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'الرسالة أقدم من المعروض — مرّر للأعلى', 'That message is further up — scroll up')))); return; }
+    // the list is reversed: the newest is at offset 0; a rough position is enough to bring it into view
+    final fromEnd = _msgs.length - 1 - i;
+    if (_scroll.hasClients) _scroll.animateTo((fromEnd * 90.0).clamp(0, _scroll.position.maxScrollExtent), duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
   late final CallsProvider _calls;
 
   void _onCallNotice() {
@@ -337,11 +348,20 @@ class _ChatScreenState extends State<ChatScreen> {
               ListTile(leading: Icon(m.meta?.pinned == true ? Lu.pinOff : Lu.pin, color: Brand.blue), title: Text(m.meta?.pinned == true ? L(context, 'إلغاء التثبيت', 'Unpin') : L(context, 'تثبيت في المحادثة', 'Pin in the conversation')), onTap: () => Navigator.pop(c, '·pin')),
               ListTile(leading: Icon(m.meta?.saved == true ? Lu.bookmarkMinus : Lu.bookmark, color: Brand.blue), title: Text(m.meta?.saved == true ? L(context, 'إزالة من المحفوظات', 'Remove from saved') : L(context, 'حفظ', 'Save')), onTap: () => Navigator.pop(c, '·save')),
               ListTile(leading: const Icon(Lu.forward, color: Brand.blue), title: Text(L(context, 'تحويل', 'Forward')), onTap: () => Navigator.pop(c, '·forward')),
+              if (m.text.isNotEmpty) ListTile(leading: const Icon(Lu.languages, color: Brand.blue), title: Text(L(context, 'ترجمة', 'Translate')), onTap: () => Navigator.pop(c, '·translate')),
             ])));
     if (r == null || !mounted) return;
     if (r == '·reply') { setState(() => _replyTo = m); return; }
     if (r == '·thread') { await showThreadSheet(context, widget.id, m); _meta([m]); return; }
     if (r == '·forward') { await showForwardPicker(context, m); return; }
+    if (r == '·translate') {
+      setState(() => _translations[m.id] = null);           // «جارٍ الترجمة…» until it arrives
+      final t = await _api.chatTranslate(m.id);
+      if (!mounted) return;
+      setState(() { if (t == null) { _translations.remove(m.id); } else { _translations[m.id] = t.$1; } });
+      if (t == null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L(context, 'المساعد غير متاح الآن — حاول لاحقاً', 'The assistant is not available right now — try again later'))));
+      return;
+    }
     if (r == '·pin') {
       if (await _api.chatPin(m.id, m.meta?.pinned != true)) { _meta([m]); final p = await _api.getChatPinned(widget.id); if (mounted) setState(() => _pinned = p); }
       return;
@@ -413,6 +433,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Brand.inkC)),
               Text(sub, style: TextStyle(fontSize: 9.5, color: h?.online == true || h?.isGroup == true ? Brand.blue : Brand.mutedC)),
             ])),
+            _headBtn(Lu.sparkles, onTap: () => showAssistantSheet(context, widget.id, onGoTo: _goToMessage)),
             if (canCall) ...[
               _headBtn(Lu.phone, onTap: () => _call(video: false)),
               if (calls.me?.video ?? true) _headBtn(Lu.video, fill: true, onTap: () => _call(video: true)),
@@ -560,6 +581,18 @@ class _ChatScreenState extends State<ChatScreen> {
       } else {
         if (m.attachmentPath != null) content.add(_attachment(context, m, mine));
         if (m.text.isNotEmpty) content.add(Text.rich(TextSpan(children: _spans(m.text, mine)), style: TextStyle(fontSize: 11.5, height: 1.6, color: fg)));
+        if (_translations.containsKey(m.id)) {
+          final tr = _translations[m.id];
+          content.add(Container(
+            margin: const EdgeInsets.only(top: 5),
+            padding: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: muted.withValues(alpha: .5)))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisSize: MainAxisSize.min, children: [Icon(Lu.languages, size: 11, color: muted), const SizedBox(width: 4), Text(tr == null ? L(context, 'جارٍ الترجمة…', 'Translating…') : L(context, 'الترجمة', 'Translation'), style: TextStyle(fontSize: 9.5, color: muted))]),
+              if (tr != null) Text(tr, style: TextStyle(fontSize: 11.5, height: 1.6, color: fg)),
+            ]),
+          ));
+        }
       }
     }
     content.add(Row(mainAxisSize: MainAxisSize.min, children: [
@@ -671,6 +704,19 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.only(bottom: 4),
             child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(url, headers: _api.authHeaders, width: 200, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const SizedBox(width: 200, height: 80, child: Icon(Lu.imageOff, color: Brand.mutedC)))),
+          ),
+        );
+      case 'video':
+        return GestureDetector(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _VideoScreen(url: url))),
+          child: Container(
+            width: 200, height: 120, margin: const EdgeInsets.only(bottom: 4), alignment: Alignment.center,
+            decoration: BoxDecoration(color: const Color(0xFF0C1837), borderRadius: BorderRadius.circular(12)),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 44, height: 44, alignment: Alignment.center, decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle), child: const Icon(Lu.play, color: Colors.white, size: 22)),
+              const SizedBox(height: 6),
+              Text(L(context, 'رسالة فيديو', 'Video message'), style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
+            ]),
           ),
         );
       case 'audio':
@@ -858,6 +904,54 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 }
 
+/// A video message, full screen (tap the picture to pause or play).
+class _VideoScreen extends StatefulWidget {
+  final String url;
+  const _VideoScreen({required this.url});
+  @override
+  State<_VideoScreen> createState() => _VideoScreenState();
+}
+
+class _VideoScreenState extends State<_VideoScreen> {
+  VideoPlayerController? _v;
+  bool _failed = false;
+  VideoPlayerController get _c => _v!;
+  @override
+  void initState() {
+    super.initState();
+    _open();
+  }
+  Future<void> _open() async {
+    final f = await ApiService.instance.mediaFile(widget.url);   // see mediaFile: the player cannot fetch it itself
+    if (!mounted) return;
+    if (f == null) { setState(() => _failed = true); return; }
+    final c = VideoPlayerController.file(f);
+    _v = c;
+    c.addListener(() { if (mounted) setState(() {}); });
+    try { await c.initialize(); if (mounted) { setState(() {}); await c.play(); } } catch (_) { if (mounted) setState(() => _failed = true); }
+  }
+  @override
+  void dispose() { _v?.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white, title: Text(L(context, 'رسالة فيديو', 'Video message'), style: const TextStyle(fontSize: 14))),
+        body: Center(
+          child: _failed
+              ? Text(L(context, 'تعذّر تشغيل الفيديو', 'The video could not be played'), style: const TextStyle(color: Colors.white70))
+              : _v == null || !_c.value.isInitialized
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : GestureDetector(
+                      onTap: () => _c.value.isPlaying ? _c.pause() : _c.play(),
+                      child: AspectRatio(aspectRatio: _c.value.aspectRatio, child: Stack(alignment: Alignment.bottomCenter, children: [
+                        VideoPlayer(_c),
+                        VideoProgressIndicator(_c, allowScrubbing: true, colors: const VideoProgressColors(playedColor: Brand.blue, bufferedColor: Colors.white38, backgroundColor: Colors.white12)),
+                      ])),
+                    ),
+        ),
+      );
+}
+
 /// A voice message: play/pause, the progress, the length.
 class _VoicePlayer extends StatefulWidget {
   final String url;
@@ -873,7 +967,9 @@ class _VoicePlayerState extends State<_VoicePlayer> {
 
   Future<void> _toggle() async {
     if (_c == null) {
-      final c = VideoPlayerController.networkUrl(Uri.parse(widget.url), httpHeaders: ApiService.instance.authHeaders);
+      final f = await ApiService.instance.mediaFile(widget.url);   // see mediaFile: the player cannot fetch it itself
+      if (f == null) { if (mounted) setState(() => _failed = true); return; }
+      final c = VideoPlayerController.file(f);
       _c = c;
       c.addListener(() { if (mounted) setState(() {}); });
       try { await c.initialize(); } catch (_) { if (mounted) setState(() => _failed = true); return; }

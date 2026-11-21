@@ -6,7 +6,7 @@ open, and protected routes reject calls without the shared secret.
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import anomaly, calls, diag, forecast, inventory, speech
+from app.routers import anomaly, assist, calls, diag, forecast, inventory, speech
 from app.security import require_secret
 
 app = FastAPI(
@@ -42,6 +42,7 @@ app.include_router(forecast.router)
 app.include_router(inventory.router)
 app.include_router(speech.router)   # speech to text: a voice message becomes words (Whisper, on this machine)
 app.include_router(calls.router)    # call summaries: a recorded call's words and summary, in the background
+app.include_router(assist.router)   # the assistant in a conversation (summary, questions) and message translation
 
 
 @app.on_event("startup")

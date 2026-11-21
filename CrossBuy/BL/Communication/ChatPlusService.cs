@@ -50,7 +50,7 @@ namespace CrossBuy.BL.Communication
 		}
 		private static string Preview(string? body, string? attType, string? attName)
 			=> !string.IsNullOrEmpty(body) ? (Plain(body!) is var p && p.Length > 120 ? p[..120] : Plain(body!))
-			: attType == "image" ? "📷" : attType == "audio" ? "🎤" : attType == "poll" ? "📊" : "📎 " + (attName ?? "");
+			: attType == "image" ? "📷" : attType == "audio" ? "🎤" : attType == "video" ? "🎬" : attType == "poll" ? "📊" : "📎 " + (attName ?? "");
 
 		private ChatMsgDto Dto(ChatMessage m, int meId, Dictionary<int, (string name, string? avatar)> names)
 		{
@@ -188,6 +188,8 @@ namespace CrossBuy.BL.Communication
 			var polls = new Dictionary<int, object>();
 			foreach (var pid in pollIds) { var p = await PollAsync(companyId, pid, meId); if (p != null) polls[pid] = p; }
 			var transcripts = await ChatTranscriber.StoredAsync(_db, own.Where(x => x.AttachmentType == "audio").Select(x => x.ID).ToList());
+			var translations = await ChatAssistant.StoredAsync(_db, okIds);
+			var via = await ChatWebhookService.ViaAsync(_db, okIds);
 			var names = await NamesAsync(threads.SelectMany(t => t.People).Concat(fwd.Select(f => f.SenderEmployeeId)).Concat(own.Where(o => o.PinnedByEmployeeId != null).Select(o => o.PinnedByEmployeeId!.Value)));
 			return own.Select(x =>
 			{
@@ -202,6 +204,8 @@ namespace CrossBuy.BL.Communication
 					saved = saved.Contains(x.ID), reminded = reminded.Contains(x.ID),
 					poll = polls.TryGetValue(x.ID, out var po) ? po : null,
 					transcript = transcripts.TryGetValue(x.ID, out var tr) ? new { status = tr.Status, text = tr.Text, language = tr.Language } : null,
+					translations = translations.TryGetValue(x.ID, out var tl) ? tl : null,
+					via = via.TryGetValue(x.ID, out var vh) ? vh : null,
 				};
 			}).ToList();
 		}

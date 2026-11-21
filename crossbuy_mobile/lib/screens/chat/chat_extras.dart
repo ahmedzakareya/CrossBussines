@@ -159,6 +159,125 @@ class _ThreadSheetState extends State<_ThreadSheet> {
 
 }
 
+// ================================================================================================ the assistant
+/// «المساعد»: a summary of the conversation, or a question about it — answered from it alone, on the company's own
+/// servers; every answer names the messages it rests on, and nothing is made up.
+Future<void> showAssistantSheet(BuildContext context, int conversationId, {void Function(int messageId)? onGoTo}) =>
+    _sheet(context, _AssistantSheet(conversationId: conversationId, onGoTo: onGoTo), height: .85);
+
+class _AssistantSheet extends StatefulWidget {
+  final int conversationId;
+  final void Function(int messageId)? onGoTo;
+  const _AssistantSheet({required this.conversationId, this.onGoTo});
+  @override
+  State<_AssistantSheet> createState() => _AssistantSheetState();
+}
+
+class _AssistantSheetState extends State<_AssistantSheet> {
+  final _q = TextEditingController();
+  bool _busy = false;
+  String? _mode, _error;
+  Map<String, dynamic>? _result;
+  Timer? _poll;
+
+  @override
+  void dispose() { _poll?.cancel(); _q.dispose(); super.dispose(); }
+
+  Future<void> _run(String mode) async {
+    final q = _q.text.trim();
+    if (mode == 'ask' && q.isEmpty) return;
+    setState(() { _busy = true; _mode = mode; _result = null; _error = null; });
+    final job = await ApiService.instance.chatAssist(widget.conversationId, mode, question: mode == 'ask' ? q : null);
+    if (!mounted) return;
+    if (job == null) { setState(() { _busy = false; _error = L(context, 'المساعد غير متاح الآن — حاول لاحقاً', 'The assistant is not available right now — try again later'); }); return; }
+    void tick() {
+      _poll = Timer(const Duration(seconds: 3), () async {
+        final s = await ApiService.instance.chatAssistStatus(job);
+        if (!mounted) return;
+        if (s == null || s['status'] == 'working') { tick(); return; }
+        setState(() {
+          _busy = false;
+          if (s['status'] == 'done' && s['result'] is Map) { _result = (s['result'] as Map).cast<String, dynamic>(); }
+          else { _error = L(context, 'المساعد غير متاح الآن — حاول لاحقاً', 'The assistant is not available right now — try again later'); }
+        });
+      });
+    }
+    tick();
+  }
+
+  List<String> _strs(dynamic x) => (x as List? ?? const []).map((e) => '$e').where((e) => e.trim().isNotEmpty).toList();
+
+  Widget _sec(IconData icon, String title, List<Widget> rows) => rows.isEmpty
+      ? const SizedBox.shrink()
+      : Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Icon(icon, size: 13, color: Brand.blue), const SizedBox(width: 5), Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Brand.blue))]),
+            const SizedBox(height: 4),
+            ...rows,
+          ]),
+        );
+  Widget _li(Widget child) => Padding(padding: const EdgeInsets.only(bottom: 3), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('•  ', style: TextStyle(fontSize: 12)), Expanded(child: child)]));
+
+  Widget _resultView(BuildContext context) {
+    final r = _result!;
+    final cut = r['cut'] == true ? Padding(padding: const EdgeInsets.only(top: 10), child: Text(L(context, 'قُرئ الجزء الأحدث فقط من محادثة طويلة.', 'Only the newest part of a long conversation was read.'), style: T.small)) : const SizedBox.shrink();
+    if (_mode == 'ask') {
+      if (r['found'] != true) return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(L(context, 'لا توجد إجابة عن هذا في المحادثة.', 'There is no answer to this in the conversation.'), style: T.sub), cut]);
+      final ids = (r['messageIds'] as List? ?? const []).map((e) => (e as num).toInt()).toList();
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('${r['answer'] ?? ''}', style: const TextStyle(fontSize: 13, height: 1.8, color: Brand.inkC)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Text(L(context, 'من:', 'From:'), style: T.small),
+          for (final id in ids)
+            ActionChip(visualDensity: VisualDensity.compact, backgroundColor: Brand.soft, side: BorderSide.none, label: Text('#$id', style: const TextStyle(fontSize: 11, color: Brand.blue)),
+                onPressed: () { Navigator.of(context).pop(); widget.onGoTo?.call(id); }),
+        ]),
+        cut,
+      ]);
+    }
+    if (r['tooShort'] == true || ('${r['overview'] ?? ''}'.trim().isEmpty && _strs(r['points']).isEmpty)) {
+      return Text(L(context, 'المكتوب هنا أقل من أن يُلخَّص.', 'Too little was written here to summarise.'), style: T.sub);
+    }
+    const body = TextStyle(fontSize: 12, height: 1.7, color: Brand.inkC);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('${r['overview'] ?? ''}', style: const TextStyle(fontSize: 13, height: 1.8, color: Brand.inkC)),
+      _sec(Lu.list, L(context, 'أهم النقاط', 'Key points'), [for (final p in _strs(r['points'])) _li(Text(p, style: body))]),
+      _sec(Lu.circleCheck, L(context, 'القرارات', 'Decisions'), [for (final p in _strs(r['decisions'])) _li(Text(p, style: body))]),
+      _sec(Lu.listTodo, L(context, 'المهام', 'Tasks'), [
+        for (final a in (r['actions'] as List? ?? const []).whereType<Map>())
+          _li(Text.rich(TextSpan(children: [TextSpan(text: '${a['owner'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: ' — ${a['task'] ?? ''}')]), style: body)),
+      ]),
+      cut,
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _title(L(context, 'المساعد', 'Assistant'), sub: L(context, 'يُجاب من هذه المحادثة وحدها، على خوادم الشركة نفسها.', 'Answered from this conversation only, on the company’s own servers.')),
+        Expanded(child: ListView(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
+          _primary(L(context, 'تلخيص المحادثة', 'Summarise the conversation'), _busy ? null : () => _run('summary'), icon: Lu.sparkles),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: TextField(controller: _q, maxLength: 300, style: const TextStyle(fontSize: 12.5), textInputAction: TextInputAction.send, onSubmitted: (_) => _run('ask'),
+                decoration: _field(L(context, 'اسأل عن هذه المحادثة…', 'Ask about this conversation…')).copyWith(counterText: ''))),
+            const SizedBox(width: 8),
+            OutlinedButton(onPressed: _busy ? null : () => _run('ask'), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))), child: Text(L(context, 'اسأل', 'Ask'))),
+          ]),
+          const SizedBox(height: 16),
+          if (_busy)
+            Row(children: [
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(_mode == 'ask' ? L(context, 'جارٍ قراءة المحادثة…', 'Reading the conversation…') : L(context, 'جارٍ تلخيص المحادثة… قد يستغرق ذلك بضع دقائق', 'Summarising the conversation… this can take a few minutes'), style: T.sub)),
+            ])
+          else if (_error != null) Text(_error!, style: T.sub)
+          else if (_result != null) _resultView(context),
+        ])),
+      ]);
+}
+
 // ================================================================================================ a poll
 Future<ChatMsg?> showPollComposer(BuildContext context, int conversationId) => _sheet<ChatMsg>(context, _PollSheet(conversationId: conversationId));
 

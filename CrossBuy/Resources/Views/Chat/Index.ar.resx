@@ -1126,4 +1126,121 @@
   <data name="Too little was said in this call to summarise it." xml:space="preserve">
     <value>لم يُقل في المكالمة ما يكفي لتلخيصها.</value>
   </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>المساعد</value>
+  </data>
+  <data name="Summarise the conversation" xml:space="preserve">
+    <value>تلخيص المحادثة</value>
+  </data>
+  <data name="or" xml:space="preserve">
+    <value>أو</value>
+  </data>
+  <data name="Ask about this conversation…" xml:space="preserve">
+    <value>اسأل عن هذه المحادثة…</value>
+  </data>
+  <data name="Ask" xml:space="preserve">
+    <value>اسأل</value>
+  </data>
+  <data name="Answered from this conversation only, on the company’s own servers." xml:space="preserve">
+    <value>يُجاب من هذه المحادثة وحدها، على خوادم الشركة نفسها.</value>
+  </data>
+  <data name="Reading the conversation…" xml:space="preserve">
+    <value>جارٍ قراءة المحادثة…</value>
+  </data>
+  <data name="Summarising the conversation… this can take a few minutes" xml:space="preserve">
+    <value>جارٍ تلخيص المحادثة… قد يستغرق ذلك بضع دقائق</value>
+  </data>
+  <data name="There is nothing written here to read yet." xml:space="preserve">
+    <value>لا يوجد نص مكتوب هنا بعد.</value>
+  </data>
+  <data name="The assistant is not available right now — try again later" xml:space="preserve">
+    <value>المساعد غير متاح الآن — حاول لاحقاً</value>
+  </data>
+  <data name="Only the newest part of a long conversation was read." xml:space="preserve">
+    <value>قُرئ الجزء الأحدث فقط من محادثة طويلة.</value>
+  </data>
+  <data name="Too little was written here to summarise." xml:space="preserve">
+    <value>المكتوب هنا أقل من أن يُلخَّص.</value>
+  </data>
+  <data name="Make it a task" xml:space="preserve">
+    <value>تحويلها إلى مهمة</value>
+  </data>
+  <data name="There is no answer to this in the conversation." xml:space="preserve">
+    <value>لا توجد إجابة عن هذا في المحادثة.</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>من</value>
+  </data>
+  <data name="Translate" xml:space="preserve">
+    <value>ترجمة</value>
+  </data>
+  <data name="Translation" xml:space="preserve">
+    <value>الترجمة</value>
+  </data>
+  <data name="Translating…" xml:space="preserve">
+    <value>جارٍ الترجمة…</value>
+  </data>
+  <data name="Video message" xml:space="preserve">
+    <value>رسالة فيديو</value>
+  </data>
+  <data name="Video messages are not supported in this browser" xml:space="preserve">
+    <value>هذا المتصفح لا يدعم رسائل الفيديو</value>
+  </data>
+  <data name="Record" xml:space="preserve">
+    <value>تسجيل</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>إيقاف</value>
+  </data>
+  <data name="Record again" xml:space="preserve">
+    <value>إعادة التسجيل</value>
+  </data>
+  <data name="The camera could not be opened" xml:space="preserve">
+    <value>تعذّر فتح الكاميرا</value>
+  </data>
+  <data name="Sending the video…" xml:space="preserve">
+    <value>جارٍ إرسال الفيديو…</value>
+  </data>
+  <data name="The video was not sent" xml:space="preserve">
+    <value>لم يُرسَل الفيديو</value>
+  </data>
+  <data name="Webhooks" xml:space="preserve">
+    <value>الربط الوارد (Webhooks)</value>
+  </data>
+  <data name="Another system (monitoring, a form, a script) can post messages here through a secret address. Messages go in your name, marked with the webhook's name." xml:space="preserve">
+    <value>يمكن لنظام آخر (مراقبة، نموذج، برنامج نصي) أن ينشر رسائل هنا عبر عنوان سري. تُنشر الرسائل باسمك، وعليها اسم الربط.</value>
+  </data>
+  <data name="Webhook name, e.g. Server alerts" xml:space="preserve">
+    <value>اسم الربط، مثل: تنبيهات الخوادم</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>إضافة</value>
+  </data>
+  <data name="No webhooks yet" xml:space="preserve">
+    <value>لا يوجد ربط بعد</value>
+  </data>
+  <data name="Revoked" xml:space="preserve">
+    <value>مُلغى</value>
+  </data>
+  <data name="Made by" xml:space="preserve">
+    <value>أنشأه</value>
+  </data>
+  <data name="Revoke" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Revoke — sure?" xml:space="preserve">
+    <value>تأكيد الإلغاء؟</value>
+  </data>
+  <data name="The webhook could not be made — only the group admin can, and at most 10 at a time" xml:space="preserve">
+    <value>تعذّر إنشاء الربط — يُنشئه مشرف المجموعة فقط، وبحد أقصى 10 في وقت واحد</value>
+  </data>
+  <data name="Copy the address now — it will not be shown again" xml:space="preserve">
+    <value>انسخ العنوان الآن — لن يُعرض مرة أخرى</value>
+  </data>
+  <data name="Example" xml:space="preserve">
+    <value>مثال</value>
+  </data>
+  <data name="via" xml:space="preserve">
+    <value>عبر</value>
+  </data>
 </root>

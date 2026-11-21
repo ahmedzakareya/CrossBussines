@@ -143,6 +143,34 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { ok = await Plus.JoinChannelAsync(me.CompanyId, me.EmployeeId!.Value, c) });
 		}
 
+		// ---------------- the assistant ----------------
+		private ChatAssistant Assistant => ActivatorUtilities.CreateInstance<ChatAssistant>(_sp);
+
+		[HttpPost("assist")]
+		public async Task<IActionResult> Assist([FromForm] int c, [FromForm] string mode, [FromForm] string? question, [FromForm] int? root, [FromForm] int? since, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || !await MayAsync(me, CommunicationActions.Read, c, ct)) return NotFound(Missing);
+			var r = await Assistant.StartAsync(me.CompanyId, me.EmployeeId!.Value, c, mode, question, root > 0 ? root : null, since > 0 ? since : null, ct);
+			return Ok(new { ok = r.Ok, job = r.Job, code = r.Code });
+		}
+
+		[HttpGet("assist")]
+		public async Task<IActionResult> AssistStatus(string job, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || string.IsNullOrEmpty(job)) return NotFound(Missing);
+			var s = await Assistant.StatusAsync(me.CompanyId, me.EmployeeId!.Value, job, ct);
+			return s == null ? NotFound(Missing) : Ok(s);
+		}
+
+		[HttpPost("translate")]
+		public async Task<IActionResult> Translate([FromQuery] int id, [FromQuery] string? to, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); int c = await ConvOfAsync(id, ct);
+			if (me == null || !await MayAsync(me, CommunicationActions.Read, c, ct)) return NotFound(Missing);
+			var r = await Assistant.TranslateAsync(me.CompanyId, me.EmployeeId!.Value, id, to, ct);
+			return Ok(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code });
+		}
+
 		// ---------------- what I missed ----------------
 		[HttpGet("catchup")]
 		public async Task<IActionResult> CatchUp(int c, int since, CancellationToken ct)

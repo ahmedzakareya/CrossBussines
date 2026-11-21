@@ -154,30 +154,8 @@ namespace CrossBuy.BL.Communication
 			return people.Select(p => EmployeeNames.Of(p.FullName, p.FullNameEn)).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(12).ToList();
 		}
 
-		/// One approved post to the AI service; null when the policy refused or the service did not answer.
-		private async Task<AiProxyResult?> PostAsync(int companyId, string path, object payload, AiDataClassification cls, CancellationToken ct)
-		{
-			var scope = OpenAiOptions.FromConfiguration(_config).Scope;
-			var decision = await _egress.EvaluateAsync(new AiEgressRequest
-			{
-				Purpose = AiEgressPurpose.CallSummary,
-				Destination = AiDestinationResolver.Resolve(_config, AiEgressPurpose.CallSummary, _providers.Assess(DateTime.UtcNow, scope).State),
-				ProviderScope = scope,
-				Classification = cls,
-				DataCompanyId = companyId,
-				PayloadBytes = System.Text.Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(payload)),
-			}, ct);
-			if (!decision.Allowed || decision.Approval == null)
-			{
-				_log.LogInformation("Call summary step {Path} not sent: egress denied ({Reason}).", path, decision.Reason);
-				return null;
-			}
-			try { return await _ai.PostAsync(decision.Approval, path, payload, ct); }
-			catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
-			{
-				_log.LogWarning("Call summary step {Path}: the AI service did not answer ({Kind}).", path, e.GetType().Name);
-				return null;
-			}
-		}
+		/// One approved post to the AI service (purpose CallSummary); null when the policy refused or the service did not answer.
+		private Task<AiProxyResult?> PostAsync(int companyId, string path, object payload, AiDataClassification cls, CancellationToken ct)
+			=> CommAi.PostAsync(_ai, _egress, _providers, _config, _log, AiEgressPurpose.CallSummary, cls, companyId, path, payload, ct);
 	}
 }
