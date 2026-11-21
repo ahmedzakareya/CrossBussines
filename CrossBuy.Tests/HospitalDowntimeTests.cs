@@ -1,3 +1,4 @@
+using CrossBuy.BL.Hospital;
 using CrossBuy.BL.Reporting;
 using Xunit;
 
@@ -30,5 +31,19 @@ namespace CrossBuy.Tests
 			Assert.Equal(4, detail.Elements.Count(e => e.Kind == ReportElementKind.Rectangle));   // four boxes to chart doses on paper
 			foreach (var k in new[] { "Drug", "Dose", "Route", "Schedule", "LastGiven", "NextDue" }) Assert.Contains(detail.Elements, e => e.FieldKey == k);
 		}
-	}
+	
+		[Fact]
+		public void The_shift_copies_go_to_valid_addresses_at_valid_times()
+		{
+			var ok = HospitalDowntimeScheduleRules.Read(new() { Emails = "icu@hospital.example; charge.nurse@hospital.example" });
+			Assert.Null(ok.Refusal);
+			Assert.Equal(2, ok.Emails.Count);
+			Assert.Equal(new[] { (6, 30), (14, 30), (22, 30) }, ok.Times);   // the three shifts by default
+			Assert.Equal("Write the address the copies go to", HospitalDowntimeScheduleRules.Read(new() { Emails = " " }).Refusal);
+			Assert.Equal("An address is not a valid e-mail", HospitalDowntimeScheduleRules.Read(new() { Emails = "icu at hospital" }).Refusal);
+			Assert.Equal("A time is not hh:mm", HospitalDowntimeScheduleRules.Read(new() { Emails = "a@b.example", Times = new() { "25:00" } }).Refusal);
+			Assert.Equal("At most four copies a day", HospitalDowntimeScheduleRules.Read(new() { Emails = "a@b.example", Times = new() { "01:00", "02:00", "03:00", "04:00", "05:00" } }).Refusal);
+			Assert.Equal("{\"WardId\":\"4\"}", HospitalDowntimeScheduleRules.ParamsFor(4));
+		}
+}
 }

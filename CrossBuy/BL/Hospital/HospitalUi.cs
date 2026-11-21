@@ -30,6 +30,17 @@ namespace CrossBuy.BL.Hospital
 		/// A lab value at its analyte's decimals, invariant (results are read left to right in both languages).
 		public static string LabNum(decimal? v, int dec) => v?.ToString("F" + dec, System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
+		/// A person's round photo, or their initials on the brand tint when there is none (the owner's standing rule:
+		/// a named person is shown with their face).
+		public static Microsoft.AspNetCore.Html.IHtmlContent Avatar(string? photo, string? name, int size = 30)
+		{
+			var enc = System.Text.Encodings.Web.HtmlEncoder.Default;
+			string inner = string.IsNullOrWhiteSpace(photo)
+				? "<span class=\"symbol-label bg-light-primary text-primary fw-bold fs-8\">" + enc.Encode(Initials(name)) + "</span>"
+				: "<img src=\"" + enc.Encode(photo) + "\" alt=\"\" style=\"object-fit:cover\" />";
+			return new Microsoft.AspNetCore.Html.HtmlString("<span class=\"symbol symbol-" + size + "px symbol-circle flex-shrink-0\">" + inner + "</span>");
+		}
+
 		/// A reference range as "4.0 – 11.0", "≥ 40" or "≤ 200"; "—" when neither limit is set.
 		public static string LabRange(decimal? lo, decimal? hi, int dec) =>
 			lo != null && hi != null ? LabNum(lo, dec) + " – " + LabNum(hi, dec) : lo != null ? "≥ " + LabNum(lo, dec) : hi != null ? "≤ " + LabNum(hi, dec) : "—";

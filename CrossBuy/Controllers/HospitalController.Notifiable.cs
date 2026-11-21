@@ -33,6 +33,16 @@ namespace CrossBuy.Controllers
 			return View(rows);
 		}
 
+		/// H225: the case sent to the Ministry's system; the reference it returns closes it.
+		[HttpPost("Notifiable/{id:int}/MohSend"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.ClinicalRead)]
+		public async Task<IActionResult> NotifiableMohSend(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var gw = ActivatorUtilities.CreateInstance<HospitalMohGatewayService>(HttpContext.RequestServices);
+			return Result(await gw.SendDiseaseAsync(ctx, NotifSvc, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
 		[HttpPost("Notifiable/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.ClinicalRead)]
 		public async Task<IActionResult> NotifiableClose(int id, [FromBody] HospitalDiseaseCloseInput input, CancellationToken ct = default)
 		{

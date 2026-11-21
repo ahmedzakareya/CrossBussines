@@ -52,6 +52,33 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? ReportedAt { get; set; }
 		public int? ReportedByEmployeeId { get; set; }
 		public string? CancelReason { get; set; }
+		/// H222: the structured cancer report (synoptic) of a malignant diagnosis.
+		public string? TumourType { get; set; }
+		public string? Grade { get; set; }
+		public decimal? TumourSizeMm { get; set; }
+		public string? Margins { get; set; }
+		public decimal? MarginMm { get; set; }
+		public string? Lvi { get; set; }
+		public string? PT { get; set; }
+		public string? PN { get; set; }
+		public int? NodesExamined { get; set; }
+		public int? NodesPositive { get; set; }
+	}
+
+	public static class HospitalPathMargins
+	{
+		public const string Clear = "Clear";
+		public const string Close = "Close";
+		public const string Involved = "Involved";
+		public static readonly IReadOnlyList<string> All = new[] { Clear, Close, Involved };
+	}
+
+	public static class HospitalPathLvi
+	{
+		public const string Absent = "Absent";
+		public const string Present = "Present";
+		public const string Indeterminate = "Indeterminate";
+		public static readonly IReadOnlyList<string> All = new[] { Absent, Present, Indeterminate };
 	}
 
 	public class HospitalPathAmendment
@@ -82,6 +109,14 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Microscopic).HasMaxLength(4000);
 				e.Property(x => x.Diagnosis).HasMaxLength(1000);
 				e.Property(x => x.CancelReason).HasMaxLength(300);
+				e.Property(x => x.TumourType).HasMaxLength(200);   // H222
+				e.Property(x => x.Grade).HasMaxLength(20);
+				e.Property(x => x.TumourSizeMm).HasPrecision(6, 1);
+				e.Property(x => x.Margins).HasMaxLength(10);
+				e.Property(x => x.MarginMm).HasPrecision(5, 1);
+				e.Property(x => x.Lvi).HasMaxLength(15);
+				e.Property(x => x.PT).HasMaxLength(10);
+				e.Property(x => x.PN).HasMaxLength(10);
 				e.HasIndex(x => new { x.CompanyId, x.CaseNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.Status });
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });

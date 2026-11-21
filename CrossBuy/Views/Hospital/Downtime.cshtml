@@ -12,6 +12,9 @@
     string q = ViewBag.Q as string ?? "";
     int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total, patients = (int)ViewBag.Patients, medicines = (int)ViewBag.Medicines;
     string Link(int p) => Url.Action("Downtime", new { q, page = p })!;
+    var sched = (ViewBag.Schedules as Dictionary<int, HospitalDowntimeSchedules>) ?? new();
+    bool workerOn = ViewBag.WorkerOn == true, canManage = ViewBag.CanManage == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 
@@ -35,6 +38,11 @@
             <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["When the system is down, the ward works from paper"]</h4>
                 <div class="fs-6 text-gray-700">@T["Print or save each ward's summary at the start of every shift and before any planned outage: every patient with allergies, isolation and diagnosis, every active medicine with its next dose, and boxes to chart the doses given. Enter them in the system when it is back."]</div></div>
         </div>
+        @if (!workerOn && sched.Count > 0)
+        {
+            <div class="notice d-flex bg-light rounded border border-dashed p-5 mb-5"><i class="ki-outline ki-information-5 fs-2tx text-gray-500 me-4"></i>
+                <div class="fs-7 fw-semibold text-gray-700">@T["The shift copies are set, but the platform's scheduled reports are switched off: they are sent when the administrator turns them on. Until then use «Send a copy now»."]</div></div>
+        }
         <div class="card card-flush mb-5">
             <div class="card-header pt-5">
                 <h3 class="card-title align-items-start flex-column">
@@ -54,7 +62,7 @@
                 else
                 {
                     <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 my-0">
-                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start min-w-200px">@T["Ward"]</th><th>@T["Patients in beds"]</th><th>@T["Active medicines"]</th><th>@T["In isolation"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start min-w-200px">@T["Ward"]</th><th>@T["Patients in beds"]</th><th>@T["Active medicines"]</th><th>@T["In isolation"]</th><th>@T["Copies each shift"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
                         <tbody>
                             @foreach (var w in Model)
                             {
@@ -63,7 +71,16 @@
                                     <td><span class="fw-bold fs-6 hp-num">@w.Patients</span></td>
                                     <td><span class="fw-bold fs-6 hp-num">@w.Medicines</span></td>
                                     <td>@if (w.Isolated > 0) {<span class="badge badge-light-danger fs-7 hp-num">@w.Isolated</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td class="text-end pe-4">@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalWardDowntime, DocumentId = w.Id.ToString(), DocumentTitle = w.Code })</td>
+                                    <td class="fs-8">@if (sched.TryGetValue(w.Id, out var sc))
+                                    {
+                                        <span class="badge badge-light-primary">@T["{0} copies a day", sc.Count]</span>
+                                        <div class="text-muted mt-1"><bdi dir="ltr">@sc.Emails</bdi></div>
+                                        @if (sc.LastRunAt is DateTime lr) {<div class="text-muted hp-num" dir="ltr">@T["Last sent"] @HospitalNursingService.UtcToWard(lr).ToString("MM-dd HH:mm", inv) · @sc.LastRunStatus</div>}
+                                    }
+                                    else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-end pe-4 text-nowrap">@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalWardDowntime, DocumentId = w.Id.ToString(), DocumentTitle = w.Code })
+                                        @if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Copies each shift"]" data-bs-toggle="tooltip" data-dt-plan="@w.Id" data-emails="@(sc?.Emails)"><i class="ki-outline ki-time fs-3"></i></button>}
+                                        @if (sched.ContainsKey(w.Id)) {<button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Send a copy now"]" data-bs-toggle="tooltip" data-dt-send="@w.Id"><i class="ki-outline ki-send fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -81,3 +98,37 @@
         </div>
     </div></div>
 </div>
+@Html.AntiForgeryToken()
+<div class="modal fade" id="dtPlan" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-6 text-center"><h1 class="mb-3">@T["Copies each shift"]</h1><div class="text-muted fw-semibold fs-7">@T["The ward's summary is sent as a PDF at these times, before anything can go down."]</div></div>
+        <label class="fs-6 fw-semibold mb-2 required">@T["Send to (e-mail)"]</label>
+        <input class="form-control form-control-solid mb-4" dir="ltr" data-dt="emails" placeholder="ward@hospital.example" />
+        <label class="fs-6 fw-semibold mb-2">@T["Times"]</label>
+        <div class="d-flex gap-2 mb-2">@foreach (var t in HospitalDowntimeScheduleRules.DefaultTimes) {<input type="time" class="form-control form-control-solid" value="@t" data-dt-time />}</div>
+        <div class="text-center pt-6"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-dt-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, m = document.getElementById('dtPlan'), ward = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), sent: @Json.Serialize(T["The copy was sent"].Value) };
+            var root = @Json.Serialize(Url.Content("~/Hospital/Wards/Downtime/"));
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-dt-plan],[data-dt-save],[data-dt-send]'); if (!t) return;
+                if (t.hasAttribute('data-dt-plan')) { ward = t.getAttribute('data-dt-plan'); m.querySelector('[data-dt=emails]').value = t.getAttribute('data-emails') || ''; bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                t.disabled = true;
+                if (t.hasAttribute('data-dt-send')) {
+                    post(root + t.getAttribute('data-dt-send') + '/SendNow').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.sent); setTimeout(function () { location.reload(); }, 600); });
+                    return;
+                }
+                var times = Array.prototype.map.call(m.querySelectorAll('[data-dt-time]'), function (i) { return i.value; }).filter(function (v) { return v; });
+                post(root + ward + '/Schedule', { emails: m.querySelector('[data-dt=emails]').value, times: times })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 500); });
+            });
+        })();
+    </script>
+}

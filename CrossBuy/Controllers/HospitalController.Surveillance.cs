@@ -11,7 +11,7 @@ namespace CrossBuy.Controllers
 	// `clinical-read`), and a clinician's answer to one.
 	public partial class HospitalController
 	{
-		public sealed class HospitalSurveillanceAnswerInput { public string? Response { get; set; } public string? Note { get; set; } }
+		public sealed class HospitalSurveillanceAnswerInput { public string? Response { get; set; } public string? Note { get; set; } public List<string>? Padua { get; set; } }
 
 		private HospitalSurveillanceService? _survSvc;
 		private HospitalSurveillanceService SurvSvc => _survSvc ??= ActivatorUtilities.CreateInstance<HospitalSurveillanceService>(HttpContext.RequestServices);
@@ -40,7 +40,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await SurvSvc.AnswerAsync(ctx, id, input.Response, input.Note, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await SurvSvc.AnswerAsync(ctx, id, input.Response, input.Note, ctx.EmployeeId, DateTime.UtcNow, ct, input.Padua));
 		}
 	}
 }

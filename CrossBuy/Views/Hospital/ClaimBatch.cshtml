@@ -71,7 +71,8 @@
                 @* H200: the claims as the payer's system reads them (FHIR R4), and the payer's answer file *@
                 <a href="@Url.Action("ClaimBatchFhir", new { id = b.ID })" class="btn btn-sm btn-light-primary text-nowrap" data-fhir-out><i class="ki-outline ki-file-up fs-4"></i>@T["Claims file (FHIR)"]</a>
                 @* H210: the claims as the payer's TPA sheet (its columns, headers, separator and date format) *@
-                <a href="@Url.Action("ClaimBatchSheet", new { id = b.ID })" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-out><i class="ki-outline ki-file-sheet fs-4"></i>@T["Claim sheet (Excel)"]</a>
+                <a href="@Url.Action("ClaimBatchSheet", new { id = b.ID, format = "xlsx" })" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-out><i class="ki-outline ki-file-sheet fs-4"></i>@T["Claim sheet (Excel)"]</a>
+                <a href="@Url.Action("ClaimBatchSheet", new { id = b.ID })" class="btn btn-sm btn-light text-nowrap" data-sheet-csv>CSV</a>
                 <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#hp_answer_modal" data-fhir-in><i class="ki-outline ki-file-down fs-4"></i>@T["Load the payer's answer"]</button>
             }
             @if (canBill && files != null) {<button type="button" class="btn btn-sm btn-icon btn-light" title="@T["The payer's claim sheet columns"]" data-bs-toggle="tooltip" data-sheet-setup="@b.PayerId"><i class="ki-outline ki-setting-2 fs-3"></i></button>}
@@ -328,6 +329,10 @@
         <div class="modal-header"><h2 class="fw-bold mb-0">@T["The payer's claim sheet"]</h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body px-10">
             <div class="text-muted fs-7 mb-5">@T["Tick the columns the payer's TPA takes, put them in its order and write its headers. One row per claim line."] <span class="badge badge-light-info fs-8 d-none" data-sheet-std>@T["Standard sheet: not saved for this payer yet"]</span></div>
+            <div class="d-flex gap-2 mb-5 d-none" data-sheet-copy-row>
+                <select class="form-select form-select-sm form-select-solid" data-sheet-copy-from></select>
+                <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-copy>@T["Copy this payer's sheet"]</button>
+            </div>
             <div class="row g-4 mb-5">
                 <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Separator"]</label><select class="form-select form-select-solid" data-sheet="delimiter"><option value=",">@T["Comma"] ( , )</option><option value=";">@T["Semicolon"] ( ; )</option><option value="TAB">@T["Tab"]</option></select></div>
                 <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Date format"]</label><select class="form-select form-select-solid" data-sheet="dateFormat">@foreach (var f in HospitalClaimSheets.DateFormats) {<option value="@f">@f</option>}</select></div>
@@ -441,7 +446,14 @@
                     + '<td class="text-end pe-4 text-nowrap"><button type="button" class="btn btn-sm btn-icon btn-bg-light" data-up><i class="ki-outline ki-arrow-up fs-4"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light ms-1" data-down><i class="ki-outline ki-arrow-down fs-4"></i></button></td></tr>';
             }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-sheet-setup],[data-up],[data-down],[data-sheet-save]'); if (!t) return;
+                var t = e.target.closest('[data-sheet-setup],[data-up],[data-down],[data-sheet-save],[data-sheet-copy]'); if (!t) return;
+                if (t.hasAttribute('data-sheet-copy')) {
+                    t.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet/CopyFrom/' + m.querySelector('[data-sheet-copy-from]').value, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(m).hide(); });
+                    return;
+                }
                 if (t.hasAttribute('data-sheet-setup')) {
                     payer = t.getAttribute('data-sheet-setup');
                     fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
@@ -453,6 +465,10 @@
                         body.innerHTML = h;
                         [['delimiter', d.delimiter], ['dateFormat', d.dateFormat]].forEach(function (x) { var el = m.querySelector('[data-sheet=' + x[0] + ']'); el.value = x[1]; if (window.jQuery) jQuery(el).trigger('change'); });   // the theme makes these select2
                         m.querySelector('[data-sheet-std]').classList.toggle('d-none', !!d.saved);
+                        // H223: copy another payer's sheet (a TPA serving several insurers takes one layout)
+                        var sel = m.querySelector('[data-sheet-copy-from]');
+                        sel.innerHTML = (d.others || []).map(function (o) { return '<option value="' + o.id + '">' + esc(o.name) + '</option>'; }).join('');
+                        m.querySelector('[data-sheet-copy-row]').classList.toggle('d-none', !(d.others || []).length);
                         bootstrap.Modal.getOrCreateInstance(m).show();
                     });
                     return;

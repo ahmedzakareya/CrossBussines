@@ -1,0 +1,115 @@
+{
+ "unit": "H222 - Pathology synoptic and block labels",
+ "strings": {
+  "Cancer synoptic": {
+   "ar": "التقرير المنظَّم للورم",
+   "en": "Cancer synoptic",
+   "fr": "Compte rendu synoptique"
+  },
+  "Tumour type": {
+   "ar": "نوع الورم",
+   "en": "Tumour type",
+   "fr": "Type tumoral"
+  },
+  "Grade": {
+   "ar": "الدرجة",
+   "en": "Grade",
+   "fr": "Grade"
+  },
+  "Size (mm)": {
+   "ar": "الحجم (مم)",
+   "en": "Size (mm)",
+   "fr": "Taille (mm)"
+  },
+  "Margins": {
+   "ar": "الحواف",
+   "en": "Margins",
+   "fr": "Marges"
+  },
+  "Closest margin (mm)": {
+   "ar": "أقرب حافة (مم)",
+   "en": "Closest margin (mm)",
+   "fr": "Marge la plus proche (mm)"
+  },
+  "Lymphovascular invasion": {
+   "ar": "الغزو اللمفي الوعائي",
+   "en": "Lymphovascular invasion",
+   "fr": "Invasion lymphovasculaire"
+  },
+  "Nodes": {
+   "ar": "العقد",
+   "en": "Nodes",
+   "fr": "Ganglions"
+  },
+  "pam:Clear": {
+   "ar": "سليمة",
+   "en": "Clear",
+   "fr": "Saines"
+  },
+  "pam:Close": {
+   "ar": "قريبة",
+   "en": "Close",
+   "fr": "Proches"
+  },
+  "pam:Involved": {
+   "ar": "مصابة",
+   "en": "Involved",
+   "fr": "Atteintes"
+  },
+  "pal:Absent": {
+   "ar": "غير موجود",
+   "en": "Absent",
+   "fr": "Absente"
+  },
+  "pal:Present": {
+   "ar": "موجود",
+   "en": "Present",
+   "fr": "Présente"
+  },
+  "pal:Indeterminate": {
+   "ar": "غير محدد",
+   "en": "Indeterminate",
+   "fr": "Indéterminée"
+  },
+  "Write the tumour type": {
+   "ar": "اكتب نوع الورم",
+   "en": "Write the tumour type",
+   "fr": "Indiquez le type tumoral"
+  },
+  "Write the grade": {
+   "ar": "اكتب الدرجة",
+   "en": "Write the grade",
+   "fr": "Indiquez le grade"
+  },
+  "Write the tumour size in mm": {
+   "ar": "اكتب حجم الورم بالمليمتر",
+   "en": "Write the tumour size in mm",
+   "fr": "Indiquez la taille tumorale en mm"
+  },
+  "Choose the margin status": {
+   "ar": "اختر حالة الحواف",
+   "en": "Choose the margin status",
+   "fr": "Choisissez l'état des marges"
+  },
+  "Write the closest margin in mm": {
+   "ar": "اكتب أقرب حافة بالمليمتر",
+   "en": "Write the closest margin in mm",
+   "fr": "Indiquez la marge la plus proche en mm"
+  },
+  "Choose the lymphovascular invasion": {
+   "ar": "اختر حالة الغزو اللمفي الوعائي",
+   "en": "Choose the lymphovascular invasion",
+   "fr": "Choisissez l'invasion lymphovasculaire"
+  },
+  "Write the pT stage": {
+   "ar": "اكتب مرحلة pT",
+   "en": "Write the pT stage",
+   "fr": "Indiquez le stade pT"
+  },
+  "The positive nodes cannot exceed those examined": {
+   "ar": "لا يمكن أن تزيد العقد الموجبة على المفحوصة",
+   "en": "The positive nodes cannot exceed those examined",
+   "fr": "Les ganglions positifs ne peuvent dépasser ceux examinés"
+  }
+ }
+}

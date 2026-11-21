@@ -148,6 +148,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalPathologyModel.Configure(b);   // H216: anatomic pathology cases and their amendments
 			HospitalEndoscopyModel.Configure(b);   // H217: scopes, their reprocessing, and the procedures
 			HospitalCardiologyModel.Configure(b);   // H218: ECG and echo studies
+			CrossBuy.BL.Hospital.HospitalMohGatewayModel.Configure(b);   // H225: what was sent to the Ministry of Health
 			HospitalNotifiableModel.Configure(b);   // H209: notifiable diseases and the cases reported to the Ministry
 			b.Entity<HospitalDepartment>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalPractitioner>(e => e.HasIndex(x => new { x.CompanyId, x.DepartmentId }));

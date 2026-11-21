@@ -50,6 +50,33 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void A_malignant_diagnosis_carries_its_synoptic()
+		{
+			HospitalPathStepInput Ok() => new() { To = HospitalPathStatus.Reported, Microscopic = "Invasive carcinoma", Diagnosis = "Adenocarcinoma", Malignant = true,
+				TumourType = "Adenocarcinoma, NOS", Grade = "G2", TumourSizeMm = 23.5m, Margins = HospitalPathMargins.Clear, MarginMm = 4, Lvi = HospitalPathLvi.Absent, PT = "pT2", PN = "pN0", NodesExamined = 14, NodesPositive = 0 };
+			var c = C(HospitalPathStatus.Grossed);
+			Assert.Null(HospitalPathRules.StepRefusal(c, Ok()));
+			var i = Ok(); i.TumourType = null; Assert.Equal("Write the tumour type", HospitalPathRules.StepRefusal(c, i));
+			i = Ok(); i.MarginMm = null; Assert.Equal("Write the closest margin in mm", HospitalPathRules.StepRefusal(c, i));
+			i = Ok(); i.Margins = HospitalPathMargins.Involved; i.MarginMm = null; Assert.Null(HospitalPathRules.StepRefusal(c, i));   // an involved margin has no distance
+			i = Ok(); i.NodesPositive = 15; Assert.Equal("The positive nodes cannot exceed those examined", HospitalPathRules.StepRefusal(c, i));
+			i = Ok(); i.PT = " "; Assert.Equal("Write the pT stage", HospitalPathRules.StepRefusal(c, i));
+			var benign = new HospitalPathStepInput { To = HospitalPathStatus.Reported, Microscopic = "x", Diagnosis = "Benign naevus" };
+			Assert.Null(HospitalPathRules.StepRefusal(c, benign));   // no synoptic for a benign diagnosis
+			var signed = new HospitalPathCase { Malignant = true, TumourType = "Adenocarcinoma", Grade = "G2", TumourSizeMm = 23.5m, Margins = "Clear", MarginMm = 4, Lvi = "Absent", PT = "pT2", PN = "pN0", NodesExamined = 14, NodesPositive = 0 };
+			Assert.Equal("Adenocarcinoma · grade G2 · 23.5 mm · Margins: clear 4 mm · LVI: absent · pT2 pN0 · nodes 0/14", HospitalPathRules.Synoptic(signed, false));
+		}
+
+		[Fact]
+		public void Every_block_and_its_slide_has_a_label()
+		{
+			var l = HospitalPathRules.Labels("PATH-000007", 2);
+			Assert.Equal(new[] { "PATH-000007-A1", "PATH-000007-A1-S1", "PATH-000007-A2", "PATH-000007-A2-S1" }, l.Select(x => x.Code));
+			Assert.Equal(new[] { "Block", "Slide", "Block", "Slide" }, l.Select(x => x.Kind));
+			Assert.Empty(HospitalPathRules.Labels("PATH-000007", 0));
+		}
+
+		[Fact]
 		public void A_case_received_more_than_3_days_ago_and_not_signed_is_late()
 		{
 			var c = new HospitalPathCase { Status = HospitalPathStatus.Grossed, ReceivedAt = Now.AddDays(-3).AddMinutes(-1) };
@@ -66,7 +93,7 @@ namespace CrossBuy.Tests
 			var model = HospitalSliceParity.Model(HospitalPathologyModel.Configure);
 			var s = HospitalSliceParity.Slice("hospital_h216_pathology.sql");
 			HospitalSliceParity.NamesItsTable(model, s, typeof(HospitalPathCase), "HospitalPathCases");
-			HospitalSliceParity.ColumnsMatch(model, s, typeof(HospitalPathCase), "HospitalPathCases");
+			HospitalSliceParity.ColumnsMatch(model, s + Environment.NewLine + HospitalSliceParity.Slice("hospital_h222_path_synoptic.sql"), typeof(HospitalPathCase), "HospitalPathCases");   // + H222's synoptic
 			HospitalSliceParity.NamesItsTable(model, s, typeof(HospitalPathAmendment), "HospitalPathAmendments");
 			HospitalSliceParity.ColumnsMatch(model, s, typeof(HospitalPathAmendment), "HospitalPathAmendments");
 			foreach (var x in HospitalPathStatus.All.Concat(HospitalPathSource.All)) Assert.Contains("'" + x + "'", s);

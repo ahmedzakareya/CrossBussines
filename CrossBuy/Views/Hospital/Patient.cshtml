@@ -3,6 +3,7 @@
 @using CrossBuy.Models.Context.Hospital
 @model HospitalPatient
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     var name = DisplayName.Of(Model.Name, Model.NameEn);
@@ -408,6 +409,7 @@
                                                     @if (l.VerifyCode != null) {<div class="text-muted fs-9 mt-1">@T["Verification code"]: <bdi class="hp-num fw-bold" dir="ltr">@l.VerifyCode</bdi></div>}</td>
                                                 <td class="text-end"><div class="d-flex justify-content-end gap-2">
                                                     @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalSickLeave, DocumentId = l.ID.ToString(), DocumentTitle = l.LeaveNo })
+                                                    @if (!isVoid && l.MohAuthAt == null && !string.IsNullOrWhiteSpace(Config["Hospital:MohGateway:Url"])) { <button type="button" class="btn btn-sm btn-primary" data-sick-mohsend="@l.ID">@T["Send to the Ministry"]</button> }
                                                     @if (!isVoid && l.MohAuthAt == null) { <button type="button" class="btn btn-sm btn-light-primary" data-sick-moh="@l.ID" data-no="@l.LeaveNo">@T["Record MOH authentication"]</button> }
                                                     @if (!isVoid && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-sick-void="@l.ID" data-no="@l.LeaveNo">@T["sl:voidAction"]</button> }
                                                 </div></td>
@@ -524,7 +526,13 @@
                     });
                 }
                 document.addEventListener('click', function (e) {
-                    var t = e.target.closest('[data-sick-issue],[data-sick-void],[data-sick-moh]'); if (!t) return;
+                    var t = e.target.closest('[data-sick-issue],[data-sick-void],[data-sick-moh],[data-sick-mohsend]'); if (!t) return;
+                    if (t.hasAttribute('data-sick-mohsend')) {   // H225: sent to the Ministry's system, the reference recorded from its answer
+                        t.disabled = true;
+                        post(@Json.Serialize(Url.Content("~/Hospital/SickLeaves/")) + t.getAttribute('data-sick-mohsend') + '/MohSend', {})
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.mohDone); swap(); });
+                        return;
+                    }
                     if (t.hasAttribute('data-sick-moh')) {   // H208
                         var mid = t.getAttribute('data-sick-moh');
                         cbPrompt(W.mohRef.replace('{0}', t.getAttribute('data-no'))).then(function (ref) {

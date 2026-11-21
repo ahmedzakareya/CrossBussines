@@ -78,7 +78,7 @@ namespace CrossBuy.Tests
 			var s = HospitalSliceParity.Slice("hospital_h215_interfaces.sql");
 			HospitalSliceParity.NamesItsTable(model, s, typeof(HospitalInterface), "HospitalInterfaces");
 			HospitalSliceParity.ColumnsMatch(model, s, typeof(HospitalInterface), "HospitalInterfaces");
-			foreach (var k in HospitalInterfaceKind.All) Assert.Contains("'" + k + "'", s);
+			foreach (var k in HospitalInterfaceKind.All) Assert.Contains("'" + k + "'", s + HospitalSliceParity.Slice("hospital_h221_ecg_device.sql"));   // H221 adds CardioResults
 		}
 	}
 }

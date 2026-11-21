@@ -9598,4 +9598,90 @@
   <data name="{0} critical" xml:space="preserve"><value>{0} حرجة</value></data>
   <data name="{0} studies" xml:space="preserve"><value>{0} فحوص</value></data>
   <data name="{0} waiting to be read" xml:space="preserve"><value>{0} بانتظار القراءة</value></data>
+  <data name="High risk" xml:space="preserve"><value>خطورة عالية</value></data>
+  <data name="Padua 4 or more is high risk: order prophylaxis, or record why it is contraindicated" xml:space="preserve"><value>بادوا 4 فأكثر خطورة عالية: اطلب الوقاية أو سجّل سبب منعها</value></data>
+  <data name="Padua score" xml:space="preserve"><value>مقياس بادوا</value></data>
+  <data name="Score the Padua items first" xml:space="preserve"><value>قيّم بنود مقياس بادوا أولًا</value></data>
+  <data name="padua:age70" xml:space="preserve"><value>العمر 70 فأكثر</value></data>
+  <data name="padua:cancer" xml:space="preserve"><value>سرطان نشط</value></data>
+  <data name="padua:heartRespFailure" xml:space="preserve"><value>قصور قلبي أو تنفسي</value></data>
+  <data name="padua:hormones" xml:space="preserve"><value>علاج هرموني</value></data>
+  <data name="padua:immobility" xml:space="preserve"><value>قلة الحركة (3 أيام فأكثر)</value></data>
+  <data name="padua:infectionRheum" xml:space="preserve"><value>عدوى حادة أو مرض روماتيزمي</value></data>
+  <data name="padua:miStroke" xml:space="preserve"><value>احتشاء قلبي أو سكتة حادة</value></data>
+  <data name="padua:obesity" xml:space="preserve"><value>سمنة (مؤشر كتلة 30 فأكثر)</value></data>
+  <data name="padua:previousVte" xml:space="preserve"><value>جلطة وريدية سابقة</value></data>
+  <data name="padua:thrombophilia" xml:space="preserve"><value>قابلية تخثر معروفة</value></data>
+  <data name="padua:traumaSurgery" xml:space="preserve"><value>رضّ أو جراحة حديثة (شهر)</value></data>
+  <data name="svc:LAC" xml:space="preserve"><value>اللاكتات</value></data>
+  <data name="svc:LACTATE" xml:space="preserve"><value>ارتفاع اللاكتات</value></data>
+  <data name="svc:PADUA" xml:space="preserve"><value>مقياس بادوا</value></data>
+  <data name="svc:WBC" xml:space="preserve"><value>كريات الدم البيضاء</value></data>
+  <data name="svc:age70" xml:space="preserve"><value>العمر 70+</value></data>
+  <data name="svc:cancer" xml:space="preserve"><value>سرطان نشط</value></data>
+  <data name="svc:heartRespFailure" xml:space="preserve"><value>قصور قلبي أو تنفسي</value></data>
+  <data name="svc:hormones" xml:space="preserve"><value>علاج هرموني</value></data>
+  <data name="svc:immobility" xml:space="preserve"><value>قلة الحركة</value></data>
+  <data name="svc:infectionRheum" xml:space="preserve"><value>عدوى أو روماتيزم</value></data>
+  <data name="svc:miStroke" xml:space="preserve"><value>احتشاء أو سكتة</value></data>
+  <data name="svc:obesity" xml:space="preserve"><value>سمنة</value></data>
+  <data name="svc:previousVte" xml:space="preserve"><value>جلطة سابقة</value></data>
+  <data name="svc:thrombophilia" xml:space="preserve"><value>قابلية تخثر</value></data>
+  <data name="svc:traumaSurgery" xml:space="preserve"><value>رضّ أو جراحة</value></data>
+  <data name="Device reading" xml:space="preserve"><value>قراءة الجهاز</value></data>
+  <data name="ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm." xml:space="preserve"><value>أجهزة تخطيط القلب: تُسجَّل قياسات كل فحص وقراءة الجهاز (ORU^R01 ورقم الفحص في OBR-2) لتأكيد طبيب القلب.</value></data>
+  <data name="No ECG measurement in the message" xml:space="preserve"><value>لا توجد قياسات تخطيط قلب في الرسالة</value></data>
+  <data name="No ECG study has this number" xml:space="preserve"><value>لا يوجد فحص تخطيط قلب بهذا الرقم</value></data>
+  <data name="This study is not an ECG" xml:space="preserve"><value>هذا الفحص ليس تخطيط قلب</value></data>
+  <data name="To be confirmed by the cardiologist" xml:space="preserve"><value>بانتظار تأكيد طبيب القلب</value></data>
+  <data name="ifk:CardioResults" xml:space="preserve"><value>أجهزة تخطيط القلب</value></data>
+  <data name="Cancer synoptic" xml:space="preserve"><value>التقرير المنظَّم للورم</value></data>
+  <data name="Choose the lymphovascular invasion" xml:space="preserve"><value>اختر حالة الغزو اللمفي الوعائي</value></data>
+  <data name="Choose the margin status" xml:space="preserve"><value>اختر حالة الحواف</value></data>
+  <data name="Closest margin (mm)" xml:space="preserve"><value>أقرب حافة (مم)</value></data>
+  <data name="Grade" xml:space="preserve"><value>الدرجة</value></data>
+  <data name="Lymphovascular invasion" xml:space="preserve"><value>الغزو اللمفي الوعائي</value></data>
+  <data name="Margins" xml:space="preserve"><value>الحواف</value></data>
+  <data name="Nodes" xml:space="preserve"><value>العقد</value></data>
+  <data name="Size (mm)" xml:space="preserve"><value>الحجم (مم)</value></data>
+  <data name="The positive nodes cannot exceed those examined" xml:space="preserve"><value>لا يمكن أن تزيد العقد الموجبة على المفحوصة</value></data>
+  <data name="Tumour type" xml:space="preserve"><value>نوع الورم</value></data>
+  <data name="Write the closest margin in mm" xml:space="preserve"><value>اكتب أقرب حافة بالمليمتر</value></data>
+  <data name="Write the grade" xml:space="preserve"><value>اكتب الدرجة</value></data>
+  <data name="Write the pT stage" xml:space="preserve"><value>اكتب مرحلة pT</value></data>
+  <data name="Write the tumour size in mm" xml:space="preserve"><value>اكتب حجم الورم بالمليمتر</value></data>
+  <data name="Write the tumour type" xml:space="preserve"><value>اكتب نوع الورم</value></data>
+  <data name="pal:Absent" xml:space="preserve"><value>غير موجود</value></data>
+  <data name="pal:Indeterminate" xml:space="preserve"><value>غير محدد</value></data>
+  <data name="pal:Present" xml:space="preserve"><value>موجود</value></data>
+  <data name="pam:Clear" xml:space="preserve"><value>سليمة</value></data>
+  <data name="pam:Close" xml:space="preserve"><value>قريبة</value></data>
+  <data name="pam:Involved" xml:space="preserve"><value>مصابة</value></data>
+  <data name="Copy this payer's sheet" xml:space="preserve"><value>نسخ كشف هذه الجهة</value></data>
+  <data name="That payer has no sheet of its own to copy" xml:space="preserve"><value>لا يوجد لهذه الجهة كشف خاص بها لنسخه</value></data>
+  <data name="A time is not hh:mm" xml:space="preserve"><value>أحد الأوقات ليس بصيغة hh:mm</value></data>
+  <data name="An address is not a valid e-mail" xml:space="preserve"><value>أحد العناوين ليس بريدًا إلكترونيًا صحيحًا</value></data>
+  <data name="At most five addresses" xml:space="preserve"><value>خمسة عناوين على الأكثر</value></data>
+  <data name="At most four copies a day" xml:space="preserve"><value>أربع نسخ يوميًا على الأكثر</value></data>
+  <data name="Copies each shift" xml:space="preserve"><value>نسخ كل وردية</value></data>
+  <data name="Last sent" xml:space="preserve"><value>آخر إرسال</value></data>
+  <data name="Send a copy now" xml:space="preserve"><value>إرسال نسخة الآن</value></data>
+  <data name="Send to (e-mail)" xml:space="preserve"><value>الإرسال إلى (بريد إلكتروني)</value></data>
+  <data name="Set the ward's shift copies first" xml:space="preserve"><value>اضبط نسخ ورديات القسم أولًا</value></data>
+  <data name="The copy could not be generated" xml:space="preserve"><value>تعذّر إنشاء النسخة</value></data>
+  <data name="The copy was generated but no e-mail could be sent" xml:space="preserve"><value>أُنشئت النسخة لكن تعذّر إرسال البريد</value></data>
+  <data name="The copy was sent" xml:space="preserve"><value>أُرسلت النسخة</value></data>
+  <data name="The schedule could not be saved" xml:space="preserve"><value>تعذّر حفظ الجدولة</value></data>
+  <data name="The shift copies are set, but the platform's scheduled reports are switched off: they are sent when the administrator turns them on. Until then use «Send a copy now»." xml:space="preserve"><value>نسخ الورديات مضبوطة، لكن التقارير المجدولة في المنصة متوقفة: تُرسل عندما يشغّلها مسؤول النظام. حتى ذلك الحين استخدم «إرسال نسخة الآن».</value></data>
+  <data name="The ward's summary is sent as a PDF at these times, before anything can go down." xml:space="preserve"><value>يُرسل ملخص القسم ملف PDF في هذه الأوقات، قبل أن يتوقف أي شيء.</value></data>
+  <data name="Times" xml:space="preserve"><value>الأوقات</value></data>
+  <data name="Write the address the copies go to" xml:space="preserve"><value>اكتب العنوان الذي تُرسل إليه النسخ</value></data>
+  <data name="{0} copies a day" xml:space="preserve"><value>{0} نسخ يوميًا</value></data>
+  <data name="Send to the Ministry" xml:space="preserve"><value>إرسال إلى الوزارة</value></data>
+  <data name="The Ministry's system answered without a reference" xml:space="preserve"><value>أجاب نظام الوزارة دون مرجع</value></data>
+  <data name="The Ministry's system could not be reached" xml:space="preserve"><value>تعذّر الوصول إلى نظام الوزارة</value></data>
+  <data name="The Ministry's system did not answer" xml:space="preserve"><value>لم يُجب نظام الوزارة</value></data>
+  <data name="The Ministry's system refused the record" xml:space="preserve"><value>رفض نظام الوزارة السجل</value></data>
+  <data name="The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here." xml:space="preserve"><value>المستشفى غير متصل بنظام الوزارة بعد: تُبلَّغ الحالات كما في السابق ويُسجَّل مرجع الوزارة يدويًا. وعندما يضبط المسؤول الاتصال تُرسَل كل حالة من هنا.</value></data>
+  <data name="The hospital is not connected to the Ministry's system: record the reference by hand" xml:space="preserve"><value>المستشفى غير متصل بنظام الوزارة: سجّل المرجع يدويًا</value></data>
 </root>

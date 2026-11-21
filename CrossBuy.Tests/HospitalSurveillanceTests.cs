@@ -75,6 +75,33 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void The_laboratory_counts_a_white_count_and_a_raised_lactate()
+		{
+			// SIRS of two from one vital sign and the white count
+			Assert.Equal("SIRS;HR=104;WBC=15.2;INF", HospitalSurveillanceRules.Sepsis(O(hr: 104), infection: true, wbc: 15.2m)!.Value.Criteria);
+			Assert.Null(HospitalSurveillanceRules.Sepsis(O(hr: 104), infection: true, wbc: 8m));
+			// a lactate of 2 or more with an infection fires even when the vital signs do not
+			Assert.Equal("LACTATE;LAC=2.6;INF", HospitalSurveillanceRules.Sepsis(O(), infection: true, lactate: 2.6m)!.Value.Criteria);
+			Assert.Null(HospitalSurveillanceRules.Sepsis(O(), infection: false, lactate: 2.6m));
+			Assert.Null(HospitalSurveillanceRules.Sepsis(O(), infection: true, lactate: 1.4m));
+			// qSOFA carries the lactate beside it
+			Assert.Equal("qSOFA;RR=24;SBP=96;LAC=4.1", HospitalSurveillanceRules.Sepsis(O(rr: 24, sbp: 96), false, lactate: 4.1m)!.Value.Criteria);
+		}
+
+		[Fact]
+		public void A_VTE_answer_is_scored_by_Padua_and_a_high_risk_patient_is_never_not_indicated()
+		{
+			Assert.Equal(0, HospitalSurveillanceRules.Padua(Array.Empty<string>()));
+			Assert.Equal(5, HospitalSurveillanceRules.Padua(new[] { "cancer", "age70", "obesity" }));
+			Assert.Equal(3, HospitalSurveillanceRules.Padua(new[] { "immobility", "immobility" }));   // an item counts once
+			Assert.Equal("Score the Padua items first", HospitalSurveillanceRules.VteRefusal(HospitalSurveillanceResponse.ProphylaxisOrdered, null));
+			Assert.Null(HospitalSurveillanceRules.VteRefusal(HospitalSurveillanceResponse.NotIndicated, new[] { "age70" }));
+			Assert.NotNull(HospitalSurveillanceRules.VteRefusal(HospitalSurveillanceResponse.NotIndicated, new[] { "cancer", "age70" }));
+			Assert.Null(HospitalSurveillanceRules.VteRefusal(HospitalSurveillanceResponse.Contraindicated, new[] { "cancer", "age70" }));
+			Assert.Equal("not_found", HospitalSurveillanceRules.VteRefusal(HospitalSurveillanceResponse.ProphylaxisOrdered, new[] { "smoking" }));
+		}
+
+		[Fact]
 		public void The_table_matches_its_slice()
 		{
 			var model = HospitalSliceParity.Model(HospitalSurveillanceModel.Configure);

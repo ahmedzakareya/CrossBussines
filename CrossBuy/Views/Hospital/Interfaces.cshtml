@@ -45,6 +45,8 @@
                 <div class="mt-1"><code dir="ltr">POST @(bas){code}/hl7</code></div>
                 <div class="mt-2">@T["Imaging worklist: the worklist broker reads the scheduled imaging orders (add ?modality=CT, or format=hl7 for HL7 messages)."]</div>
                 <div class="mt-1"><code dir="ltr">GET @(bas){code}/worklist</code></div>
+                <div class="mt-2">@T["ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm."]</div>
+                <div class="mt-1"><code dir="ltr">POST @(bas){code}/ecg</code></div>
                 <div class="mt-2">@T["Every request carries the interface key in the header:"] <code dir="ltr">X-Interface-Key</code>. @T["A machine works with the rights of the person it acts for."]</div>
             </div>
         </div>

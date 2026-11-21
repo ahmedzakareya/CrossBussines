@@ -583,9 +583,9 @@ namespace CrossBuy.BL.Reporting
 			Heading("الوصف المجهري", "Microscopic description");
 			Block("Microscopic", 4);
 			Heading("التشخيص", "Diagnosis");
-			double box = Need(11) * 2 + 2;
+			double box = Need(11) * 3 + 2;   // H222: the diagnosis, and the synoptic under it
 			e.Add(Box(0, y, W, box, Brand));
-			e.Add(Field("Diagnosis", 2, y + 1, W - 40, Need(11) * 2, Top(11, true)));
+			e.Add(Field("Diagnosis", 2, y + 1, W - 40, Need(11) * 3, Top(11, true)));
 			e.Add(Field("Malignant", W - 36, y + 1, 34, Need(11), S(11, true, Alert, ReportTextAlign.End)));
 			y += box + 2;
 			double sig = y;
@@ -597,6 +597,99 @@ namespace CrossBuy.BL.Reporting
 			Block("Amendments", 2, 9);
 			if (y + 1 > ReportPaper.ContentHeightMm(LetterPage)) throw new InvalidOperationException("The pathology report no longer fits one page: " + (y + 1) + " mm");
 			return OneBand(LetterPage, y + 1, e);
+		}
+
+		/// H219 — a one-page A4 clinical report shared by the endoscopy and cardiac study reports: the letterhead and title;
+		/// the report number and date; the patient (name, file, age, sex); the doctor; then the report's own sections, each a
+		/// heading over a text block that starts at the top of its box; the doctor's signature beside the date. It refuses
+		/// to build if it no longer fits one page.
+		private static ReportVisualLayout ClinicalReport(string titleAr, string titleEn, IReadOnlyList<(string Ar, string En, string Key, int Lines, bool Alert)> sections)
+		{
+			const double W = 180, Half = 90, L = 30;
+			var e = new List<ReportElement>(); double y = 0;
+			ReportElementStyle Top(double pt, bool bold = false, string color = Ink) => new()
+			{
+				FontSizePt = pt, Bold = bold, Color = color, Align = ReportTextAlign.Start, VerticalAlign = ReportVerticalAlign.Top, PaddingMm = 0.5, BorderStyle = ReportBorderStyle.None,
+			};
+			void Cell(double x, double width, string ar, string en, string key, bool bold = false, string? date = null)
+			{
+				e.Add(Text(ar, en, x, y, L, Need(8.5), S(8.5, color: Muted)));
+				e.Add(Field(key, x + L, y, width - L, Need(10), S(10, bold, date: date)));
+			}
+			e.Add(Field("CompanyName", 0, y, W, Need(14), S(14, true, align: ReportTextAlign.Center))); y += Need(14);
+			e.Add(Field("CompanyAddress", 0, y, Half - 1, Need(8.5), S(8.5, color: Muted, align: ReportTextAlign.End)));
+			e.Add(Field("CompanyPhone", Half + 1, y, Half - 1, Need(8.5), S(8.5, color: Muted))); y += Need(8.5) + 2;
+			e.Add(Text(titleAr, titleEn, 0, y, W, Need(16), S(16, true, Brand, ReportTextAlign.Center))); y += Need(16);
+			e.Add(Line(0, y, W)); y += 2;
+			Cell(0, Half - 2, "الرقم", "No.", "DocumentNo", true);
+			Cell(Half, Half, "التاريخ", "Date", "DocumentDate", date: "yyyy-MM-dd HH:mm"); y += Need(10);
+			Cell(0, W, "المريض", "Patient", "PatientName", true); y += Need(10);
+			Cell(0, Half - 2, "رقم الملف", "File no.", "PatientMrn");
+			Cell(Half, Half, "السن", "Age", "PatientAge"); y += Need(10);
+			Cell(0, Half - 2, "النوع", "Sex", "PatientSex");
+			Cell(Half, Half, "الطبيب", "Doctor", "DoctorName", true); y += Need(10);
+			foreach (var s in sections)
+			{
+				if (s.Lines == 1)
+				{   // a one-line item is a labelled row, not a headed block
+					y += 0.5;
+					e.Add(Text(s.Ar, s.En, 0, y, L + 10, Need(8.5), S(8.5, color: Muted)));
+					e.Add(Field(s.Key, L + 10, y, W - L - 10, Need(10), S(10, s.Alert, s.Alert ? Alert : Ink))); y += Need(10);
+					continue;
+				}
+				y += 1.5; e.Add(Text(s.Ar, s.En, 0, y, W, Need(10), S(10, true, Brand))); y += Need(10); e.Add(Line(0, y, W)); y += 1;
+				double h = Need(9.5) * s.Lines;
+				e.Add(Field(s.Key, 0, y, W, h, Top(9.5, s.Alert, s.Alert ? Alert : Ink))); y += h;
+			}
+			y += 3;
+			double sig = y;
+			Cell(0, Half - 2, "الطبيب", "Doctor", "DoctorName", true); y += Need(10);
+			Cell(0, Half - 2, "الترخيص", "Licence", "DoctorLicense"); y += Need(10);
+			e.Add(Text("التوقيع والختم", "Signature and stamp", Half, sig, Half, Need(8.5), S(8.5, color: Muted)));
+			e.Add(Box(Half, sig + Need(8.5), Half, y - sig - Need(8.5), Rule));
+			if (y + 1 > ReportPaper.ContentHeightMm(LetterPage)) throw new InvalidOperationException(titleEn + " no longer fits one page: " + (y + 1) + " mm");
+			return OneBand(LetterPage, y + 1, e);
+		}
+
+		/// H219 — the ENDOSCOPY REPORT (one A4 page).
+		public static ReportVisualLayout EndoReport() => ClinicalReport("تقرير المنظار", "Endoscopy report", new[]
+		{
+			("الإجراء", "Procedure", "Procedure", 1, false), ("المنظار ودورة تعقيمه", "Scope and its reprocessing", "Scope", 1, false), ("التهدئة", "Sedation", "Sedation", 1, false),
+			("دواعي الإجراء", "Indication", "Indication", 2, false), ("الموجودات", "Findings", "Findings", 4, false), ("التدخلات", "Interventions", "Interventions", 2, false),
+			("المضاعفات", "Complications", "Complications", 1, false), ("مؤشرات الجودة", "Quality", "Quality", 1, false), ("الخزعات", "Biopsies", "Biopsies", 1, false),
+			("التوصيات", "Recommendations", "Recommendations", 2, false),
+		});
+
+		/// H219 — the CARDIAC STUDY REPORT (one A4 page).
+		public static ReportVisualLayout CardioReport() => ClinicalReport("تقرير فحص القلب", "Cardiac study report", new[]
+		{
+			("الفحص", "Study", "Study", 1, false), ("دواعي الفحص", "Indication", "Indication", 2, false), ("القياسات", "Measurements", "Measurements", 5, false),
+			("التفسير", "Interpretation", "Interpretation", 5, false), ("نتيجة حرجة", "Critical finding", "Critical", 1, true),
+		});
+
+		/// H222 — the BLOCK / SLIDE LABEL: one label per row (a DETAIL band one label high), the code large beside its QR,
+		/// what it is (block or slide), the patient and the file number, the case — on the laboratory's 100 × 60 stock.
+		public static ReportVisualLayout PathLabel()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.RxLabel, MarginTopMm = 1, MarginBottomMm = 1, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 96, H = 58, Qs = 30, Lw = W - Qs - 2;
+			double a = Need(7.5), b = Need(10), c = Need(14), y = 0;
+			var e = new List<ReportElement>();
+			e.Add(Field("CompanyName", 0, y, W, a, S(7.5, true, Brand))); y += a + 0.4;
+			e.Add(Line(0, y, W)); y += 0.8;
+			double top = y;
+			e.Add(Field("LabelKind", 0, y, Lw, b, S(10, true, Alert))); y += b;
+			e.Add(Field("LabelCode", 0, y, Lw, c, S(14, true))); y += c;
+			e.Add(Field("PatientName", 0, y, Lw, b, S(10, true))); y += b;
+			e.Add(Field("PatientMrn", 0, y, Lw, b, S(10, true, Brand))); y += b;
+			e.Add(Field("Specimen", 0, y, Lw, a, S(7.5, color: Muted))); y += a;
+			e.Add(Qr("LabelCode", W - Qs, top, Qs));
+			if (y > H) throw new InvalidOperationException("The block label no longer fits its label: " + y + " mm");
+			var band = new ReportBand { Kind = ReportBandKind.Detail, HeightMm = H };
+			band.Elements.AddRange(e);
+			var layout = new ReportVisualLayout { Page = page, GridMm = 1, SnapToGrid = false };
+			layout.Bands.Add(band);
+			return layout;
 		}
 
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
@@ -614,6 +707,9 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.DiseaseReport => DiseaseReport(),   // H209
 			HospitalDocumentDatasetCodes.WardDowntime => WardDowntime(),   // H211
 			HospitalDocumentDatasetCodes.PathReport => PathReport(),   // H216
+			HospitalDocumentDatasetCodes.EndoReport => EndoReport(),   // H219
+			HospitalDocumentDatasetCodes.CardioReport => CardioReport(),   // H219
+			HospitalDocumentDatasetCodes.PathLabels => PathLabel(),   // H222
 			_ => null,
 		};
 	}

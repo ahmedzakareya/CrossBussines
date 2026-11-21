@@ -47,7 +47,7 @@ namespace CrossBuy.BL.Reporting
 			header["ClinicalHistory"] = c.ClinicalHistory;
 			header["Gross"] = c.Gross + (c.Blocks is int b ? (ar ? $" ({b} قوالب)" : $" ({b} blocks)") : "");
 			header["Microscopic"] = c.Microscopic;
-			header["Diagnosis"] = c.Diagnosis;
+			header["Diagnosis"] = c.Diagnosis + (CrossBuy.BL.Hospital.HospitalPathRules.Synoptic(c, ar) is string syn ? "\n" + syn : "");   // H222: the synoptic under the diagnosis
 			header["Malignant"] = c.Malignant ? (ar ? "ورم خبيث" : "MALIGNANT") : null;
 			header["Pathologist"] = signer == null ? null : HospitalDocumentRows.P(ar, signer.FullName, signer.FullNameEn);
 			header["SignedAt"] = c.ReportedAt?.ToLocalTime();

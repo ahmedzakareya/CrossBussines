@@ -310,6 +310,35 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// The batch's claims as the payer's sheet (kept as a sent file, like the FHIR one). Only a submitted batch goes out.
+		/// H223: the sheet as an Excel workbook (kept, like the CSV, as the CSV text of the same rows).
+		public async Task<(HospitalResult Result, string? FileName, byte[]? Xlsx)> ExportSheetXlsxAsync(BusinessContext ctx, int batchId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var (r, name, csv) = await ExportSheetAsync(ctx, batchId, employeeId, nowUtc, ct);
+			if (!r.Ok) return (r, null, null);
+			var (b, payer) = await BatchAsync(ctx, batchId, ct);
+			var setup = (await SheetAsync(ctx, payer!.ID, ct))!;
+			var claims = await ClaimsAsync(ctx, batchId, ct);
+			string currency = await CurrencyAsync(ctx, payer, ct);
+			return (r, b!.BatchNo + ".xlsx", HospitalClaimSheets.RenderXlsx(setup, b.BatchNo, claims, currency));
+		}
+
+		/// H223: one payer's sheet copied onto another (a TPA serving several insurers takes one layout).
+		public async Task<HospitalResult> CopySheetAsync(BusinessContext ctx, int payerId, int fromPayerId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Bill, null, ct)) return HospitalResult.Fail("forbidden");
+			var src = await _db.Set<HospitalPayerClaimSheet>().AsNoTracking().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.PayerId == fromPayerId, ct);
+			if (src == null) return HospitalResult.Fail("That payer has no sheet of its own to copy");
+			return await SaveSheetAsync(ctx, payerId, new HospitalClaimSheetInput { Columns = HospitalClaimSheets.Unpack(src.Columns).ToList(), Delimiter = src.Delimiter, DateFormat = src.DateFormat }, employeeId, nowUtc, ct);
+		}
+
+		/// H223: the payers that have a sheet of their own (to copy from).
+		public async Task<IReadOnlyList<(int Id, string Name, string NameEn)>> PayersWithSheetsAsync(BusinessContext ctx, CancellationToken ct = default) =>
+			(await (from s in _db.Set<HospitalPayerClaimSheet>().AsNoTracking()
+					join p in _db.Set<HospitalPayer>().AsNoTracking() on s.PayerId equals p.ID
+					where s.CompanyId == ctx.CompanyId && p.CompanyId == ctx.CompanyId
+					orderby p.Name
+					select new { p.ID, p.Name, p.NameEn }).ToListAsync(ct)).Select(x => (x.ID, x.Name, x.NameEn)).ToList();
+
 		public async Task<(HospitalResult Result, string? FileName, string? Csv)> ExportSheetAsync(BusinessContext ctx, int batchId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Bill, null, ct)) return (HospitalResult.Fail("forbidden"), null, null);

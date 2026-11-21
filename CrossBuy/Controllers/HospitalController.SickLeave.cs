@@ -27,6 +27,16 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalMohAuthInput { public string? Reference { get; set; } }
 
 		/// H208: the Ministry of Health's authentication of a certificate, by its reference.
+		/// H225: the certificate sent to the Ministry's system; the reference it returns is recorded.
+		[HttpPost("SickLeaves/{id:int}/MohSend"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> SickLeaveMohSend(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var gw = ActivatorUtilities.CreateInstance<HospitalMohGatewayService>(HttpContext.RequestServices);
+			return Result(await gw.SendSickLeaveAsync(ctx, SickSvc, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
 		[HttpPost("SickLeaves/{id:int}/Moh"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> SickLeaveMoh(int id, [FromBody] HospitalMohAuthInput? input, CancellationToken ct = default)
 		{

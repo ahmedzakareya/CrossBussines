@@ -67,7 +67,7 @@
                             {
                                 var c = row.Case; int at = Array.IndexOf(steps, c.Status);
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = c.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = c.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@c.CaseNo</bdi></span></td>
                                     <td class="fs-7"><div class="fw-semibold text-gray-800"><bdi>@c.Specimen</bdi></div>@if (c.Site != null) {<div class="text-muted fs-8"><bdi>@c.Site</bdi></div>}
                                         <div class="text-muted fs-8">@T["pasrc:" + c.Source] · @T["{0} containers", c.Containers]</div>
@@ -87,6 +87,7 @@
                                     {
                                         <div class="fw-bold @(c.Malignant ? "text-danger" : "text-gray-900")"><bdi>@c.Diagnosis</bdi></div>
                                         @if (c.Malignant) {<span class="badge badge-danger fs-9 mt-1">@T["Malignant"]</span>}
+                                        @if (HospitalPathRules.Synoptic(c, DisplayName.IsArabic) is string syn) {<div class="text-gray-700 fs-8 mt-1"><bdi>@syn</bdi></div>}
                                         <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Pathologist)</div>
                                         @foreach (var a in amendOf.GetValueOrDefault(c.ID) ?? Array.Empty<HospitalPathAmendment>())
                                         {<div class="notice bg-light-info rounded border-info border border-dashed p-2 mt-2 fs-8"><span class="fw-bold">@T["Amendment"] <span class="hp-num" dir="ltr">@At(a.At)</span>:</span> <bdi>@a.Text</bdi><div class="text-muted"><bdi>@a.Reason</bdi></div></div>}
@@ -94,6 +95,7 @@
                                     else if (c.Gross != null) {<div class="text-gray-700 fs-8"><span class="text-muted">@T["Grossing"]:</span> <bdi>@c.Gross</bdi></div>}</td>
                                     <td class="text-end pe-4 text-nowrap">
                                         @if (c.Status == HospitalPathStatus.Reported) {@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPathology, DocumentId = c.ID.ToString(), DocumentTitle = c.CaseNo })}
+                                        @if (c.Blocks > 0 && c.Status is HospitalPathStatus.Grossed or HospitalPathStatus.Reported) {@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPathLabels, DocumentId = c.ID.ToString(), DocumentTitle = c.CaseNo })}
                                         @if (ready && canLab && c.Status == HospitalPathStatus.Requested) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Received" data-id="@c.ID" data-no="@c.CaseNo" data-containers="@c.Containers">@T["Receive"]</button>}
                                         @if (ready && canLab && c.Status == HospitalPathStatus.Received) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Grossed" data-id="@c.ID" data-no="@c.CaseNo">@T["Grossing"]</button>}
                                         @if (ready && canLab && c.Status == HospitalPathStatus.Grossed) {<button type="button" class="btn btn-sm btn-primary" data-pa-step="Reported" data-id="@c.ID" data-no="@c.CaseNo">@T["Sign out the report"]</button>}
@@ -145,6 +147,23 @@
             <div data-ps-for="Reported"><label class="fs-6 fw-semibold mb-2 required">@T["Microscopic description"]</label><textarea class="form-control form-control-solid" rows="5" maxlength="4000" data-ps="microscopic"></textarea></div>
             <div data-ps-for="Reported"><label class="fs-6 fw-semibold mb-2 required">@T["Diagnosis"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-ps="diagnosis"></textarea></div>
             <div data-ps-for="Reported"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-ps="malignant" /><span class="form-check-label fw-semibold text-danger">@T["Malignant"]</span></label></div>
+            <div data-ps-for="Reported" class="d-none" data-synoptic>
+                <div class="notice bg-light-danger rounded border border-danger border-dashed p-4">
+                    <div class="fw-bold mb-3">@T["Cancer synoptic"]</div>
+                    <div class="row g-3">
+                        <div class="col-md-8"><label class="fs-7 fw-semibold mb-1 required">@T["Tumour type"]</label><input class="form-control form-control-sm form-control-solid" maxlength="200" data-ps="tumourType" /></div>
+                        <div class="col-md-4"><label class="fs-7 fw-semibold mb-1 required">@T["Grade"]</label><input class="form-control form-control-sm form-control-solid" maxlength="20" data-ps="grade" /></div>
+                        <div class="col-md-4"><label class="fs-7 fw-semibold mb-1 required">@T["Size (mm)"]</label><input type="number" step="0.1" class="form-control form-control-sm form-control-solid" data-ps="tumourSizeMm" /></div>
+                        <div class="col-md-4"><label class="fs-7 fw-semibold mb-1 required">@T["Margins"]</label><select class="form-select form-select-sm form-select-solid" data-ps="margins">@foreach (var m in HospitalPathMargins.All) {<option value="@m">@T["pam:" + m]</option>}</select></div>
+                        <div class="col-md-4"><label class="fs-7 fw-semibold mb-1">@T["Closest margin (mm)"]</label><input type="number" step="0.1" class="form-control form-control-sm form-control-solid" data-ps="marginMm" /></div>
+                        <div class="col-md-4"><label class="fs-7 fw-semibold mb-1 required">@T["Lymphovascular invasion"]</label><select class="form-select form-select-sm form-select-solid" data-ps="lvi">@foreach (var m in HospitalPathLvi.All) {<option value="@m">@T["pal:" + m]</option>}</select></div>
+                        <div class="col-md-2"><label class="fs-7 fw-semibold mb-1 required">pT</label><input class="form-control form-control-sm form-control-solid" maxlength="10" dir="ltr" data-ps="pt" /></div>
+                        <div class="col-md-2"><label class="fs-7 fw-semibold mb-1">pN</label><input class="form-control form-control-sm form-control-solid" maxlength="10" dir="ltr" data-ps="pn" /></div>
+                        <div class="col-md-2"><label class="fs-7 fw-semibold mb-1">@T["Nodes"]</label><input type="number" min="0" class="form-control form-control-sm form-control-solid" data-ps="nodesExamined" /></div>
+                        <div class="col-md-2"><label class="fs-7 fw-semibold mb-1">@T["Positive"]</label><input type="number" min="0" class="form-control form-control-sm form-control-solid" data-ps="nodesPositive" /></div>
+                    </div>
+                </div>
+            </div>
             <div data-ps-for="Amend"><label class="fs-6 fw-semibold mb-2 required">@T["Amendment"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="2000" data-ps="text"></textarea></div>
             <div data-ps-for="Amend"><label class="fs-6 fw-semibold mb-2 required">@T["Why amended"]</label><input class="form-control form-control-solid" maxlength="300" data-ps="reason" /></div>
         </div>
@@ -164,6 +183,7 @@
             function done(t, m) { return function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } if (m) bootstrap.Modal.getOrCreateInstance(m).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
             if (window.jQuery) jQuery(mn.querySelector('[data-pa=patient]')).select2({ width: '100%', dropdownParent: jQuery(mn), placeholder: mn.querySelector('[data-pa=patient]').getAttribute('data-placeholder'),
                 ajax: { url: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")), delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: (d.results || d || []).map(function (x) { return { id: x.id, text: x.text || x.name }; }) }; } } });
+            ms.addEventListener('change', function (e) { if (e.target.matches('[data-ps=malignant]')) ms.querySelector('[data-synoptic]').classList.toggle('d-none', !e.target.checked); });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-pa-new],[data-pa-send],[data-pa-step],[data-ps-save],[data-pa-cancel]'); if (!t) return;
                 if (t.hasAttribute('data-pa-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
@@ -177,7 +197,8 @@
                     id = t.getAttribute('data-id'); to = t.getAttribute('data-pa-step');
                     ms.querySelector('[data-ps-title]').textContent = W.title[to]; ms.querySelector('[data-ps-no]').textContent = t.getAttribute('data-no');
                     ms.querySelectorAll('[data-ps-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-ps-for') !== to); });
-                    ms.querySelectorAll('[data-ps]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else i.value = ''; });
+                    ms.querySelectorAll('[data-ps]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else if (i.tagName !== 'SELECT') i.value = ''; });
+                    ms.querySelector('[data-synoptic]').classList.add('d-none');
                     bootstrap.Modal.getOrCreateInstance(ms).show(); return;
                 }
                 if (t.hasAttribute('data-ps-save')) {
@@ -185,7 +206,10 @@
                     t.disabled = true;
                     if (to === 'Amend') { post(root + '/' + id + '/Amend', { text: f('text').value, reason: f('reason').value }).then(done(t, ms)); return; }
                     post(root + '/' + id + '/Step', { to: to, containers: Number(f('containers').value) || null, gross: f('gross').value, blocks: Number(f('blocks').value) || null,
-                        microscopic: f('microscopic').value, diagnosis: f('diagnosis').value, malignant: f('malignant').checked }).then(done(t, ms));
+                        microscopic: f('microscopic').value, diagnosis: f('diagnosis').value, malignant: f('malignant').checked,
+                        tumourType: f('tumourType').value, grade: f('grade').value, tumourSizeMm: f('tumourSizeMm').value === '' ? null : Number(f('tumourSizeMm').value), margins: f('margins').value,
+                        marginMm: f('marginMm').value === '' ? null : Number(f('marginMm').value), lvi: f('lvi').value, pt: f('pt').value, pn: f('pn').value || null,
+                        nodesExamined: f('nodesExamined').value === '' ? null : Number(f('nodesExamined').value), nodesPositive: f('nodesPositive').value === '' ? null : Number(f('nodesPositive').value) }).then(done(t, ms));
                     return;
                 }
                 cbPrompt(W.cancel, { kind: 'danger' }).then(function (why) { if (why == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-pa-cancel') + '/Step', { to: 'Cancelled', reason: why }).then(done(t)); });

@@ -8,7 +8,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string LabResults = "LabResults";
 		/// A modality worklist broker reads the scheduled imaging orders (HL7 v2 ORM^O01 each).
 		public const string ImagingWorklist = "ImagingWorklist";
-		public static readonly IReadOnlyList<string> All = new[] { LabResults, ImagingWorklist };
+		/// H221: an ECG machine (or its management system) sends each study's measurements and reading (HL7 v2 ORU^R01).
+		public const string CardioResults = "CardioResults";
+		public static readonly IReadOnlyList<string> All = new[] { LabResults, ImagingWorklist, CardioResults };
 	}
 
 	// HOSPITAL H215 — a machine allowed to talk to the hospital without a person at a screen: its key (kept only as a

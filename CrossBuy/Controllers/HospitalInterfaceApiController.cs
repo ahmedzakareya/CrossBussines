@@ -62,6 +62,26 @@ namespace CrossBuy.Controllers
 
 		[AllowAnonymous]
 		[AnonymousByDesign(
+			"An ECG machine or its management system has no login: it presents its interface key (X-Interface-Key; hashed, shown once). " +
+			"The key opens one CardioResults interface of one company; the measurements are filed on the requested ECG study the message " +
+			"names, as the device reading, AS the employee the interface acts for (consult rights checked on every message); the cardiologist " +
+			"still confirms and signs. A wrong, inactive or other-kind key gets a bare 401 and nothing is read.")]
+		[HttpPost("{code}/ecg")]
+		[RequestSizeLimit(1_000_000)]
+		public async Task<IActionResult> Ecg(string code, CancellationToken ct = default)
+		{
+			var open = await OpenAsync(code, HospitalInterfaceKind.CardioResults, ct);
+			if (open == null) return Unauthorized();
+			string raw;
+			using (var reader = new StreamReader(Request.Body, Encoding.UTF8)) raw = await reader.ReadToEndAsync(ct);
+			raw = raw.Trim('\v', '\x1c', '\r', '\n', ' ');
+			var svc = ActivatorUtilities.CreateInstance<HospitalCardiologyService>(HttpContext.RequestServices);
+			var r = await svc.ImportAsync(open.Value.Ctx, raw, DateTime.UtcNow, ct);
+			return Content(HospitalInterfaceRules.Ack(HospitalInterfaceRules.ControlId(raw) ?? "", r.Ack, r.Detail, DateTime.UtcNow), "application/hl7-v2", Encoding.UTF8);
+		}
+
+		[AllowAnonymous]
+		[AnonymousByDesign(
 			"A modality worklist broker has no login: it presents its interface key (X-Interface-Key; hashed, shown once). The key opens " +
 			"one ImagingWorklist interface of one company, and the scheduled imaging orders are read AS the employee the interface acts " +
 			"for (radiology rights checked each time). It reads; it writes nothing but the interface's last-used time.")]

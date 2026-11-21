@@ -36,9 +36,20 @@ namespace CrossBuy.BL.Hospital
 		public string? Diagnosis { get; set; }
 		public bool Malignant { get; set; }
 		public string? Reason { get; set; }
+		// H222: the synoptic, required with a malignant diagnosis
+		public string? TumourType { get; set; }
+		public string? Grade { get; set; }
+		public decimal? TumourSizeMm { get; set; }
+		public string? Margins { get; set; }
+		public decimal? MarginMm { get; set; }
+		public string? Lvi { get; set; }
+		public string? PT { get; set; }
+		public string? PN { get; set; }
+		public int? NodesExamined { get; set; }
+		public int? NodesPositive { get; set; }
 	}
 
-	public sealed record HospitalPathRow(HospitalPathCase Case, string Patient, string PatientEn, string Mrn, HospitalFace? Pathologist, HospitalFace? Requester, int Amendments, bool Late);
+	public sealed record HospitalPathRow(HospitalPathCase Case, string Patient, string PatientEn, string Mrn, HospitalFace? Pathologist, HospitalFace? Requester, int Amendments, bool Late, string? PatientPhoto = null);
 
 	public static class HospitalPathRules
 	{
@@ -70,6 +81,7 @@ namespace CrossBuy.BL.Hospital
 					if (c.Status != HospitalPathStatus.Grossed) return "Describe the specimen before signing the report";
 					if (string.IsNullOrWhiteSpace(i.Microscopic)) return "Write the microscopic description";
 					if (string.IsNullOrWhiteSpace(i.Diagnosis)) return "Write the diagnosis";
+					if (i.Malignant && SynopticRefusal(i) is string syn) return syn;
 					return i.Microscopic.Trim().Length > 4000 || i.Diagnosis.Trim().Length > 1000 ? "The text is too long" : null;
 				case HospitalPathStatus.Cancelled:
 					if (c.Status != HospitalPathStatus.Requested) return "Only a request not yet received is cancelled";
@@ -78,6 +90,41 @@ namespace CrossBuy.BL.Hospital
 					return "not_found";
 			}
 		}
+
+		/// H222 — a malignant diagnosis carries its synoptic: the tumour type, grade, size, margins (with the distance when
+		/// clear or close), lymphovascular invasion and the pT stage; pN with the node counts when nodes were sent.
+		public static string? SynopticRefusal(HospitalPathStepInput i)
+		{
+			if (string.IsNullOrWhiteSpace(i.TumourType)) return "Write the tumour type";
+			if (string.IsNullOrWhiteSpace(i.Grade)) return "Write the grade";
+			if (i.TumourSizeMm is not (> 0 and <= 2000)) return "Write the tumour size in mm";
+			if (string.IsNullOrEmpty(i.Margins) || !HospitalPathMargins.All.Contains(i.Margins)) return "Choose the margin status";
+			if (i.Margins != HospitalPathMargins.Involved && i.MarginMm is not (>= 0 and <= 500)) return "Write the closest margin in mm";
+			if (string.IsNullOrEmpty(i.Lvi) || !HospitalPathLvi.All.Contains(i.Lvi)) return "Choose the lymphovascular invasion";
+			if (string.IsNullOrWhiteSpace(i.PT)) return "Write the pT stage";
+			if (i.NodesExamined is int ex && (ex < 0 || i.NodesPositive is not int pos || pos < 0 || pos > ex)) return "The positive nodes cannot exceed those examined";
+			return (i.TumourType.Trim().Length > 200 || i.Grade.Trim().Length > 20 || i.PT.Trim().Length > 10 || (i.PN?.Trim().Length ?? 0) > 10) ? "The text is too long" : null;
+		}
+
+		/// The synoptic as one line (the list and the printed report).
+		public static string? Synoptic(HospitalPathCase c, bool ar)
+		{
+			if (!c.Malignant || c.TumourType == null) return null;
+			var inv = System.Globalization.CultureInfo.InvariantCulture;
+			string margin = c.Margins switch
+			{
+				HospitalPathMargins.Involved => ar ? "الحواف: مصابة" : "Margins: involved",
+				HospitalPathMargins.Close => (ar ? "الحواف: قريبة " : "Margins: close ") + c.MarginMm?.ToString("0.#", inv) + " mm",
+				_ => (ar ? "الحواف: سليمة " : "Margins: clear ") + c.MarginMm?.ToString("0.#", inv) + " mm",
+			};
+			string lvi = c.Lvi switch { HospitalPathLvi.Present => ar ? "غزو لمفي وعائي: موجود" : "LVI: present", HospitalPathLvi.Absent => ar ? "غزو لمفي وعائي: غير موجود" : "LVI: absent", _ => ar ? "غزو لمفي وعائي: غير محدد" : "LVI: indeterminate" };
+			string nodes = c.NodesExamined is int ex ? (ar ? $" · العقد {c.NodesPositive}/{ex}" : $" · nodes {c.NodesPositive}/{ex}") : "";
+			return $"{c.TumourType} · {(ar ? "الدرجة" : "grade")} {c.Grade} · {c.TumourSizeMm?.ToString("0.#", inv)} mm · {margin} · {lvi} · {c.PT}{(c.PN == null ? "" : " " + c.PN)}{nodes}";
+		}
+
+		/// H222: the labels the laboratory cuts for a case: one per block (CASE-A1 …) and one per slide (CASE-A1-S1 …).
+		public static IReadOnlyList<(string Code, string Kind)> Labels(string caseNo, int blocks) =>
+			Enumerable.Range(1, Math.Max(0, blocks)).SelectMany(i => new[] { ($"{caseNo}-A{i}", "Block"), ($"{caseNo}-A{i}-S1", "Slide") }).ToList();
 
 		public static string? AmendRefusal(HospitalPathCase c, string? text, string? reason)
 		{
@@ -130,7 +177,15 @@ namespace CrossBuy.BL.Hospital
 			{
 				case HospitalPathStatus.Received: c.ReceivedAt = nowUtc; c.ReceivedByEmployeeId = employeeId; break;
 				case HospitalPathStatus.Grossed: c.Gross = Clip(input.Gross, 2000); c.Blocks = input.Blocks; c.GrossedAt = nowUtc; c.GrossedByEmployeeId = employeeId; break;
-				case HospitalPathStatus.Reported: c.Microscopic = Clip(input.Microscopic, 4000); c.Diagnosis = Clip(input.Diagnosis, 1000); c.Malignant = input.Malignant; c.ReportedAt = nowUtc; c.ReportedByEmployeeId = employeeId; break;
+				case HospitalPathStatus.Reported:
+					c.Microscopic = Clip(input.Microscopic, 4000); c.Diagnosis = Clip(input.Diagnosis, 1000); c.Malignant = input.Malignant; c.ReportedAt = nowUtc; c.ReportedByEmployeeId = employeeId;
+					if (input.Malignant)
+					{   // H222: the synoptic
+						c.TumourType = Clip(input.TumourType, 200); c.Grade = Clip(input.Grade, 20); c.TumourSizeMm = input.TumourSizeMm; c.Margins = input.Margins;
+						c.MarginMm = input.Margins == HospitalPathMargins.Involved ? null : input.MarginMm; c.Lvi = input.Lvi; c.PT = Clip(input.PT, 10); c.PN = Clip(input.PN, 10);
+						c.NodesExamined = input.NodesExamined; c.NodesPositive = input.NodesExamined == null ? null : input.NodesPositive;
+					}
+					break;
 				case HospitalPathStatus.Cancelled: c.CancelReason = Clip(input.Reason, 300); break;
 			}
 			c.Status = input.To!;
@@ -178,7 +233,7 @@ namespace CrossBuy.BL.Hospital
 				var amends = await _db.Set<HospitalPathAmendment>().AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && ids.Contains(a.CaseId)).GroupBy(a => a.CaseId).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N, ct);
 				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, rows.SelectMany(x => new[] { x.c.ReportedByEmployeeId, x.c.RequestedByEmployeeId }), ct);
 				HospitalFace? F(int? id) => id is int i ? faces.GetValueOrDefault(i) : null;
-				return (rows.Select(x => new HospitalPathRow(x.c, x.p.Name, x.p.NameEn, x.p.Mrn, F(x.c.ReportedByEmployeeId), F(x.c.RequestedByEmployeeId), amends.GetValueOrDefault(x.c.ID), HospitalPathRules.Late(x.c, nowUtc))).ToList(), total, open, late, true);
+				return (rows.Select(x => new HospitalPathRow(x.c, x.p.Name, x.p.NameEn, x.p.Mrn, F(x.c.ReportedByEmployeeId), F(x.c.RequestedByEmployeeId), amends.GetValueOrDefault(x.c.ID), HospitalPathRules.Late(x.c, nowUtc)) { PatientPhoto = x.p.PhotoPath }).ToList(), total, open, late, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalPathRow>(), 0, 0, 0, false); }
 		}

@@ -49,7 +49,7 @@
             <div class="col-xl-3">
                 <div class="card card-flush"><div class="card-body">
                     <div class="text-muted fs-8 mb-1">@T["Patient"]</div>
-                    <a href="@Url.Action("Patient", new { id = v.PatientId })" class="fs-5 fw-bold text-gray-900 text-hover-primary d-block">@DisplayName.Of(Model.Patient, Model.PatientEn)</a>
+                    <a href="@Url.Action("Patient", new { id = v.PatientId })" class="fs-5 fw-bold text-gray-900 text-hover-primary d-flex align-items-center gap-2">@HospitalUi.Avatar(Model.PatientPhoto, Model.PatientEn, 40)<span>@DisplayName.Of(Model.Patient, Model.PatientEn)</span></a>
                     <bdi class="text-muted fs-7 hp-num" dir="ltr">@Model.Mrn</bdi>
                     <div class="separator separator-dashed my-5"></div>
                     <div class="text-muted fs-8 mb-1">@T["Appointment"]</div>

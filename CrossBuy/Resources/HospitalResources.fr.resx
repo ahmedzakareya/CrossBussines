@@ -9549,4 +9549,90 @@
   <data name="{0} critical" xml:space="preserve"><value>{0} critiques</value></data>
   <data name="{0} studies" xml:space="preserve"><value>{0} examens</value></data>
   <data name="{0} waiting to be read" xml:space="preserve"><value>{0} en attente de lecture</value></data>
+  <data name="High risk" xml:space="preserve"><value>Risque élevé</value></data>
+  <data name="Padua 4 or more is high risk: order prophylaxis, or record why it is contraindicated" xml:space="preserve"><value>Padoue ≥ 4 est un risque élevé : prescrivez la prophylaxie ou indiquez la contre-indication</value></data>
+  <data name="Padua score" xml:space="preserve"><value>Score de Padoue</value></data>
+  <data name="Score the Padua items first" xml:space="preserve"><value>Évaluez d'abord les items de Padoue</value></data>
+  <data name="padua:age70" xml:space="preserve"><value>Âge 70 ans ou plus</value></data>
+  <data name="padua:cancer" xml:space="preserve"><value>Cancer actif</value></data>
+  <data name="padua:heartRespFailure" xml:space="preserve"><value>Insuffisance cardiaque ou respiratoire</value></data>
+  <data name="padua:hormones" xml:space="preserve"><value>Traitement hormonal</value></data>
+  <data name="padua:immobility" xml:space="preserve"><value>Mobilité réduite (3 jours ou plus)</value></data>
+  <data name="padua:infectionRheum" xml:space="preserve"><value>Infection aiguë ou maladie rhumatismale</value></data>
+  <data name="padua:miStroke" xml:space="preserve"><value>IDM ou AVC aigu</value></data>
+  <data name="padua:obesity" xml:space="preserve"><value>Obésité (IMC ≥ 30)</value></data>
+  <data name="padua:previousVte" xml:space="preserve"><value>Antécédent de MTEV</value></data>
+  <data name="padua:thrombophilia" xml:space="preserve"><value>Thrombophilie connue</value></data>
+  <data name="padua:traumaSurgery" xml:space="preserve"><value>Traumatisme ou chirurgie récents (1 mois)</value></data>
+  <data name="svc:LAC" xml:space="preserve"><value>Lactate</value></data>
+  <data name="svc:LACTATE" xml:space="preserve"><value>Lactate élevé</value></data>
+  <data name="svc:PADUA" xml:space="preserve"><value>Score de Padoue</value></data>
+  <data name="svc:WBC" xml:space="preserve"><value>Leucocytes</value></data>
+  <data name="svc:age70" xml:space="preserve"><value>Âge 70+</value></data>
+  <data name="svc:cancer" xml:space="preserve"><value>Cancer actif</value></data>
+  <data name="svc:heartRespFailure" xml:space="preserve"><value>Insuffisance cardiaque/respiratoire</value></data>
+  <data name="svc:hormones" xml:space="preserve"><value>Hormones</value></data>
+  <data name="svc:immobility" xml:space="preserve"><value>Mobilité réduite</value></data>
+  <data name="svc:infectionRheum" xml:space="preserve"><value>Infection ou rhumatisme</value></data>
+  <data name="svc:miStroke" xml:space="preserve"><value>IDM ou AVC</value></data>
+  <data name="svc:obesity" xml:space="preserve"><value>Obésité</value></data>
+  <data name="svc:previousVte" xml:space="preserve"><value>Antécédent de MTEV</value></data>
+  <data name="svc:thrombophilia" xml:space="preserve"><value>Thrombophilie</value></data>
+  <data name="svc:traumaSurgery" xml:space="preserve"><value>Traumatisme ou chirurgie</value></data>
+  <data name="Device reading" xml:space="preserve"><value>Lecture de l'appareil</value></data>
+  <data name="ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm." xml:space="preserve"><value>Appareils ECG : les mesures et la lecture de chaque examen (ORU^R01, le numéro en OBR-2) sont classées pour confirmation par le cardiologue.</value></data>
+  <data name="No ECG measurement in the message" xml:space="preserve"><value>Aucune mesure ECG dans le message</value></data>
+  <data name="No ECG study has this number" xml:space="preserve"><value>Aucun ECG ne porte ce numéro</value></data>
+  <data name="This study is not an ECG" xml:space="preserve"><value>Cet examen n'est pas un ECG</value></data>
+  <data name="To be confirmed by the cardiologist" xml:space="preserve"><value>À confirmer par le cardiologue</value></data>
+  <data name="ifk:CardioResults" xml:space="preserve"><value>Appareils ECG</value></data>
+  <data name="Cancer synoptic" xml:space="preserve"><value>Compte rendu synoptique</value></data>
+  <data name="Choose the lymphovascular invasion" xml:space="preserve"><value>Choisissez l'invasion lymphovasculaire</value></data>
+  <data name="Choose the margin status" xml:space="preserve"><value>Choisissez l'état des marges</value></data>
+  <data name="Closest margin (mm)" xml:space="preserve"><value>Marge la plus proche (mm)</value></data>
+  <data name="Grade" xml:space="preserve"><value>Grade</value></data>
+  <data name="Lymphovascular invasion" xml:space="preserve"><value>Invasion lymphovasculaire</value></data>
+  <data name="Margins" xml:space="preserve"><value>Marges</value></data>
+  <data name="Nodes" xml:space="preserve"><value>Ganglions</value></data>
+  <data name="Size (mm)" xml:space="preserve"><value>Taille (mm)</value></data>
+  <data name="The positive nodes cannot exceed those examined" xml:space="preserve"><value>Les ganglions positifs ne peuvent dépasser ceux examinés</value></data>
+  <data name="Tumour type" xml:space="preserve"><value>Type tumoral</value></data>
+  <data name="Write the closest margin in mm" xml:space="preserve"><value>Indiquez la marge la plus proche en mm</value></data>
+  <data name="Write the grade" xml:space="preserve"><value>Indiquez le grade</value></data>
+  <data name="Write the pT stage" xml:space="preserve"><value>Indiquez le stade pT</value></data>
+  <data name="Write the tumour size in mm" xml:space="preserve"><value>Indiquez la taille tumorale en mm</value></data>
+  <data name="Write the tumour type" xml:space="preserve"><value>Indiquez le type tumoral</value></data>
+  <data name="pal:Absent" xml:space="preserve"><value>Absente</value></data>
+  <data name="pal:Indeterminate" xml:space="preserve"><value>Indéterminée</value></data>
+  <data name="pal:Present" xml:space="preserve"><value>Présente</value></data>
+  <data name="pam:Clear" xml:space="preserve"><value>Saines</value></data>
+  <data name="pam:Close" xml:space="preserve"><value>Proches</value></data>
+  <data name="pam:Involved" xml:space="preserve"><value>Atteintes</value></data>
+  <data name="Copy this payer's sheet" xml:space="preserve"><value>Copier le bordereau de ce payeur</value></data>
+  <data name="That payer has no sheet of its own to copy" xml:space="preserve"><value>Ce payeur n'a pas de bordereau propre à copier</value></data>
+  <data name="A time is not hh:mm" xml:space="preserve"><value>Une heure n'est pas au format hh:mm</value></data>
+  <data name="An address is not a valid e-mail" xml:space="preserve"><value>Une adresse n'est pas un e-mail valide</value></data>
+  <data name="At most five addresses" xml:space="preserve"><value>Cinq adresses au plus</value></data>
+  <data name="At most four copies a day" xml:space="preserve"><value>Quatre copies par jour au plus</value></data>
+  <data name="Copies each shift" xml:space="preserve"><value>Copies à chaque garde</value></data>
+  <data name="Last sent" xml:space="preserve"><value>Dernier envoi</value></data>
+  <data name="Send a copy now" xml:space="preserve"><value>Envoyer une copie maintenant</value></data>
+  <data name="Send to (e-mail)" xml:space="preserve"><value>Envoyer à (e-mail)</value></data>
+  <data name="Set the ward's shift copies first" xml:space="preserve"><value>Réglez d'abord les copies de garde du service</value></data>
+  <data name="The copy could not be generated" xml:space="preserve"><value>La copie n'a pas pu être générée</value></data>
+  <data name="The copy was generated but no e-mail could be sent" xml:space="preserve"><value>La copie a été générée mais aucun e-mail n'a pu être envoyé</value></data>
+  <data name="The copy was sent" xml:space="preserve"><value>La copie a été envoyée</value></data>
+  <data name="The schedule could not be saved" xml:space="preserve"><value>La planification n'a pas pu être enregistrée</value></data>
+  <data name="The shift copies are set, but the platform's scheduled reports are switched off: they are sent when the administrator turns them on. Until then use «Send a copy now»." xml:space="preserve"><value>Les copies de garde sont réglées, mais les rapports planifiés de la plateforme sont désactivés : elles partiront quand l'administrateur les activera. D'ici là, utilisez « Envoyer une copie maintenant ».</value></data>
+  <data name="The ward's summary is sent as a PDF at these times, before anything can go down." xml:space="preserve"><value>Le résumé du service est envoyé en PDF à ces heures, avant toute panne.</value></data>
+  <data name="Times" xml:space="preserve"><value>Heures</value></data>
+  <data name="Write the address the copies go to" xml:space="preserve"><value>Indiquez l'adresse des copies</value></data>
+  <data name="{0} copies a day" xml:space="preserve"><value>{0} copies par jour</value></data>
+  <data name="Send to the Ministry" xml:space="preserve"><value>Envoyer au ministère</value></data>
+  <data name="The Ministry's system answered without a reference" xml:space="preserve"><value>Le système du ministère a répondu sans référence</value></data>
+  <data name="The Ministry's system could not be reached" xml:space="preserve"><value>Le système du ministère est injoignable</value></data>
+  <data name="The Ministry's system did not answer" xml:space="preserve"><value>Le système du ministère n'a pas répondu</value></data>
+  <data name="The Ministry's system refused the record" xml:space="preserve"><value>Le système du ministère a refusé l'enregistrement</value></data>
+  <data name="The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here." xml:space="preserve"><value>L'hôpital n'est pas encore connecté au système du ministère : les cas sont déclarés comme avant et la référence du ministère est saisie à la main. Une fois la connexion configurée par l'administrateur, chaque cas est envoyé d'ici.</value></data>
+  <data name="The hospital is not connected to the Ministry's system: record the reference by hand" xml:space="preserve"><value>L'hôpital n'est pas connecté au système du ministère : saisissez la référence à la main</value></data>
 </root>

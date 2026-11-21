@@ -47,6 +47,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? CriticalWhy { get; set; }
 		public DateTime? ReportedAt { get; set; }
 		public int? ReportedByEmployeeId { get; set; }
+		/// H221: the ECG machine's own reading, until the cardiologist confirms it (the machine, its statement, when).
+		public string? DeviceName { get; set; }
+		public string? DeviceInterpretation { get; set; }
+		public DateTime? DeviceReadAt { get; set; }
 	}
 
 	public static class HospitalCardiologyModel
@@ -67,6 +71,8 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Pericardium).HasMaxLength(200);
 				e.Property(x => x.Interpretation).HasMaxLength(2000);
 				e.Property(x => x.CriticalWhy).HasMaxLength(200);
+				e.Property(x => x.DeviceName).HasMaxLength(60);   // H221
+				e.Property(x => x.DeviceInterpretation).HasMaxLength(1000);
 				e.HasIndex(x => new { x.CompanyId, x.StudyNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.Status });
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });

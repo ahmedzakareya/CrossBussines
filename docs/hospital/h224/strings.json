@@ -1,0 +1,95 @@
+{
+ "unit": "H224 - Downtime copies each shift",
+ "strings": {
+  "Copies each shift": {
+   "ar": "نسخ كل وردية",
+   "en": "Copies each shift",
+   "fr": "Copies à chaque garde"
+  },
+  "{0} copies a day": {
+   "ar": "{0} نسخ يوميًا",
+   "en": "{0} copies a day",
+   "fr": "{0} copies par jour"
+  },
+  "Last sent": {
+   "ar": "آخر إرسال",
+   "en": "Last sent",
+   "fr": "Dernier envoi"
+  },
+  "Send a copy now": {
+   "ar": "إرسال نسخة الآن",
+   "en": "Send a copy now",
+   "fr": "Envoyer une copie maintenant"
+  },
+  "The shift copies are set, but the platform's scheduled reports are switched off: they are sent when the administrator turns them on. Until then use «Send a copy now».": {
+   "ar": "نسخ الورديات مضبوطة، لكن التقارير المجدولة في المنصة متوقفة: تُرسل عندما يشغّلها مسؤول النظام. حتى ذلك الحين استخدم «إرسال نسخة الآن».",
+   "en": "The shift copies are set, but the platform's scheduled reports are switched off: they are sent when the administrator turns them on. Until then use «Send a copy now».",
+   "fr": "Les copies de garde sont réglées, mais les rapports planifiés de la plateforme sont désactivés : elles partiront quand l'administrateur les activera. D'ici là, utilisez « Envoyer une copie maintenant »."
+  },
+  "The ward's summary is sent as a PDF at these times, before anything can go down.": {
+   "ar": "يُرسل ملخص القسم ملف PDF في هذه الأوقات، قبل أن يتوقف أي شيء.",
+   "en": "The ward's summary is sent as a PDF at these times, before anything can go down.",
+   "fr": "Le résumé du service est envoyé en PDF à ces heures, avant toute panne."
+  },
+  "Send to (e-mail)": {
+   "ar": "الإرسال إلى (بريد إلكتروني)",
+   "en": "Send to (e-mail)",
+   "fr": "Envoyer à (e-mail)"
+  },
+  "Times": {
+   "ar": "الأوقات",
+   "en": "Times",
+   "fr": "Heures"
+  },
+  "The copy was sent": {
+   "ar": "أُرسلت النسخة",
+   "en": "The copy was sent",
+   "fr": "La copie a été envoyée"
+  },
+  "Write the address the copies go to": {
+   "ar": "اكتب العنوان الذي تُرسل إليه النسخ",
+   "en": "Write the address the copies go to",
+   "fr": "Indiquez l'adresse des copies"
+  },
+  "At most five addresses": {
+   "ar": "خمسة عناوين على الأكثر",
+   "en": "At most five addresses",
+   "fr": "Cinq adresses au plus"
+  },
+  "An address is not a valid e-mail": {
+   "ar": "أحد العناوين ليس بريدًا إلكترونيًا صحيحًا",
+   "en": "An address is not a valid e-mail",
+   "fr": "Une adresse n'est pas un e-mail valide"
+  },
+  "A time is not hh:mm": {
+   "ar": "أحد الأوقات ليس بصيغة hh:mm",
+   "en": "A time is not hh:mm",
+   "fr": "Une heure n'est pas au format hh:mm"
+  },
+  "At most four copies a day": {
+   "ar": "أربع نسخ يوميًا على الأكثر",
+   "en": "At most four copies a day",
+   "fr": "Quatre copies par jour au plus"
+  },
+  "Set the ward's shift copies first": {
+   "ar": "اضبط نسخ ورديات القسم أولًا",
+   "en": "Set the ward's shift copies first",
+   "fr": "Réglez d'abord les copies de garde du service"
+  },
+  "The copy was generated but no e-mail could be sent": {
+   "ar": "أُنشئت النسخة لكن تعذّر إرسال البريد",
+   "en": "The copy was generated but no e-mail could be sent",
+   "fr": "La copie a été générée mais aucun e-mail n'a pu être envoyé"
+  },
+  "The copy could not be generated": {
+   "ar": "تعذّر إنشاء النسخة",
+   "en": "The copy could not be generated",
+   "fr": "La copie n'a pas pu être générée"
+  },
+  "The schedule could not be saved": {
+   "ar": "تعذّر حفظ الجدولة",
+   "en": "The schedule could not be saved",
+   "fr": "La planification n'a pas pu être enregistrée"
+  }
+ }
+}

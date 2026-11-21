@@ -55,6 +55,11 @@ namespace CrossBuy.BL.Reporting
         public const string WardDowntime = "Hospital.WardDowntime";
         /// H216: a signed anatomic pathology report, as ONE row.
         public const string PathReport = "Hospital.PathReport";
+        /// H219: an endoscopy report, and a cardiac study (ECG / echo) report, each as ONE row.
+        public const string EndoReport = "Hospital.EndoReport";
+        public const string CardioReport = "Hospital.CardioReport";
+        /// H222: a pathology case's block and slide labels, one row per label.
+        public const string PathLabels = "Hospital.PathLabels";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -126,6 +131,9 @@ namespace CrossBuy.BL.Reporting
             HospitalDocumentDatasetCodes.DiseaseReport,    // H209
             HospitalDocumentDatasetCodes.WardDowntime,     // H211
             HospitalDocumentDatasetCodes.PathReport,       // H216
+            HospitalDocumentDatasetCodes.EndoReport,       // H219
+            HospitalDocumentDatasetCodes.CardioReport,     // H219
+            HospitalDocumentDatasetCodes.PathLabels,       // H222
         };
 
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
@@ -650,6 +658,62 @@ namespace CrossBuy.BL.Reporting
             },
             Params("PathCaseId", "رقم الحالة الداخلي", "Case id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
 
+        /// H219: the endoscopy report.
+        public static ReportDatasetDefinition EndoReport() => Show(Doc(HospitalDocumentDatasetCodes.EndoReport,
+            "تقرير المنظار", "Endoscopy report",
+            "تقرير إجراء بالمنظار: الإجراء والمنظار ودورة تعقيمه، والتهدئة، ودواعي الإجراء، والموجودات، والتدخلات، والمضاعفات، والتوصيات، ومؤشرات جودة منظار القولون، والخزعات.",
+            "An endoscopy report: the procedure, the scope and its reprocessing cycle, sedation, indication, findings, interventions, complications, recommendations, the colonoscopy quality figures and the biopsies.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Procedure", "الإجراء", "Procedure", width: 60, visible: true),
+                F("Sedation", "التهدئة", "Sedation", width: 30),
+                F("Scope", "المنظار", "Scope", width: 80),
+                F("Indication", "دواعي الإجراء", "Indication", width: 140),
+                F("Findings", "الموجودات", "Findings", width: 140, visible: true),
+                F("Interventions", "التدخلات", "Interventions", width: 140),
+                F("Complications", "المضاعفات", "Complications", width: 140),
+                F("Recommendations", "التوصيات", "Recommendations", width: 140),
+                F("Quality", "مؤشرات الجودة", "Quality", width: 100),
+                F("Biopsies", "الخزعات", "Biopsies", width: 100),
+            },
+            Params("EndoscopyId", "رقم الإجراء الداخلي", "Procedure id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
+
+        /// H219: the cardiac study report.
+        public static ReportDatasetDefinition CardioReport() => Show(Doc(HospitalDocumentDatasetCodes.CardioReport,
+            "تقرير فحص القلب", "Cardiac study report",
+            "تقرير تخطيط القلب أو صدى القلب: القياسات (مع QTc محسوبًا)، والتفسير، والنتيجة الحرجة إن وجدت، والطبيب القارئ.",
+            "An ECG or echocardiogram report: the measurements (QTc calculated), the interpretation, any critical finding, and the reading doctor.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Study", "الفحص", "Study", width: 60, visible: true),
+                F("Indication", "دواعي الفحص", "Indication", width: 140),
+                F("Measurements", "القياسات", "Measurements", width: 140, visible: true),
+                F("Interpretation", "التفسير", "Interpretation", width: 140, visible: true),
+                F("Critical", "نتيجة حرجة", "Critical finding", width: 100),
+                F("SignedAt", "تاريخ التوقيع", "Signed", ReportFieldType.DateTime),
+            },
+            Params("CardioStudyId", "رقم الفحص الداخلي", "Study id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn", "DoctorName");
+
+        /// H222: the block and slide labels of a pathology case.
+        public static ReportDatasetDefinition PathLabels() => Show(Doc(HospitalDocumentDatasetCodes.PathLabels,
+            "ملصقات القوالب والشرائح", "Block and slide labels",
+            "ملصق لكل قالب نسيجي ولكل شريحة: الرمز نصًا ورمز QR، والمريض، ورقم الحالة، ونوع الملصق، والعينة.",
+            "A label for every tissue block and every slide: the code as text and as a QR, the patient, the case number, the kind of label and the specimen.",
+            new[]
+            {
+                F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center),
+                F("LabelCode", "الرمز", "Code", width: 40, visible: true),
+                F("LabelKind", "النوع", "Kind", width: 20, visible: true),
+            },
+            new[]
+            {
+                F("CaseNo", "رقم الحالة", "Case no.", width: 30),
+                F("Specimen", "العينة", "Specimen", width: 60),
+            },
+            Params("PathCaseId", "رقم الحالة الداخلي", "Case id")), "PatientName", "PatientMrn");
+
         public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
             "إشعار دائن", "Credit note",
             "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
@@ -717,6 +781,9 @@ namespace CrossBuy.BL.Reporting
             yield return DiseaseReport();    // H209
             yield return WardDowntime();     // H211
             yield return PathReport();       // H216
+            yield return EndoReport();       // H219
+            yield return CardioReport();     // H219
+            yield return PathLabels();       // H222
             yield return CompoundLabel();    // H153
             yield return DentalClaim();
         }

@@ -1,0 +1,155 @@
+{
+ "unit": "H220 - Sepsis labs and the Padua score",
+ "strings": {
+  "svc:WBC": {
+   "ar": "كريات الدم البيضاء",
+   "en": "White cells",
+   "fr": "Leucocytes"
+  },
+  "svc:LAC": {
+   "ar": "اللاكتات",
+   "en": "Lactate",
+   "fr": "Lactate"
+  },
+  "svc:LACTATE": {
+   "ar": "ارتفاع اللاكتات",
+   "en": "Raised lactate",
+   "fr": "Lactate élevé"
+  },
+  "svc:PADUA": {
+   "ar": "مقياس بادوا",
+   "en": "Padua score",
+   "fr": "Score de Padoue"
+  },
+  "Padua score": {
+   "ar": "مقياس بادوا",
+   "en": "Padua score",
+   "fr": "Score de Padoue"
+  },
+  "High risk": {
+   "ar": "خطورة عالية",
+   "en": "High risk",
+   "fr": "Risque élevé"
+  },
+  "padua:cancer": {
+   "ar": "سرطان نشط",
+   "en": "Active cancer",
+   "fr": "Cancer actif"
+  },
+  "padua:previousVte": {
+   "ar": "جلطة وريدية سابقة",
+   "en": "Previous VTE",
+   "fr": "Antécédent de MTEV"
+  },
+  "padua:immobility": {
+   "ar": "قلة الحركة (3 أيام فأكثر)",
+   "en": "Reduced mobility (3 days or more)",
+   "fr": "Mobilité réduite (3 jours ou plus)"
+  },
+  "padua:thrombophilia": {
+   "ar": "قابلية تخثر معروفة",
+   "en": "Known thrombophilia",
+   "fr": "Thrombophilie connue"
+  },
+  "padua:traumaSurgery": {
+   "ar": "رضّ أو جراحة حديثة (شهر)",
+   "en": "Recent trauma or surgery (1 month)",
+   "fr": "Traumatisme ou chirurgie récents (1 mois)"
+  },
+  "padua:age70": {
+   "ar": "العمر 70 فأكثر",
+   "en": "Age 70 or over",
+   "fr": "Âge 70 ans ou plus"
+  },
+  "padua:heartRespFailure": {
+   "ar": "قصور قلبي أو تنفسي",
+   "en": "Heart or respiratory failure",
+   "fr": "Insuffisance cardiaque ou respiratoire"
+  },
+  "padua:miStroke": {
+   "ar": "احتشاء قلبي أو سكتة حادة",
+   "en": "Acute MI or stroke",
+   "fr": "IDM ou AVC aigu"
+  },
+  "padua:infectionRheum": {
+   "ar": "عدوى حادة أو مرض روماتيزمي",
+   "en": "Acute infection or rheumatic disorder",
+   "fr": "Infection aiguë ou maladie rhumatismale"
+  },
+  "padua:obesity": {
+   "ar": "سمنة (مؤشر كتلة 30 فأكثر)",
+   "en": "Obesity (BMI 30 or more)",
+   "fr": "Obésité (IMC ≥ 30)"
+  },
+  "padua:hormones": {
+   "ar": "علاج هرموني",
+   "en": "Hormonal treatment",
+   "fr": "Traitement hormonal"
+  },
+  "svc:cancer": {
+   "ar": "سرطان نشط",
+   "en": "Active cancer",
+   "fr": "Cancer actif"
+  },
+  "svc:previousVte": {
+   "ar": "جلطة سابقة",
+   "en": "Previous VTE",
+   "fr": "Antécédent de MTEV"
+  },
+  "svc:immobility": {
+   "ar": "قلة الحركة",
+   "en": "Reduced mobility",
+   "fr": "Mobilité réduite"
+  },
+  "svc:thrombophilia": {
+   "ar": "قابلية تخثر",
+   "en": "Thrombophilia",
+   "fr": "Thrombophilie"
+  },
+  "svc:traumaSurgery": {
+   "ar": "رضّ أو جراحة",
+   "en": "Trauma or surgery",
+   "fr": "Traumatisme ou chirurgie"
+  },
+  "svc:age70": {
+   "ar": "العمر 70+",
+   "en": "Age 70+",
+   "fr": "Âge 70+"
+  },
+  "svc:heartRespFailure": {
+   "ar": "قصور قلبي أو تنفسي",
+   "en": "Heart/resp. failure",
+   "fr": "Insuffisance cardiaque/respiratoire"
+  },
+  "svc:miStroke": {
+   "ar": "احتشاء أو سكتة",
+   "en": "MI or stroke",
+   "fr": "IDM ou AVC"
+  },
+  "svc:infectionRheum": {
+   "ar": "عدوى أو روماتيزم",
+   "en": "Infection or rheumatic",
+   "fr": "Infection ou rhumatisme"
+  },
+  "svc:obesity": {
+   "ar": "سمنة",
+   "en": "Obesity",
+   "fr": "Obésité"
+  },
+  "svc:hormones": {
+   "ar": "علاج هرموني",
+   "en": "Hormones",
+   "fr": "Hormones"
+  },
+  "Score the Padua items first": {
+   "ar": "قيّم بنود مقياس بادوا أولًا",
+   "en": "Score the Padua items first",
+   "fr": "Évaluez d'abord les items de Padoue"
+  },
+  "Padua 4 or more is high risk: order prophylaxis, or record why it is contraindicated": {
+   "ar": "بادوا 4 فأكثر خطورة عالية: اطلب الوقاية أو سجّل سبب منعها",
+   "en": "Padua 4 or more is high risk: order prophylaxis, or record why it is contraindicated",
+   "fr": "Padoue ≥ 4 est un risque élevé : prescrivez la prophylaxie ou indiquez la contre-indication"
+  }
+ }
+}

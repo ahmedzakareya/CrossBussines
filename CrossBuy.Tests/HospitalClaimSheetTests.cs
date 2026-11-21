@@ -83,6 +83,22 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void The_Excel_sheet_has_the_payers_headers_and_amounts_as_numbers()
+		{
+			var setup = new HospitalClaimSheetSetup(new[] { new HospitalClaimSheetColumn("PatientName", "Member Name"), new HospitalClaimSheetColumn("ServiceCode", "CPT"),
+				new HospitalClaimSheetColumn("Claimed", "Net") }, ",", "dd/MM/yyyy", true);
+			var bytes = HospitalClaimSheets.RenderXlsx(setup, "CB-9", new[] { Claim("=cmd", "", ("85025", 12.5m, 10m)) }, "KWD");
+			using var wb = new ClosedXML.Excel.XLWorkbook(new MemoryStream(bytes));
+			var ws = wb.Worksheet(1);
+			Assert.Equal("Member Name", ws.Cell(1, 1).GetString());
+			Assert.True(ws.Cell(1, 1).Style.Font.Bold);
+			Assert.Equal("=cmd", ws.Cell(2, 1).GetString());   // a name is text, never a formula
+			Assert.False(ws.Cell(2, 1).HasFormula);
+			Assert.Equal(10m, ws.Cell(2, 3).GetValue<decimal>());   // an amount is a number the TPA can sum
+			Assert.Equal("0.000", ws.Cell(2, 3).Style.NumberFormat.Format);
+		}
+
+		[Fact]
 		public void The_table_matches_its_slice()
 		{
 			var model = HospitalSliceParity.Model(HospitalClaimSheetModel.Configure);

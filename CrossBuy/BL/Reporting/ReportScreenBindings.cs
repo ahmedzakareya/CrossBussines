@@ -90,6 +90,9 @@ namespace CrossBuy.BL.Reporting
         public const string HospitalDiseaseReport = "Hospital.DiseaseReport";   // H209: a notifiable disease case form
         public const string HospitalWardDowntime = "Hospital.WardDowntime";     // H211: a ward's downtime summary
         public const string HospitalPathology = "Hospital.Pathology";           // H216: a signed pathology report
+        public const string HospitalEndoscopy = "Hospital.Endoscopy";           // H219: an endoscopy report
+        public const string HospitalCardiology = "Hospital.Cardiology";         // H219: a cardiac study report
+        public const string HospitalPathLabels = "Hospital.PathLabels";         // H222: a case's block and slide labels
         public const string HospitalCompounding = "Hospital.Compounding";       // H153: a preparation's bag label
         public const string HospitalBirth = "Hospital.Birth";           // H58
         public const string HospitalDeath = "Hospital.Death";           // H59
@@ -220,6 +223,9 @@ namespace CrossBuy.BL.Reporting
             new() { ScreenKey = ReportScreenKeys.HospitalDiseaseReport, ReportCode = HospitalDocumentDatasetCodes.DiseaseReport, IdParameter = "DiseaseReportId", SortOrder = 10 },   // H209
             new() { ScreenKey = ReportScreenKeys.HospitalWardDowntime, ReportCode = HospitalDocumentDatasetCodes.WardDowntime, IdParameter = "WardId", SortOrder = 10 },   // H211
             new() { ScreenKey = ReportScreenKeys.HospitalPathology, ReportCode = HospitalDocumentDatasetCodes.PathReport, IdParameter = "PathCaseId", SortOrder = 10 },   // H216
+            new() { ScreenKey = ReportScreenKeys.HospitalEndoscopy, ReportCode = HospitalDocumentDatasetCodes.EndoReport, IdParameter = "EndoscopyId", SortOrder = 10 },   // H219
+            new() { ScreenKey = ReportScreenKeys.HospitalCardiology, ReportCode = HospitalDocumentDatasetCodes.CardioReport, IdParameter = "CardioStudyId", SortOrder = 10 },   // H219
+            new() { ScreenKey = ReportScreenKeys.HospitalPathLabels, ReportCode = HospitalDocumentDatasetCodes.PathLabels, IdParameter = "PathCaseId", SortOrder = 10 },   // H222
             new() { ScreenKey = ReportScreenKeys.HospitalCompounding, ReportCode = HospitalDocumentDatasetCodes.CompoundLabel, IdParameter = "CompoundingId", SortOrder = 10 },   // H153
             new() { ScreenKey = ReportScreenKeys.HospitalBirth, ReportCode = HospitalDocumentDatasetCodes.BirthNotice, IdParameter = "BirthId", SortOrder = 10 },   // H58
             new() { ScreenKey = ReportScreenKeys.HospitalDeath, ReportCode = HospitalDocumentDatasetCodes.DeathCertificate, IdParameter = "DeathId", SortOrder = 10 },   // H59

@@ -137,6 +137,9 @@ namespace CrossBuy.Tests
 		[InlineData(HospitalDocumentDatasetCodes.SickLeave)]   // H208
 		[InlineData(HospitalDocumentDatasetCodes.DiseaseReport)]   // H209
 		[InlineData(HospitalDocumentDatasetCodes.PathReport)]   // H216
+		[InlineData(HospitalDocumentDatasetCodes.EndoReport)]   // H219
+		[InlineData(HospitalDocumentDatasetCodes.CardioReport)]   // H219
+		[InlineData(HospitalDocumentDatasetCodes.PathLabels)]   // H222
 		public void No_one_piece_paper_carries_the_running_footer(string code)
 		{
 			// the PDF engine's footer (the report code and "Page 1 of 1") printed over the foot of the wristband and the label

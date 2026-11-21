@@ -3,6 +3,7 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalDiseaseReportRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @*
     H209 — notifiable diseases, composed from the theme (demo39): two stat badges, the register's filter bar and table
     (each case's disease and group, the visit's diagnosis, the time it is due by — overdue in red — and how it closed),
@@ -17,6 +18,7 @@
     bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
     var diseases = (ViewBag.Diseases as IReadOnlyList<HospitalNotifiableDisease>) ?? Array.Empty<HospitalNotifiableDisease>();
     string Link(int p, bool? od = null) => Url.Action("Notifiable", new { q, status, overdue = od ?? overdue, patient, page = p })!;
+    bool mohConnected = !string.IsNullOrWhiteSpace(Config["Hospital:MohGateway:Url"]);   // H225
     string Tone(string s) => s switch { HospitalDiseaseReportStatus.Due => "info", HospitalDiseaseReportStatus.Reported => "primary", _ => "secondary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -40,6 +42,10 @@
         @if (!ready)
         {
             <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The notifiable disease tables are not created yet (hospital_h209_notifiable_diseases.sql)."]</div></div>
+        }
+        @if (ready && !mohConnected)
+        {
+            <div class="notice d-flex bg-light rounded border border-dashed p-5 mb-5"><i class="ki-outline ki-information-5 fs-2tx text-gray-500 me-4"></i><div class="fs-7 fw-semibold text-gray-700">@T["The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here."]</div></div>
         }
         <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mb-5">
             <li class="nav-item"><a class="nav-link text-active-primary active" data-bs-toggle="tab" href="#nt-cases">@T["Cases to report"]</a></li>
@@ -79,7 +85,7 @@
                             {
                                 var r = row.Report;
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num text-nowrap" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num text-nowrap" dir="ltr">@r.ReportNo</bdi></span></td>
                                     <td class="fs-7"><span class="badge badge-@(row.Urgency == HospitalNotifiableUrgency.Immediate ? "danger" : "light") fw-semibold mb-1">@T["ntu:" + row.Urgency]</span>
                                         <div class="text-gray-800 fw-semibold">@DisplayName.Of(row.Disease, row.DiseaseEn)</div></td>
@@ -95,7 +101,8 @@
                                         @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDiseaseReport, DocumentId = r.ID.ToString(), DocumentTitle = r.ReportNo })
                                         @if (r.Status == HospitalDiseaseReportStatus.Due)
                                         {
-                                            <button type="button" class="btn btn-sm btn-icon btn-primary ms-1" title="@T["Record the report to the Ministry"]" data-bs-toggle="tooltip" data-nt-close="Reported" data-id="@r.ID" data-no="@r.ReportNo"><i class="ki-outline ki-send fs-3"></i></button>
+                                            @if (mohConnected) {<button type="button" class="btn btn-sm btn-primary ms-1" data-nt-moh="@r.ID"><i class="ki-outline ki-send fs-4"></i>@T["Send to the Ministry"]</button>}
+                                            <button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Record the report to the Ministry"]" data-bs-toggle="tooltip" data-nt-close="Reported" data-id="@r.ID" data-no="@r.ReportNo"><i class="ki-outline ki-notepad-edit fs-3"></i></button>
                                             <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Not a case to report"]" data-bs-toggle="tooltip" data-nt-close="Dismissed" data-id="@r.ID" data-no="@r.ReportNo"><i class="ki-outline ki-cross-circle fs-3"></i></button>
                                         }
                                     </td>
@@ -197,7 +204,8 @@
             paint();
             var m = document.getElementById('ndModal'), editId = null;
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-nt-close],[data-nd-page],[data-nd-edit],[data-nd-save],[data-nd-toggle]'); if (!t) return;
+                var t = e.target.closest('[data-nt-close],[data-nd-page],[data-nd-edit],[data-nd-save],[data-nd-toggle],[data-nt-moh]'); if (!t) return;
+                if (t.hasAttribute('data-nt-moh')) { t.disabled = true; post(root + '/' + t.getAttribute('data-nt-moh') + '/MohSend').then(done(t)); return; }
                 if (t.hasAttribute('data-nd-page')) { e.preventDefault(); cur = Number(t.getAttribute('data-nd-page')); paint(); return; }
                 if (t.hasAttribute('data-nd-edit')) {
                     editId = t.getAttribute('data-nd-edit') || null;

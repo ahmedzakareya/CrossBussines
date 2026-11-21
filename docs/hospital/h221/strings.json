@@ -1,0 +1,40 @@
+{
+ "unit": "H221 - ECG machines into the cardiology record",
+ "strings": {
+  "ifk:CardioResults": {
+   "ar": "أجهزة تخطيط القلب",
+   "en": "ECG machines",
+   "fr": "Appareils ECG"
+  },
+  "Device reading": {
+   "ar": "قراءة الجهاز",
+   "en": "Device reading",
+   "fr": "Lecture de l'appareil"
+  },
+  "To be confirmed by the cardiologist": {
+   "ar": "بانتظار تأكيد طبيب القلب",
+   "en": "To be confirmed by the cardiologist",
+   "fr": "À confirmer par le cardiologue"
+  },
+  "ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm.": {
+   "ar": "أجهزة تخطيط القلب: تُسجَّل قياسات كل فحص وقراءة الجهاز (ORU^R01 ورقم الفحص في OBR-2) لتأكيد طبيب القلب.",
+   "en": "ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm.",
+   "fr": "Appareils ECG : les mesures et la lecture de chaque examen (ORU^R01, le numéro en OBR-2) sont classées pour confirmation par le cardiologue."
+  },
+  "No ECG study has this number": {
+   "ar": "لا يوجد فحص تخطيط قلب بهذا الرقم",
+   "en": "No ECG study has this number",
+   "fr": "Aucun ECG ne porte ce numéro"
+  },
+  "This study is not an ECG": {
+   "ar": "هذا الفحص ليس تخطيط قلب",
+   "en": "This study is not an ECG",
+   "fr": "Cet examen n'est pas un ECG"
+  },
+  "No ECG measurement in the message": {
+   "ar": "لا توجد قياسات تخطيط قلب في الرسالة",
+   "en": "No ECG measurement in the message",
+   "fr": "Aucune mesure ECG dans le message"
+  }
+ }
+}

@@ -18,7 +18,7 @@ namespace CrossBuy.BL.Hospital
 	// An alert past its time is OVERDUE. The evaluation runs after each observation is recorded and on each read of the
 	// surveillance list, so nothing depends on someone opening the right screen first.
 	// ==========================================================================================
-	public sealed record HospitalSurveillanceRow(HospitalSurveillanceAlert Alert, string Patient, string PatientEn, string Mrn, string? Bed, string? Ward, string? WardEn, bool Overdue, HospitalFace? AnsweredBy = null);
+	public sealed record HospitalSurveillanceRow(HospitalSurveillanceAlert Alert, string Patient, string PatientEn, string Mrn, string? Bed, string? Ward, string? WardEn, bool Overdue, HospitalFace? AnsweredBy = null, string? PatientPhoto = null);
 
 	public static class HospitalSurveillanceRules
 	{
@@ -34,25 +34,43 @@ namespace CrossBuy.BL.Hospital
 			return (met.Count, met);
 		}
 
-		/// SIRS without the white count: temperature > 38 or < 36, pulse > 90, respiratory rate > 20.
-		public static (int Score, List<string> Met) Sirs(decimal? temp, int? hr, int? rr)
+		/// SIRS: temperature > 38 or < 36, pulse > 90, respiratory rate > 20, and (when the laboratory has one from the last
+		/// 24 hours) a white count > 12 or < 4 ×10⁹/L.
+		public static (int Score, List<string> Met) Sirs(decimal? temp, int? hr, int? rr, decimal? wbc = null)
 		{
 			var met = new List<string>();
 			if (temp is > 38m or < 36m) met.Add("T=" + temp!.Value.ToString("0.0", CultureInfo.InvariantCulture));
 			if (hr is > 90) met.Add("HR=" + hr);
 			if (rr is > 20) met.Add("RR=" + rr);
+			if (wbc is > 12m or < 4m) met.Add("WBC=" + wbc!.Value.ToString("0.0", CultureInfo.InvariantCulture));
 			return (met.Count, met);
 		}
 
-		/// Why the reading fires a sepsis alert (its criteria), or null.
-		public static (string Criteria, int Score)? Sepsis(HospitalObservation o, bool infection)
+		public const decimal LactateHigh = 2m, LactateShock = 4m;
+
+		/// Why the reading (with the latest white count and lactate of the last 24 hours) fires a sepsis alert, or null:
+		/// qSOFA ≥ 2; or, with an infection on record, SIRS ≥ 2 or a lactate ≥ 2 mmol/L.
+		public static (string Criteria, int Score)? Sepsis(HospitalObservation o, bool infection, decimal? wbc = null, decimal? lactate = null)
 		{
+			string Lac() => lactate is decimal l && l >= LactateHigh ? ";LAC=" + l.ToString("0.0", CultureInfo.InvariantCulture) : "";
 			var q = Qsofa(o.RespRate, o.SystolicBp, o.Consciousness);
-			if (q.Score >= 2) return ("qSOFA;" + string.Join(";", q.Met), q.Score);
-			var s = Sirs(o.TempC, o.HeartRate, o.RespRate);
-			if (s.Score >= 2 && infection) return ("SIRS;" + string.Join(";", s.Met) + ";INF", s.Score);
+			if (q.Score >= 2) return ("qSOFA;" + string.Join(";", q.Met) + Lac(), q.Score);
+			var s = Sirs(o.TempC, o.HeartRate, o.RespRate, wbc);
+			if (s.Score >= 2 && infection) return ("SIRS;" + string.Join(";", s.Met) + Lac() + ";INF", s.Score);
+			if (lactate is decimal lac && lac >= LactateHigh && infection) return ("LACTATE" + Lac() + ";INF", s.Score);
 			return null;
 		}
+
+		// ---- the Padua prediction score (VTE risk of a medical inpatient); 4 or more is high risk ----
+		public static readonly IReadOnlyList<(string Key, int Points)> PaduaItems = new[]
+		{
+			("cancer", 3), ("previousVte", 3), ("immobility", 3), ("thrombophilia", 3), ("traumaSurgery", 2), ("age70", 1),
+			("heartRespFailure", 1), ("miStroke", 1), ("infectionRheum", 1), ("obesity", 1), ("hormones", 1),
+		};
+		public const int PaduaHigh = 4;
+
+		public static int Padua(IEnumerable<string>? items) =>
+			(items ?? Array.Empty<string>()).Distinct().Sum(k => PaduaItems.FirstOrDefault(p => p.Key == k).Points);
 
 		/// Whether a new sepsis alert may open now: none open, and the last one raised at least 12 hours before this reading.
 		public static bool SepsisMayFire(IEnumerable<HospitalSurveillanceAlert> earlier, DateTime readingAt) =>
@@ -67,6 +85,15 @@ namespace CrossBuy.BL.Hospital
 			bool needsWhy = response is HospitalSurveillanceResponse.NotSepsis or HospitalSurveillanceResponse.NotIndicated or HospitalSurveillanceResponse.Contraindicated;
 			if (needsWhy && string.IsNullOrWhiteSpace(note)) return "Write the reason for this decision";
 			return (note?.Trim().Length ?? 0) > 500 ? "The text is too long" : null;
+		}
+
+		/// A VTE answer is scored on the Padua items (an empty list means none applies); a high-risk patient is not "not indicated".
+		public static string? VteRefusal(string? response, IReadOnlyList<string>? padua)
+		{
+			if (padua == null) return "Score the Padua items first";
+			if (padua.Any(k => !PaduaItems.Any(p => p.Key == k))) return "not_found";
+			return response == HospitalSurveillanceResponse.NotIndicated && Padua(padua) >= PaduaHigh
+				? "Padua 4 or more is high risk: order prophylaxis, or record why it is contraindicated" : null;
 		}
 	}
 
@@ -90,7 +117,8 @@ namespace CrossBuy.BL.Hospital
 				if (o == null) return false;
 				bool infection = await db.Set<HospitalIsolation>().AnyAsync(x => x.CompanyId == companyId && x.PatientId == adm.PatientId && x.EndedAt == null, ct)
 					|| await db.Set<HospitalInfectionCase>().AnyAsync(x => x.CompanyId == companyId && x.PatientId == adm.PatientId && x.Status != HospitalInfectionStatus.RuledOut, ct);
-				if (HospitalSurveillanceRules.Sepsis(o, infection) is not var (criteria, score)) return false;
+				var (wbc, lactate) = await LabsAsync(db, companyId, adm.PatientId, nowUtc, ct);
+				if (HospitalSurveillanceRules.Sepsis(o, infection, wbc, lactate) is not var (criteria, score)) return false;
 				var earlier = await db.Set<HospitalSurveillanceAlert>().AsNoTracking().Where(a => a.CompanyId == companyId && a.AdmissionId == admissionId && a.Kind == HospitalSurveillanceKind.Sepsis).ToListAsync(ct);
 				if (!HospitalSurveillanceRules.SepsisMayFire(earlier, o.TakenAt)) return false;
 				db.Add(new HospitalSurveillanceAlert
@@ -102,6 +130,23 @@ namespace CrossBuy.BL.Hospital
 				return true;
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { db.ChangeTracker.Clear(); return false; }
+		}
+
+		/// The latest white count and lactate of the last 24 hours (by the analyte's code: WBC / LOINC 6690-2; LACT, LAC,
+		/// LOINC 2524-7 or 32693-4 — or a name with "lactate").
+		public static async Task<(decimal? Wbc, decimal? Lactate)> LabsAsync(CrossDbContext db, int companyId, int patientId, DateTime nowUtc, CancellationToken ct)
+		{
+			var since = nowUtc.AddHours(-24);
+			var rows = await (from r in db.Set<HospitalLabResult>().AsNoTracking()
+							  join o in db.HospitalLabOrders.AsNoTracking() on r.LabOrderId equals o.ID
+							  join a in db.Set<HospitalLabAnalyte>().AsNoTracking() on r.AnalyteId equals a.ID
+							  where o.CompanyId == companyId && o.PatientId == patientId && r.Value != null && o.ResultedAt >= since
+								 && (a.Code == "WBC" || a.Code == "6690-2" || a.Code == "LACT" || a.Code == "LAC" || a.Code == "2524-7" || a.Code == "32693-4" || a.NameEn.Contains("lactate"))
+							  orderby o.ResultedAt descending
+							  select new { a.Code, a.NameEn, r.Value }).ToListAsync(ct);
+			decimal? wbc = rows.FirstOrDefault(x => x.Code is "WBC" or "6690-2")?.Value;
+			decimal? lac = rows.FirstOrDefault(x => x.Code is not ("WBC" or "6690-2"))?.Value;
+			return (wbc, lac);
 		}
 
 		/// Every active admission: the sepsis check on its latest reading, and its VTE prompt if it has none. Returns how many opened.
@@ -127,14 +172,22 @@ namespace CrossBuy.BL.Hospital
 			return opened;
 		}
 
-		public async Task<HospitalResult> AnswerAsync(BusinessContext ctx, int id, string? response, string? note, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		public async Task<HospitalResult> AnswerAsync(BusinessContext ctx, int id, string? response, string? note, int? employeeId, DateTime nowUtc, CancellationToken ct = default, IReadOnlyList<string>? padua = null)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) return HospitalResult.Fail("forbidden");
 			var a = await Alerts(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
 			if (a == null) return HospitalResult.Fail("not_found");
 			if (HospitalSurveillanceRules.AnswerRefusal(a, response, note) is string why) return HospitalResult.Fail(why);
+			string criteria = a.Criteria; int? score = a.Score;
+			if (a.Kind == HospitalSurveillanceKind.Vte)
+			{
+				if (HospitalSurveillanceRules.VteRefusal(response, padua) is string vte) return HospitalResult.Fail(vte);
+				score = HospitalSurveillanceRules.Padua(padua);
+				criteria = "PADUA" + (padua!.Count == 0 ? "" : ";" + string.Join(";", padua.Distinct()));
+			}
 			string? n = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
 			int done = await Alerts(ctx).Where(x => x.ID == id && x.Status == HospitalSurveillanceStatus.Open).ExecuteUpdateAsync(u => u
+				.SetProperty(x => x.Criteria, criteria).SetProperty(x => x.Score, score)
 				.SetProperty(x => x.Status, HospitalSurveillanceStatus.Answered).SetProperty(x => x.Response, response).SetProperty(x => x.Note, n)
 				.SetProperty(x => x.AnsweredAt, nowUtc).SetProperty(x => x.AnsweredByEmployeeId, employeeId), ct);
 			return done == 1 ? HospitalResult.Success(id) : HospitalResult.Fail("Someone else answered this alert: open it again");
@@ -175,7 +228,7 @@ namespace CrossBuy.BL.Hospital
 				{
 					var bd = beds.GetValueOrDefault(x.a.AdmissionId);
 					return new HospitalSurveillanceRow(x.a, x.p.Name, x.p.NameEn, x.p.Mrn, bd?.Bed, bd?.Name, bd?.NameEn, HospitalSurveillanceRules.Overdue(x.a, nowUtc),
-						x.a.AnsweredByEmployeeId is int e ? faces.GetValueOrDefault(e) : null);
+						x.a.AnsweredByEmployeeId is int e ? faces.GetValueOrDefault(e) : null) { PatientPhoto = x.p.PhotoPath };
 				}).ToList(), total, sepsis, vte, late, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalSurveillanceRow>(), 0, 0, 0, 0, false); }

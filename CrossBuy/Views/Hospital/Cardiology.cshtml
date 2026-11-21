@@ -59,7 +59,7 @@
                             {
                                 var s = row.Study; bool ecg = s.Kind == HospitalCardioKind.Ecg;
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = s.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = s.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@s.StudyNo</bdi></span></td>
                                     <td class="fs-7"><span class="badge badge-light-primary fw-bold">@T["cdk:" + s.Kind]</span><div class="text-muted fs-8 mt-1"><bdi>@s.Indication</bdi></div>
                                         <div class="text-muted fs-8 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(s.RequestedAt).ToString("MM-dd HH:mm", inv)</div>
@@ -77,11 +77,20 @@
                                             @if (s.Valves != null) {<div><span class="text-muted">@T["Valves"]:</span> <bdi>@s.Valves</bdi></div>}
                                             @if (s.WallMotion != null) {<div><span class="text-muted">@T["Wall motion"]:</span> <bdi>@s.WallMotion</bdi></div>}
                                         }
-                                    } else {<span class="badge badge-light-info">@T["cds:Requested"]</span>}</td>
+                                    }
+                                    else if (s.DeviceReadAt != null)
+                                    {
+                                        <span class="badge badge-light-primary">@T["Device reading"]</span> <span class="text-muted">@s.DeviceName</span>
+                                        <div class="hp-num mt-1" dir="ltr">HR @s.HeartRate · PR @s.PrMs · QRS @s.QrsMs · QT @s.QtMs · <span class="fw-bold @(s.QtcMs >= 500 ? "text-danger" : "")">QTc @s.QtcMs</span> · @s.Axis°</div>
+                                        @if (s.DeviceInterpretation != null) {<div class="text-gray-700 mt-1"><bdi>@s.DeviceInterpretation</bdi></div>}
+                                        <div class="text-muted">@T["To be confirmed by the cardiologist"]</div>
+                                    }
+                                    else {<span class="badge badge-light-info">@T["cds:Requested"]</span>}</td>
                                     <td class="fs-7">@if (s.Interpretation != null) {<div class="fw-semibold text-gray-900"><bdi>@s.Interpretation</bdi></div>}
                                         @if (s.Critical) {<span class="badge badge-danger mt-1">@T["Critical finding"]</span> @foreach (var w in (s.CriticalWhy ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-light-danger hp-num ms-1" dir="ltr">@w</span>}}
                                         <div class="mt-2">@await Html.PartialAsync("_HospitalFace", row.Reader)</div></td>
-                                    <td class="text-end pe-4">@if (ready && canConsult && s.Status == HospitalCardioStatus.Requested) {<button type="button" class="btn btn-sm btn-primary" data-cd-report="@s.ID" data-kind="@s.Kind" data-no="@s.StudyNo">@T["Read the study"]</button>}</td>
+                                    <td class="text-end pe-4 text-nowrap">@if (s.Status == HospitalCardioStatus.Reported) {@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCardiology, DocumentId = s.ID.ToString(), DocumentTitle = s.StudyNo })}
+                                        @if (ready && canConsult && s.Status == HospitalCardioStatus.Requested) {<button type="button" class="btn btn-sm btn-primary" data-cd-report="@s.ID" data-kind="@s.Kind" data-no="@s.StudyNo" data-hr="@s.HeartRate" data-pr="@s.PrMs" data-qrs="@s.QrsMs" data-qt="@s.QtMs" data-axis="@s.Axis" data-interp="@s.DeviceInterpretation">@T["Read the study"]</button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -154,6 +163,9 @@
                     id = t.getAttribute('data-cd-report'); var k = t.getAttribute('data-kind'); mr.querySelector('[data-cr-no]').textContent = t.getAttribute('data-no');
                     mr.querySelectorAll('[data-cr-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-cr-for') !== k); });
                     mr.querySelectorAll('[data-cr]').forEach(function (i) { i.value = ''; });
+                    // a device reading prefills the report; the cardiologist confirms or corrects it
+                    [['heartRate', 'hr'], ['prMs', 'pr'], ['qrsMs', 'qrs'], ['qtMs', 'qt'], ['axis', 'axis'], ['interpretation', 'interp']].forEach(function (p) {
+                        var v = t.getAttribute('data-' + p[1]); if (v) mr.querySelector('[data-cr="' + p[0] + '"]').value = v; });
                     bootstrap.Modal.getOrCreateInstance(mr).show(); return;
                 }
                 var f = function (k) { return mr.querySelector('[data-cr="' + k + '"]').value; }; t.disabled = true;

@@ -1,0 +1,40 @@
+{
+ "unit": "H225 - Ministry of Health gateway",
+ "strings": {
+  "Send to the Ministry": {
+   "ar": "إرسال إلى الوزارة",
+   "en": "Send to the Ministry",
+   "fr": "Envoyer au ministère"
+  },
+  "The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here.": {
+   "ar": "المستشفى غير متصل بنظام الوزارة بعد: تُبلَّغ الحالات كما في السابق ويُسجَّل مرجع الوزارة يدويًا. وعندما يضبط المسؤول الاتصال تُرسَل كل حالة من هنا.",
+   "en": "The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here.",
+   "fr": "L'hôpital n'est pas encore connecté au système du ministère : les cas sont déclarés comme avant et la référence du ministère est saisie à la main. Une fois la connexion configurée par l'administrateur, chaque cas est envoyé d'ici."
+  },
+  "The hospital is not connected to the Ministry's system: record the reference by hand": {
+   "ar": "المستشفى غير متصل بنظام الوزارة: سجّل المرجع يدويًا",
+   "en": "The hospital is not connected to the Ministry's system: record the reference by hand",
+   "fr": "L'hôpital n'est pas connecté au système du ministère : saisissez la référence à la main"
+  },
+  "The Ministry's system did not answer": {
+   "ar": "لم يُجب نظام الوزارة",
+   "en": "The Ministry's system did not answer",
+   "fr": "Le système du ministère n'a pas répondu"
+  },
+  "The Ministry's system answered without a reference": {
+   "ar": "أجاب نظام الوزارة دون مرجع",
+   "en": "The Ministry's system answered without a reference",
+   "fr": "Le système du ministère a répondu sans référence"
+  },
+  "The Ministry's system could not be reached": {
+   "ar": "تعذّر الوصول إلى نظام الوزارة",
+   "en": "The Ministry's system could not be reached",
+   "fr": "Le système du ministère est injoignable"
+  },
+  "The Ministry's system refused the record": {
+   "ar": "رفض نظام الوزارة السجل",
+   "en": "The Ministry's system refused the record",
+   "fr": "Le système du ministère a refusé l'enregistrement"
+  }
+ }
+}

@@ -73,7 +73,7 @@
                                 var a = row.Alert; bool open = a.Status == HospitalSurveillanceStatus.Open;
                                 var parts = a.Criteria.Split(';', StringSplitOptions.RemoveEmptyEntries);
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi>@if (row.Bed != null) {<text> · @DisplayName.Of(row.Ward ?? "", row.WardEn) · <bdi class="hp-num" dir="ltr">@row.Bed</bdi></text>}</span></td>
                                     <td><span class="badge badge-@(a.Kind == HospitalSurveillanceKind.Sepsis ? "danger" : "light-primary") fs-7 fw-bold">@T["svk:" + a.Kind]</span>
                                         <div class="text-muted fs-8 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(a.RaisedAt).ToString("MM-dd HH:mm", inv)</div></td>
@@ -120,6 +120,16 @@
                 }
             </div>
         }
+        @* the Padua prediction score for a VTE answer: 4 or more is high risk *@
+        <div class="d-none mb-5" data-sv-padua>
+            <div class="fs-6 fw-bold mb-3">@T["Padua score"] <span class="badge badge-light-primary ms-2 hp-num" data-padua-total>0</span> <span class="badge badge-danger ms-1 d-none" data-padua-high>@T["High risk"]</span></div>
+            <div class="row g-2">
+                @foreach (var (k, pts) in HospitalSurveillanceRules.PaduaItems)
+                {
+                    <div class="col-md-6"><label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" value="@k" data-points="@pts" /><span class="form-check-label fs-7">@T["padua:" + k] <span class="text-muted hp-num">(@pts)</span></span></label></div>
+                }
+            </div>
+        </div>
         <label class="fs-6 fw-semibold mb-2">@T["Reason / note"]</label>
         <textarea class="form-control form-control-solid" rows="3" maxlength="500" data-sv-note></textarea>
         <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-sv-save>@T["Save"]</button></div>
@@ -132,6 +142,11 @@
             var tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tk) return;
             var token = tk.value, root = @Json.Serialize(Url.Content("~/Hospital/Wards/Surveillance/")), m = document.getElementById('svModal'), id = null, kind = null;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose the decision"].Value) };
+            function score() {
+                var n = 0; m.querySelectorAll('[data-sv-padua] input:checked').forEach(function (c) { n += Number(c.getAttribute('data-points')); });
+                m.querySelector('[data-padua-total]').textContent = n; m.querySelector('[data-padua-high]').classList.toggle('d-none', n < 4);
+            }
+            m.addEventListener('change', function (e) { if (e.target.closest('[data-sv-padua]')) score(); });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-sv-answer],[data-sv-save]'); if (!t) return;
                 if (t.hasAttribute('data-sv-answer')) {
@@ -139,13 +154,16 @@
                     m.querySelectorAll('[data-sv-for]').forEach(function (d) { d.classList.toggle('d-none', d.getAttribute('data-sv-for') !== kind); });
                     m.querySelectorAll('input[type=radio]').forEach(function (r) { r.checked = false; });
                     m.querySelector('[data-sv-note]').value = '';
+                    var pd = m.querySelector('[data-sv-padua]'); pd.classList.toggle('d-none', kind !== 'Vte');
+                    pd.querySelectorAll('input').forEach(function (c) { c.checked = false; }); score();
                     bootstrap.Modal.getOrCreateInstance(m).show(); return;
                 }
                 var picked = m.querySelector('input[name="sv-' + kind + '"]:checked');
                 if (!picked) { toastr.error(W.choose); return; }
                 t.disabled = true;
                 fetch(root + id + '/Answer', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
-                    body: JSON.stringify({ response: picked.value, note: m.querySelector('[data-sv-note]').value }) })
+                    body: JSON.stringify({ response: picked.value, note: m.querySelector('[data-sv-note]').value,
+                        padua: kind === 'Vte' ? Array.prototype.map.call(m.querySelectorAll('[data-sv-padua] input:checked'), function (c) { return c.value; }) : null }) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                     .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(m).hide(); setTimeout(function () { location.reload(); }, 400); });
             });

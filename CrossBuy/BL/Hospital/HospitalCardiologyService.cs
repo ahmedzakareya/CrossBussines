@@ -31,7 +31,28 @@ namespace CrossBuy.BL.Hospital
 		public string? Interpretation { get; set; }
 	}
 
-	public sealed record HospitalCardioRow(HospitalCardioStudy Study, string Patient, string PatientEn, string Mrn, HospitalFace? Reader, HospitalFace? Requester);
+	public sealed record HospitalEcgImport(string Ack, string? Detail, int? StudyId);
+
+	/// H221 — the ECG machine's message read into a study: which OBX is which measurement (LOINC, the IEEE 11073 MDC code,
+	/// or the measurement's own name), the machine's statement, the study it names (OBR-2 / OBR-3 = the study number).
+	public static class HospitalEcgImportRules
+	{
+		public static string? FieldOf(string code, string text)
+		{
+			var c = (code ?? "").Trim().ToUpperInvariant(); var t = (text ?? "").Trim().ToUpperInvariant();
+			if (c is "8867-4" or "147842" or "MDC_ECG_HEART_RATE" or "HR" || t is "HR" or "HEART RATE" or "VENT RATE" or "VENTRICULAR RATE") return "HR";
+			if (c is "8625-6" or "148066" or "MDC_ECG_TIME_PD_PR" or "PR" || t is "PR" or "PR INTERVAL") return "PR";
+			if (c is "8633-0" or "148065" or "MDC_ECG_TIME_PD_QRS" or "QRS" || t is "QRS" or "QRS DURATION") return "QRS";
+			if (c is "8634-8" or "148064" or "MDC_ECG_TIME_PD_QT_GL" or "QT" || t is "QT" or "QT INTERVAL") return "QT";
+			if (c is "8632-2" or "147236" or "MDC_ECG_ANGLE_QRS_FRONT" or "AXIS" or "QRS AXIS" || t is "AXIS" or "QRS AXIS" or "R AXIS") return "AXIS";
+			if (c is "18844-1" or "11524-6" or "INTERP" or "INTERPRETATION" || t.Contains("INTERPRET") || t.Contains("STATEMENT") || t.Contains("DIAGNOSIS")) return "TEXT";
+			return null;   // QTc is never taken from a machine: the system calculates it
+		}
+
+		public static int? Int(string v) => decimal.TryParse(v, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d) ? (int)Math.Round(d) : null;
+	}
+
+	public sealed record HospitalCardioRow(HospitalCardioStudy Study, string Patient, string PatientEn, string Mrn, HospitalFace? Reader, HospitalFace? Requester, string? PatientPhoto = null);
 
 	public static class HospitalCardioRules
 	{
@@ -119,6 +140,39 @@ namespace CrossBuy.BL.Hospital
 			return HospitalResult.Success(s.ID);
 		}
 
+		/// H221: an ECG machine's ORU^R01 filed on the requested ECG study it names (as the device reading; the cardiologist
+		/// still confirms and signs). Checked with the rights of the employee the interface acts for.
+		public async Task<HospitalEcgImport> ImportAsync(BusinessContext ctx, string? raw, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var (msg, why) = HospitalHl7.ParseOru(raw);
+			if (msg == null) return new("AR", why, null);
+			if (!await _access.CanAsync(ctx, HospitalActions.Consult, null, ct)) return new("AR", "forbidden", null);
+			var nos = new[] { msg.Placer, msg.Filler }.Where(x => !string.IsNullOrEmpty(x)).ToList();
+			var s = await Studies(ctx).FirstOrDefaultAsync(x => nos.Contains(x.StudyNo), ct);
+			if (s == null) return new("AR", "No ECG study has this number", null);
+			if (s.Kind != HospitalCardioKind.Ecg) return new("AR", "This study is not an ECG", s.ID);
+			if (s.Status != HospitalCardioStatus.Requested) return new("AR", "This study is already reported", s.ID);
+			int known = 0; var unknown = new List<string>(); var text = new List<string>();
+			foreach (var o in msg.Results)
+			{
+				switch (HospitalEcgImportRules.FieldOf(o.Code, o.Text))
+				{
+					case "HR": s.HeartRate = HospitalEcgImportRules.Int(o.Value) is int hr and >= 15 and <= 300 ? hr : s.HeartRate; known++; break;
+					case "PR": s.PrMs = HospitalEcgImportRules.Int(o.Value) is int pr and >= 40 and <= 600 ? pr : s.PrMs; known++; break;
+					case "QRS": s.QrsMs = HospitalEcgImportRules.Int(o.Value) is int qrs and >= 40 and <= 300 ? qrs : s.QrsMs; known++; break;
+					case "QT": s.QtMs = HospitalEcgImportRules.Int(o.Value) is int qt and >= 200 and <= 700 ? qt : s.QtMs; known++; break;
+					case "AXIS": s.Axis = HospitalEcgImportRules.Int(o.Value) is int ax and >= -180 and <= 180 ? ax : s.Axis; known++; break;
+					case "TEXT": if (!string.IsNullOrWhiteSpace(o.Value)) text.Add(o.Value.Trim()); known++; break;
+					default: unknown.Add(string.IsNullOrEmpty(o.Code) ? o.Text : o.Code); break;
+				}
+			}
+			if (known == 0) return new("AE", "No ECG measurement in the message" + (unknown.Count > 0 ? ": " + string.Join(", ", unknown.Take(5)) : ""), s.ID);
+			s.QtcMs = HospitalCardioRules.Qtc(s.QtMs, s.HeartRate);
+			s.DeviceName = Clip(msg.Device, 60); s.DeviceInterpretation = Clip(string.Join(" · ", text), 1000); s.DeviceReadAt = nowUtc;
+			await _db.SaveChangesAsync(ct);
+			return new(unknown.Count == 0 ? "AA" : "AE", unknown.Count == 0 ? null : "Not read: " + string.Join(", ", unknown.Take(5)), s.ID);
+		}
+
 		public async Task<(IReadOnlyList<HospitalCardioRow> Rows, int Total, int Waiting, int Critical, bool Ready)> ListAsync(BusinessContext ctx, string? q, string? kind, string? status, int page, int size, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) return (Array.Empty<HospitalCardioRow>(), 0, 0, 0, true);
@@ -137,7 +191,7 @@ namespace CrossBuy.BL.Hospital
 				var rows = await query.OrderBy(x => x.s.Status == HospitalCardioStatus.Reported).ThenByDescending(x => x.s.ID).Skip((Math.Max(1, page) - 1) * size).Take(size).ToListAsync(ct);
 				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, rows.SelectMany(x => new[] { x.s.ReportedByEmployeeId, x.s.RequestedByEmployeeId }), ct);
 				HospitalFace? F(int? id) => id is int i ? faces.GetValueOrDefault(i) : null;
-				return (rows.Select(x => new HospitalCardioRow(x.s, x.p.Name, x.p.NameEn, x.p.Mrn, F(x.s.ReportedByEmployeeId), F(x.s.RequestedByEmployeeId))).ToList(), total, waiting, critical, true);
+				return (rows.Select(x => new HospitalCardioRow(x.s, x.p.Name, x.p.NameEn, x.p.Mrn, F(x.s.ReportedByEmployeeId), F(x.s.RequestedByEmployeeId)) { PatientPhoto = x.p.PhotoPath }).ToList(), total, waiting, critical, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalCardioRow>(), 0, 0, 0, false); }
 		}

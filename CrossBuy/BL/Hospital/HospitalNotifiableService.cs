@@ -16,7 +16,7 @@ namespace CrossBuy.BL.Hospital
 	// disease); the duty starts the day the list is set up — visits signed before it are not swept into the register.
 	// ==========================================================================================
 	public sealed record HospitalDiseaseReportRow(HospitalDiseaseReport Report, string Patient, string PatientEn, string Mrn, HospitalFace? Doctor,
-		string Disease, string? DiseaseEn, string Urgency, bool Overdue);
+		string Disease, string? DiseaseEn, string Urgency, bool Overdue, string? PatientPhoto = null);
 
 	public sealed class HospitalNotifiableInput
 	{
@@ -221,7 +221,7 @@ namespace CrossBuy.BL.Hospital
 					.Skip((page - 1) * size).Take(size).ToListAsync(ct);
 				var docs = await HospitalFaces.OfPractitionersAsync(_db, ctx.CompanyId, rows.Select(x => x.r.PractitionerId), ct);
 				return (rows.Select(x => new HospitalDiseaseReportRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, x.r.PractitionerId is int pr ? docs.GetValueOrDefault(pr) : null, x.d.Name, x.d.NameEn, x.d.Urgency,
-					HospitalNotifiableRules.Overdue(x.r, nowUtc))).ToList(), total, dueN, lateN, true);
+					HospitalNotifiableRules.Overdue(x.r, nowUtc)) { PatientPhoto = x.p.PhotoPath }).ToList(), total, dueN, lateN, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalDiseaseReportRow>(), 0, 0, 0, false); }
 		}

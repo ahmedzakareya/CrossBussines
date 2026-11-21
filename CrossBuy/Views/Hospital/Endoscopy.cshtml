@@ -65,7 +65,7 @@
                             {
                                 var p = row.Proc; bool colon = p.Kind == HospitalEndoKind.Colonoscopy;
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi> · <bdi class="hp-num" dir="ltr">@p.ProcNo</bdi></span></td>
                                     <td class="fs-7"><span class="badge badge-light-primary fw-bold">@T["enk:" + p.Kind]</span>
                                         <div class="text-muted fs-8 mt-1">@T["Scope"] <bdi class="hp-num" dir="ltr">@row.Scope</bdi> · @T["Cycle"] <span class="hp-num">#@p.CycleId</span></div>
@@ -80,7 +80,8 @@
                                             <div class="text-muted mt-1">@(p.CecumReached == true ? T["Caecum reached"] : T["Caecum not reached"])@if (p.WithdrawalMinutes != null) {<text> · @T["Withdrawal {0} min", p.WithdrawalMinutes]</text>} · @T["Boston {0}", p.BowelPrepScore]</div>}
                                         @if (p.Biopsies > 0) {<div class="mt-1">@T["{0} biopsies", p.Biopsies] @if (row.PathCaseNo != null) {<a href="@Url.Action("Pathology", new { q = row.PathCaseNo })" class="badge badge-light-info hp-num" dir="ltr">@row.PathCaseNo</a>}</div>}
                                     } else {<span class="badge badge-light-info">@T["ens:Started"]</span>}</td>
-                                    <td class="text-end pe-4">@if (ready && canConsult && p.Status == HospitalEndoStatus.Started) {<button type="button" class="btn btn-sm btn-primary" data-en-done="@p.ID" data-kind="@p.Kind" data-no="@p.ProcNo">@T["Complete the report"]</button>}</td>
+                                    <td class="text-end pe-4 text-nowrap">@if (p.Status == HospitalEndoStatus.Completed) {@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalEndoscopy, DocumentId = p.ID.ToString(), DocumentTitle = p.ProcNo })}
+                                        @if (ready && canConsult && p.Status == HospitalEndoStatus.Started) {<button type="button" class="btn btn-sm btn-primary" data-en-done="@p.ID" data-kind="@p.Kind" data-no="@p.ProcNo">@T["Complete the report"]</button>}</td>
                                 </tr>
                             }
                         </tbody>

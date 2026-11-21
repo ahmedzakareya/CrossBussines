@@ -37,7 +37,7 @@ namespace CrossBuy.BL.Hospital
 	}
 
 	public sealed record HospitalRestraintRow(HospitalRestraint Restraint, string Patient, string PatientEn, string Mrn, string? Bed, HospitalFace? OrderedBy,
-		HospitalRestraintCheck? LastCheck, int Checks, DateTime NextCheckAt, bool CheckOverdue, bool Expired);
+		HospitalRestraintCheck? LastCheck, int Checks, DateTime NextCheckAt, bool CheckOverdue, bool Expired, string? PatientPhoto = null);
 
 	public static class HospitalRestraintRules
 	{
@@ -171,7 +171,7 @@ namespace CrossBuy.BL.Hospital
 					var mine = checks.Where(c => c.RestraintId == x.r.ID).OrderByDescending(c => c.At).ToList();
 					var last = mine.FirstOrDefault();
 					return new HospitalRestraintRow(x.r, x.p.Name, x.p.NameEn, x.p.Mrn, beds.GetValueOrDefault(x.r.AdmissionId), x.r.OrderedByEmployeeId is int oid ? faces.GetValueOrDefault(oid) : null, last, mine.Count,
-						HospitalRestraintRules.NextCheckAt(x.r, last?.At), HospitalRestraintRules.CheckOverdue(x.r, last?.At, nowUtc), HospitalRestraintRules.Expired(x.r, nowUtc));
+						HospitalRestraintRules.NextCheckAt(x.r, last?.At), HospitalRestraintRules.CheckOverdue(x.r, last?.At, nowUtc), HospitalRestraintRules.Expired(x.r, nowUtc)) { PatientPhoto = x.p.PhotoPath };
 				}).ToList(), total, active.Count, overdue, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalRestraintRow>(), 0, 0, 0, false); }

@@ -94,12 +94,49 @@ namespace CrossBuy.BL.Hospital
 		public static string Render(HospitalClaimSheetSetup setup, string batchNo, IEnumerable<HospitalEClaimClaimData> claims, string currency)
 		{
 			char sep = setup.Delimiter == "TAB" ? '\t' : setup.Delimiter[0];
-			var inv = CultureInfo.InvariantCulture;
-			string money = "0." + new string('0', Decimals(currency));
-			string Day(DateTime? d) => d?.ToString(setup.DateFormat, inv) ?? "";
 			var numeric = Fields.ToDictionary(f => f.Key, f => f.Numeric);
 			var sb = new StringBuilder();
 			sb.Append(string.Join(sep, setup.Columns.Select(c => Cell(c.Header, false, sep)))).Append("\r\n");
+			foreach (var row in Values(setup, batchNo, claims, currency))
+				sb.Append(string.Join(sep, setup.Columns.Select((c, i) => Cell(row[i], numeric.GetValueOrDefault(c.Key), sep)))).Append("\r\n");
+			return sb.ToString();
+		}
+
+		/// H223: the same sheet as a real Excel workbook — the payer's headers in bold, amounts as NUMBERS in the currency's
+		/// decimals (a sheet the TPA sums without retyping), every other cell as text exactly as the CSV has it.
+		public static byte[] RenderXlsx(HospitalClaimSheetSetup setup, string batchNo, IEnumerable<HospitalEClaimClaimData> claims, string currency)
+		{
+			var inv = CultureInfo.InvariantCulture;
+			var numeric = Fields.ToDictionary(f => f.Key, f => f.Numeric);
+			using var wb = new ClosedXML.Excel.XLWorkbook();
+			var ws = wb.Worksheets.Add(batchNo.Length <= 31 ? batchNo : batchNo[..31]);
+			for (int c = 0; c < setup.Columns.Count; c++) { var h = ws.Cell(1, c + 1); h.SetValue(setup.Columns[c].Header); h.Style.Font.Bold = true; }
+			string fmt = "0." + new string('0', Decimals(currency));
+			int r = 1;
+			foreach (var row in Values(setup, batchNo, claims, currency))
+			{
+				r++;
+				for (int c = 0; c < setup.Columns.Count; c++)
+				{
+					var cell = ws.Cell(r, c + 1); var v = row[c];
+					if (numeric.GetValueOrDefault(setup.Columns[c].Key) && decimal.TryParse(v, NumberStyles.Number, inv, out var d))
+					{ cell.SetValue(d); if (setup.Columns[c].Key != "LineNo") cell.Style.NumberFormat.Format = fmt; }
+					else cell.SetValue(v ?? "");   // text stays text: a "=..." name is never a formula in a typed cell
+				}
+			}
+			ws.SheetView.FreezeRows(1);
+			ws.Columns().AdjustToContents(1, Math.Min(r, 200));
+			using var ms = new MemoryStream();
+			wb.SaveAs(ms);
+			return ms.ToArray();
+		}
+
+		/// The sheet's values, one array per claim line in the payer's column order (text exactly as the CSV writes it).
+		public static IEnumerable<string?[]> Values(HospitalClaimSheetSetup setup, string batchNo, IEnumerable<HospitalEClaimClaimData> claims, string currency)
+		{
+			var inv = CultureInfo.InvariantCulture;
+			string money = "0." + new string('0', Decimals(currency));
+			string Day(DateTime? d) => d?.ToString(setup.DateFormat, inv) ?? "";
 			foreach (var d in claims)
 			{
 				var primary = d.Diagnoses.OrderByDescending(x => x.IsPrimary).ThenBy(x => x.SortOrder).FirstOrDefault();
@@ -134,10 +171,9 @@ namespace CrossBuy.BL.Hospital
 						"Currency" => currency,
 						_ => null,
 					};
-					sb.Append(string.Join(sep, setup.Columns.Select(c => Cell(V(c.Key), numeric.GetValueOrDefault(c.Key), sep)))).Append("\r\n");
+					yield return setup.Columns.Select(c => V(c.Key)).ToArray();
 				}
 			}
-			return sb.ToString();
 		}
 	}
 }

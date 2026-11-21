@@ -29,10 +29,16 @@ namespace CrossBuy.Controllers
 
 		/// H210: the batch as the payer's claim sheet (CSV with its UTF-8 mark: a spreadsheet opens Arabic as Arabic).
 		[HttpGet("Insurance/Batch/{id:int}/Sheet"), HospitalPerm(HospitalActions.Bill)]
-		public async Task<IActionResult> ClaimBatchSheet(int id, CancellationToken ct = default)
+		public async Task<IActionResult> ClaimBatchSheet(int id, string? format, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound();
+			if (string.Equals(format, "xlsx", StringComparison.OrdinalIgnoreCase))
+			{   // H223: a real Excel workbook
+				var (rx, nx, bytes) = await EClaimSvc.ExportSheetXlsxAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct);
+				if (!rx.Ok) return Result(rx);
+				return File(bytes!, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", nx);
+			}
 			var (r, name, csv) = await EClaimSvc.ExportSheetAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct);
 			if (!r.Ok) return Result(r);
 			return File(new UTF8Encoding(true).GetPreamble().Concat(new UTF8Encoding(false).GetBytes(csv!)).ToArray(), "text/csv", name);
@@ -46,8 +52,17 @@ namespace CrossBuy.Controllers
 			var s = await EClaimSvc.SheetAsync(ctx, id, ct);
 			if (s == null) return NotFound(new { ok = false, code = "not_found" });
 			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var others = (await EClaimSvc.PayersWithSheetsAsync(ctx, ct)).Where(p => p.Id != id).Select(p => new { id = p.Id, name = ar ? p.Name : (string.IsNullOrWhiteSpace(p.NameEn) ? p.Name : p.NameEn) });
 			return Json(new { ok = true, saved = s.Saved, delimiter = s.Delimiter, dateFormat = s.DateFormat, columns = s.Columns.Select(c => new { key = c.Key, header = c.Header }),
-				fields = HospitalClaimSheets.Fields.Select(f => new { key = f.Key, name = ar ? f.Ar : f.En, en = f.En }) });
+				fields = HospitalClaimSheets.Fields.Select(f => new { key = f.Key, name = ar ? f.Ar : f.En, en = f.En }), others });
+		}
+
+		[HttpPost("Insurance/Payers/{id:int}/Sheet/CopyFrom/{from:int}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		public async Task<IActionResult> PayerClaimSheetCopy(int id, int from, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await EClaimSvc.CopySheetAsync(ctx, id, from, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Insurance/Payers/{id:int}/Sheet"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]

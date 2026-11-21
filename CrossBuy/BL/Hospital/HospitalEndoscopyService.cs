@@ -49,7 +49,7 @@ namespace CrossBuy.BL.Hospital
 	}
 
 	public sealed record HospitalScopeRow(HospitalScope Scope, HospitalScopeCycle? LastCycle, DateTime? LastUsedAt, bool Ready, string? NotReady);
-	public sealed record HospitalEndoRow(HospitalEndoscopy Proc, string Patient, string PatientEn, string Mrn, string Scope, string? PathCaseNo, bool QualityMet, HospitalFace? Endoscopist = null);
+	public sealed record HospitalEndoRow(HospitalEndoscopy Proc, string Patient, string PatientEn, string Mrn, string Scope, string? PathCaseNo, bool QualityMet, HospitalFace? Endoscopist = null, string? PatientPhoto = null);
 
 	public static class HospitalEndoRules
 	{
@@ -238,7 +238,7 @@ namespace CrossBuy.BL.Hospital
 				var cases = await _db.Set<HospitalPathCase>().AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId && caseIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CaseNo, ct);
 				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, rows.Select(x => x.p.EndoscopistEmployeeId), ct);
 				return (rows.Select(x => new HospitalEndoRow(x.p, x.pt.Name, x.pt.NameEn, x.pt.Mrn, x.Serial, x.p.PathCaseId is int c ? cases.GetValueOrDefault(c) : null, HospitalEndoRules.QualityMet(x.p),
-					x.p.EndoscopistEmployeeId is int e ? faces.GetValueOrDefault(e) : null)).ToList(), total, true);
+					x.p.EndoscopistEmployeeId is int e ? faces.GetValueOrDefault(e) : null) { PatientPhoto = x.pt.PhotoPath }).ToList(), total, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalEndoRow>(), 0, false); }
 		}

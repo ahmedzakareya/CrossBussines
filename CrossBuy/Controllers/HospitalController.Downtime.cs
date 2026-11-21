@@ -43,7 +43,31 @@ namespace CrossBuy.Controllers
 			int pages = Math.Max(1, (rows.Count + size - 1) / size); page = Math.Clamp(page, 1, pages);
 			ViewBag.Q = q; ViewBag.Page = page; ViewBag.Pages = pages; ViewBag.Total = rows.Count;
 			ViewBag.Patients = rows.Sum(r => r.Patients); ViewBag.Medicines = rows.Sum(r => r.Medicines);
-			return View(rows.Skip((page - 1) * size).Take(size).ToList());
+			var shown = rows.Skip((page - 1) * size).Take(size).ToList();
+			// H224: each ward's shift copies, and whether the platform's schedule worker sends them by itself
+			ViewBag.Schedules = await DowntimeSchedules.StateAsync(c, shown.Select(w => w.Id), ct);
+			ViewBag.WorkerOn = HttpContext.RequestServices.GetService<Microsoft.Extensions.Configuration.IConfiguration>()?.GetValue<bool>("Reporting:ScheduleWorker:Enabled") == true;
+			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			return View(shown);
+		}
+
+		public sealed class HospitalDowntimeSendInput { public string? Emails { get; set; } public List<string>? Times { get; set; } }
+		private HospitalDowntimeScheduleService DowntimeSchedules => ActivatorUtilities.CreateInstance<HospitalDowntimeScheduleService>(HttpContext.RequestServices);
+
+		[HttpPost("Wards/Downtime/{id:int}/Schedule"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> DowntimeSchedule(int id, [FromBody] HospitalDowntimeSendInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await DowntimeSchedules.SaveAsync(ctx, id, new HospitalDowntimeScheduleInput { Emails = input.Emails, Times = input.Times }, ct));
+		}
+
+		[HttpPost("Wards/Downtime/{id:int}/SendNow"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.ClinicalRead)]
+		public async Task<IActionResult> DowntimeSendNow(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await DowntimeSchedules.SendNowAsync(ctx, id, ct));
 		}
 	}
 }

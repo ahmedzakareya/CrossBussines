@@ -71,7 +71,7 @@
                             {
                                 var r = row.Restraint; var c = row.LastCheck;
                                 <tr>
-                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-block fs-7">@DisplayName.Of(row.Patient, row.PatientEn)</a>
+                                    <td class="ps-4"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary d-flex align-items-center gap-2 fs-7 mb-1">@HospitalUi.Avatar(row.PatientPhoto, row.PatientEn)<span>@DisplayName.Of(row.Patient, row.PatientEn)</span></a>
                                         <span class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@row.Mrn</bdi>@if (row.Bed != null) {<text> · <bdi class="hp-num" dir="ltr">@row.Bed</bdi></text>}</span></td>
                                     <td class="fs-7"><span class="badge badge-light-danger fw-bold me-1">@T["rsk:" + r.Kind]</span>@if (r.Device != null) {<span class="text-gray-700"><bdi>@r.Device</bdi></span>}
                                         <div class="text-gray-800 mt-1"><span class="text-muted">@T["Why restrained"]:</span> <bdi>@r.Reason</bdi></div>
