@@ -312,9 +312,9 @@ namespace CrossBuy.Tests
             using var host = new PlatformTestHost(companyId: CompanyOne);
             host.Seed.Employee.AddRange(Emp(10, CompanyOne), Emp(11, CompanyOne), Emp(20, CompanyTwo));
             host.Seed.Hierarchicals.AddRange(
-                new Hierarchical { H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
-                new Hierarchical { H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 },
-                new Hierarchical { H_ID = 3, H_Type = 5, H_ObjectID = 20, H_Parent = 1 });   // other company
+                new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
+                new Hierarchical { CompanyID = CompanyOf(host, 11), H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 },
+                new Hierarchical { CompanyID = CompanyOf(host, 20), H_ID = 3, H_Type = 5, H_ObjectID = 20, H_Parent = 1 });   // other company
             await host.Seed.SaveChangesAsync();
 
             var team = await Crm(host).TeamOwnerIdsAsync(CompanyOne, 10);
@@ -332,9 +332,9 @@ namespace CrossBuy.Tests
             using var host = new PlatformTestHost(companyId: CompanyOne);
             host.Seed.Employee.AddRange(Emp(10, CompanyOne), Emp(11, CompanyOne), Emp(20, CompanyTwo));
             host.Seed.Hierarchicals.AddRange(
-                new Hierarchical { H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
-                new Hierarchical { H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 },
-                new Hierarchical { H_ID = 3, H_Type = 5, H_ObjectID = 20, H_Parent = 1 });
+                new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
+                new Hierarchical { CompanyID = CompanyOf(host, 11), H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 },
+                new Hierarchical { CompanyID = CompanyOf(host, 20), H_ID = 3, H_Type = 5, H_ObjectID = 20, H_Parent = 1 });
             await host.Seed.SaveChangesAsync();
 
             var team = await ((ICrmAccessService)Crm(host)).TeamOwnerIdsAsync(10);
@@ -348,11 +348,14 @@ namespace CrossBuy.Tests
         public async Task A_manager_with_no_company_on_their_row_gets_an_empty_crm_team_set()
         {
             using var host = new PlatformTestHost(companyId: CompanyOne);
-            host.Seed.Employee.AddRange(Emp(10, 0), Emp(11, CompanyOne));
+            // EF cannot write EmpCompanyID = 0: it is a required FK, so the tracker calls it "unknown" and
+            // waits for a principal. Seed legally, then break the column - see MakeEmployeeCompanyless.
+            host.Seed.Employee.AddRange(Emp(10, CompanyOne), Emp(11, CompanyOne));
             host.Seed.Hierarchicals.AddRange(
-                new Hierarchical { H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
-                new Hierarchical { H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 });
+                new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 1, H_Type = 5, H_ObjectID = 10, H_Parent = null },
+                new Hierarchical { CompanyID = CompanyOf(host, 11), H_ID = 2, H_Type = 5, H_ObjectID = 11, H_Parent = 1 });
             await host.Seed.SaveChangesAsync();
+            host.MakeEmployeeCompanyless(10);   // the manager row loses its company
 
             Assert.Empty(await ((ICrmAccessService)Crm(host)).TeamOwnerIdsAsync(10));
         }
@@ -364,11 +367,17 @@ namespace CrossBuy.Tests
                 NullLogger<LeaveWorkflowService>.Instance);
 
         // employee node → position node → manager employee node, which is the shape ManagerChainAsync walks
+        // The org tree is company-filtered now: every node takes the company of the employee it stands for,
+        // resolved from the seeded employees, so a CompanyTwo person's node stays CompanyTwo and the filter
+        // stops the climb / excludes the team exactly where these tests assert it does.
+        private static int CompanyOf(PlatformTestHost host, int employeeId)
+            => host.Seed.Employee.Local.FirstOrDefault(e => e.ID == employeeId)?.EmpCompanyID ?? CompanyOne;
+
         private static void SeedChain(PlatformTestHost host, int subordinate, int manager)
         {
             host.Seed.Hierarchicals.AddRange(
-                new Hierarchical { H_ID = 100 + subordinate, H_Type = 5, H_ObjectID = subordinate, H_Parent = 200 + subordinate },
-                new Hierarchical { H_ID = 200 + subordinate, H_Type = 4, H_ObjectID = null, H_Parent = 100 + manager });
+                new Hierarchical { CompanyID = CompanyOf(host, subordinate), H_ID = 100 + subordinate, H_Type = 5, H_ObjectID = subordinate, H_Parent = 200 + subordinate },
+                new Hierarchical { CompanyID = CompanyOf(host, subordinate), H_ID = 200 + subordinate, H_Type = 4, H_ObjectID = null, H_Parent = 100 + manager });
         }
 
         [Fact]
@@ -377,7 +386,7 @@ namespace CrossBuy.Tests
             using var host = new PlatformTestHost(companyId: CompanyOne);
             host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(20, CompanyTwo));
             // employee 11 (company 1) reports to employee 20 (COMPANY 2) through the shared tree
-            host.Seed.Hierarchicals.Add(new Hierarchical { H_ID = 120, H_Type = 5, H_ObjectID = 20, H_Parent = null });
+            host.Seed.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyOf(host, 20), H_ID = 120, H_Type = 5, H_ObjectID = 20, H_Parent = null });
             SeedChain(host, 11, 20);
             await host.Seed.SaveChangesAsync();
 
@@ -397,9 +406,9 @@ namespace CrossBuy.Tests
         {
             using var host = new PlatformTestHost(companyId: CompanyOne);
             host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(20, CompanyTwo));
-            host.Seed.Hierarchicals.Add(new Hierarchical { H_ID = 120, H_Type = 5, H_ObjectID = 20, H_Parent = null });
+            host.Seed.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyOf(host, 20), H_ID = 120, H_Type = 5, H_ObjectID = 20, H_Parent = null });
             SeedChain(host, 11, 20);
-            host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+            host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = CompanyOne, NameAr = "سنوية", NameEn = "Annual" });
             await host.Seed.SaveChangesAsync();
 
             var (ok, error, req) = await Leave(host).CreateAsync(
@@ -416,7 +425,7 @@ namespace CrossBuy.Tests
         {
             using var host = new PlatformTestHost(companyId: CompanyOne);
             host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(10, CompanyOne));
-            host.Seed.Hierarchicals.Add(new Hierarchical { H_ID = 110, H_Type = 5, H_ObjectID = 10, H_Parent = null });
+            host.Seed.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 110, H_Type = 5, H_ObjectID = 10, H_Parent = null });
             SeedChain(host, 11, 10);
             await host.Seed.SaveChangesAsync();
 
@@ -439,10 +448,10 @@ namespace CrossBuy.Tests
             // also how a cycle appears in reality: someone re-parents an existing node.
             var n = new[]
             {
-                new Hierarchical { H_ID = 111, H_Type = 5, H_ObjectID = 11 },   // employee 11
-                new Hierarchical { H_ID = 211, H_Type = 4, H_ObjectID = null }, // 11's position
-                new Hierarchical { H_ID = 110, H_Type = 5, H_ObjectID = 10 },   // employee 10
-                new Hierarchical { H_ID = 210, H_Type = 4, H_ObjectID = null }, // 10's position
+                new Hierarchical { CompanyID = CompanyOf(host, 11), H_ID = 111, H_Type = 5, H_ObjectID = 11 },   // employee 11
+                new Hierarchical { CompanyID = CompanyOne, H_ID = 211, H_Type = 4, H_ObjectID = null }, // 11's position
+                new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 110, H_Type = 5, H_ObjectID = 10 },   // employee 10
+                new Hierarchical { CompanyID = CompanyOne, H_ID = 210, H_Type = 4, H_ObjectID = null }, // 10's position
             };
             host.Seed.Hierarchicals.AddRange(n);
             await host.Seed.SaveChangesAsync();
@@ -461,10 +470,13 @@ namespace CrossBuy.Tests
         public async Task An_employee_with_no_company_produces_no_approver_chain_and_is_reported_as_a_defect()
         {
             using var host = new PlatformTestHost(companyId: CompanyOne);
-            host.Seed.Employee.AddRange(Emp(11, 0), Emp(10, CompanyOne));
-            host.Seed.Hierarchicals.Add(new Hierarchical { H_ID = 110, H_Type = 5, H_ObjectID = 10, H_Parent = null });
+            // EF cannot write EmpCompanyID = 0: it is a required FK, so the tracker calls it "unknown" and
+            // waits for a principal. Seed legally, then break the column - see MakeEmployeeCompanyless.
+            host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(10, CompanyOne));
+            host.Seed.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyOf(host, 10), H_ID = 110, H_Type = 5, H_ObjectID = 10, H_Parent = null });
             SeedChain(host, 11, 10);
             await host.Seed.SaveChangesAsync();
+            host.MakeEmployeeCompanyless(11);   // the requester row loses its company
 
             var result = await Leave(host).ApproverChainAsync(11);
 

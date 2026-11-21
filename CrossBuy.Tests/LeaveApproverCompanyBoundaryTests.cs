@@ -45,12 +45,20 @@ namespace CrossBuy.Tests
 			UserId = "user-" + id,
 		};
 
+		// The org tree carries a CompanyID now (HR0 company filter), so every seeded node must take the company of
+		// the employee it stands for — resolved from the employees already added to the seed — or the filter hides
+		// it and the climb breaks. A node for a CompanyTwo manager is CompanyTwo, exactly so the filter stops the
+		// climb at the boundary: that is what these tests assert.
+		private static int CompanyOf(PlatformTestHost host, int employeeId)
+			=> host.Seed.Employee.Local.FirstOrDefault(e => e.ID == employeeId)?.EmpCompanyID ?? CompanyOne;
+
 		// employee node -> position node -> manager employee node, the exact shape the climb walks.
 		private static void SeedLink(PlatformTestHost host, int subordinate, int manager)
 		{
+			var co = CompanyOf(host, subordinate);
 			host.Seed.Hierarchicals.AddRange(
-				new Hierarchical { H_ID = 100 + subordinate, H_Type = 5, H_ObjectID = subordinate, H_Parent = 200 + subordinate },
-				new Hierarchical { H_ID = 200 + subordinate, H_Type = 4, H_ObjectID = null, H_Parent = 100 + manager });
+				new Hierarchical { CompanyID = co, H_ID = 100 + subordinate, H_Type = 5, H_ObjectID = subordinate, H_Parent = 200 + subordinate },
+				new Hierarchical { CompanyID = co, H_ID = 200 + subordinate, H_Type = 4, H_ObjectID = null, H_Parent = 100 + manager });
 		}
 
 		// A top node with no parent: the climb reaches it and stops. Deliberately NOT a unit head, so the
@@ -58,7 +66,7 @@ namespace CrossBuy.Tests
 		// company boundary rather than about unit-head detection, which has its own coverage.
 		private static void SeedTop(PlatformTestHost host, int employeeId)
 			=> host.Seed.Hierarchicals.Add(
-				new Hierarchical { H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = null });
+				new Hierarchical { CompanyID = CompanyOf(host, employeeId), H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = null });
 
 		// A VERIFIED STRUCTURAL ROOT, and the difference from SeedTop directly above is the whole of
 		// RSK-31. SeedTop builds a node with NO parent: the climb stops because nothing is above it,
@@ -67,10 +75,11 @@ namespace CrossBuy.Tests
 		// that failed to resolve. Both produce an empty approver chain; only this one may be approved.
 		private static void SeedVerifiedRoot(PlatformTestHost host, int employeeId, int companyNodeId = 900)
 		{
+			var co = CompanyOf(host, employeeId);
 			host.Seed.Hierarchicals.AddRange(
-				new Hierarchical { H_ID = companyNodeId, H_Type = 1, H_ObjectID = null, H_Parent = null },
-				new Hierarchical { H_ID = 200 + employeeId, H_Type = 4, H_ObjectID = null, H_Parent = companyNodeId },
-				new Hierarchical { H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = 200 + employeeId });
+				new Hierarchical { CompanyID = co, H_ID = companyNodeId, H_Type = 1, H_ObjectID = null, H_Parent = null },
+				new Hierarchical { CompanyID = co, H_ID = 200 + employeeId, H_Type = 4, H_ObjectID = null, H_Parent = companyNodeId },
+				new Hierarchical { CompanyID = co, H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = 200 + employeeId });
 		}
 
 		// THE ACTOR THESE SCENARIOS ALWAYS ASSUMED (SHF-87, RSK-26 fixture adaptation).
@@ -113,7 +122,7 @@ namespace CrossBuy.Tests
 		}
 
 		private static void SeedAnnualLeaveType(PlatformTestHost host)
-			=> host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+			=> host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = CompanyOne, NameAr = "سنوية", NameEn = "Annual" });
 
 		// ---------------------------------------------------------------------------------------------
 		// 1 + 2 — the same-company chain still resolves, at one level and at two
@@ -274,7 +283,7 @@ namespace CrossBuy.Tests
 			SeedLink(host, 10, 30);
 			SeedLink(host, 11, 10);
 			// A foreign employee exists in the tree elsewhere, reachable only by a defective graft.
-			host.Seed.Hierarchicals.Add(new Hierarchical { H_ID = 900, H_Type = 5, H_ObjectID = 20, H_Parent = null });
+			host.Seed.Hierarchicals.Add(new Hierarchical { CompanyID = CompanyTwo, H_ID = 900, H_Type = 5, H_ObjectID = 20, H_Parent = null });
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
 
@@ -335,11 +344,14 @@ namespace CrossBuy.Tests
 		public async Task A_requester_with_no_company_on_their_row_produces_no_chain_and_is_refused()
 		{
 			using var host = new PlatformTestHost(companyId: CompanyOne);
-			host.Seed.Employee.AddRange(Emp(11, 0), Emp(10, CompanyOne));
+			// EF cannot write EmpCompanyID = 0: it is a required FK, so the tracker calls it "unknown"
+			// and waits for a principal. Seed legally, then break it - see MakeEmployeeCompanyless.
+			host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(10, CompanyOne));
 			SeedTop(host, 10);
 			SeedLink(host, 11, 10);
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
+			host.MakeEmployeeCompanyless(11);
 
 			var result = await Leave(host).ApproverChainAsync(11);
 			Assert.Empty(result.Approvers);
@@ -412,8 +424,8 @@ namespace CrossBuy.Tests
 			// being modelled, so the fixture closes the loop after both rows exist rather than pretending the
 			// shape is impossible.
 			host.Seed.Hierarchicals.AddRange(
-				new Hierarchical { H_ID = 211, H_Type = 4, H_ObjectID = null, H_Parent = null },
-				new Hierarchical { H_ID = 111, H_Type = 5, H_ObjectID = 11, H_Parent = 211 });
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 211, H_Type = 4, H_ObjectID = null, H_Parent = null },
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 111, H_Type = 5, H_ObjectID = 11, H_Parent = 211 });
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
 
@@ -461,10 +473,13 @@ namespace CrossBuy.Tests
 		public async Task A_requester_with_no_company_is_neither_validated_nor_a_root()
 		{
 			using var host = new PlatformTestHost(companyId: CompanyOne);
-			host.Seed.Employee.Add(Emp(11, 0));        // no company on the requester's own row
+			// EF cannot write EmpCompanyID = 0: it is a required FK, so the tracker calls it "unknown"
+			// and waits for a principal. Seed legally, then break it - see MakeEmployeeCompanyless.
+			host.Seed.Employee.Add(Emp(11, CompanyOne));
 			SeedVerifiedRoot(host, 11);                // even WITH root-shaped rows above them
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
+			host.MakeEmployeeCompanyless(11);          // no company on the requester's own row
 
 			var result = await Leave(host).ApproverChainAsync(11);
 			Assert.Empty(result.Approvers);
@@ -530,10 +545,10 @@ namespace CrossBuy.Tests
 			// also how a cycle appears in reality: someone re-parents an existing node.
 			var nodes = new[]
 			{
-				new Hierarchical { H_ID = 111, H_Type = 5, H_ObjectID = 11 },
-				new Hierarchical { H_ID = 211, H_Type = 4, H_ObjectID = null },
-				new Hierarchical { H_ID = 110, H_Type = 5, H_ObjectID = 10 },
-				new Hierarchical { H_ID = 210, H_Type = 4, H_ObjectID = null },
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 111, H_Type = 5, H_ObjectID = 11 },
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 211, H_Type = 4, H_ObjectID = null },
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 110, H_Type = 5, H_ObjectID = 10 },
+				new Hierarchical { CompanyID = CompanyOne, H_ID = 210, H_Type = 4, H_ObjectID = null },
 			};
 			host.Seed.Hierarchicals.AddRange(nodes);
 			await host.Seed.SaveChangesAsync();

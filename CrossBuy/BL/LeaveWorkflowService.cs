@@ -211,15 +211,26 @@ namespace CrossBuy.BL
 				.Select(e => e.ID)
 				.ToListAsync()).ToHashSet();
 
-			// the manager directly above: employee node → its position → the parent employee node
-			int? ManagerOf(int empId)
+			// the manager directly above: employee node → its position → the parent employee node.
+			//
+			// `hiddenParent` IS THE FOREIGN-COMPANY DEFENCE UNDER THE HR0 FILTER. `all` is company-scoped now
+			// (HR0 added a CompanyID filter to Hierarchical), so a node that belongs to ANOTHER company is simply
+			// absent from `byId`. A position whose parent node is referenced (H_Parent set) but absent is therefore
+			// a parent in a different company — the cross-company graft this climb exists to refuse. We must NOT read
+			// cross-company to see it (IgnoreQueryFilters is banned, and widening the read would be the leak): the
+			// ABSENCE of a referenced parent is itself the signal, and the climb fails CLOSED on it rather than
+			// mistaking it for "no manager above" and auto-approving. A genuine top attaches to a unit node of the
+			// SAME company, which stays visible, so the two cases do not collide.
+			(int? mgr, bool hiddenParent) ManagerOf(int empId)
 			{
 				var node = all.FirstOrDefault(h => h.H_Type == 5 && h.H_ObjectID == empId);
-				if (node?.H_Parent == null || !byId.ContainsKey(node.H_Parent.Value)) return null;
+				if (node?.H_Parent == null) return (null, false);                            // no position above: genuine top-candidate
+				if (!byId.ContainsKey(node.H_Parent.Value)) return (null, true);             // position node is in another company
 				var pos = byId[node.H_Parent.Value];                 // position node (type 4)
-				if (pos.H_Parent == null || !byId.ContainsKey(pos.H_Parent.Value)) return null;
+				if (pos.H_Parent == null) return (null, false);                              // position attaches to nothing above
+				if (!byId.ContainsKey(pos.H_Parent.Value)) return (null, true);              // the manager node is in another company
 				var mgr = byId[pos.H_Parent.Value];                  // manager employee node (type 5)
-				return mgr.H_Type == 5 ? mgr.H_ObjectID : null;
+				return (mgr.H_Type == 5 ? mgr.H_ObjectID : null, false);
 			}
 
 			// an employee is a unit head when their position attaches DIRECTLY to a unit node
@@ -242,7 +253,21 @@ namespace CrossBuy.BL
 			var dropped = 0;
 			while (guard++ < 50)   // cycle protection preserved: bounded climb + the chain.Contains check below
 			{
-				var mgr = ManagerOf(current);
+				var (mgr, hiddenParent) = ManagerOf(current);
+
+				// A referenced parent that is not visible is a foreign-company node (see ManagerOf): fail CLOSED,
+				// exactly as a resolved foreign manager does below, rather than treat it as "reached the top".
+				if (hiddenParent)
+				{
+					dropped++;
+					defect = true;
+					_log.LogWarning(
+						"Leave: the approver climb for employee {Employee} (company {Company}) reached a parent org node " +
+						"that is not in their company; the tree is company-scoped, so this is a cross-company graft. The " +
+						"request is refused rather than auto-approved on an empty chain.", employeeId, companyId.Value);
+					break;
+				}
+
 				if (mgr == null || mgr == employeeId || chain.Contains(mgr.Value)) break;
 
 				// the company intersection — a foreign node ends the chain, it is never approved past
