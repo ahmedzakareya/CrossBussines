@@ -162,13 +162,14 @@ class _ThreadSheetState extends State<_ThreadSheet> {
 // ================================================================================================ the assistant
 /// «المساعد»: a summary of the conversation, or a question about it — answered from it alone, on the company's own
 /// servers; every answer names the messages it rests on, and nothing is made up.
-Future<void> showAssistantSheet(BuildContext context, int conversationId, {void Function(int messageId)? onGoTo}) =>
-    _sheet(context, _AssistantSheet(conversationId: conversationId, onGoTo: onGoTo), height: .85);
+Future<void> showAssistantSheet(BuildContext context, int conversationId, {void Function(int messageId)? onGoTo, int? newestId}) =>
+    _sheet(context, _AssistantSheet(conversationId: conversationId, onGoTo: onGoTo, newestId: newestId), height: .85);
 
 class _AssistantSheet extends StatefulWidget {
   final int conversationId;
   final void Function(int messageId)? onGoTo;
-  const _AssistantSheet({required this.conversationId, this.onGoTo});
+  final int? newestId;   // the task made from a summary item is linked to the conversation's newest message (as on the web)
+  const _AssistantSheet({required this.conversationId, this.onGoTo, this.newestId});
   @override
   State<_AssistantSheet> createState() => _AssistantSheetState();
 }
@@ -177,6 +178,20 @@ class _AssistantSheetState extends State<_AssistantSheet> {
   final _q = TextEditingController();
   bool _busy = false;
   String? _mode, _error;
+  final Set<String> _made = {};   // the summary's tasks already turned into tasks here
+
+  Future<void> _makeTask(String title) async {
+    final id = widget.newestId;
+    if (id == null || _made.contains(title)) return;
+    setState(() => _made.add(title));
+    final (ok, error) = await ApiService.instance.chatMakeTask(id, title);
+    if (!mounted) return;
+    if (!ok) setState(() => _made.remove(title));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok
+        ? L(context, 'أُنشئت المهمة وارتبطت بالمحادثة', 'The task is created and linked to the conversation')
+        : error == 'forbidden' ? L(context, 'لا تملك صلاحية إنشاء المهام', 'You may not create tasks')
+        : L(context, 'تعذّر إنشاء المهمة', 'The task could not be created'))));
+  }
   Map<String, dynamic>? _result;
   Timer? _poll;
 
@@ -247,7 +262,19 @@ class _AssistantSheetState extends State<_AssistantSheet> {
       _sec(Lu.circleCheck, L(context, 'القرارات', 'Decisions'), [for (final p in _strs(r['decisions'])) _li(Text(p, style: body))]),
       _sec(Lu.listTodo, L(context, 'المهام', 'Tasks'), [
         for (final a in (r['actions'] as List? ?? const []).whereType<Map>())
-          _li(Text.rich(TextSpan(children: [TextSpan(text: '${a['owner'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: ' — ${a['task'] ?? ''}')]), style: body)),
+          _li(Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '${a['owner'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: ' — ${a['task'] ?? ''}')]), style: body)),
+            if (widget.newestId != null)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 8),
+                child: _made.contains('${a['task'] ?? ''}')
+                    ? const Icon(Lu.circleCheck, size: 16, color: Brand.blue)
+                    : ActionChip(visualDensity: VisualDensity.compact, backgroundColor: Brand.soft, side: BorderSide.none,
+                        avatar: const Icon(Lu.squareCheck, size: 13, color: Brand.blue),
+                        label: Text(L(context, 'مهمة', 'Task'), style: const TextStyle(fontSize: 11, color: Brand.blue)),
+                        onPressed: () => _makeTask('${a['task'] ?? ''}')),
+              ),
+          ])),
       ]),
       cut,
     ]);

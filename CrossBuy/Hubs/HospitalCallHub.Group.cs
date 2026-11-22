@@ -29,6 +29,7 @@ namespace CrossBuy.Hubs
 			public int? RecId, RecBy, RecorderId;   // RecBy asked; RecorderId's browser records (a browser, never a phone)
 			public readonly ConcurrentDictionary<int, bool> RecYes = new();
 			public bool Recording;
+			public readonly ConcurrentDictionary<int, object> Offers = new();   // employee → the ring as sent (a phone woken by push gets it on connecting)
 			public int? ConversationId;   // the group conversation it was started from (Communication)
 			public DateTime StartedAt = DateTime.UtcNow;
 		}
@@ -112,10 +113,14 @@ namespace CrossBuy.Hubs
 			var settings = await svc.SettingsAsync(g.CompanyId);
 			var patient = g.PatientId is int pid ? await svc.PatientCardAsync(g.CompanyId, pid) : null;
 			var refused = new List<string>();
+			var woken = new List<int>();
 			foreach (var id in ids)
 			{
 				var who = people[id];
-				string state = Presence(id) == "on" ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy;
+				// push (2026-11-22): someone whose app is closed but whose phone is registered is rung through push, as in a 1:1 call
+				bool byPush = Presence(id) == "phone" && await CrossBuy.BL.Communication.PushWake.CanWakeAsync(_sp, g.CompanyId, id);
+				if (byPush) woken.Add(id);
+				string state = Presence(id) == "on" || byPush ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy;
 				if (!fresh) await GroupSvc.InviteAsync(g.CompanyId, g.CallId, id, state, DateTime.UtcNow);
 				if (state == HospitalCallParticipantState.Busy) { refused.Add(DisplayName.Of(who.Name, who.NameEn)); await Clients.Group(Emp(id)).SendAsync("missed", new { callId = g.CallId }); await NotifyMissedAsync(g.CompanyId, g.CallId, id, g.HostId, g.Video, true); continue; }
 				g.Ringing[id] = DateTime.UtcNow;
@@ -126,12 +131,15 @@ namespace CrossBuy.Hubs
 			foreach (var id in g.Ringing.Keys)
 			{
 				var (may, _, _) = await RecSvc.OptionsAsync(g.CompanyId, people.TryGetValue(id, out var p) ? p : host, g.Video);
-				await Clients.Group(Emp(id)).SendAsync("groupincoming", new
+				var offer = new
 				{
 					callId = g.CallId, video = g.Video, reason = g.Reason, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight,
 					host = Card(host), members, joined = g.Joined.Count, patient, recording = g.Recording, canRecord = may, recKind = kind,
-				});
+				};
+				g.Offers[id] = offer;
+				await Clients.Group(Emp(id)).SendAsync("groupincoming", offer);
 			}
+			if (woken.Count > 0) CrossBuy.BL.Communication.PushWake.Enqueue(_sp, g.CompanyId, woken, "call");
 			return refused;
 		}
 
@@ -207,7 +215,10 @@ namespace CrossBuy.Hubs
 				_calls.TryRemove(from.CallId, out _);
 				await svc.MoveAsync(co, from.CallId, me, "hangup", null, now);
 			}
-			var list = invite.Select(i => (i, Presence(i) == "on" || i == peer ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy)).ToList();
+			// "phone" (app closed, registered phone) counts as reachable: RingAsync wakes it through push
+			var list = new List<(int, string)>();
+			foreach (var i in invite)
+				list.Add((i, Presence(i) == "on" || i == peer || (Presence(i) == "phone" && await CrossBuy.BL.Communication.PushWake.CanWakeAsync(_sp, co, i)) ? HospitalCallParticipantState.Invited : HospitalCallParticipantState.Busy));
 			if (peer is int p0) list.Insert(0, (p0, HospitalCallParticipantState.Invited));
 			var row = await GroupSvc.OpenAsync(co, me, list, video, patientId, reason, now);
 			var g = new GroupLive { CallId = row.ID, CompanyId = co, HostId = me, Video = video, PatientId = patientId, Reason = row.Reason, ConversationId = conversationId };

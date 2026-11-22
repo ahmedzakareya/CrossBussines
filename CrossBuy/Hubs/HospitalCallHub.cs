@@ -38,7 +38,8 @@ namespace CrossBuy.Hubs
 
 		/// The call ringing for this person now, if any (the app's push summary shows it as an incoming call).
 		public static (int CallId, int CallerId, bool Video)? RingingFor(int employeeId)
-			=> _calls.Values.Where(l => l.CalleeId == employeeId && l.CalleeConn == null).Select(l => ((int, int, bool)?)(l.CallId, l.CallerId, l.Video)).FirstOrDefault();
+			=> _calls.Values.Where(l => l.CalleeId == employeeId && l.CalleeConn == null).Select(l => ((int, int, bool)?)(l.CallId, l.CallerId, l.Video)).FirstOrDefault()
+			?? _groups.Values.Where(g => g.Ringing.ContainsKey(employeeId) && !g.Joined.ContainsKey(employeeId)).Select(g => ((int, int, bool)?)(g.CallId, g.HostId, g.Video)).FirstOrDefault();
 
 		private static readonly ConcurrentDictionary<int, int> _online = new();          // employee → connections
 		private static readonly ConcurrentDictionary<int, int> _company = new();         // employee → company
@@ -98,6 +99,9 @@ namespace CrossBuy.Hubs
 				// a call rang while this person had no connection (their phone was woken by push): it rings here now
 				foreach (var l in _calls.Values.Where(l => l.CalleeId == emp && l.CalleeConn == null && l.Offer != null).ToList())
 					await Clients.Caller.SendAsync("incoming", l.Offer);
+				// and a group call ringing for them
+				foreach (var gl in _groups.Values.Where(x => x.Ringing.ContainsKey(emp) && !x.Joined.ContainsKey(emp)).ToList())
+					if (gl.Offers.TryGetValue(emp, out var go)) await Clients.Caller.SendAsync("groupincoming", go);
 			}
 			await base.OnConnectedAsync();
 		}

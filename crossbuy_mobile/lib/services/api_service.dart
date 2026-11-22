@@ -821,13 +821,51 @@ class ApiService {
     final d = await _post('/api/chat/assist', form: {'c': c, 'mode': mode, if (question != null) 'question': question});
     return d?['ok'] == true ? d!['job'] as String? : null;
   }
+  /// A video message recorded in the app, with its first picture beside it when there is one.
+  Future<bool> chatSendVideo(int conversationId, String path, {List<int>? poster}) async {
+    try {
+      final form = FormData.fromMap({
+        'c': conversationId,
+        'file': await MultipartFile.fromFile(path, filename: 'video.mp4', contentType: DioMediaType('video', 'mp4')),
+        if (poster != null && poster.isNotEmpty) 'poster': poster.first == 0x89   // PNG's signature; anything else is the camera's JPEG
+            ? MultipartFile.fromBytes(poster, filename: 'poster.png', contentType: DioMediaType('image', 'png'))
+            : MultipartFile.fromBytes(poster, filename: 'poster.jpg', contentType: DioMediaType('image', 'jpeg')),
+      });
+      final r = await _dio.post('/api/chat/video', data: form, options: Options(sendTimeout: const Duration(minutes: 5), receiveTimeout: const Duration(minutes: 2)));
+      return r.statusCode == 200;
+    } on DioException {
+      return false;
+    }
+  }
+
+  /// A task from a message (the assistant's "make it a task"): assigned to me unless someone else is named. (ok, error)
+  Future<(bool, String?)> chatMakeTask(int messageId, String title, {int? assignee}) async {
+    try {
+      final d = (await _dio.post('/api/chat/task', data: FormData.fromMap({'id': messageId, 'title': title, if (assignee != null) 'assignee': assignee}))).data as Map;
+      return (d['ok'] == true, d['error'] as String?);
+    } on DioException {
+      return (false, null);
+    }
+  }
+
   /// The job as it stands: {status: working|done|failed, result}.
   Future<Map<String, dynamic>?> chatAssistStatus(String job) => _getMap('/api/chat/assist', {'job': job});
   /// One message in the other language (made once on the server and kept). (text, lang) or null.
   Future<(String, String)?> chatTranslate(int id) async {
     try {
-      final d = (await _dio.post('/api/chat/translate', queryParameters: {'id': id}, options: Options(receiveTimeout: const Duration(minutes: 2)))).data as Map;
-      return d['ok'] == true ? ('${d['text']}', '${d['lang']}') : null;
+      final d = (await _dio.post('/api/chat/translate', queryParameters: {'id': id})).data as Map;
+      if (d['ok'] == true) return ('${d['text']}', '${d['lang']}');
+      final job = d['job'];
+      if (d['code'] != 'working' || job is! String) return null;
+      // made in its turn (a summary may be using the model): follow the job, at most ten minutes
+      for (var i = 0; i < 200; i++) {
+        await Future.delayed(const Duration(seconds: 3));
+        final st = await chatAssistStatus(job);
+        if (st == null || st['status'] == 'working') continue;
+        final r = st['result'];
+        return st['status'] == 'done' && r is Map && r['text'] != null ? ('${r['text']}', '${r['lang']}') : null;
+      }
+      return null;
     } on DioException {
       return null;
     }

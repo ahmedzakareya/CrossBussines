@@ -594,7 +594,7 @@
 		if (!m.attachmentPath) return '';
 		if (isImg(m)) return '<img class="cm-img" src="' + esc(m.attachmentPath) + '" alt="" data-zoom="1" />';
 		// a video message: plays in place (owner 2026-11-19)
-		if (m.attachmentType === 'video') return '<video class="cm-vid" controls preload="metadata" playsinline src="' + esc(m.attachmentPath) + '#t=0.1"></video>'   // #t: a first frame, not black;
+		if (m.attachmentType === 'video') return '<video class="cm-vid" controls preload="metadata" playsinline poster="' + esc(m.attachmentPath) + '.jpg" src="' + esc(m.attachmentPath) + '"></video>'   // the poster: its first picture, kept beside it;
 		if (isAudio(m)) {
 			var seed = m.id || 1, bars = '';
 			for (var i = 0; i < 20; i++) { seed = (seed * 9301 + 49297) % 233280; bars += '<i style="height:' + (5 + Math.round(seed / 233280 * 15)) + 'px"></i>'; }

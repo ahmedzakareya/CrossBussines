@@ -67,7 +67,7 @@ namespace CrossBuy.Controllers
 		// kept like every attachment: in the company's File Manager, served only to the company (PrivateFileGate).
 		[HttpPost, ValidateAntiForgeryToken]
 		[RequestSizeLimit(80 * 1024 * 1024)]
-		public async Task<IActionResult> SendVideo(int c, IFormFile? file, int? replyToId)
+		public async Task<IActionResult> SendVideo(int c, IFormFile? file, IFormFile? poster, int? replyToId)
 		{
 			var me = await MeAsync(); var ctx = await CtxAsync();
 			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
@@ -79,12 +79,17 @@ namespace CrossBuy.Controllers
 			System.IO.Directory.CreateDirectory(dir);
 			var stored = Guid.NewGuid().ToString("N") + ext;
 			using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
+			// its first picture, taken by the browser from the recording (a recorded WebM cannot be seeked before it has
+			// loaded, so a player shows black until it plays): kept beside the video as <video>.jpg — a preview derived
+			// from the video, served by the same gate, not a second attachment
+			if (poster != null && poster.Length > 0 && poster.Length <= 600 * 1024 && (poster.ContentType ?? "").StartsWith("image/jpeg", StringComparison.OrdinalIgnoreCase))
+				using (var ps = System.IO.File.Create(Path.Combine(dir, stored + ".jpg"))) await poster.CopyToAsync(ps);
 			var path = "/uploads/library/" + me.Value.companyId + "/chat/" + stored;
 			var name = "video-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ext;   // the name people read: local time
 			var files = HttpContext.RequestServices.GetService(typeof(IFileManagerService)) as IFileManagerService;
 			if (files != null) { try { await files.AddFileAsync(me.Value.companyId, me.Value.empId, null, name, null, path, file.ContentType, file.Length); } catch { } }
 			var m = await Plus.PostAsync(me.Value.companyId, c, me.Value.empId, new ChatPlusService.PostInput { AttachmentPath = path, AttachmentName = name, AttachmentType = "video" });
-			if (m == null) { System.IO.File.Delete(Path.Combine(dir, stored)); return BadRequest(new { ok = false }); }
+			if (m == null) { System.IO.File.Delete(Path.Combine(dir, stored)); System.IO.File.Delete(Path.Combine(dir, stored + ".jpg")); return BadRequest(new { ok = false }); }
 			return Json(await Plus.DtoAsync(m, me.Value.empId));
 		}
 
@@ -112,7 +117,7 @@ namespace CrossBuy.Controllers
 			var me = await MeAsync(); var ctx = await CtxAsync(); int c = await ConvOfAsync(id);
 			if (me == null || ctx == null || c == 0 || !await Comm.CanAsync(ctx, CommunicationActions.Read, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
 			var r = await Assistant.TranslateAsync(me.Value.companyId, me.Value.empId, id, to, HttpContext.RequestAborted);
-			return Json(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code });
+			return Json(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code, job = r.Job });
 		}
 
 		// ---------------- pinned and saved messages ----------------

@@ -76,10 +76,20 @@
 		var wait = document.createElement('div'); wait.className = 'cm-translation'; wait.innerHTML = '<div class="lb"><span class="spinner-border spinner-border-sm"></span> ' + esc(t('Translating…')) + '</div>';
 		var old = bub.querySelector('.cm-translation'); if (old) old.remove();
 		var meta = bub.querySelector('.cm-meta'); if (meta) bub.insertBefore(wait, meta); else bub.appendChild(wait);
+		function fail() { wait.remove(); toast('error', t('The assistant is not available right now — try again later')); }
+		function show(lang, text) { trShown[id] = lang; paintTranslation(msgEl(id) || el, { lang: lang, text: text }); }
 		post('/Chat/Translate', { id: id }).then(function (x) {
-			if (!x || !x.ok) { wait.remove(); toast('error', t('The assistant is not available right now — try again later')); return; }
-			trShown[id] = x.lang;
-			paintTranslation(msgEl(id) || el, { lang: x.lang, text: x.text });
+			if (x && x.ok) { show(x.lang, x.text); return; }
+			if (!x || x.code !== 'working' || !x.job) { fail(); return; }
+			// made in its turn (a summary may be using the model): ask until it is ready
+			(function poll() {
+				setTimeout(function () {
+					getJson('/Chat/AssistStatus?job=' + encodeURIComponent(x.job)).then(function (s) {
+						if (!s || s.status === 'working') { poll(); return; }
+						if (s.status === 'done' && s.result && s.result.text) show(s.result.lang, s.result.text); else fail();
+					});
+				}, 3000);
+			})();
 		});
 	}
 
@@ -359,7 +369,18 @@
 	function videoDialog() {
 		var c = C.cur(); if (!c) return;
 		if (!navigator.mediaDevices || !window.MediaRecorder) { toast('error', t('Video messages are not supported in this browser')); return; }
-		var stream = null, rec = null, chunks = [], blob = null, url = null, started = 0, timer = null, MAX = 180;
+		var stream = null, rec = null, chunks = [], blob = null, url = null, started = 0, timer = null, MAX = 180, poster = null;
+		// the message's poster (a recorded WebM shows black until it plays): a picture of the LIVE camera one second into
+		// the recording. The recording's own first frame came out black (a camera's first frames often are).
+		function grabPoster(v) {
+			poster = null;
+			try {
+				var w = v.videoWidth, h = v.videoHeight; if (!w || !h) return;
+				var k = Math.min(1, 480 / w), cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+				cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+				cv.toBlob(function (b) { poster = b; }, 'image/jpeg', 0.8);
+			} catch (e) { poster = null; }
+		}
 		var html = '<div class="cm-vrec text-start"><video class="lv" autoplay muted playsinline></video><video class="pb d-none" controls playsinline></video>' +
 			'<div class="bar"><span class="dot"></span><span class="num" data-vt>0:00</span><span class="text-muted fs-8">/ 3:00</span>' +
 			'<span class="ms-auto d-flex gap-2"><button type="button" class="btn btn-sm btn-danger" data-vr="rec">' + ico('circle', 13) + ' ' + esc(t('Record')) + '</button>' +
@@ -383,6 +404,7 @@
 			if (!r.isConfirmed || !blob) return;
 			var type = (blob.type || 'video/webm').split(';')[0], ext = type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
 			var fd = new FormData(); fd.append('c', c); fd.append('file', new File([blob], 'video-' + Date.now() + '.' + ext, { type: type }));
+			if (poster) fd.append('poster', new File([poster], 'poster.jpg', { type: 'image/jpeg' }));
 			toast('info', t('Sending the video…'));
 			fetch('/Chat/SendVideo', { method: 'POST', credentials: 'same-origin', headers: { RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value }, body: fd })
 				.then(function (x) { if (!x.ok) toast('error', t('The video was not sent')); }).catch(function () { toast('error', t('The video was not sent')); });
@@ -400,6 +422,7 @@
 				Swal.getConfirmButton().disabled = false;
 			};
 			rec.start(1000); started = Date.now();
+			setTimeout(function () { if (rec && rec.state === 'recording') grabPoster(pop.querySelector('.lv')); }, 1000);
 			pop.querySelector('.cm-vrec').classList.add('on');
 			['rec', 'again'].forEach(function (k) { pop.querySelector('[data-vr="' + k + '"]').classList.add('d-none'); });
 			pop.querySelector('[data-vr="stop"]').classList.remove('d-none');

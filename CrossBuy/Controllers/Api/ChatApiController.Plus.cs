@@ -168,7 +168,61 @@ namespace CrossBuy.Controllers.Api
 			var me = await MeAsync(ct); int c = await ConvOfAsync(id, ct);
 			if (me == null || !await MayAsync(me, CommunicationActions.Read, c, ct)) return NotFound(Missing);
 			var r = await Assistant.TranslateAsync(me.CompanyId, me.EmployeeId!.Value, id, to, ct);
-			return Ok(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code });
+			return Ok(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code, job = r.Job });
+		}
+
+		// ---------------- a video message recorded in the app (the web's SendVideo, behind the app's token) ----------------
+		// The same rules: webm or mp4 declared as video, at most 75 MB, kept in the company's File Manager. Its first
+		// picture (the camera frame the app takes when recording starts) is kept beside it as <video>.jpg — a phone gives
+		// it as PNG; it is stored under the same name either way, and a browser or the app reads the image by its bytes.
+		[HttpPost("video")]
+		[RequestSizeLimit(80 * 1024 * 1024)]
+		public async Task<IActionResult> SendVideo([FromForm] int c, IFormFile? file, IFormFile? poster, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || !await MayAsync(me, CommunicationActions.Send, c, ct)) return NotFound(Missing);
+			if (file == null || file.Length == 0) return BadRequest(new { ok = false });
+			var ext = Path.GetExtension(file.FileName ?? "").ToLowerInvariant();
+			if (ext is not (".webm" or ".mp4") || !(file.ContentType ?? "").StartsWith("video/", StringComparison.OrdinalIgnoreCase) || file.Length > 75 * 1024 * 1024)
+				return BadRequest(new { ok = false, code = "video" });
+			int co = me.CompanyId, emp = me.EmployeeId!.Value;
+			var dir = Path.Combine(_env.WebRootPath, "uploads", "library", co.ToString(), "chat");
+			System.IO.Directory.CreateDirectory(dir);
+			var stored = Guid.NewGuid().ToString("N") + ext;
+			await using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s, ct);
+			var pt = (poster?.ContentType ?? "").ToLowerInvariant();
+			if (poster != null && poster.Length > 0 && poster.Length <= 1024 * 1024 && (pt.StartsWith("image/jpeg") || pt.StartsWith("image/png")))
+				await using (var ps = System.IO.File.Create(Path.Combine(dir, stored + ".jpg"))) await poster.CopyToAsync(ps, ct);
+			var path = "/uploads/library/" + co + "/chat/" + stored;
+			var name = "video-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ext;
+			if (_sp.GetService<IFileManagerService>() is IFileManagerService files) { try { await files.AddFileAsync(co, emp, null, name, null, path, file.ContentType, file.Length); } catch { } }
+			var m = await Plus.PostAsync(co, c, emp, new ChatPlusService.PostInput { AttachmentPath = path, AttachmentName = name, AttachmentType = "video" });
+			if (m == null) { System.IO.File.Delete(Path.Combine(dir, stored)); System.IO.File.Delete(Path.Combine(dir, stored + ".jpg")); return BadRequest(new { ok = false }); }
+			return Ok(await Plus.DtoAsync(m, emp));
+		}
+
+		// ---------------- a task from a message (the assistant's "make it a task" in the app; same rules as the web's) ----------------
+		[HttpPost("task")]
+		public async Task<IActionResult> MakeTask([FromForm] int id, [FromForm] string? title, [FromForm] int? assignee, [FromForm] string? due, [FromForm] string? priority, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); int c = await ConvOfAsync(id, ct);
+			if (me == null || !await MayAsync(me, CommunicationActions.Read, c, ct)) return NotFound(Missing);
+			var tasksAccess = _sp.GetService<ITasksAccessService>(); var tasks = _sp.GetService<ITaskService>();
+			if (tasksAccess == null || tasks == null) return Ok(new { ok = false, error = "tasks" });
+			if (!await tasksAccess.CanAsync(me, TasksActions.Create, null, ct)) return Ok(new { ok = false, error = "forbidden" });
+			int emp = me.EmployeeId!.Value, who = assignee is int a && a > 0 ? a : emp;
+			if (who != emp && !await tasksAccess.CanAsync(me, TasksActions.Assign, null, ct)) return Ok(new { ok = false, error = "assign" });
+			var msg = await _db.ChatMessages.AsNoTracking().FirstAsync(m => m.ID == id, ct);
+			var link = Url.Content("~/Chat") + $"?c={c}&m={id}" + (msg.ThreadRootId is int t ? $"&thread={t}" : "");
+			var fallback = msg.Body ?? msg.AttachmentName ?? "-";
+			var input = new TaskSaveInput
+			{
+				Title = string.IsNullOrWhiteSpace(title) ? fallback[..Math.Min(150, fallback.Length)] : title.Trim()[..Math.Min(200, title.Trim().Length)],
+				Description = (msg.Body ?? "") + "\n\n" + link, AssigneeEmployeeId = who, Priority = priority is "High" or "Urgent" or "Low" ? priority : "Normal", DueDate = Utc(due),
+			};
+			var (ok, error, taskId) = await tasks.SaveAsync(me.CompanyId, input, emp);
+			if (ok && taskId > 0)
+				await Plus.PostAsync(me.CompanyId, c, emp, new ChatPlusService.PostInput { Body = "✅ " + input.Title + "\n" + Url.Content("~/Tasks/Details/" + taskId), ThreadRootId = msg.ThreadRootId });
+			return Ok(new { ok, error, id = taskId });
 		}
 
 		// ---------------- push to a closed phone (owner 2026-11-22: FCM, no content) ----------------

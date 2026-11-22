@@ -140,7 +140,15 @@ def start(mode: str, messages: list[dict], lang: str, participants: list[str], q
     def run() -> None:
         started = time.perf_counter()
         try:
-            result = _ask(messages, question or "", lang) if mode == "ask" else _summary(messages, lang, participants)
+            if mode == "translate":
+                # a translation waits its turn for the model like a summary does (owner 2026-11-22: it failed when
+                # a summary was running); None only after LOCK_WAIT
+                text = translate((messages[0].get("text") if messages else "") or "", lang, wait=LOCK_WAIT)
+                if text is None:
+                    raise TimeoutError("the model was busy")
+                result = {"text": text}
+            else:
+                result = _ask(messages, question or "", lang) if mode == "ask" else _summary(messages, lang, participants)
             with _jobs_lock:
                 _jobs[job].update(status="done", result=result, seconds=round(time.perf_counter() - started, 1))
         except Exception as e:     # a failed job says so; it never takes the service down
@@ -164,7 +172,7 @@ def status(job: str) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------ translate
-def translate(text: str, to: str) -> str | None:
+def translate(text: str, to: str, wait: float = 90) -> str | None:
     """One message into Arabic (Fusha) or English. None when the model is busy for too long (the caller says so)."""
     text = (text or "").strip()
     if not text:
@@ -174,7 +182,7 @@ def translate(text: str, to: str) -> str | None:
              ("Translate the user's text into clear English, faithfully, keeping names, numbers and links as they are. "
               "Do not explain or add anything.")
     llm = calls._engine()
-    if not calls._llm_lock.acquire(timeout=90):
+    if not calls._llm_lock.acquire(timeout=wait):
         return None
     try:
         out = llm.create_chat_completion(

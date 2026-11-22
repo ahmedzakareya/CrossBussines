@@ -23,7 +23,7 @@ class Msg(BaseModel):
 
 
 class JobRequest(BaseModel):
-    mode: str = Field(pattern="^(summary|ask)$")
+    mode: str = Field(pattern="^(summary|ask|translate)$")   # translate: messages[0].text into `language`
     language: str = Field(default="ar", max_length=8)
     participants: list[str] = Field(default_factory=list, max_length=50)
     messages: list[Msg] = Field(max_length=2000)

@@ -397,8 +397,14 @@
 		if (!g || !g.sharing) return;
 		g.sharing = false; if (g.screen) g.screen.getTracks().forEach(function (x) { x.stop(); }); g.screen = null;
 		var v = g.local && g.local.getVideoTracks()[0];
-		sendVideo(v || null);
-		if (g.pubV && !g.cam) g.pubV.mute();
+		// The owner (2026-11-22): after the browser's "Stop sharing", the others went on seeing the screen. LiveKit
+		// listens for "ended" on the track it publishes (the screen, at that moment) and MUTES the publication when it
+		// ends; the camera then went back into a muted publication, so the last frame of the screen stayed. After the
+		// camera is back, the publication follows the camera button: unmuted when it is on, muted when it is off.
+		// (after a short pause: LiveKit's own mute, on the same "ended", finishes asynchronously and must not land last)
+		Promise.resolve(sendVideo(v || null)).then(function () { return new Promise(function (ok) { setTimeout(ok, 400); }); }).then(function () {
+			if (g && g.pubV) return g.cam ? g.pubV.unmute() : g.pubV.mute();
+		}).catch(function () { });
 		paint(); sendState();
 	}
 

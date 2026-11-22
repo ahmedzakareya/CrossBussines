@@ -94,6 +94,17 @@ namespace CrossBuy.BL.Communication
 			var j = JsonDocument.Parse(res.Json).RootElement;
 			var status = j.GetProperty("status").GetString();
 			if (status != "working") Jobs.TryRemove(job, out _);
+			if (status != "working" && TranslateJobs.TryRemove(job, out var tj))
+			{
+				var text = status == "done" && j.TryGetProperty("result", out var tr) && tr.TryGetProperty("text", out var tt) ? tt.GetString() : null;
+				if (string.IsNullOrWhiteSpace(text)) return new { status = "failed", conversationId = owner.Conv };
+				if (!await _db.Set<ChatTranslation>().AnyAsync(t => t.MessageId == tj.MessageId && t.Lang == tj.Lang, ct))
+				{
+					_db.Add(new ChatTranslation { MessageId = tj.MessageId, Lang = tj.Lang, CompanyId = companyId, Text = text, RequestedByEmployeeId = meId, CreatedAt = DateTime.UtcNow });
+					try { await _db.SaveChangesAsync(ct); } catch (DbUpdateException) { /* two readers at once: the other row stands */ }
+				}
+				return new { status = "done", conversationId = owner.Conv, result = new { messageId = tj.MessageId, lang = tj.Lang, text } };
+			}
 			return new
 			{
 				status,
@@ -102,7 +113,10 @@ namespace CrossBuy.BL.Communication
 			};
 		}
 
-		public sealed record Translated(bool Ok, string? Text, string Lang, string? Code);
+		public sealed record Translated(bool Ok, string? Text, string Lang, string? Code, string? Job = null);
+
+		/// A translation being made (job → the message and the language), so its status call can keep the result.
+		private static readonly ConcurrentDictionary<string, (int MessageId, string Lang)> TranslateJobs = new();
 
 		/// One message in the other language (or the one asked for), translated once and kept.
 		public async Task<Translated> TranslateAsync(int companyId, int meId, int messageId, string? to, CancellationToken ct)
@@ -116,13 +130,15 @@ namespace CrossBuy.BL.Communication
 			var have = await _db.Set<ChatTranslation>().AsNoTracking().FirstOrDefaultAsync(t => t.MessageId == messageId && t.Lang == lang, ct);
 			if (have != null) return new(true, have.Text, lang, null);
 
-			var res = await Post(companyId, "/assist/translate", new { text = body.Length > 4000 ? body[..4000] : body, to = lang }, ct);
+			// a job, like a summary: it waits its turn for the model (one at a time on the processor) instead of failing
+			// while a summary runs; the caller asks the status, which keeps the translation when it is done
+			var res = await Post(companyId, "/assist/jobs", new { mode = "translate", language = lang, participants = Array.Empty<string>(),
+				messages = new[] { new { id = messageId, sender = "", text = body.Length > 4000 ? body[..4000] : body } } }, ct);
 			if (res == null || res.Status != 200) return new(false, null, lang, "not_available");
-			var text = JsonDocument.Parse(res.Json).RootElement.GetProperty("text").GetString() ?? "";
-			if (string.IsNullOrWhiteSpace(text)) return new(false, null, lang, "not_available");
-			_db.Add(new ChatTranslation { MessageId = messageId, Lang = lang, CompanyId = companyId, Text = text, RequestedByEmployeeId = meId, CreatedAt = DateTime.UtcNow });
-			try { await _db.SaveChangesAsync(ct); } catch (DbUpdateException) { /* two readers at once: the other row stands */ }
-			return new(true, text, lang, null);
+			var job = JsonDocument.Parse(res.Json).RootElement.GetProperty("job").GetString()!;
+			Jobs[job] = (companyId, meId, m.ConversationId, DateTime.UtcNow);
+			TranslateJobs[job] = (messageId, lang);
+			return new(false, null, lang, "working", job);
 		}
 
 		/// The translations already made for these messages (for the messages a reader just loaded).

@@ -16,6 +16,7 @@ import '../../widgets/ui.dart';
 import '../../services/chat_hub.dart';
 import '../calls/calls_screen.dart';
 import 'chat_extras.dart';
+import 'video_recorder.dart';
 
 /// A conversation — exactly the approved prototype (design-output/executive-prototype, ?page=chat): the head (back,
 /// face, name and presence, voice and video), the pinned line, the thread by day (others white on the left of their
@@ -267,11 +268,13 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
               ListTile(leading: const Icon(Lu.image, color: Brand.blue), title: Text(L(context, 'صورة', 'Picture')), onTap: () => Navigator.pop(c, 1)),
               ListTile(leading: const Icon(Lu.paperclip, color: Brand.blue), title: Text(L(context, 'ملف', 'File')), onTap: () => Navigator.pop(c, 2)),
+              ListTile(leading: const Icon(Lu.video, color: Brand.blue), title: Text(L(context, 'رسالة فيديو', 'Video message')), onTap: () => Navigator.pop(c, 5)),
               ListTile(leading: const Icon(Lu.chartBar, color: Brand.blue), title: Text(L(context, 'تصويت', 'Poll')), onTap: () => Navigator.pop(c, 3)),
               ListTile(leading: const Icon(Lu.clock, color: Brand.blue), title: Text(L(context, 'جدولة رسالة', 'Schedule a message')), onTap: () => Navigator.pop(c, 4)),
             ])));
     if (pick == 1) _attach(picture: true);
     if (pick == 2) _attach();
+    if (pick == 5 && mounted) { final sent = await showVideoRecorder(context, widget.id); if (sent == true) _refresh(); }
     if (pick == 3 && mounted) { final m = await showPollComposer(context, widget.id); if (m != null) _refresh(); }
     if (pick == 4 && mounted) {
       final ok = await showScheduleComposer(context, widget.id, _box.text.trim());
@@ -433,7 +436,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Brand.inkC)),
               Text(sub, style: TextStyle(fontSize: 9.5, color: h?.online == true || h?.isGroup == true ? Brand.blue : Brand.mutedC)),
             ])),
-            _headBtn(Lu.sparkles, onTap: () => showAssistantSheet(context, widget.id, onGoTo: _goToMessage)),
+            _headBtn(Lu.sparkles, onTap: () => showAssistantSheet(context, widget.id, onGoTo: _goToMessage, newestId: _msgs.isEmpty ? null : _msgs.last.id)),
             if (canCall) ...[
               _headBtn(Lu.phone, onTap: () => _call(video: false)),
               if (calls.me?.video ?? true) _headBtn(Lu.video, fill: true, onTap: () => _call(video: true)),
@@ -710,12 +713,16 @@ class _ChatScreenState extends State<ChatScreen> {
         return GestureDetector(
           onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _VideoScreen(url: url))),
           child: Container(
-            width: 200, height: 120, margin: const EdgeInsets.only(bottom: 4), alignment: Alignment.center,
+            width: 200, height: 120, margin: const EdgeInsets.only(bottom: 4), clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(color: const Color(0xFF0C1837), borderRadius: BorderRadius.circular(12)),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 44, height: 44, alignment: Alignment.center, decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle), child: const Icon(Lu.play, color: Colors.white, size: 22)),
-              const SizedBox(height: 6),
-              Text(L(context, 'رسالة فيديو', 'Video message'), style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
+            child: Stack(fit: StackFit.expand, children: [
+              // its first picture, kept beside the video by the web recorder; none → the dark tile as before
+              Image.network('$url&poster=true', headers: _api.authHeaders, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+              Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 44, height: 44, alignment: Alignment.center, decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle), child: const Icon(Lu.play, color: Colors.white, size: 22)),
+                const SizedBox(height: 6),
+                Text(L(context, 'رسالة فيديو', 'Video message'), style: const TextStyle(fontSize: 10.5, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)])),
+              ])),
             ]),
           ),
         );

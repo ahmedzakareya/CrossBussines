@@ -103,14 +103,23 @@ namespace CrossBuy.Controllers.Api
 
 		/// GET /api/chat/file?messageId= — a message's attachment for the app (the browser reads it from its own address).
 		[HttpGet("file")]
-		public async Task<IActionResult> File(int messageId, CancellationToken ct)
+		public async Task<IActionResult> File(int messageId, bool poster, CancellationToken ct)
 		{
 			var me = await MeAsync(ct); if (me == null) return NotFound();
-			var m = await _db.ChatMessages.AsNoTracking().Where(x => x.ID == messageId && x.DeletedAt == null).Select(x => new { x.ConversationId, x.AttachmentPath, x.AttachmentName }).FirstOrDefaultAsync(ct);
+			var m = await _db.ChatMessages.AsNoTracking().Where(x => x.ID == messageId && x.DeletedAt == null).Select(x => new { x.ConversationId, x.AttachmentPath, x.AttachmentName, x.AttachmentType }).FirstOrDefaultAsync(ct);
 			if (m == null || m.AttachmentPath == null || !await _comm.CanAsync(me, CommunicationActions.Read, In(m.ConversationId), ct)) return NotFound();
 			var full = await ChatAttachmentFiles.ResolveAsync(_db, _env, me.CompanyId, m.AttachmentPath, ct);
 			if (full == null) return NotFound();
 			var ext = Path.GetExtension(full).ToLowerInvariant();
+			// a video message is .webm/.mp4 too: its type says which (a voice message's .webm is audio)
+			// poster=1: a video message's first picture, kept beside it as <video>.jpg (same checks as the video itself)
+			if (poster)
+			{
+				if (m.AttachmentType != "video" || !System.IO.File.Exists(full + ".jpg")) return NotFound();
+				Response.Headers.CacheControl = "private, max-age=3600";
+				return PhysicalFile(full + ".jpg", "image/jpeg");
+			}
+			if (m.AttachmentType == "video") { Response.Headers.CacheControl = "private, max-age=3600"; return PhysicalFile(full, ext == ".mp4" ? "video/mp4" : "video/webm", enableRangeProcessing: true); }
 			var type = ext switch { ".png" => "image/png", ".jpg" or ".jpeg" or ".jfif" => "image/jpeg", ".gif" => "image/gif", ".webp" => "image/webp", ".webm" => "audio/webm", ".ogg" => "audio/ogg", ".m4a" => "audio/mp4", ".mp3" => "audio/mpeg", ".wav" => "audio/wav", ".pdf" => "application/pdf", _ => "application/octet-stream" };
 			Response.Headers.CacheControl = "private, max-age=3600";
 			return PhysicalFile(full, type, enableRangeProcessing: true);
