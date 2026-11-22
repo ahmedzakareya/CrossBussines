@@ -45,6 +45,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/   # H176: the ring and the ringback, two plain tones made for this app
+    - assets/brand/    # the sign-in: the brand login scene and the white CrossBusiness logo
 
   # Cairo, the system's Arabic face (the same files the web uses: wwwroot/Backend-assets/fonts/cairo)
   fonts:
