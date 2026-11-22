@@ -84,7 +84,14 @@ namespace CrossBuy.BL.Platform
             // A worker names the company it processes but has NO employee, so it holds no role and no
             // record-level relationship. It is refused here rather than reaching EvaluateAsync and being
             // accidentally allowed by a rule that only checks the company.
-            if (context.Source == BusinessContextSource.Worker)
+            //
+            // H226: EXCEPT a worker that carries a resolved employee. Exactly one producer builds that shape,
+            // IdentityReportSchedulePrincipalFactory: a scheduled report runs as its OWNER, an active employee
+            // re-read from the identity tables at run time (a leaver resolves to null and is never built). It
+            // falls through to gate 7 and is judged by that employee's STORED grants (RolesAsync reads the
+            // table, never a session), so a schedule can read no more than its owner could, and no less.
+            // Refusing it here made every module-owned report unschedulable, which the factory never intended.
+            if (context.Source == BusinessContextSource.Worker && context.EmployeeId is not > 0)
             {
                 _log.LogDebug(
                     "{Scope}: worker context denied '{Action}' — a worker holds no employee identity, so it holds no role.",
