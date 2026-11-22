@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -26,21 +25,16 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _user = TextEditingController();
   final _pass = TextEditingController();
   bool _obscure = true;
   String? _error;
 
-  // the cards' arrival (once) and their breathing (always)
-  late final AnimationController _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 1900))..forward();
-  late final AnimationController _float = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
 
   @override
   void dispose() {
-    _intro.dispose();
-    _float.dispose();
     _user.dispose();
     _pass.dispose();
     super.dispose();
@@ -73,20 +67,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Brand.badC, width: 1.4)),
       );
 
-  /// A system the platform holds, as a frosted chip on the veil: it arrives in its slot of the intro, then breathes
-  /// on its own phase. (Owner 2026-11-22: invented records — a named employee, "sales today" — say nothing; the
+  /// A system the platform holds, as a frosted chip on the veil. It SITS STILL (owner 2026-11-22: no arrival, no
+  /// floating — moving chips were rejected outright). (Owner 2026-11-22: invented records — a named employee, "sales today" — say nothing; the
   /// systems themselves say what the motto promises.)
   Widget _module(int i, IconData icon, String label) {
-    final reduce = MediaQuery.of(context).disableAnimations;
-    final arrive = CurvedAnimation(parent: _intro, curve: Interval((.10 + i * .07).clamp(0, .7), (.45 + i * .07).clamp(0, 1), curve: Curves.easeOutCubic));
-    return AnimatedBuilder(
-      animation: Listenable.merge([_intro, _float]),
-      builder: (_, c) {
-        final a = reduce ? 1.0 : arrive.value;
-        final bob = reduce ? 0.0 : math.sin((_float.value + i * .17) * 2 * math.pi) * 2.5;
-        return Opacity(opacity: a, child: Transform.translate(offset: Offset(0, 14 * (1 - a) + bob), child: c));
-      },
-      child: Container(
+    return Container(
         padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 12, 6),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: .13),
@@ -103,8 +88,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           const SizedBox(width: 7),
           Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white)),
         ]),
-      ),
-    );
+      );
   }
 
   Widget _modules() {

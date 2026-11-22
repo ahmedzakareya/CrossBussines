@@ -215,24 +215,22 @@
 
 		/* ---------- what the platform holds, on the picture -----------------------------------------
 		   The motto says "all your business in one place"; this shows the place: the systems themselves,
-		   as frosted glass tiles with the theme's line icons, white on the veil. They arrive one after
-		   another and then breathe on their own phases; with reduced motion they simply sit there.
+		   as frosted glass tiles with the theme's line icons, white on the veil. They SIT STILL —
+		   owner 2026-11-22: no arrival, no floating; moving tiles were rejected outright.
 		   (Owner 2026-11-22: invented records — a named employee, "sales today" — say nothing; removed.) */
 		.cb-mods { position: absolute; inset-inline-end: 56px; top: 150px; width: 352px; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 		.cb-mod {
 			display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 16px; color: #fff;
 			background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
 			backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-			opacity: 0; animation: cb-in .7s cubic-bezier(.2,.7,.2,1) forwards, cb-float 7s ease-in-out infinite;
 		}
 		.cb-mod:nth-child(even) { transform: translateY(22px); }
 		.cb-mod .ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(255,255,255,.16); flex: 0 0 34px; }
 		.cb-mod .ic i { font-size: 19px; color: #fff; }
 		.cb-mod b { font-size: 13px; font-weight: 600; line-height: 1.3; }
 		@@keyframes cb-in { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
-		@@keyframes cb-float { 0%, 100% { margin-top: 0; } 50% { margin-top: -6px; } }
 		@@media (max-width: 1199.98px) { .cb-mods { display: none; } }
-		@@media (prefers-reduced-motion: reduce) { .cb-mod, .cb-form-wrap { animation: none !important; opacity: 1; } }
+		@@media (prefers-reduced-motion: reduce) { .cb-form-wrap { animation: none !important; opacity: 1; } }
 
 		/* ---------- the form side's own touches ---------------------------------------------------- */
 		.cb-side { position: relative; overflow: hidden; }
@@ -292,14 +290,14 @@
 					string R(string key) => CrossBuy.Resources.SharedResources.ResourceManager.GetString(key, System.Globalization.CultureInfo.CurrentUICulture) ?? key;
 				}
 				<div class="cb-mods" aria-hidden="true">
-					<div class="cb-mod" style="animation-delay:0.30s,1.2s"><span class="ic"><i class="ki-outline ki-bank"></i></span><b>@CrossBuy.Resources.SharedResources.Accounting</b></div>
-					<div class="cb-mod" style="animation-delay:0.42s,1.6s"><span class="ic"><i class="ki-outline ki-package"></i></span><b>@CrossBuy.Resources.SharedResources.Inventory</b></div>
-					<div class="cb-mod" style="animation-delay:0.54s,2.1s"><span class="ic"><i class="ki-outline ki-people"></i></span><b>@CrossBuy.Resources.SharedResources.CRM</b></div>
-					<div class="cb-mod" style="animation-delay:0.66s,2.5s"><span class="ic"><i class="ki-outline ki-shop"></i></span><b>@CrossBuy.Resources.SharedResources.POSShort</b></div>
-					<div class="cb-mod" style="animation-delay:0.78s,3.0s"><span class="ic"><i class="ki-outline ki-cube-2"></i></span><b>@CrossBuy.Resources.SharedResources.Manufacturing</b></div>
-					<div class="cb-mod" style="animation-delay:0.90s,3.5s"><span class="ic"><i class="ki-outline ki-briefcase"></i></span><b>@CrossBuy.Resources.SharedResources.Projects</b></div>
-					<div class="cb-mod" style="animation-delay:1.02s,3.9s"><span class="ic"><i class="ki-outline ki-profile-user"></i></span><b>@CrossBuy.Resources.SharedResources.HR</b></div>
-					<div class="cb-mod" style="animation-delay:1.14s,4.3s"><span class="ic"><i class="ki-outline ki-chart-simple"></i></span><b>@CrossBuy.Resources.SharedResources.Reports</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-bank"></i></span><b>@CrossBuy.Resources.SharedResources.Accounting</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-package"></i></span><b>@CrossBuy.Resources.SharedResources.Inventory</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-people"></i></span><b>@CrossBuy.Resources.SharedResources.CRM</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-shop"></i></span><b>@CrossBuy.Resources.SharedResources.POSShort</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-cube-2"></i></span><b>@CrossBuy.Resources.SharedResources.Manufacturing</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-briefcase"></i></span><b>@CrossBuy.Resources.SharedResources.Projects</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-profile-user"></i></span><b>@CrossBuy.Resources.SharedResources.HR</b></div>
+					<div class="cb-mod"><span class="ic"><i class="ki-outline ki-chart-simple"></i></span><b>@CrossBuy.Resources.SharedResources.Reports</b></div>
 				</div>
 
 				<div class="cb-hero-copy">
