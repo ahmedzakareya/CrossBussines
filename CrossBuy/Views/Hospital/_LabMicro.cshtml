@@ -1,0 +1,162 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalMicroView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H230 — the culture on its lab order: source, preliminary reports, isolates with their susceptibility (S/I/R, MIC) in the
+    group's panel order (tier 2 = reported only when a tier-1 agent is resisted), and completion. Theme controls only.
+*@
+@{
+    var o = (HospitalLabOrder)ViewData["LabOrder"]!;
+    bool canLab = ViewBag.CanLab == true;
+    bool locked = o.Status == HospitalLabStatus.Verified || Model.Culture?.Status == HospitalMicroStatus.Final;
+    bool bench = canLab && !locked && o.Status is HospitalLabStatus.Received or HospitalLabStatus.Resulted;
+    var c = Model.Culture;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Sir(string r) => r == HospitalMicroSir.Susceptible ? "primary" : r == HospitalMicroSir.Intermediate ? "info" : "danger";
+}
+<div data-micro data-root="@Url.Content("~/Hospital/Lab/" + o.ID + "/Micro")">
+@if (!Model.Ready)
+{
+    <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5"><div class="fs-6 text-gray-700 fw-semibold">@T["Microbiology is not installed yet (hospital_h230_microbiology.sql)."]</div></div>
+}
+else if (c == null)
+{
+    @if (!bench)
+    {
+        <div class="d-flex align-items-center bg-light-primary rounded p-4"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fs-7 fw-semibold text-gray-700">@T["The culture starts once the specimen is received in the lab."]</span></div>
+    }
+    else
+    {
+        <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6 mb-6">
+            <i class="ki-outline ki-flask fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Start the culture"]</h4>
+                <div class="fs-7 text-gray-700">@T["Record where the specimen came from; the plates are then incubating."]</div></div>
+        </div>
+        <div class="row g-4 align-items-end">
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Specimen source"]</label>
+                <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["Specimen source"]" data-mc="source">
+                    <option></option>@foreach (var s in HospitalMicroRules.Sources) {<option value="@s">@T["src:" + s]</option>}</select></div>
+            <div class="col-md-5"><label class="fs-6 fw-semibold mb-2">@T["Detail (site, bottle)"]</label><input class="form-control form-control-solid" maxlength="120" dir="auto" data-mc="detail" /></div>
+            <div class="col-md-3"><button type="button" class="btn btn-primary w-100" data-mc-act="Start"><i class="ki-outline ki-time fs-4"></i>@T["Start the culture"]</button></div>
+        </div>
+    }
+}
+else
+{
+    var isolates = Model.Isolates;
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-6">
+        <span class="badge badge-light-primary fs-7 fw-bold">@T["src:" + c.Source]</span>
+        @if (!string.IsNullOrWhiteSpace(c.SourceDetail)) {<span class="text-gray-700 fs-7" dir="auto">@c.SourceDetail</span>}
+        <span class="badge badge-light-info fs-7">@T["micro:" + c.Status]</span>
+        <span class="badge badge-light-@(c.Growth == HospitalMicroGrowth.Growth ? "danger" : "primary") fs-7">@T["growth:" + c.Growth]</span>
+        @foreach (var m in (c.Mdro ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-danger fs-7" title="@T["mdro:" + m]" data-bs-toggle="tooltip">@m</span>}
+        <span class="text-muted fs-8 ms-auto hp-num" dir="ltr">@T["Started"] <span data-fmt data-utc="@c.StartedAt.ToString("o")">@c.StartedAt.ToLocalTime().ToString("MM-dd HH:mm", inv)</span></span>
+    </div>
+
+    @* the preliminary report *@
+    <div class="border border-dashed border-gray-300 rounded p-5 mb-6">
+        <div class="fs-6 fw-bold text-gray-800 mb-3">@T["Preliminary report"]
+            @if (c.PreliminaryAt is DateTime pa) {<span class="text-muted fs-8 fw-semibold ms-2 hp-num" dir="ltr" data-fmt data-utc="@pa.ToString("o")">@pa.ToLocalTime().ToString("MM-dd HH:mm", inv)</span>}</div>
+        @if (bench)
+        {
+            <div class="row g-4">
+                <div class="col-md-4"><label class="fs-7 fw-semibold mb-2">@T["Growth so far"]</label>
+                    <select class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" data-placeholder="@T["Growth so far"]" data-mc="pgrowth">
+                        @foreach (var g in HospitalMicroGrowth.All) {<option value="@g" selected="@(g == c.Growth)">@T["growth:" + g]</option>}</select></div>
+                <div class="col-md-8"><label class="fs-7 fw-semibold mb-2">@T["Gram stain"]</label><input class="form-control form-control-solid form-control-sm" maxlength="300" dir="auto" value="@c.GramStain" data-mc="gram" placeholder="@T["e.g. Gram-negative rods seen"]" /></div>
+                <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["Report to the doctor"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-mc="ptext" placeholder="@T["e.g. No growth at 24 hours; final report to follow"]">@c.Preliminary</textarea></div>
+            </div>
+            <div class="text-end mt-3"><button type="button" class="btn btn-sm btn-light-primary" data-mc-act="Preliminary"><i class="ki-outline ki-send fs-4"></i>@T["Release the preliminary report"]</button></div>
+        }
+        else
+        {
+            @if (!string.IsNullOrWhiteSpace(c.GramStain)) {<div class="fs-7 text-gray-700 mb-1"><span class="fw-bold">@T["Gram stain"]:</span> <span dir="auto">@c.GramStain</span></div>}
+            <div class="fs-7 text-gray-700" dir="auto">@(string.IsNullOrWhiteSpace(c.Preliminary) ? "—" : c.Preliminary)</div>
+        }
+    </div>
+
+    @* the isolates and their susceptibility *@
+    @foreach (var iv in isolates)
+    {
+        var i = iv.Isolate; var byAbx = iv.Results.ToDictionary(r => r.AntibioticId);
+        var extra = iv.Results.Where(r => iv.Panel.All(p => p.AntibioticId != r.AntibioticId)).ToList();
+        <div class="card card-bordered mb-5" data-iso="@i.ID">
+            <div class="card-header min-h-50px">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800"><span class="hp-num">@i.No.</span> <i dir="ltr">@iv.Organism.NameEn</i> <span class="text-muted fs-7 fw-semibold ms-1">@iv.Organism.Name</span></span>
+                    <span class="text-gray-500 fs-7 fw-semibold">@T["mgroup:" + iv.Organism.Group]@if (!string.IsNullOrWhiteSpace(i.Quantity)) {<text> · <bdi dir="ltr">@i.Quantity</bdi></text>}</span>
+                </h3>
+                <div class="card-toolbar gap-2">
+                    @if (i.Mdro != null) {<span class="badge badge-danger fs-7" title="@T["mdro:" + i.Mdro]" data-bs-toggle="tooltip">@i.Mdro</span>}
+                    @if (bench) {<button type="button" class="btn btn-sm btn-icon btn-light-danger" title="@T["Remove the isolate"]" data-bs-toggle="tooltip" data-mc-rm="@i.ID"><i class="ki-outline ki-trash fs-4"></i></button>}
+                </div>
+            </div>
+            <div class="card-body py-3">
+                @if (iv.Panel.Count == 0 && extra.Count == 0)
+                {
+                    <div class="text-muted fs-7">@T["No susceptibility panel for this group."]</div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-2 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-8"><th class="min-w-175px">@T["Antibiotic"]</th><th class="w-70px">@T["Tier"]</th><th class="w-125px">@T["Result"]</th><th class="w-100px">@T["MIC (mg/L)"]</th>@if (locked || c.Status == HospitalMicroStatus.Completed) {<th class="w-90px">@T["On report"]</th>}</tr></thead>
+                        <tbody>
+                        @foreach (var line in iv.Panel.Select(p => (p.AntibioticId, p.Name, Tier: (int?)p.Tier)).Concat(extra.Select(e => (e.AntibioticId, Name: Model.Antibiotics.FirstOrDefault(a => a.ID == e.AntibioticId)?.NameEn ?? "?", Tier: (int?)null))))
+                        {
+                            var r = byAbx.GetValueOrDefault(line.AntibioticId);
+                            <tr data-abx="@line.AntibioticId">
+                                <td class="fs-7 fw-semibold text-gray-800" dir="ltr">@line.Name</td>
+                                <td>@if (line.Tier == 2) {<span class="badge badge-light fs-8">@T["Tier 2"]</span>} else if (line.Tier == 1) {<span class="badge badge-light-primary fs-8">@T["Tier 1"]</span>}</td>
+                                <td>
+                                    @if (bench)
+                                    {
+                                        <select class="form-select form-select-solid form-select-sm" data-r>
+                                            <option value="">—</option>@foreach (var s in HospitalMicroSir.All) {<option value="@s" selected="@(r?.Result == s)">@s</option>}</select>
+                                    }
+                                    else if (r != null) {<span class="badge badge-light-@Sir(r.Result) fs-7 fw-bold">@r.Result</span>}
+                                </td>
+                                <td>@if (bench) {<input class="form-control form-control-solid form-control-sm hp-num" dir="ltr" maxlength="10" value="@r?.Mic?.ToString("0.###", inv)" data-mic />} else {<span class="hp-num" dir="ltr">@r?.Mic?.ToString("0.###", inv)</span>}</td>
+                                @if (locked || c.Status == HospitalMicroStatus.Completed) {<td>@if (r != null) {<i class="ki-outline @(r.Reported ? "ki-eye text-primary" : "ki-eye-slash text-muted") fs-3" title="@(r.Reported ? T["Reported to the doctor"] : T["Withheld by cascade reporting"])" data-bs-toggle="tooltip"></i>}</td>}
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    @if (bench) {<div class="text-end mt-3"><button type="button" class="btn btn-sm btn-light-primary" data-mc-ast="@i.ID"><i class="ki-outline ki-check fs-4"></i>@T["Save the susceptibility"]</button></div>}
+                }
+            </div>
+        </div>
+    }
+
+    @if (bench)
+    {
+        <div class="row g-4 align-items-end mb-6">
+            <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Organism"]</label>
+                <select class="form-select form-select-solid form-select-sm" data-control="select2" data-placeholder="@T["Choose the organism"]" data-mc="organism">
+                    <option></option>
+                    @foreach (var grp in Model.Organisms.GroupBy(x => x.Group))
+                    {
+                        <optgroup label="@T["mgroup:" + grp.Key]">@foreach (var g in grp) {<option value="@g.ID">@g.NameEn — @g.Name</option>}</optgroup>
+                    }
+                </select></div>
+            <div class="col-md-3"><label class="fs-7 fw-semibold mb-2">@T["Quantity"]</label><input class="form-control form-control-solid form-control-sm" dir="ltr" maxlength="60" placeholder=">100,000 CFU/mL" data-mc="qty" /></div>
+            <div class="col-md-3"><button type="button" class="btn btn-sm btn-light-primary w-100" data-mc-act="Isolates"><i class="ki-outline ki-plus fs-4"></i>@T["Add the isolate"]</button></div>
+        </div>
+        @if (Model.Organisms.Count == 0)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-6"><div class="fs-7 text-gray-700 fw-semibold">@T["The organism dictionary is empty: the administrator adds the standard list from lab tests."]</div></div>
+        }
+
+        <div class="separator separator-dashed my-6"></div>
+        <div class="row g-4 align-items-end">
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Final growth"]</label>
+                <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@T["Final growth"]" data-mc="growth">
+                    @foreach (var g in HospitalMicroGrowth.All.Where(g => g != HospitalMicroGrowth.Pending)) {<option value="@g" selected="@(g == c.Growth)">@T["growth:" + g]</option>}</select></div>
+            <div class="col-md-8"><label class="fs-6 fw-semibold mb-2">@T["Comment"]</label><input class="form-control form-control-solid" maxlength="1000" dir="auto" value="@c.Comment" data-mc="comment" /></div>
+        </div>
+        <div class="text-end mt-4"><button type="button" class="btn btn-primary" data-mc-act="Complete"><i class="ki-outline ki-check-circle fs-4"></i>@T["Complete the culture"]</button></div>
+        <div class="text-muted fs-8 mt-2 text-end">@T["Completing writes the report; a second person then verifies it before the doctor sees it."]</div>
+    }
+}
+</div>

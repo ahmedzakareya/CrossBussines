@@ -300,6 +300,37 @@ namespace CrossBuy.BL.Hospital
 			var onset = input.OnsetDate!.Value.Date;
 			try
 			{
+				var id = await RecordCaseAsync(ctx, adm, input.Kind!, input.Organism, onset, input.Notes, employeeId, nowUtc, ct);
+				return HospitalResult.Success(id);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
+		}
+
+		/// H230: a verified culture with a multidrug-resistant organism opens a SUSPECTED MDRO case for infection control,
+		/// when the patient is admitted (an outpatient's flag stays on the culture). The microbiologist verified the
+		/// culture, so no ward permission is asked here; infection control still confirms or rules it out as any case,
+		/// and confirming puts the patient under contact precautions. One open case per stay and organism.
+		public async Task<int?> OpenLabMdroCaseAsync(BusinessContext ctx, int patientId, string organism, DateTime specimenUtc, string notes, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			try
+			{
+				var adm = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId && a.DischargedAt == null)
+					.OrderByDescending(a => a.AdmittedAt).FirstOrDefaultAsync(ct);
+				if (adm == null) return null;
+				var org = Clip(organism, 100);
+				if (await Cases(ctx).AnyAsync(c => c.AdmissionId == adm.ID && c.Kind == HospitalInfectionKind.Mdro && c.Organism == org && c.Status == HospitalInfectionStatus.Suspected, ct)) return null;
+				var onset = Local(specimenUtc).Date;
+				if (onset < Local(adm.AdmittedAt).Date) onset = Local(adm.AdmittedAt).Date;   // taken at the door: day 1 of the stay
+				return await RecordCaseAsync(ctx, adm, HospitalInfectionKind.Mdro, org, onset, notes, employeeId, nowUtc, ct);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return null; }
+		}
+
+		/// The one place a case row is written: its ward that day, its device when device-associated, its number.
+		private async Task<int> RecordCaseAsync(BusinessContext ctx, HospitalAdmission adm, string kind, string? organism, DateTime onset, string? notes, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		{
+			var admittedLocal = Local(adm.AdmittedAt).Date;
+			{
 				// the ward of the bed the patient lay in that day (the last stay to start by the end of it)
 				var dayEndUtc = HospitalNursingService.WardToUtc(onset.AddDays(1));
 				var wardId = await (from s in _db.HospitalBedStays.AsNoTracking()
@@ -308,7 +339,7 @@ namespace CrossBuy.BL.Hospital
 									orderby s.StartedAt descending
 									select r.WardId).FirstOrDefaultAsync(ct);
 				int? deviceId = null;
-				if (HospitalInfectionKind.DeviceOf(input.Kind!) is string dk)
+				if (HospitalInfectionKind.DeviceOf(kind) is string dk)
 				{
 					var devices = await Devices(ctx).AsNoTracking().Where(x => x.AdmissionId == adm.ID && x.Kind == dk).OrderByDescending(x => x.InsertedAt).ToListAsync(ct);
 					deviceId = devices.FirstOrDefault(d => HospitalInfectionRules.DeviceAssociated(Local(d.InsertedAt), d.RemovedAt == null ? null : Local(d.RemovedAt.Value), onset))?.ID;
@@ -316,15 +347,14 @@ namespace CrossBuy.BL.Hospital
 				var nos = await Cases(ctx).Select(c => c.CaseNo).ToListAsync(ct);
 				var row = new HospitalInfectionCase
 				{
-					CompanyId = ctx.CompanyId, CaseNo = HospitalDentalPracticeRules.NextNo(nos, "IC-", 6), PatientId = adm.PatientId, AdmissionId = adm.ID, Kind = input.Kind!,
-					Organism = Clip(input.Organism, 100), OnsetDate = onset, HospitalAcquired = HospitalInfectionRules.HospitalAcquired(admittedLocal, onset),
-					WardId = wardId, DeviceId = deviceId, Status = HospitalInfectionStatus.Suspected, Notes = Clip(input.Notes, 1000), ReportedAt = nowUtc, ReportedByEmployeeId = employeeId,
+					CompanyId = ctx.CompanyId, CaseNo = HospitalDentalPracticeRules.NextNo(nos, "IC-", 6), PatientId = adm.PatientId, AdmissionId = adm.ID, Kind = kind,
+					Organism = Clip(organism, 100), OnsetDate = onset, HospitalAcquired = HospitalInfectionRules.HospitalAcquired(admittedLocal, onset),
+					WardId = wardId, DeviceId = deviceId, Status = HospitalInfectionStatus.Suspected, Notes = Clip(notes, 1000), ReportedAt = nowUtc, ReportedByEmployeeId = employeeId,
 				};
 				_db.Add(row);
 				await _db.SaveChangesAsync(ct);
-				return HospitalResult.Success(row.ID);
+				return row.ID;
 			}
-			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
 		}
 
 		/// Infection control confirms or rules out. A confirmed MDRO or C. difficile puts the patient under contact

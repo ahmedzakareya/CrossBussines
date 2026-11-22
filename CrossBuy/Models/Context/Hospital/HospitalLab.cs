@@ -51,6 +51,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? SpecimenEn { get; set; }
 		public string Section { get; set; } = "";
 		public string? SectionEn { get; set; }
+		/// H230: a culture is reported from its microbiology panel (organisms and susceptibility), not an analyte grid.
+		public bool IsCulture { get; set; }
 	}
 
 	/// One measured value of a test, with its limits. A limit left empty is not checked.
@@ -180,6 +182,7 @@ namespace CrossBuy.Models.Context.Hospital
 		{
 			HospitalLabDeviceModel.Configure(b);   // H198: the analysers' messages and code links
 			b.Entity<HospitalLabTest>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
+			HospitalMicroModel.Configure(b);   // H230: microbiology
 			b.Entity<HospitalLabAnalyte>(e =>
 			{
 				foreach (var p in new[] { nameof(HospitalLabAnalyte.RefLow), nameof(HospitalLabAnalyte.RefHigh), nameof(HospitalLabAnalyte.CriticalLow), nameof(HospitalLabAnalyte.CriticalHigh) })

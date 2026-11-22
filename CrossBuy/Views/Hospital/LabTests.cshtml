@@ -28,6 +28,7 @@
         {
             <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
                 <button type="button" class="btn btn-sm btn-light-primary" data-seed><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load the standard panels"]</button>
+                <button type="button" class="btn btn-sm btn-light-primary" data-seed-micro><i class="ki-outline ki-flask fs-4"></i>@T["Load the microbiology dictionary"]</button>
             </div>
         }
     </div></div>
@@ -65,10 +66,12 @@
                 </div>
                 <div class="card-body pt-2">
                     <div class="row g-4 mb-6 align-items-end">
-                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Specimen"]</label><input class="form-control form-control-solid" data-k="specimen" value="@m.Setup?.Specimen" @ro /></div>
-                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Specimen (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="specimenEn" value="@m.Setup?.SpecimenEn" @ro /></div>
+                        <div class="col-md-2"><label class="fs-6 fw-semibold mb-2">@T["Specimen"]</label><input class="form-control form-control-solid" data-k="specimen" value="@m.Setup?.Specimen" @ro /></div>
+                        <div class="col-md-2"><label class="fs-6 fw-semibold mb-2">@T["Specimen (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="specimenEn" value="@m.Setup?.SpecimenEn" @ro /></div>
                         <div class="col-md-2"><label class="fs-6 fw-semibold mb-2">@T["Section"]</label><input class="form-control form-control-solid" data-k="section" value="@m.Setup?.Section" @ro /></div>
                         <div class="col-md-2"><label class="fs-6 fw-semibold mb-2">@T["Section (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="sectionEn" value="@m.Setup?.SectionEn" @ro /></div>
+                        @* H230: a culture is reported from its microbiology panel *@
+                        <div class="col-md-2"><label class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-k="isCulture" @(m.Setup?.IsCulture == true ? "checked" : "") @(canManage ? "" : "disabled") /><span class="form-check-label fw-semibold text-gray-700">@T["Culture (microbiology)"]</span></label></div>
                         @if (canManage) { <div class="col-md-2"><button type="button" class="btn btn-light-primary w-100" data-save-test="@s.ID"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div> }
                     </div>
                     <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0 fs-7">
@@ -131,9 +134,10 @@
             }
             function done(btn) { return function (res) { btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-seed],[data-save-test],[data-save-analyte]'); if (!t) return;
+                var t = e.target.closest('[data-seed],[data-seed-micro],[data-save-test],[data-save-analyte]'); if (!t) return;
                 t.disabled = true;
                 if (t.hasAttribute('data-seed')) { post(root + '/SeedStandard').then(done(t)); return; }
+                if (t.hasAttribute('data-seed-micro')) { post(root + '/Micro/SeedStandard').then(done(t)); return; }   // H230
                 if (t.hasAttribute('data-save-test')) { post(root + '/' + t.getAttribute('data-save-test'), read(t.closest('.row'))).then(done(t)); return; }
                 var tr = t.closest('tr'), body = read(tr);
                 body.serviceId = Number(tr.getAttribute('data-service'));

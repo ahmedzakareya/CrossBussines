@@ -1,0 +1,405 @@
+{
+ "unit": "H230 - microbiology",
+ "strings": {
+  "Microbiology is not installed yet (hospital_h230_microbiology.sql).": {
+   "ar": "الأحياء الدقيقة غير مثبتة بعد (hospital_h230_microbiology.sql).",
+   "en": "Microbiology is not installed yet (hospital_h230_microbiology.sql).",
+   "fr": "La microbiologie n'est pas encore installée (hospital_h230_microbiology.sql)."
+  },
+  "The culture starts once the specimen is received in the lab.": {
+   "ar": "تبدأ المزرعة بعد استلام العينة في المختبر.",
+   "en": "The culture starts once the specimen is received in the lab.",
+   "fr": "La culture commence une fois l'échantillon reçu au laboratoire."
+  },
+  "Start the culture": {
+   "ar": "بدء المزرعة",
+   "en": "Start the culture",
+   "fr": "Démarrer la culture"
+  },
+  "Record where the specimen came from; the plates are then incubating.": {
+   "ar": "سجّل مصدر العينة؛ ثم تكون الأطباق في الحضانة.",
+   "en": "Record where the specimen came from; the plates are then incubating.",
+   "fr": "Indiquez l'origine de l'échantillon ; les boîtes sont alors en incubation."
+  },
+  "Specimen source": {
+   "ar": "مصدر العينة",
+   "en": "Specimen source",
+   "fr": "Origine de l'échantillon"
+  },
+  "src:Blood": {
+   "ar": "دم",
+   "en": "Blood",
+   "fr": "Sang"
+  },
+  "src:Urine": {
+   "ar": "بول",
+   "en": "Urine",
+   "fr": "Urine"
+  },
+  "src:Sputum": {
+   "ar": "قشع",
+   "en": "Sputum",
+   "fr": "Expectoration"
+  },
+  "src:Wound": {
+   "ar": "جرح",
+   "en": "Wound",
+   "fr": "Plaie"
+  },
+  "src:CSF": {
+   "ar": "سائل دماغي شوكي",
+   "en": "CSF",
+   "fr": "LCR"
+  },
+  "src:Stool": {
+   "ar": "براز",
+   "en": "Stool",
+   "fr": "Selles"
+  },
+  "src:Swab": {
+   "ar": "مسحة",
+   "en": "Swab",
+   "fr": "Écouvillon"
+  },
+  "src:Fluid": {
+   "ar": "سائل جسمي",
+   "en": "Body fluid",
+   "fr": "Liquide biologique"
+  },
+  "src:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "Detail (site, bottle)": {
+   "ar": "تفصيل (الموضع، القارورة)",
+   "en": "Detail (site, bottle)",
+   "fr": "Détail (site, flacon)"
+  },
+  "micro:Incubating": {
+   "ar": "في الحضانة",
+   "en": "Incubating",
+   "fr": "En incubation"
+  },
+  "micro:Preliminary": {
+   "ar": "تقرير أولي",
+   "en": "Preliminary",
+   "fr": "Préliminaire"
+  },
+  "micro:Completed": {
+   "ar": "مكتملة بانتظار التحقق",
+   "en": "Completed, awaiting verification",
+   "fr": "Terminée, en attente de validation"
+  },
+  "micro:Final": {
+   "ar": "نهائية",
+   "en": "Final",
+   "fr": "Définitive"
+  },
+  "growth:Pending": {
+   "ar": "لم يُحدد النمو بعد",
+   "en": "Growth not yet known",
+   "fr": "Croissance non encore connue"
+  },
+  "growth:NoGrowth": {
+   "ar": "لا يوجد نمو",
+   "en": "No growth",
+   "fr": "Pas de croissance"
+  },
+  "growth:Growth": {
+   "ar": "يوجد نمو",
+   "en": "Growth",
+   "fr": "Croissance"
+  },
+  "growth:Contaminated": {
+   "ar": "نمو مختلط (تلوث محتمل)",
+   "en": "Mixed growth (probable contamination)",
+   "fr": "Flore mixte (contamination probable)"
+  },
+  "mdro:MRSA": {
+   "ar": "مكورات عنقودية ذهبية مقاومة للميثيسيلين",
+   "en": "Methicillin-resistant Staphylococcus aureus",
+   "fr": "Staphylococcus aureus résistant à la méticilline"
+  },
+  "mdro:VRE": {
+   "ar": "مكورات معوية مقاومة للفانكومايسين",
+   "en": "Vancomycin-resistant Enterococcus",
+   "fr": "Entérocoque résistant à la vancomycine"
+  },
+  "mdro:ESBL": {
+   "ar": "منتجة لإنزيمات البيتالاكتاماز واسعة الطيف",
+   "en": "Extended-spectrum beta-lactamase producer",
+   "fr": "Producteur de bêta-lactamase à spectre étendu"
+  },
+  "mdro:CRE": {
+   "ar": "أمعائيات مقاومة للكاربابينيم",
+   "en": "Carbapenem-resistant Enterobacterales",
+   "fr": "Entérobactérie résistante aux carbapénèmes"
+  },
+  "mdro:CRAB": {
+   "ar": "راكدة بومانية مقاومة للكاربابينيم",
+   "en": "Carbapenem-resistant Acinetobacter baumannii",
+   "fr": "Acinetobacter baumannii résistant aux carbapénèmes"
+  },
+  "mdro:CRPA": {
+   "ar": "زائفة زنجارية مقاومة للكاربابينيم",
+   "en": "Carbapenem-resistant Pseudomonas aeruginosa",
+   "fr": "Pseudomonas aeruginosa résistant aux carbapénèmes"
+  },
+  "Preliminary report": {
+   "ar": "التقرير الأولي",
+   "en": "Preliminary report",
+   "fr": "Rapport préliminaire"
+  },
+  "Growth so far": {
+   "ar": "النمو حتى الآن",
+   "en": "Growth so far",
+   "fr": "Croissance à ce stade"
+  },
+  "Gram stain": {
+   "ar": "صبغة غرام",
+   "en": "Gram stain",
+   "fr": "Coloration de Gram"
+  },
+  "e.g. Gram-negative rods seen": {
+   "ar": "مثلًا: شوهدت عصيات سلبية الغرام",
+   "en": "e.g. Gram-negative rods seen",
+   "fr": "ex. bacilles à Gram négatif observés"
+  },
+  "Report to the doctor": {
+   "ar": "التقرير المرسل للطبيب",
+   "en": "Report to the doctor",
+   "fr": "Rapport au médecin"
+  },
+  "e.g. No growth at 24 hours; final report to follow": {
+   "ar": "مثلًا: لا نمو بعد 24 ساعة؛ يتبع التقرير النهائي",
+   "en": "e.g. No growth at 24 hours; final report to follow",
+   "fr": "ex. Pas de croissance à 24 heures ; rapport définitif à suivre"
+  },
+  "Release the preliminary report": {
+   "ar": "إصدار التقرير الأولي",
+   "en": "Release the preliminary report",
+   "fr": "Publier le rapport préliminaire"
+  },
+  "mgroup:Staphylococci": {
+   "ar": "المكورات العنقودية",
+   "en": "Staphylococci",
+   "fr": "Staphylocoques"
+  },
+  "mgroup:Streptococci": {
+   "ar": "المكورات العقدية",
+   "en": "Streptococci",
+   "fr": "Streptocoques"
+  },
+  "mgroup:Enterococci": {
+   "ar": "المكورات المعوية",
+   "en": "Enterococci",
+   "fr": "Entérocoques"
+  },
+  "mgroup:Enterobacterales": {
+   "ar": "الأمعائيات",
+   "en": "Enterobacterales",
+   "fr": "Entérobactéries"
+  },
+  "mgroup:Pseudomonas": {
+   "ar": "الزائفة",
+   "en": "Pseudomonas",
+   "fr": "Pseudomonas"
+  },
+  "mgroup:Acinetobacter": {
+   "ar": "الراكدة",
+   "en": "Acinetobacter",
+   "fr": "Acinetobacter"
+  },
+  "mgroup:Fungi": {
+   "ar": "الفطريات",
+   "en": "Fungi",
+   "fr": "Champignons"
+  },
+  "mgroup:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autres"
+  },
+  "Remove the isolate": {
+   "ar": "حذف العزلة",
+   "en": "Remove the isolate",
+   "fr": "Supprimer l'isolat"
+  },
+  "No susceptibility panel for this group.": {
+   "ar": "لا توجد لوحة حساسية لهذه المجموعة.",
+   "en": "No susceptibility panel for this group.",
+   "fr": "Aucun panel d'antibiogramme pour ce groupe."
+  },
+  "Antibiotic": {
+   "ar": "المضاد الحيوي",
+   "en": "Antibiotic",
+   "fr": "Antibiotique"
+  },
+  "Tier": {
+   "ar": "المستوى",
+   "en": "Tier",
+   "fr": "Niveau"
+  },
+  "MIC (mg/L)": {
+   "ar": "التركيز المثبط الأدنى (ملغ/لتر)",
+   "en": "MIC (mg/L)",
+   "fr": "CMI (mg/L)"
+  },
+  "On report": {
+   "ar": "في التقرير",
+   "en": "On report",
+   "fr": "Au rapport"
+  },
+  "Tier 1": {
+   "ar": "المستوى الأول",
+   "en": "Tier 1",
+   "fr": "Niveau 1"
+  },
+  "Tier 2": {
+   "ar": "المستوى الثاني",
+   "en": "Tier 2",
+   "fr": "Niveau 2"
+  },
+  "Reported to the doctor": {
+   "ar": "يظهر للطبيب",
+   "en": "Reported to the doctor",
+   "fr": "Communiqué au médecin"
+  },
+  "Withheld by cascade reporting": {
+   "ar": "محجوب وفق الإبلاغ المتدرج",
+   "en": "Withheld by cascade reporting",
+   "fr": "Masqué par le rendu en cascade"
+  },
+  "Save the susceptibility": {
+   "ar": "حفظ الحساسية",
+   "en": "Save the susceptibility",
+   "fr": "Enregistrer l'antibiogramme"
+  },
+  "Choose the organism": {
+   "ar": "اختر الكائن الحي",
+   "en": "Choose the organism",
+   "fr": "Choisissez le micro-organisme"
+  },
+  "Add the isolate": {
+   "ar": "إضافة العزلة",
+   "en": "Add the isolate",
+   "fr": "Ajouter l'isolat"
+  },
+  "The organism dictionary is empty: the administrator adds the standard list from lab tests.": {
+   "ar": "قاموس الكائنات الحية فارغ: يضيف المسؤول القائمة القياسية من شاشة فحوصات المختبر.",
+   "en": "The organism dictionary is empty: the administrator adds the standard list from lab tests.",
+   "fr": "Le dictionnaire des micro-organismes est vide : l'administrateur ajoute la liste standard depuis les analyses."
+  },
+  "Final growth": {
+   "ar": "النمو النهائي",
+   "en": "Final growth",
+   "fr": "Croissance définitive"
+  },
+  "Complete the culture": {
+   "ar": "إكمال المزرعة",
+   "en": "Complete the culture",
+   "fr": "Terminer la culture"
+  },
+  "Completing writes the report; a second person then verifies it before the doctor sees it.": {
+   "ar": "الإكمال يكتب التقرير، ثم يتحقق منه شخص ثانٍ قبل أن يراه الطبيب.",
+   "en": "Completing writes the report; a second person then verifies it before the doctor sees it.",
+   "fr": "Terminer rédige le rapport ; une seconde personne le valide avant que le médecin ne le voie."
+  },
+  "Remove this isolate and its susceptibility?": {
+   "ar": "حذف هذه العزلة ونتائج حساسيتها؟",
+   "en": "Remove this isolate and its susceptibility?",
+   "fr": "Supprimer cet isolat et son antibiogramme ?"
+  },
+  "Load the microbiology dictionary": {
+   "ar": "تحميل قاموس الأحياء الدقيقة",
+   "en": "Load the microbiology dictionary",
+   "fr": "Charger le dictionnaire de microbiologie"
+  },
+  "Culture (microbiology)": {
+   "ar": "مزرعة (أحياء دقيقة)",
+   "en": "Culture (microbiology)",
+   "fr": "Culture (microbiologie)"
+  },
+  "A culture is reported from its microbiology panel": {
+   "ar": "تُسجَّل نتيجة المزرعة من لوحة الأحياء الدقيقة",
+   "en": "A culture is reported from its microbiology panel",
+   "fr": "Une culture se rend depuis son panneau de microbiologie"
+  },
+  "This test is not a culture": {
+   "ar": "هذا الفحص ليس مزرعة",
+   "en": "This test is not a culture",
+   "fr": "Cette analyse n'est pas une culture"
+  },
+  "Start the culture first": {
+   "ar": "ابدأ المزرعة أولًا",
+   "en": "Start the culture first",
+   "fr": "Démarrez d'abord la culture"
+  },
+  "Choose the specimen source": {
+   "ar": "اختر مصدر العينة",
+   "en": "Choose the specimen source",
+   "fr": "Choisissez l'origine de l'échantillon"
+  },
+  "Record whether there is growth": {
+   "ar": "سجّل هل يوجد نمو",
+   "en": "Record whether there is growth",
+   "fr": "Indiquez s'il y a croissance"
+  },
+  "Write the preliminary report": {
+   "ar": "اكتب التقرير الأولي",
+   "en": "Write the preliminary report",
+   "fr": "Rédigez le rapport préliminaire"
+  },
+  "A preliminary report is 500 characters at most": {
+   "ar": "التقرير الأولي 500 حرف على الأكثر",
+   "en": "A preliminary report is 500 characters at most",
+   "fr": "Un rapport préliminaire compte 500 caractères au plus"
+  },
+  "The Gram stain is 300 characters at most": {
+   "ar": "صبغة غرام 300 حرف على الأكثر",
+   "en": "The Gram stain is 300 characters at most",
+   "fr": "La coloration de Gram compte 300 caractères au plus"
+  },
+  "The quantity is 60 characters at most": {
+   "ar": "الكمية 60 حرفًا على الأكثر",
+   "en": "The quantity is 60 characters at most",
+   "fr": "La quantité compte 60 caractères au plus"
+  },
+  "A culture has 6 isolates at most": {
+   "ar": "للمزرعة 6 عزلات على الأكثر",
+   "en": "A culture has 6 isolates at most",
+   "fr": "Une culture compte 6 isolats au plus"
+  },
+  "A result is S, I or R": {
+   "ar": "النتيجة S أو I أو R",
+   "en": "A result is S, I or R",
+   "fr": "Un résultat est S, I ou R"
+  },
+  "An antibiotic is entered twice": {
+   "ar": "أُدخل مضاد حيوي مرتين",
+   "en": "An antibiotic is entered twice",
+   "fr": "Un antibiotique est saisi deux fois"
+  },
+  "The comment is 1000 characters at most": {
+   "ar": "التعليق 1000 حرف على الأكثر",
+   "en": "The comment is 1000 characters at most",
+   "fr": "Le commentaire compte 1000 caractères au plus"
+  },
+  "Remove the isolates: there is no significant growth": {
+   "ar": "احذف العزلات: لا يوجد نمو ذو دلالة",
+   "en": "Remove the isolates: there is no significant growth",
+   "fr": "Supprimez les isolats : il n'y a pas de croissance significative"
+  },
+  "Add the organism that grew": {
+   "ar": "أضف الكائن الحي الذي نما",
+   "en": "Add the organism that grew",
+   "fr": "Ajoutez le micro-organisme qui a poussé"
+  },
+  "Enter the susceptibility of every isolate": {
+   "ar": "أدخل حساسية كل عزلة",
+   "en": "Enter the susceptibility of every isolate",
+   "fr": "Saisissez l'antibiogramme de chaque isolat"
+  }
+ }
+}

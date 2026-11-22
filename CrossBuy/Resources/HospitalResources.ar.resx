@@ -9738,4 +9738,84 @@
   <data name="The template's headings are in place: check each field, then save" xml:space="preserve"><value>وُضعت عناوين النموذج: راجع كل حقل ثم احفظ</value></data>
   <data name="Value on every row (may be empty)" xml:space="preserve"><value>القيمة في كل صف (يمكن أن تبقى فارغة)</value></data>
   <data name="Write the gateway address" xml:space="preserve"><value>اكتب عنوان البوابة</value></data>
+  <data name="A culture has 6 isolates at most" xml:space="preserve"><value>للمزرعة 6 عزلات على الأكثر</value></data>
+  <data name="A culture is reported from its microbiology panel" xml:space="preserve"><value>تُسجَّل نتيجة المزرعة من لوحة الأحياء الدقيقة</value></data>
+  <data name="A preliminary report is 500 characters at most" xml:space="preserve"><value>التقرير الأولي 500 حرف على الأكثر</value></data>
+  <data name="A result is S, I or R" xml:space="preserve"><value>النتيجة S أو I أو R</value></data>
+  <data name="Add the isolate" xml:space="preserve"><value>إضافة العزلة</value></data>
+  <data name="Add the organism that grew" xml:space="preserve"><value>أضف الكائن الحي الذي نما</value></data>
+  <data name="An antibiotic is entered twice" xml:space="preserve"><value>أُدخل مضاد حيوي مرتين</value></data>
+  <data name="Antibiotic" xml:space="preserve"><value>المضاد الحيوي</value></data>
+  <data name="Choose the organism" xml:space="preserve"><value>اختر الكائن الحي</value></data>
+  <data name="Choose the specimen source" xml:space="preserve"><value>اختر مصدر العينة</value></data>
+  <data name="Complete the culture" xml:space="preserve"><value>إكمال المزرعة</value></data>
+  <data name="Completing writes the report; a second person then verifies it before the doctor sees it." xml:space="preserve"><value>الإكمال يكتب التقرير، ثم يتحقق منه شخص ثانٍ قبل أن يراه الطبيب.</value></data>
+  <data name="Culture (microbiology)" xml:space="preserve"><value>مزرعة (أحياء دقيقة)</value></data>
+  <data name="Detail (site, bottle)" xml:space="preserve"><value>تفصيل (الموضع، القارورة)</value></data>
+  <data name="Enter the susceptibility of every isolate" xml:space="preserve"><value>أدخل حساسية كل عزلة</value></data>
+  <data name="Final growth" xml:space="preserve"><value>النمو النهائي</value></data>
+  <data name="Gram stain" xml:space="preserve"><value>صبغة غرام</value></data>
+  <data name="Growth so far" xml:space="preserve"><value>النمو حتى الآن</value></data>
+  <data name="Load the microbiology dictionary" xml:space="preserve"><value>تحميل قاموس الأحياء الدقيقة</value></data>
+  <data name="MIC (mg/L)" xml:space="preserve"><value>التركيز المثبط الأدنى (ملغ/لتر)</value></data>
+  <data name="Microbiology is not installed yet (hospital_h230_microbiology.sql)." xml:space="preserve"><value>الأحياء الدقيقة غير مثبتة بعد (hospital_h230_microbiology.sql).</value></data>
+  <data name="No susceptibility panel for this group." xml:space="preserve"><value>لا توجد لوحة حساسية لهذه المجموعة.</value></data>
+  <data name="On report" xml:space="preserve"><value>في التقرير</value></data>
+  <data name="Preliminary report" xml:space="preserve"><value>التقرير الأولي</value></data>
+  <data name="Record where the specimen came from; the plates are then incubating." xml:space="preserve"><value>سجّل مصدر العينة؛ ثم تكون الأطباق في الحضانة.</value></data>
+  <data name="Record whether there is growth" xml:space="preserve"><value>سجّل هل يوجد نمو</value></data>
+  <data name="Release the preliminary report" xml:space="preserve"><value>إصدار التقرير الأولي</value></data>
+  <data name="Remove the isolate" xml:space="preserve"><value>حذف العزلة</value></data>
+  <data name="Remove the isolates: there is no significant growth" xml:space="preserve"><value>احذف العزلات: لا يوجد نمو ذو دلالة</value></data>
+  <data name="Remove this isolate and its susceptibility?" xml:space="preserve"><value>حذف هذه العزلة ونتائج حساسيتها؟</value></data>
+  <data name="Report to the doctor" xml:space="preserve"><value>التقرير المرسل للطبيب</value></data>
+  <data name="Reported to the doctor" xml:space="preserve"><value>يظهر للطبيب</value></data>
+  <data name="Save the susceptibility" xml:space="preserve"><value>حفظ الحساسية</value></data>
+  <data name="Specimen source" xml:space="preserve"><value>مصدر العينة</value></data>
+  <data name="Start the culture" xml:space="preserve"><value>بدء المزرعة</value></data>
+  <data name="Start the culture first" xml:space="preserve"><value>ابدأ المزرعة أولًا</value></data>
+  <data name="The Gram stain is 300 characters at most" xml:space="preserve"><value>صبغة غرام 300 حرف على الأكثر</value></data>
+  <data name="The comment is 1000 characters at most" xml:space="preserve"><value>التعليق 1000 حرف على الأكثر</value></data>
+  <data name="The culture starts once the specimen is received in the lab." xml:space="preserve"><value>تبدأ المزرعة بعد استلام العينة في المختبر.</value></data>
+  <data name="The organism dictionary is empty: the administrator adds the standard list from lab tests." xml:space="preserve"><value>قاموس الكائنات الحية فارغ: يضيف المسؤول القائمة القياسية من شاشة فحوصات المختبر.</value></data>
+  <data name="The quantity is 60 characters at most" xml:space="preserve"><value>الكمية 60 حرفًا على الأكثر</value></data>
+  <data name="This test is not a culture" xml:space="preserve"><value>هذا الفحص ليس مزرعة</value></data>
+  <data name="Tier" xml:space="preserve"><value>المستوى</value></data>
+  <data name="Tier 1" xml:space="preserve"><value>المستوى الأول</value></data>
+  <data name="Tier 2" xml:space="preserve"><value>المستوى الثاني</value></data>
+  <data name="Withheld by cascade reporting" xml:space="preserve"><value>محجوب وفق الإبلاغ المتدرج</value></data>
+  <data name="Write the preliminary report" xml:space="preserve"><value>اكتب التقرير الأولي</value></data>
+  <data name="e.g. Gram-negative rods seen" xml:space="preserve"><value>مثلًا: شوهدت عصيات سلبية الغرام</value></data>
+  <data name="e.g. No growth at 24 hours; final report to follow" xml:space="preserve"><value>مثلًا: لا نمو بعد 24 ساعة؛ يتبع التقرير النهائي</value></data>
+  <data name="growth:Contaminated" xml:space="preserve"><value>نمو مختلط (تلوث محتمل)</value></data>
+  <data name="growth:Growth" xml:space="preserve"><value>يوجد نمو</value></data>
+  <data name="growth:NoGrowth" xml:space="preserve"><value>لا يوجد نمو</value></data>
+  <data name="growth:Pending" xml:space="preserve"><value>لم يُحدد النمو بعد</value></data>
+  <data name="mdro:CRAB" xml:space="preserve"><value>راكدة بومانية مقاومة للكاربابينيم</value></data>
+  <data name="mdro:CRE" xml:space="preserve"><value>أمعائيات مقاومة للكاربابينيم</value></data>
+  <data name="mdro:CRPA" xml:space="preserve"><value>زائفة زنجارية مقاومة للكاربابينيم</value></data>
+  <data name="mdro:ESBL" xml:space="preserve"><value>منتجة لإنزيمات البيتالاكتاماز واسعة الطيف</value></data>
+  <data name="mdro:MRSA" xml:space="preserve"><value>مكورات عنقودية ذهبية مقاومة للميثيسيلين</value></data>
+  <data name="mdro:VRE" xml:space="preserve"><value>مكورات معوية مقاومة للفانكومايسين</value></data>
+  <data name="mgroup:Acinetobacter" xml:space="preserve"><value>الراكدة</value></data>
+  <data name="mgroup:Enterobacterales" xml:space="preserve"><value>الأمعائيات</value></data>
+  <data name="mgroup:Enterococci" xml:space="preserve"><value>المكورات المعوية</value></data>
+  <data name="mgroup:Fungi" xml:space="preserve"><value>الفطريات</value></data>
+  <data name="mgroup:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="mgroup:Pseudomonas" xml:space="preserve"><value>الزائفة</value></data>
+  <data name="mgroup:Staphylococci" xml:space="preserve"><value>المكورات العنقودية</value></data>
+  <data name="mgroup:Streptococci" xml:space="preserve"><value>المكورات العقدية</value></data>
+  <data name="micro:Completed" xml:space="preserve"><value>مكتملة بانتظار التحقق</value></data>
+  <data name="micro:Final" xml:space="preserve"><value>نهائية</value></data>
+  <data name="micro:Incubating" xml:space="preserve"><value>في الحضانة</value></data>
+  <data name="micro:Preliminary" xml:space="preserve"><value>تقرير أولي</value></data>
+  <data name="src:Blood" xml:space="preserve"><value>دم</value></data>
+  <data name="src:CSF" xml:space="preserve"><value>سائل دماغي شوكي</value></data>
+  <data name="src:Fluid" xml:space="preserve"><value>سائل جسمي</value></data>
+  <data name="src:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="src:Sputum" xml:space="preserve"><value>قشع</value></data>
+  <data name="src:Stool" xml:space="preserve"><value>براز</value></data>
+  <data name="src:Swab" xml:space="preserve"><value>مسحة</value></data>
+  <data name="src:Urine" xml:space="preserve"><value>بول</value></data>
+  <data name="src:Wound" xml:space="preserve"><value>جرح</value></data>
 </root>

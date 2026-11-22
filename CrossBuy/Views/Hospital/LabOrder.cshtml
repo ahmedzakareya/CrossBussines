@@ -12,6 +12,8 @@
     bool canLab = ViewBag.CanLab == true, canVerify = ViewBag.CanVerify == true;
     int? me = ViewBag.Me as int?;
     bool locked = o.Status == HospitalLabStatus.Verified;
+    var micro = ViewBag.Micro as HospitalMicroView;   // H230
+    ViewData["LabOrder"] = o;
     bool bench = o.Status is HospitalLabStatus.Received or HospitalLabStatus.Resulted;
     bool canEnter = canLab && bench;
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
@@ -106,7 +108,11 @@
                         </div>
                     </div>
                     <div class="card-body pt-2">
-                        @if (Model.Lines.Count == 0)
+                        @if (micro is { IsCulture: true })
+                        {
+                            <partial name="_LabMicro" model="micro" />
+                        }
+                        else if (Model.Lines.Count == 0)
                         {
                             <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6">
                                 <i class="ki-outline ki-setting-3 fs-2tx text-primary me-4"></i>
@@ -223,6 +229,11 @@
                 return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var doc = new DOMParser().parseFromString(html, 'text/html');
                     ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                    // H230: the swapped content's theme selects come back to life
+                    if (window.jQuery && jQuery.fn.select2) document.querySelectorAll('#kt_app_content [data-control="select2"]').forEach(function (el) {
+                        jQuery(el).select2({ minimumResultsForSearch: el.getAttribute('data-hide-search') === 'true' ? Infinity : 0, placeholder: el.getAttribute('data-placeholder') || '', dir: document.documentElement.dir || 'ltr' });
+                    });
+                    if (window.bootstrap) document.querySelectorAll('#kt_app_content [data-bs-toggle="tooltip"]').forEach(function (el) { bootstrap.Tooltip.getOrCreateInstance(el); });
                 });
             }
             function done(btn, msg) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }; }
@@ -247,6 +258,30 @@
                     if (!r) return; c.disabled = true;
                     post('Collect', { wristband: r.first, tube: r.second, scanOverride: r.override }).then(done(c));
                 });
+            });
+            // H230: the culture's bench work
+            var MW = { rm: @Json.Serialize(T["Remove this isolate and its susceptibility?"].Value) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-mc-act],[data-mc-ast],[data-mc-rm]'); if (!t) return;
+                var box = t.closest('[data-micro]'); if (!box) return;
+                function v(n) { var el = box.querySelector('[data-mc="' + n + '"]'); return el ? el.value : null; }
+                if (t.hasAttribute('data-mc-rm')) {
+                    cbConfirm(MW.rm, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true; post('Micro/Isolates/' + t.getAttribute('data-mc-rm') + '/Remove').then(done(t)); });
+                    return;
+                }
+                t.disabled = true;
+                if (t.hasAttribute('data-mc-ast')) {
+                    var card = t.closest('[data-iso]'), lines = [];
+                    card.querySelectorAll('tr[data-abx]').forEach(function (r) { var res = r.querySelector('[data-r]'); if (res && res.value) lines.push({ antibioticId: +r.getAttribute('data-abx'), result: res.value, mic: (r.querySelector('[data-mic]') || {}).value || null }); });
+                    post('Micro/Isolates/' + t.getAttribute('data-mc-ast') + '/Ast', { lines: lines }).then(done(t));
+                    return;
+                }
+                var a = t.getAttribute('data-mc-act');
+                var body = a === 'Start' ? { source: v('source'), detail: v('detail') }
+                    : a === 'Preliminary' ? { growth: v('pgrowth'), gramStain: v('gram'), text: v('ptext') }
+                    : a === 'Isolates' ? { organismId: +(v('organism') || 0), quantity: v('qty') }
+                    : { growth: v('growth'), comment: v('comment') };
+                post('Micro/' + a, body).then(done(t));
             });
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-step],[data-save],[data-priority]'); if (!t) return;

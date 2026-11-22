@@ -51,6 +51,7 @@ namespace CrossBuy.Controllers
 			// H27: whether the patient may see it on the portal, and who may let them
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
 			ViewBag.PortalRelease = await PortalRecordsSvc.ReleaseOfAsync(ctx, HospitalPortalResultSource.Lab, id, ct);
+			ViewBag.Micro = await MicroSvc.ViewAsync(ctx, id, ct);   // H230: a culture shows its microbiology panel
 			return View(v);
 		}
 

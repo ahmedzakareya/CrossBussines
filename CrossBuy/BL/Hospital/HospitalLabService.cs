@@ -41,6 +41,7 @@ namespace CrossBuy.BL.Hospital
 		public string? SpecimenEn { get; set; }
 		public string Section { get; set; } = "";
 		public string? SectionEn { get; set; }
+		public bool IsCulture { get; set; }   // H230
 	}
 
 	public sealed record HospitalLabRow(int Id, string AccessionNo, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
@@ -261,6 +262,7 @@ namespace CrossBuy.BL.Hospital
 			var (o, fail) = await LoadAsync(ctx, id, HospitalActions.Lab, ct); if (fail != null) return fail;
 			if (o!.Status == HospitalLabStatus.Verified) return HospitalResult.Fail("This result is verified and locked");
 			if (o.Status is HospitalLabStatus.Ordered or HospitalLabStatus.Collected) return HospitalResult.Fail("Receive the specimen in the lab before entering results");
+			if (await HospitalMicroService.IsCultureAsync(_db, ctx.CompanyId, o.ServiceId, ct)) return HospitalResult.Fail("A culture is reported from its microbiology panel");   // H230
 			var analytes = await _db.HospitalLabAnalytes.Where(a => a.CompanyId == ctx.CompanyId && a.ServiceId == o.ServiceId && a.IsActive).OrderBy(a => a.SortOrder).ThenBy(a => a.ID).ToListAsync(ct);
 			if (analytes.Count == 0) return HospitalResult.Fail("This test has no analytes yet. Set it up in lab tests first");
 			if (values.Keys.Any(k => analytes.All(a => a.ID != k))) return HospitalResult.Fail("not_found");
@@ -302,6 +304,7 @@ namespace CrossBuy.BL.Hospital
 				return HospitalResult.Fail("A different person verifies the results they did not enter");
 			o.Status = HospitalLabStatus.Verified; o.VerifiedAt = nowUtc; o.VerifiedByEmployeeId = employeeId;
 			await _db.SaveChangesAsync(ct);
+			await HospitalMicroService.AfterVerifyAsync(_db, _access, ctx, o, employeeId, nowUtc, ct);   // H230: the culture is final; a resistant organism goes to infection control
 			await HospitalSmsService.QueueLabReadyAsync(_db, ctx.CompanyId, o.ID, employeeId, nowUtc, ct);   // H70: "your results are ready"
 			return HospitalResult.Success(o.ID);
 		}
@@ -337,7 +340,10 @@ namespace CrossBuy.BL.Hospital
 			var t = await _db.HospitalLabTests.FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.ServiceId == serviceId, ct);
 			if (t == null) { t = new HospitalLabTest { CompanyId = ctx.CompanyId, ServiceId = serviceId }; _db.HospitalLabTests.Add(t); }
 			t.Specimen = input.Specimen.Trim(); t.SpecimenEn = input.SpecimenEn?.Trim(); t.Section = input.Section.Trim(); t.SectionEn = input.SectionEn?.Trim();
-			await _db.SaveChangesAsync(ct); return HospitalResult.Success(t.ID);
+			t.IsCulture = input.IsCulture;   // H230
+			await _db.SaveChangesAsync(ct);
+			if (t.IsCulture) await HospitalMicroService.EnsureCultureAnalyteAsync(_db, ctx.CompanyId, serviceId, ct);
+			return HospitalResult.Success(t.ID);
 		}
 
 		public async Task<HospitalResult> SaveAnalyteAsync(BusinessContext ctx, HospitalLabAnalyteInput input, CancellationToken ct = default)

@@ -9668,4 +9668,84 @@
   <data name="The template's headings are in place: check each field, then save" xml:space="preserve"><value>Les en-têtes du modèle sont en place : vérifiez chaque champ, puis enregistrez</value></data>
   <data name="Value on every row (may be empty)" xml:space="preserve"><value>Valeur sur chaque ligne (peut rester vide)</value></data>
   <data name="Write the gateway address" xml:space="preserve"><value>Saisissez l'adresse de la passerelle</value></data>
+  <data name="A culture has 6 isolates at most" xml:space="preserve"><value>Une culture compte 6 isolats au plus</value></data>
+  <data name="A culture is reported from its microbiology panel" xml:space="preserve"><value>Une culture se rend depuis son panneau de microbiologie</value></data>
+  <data name="A preliminary report is 500 characters at most" xml:space="preserve"><value>Un rapport préliminaire compte 500 caractères au plus</value></data>
+  <data name="A result is S, I or R" xml:space="preserve"><value>Un résultat est S, I ou R</value></data>
+  <data name="Add the isolate" xml:space="preserve"><value>Ajouter l'isolat</value></data>
+  <data name="Add the organism that grew" xml:space="preserve"><value>Ajoutez le micro-organisme qui a poussé</value></data>
+  <data name="An antibiotic is entered twice" xml:space="preserve"><value>Un antibiotique est saisi deux fois</value></data>
+  <data name="Antibiotic" xml:space="preserve"><value>Antibiotique</value></data>
+  <data name="Choose the organism" xml:space="preserve"><value>Choisissez le micro-organisme</value></data>
+  <data name="Choose the specimen source" xml:space="preserve"><value>Choisissez l'origine de l'échantillon</value></data>
+  <data name="Complete the culture" xml:space="preserve"><value>Terminer la culture</value></data>
+  <data name="Completing writes the report; a second person then verifies it before the doctor sees it." xml:space="preserve"><value>Terminer rédige le rapport ; une seconde personne le valide avant que le médecin ne le voie.</value></data>
+  <data name="Culture (microbiology)" xml:space="preserve"><value>Culture (microbiologie)</value></data>
+  <data name="Detail (site, bottle)" xml:space="preserve"><value>Détail (site, flacon)</value></data>
+  <data name="Enter the susceptibility of every isolate" xml:space="preserve"><value>Saisissez l'antibiogramme de chaque isolat</value></data>
+  <data name="Final growth" xml:space="preserve"><value>Croissance définitive</value></data>
+  <data name="Gram stain" xml:space="preserve"><value>Coloration de Gram</value></data>
+  <data name="Growth so far" xml:space="preserve"><value>Croissance à ce stade</value></data>
+  <data name="Load the microbiology dictionary" xml:space="preserve"><value>Charger le dictionnaire de microbiologie</value></data>
+  <data name="MIC (mg/L)" xml:space="preserve"><value>CMI (mg/L)</value></data>
+  <data name="Microbiology is not installed yet (hospital_h230_microbiology.sql)." xml:space="preserve"><value>La microbiologie n'est pas encore installée (hospital_h230_microbiology.sql).</value></data>
+  <data name="No susceptibility panel for this group." xml:space="preserve"><value>Aucun panel d'antibiogramme pour ce groupe.</value></data>
+  <data name="On report" xml:space="preserve"><value>Au rapport</value></data>
+  <data name="Preliminary report" xml:space="preserve"><value>Rapport préliminaire</value></data>
+  <data name="Record where the specimen came from; the plates are then incubating." xml:space="preserve"><value>Indiquez l'origine de l'échantillon ; les boîtes sont alors en incubation.</value></data>
+  <data name="Record whether there is growth" xml:space="preserve"><value>Indiquez s'il y a croissance</value></data>
+  <data name="Release the preliminary report" xml:space="preserve"><value>Publier le rapport préliminaire</value></data>
+  <data name="Remove the isolate" xml:space="preserve"><value>Supprimer l'isolat</value></data>
+  <data name="Remove the isolates: there is no significant growth" xml:space="preserve"><value>Supprimez les isolats : il n'y a pas de croissance significative</value></data>
+  <data name="Remove this isolate and its susceptibility?" xml:space="preserve"><value>Supprimer cet isolat et son antibiogramme ?</value></data>
+  <data name="Report to the doctor" xml:space="preserve"><value>Rapport au médecin</value></data>
+  <data name="Reported to the doctor" xml:space="preserve"><value>Communiqué au médecin</value></data>
+  <data name="Save the susceptibility" xml:space="preserve"><value>Enregistrer l'antibiogramme</value></data>
+  <data name="Specimen source" xml:space="preserve"><value>Origine de l'échantillon</value></data>
+  <data name="Start the culture" xml:space="preserve"><value>Démarrer la culture</value></data>
+  <data name="Start the culture first" xml:space="preserve"><value>Démarrez d'abord la culture</value></data>
+  <data name="The Gram stain is 300 characters at most" xml:space="preserve"><value>La coloration de Gram compte 300 caractères au plus</value></data>
+  <data name="The comment is 1000 characters at most" xml:space="preserve"><value>Le commentaire compte 1000 caractères au plus</value></data>
+  <data name="The culture starts once the specimen is received in the lab." xml:space="preserve"><value>La culture commence une fois l'échantillon reçu au laboratoire.</value></data>
+  <data name="The organism dictionary is empty: the administrator adds the standard list from lab tests." xml:space="preserve"><value>Le dictionnaire des micro-organismes est vide : l'administrateur ajoute la liste standard depuis les analyses.</value></data>
+  <data name="The quantity is 60 characters at most" xml:space="preserve"><value>La quantité compte 60 caractères au plus</value></data>
+  <data name="This test is not a culture" xml:space="preserve"><value>Cette analyse n'est pas une culture</value></data>
+  <data name="Tier" xml:space="preserve"><value>Niveau</value></data>
+  <data name="Tier 1" xml:space="preserve"><value>Niveau 1</value></data>
+  <data name="Tier 2" xml:space="preserve"><value>Niveau 2</value></data>
+  <data name="Withheld by cascade reporting" xml:space="preserve"><value>Masqué par le rendu en cascade</value></data>
+  <data name="Write the preliminary report" xml:space="preserve"><value>Rédigez le rapport préliminaire</value></data>
+  <data name="e.g. Gram-negative rods seen" xml:space="preserve"><value>ex. bacilles à Gram négatif observés</value></data>
+  <data name="e.g. No growth at 24 hours; final report to follow" xml:space="preserve"><value>ex. Pas de croissance à 24 heures ; rapport définitif à suivre</value></data>
+  <data name="growth:Contaminated" xml:space="preserve"><value>Flore mixte (contamination probable)</value></data>
+  <data name="growth:Growth" xml:space="preserve"><value>Croissance</value></data>
+  <data name="growth:NoGrowth" xml:space="preserve"><value>Pas de croissance</value></data>
+  <data name="growth:Pending" xml:space="preserve"><value>Croissance non encore connue</value></data>
+  <data name="mdro:CRAB" xml:space="preserve"><value>Acinetobacter baumannii résistant aux carbapénèmes</value></data>
+  <data name="mdro:CRE" xml:space="preserve"><value>Entérobactérie résistante aux carbapénèmes</value></data>
+  <data name="mdro:CRPA" xml:space="preserve"><value>Pseudomonas aeruginosa résistant aux carbapénèmes</value></data>
+  <data name="mdro:ESBL" xml:space="preserve"><value>Producteur de bêta-lactamase à spectre étendu</value></data>
+  <data name="mdro:MRSA" xml:space="preserve"><value>Staphylococcus aureus résistant à la méticilline</value></data>
+  <data name="mdro:VRE" xml:space="preserve"><value>Entérocoque résistant à la vancomycine</value></data>
+  <data name="mgroup:Acinetobacter" xml:space="preserve"><value>Acinetobacter</value></data>
+  <data name="mgroup:Enterobacterales" xml:space="preserve"><value>Entérobactéries</value></data>
+  <data name="mgroup:Enterococci" xml:space="preserve"><value>Entérocoques</value></data>
+  <data name="mgroup:Fungi" xml:space="preserve"><value>Champignons</value></data>
+  <data name="mgroup:Other" xml:space="preserve"><value>Autres</value></data>
+  <data name="mgroup:Pseudomonas" xml:space="preserve"><value>Pseudomonas</value></data>
+  <data name="mgroup:Staphylococci" xml:space="preserve"><value>Staphylocoques</value></data>
+  <data name="mgroup:Streptococci" xml:space="preserve"><value>Streptocoques</value></data>
+  <data name="micro:Completed" xml:space="preserve"><value>Terminée, en attente de validation</value></data>
+  <data name="micro:Final" xml:space="preserve"><value>Définitive</value></data>
+  <data name="micro:Incubating" xml:space="preserve"><value>En incubation</value></data>
+  <data name="micro:Preliminary" xml:space="preserve"><value>Préliminaire</value></data>
+  <data name="src:Blood" xml:space="preserve"><value>Sang</value></data>
+  <data name="src:CSF" xml:space="preserve"><value>LCR</value></data>
+  <data name="src:Fluid" xml:space="preserve"><value>Liquide biologique</value></data>
+  <data name="src:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="src:Sputum" xml:space="preserve"><value>Expectoration</value></data>
+  <data name="src:Stool" xml:space="preserve"><value>Selles</value></data>
+  <data name="src:Swab" xml:space="preserve"><value>Écouvillon</value></data>
+  <data name="src:Urine" xml:space="preserve"><value>Urine</value></data>
+  <data name="src:Wound" xml:space="preserve"><value>Plaie</value></data>
 </root>

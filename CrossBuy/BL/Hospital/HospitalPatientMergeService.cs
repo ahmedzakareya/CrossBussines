@@ -95,6 +95,8 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalEndoscopy), "HospitalEndoscopies"),           // H217: an endoscopy follows its patient
 			(typeof(HospitalCardioStudy), "HospitalCardioStudies"),       // H218: a cardiac study follows its patient
 			(typeof(HospitalMohSubmission), "HospitalMohSubmissions"),    // H225: what was sent to the Ministry follows its patient
+			(typeof(HospitalMicroCulture), "HospitalMicroCultures"),      // H230: cultures and their isolates follow the patient
+			(typeof(HospitalMicroIsolate), "HospitalMicroIsolates"),
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages
