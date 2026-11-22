@@ -1,0 +1,25 @@
+{
+ "unit": "H226 - downtime copy without e-mail",
+ "strings": {
+  "E-mail is not connected yet, so the copy was not sent. It was saved and is downloading now: print it or keep it on the ward's computer.": {
+   "ar": "البريد الإلكتروني غير موصول بعد، فلم تُرسل النسخة. حُفظت ويجري تنزيلها الآن: اطبعها أو احفظها على حاسوب القسم.",
+   "en": "E-mail is not connected yet, so the copy was not sent. It was saved and is downloading now: print it or keep it on the ward's computer.",
+   "fr": "La messagerie n'est pas encore connectée : la copie n'a pas été envoyée. Elle a été enregistrée et se télécharge : imprimez-la ou gardez-la sur l'ordinateur du service."
+  },
+  "Last copy": {
+   "ar": "آخر نسخة",
+   "en": "Last copy",
+   "fr": "Dernière copie"
+  },
+  "made": {
+   "ar": "أُنشئت",
+   "en": "made",
+   "fr": "établie"
+  },
+  "not made": {
+   "ar": "لم تُنشأ",
+   "en": "not made",
+   "fr": "non établie"
+  }
+ }
+}

@@ -52,7 +52,8 @@ namespace CrossBuy.BL.Hospital
 		private readonly CrossDbContext _db;
 		private readonly IReportScheduleService _schedules;
 		private readonly IReportScheduleRunner _runner;
-		public HospitalDowntimeScheduleService(CrossDbContext db, IReportScheduleService schedules, IReportScheduleRunner runner) { _db = db; _schedules = schedules; _runner = runner; }
+		private readonly IReportMailSender? _mail;   // H226
+		public HospitalDowntimeScheduleService(CrossDbContext db, IReportScheduleService schedules, IReportScheduleRunner runner, IReportMailSender? mail = null) { _db = db; _schedules = schedules; _runner = runner; _mail = mail; }
 
 		private const string Code = HospitalDocumentDatasetCodes.WardDowntime;
 
@@ -104,14 +105,24 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// One copy generated and sent now (the ward's first schedule, through the platform's runner).
-		public async Task<HospitalResult> SendNowAsync(BusinessContext ctx, int wardId, CancellationToken ct = default)
+		public async Task<HospitalResult> SendNowAsync(BusinessContext ctx, int wardId, CancellationToken ct = default) =>
+			(await SendNowWithCopyAsync(ctx, wardId, ct)).Result;
+
+		/// H226: the run archives the PDF whether or not it is mailed. When nothing was sent because the platform has no mail
+		/// transport, the ward is not left with nothing: the archived copy is handed back to download and print (the archive
+		/// re-checks the report's permission on retrieval). A transport that exists but failed stays a refusal.
+		public async Task<(HospitalResult Result, long? CopyId)> SendNowWithCopyAsync(BusinessContext ctx, int wardId, CancellationToken ct = default)
 		{
 			var s = (await OfWardAsync(ctx.CompanyId, wardId, ct)).FirstOrDefault(x => x.IsActive);
-			if (s == null) return HospitalResult.Fail("Set the ward's shift copies first");
+			if (s == null) return (HospitalResult.Fail("Set the ward's shift copies first"), null);
 			var tracked = await _db.ReportSchedules.FirstOrDefaultAsync(x => x.Id == s.Id, ct);
 			var o = await _runner.RunAsync(tracked!, ct);
-			if (o.Status != ReportRunStatus.Succeeded) return HospitalResult.Fail(o.Diagnostics.FirstOrDefault()?.Message ?? "The copy could not be generated");
-			return o.DeliveriesSent > 0 ? HospitalResult.Success(wardId) : HospitalResult.Fail("The copy was generated but no e-mail could be sent");
+			if (o.Status != ReportRunStatus.Succeeded) return (HospitalResult.Fail(o.Diagnostics.FirstOrDefault()?.Message ?? "The copy could not be generated"), null);
+			if (o.DeliveriesSent > 0) return (HospitalResult.Success(wardId), null);
+			bool noTransport = _mail is { IsAvailable: false };
+			return noTransport && o.ArchiveEntryId is > 0
+				? (HospitalResult.Success(wardId), o.ArchiveEntryId)
+				: (HospitalResult.Fail("The copy was generated but no e-mail could be sent"), null);
 		}
 	}
 }

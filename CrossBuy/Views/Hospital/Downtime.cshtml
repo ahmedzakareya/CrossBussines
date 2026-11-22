@@ -75,7 +75,7 @@
                                     {
                                         <span class="badge badge-light-primary">@T["{0} copies a day", sc.Count]</span>
                                         <div class="text-muted mt-1"><bdi dir="ltr">@sc.Emails</bdi></div>
-                                        @if (sc.LastRunAt is DateTime lr) {<div class="text-muted hp-num" dir="ltr">@T["Last sent"] @HospitalNursingService.UtcToWard(lr).ToString("MM-dd HH:mm", inv) · @sc.LastRunStatus</div>}
+                                        @if (sc.LastRunAt is DateTime lr) {<div class="text-muted hp-num" dir="ltr">@T["Last copy"] @HospitalNursingService.UtcToWard(lr).ToString("MM-dd HH:mm", inv) · @(sc.LastRunStatus == "Succeeded" ? T["made"] : T["not made"])</div>}
                                     }
                                     else {<span class="text-muted">—</span>}</td>
                                     <td class="text-end pe-4 text-nowrap">@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalWardDowntime, DocumentId = w.Id.ToString(), DocumentTitle = w.Code })
@@ -122,7 +122,7 @@
                 if (t.hasAttribute('data-dt-plan')) { ward = t.getAttribute('data-dt-plan'); m.querySelector('[data-dt=emails]').value = t.getAttribute('data-emails') || ''; bootstrap.Modal.getOrCreateInstance(m).show(); return; }
                 t.disabled = true;
                 if (t.hasAttribute('data-dt-send')) {
-                    post(root + t.getAttribute('data-dt-send') + '/SendNow').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.sent); setTimeout(function () { location.reload(); }, 600); });
+                    post(root + t.getAttribute('data-dt-send') + '/SendNow').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } if (res.download) { var a = document.createElement('a'); a.href = res.download; a.download = ''; document.body.appendChild(a); a.click(); a.remove(); toastr.info(res.note, '', { timeOut: 12000 }); return; } toastr.success(W.sent); setTimeout(function () { location.reload(); }, 600); });
                     return;
                 }
                 var times = Array.prototype.map.call(m.querySelectorAll('[data-dt-time]'), function (i) { return i.value; }).filter(function (v) { return v; });

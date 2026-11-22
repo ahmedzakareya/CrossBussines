@@ -67,7 +67,26 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await DowntimeSchedules.SendNowAsync(ctx, id, ct));
+			var (r, copy) = await DowntimeSchedules.SendNowWithCopyAsync(ctx, id, ct);
+			if (r.Ok && copy is > 0)   // H226: no mail transport — hand the archived copy back instead
+				return Json(new { ok = true, sent = false, download = Url.Content("~/Hospital/Wards/Downtime/Copy/" + copy.Value),
+					note = _t["E-mail is not connected yet, so the copy was not sent. It was saved and is downloading now: print it or keep it on the ward's computer."].Value });
+			return Result(r);
+		}
+
+		// H226: the archived copy of a ward's downtime summary, read through the archive (which re-checks the report's
+		// permission and the company) and only when the entry IS that report — this is not a general archive reader.
+		[HttpGet("Wards/Downtime/Copy/{entryId:long}"), HospitalPerm(HospitalActions.ClinicalRead)]
+		public async Task<IActionResult> DowntimeCopy(long entryId, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			bool isDowntime = await _db.ReportArchiveEntries.AsNoTracking()
+				.AnyAsync(a => a.Id == entryId && a.CompanyID == ctx.CompanyId && a.ReportCode == CrossBuy.BL.Reporting.HospitalDocumentDatasetCodes.WardDowntime, ct);
+			if (!isDowntime) return NotFound();
+			var archive = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.Reporting.IReportArchiveService>();
+			var a = await archive.RetrieveAsync(entryId, ctx, ct);
+			return a == null ? NotFound() : File(a.Content, a.ContentType, a.FileName);
 		}
 	}
 }
