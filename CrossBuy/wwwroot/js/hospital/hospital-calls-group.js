@@ -117,7 +117,7 @@
 				'<div class="cbc-top"><span class="cbc-step" style="width:40px;height:40px;background:rgba(255,255,255,.15);color:#fff">' + ico('users-round', 20) + '</span>' +
 					'<div class="min-w-0"><div class="fw-bold fs-5 text-white">' + esc(t('grpCall')) + ' · <bdi class="cbc-num" dir="ltr" data-count>1</bdi></div><div class="fs-8 text-white opacity-75 text-truncate">' +
 						(g.patient ? esc(g.patient.name) + ' · ' + num(esc(g.patient.mrn)) : esc(t('grpHostIs', r.host.name))) + '</div></div>' +
-					'<span class="cbc-chip ms-3 d-none d-md-inline-flex"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('cmSecure')) + '</span>' +
+					'<span class="cbc-chip ms-3 d-none d-md-inline-flex" title="' + esc(r.sfu ? t('cmSfuHelp') : t('cmE2eHelp')) + '"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(r.sfu ? t('cmSfuSecure') : t('cmE2e')) + '</span>' +
 					'<span class="cbc-chip d-none" data-recchip></span>' +
 					'<span class="ms-auto fs-4 fw-bold cbc-num text-white" dir="ltr" data-clock>00:00</span>' +
 				'</div>' +

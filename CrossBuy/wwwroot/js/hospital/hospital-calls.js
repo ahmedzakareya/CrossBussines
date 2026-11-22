@@ -247,6 +247,7 @@
 			};
 			pc.onconnectionstatechange = function () {
 				var s = pc.connectionState;
+				if (s === 'connected' && !c.safety) safetyCode(c, pc);
 				netChip(c);
 				if (s === 'failed') { toast(t('lost'), 'error'); hangup(c); }
 			};
@@ -315,7 +316,7 @@
 				'<div class="vid" data-remote><video autoplay playsinline data-rvideo class="d-none"></video><div class="cbc-rface" data-rface></div></div>' +
 				'<audio autoplay data-raudio></audio>' +
 				'<div class="top">' + face(c.peer, 40) +
-					'<div class="min-w-0"><div class="fw-bold text-truncate">' + esc(c.peer.name) + '</div><div class="fs-8 opacity-75 d-flex align-items-center gap-1">' + ico('shield-check', 12) + ' ' + esc(t('cmSecure')) + '</div></div>' +
+					'<div class="min-w-0"><div class="fw-bold text-truncate">' + esc(c.peer.name) + '</div><div class="fs-8 opacity-75 d-flex align-items-center gap-1" data-e2e>' + ico('shield-check', 12) + ' ' + esc(t('cmE2e')) + '<span data-safety></span></div></div>' +
 					'<span class="ms-auto d-flex align-items-center gap-2">' +
 						'<span class="chip d-none" data-net><span class="spinner-border spinner-border-sm"></span>' + esc(t('reconnecting')) + '</span>' +
 						'<span class="chip rec d-none" data-recchip></span>' +
@@ -653,6 +654,23 @@
 		if (on) window.cbCaptions.start({ callId: c.id, mic: function () { return c.local && c.local.getAudioTracks()[0]; }, box: c.el && c.el.querySelector('.main') });
 		else window.cbCaptions.stop();
 		if (say) toast(on ? t('cmCaptionsOn') : t('cmCaptionsOff'), 'info');
+	}
+	// END-TO-END (owner 2026-11-22): the picture and the sound of a 1:1 call go device to device, encrypted with keys the two
+	// devices agree between themselves (DTLS-SRTP); the server only passes the messages that set the call up. What a
+	// server in the middle COULD do is hand each side a key of its own. The verification code shows it: both sides
+	// compute it from the two keys' fingerprints, so they see the same eight digits only when nobody is in between.
+	function safetyCode(c, pc) {
+		function fp(sdp) { var m = /a=fingerprint:\S+ ([0-9A-F:]+)/i.exec(sdp || ''); return m ? m[1].toUpperCase() : ''; }
+		var a = fp(pc.localDescription && pc.localDescription.sdp), b = fp(pc.remoteDescription && pc.remoteDescription.sdp);
+		if (!a || !b || !window.crypto || !crypto.subtle) return;
+		var both = [a, b].sort().join('|');
+		crypto.subtle.digest('SHA-256', new TextEncoder().encode(both)).then(function (h) {
+			var d = new Uint8Array(h), n = ((d[0] << 24) >>> 0) + (d[1] << 16) + (d[2] << 8) + d[3];
+			var code = String(n % 100000000).padStart(8, '0'); c.safety = code.slice(0, 4) + ' ' + code.slice(4);
+			var box = c.el && c.el.querySelector('[data-safety]'); if (!box) return;
+			box.innerHTML = ' · ' + esc(t('cmSafety')) + ' <bdi dir="ltr" class="fw-bold">' + esc(c.safety) + '</bdi>';
+			box.parentNode.setAttribute('title', t('cmSafetyHelp'));
+		}).catch(function () { });
 	}
 	function teardown(c) {
 		if (!c || c.closed) return; c.closed = true;

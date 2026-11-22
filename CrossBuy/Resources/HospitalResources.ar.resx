@@ -9827,4 +9827,19 @@
   <data name="Live captions are off" xml:space="preserve">
     <value>أُوقف النص المباشر</value>
   </data>
+  <data name="Encrypted between the devices" xml:space="preserve">
+    <value>مشفّرة بين الأجهزة</value>
+  </data>
+  <data name="The sound and the picture go device to device, encrypted with keys only the devices hold: the server cannot see or hear the call." xml:space="preserve">
+    <value>الصوت والصورة ينتقلان من جهاز إلى جهاز، مشفّرين بمفاتيح لا يملكها إلا الجهازان: لا يستطيع الخادم أن يرى المكالمة أو يسمعها.</value>
+  </data>
+  <data name="Compare this code with the other person: if it is the same on both screens, nobody is between you." xml:space="preserve">
+    <value>قارن هذا الرمز مع الطرف الآخر: إن تطابق على الشاشتين فلا أحد بينكما.</value>
+  </data>
+  <data name="Encrypted up to the company media server" xml:space="preserve">
+    <value>مشفّرة حتى خادم الوسائط في الشركة</value>
+  </data>
+  <data name="This group call goes through the company's own media server, which mixes the streams: it is encrypted on the way, inside the company network." xml:space="preserve">
+    <value>تمر هذه المكالمة الجماعية عبر خادم الوسائط الخاص بالشركة الذي يجمع البث: وهي مشفّرة في الطريق، داخل شبكة الشركة.</value>
+  </data>
 </root>
