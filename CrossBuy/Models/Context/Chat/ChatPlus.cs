@@ -47,6 +47,34 @@ namespace CrossBuy.Models.Context.Chat
 		public DateTime? RevokedAt { get; set; }
 		public int? RevokedByEmployeeId { get; set; }
 	}
+	/// A shared document of one conversation (comm_docs.sql): every member reads and edits it; Version counts the saves.
+	public class ChatDoc
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int ConversationId { get; set; }
+		public string Title { get; set; } = "";
+		public string Content { get; set; } = "";
+		public int Version { get; set; }
+		public int? MessageId { get; set; }
+		public string? FilePath { get; set; }
+		public int CreatedByEmployeeId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public int UpdatedByEmployeeId { get; set; }
+		public DateTime UpdatedAt { get; set; }
+		public DateTime? DeletedAt { get; set; }
+	}
+	/// Every saved version of a shared document: its history, and the base a concurrent save is merged against.
+	public class ChatDocVersion
+	{
+		public int DocId { get; set; }
+		public int Version { get; set; }
+		public string Content { get; set; } = "";
+		public string Title { get; set; } = "";
+		public int EmployeeId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public bool Merged { get; set; }
+	}
 	/// A guest from outside the company in one group conversation (comm_guests.sql): reads from the moment they were
 	/// invited, writes in it, nothing else. The link's secret is kept only as its SHA-256.
 	public class ChatGuest
@@ -232,6 +260,8 @@ namespace CrossBuy.Models.Context.Chat
 		public static void Configure(ModelBuilder b)
 		{
 			b.Entity<CallSummary>(e => { e.ToTable("CallSummaries"); e.HasKey(x => x.RecordingId); e.Property(x => x.RecordingId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.JobId).HasMaxLength(32); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(120); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.Progress).HasPrecision(5, 3); e.Property(x => x.AudioSeconds).HasPrecision(9, 1); e.Property(x => x.WorkSeconds).HasPrecision(9, 1); });
+			b.Entity<ChatDoc>(e => { e.ToTable("ChatDocs"); e.Property(x => x.Title).HasMaxLength(150); e.Property(x => x.FilePath).HasMaxLength(400); });
+			b.Entity<ChatDocVersion>(e => { e.ToTable("ChatDocVersions"); e.HasKey(x => new { x.DocId, x.Version }); e.Property(x => x.Title).HasMaxLength(150); });
 			b.Entity<ChatGuest>(e => { e.ToTable("ChatGuests"); e.Property(x => x.Name).HasMaxLength(80); e.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsFixedLength(); e.HasIndex(x => x.TokenHash).IsUnique(); });
 			b.Entity<ChatGuestPost>(e => { e.ToTable("ChatGuestPosts"); e.HasKey(x => x.MessageId); e.Property(x => x.MessageId).ValueGeneratedNever(); });
 			b.Entity<ChatWebhook>(e => { e.ToTable("ChatWebhooks"); e.Property(x => x.Name).HasMaxLength(60); e.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsFixedLength(); e.HasIndex(x => x.TokenHash).IsUnique(); });

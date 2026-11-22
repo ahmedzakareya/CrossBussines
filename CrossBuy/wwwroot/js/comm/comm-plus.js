@@ -357,11 +357,11 @@
 	   THE PLUS — a file, a picture, a poll, a record of the system, a scheduled message, a meeting
 	   ================================================================================================================ */
 	C.on('plus', function (anchor) {
-		var rows = [['paperclip', t('File'), 'file'], ['image', t('Picture'), 'image'], ['video', t('Video message'), 'video'], ['chart-bar-big', t('Poll'), 'poll'], ['link-2', t('A record of the system'), 'record'], ['clock', t('Schedule a message'), 'schedule']];
+		var rows = [['paperclip', t('File'), 'file'], ['image', t('Picture'), 'image'], ['video', t('Video message'), 'video'], ['chart-bar-big', t('Poll'), 'poll'], ['file-text', t('Shared document'), 'doc'], ['link-2', t('A record of the system'), 'record'], ['clock', t('Schedule a message'), 'schedule']];
 		if (C.header() && C.header().kind === 'Group') rows.push(['calendar-plus', t('Schedule a meeting'), 'meeting']);
 		C.pop(anchor, rows.map(function (r) { return '<button type="button" class="cm-item w-100 border-0 bg-transparent" data-more="' + r[2] + '" style="padding:8px 12px">' + ico(r[0], 16) + '<span class="fs-7 fw-semibold">' + esc(r[1]) + '</span></button>'; }).join(''), function (k) {
 			if (k === 'file') C.pickFile(''); if (k === 'image') C.pickFile('image/*');
-			if (k === 'video') videoDialog();
+			if (k === 'video') videoDialog(); if (k === 'doc') docCreateDialog();
 			if (k === 'poll') pollDialog(); if (k === 'record') recordDialog(); if (k === 'schedule') scheduleDialog(); if (k === 'meeting') meetingDialog();
 		});
 	});
@@ -978,6 +978,137 @@
 			return swal({ icon: 'warning', title: t('Sensitive data'), text: t('This message contains') + ' ' + what + '. ' + t('Send it anyway?'), confirmButtonText: t('Send anyway'), customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } }).then(function (x) { return x.isConfirmed ? body : null; });
 		});
 	});
+
+	/* ================================================================================================================
+	   SHARED DOCUMENTS (owner 2026-11-22): a document inside the conversation that every member edits. It saves itself
+	   a moment after typing stops; a save made while someone else saved is merged on the server against the version
+	   this editor started from, and lines both changed differently are kept both, marked with each writer's name.
+	   ================================================================================================================ */
+	var openDoc = null;   // the editor that is open: { id, base, sent, timer, saving, dirty, pop }
+	function docCreateDialog() {
+		var c = C.cur(); if (!c) return;
+		swal({
+			title: t('Shared document'), confirmButtonText: t('Create'), width: 560,
+			html: '<div class="text-start"><div class="cm-doc-nt mb-3">' + esc(t('Everyone in this conversation can open it and write in it. It saves as you type, and keeps every version.')) + '</div>' +
+				'<input id="dcT" class="form-control form-control-solid" maxlength="150" placeholder="' + esc(t('Document title')) + '" /></div>',
+			didOpen: function () { var i = $('dcT'); if (i) { i.focus(); i.addEventListener('keydown', function (e) { if (e.key === 'Enter') Swal.clickConfirm(); }); } },
+			preConfirm: function () { var v = ($('dcT').value || '').trim(); if (!v) { Swal.showValidationMessage(t('Write a title')); return false; } return v; }
+		}).then(function (r) {
+			if (!r || !r.isConfirmed) return;
+			post('/Chat/DocCreate', { c: c, title: r.value, content: '' }).then(function (x) {
+				if (!x || !x.ok) { toast('error', t('The document could not be created')); return; }
+				docEditor(x.id);
+			});
+		});
+	}
+	function docState(text, kind) { if (!openDoc) return; var s = openDoc.pop.querySelector('[data-dstate]'); if (s) { s.textContent = text; s.className = 'cm-doc-state ' + (kind || ''); } }
+	function docWho(d) {
+		var w = openDoc && openDoc.pop.querySelector('[data-dwho]'); if (!w) return;
+		w.innerHTML = ico('pen-line', 12) + ' ' + esc(t('Last edit')) + ': <b dir="auto">' + esc(d.updatedBy || '-') + '</b> · ' + num(C.when(d.updatedAt)) + ' · ' + esc(t('Version')) + ' ' + num(String(d.version));
+	}
+	function docEditor(id) {
+		getJson('/Chat/Doc?id=' + id).then(function (x) {
+			if (!x || !x.ok) { toast('error', t('This document is not available')); return; }
+			var d = x.doc, ro = !x.canEdit;
+			var html = '<div class="cm-doc text-start">' +
+				'<div class="d-flex gap-2 align-items-center mb-2"><input id="dT" class="form-control form-control-solid fw-bold" maxlength="150" dir="auto"' + (ro ? ' readonly' : '') + ' value="' + esc(d.title) + '" />' +
+				'<button type="button" class="btn btn-sm btn-light text-nowrap" data-dhist>' + ico('history', 14) + ' ' + esc(t('Versions')) + '</button></div>' +
+				'<textarea id="dX" class="form-control form-control-solid cm-doc-text" dir="auto" spellcheck="true"' + (ro ? ' readonly' : '') + ' placeholder="' + esc(t('Start writing…')) + '"></textarea>' +
+				'<div class="d-flex justify-content-between align-items-center mt-2 gap-2 flex-wrap"><span class="cm-doc-who" data-dwho></span><span class="cm-doc-state" data-dstate>' + esc(ro ? t('Read only') : t('Saved')) + '</span></div></div>';
+			swal({
+				title: '', html: html, showConfirmButton: false, cancelButtonText: t('Close'), width: 900,
+				didOpen: function (pop) {
+					openDoc = { id: id, base: d.version, sent: null, timer: null, saving: false, dirty: false, pop: pop, ro: ro };
+					var ta = pop.querySelector('#dX'); ta.value = d.content; docWho(d);
+					function changed() { if (!openDoc || ro) return; openDoc.dirty = true; docState(t('Editing…')); clearTimeout(openDoc.timer); openDoc.timer = setTimeout(docSave, 1200); }
+					ta.addEventListener('input', changed); pop.querySelector('#dT').addEventListener('input', changed);
+					pop.querySelector('[data-dhist]').onclick = function () { docHistory(id, d.title, ro); };
+				},
+				willClose: function () { if (openDoc && openDoc.dirty) { clearTimeout(openDoc.timer); docSave(true); } }
+			}).then(function () { openDoc = null; });
+		});
+	}
+	function docSave(closing) {
+		var o = openDoc; if (!o || o.ro) return;
+		if (o.saving) { clearTimeout(o.timer); o.timer = setTimeout(docSave, 600); return; }
+		var ta = o.pop.querySelector('#dX'), ti = o.pop.querySelector('#dT');
+		var sent = ta.value, title = ti.value;
+		o.saving = true; o.dirty = false; docState(t('Saving…'));
+		post('/Chat/DocSave', { id: o.id, baseVersion: o.base, title: title, content: sent }).then(function (x) {
+			o.saving = false;
+			if (!x || !x.ok) {
+				o.dirty = true;
+				docState(x && x.code === 'too_long' ? t('The document is too long') : t('Not saved — will try again'), 'err');
+				if (!closing && x && x.code !== 'too_long') o.timer = setTimeout(docSave, 4000);
+				return;
+			}
+			if (x.merged) {
+				// someone else saved meanwhile: the server merged both. Show the merged text unless typing went on since —
+				// then keep the old base, so the next save merges again against the same common version.
+				if (ta.value === sent && !closing) { ta.value = x.content; o.base = x.version; }
+				else o.dirty = true;
+				docState(x.conflict ? t('Merged — both versions kept where you both changed the same lines') : t('Merged with the other edits'), x.conflict ? 'warn' : 'ok');
+				if (x.conflict) toast('info', t('You and another member changed the same lines: both versions are kept, marked with each name'));
+			} else { o.base = x.version; docState(t('Saved'), 'ok'); }
+			if (o.dirty && !closing) { clearTimeout(o.timer); o.timer = setTimeout(docSave, 800); }
+			if (!closing && openDoc === o) getJson('/Chat/Doc?id=' + o.id).then(function (y) { if (y && y.ok && openDoc === o) docWho(y.doc); });
+		});
+	}
+	// someone saved: an editor with nothing unsaved takes the new text; one with unsaved typing merges on its next save
+	function docRemote(e) {
+		document.querySelectorAll('[data-doc="' + e.id + '"] .fn').forEach(function (n) { n.textContent = e.title; });
+		var o = openDoc; if (!o || o.id !== e.id || e.by === meId || e.version <= o.base) return;
+		if (o.dirty || o.saving) { docState(t('Another member is editing — your changes will be merged')); return; }
+		getJson('/Chat/Doc?id=' + e.id).then(function (y) {
+			if (!y || !y.ok || openDoc !== o || o.dirty || o.saving) return;
+			var ta = o.pop.querySelector('#dX'), pos = ta.selectionStart;
+			ta.value = y.doc.content; o.pop.querySelector('#dT').value = y.doc.title; o.base = y.doc.version;
+			try { ta.setSelectionRange(pos, pos); } catch (x) { }
+			docWho(y.doc); docState(t('Updated by') + ' ' + (y.doc.updatedBy || ''), 'ok');
+		});
+	}
+	function docHistory(id, title, ro) {
+		var keep = openDoc; if (keep && keep.dirty) { clearTimeout(keep.timer); docSave(); }
+		getJson('/Chat/DocHistory?id=' + id).then(function (rows) {
+			if (!rows) return;
+			var html = '<div class="cm-doc-hist text-start">' + rows.map(function (r, i) {
+				return '<div class="cm-hook"><span class="ic">' + ico(r.merged ? 'git-merge' : 'file-pen-line', 16) + '</span><div class="flex-grow-1 min-w-0">' +
+					'<div class="nm">' + esc(t('Version')) + ' ' + num(String(r.version)) + (i === 0 ? ' <span class="tag">' + esc(t('Current')) + '</span>' : '') + (r.merged ? ' <span class="tag">' + esc(t('Merged')) + '</span>' : '') + '</div>' +
+					'<div class="sub"><span dir="auto">' + esc(r.by || '-') + '</span> · ' + num(C.when(r.at)) + ' · ' + num(String(r.length)) + ' ' + esc(t('characters')) + '</div></div>' +
+					'<button type="button" class="btn btn-sm btn-light text-nowrap" data-dv="' + r.version + '">' + esc(t('View')) + '</button></div>';
+			}).join('') + '</div><div id="dvBox"></div>';
+			swal({
+				title: t('Versions') + ' · ' + title, html: html, showConfirmButton: false, cancelButtonText: t('Close'), width: 760,
+				didOpen: function (pop) {
+					pop.addEventListener('click', function (e) {
+						var v = e.target.closest('[data-dv]');
+						if (v) {
+							getJson('/Chat/DocHistory?id=' + id + '&version=' + v.getAttribute('data-dv')).then(function (x) {
+								if (!x) return;
+								pop.querySelector('#dvBox').innerHTML = '<div class="cm-doc-ver"><div class="d-flex justify-content-between align-items-center mb-2"><b>' + esc(t('Version')) + ' ' + num(String(x.version)) + '</b>' +
+									(ro || v.closest('.cm-hook') === pop.querySelector('.cm-hook') ? '' : '<button type="button" class="btn btn-sm btn-light-primary" data-drestore="' + x.version + '">' + ico('rotate-ccw', 13) + ' ' + esc(t('Restore this version')) + '</button>') +
+									'</div><pre dir="auto">' + esc(x.content || '') + '</pre></div>';
+							});
+							return;
+						}
+						var rs = e.target.closest('[data-drestore]');
+						if (rs) {
+							if (rs.getAttribute('data-sure') !== '1') { rs.setAttribute('data-sure', '1'); rs.textContent = t('Restore — sure?'); return; }   // a second click confirms (no browser confirm())
+							post('/Chat/DocRestore', { id: id, version: +rs.getAttribute('data-drestore') }).then(function (x) {
+								if (!x || !x.ok) { toast('error', t('Not saved — will try again')); return; }
+								toast('success', t('Restored as a new version')); Swal.close();
+							});
+						}
+					});
+				}
+			}).then(function () { setTimeout(function () { docEditor(id); }, 250); });   // back to the editor, on the current version
+		});
+	}
+	E.thread.addEventListener('click', function (e) {
+		var b = e.target.closest('[data-doc]'); if (!b) return;
+		e.preventDefault(); docEditor(+b.getAttribute('data-doc'));
+	});
+	onHub(function (conn) { conn.on('doc', function (e) { if (e && e.conversationId === C.cur()) docRemote(e); }); });
 
 	/* ---------------- boot ---------------- */
 	function boot() { loadExtras(); loadApprovals(); setTimeout(loadStatuses, 800); setInterval(loadApprovals, 120000); }

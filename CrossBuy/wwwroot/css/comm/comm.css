@@ -524,3 +524,17 @@ body[data-cb-chat-open] .cm-fab, body[data-cb-chat-open] .cm-fpanel { display: n
 .cbc-captions .ln { max-width: min(760px, 92%); background: rgba(12, 24, 55, .78); color: #fff; border-radius: 10px; padding: 6px 14px; font-size: 15px; line-height: 1.6; transition: opacity .6s; unicode-bidi: plaintext; }
 .cbc-captions .ln b { font-weight: 700; color: #C9D7F5; }
 .cbc-captions .ln.out { opacity: 0; }
+
+/* shared documents in a conversation (owner 2026-11-22) */
+.cm-doc-card { width: 100%; cursor: pointer; }
+.cm-doc-card .fi { background: var(--cm-tint); color: var(--cm-brand2); }
+.cm-doc-card:hover .fn { color: var(--cm-brand2); }
+.cm-doc-nt { font-size: 12.5px; color: var(--cm-muted, #738098); line-height: 1.7; }
+.cm-doc-text { min-height: 52vh; resize: vertical; font-size: 14px; line-height: 1.9; unicode-bidi: plaintext; }
+.cm-doc-who { font-size: 11.5px; color: var(--cm-muted, #738098); display: inline-flex; gap: 4px; align-items: center; }
+.cm-doc-state { font-size: 11.5px; font-weight: 600; color: var(--cm-muted, #738098); }
+.cm-doc-state.ok { color: var(--cm-brand2, #3A5795); }
+.cm-doc-state.warn, .cm-doc-state.err { color: var(--cm-red, #C0392B); }
+.cm-doc-hist { max-height: 40vh; overflow-y: auto; }
+.cm-doc-ver { margin-top: 12px; padding: 12px; border-radius: 12px; background: rgba(58,87,149,.05); border: 1px solid rgba(58,87,149,.18); }
+.cm-doc-ver pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 13px; line-height: 1.8; max-height: 32vh; overflow-y: auto; margin: 0; unicode-bidi: plaintext; }

@@ -594,6 +594,9 @@
 		if (!m.attachmentPath) return '';
 		if (isImg(m)) return '<img class="cm-img" src="' + esc(m.attachmentPath) + '" alt="" data-zoom="1" />';
 		// a video message: plays in place (owner 2026-11-19)
+		// a shared document of the conversation (owner 2026-11-22): a card that opens the editor (comm-plus.js)
+		if (m.attachmentType === 'doc') return '<button type="button" class="cm-file cm-doc-card border-0 text-start" data-doc="' + esc(String(m.attachmentPath).replace(/^doc:/, '')) + '"><span class="fi">' + ico('file-text', 20) + '</span>' +
+			'<div class="fm"><div class="fn" dir="auto">' + esc(m.attachmentName || '') + '</div><div class="fs">' + esc(t('Shared document · everyone here can edit')) + '</div></div>' + ico('square-pen', 16) + '</button>';
 		if (m.attachmentType === 'video') return '<video class="cm-vid" controls preload="metadata" playsinline poster="' + esc(m.attachmentPath) + '.jpg" src="' + esc(m.attachmentPath) + '"></video>'   // the poster: its first picture, kept beside it;
 		if (isAudio(m)) {
 			var seed = m.id || 1, bars = '';

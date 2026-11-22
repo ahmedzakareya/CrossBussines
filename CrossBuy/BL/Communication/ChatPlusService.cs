@@ -51,7 +51,7 @@ namespace CrossBuy.BL.Communication
 		}
 		private static string Preview(string? body, string? attType, string? attName)
 			=> !string.IsNullOrEmpty(body) ? (Plain(body!) is var p && p.Length > 120 ? p[..120] : Plain(body!))
-			: attType == "image" ? "📷" : attType == "audio" ? "🎤" : attType == "video" ? "🎬" : attType == "poll" ? "📊" : "📎 " + (attName ?? "");
+			: attType == "image" ? "📷" : attType == "audio" ? "🎤" : attType == "video" ? "🎬" : attType == "poll" ? "📊" : attType == "doc" ? "📝 " + (attName ?? "") : "📎 " + (attName ?? "");
 
 		private ChatMsgDto Dto(ChatMessage m, int meId, Dictionary<int, (string name, string? avatar)> names)
 		{
@@ -284,7 +284,7 @@ namespace CrossBuy.BL.Communication
 		public async Task<int> ForwardAsync(int companyId, int meId, int msgId, IEnumerable<int> toConvs, string? note)
 		{
 			var src = await _db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.ID == msgId && m.DeletedAt == null);
-			if (src == null || !await IsMemberAsync(companyId, src.ConversationId, meId) || src.AttachmentType == "poll") return 0;
+			if (src == null || !await IsMemberAsync(companyId, src.ConversationId, meId) || src.AttachmentType is "poll" or "doc") return 0;   // a poll and a shared document belong to their conversation
 			int n = 0;
 			foreach (var c in toConvs.Distinct().Take(20))
 			{

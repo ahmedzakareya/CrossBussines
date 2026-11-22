@@ -93,6 +93,54 @@ namespace CrossBuy.Controllers
 			return Json(await Plus.DtoAsync(m, me.Value.empId));
 		}
 
+		// ---------------- shared documents inside a conversation (owner 2026-11-22) ----------------
+		private ChatDocService Docs => ActivatorUtilities.CreateInstance<ChatDocService>(HttpContext.RequestServices);
+		private async Task<(int companyId, int empId, int c)?> DocAccessAsync(int id, string action)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync(); if (me == null || ctx == null) return null;
+			var c = await Docs.ConversationOfAsync(me.Value.companyId, id);
+			if (c == 0 || !await Comm.CanAsync(ctx, action, In(c), HttpContext.RequestAborted)) return null;
+			return (me.Value.companyId, me.Value.empId, c);
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> DocCreate(int c, string? title, string? content)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await Docs.CreateAsync(me.Value.companyId, c, me.Value.empId, title, content, Plus);
+			if (r == null) return BadRequest(new { ok = false });
+			return Json(new { ok = true, id = r.Value.doc.ID, message = await Plus.DtoAsync(r.Value.msg, me.Value.empId) });
+		}
+		[HttpGet]
+		public async Task<IActionResult> Doc(int id)
+		{
+			var a = await DocAccessAsync(id, CommunicationActions.Read); if (a == null) return NotFound(new { ok = false });
+			var d = await Docs.GetAsync(a.Value.companyId, a.Value.c, id); if (d == null) return NotFound(new { ok = false });
+			var ctx = await CtxAsync();
+			return Json(new { ok = true, doc = d, canEdit = ctx != null && await Comm.CanAsync(ctx, CommunicationActions.Send, In(a.Value.c), HttpContext.RequestAborted) });
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> DocSave(int id, int baseVersion, string? title, string? content)
+		{
+			var a = await DocAccessAsync(id, CommunicationActions.Send); if (a == null) return NotFound(new { ok = false });
+			var r = await Docs.SaveAsync(a.Value.companyId, a.Value.c, a.Value.empId, id, baseVersion, title, content);
+			return Json(new { ok = r.Ok, code = r.Code, version = r.Version, content = r.Content, merged = r.Merged, conflict = r.Conflict });
+		}
+		[HttpGet]
+		public async Task<IActionResult> DocHistory(int id, int? version)
+		{
+			var a = await DocAccessAsync(id, CommunicationActions.Read); if (a == null) return NotFound(new { ok = false });
+			var r = version is int v ? await Docs.VersionAsync(a.Value.companyId, a.Value.c, id, v) : await Docs.HistoryAsync(a.Value.companyId, a.Value.c, id);
+			return r == null ? NotFound(new { ok = false }) : Json(r);
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> DocRestore(int id, int version)
+		{
+			var a = await DocAccessAsync(id, CommunicationActions.Send); if (a == null) return NotFound(new { ok = false });
+			var r = await Docs.RestoreAsync(a.Value.companyId, a.Value.c, a.Value.empId, id, version);
+			return Json(new { ok = r.Ok, code = r.Code, version = r.Version });
+		}
+
 		// ---------------- the assistant: a summary of the conversation, a question about it, a message translated ----------------
 		private CrossBuy.BL.Communication.ChatAssistant Assistant => ActivatorUtilities.CreateInstance<CrossBuy.BL.Communication.ChatAssistant>(HttpContext.RequestServices);
 
