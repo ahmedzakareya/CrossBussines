@@ -390,7 +390,7 @@
                 askCollect: @Json.Serialize(T["Collect {0} by {1} on bill {2}?"].Value), amount: @Json.Serialize(T["Enter an amount above zero"].Value),
                 askMove: @Json.Serialize(T["Move the appointment to {0} at {1}?"].Value) };
             var W3 = { register: @Json.Serialize(T["Register a patient"].Value), reader: @Json.Serialize(T["Scan the card now: the reader types into the ID field."].Value),
-                camera: @Json.Serialize(T["The camera could not be opened: allow it in the browser, or take the photo from a file."].Value), big: @Json.Serialize(T["The photo must be an image of up to 5 MB"].Value),
+                camera: @Json.Serialize(T["The camera could not be opened: allow it in the browser, or take the photo from a file."].Value), cameraHttps: @Json.Serialize(T["The camera needs a secure connection: open the system over https (an address starting with https://), or take the photo from a file."].Value), big: @Json.Serialize(T["The photo must be an image of up to 5 MB"].Value),
                 dupAsk: @Json.Serialize(T["A similar file already exists. Open a new file anyway?"].Value), dupTitle: @Json.Serialize(T["This patient may already have a file"].Value),
                 saved: @Json.Serialize(T["The file is opened"].Value), photoFail: @Json.Serialize(T["The file is saved but the photo was not; add it from the file."].Value),
                 why: { 'national-id': @Json.Serialize(T["Same ID number"].Value), phone: @Json.Serialize(T["Same mobile"].Value), name: @Json.Serialize(T["Same name"].Value) },
@@ -661,6 +661,9 @@
                 if ((t = e.target.closest('[data-reg-reader]'))) { var nid = field('nationalId'); nid.value = ''; nid.focus(); toastr.info(W3.reader); return; }
                 if ((t = e.target.closest('[data-reg-cam]'))) {
                     var v = reg().querySelector('[data-reg-video]');
+                    // A browser offers the camera only on https (or localhost); over plain http mediaDevices is simply absent, and
+                    // "allow it in the browser" sent people hunting for a permission that does not exist there.
+                    if (!window.isSecureContext) { toastr.error(W3.cameraHttps); return; }
                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toastr.error(W3.camera); return; }
                     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } }, audio: false }).then(function (s) {
                         stream = s; v.srcObject = s; v.classList.remove('d-none'); reg().querySelector('[data-reg-shot]').classList.add('d-none'); reg().querySelector('[data-reg-empty]').classList.add('d-none');
