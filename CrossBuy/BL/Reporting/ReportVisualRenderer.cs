@@ -126,6 +126,20 @@ namespace CrossBuy.BL.Reporting
             var (paperW, paperH) = ReportPaper.Oriented(page);
             var contentW = ReportPaper.ContentWidthMm(page);
             var contentH = ReportPaper.ContentHeightMm(page);
+
+            // THE PAGE NUMBER IS DRAWN HERE, in a strip of the bottom margin, and the strip is RESERVED.
+            //
+            // It used to be Chromium's running footer, which knows nothing of this layout: it sat at a fixed
+            // height whatever margin the author chose, so a narrow margin put "Page 1 of 3" over the last rows,
+            // and the truncation notice — which also lives in that margin — printed on top of it. This
+            // renderer paginates itself, so it knows the page and the total and can place them where nothing
+            // else is. A layout that places its own page-number element is left to it.
+            bool ownNumbers = layout.Bands.Any(b => b.Elements.Any(e => e.Kind == ReportElementKind.SystemField
+                && e.SystemField is ReportSystemField.PageNumber or ReportSystemField.TotalPages or ReportSystemField.PageXOfY));
+            bool autoNumbers = page.ShowPageNumbers && !ownNumbers;
+            bool marginNotice = !ctx.ScreenPreview && (ctx.Truncated || ctx.IsPreview);
+            if (autoNumbers || marginNotice)
+                contentH = Math.Max(10, contentH - Math.Max(0, FootStripMm - page.MarginBottomMm));
             // THE AUTHOR'S CHOICE, and the language when they have not made one. `page.Rtl` used to
             // decide this: a bool stored with the design and defaulting to true, so an Arabic-authored
             // template printed English right to left — columns mirrored, totals on the wrong edge.
@@ -243,6 +257,24 @@ namespace CrossBuy.BL.Reporting
             if (current.Count > 0) pages.Add(current.Select(x => (x.Item1, x.Item2, x.Item3, x.Item4)).ToList());
             if (pages.Count == 0) pages.Add(new List<(string, ReportRow?, string?, List<ReportRow>?)>());
 
+            // THE TOTALS ROW IS A ROW. It prints after the last detail row and was never charged, so a full
+            // last page pushed it past the printable box. When it does not fit, the last row moves with it.
+            bool tableTotals = detailIsTable && detail!.Elements.Any(e => e.Kind == ReportElementKind.Table
+                && e.Columns.Any(c => c.Total != ReportAggregate.None));
+            if (tableTotals && units.Count > 0 && used + detailH > contentH - repeatH)
+            {
+                var lastPage = pages[^1];
+                var lastUnit = lastPage.FindLastIndex(u => u.Kind == "d");
+                if (lastUnit > 0)
+                {
+                    var moved = lastPage.GetRange(lastUnit, lastPage.Count - lastUnit);
+                    lastPage.RemoveRange(lastUnit, lastPage.Count - lastUnit);
+                    pages.Add(moved);
+                    used = tableHeadH + moved.Sum(u => UnitHeight(u.Kind));
+                }
+            }
+            if (tableTotals) used += detailH;
+
             if (footerH > 0 && used + footerH > contentH - repeatH) pages.Add(new());
 
             int totalPages = pages.Count;
@@ -297,7 +329,20 @@ namespace CrossBuy.BL.Reporting
             {
                 bool first = p == 0, last = p == totalPages - 1;
                 sb.Append("<section class=\"cbv-page\">");
-                if (first && !ctx.ScreenPreview && (ctx.Truncated || ctx.IsPreview))
+                if (autoNumbers)
+                {
+                    // One strip, three slots: the report's name, the run's notice (first page only) and the
+                    // number. Sharing the strip is what keeps the notice and the number from overprinting.
+                    sb.Append("<div class=\"cbv-foot\"><span class=\"cbv-foot-title\">").Append(Enc(ctx.ReportTitle))
+                      .Append("</span><span class=\"cbv-foot-note\">");
+                    if (first && marginNotice)
+                        sb.Append(Enc(ctx.Truncated
+                            ? (ctx.Arabic ? "النتيجة مقطوعة — بعض الصفوف غير معروضة" : "Truncated result — some rows are not shown")
+                            : (ctx.Arabic ? "معاينة — ليست النسخة النهائية" : "Preview — not the final document")));
+                    sb.Append("</span><span class=\"cbv-foot-no\">").Append(Enc(PageXOfY(ctx, p + 1, totalPages)))
+                      .Append("</span></div>");
+                }
+                else if (first && marginNotice)
                 {
                     // Keep the limitation on the printed document, in the paper's bottom margin,
                     // without changing the author's bands or the browser's pagination.
@@ -310,7 +355,10 @@ namespace CrossBuy.BL.Reporting
 
                 double y = 0;
 
-                if (first && reportHeader != null)
+                // DRAWN EXACTLY AS CHARGED. Pagination gives an empty band no paper (Charged), and the drawing
+                // used to advance past it anyway: an empty 12mm page header pushed every page's last 12mm of rows
+                // into the bottom margin, under the page number.
+                if (first && Charged(reportHeader) > 0)
                 {
                     // THE FIRST ROW, so a Field element in the letterhead resolves.
                     //
@@ -327,17 +375,17 @@ namespace CrossBuy.BL.Reporting
                     //
                     // Safe by inspection: these elements previously rendered EMPTY, so nothing that reads
                     // correctly today can start reading differently.
-                    Band(sb, ctx, reportHeader, rows.FirstOrDefault(), rows.ToList(), y, contentW,
+                    Band(sb, ctx, reportHeader!, rows.FirstOrDefault(), rows.ToList(), y, contentW,
                          p + 1, totalPages);
-                    y += reportHeader.HeightMm;
+                    y += reportHeader!.HeightMm;
                 }
 
-                if (pageHeader != null)
+                if (Charged(pageHeader) > 0)
                 {
                     // H211: a page head's fields read the document's header from the first row, as the report head
                     // does (they rendered EMPTY before, so nothing that reads correctly today changes).
-                    Band(sb, ctx, pageHeader, rows.FirstOrDefault(), null, y, contentW, p + 1, totalPages);
-                    y += pageHeader.HeightMm;
+                    Band(sb, ctx, pageHeader!, rows.FirstOrDefault(), null, y, contentW, p + 1, totalPages);
+                    y += pageHeader!.HeightMm;
                 }
 
                 var run = new List<ReportRow>();
@@ -393,7 +441,7 @@ namespace CrossBuy.BL.Reporting
                 {
                     // Anchored to the bottom of the printable box rather than after the last row: a totals
                     // block that floats up the page when a report is short looks like a bug to the reader.
-                    var footerY = Math.Max(y, contentH - (pageFooter?.HeightMm ?? 0) - reportFooter.HeightMm);
+                    var footerY = Math.Max(y, contentH - Charged(pageFooter) - reportFooter.HeightMm);
                     // Same reasoning for the closing band: a Summary already worked here because the
                     // scope was passed, but a Field did not — and a document's stored totals are FIELDS,
                     // not sums of the lines. A footer that could only add up the rows would print a total
@@ -431,14 +479,16 @@ namespace CrossBuy.BL.Reporting
             // this, and sorting here means the DOM order does not silently decide it instead.
             foreach (var e in band.Elements.OrderBy(x => x.Z))
                 Element(sb, ctx, e, row, scope, contentW, pageNo, totalPages, groupKey,
-                        stretchTable ? height : (double?)null, showTableTotals, tableTotalScope);
+                        stretchTable ? height : (double?)null, showTableTotals, tableTotalScope,
+                        stretchTable ? band.HeightMm : (double?)null);
 
             sb.Append("</div>");
         }
 
         private static void Element(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
             ReportRow? row, List<ReportRow>? scope, double contentW, int pageNo, int totalPages, string? groupKey,
-            double? bandHeightMm = null, bool showTableTotals = true, List<ReportRow>? tableTotalScope = null)
+            double? bandHeightMm = null, bool showTableTotals = true, List<ReportRow>? tableTotalScope = null,
+            double? rowHeightMm = null)
         {
             var s = e.Style ?? new ReportElementStyle();
             if (!s.Visible) return;
@@ -533,7 +583,7 @@ namespace CrossBuy.BL.Reporting
 
                 case ReportElementKind.Table:
                 {
-                    Table(sb, ctx, e, style.ToString(), scope, contentW, showTableTotals, tableTotalScope);
+                    Table(sb, ctx, e, style.ToString(), scope, contentW, showTableTotals, tableTotalScope, rowHeightMm);
                     return;
                 }
 
@@ -1441,13 +1491,16 @@ namespace CrossBuy.BL.Reporting
         // ---- the table element ------------------------------------------------------------------------
         private static void Table(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
             string style, List<ReportRow>? scope, double contentW,
-            bool showTotals = true, List<ReportRow>? totalScope = null)
+            bool showTotals = true, List<ReportRow>? totalScope = null, double? rowHeightMm = null)
         {
             var rows = scope ?? new List<ReportRow>();
             var s = e.Style ?? new ReportElementStyle();
 
+            // EVERY ROW IS THE HEIGHT PAGINATION CHARGED FOR IT: the Detail band's height. Rows used to take
+            // their natural height, so a short one left the page half empty and a wrapped one ran past the
+            // printable box into the footer. A cell longer than its column now ends in an ellipsis instead.
             sb.Append("<div class=\"cbv-el cbv-table-wrap\" style=\"").Append(style).Append("\">");
-            sb.Append("<table class=\"cbv-table\"><thead><tr>");
+            sb.Append(rowHeightMm is > 0 ? "<table class=\"cbv-table cbv-table-fixed\" style=\"--cbv-row:" + Mm(rowHeightMm.Value) + "\"><thead><tr>" : "<table class=\"cbv-table\"><thead><tr>");
             foreach (var c in e.Columns)
                 sb.Append("<th style=\"width:").Append(Mm(c.WidthMm)).Append(";text-align:").Append(Align(c.Align))
                   .Append("\">").Append(Enc(HeaderFor(ctx, c))).Append("</th>");
@@ -1555,6 +1608,12 @@ namespace CrossBuy.BL.Reporting
             };
         }
 
+        // The bottom-margin strip the automatic page number needs; a narrower margin is topped up from the body.
+        private const double FootStripMm = 9;
+
+        private static string PageXOfY(ReportVisualRenderContext ctx, int page, int total) =>
+            ctx.Arabic ? $"صفحة {page} من {total}" : $"Page {page} of {total}";
+
         private static string System(ReportSystemField field, ReportVisualRenderContext ctx, int page, int total)
         {
             var culture = ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture;
@@ -1564,7 +1623,7 @@ namespace CrossBuy.BL.Reporting
                 ReportSystemField.CurrentDateTime => ctx.Now.ToString("yyyy-MM-dd HH:mm", culture),
                 ReportSystemField.PageNumber => page.ToString(culture),
                 ReportSystemField.TotalPages => total.ToString(culture),
-                ReportSystemField.PageXOfY => ctx.Arabic ? $"Page {page} of {total}" : $"Page {page} of {total}",
+                ReportSystemField.PageXOfY => PageXOfY(ctx, page, total),
                 ReportSystemField.ReportName => ctx.ReportTitle,
                 _ => "",
             };
@@ -1744,6 +1803,16 @@ namespace CrossBuy.BL.Reporting
             sb.Append(".cbv-el{position:absolute;display:flex;overflow:hidden;white-space:pre-wrap;}");
             sb.Append(".cbv-el>span{width:100%;}");
             sb.Append(".cbv-table-wrap{display:block;overflow:visible;}");
+            sb.Append(".cbv-table-fixed{table-layout:fixed}.cbv-table-fixed tr{height:var(--cbv-row)}");
+            sb.Append(".cbv-table-fixed td,.cbv-table-fixed th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-block:0}");
+            // The automatic page number: centred in the bottom margin, or in the FootStripMm the body gave up.
+            var footH = Math.Max(page.MarginBottomMm, FootStripMm);
+            sb.Append(".cbv-foot{position:absolute;bottom:0;height:").Append(Mm(footH))
+              .Append(";inset-inline-start:").Append(Mm(page.MarginLeftMm)).Append(";inset-inline-end:").Append(Mm(page.MarginRightMm))
+              .Append(";display:flex;align-items:center;gap:4mm;font-size:7.5pt;color:#7e8299;border:0}");
+            sb.Append(".cbv-foot-title{flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}");
+            sb.Append(".cbv-foot-note{flex:0 1 auto;font-weight:600;color:#1F2D4D;white-space:nowrap}");
+            sb.Append(".cbv-foot-no{flex:1 1 0;text-align:end;white-space:nowrap;unicode-bidi:isolate}");
             sb.Append(".cbv-table{width:100%;border-collapse:collapse;font-size:inherit;}");
             sb.Append(".cbv-table th,.cbv-table td{border-block-end:.2mm solid #ccc;padding:.6mm 1mm;}");
             sb.Append(".cbv-table thead th{border-block-end:.4mm solid #0E4A9E;font-weight:700;}");

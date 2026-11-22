@@ -114,7 +114,9 @@ namespace CrossBuy.BL.Reporting
                 PrintBackground = true,
 
                 HeaderTemplate = null,
-                FooterTemplate = setup.ShowPageNumbers ? BuildFooterTemplate(context) : null,
+                // A designed layout numbers its own pages inside a reserved strip (ReportVisualRenderer); this
+                // running footer, which cannot see the layout, sat over its rows when the margin was narrow.
+                FooterTemplate = setup.ShowPageNumbers && context.Visual is null ? BuildFooterTemplate(context) : null,
                 Rtl = context.Rtl,
                 DocumentTitle = context.Title,
             };

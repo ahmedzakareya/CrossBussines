@@ -810,7 +810,10 @@ namespace CrossBuy.Tests
             Assert.True(result.IsSuccess);
             Assert.True(result.Run!.Truncated);
             var html = Encoding.UTF8.GetString(result.Artifact!.Content);
-            Assert.Contains("<section class=\"cbv-page\"><div class=\"cbv-print-notice\">", html);
+            // The notice shares the page-number strip of the first sheet (both live in the bottom margin, and
+            // drawn separately they overprinted each other).
+            Assert.Contains("<section class=\"cbv-page\"><div class=\"cbv-foot\">", html);
+            Assert.Contains("<span class=\"cbv-foot-note\">Truncated result", html);
             Assert.DoesNotContain("<body class=\"cbv\"><div", html);
             Assert.Contains("some rows are not shown", html);
         }
@@ -878,6 +881,55 @@ namespace CrossBuy.Tests
             // "Page 1 of N" with N > 1 is what makes a footer honest — a page number that cannot say how
             // many there are is the classic symptom of pagination left to CSS.
             Assert.Matches(@"Page\s+1\s+of\s+[2-9]", html);
+        }
+
+        [Fact] // 33b — the page number overprinted the last rows (owner, 2026-11-22)
+        public async Task The_page_number_has_a_reserved_strip_and_empty_bands_take_no_room()
+        {
+            using var host = new ReportingTestHost();
+            Grant(host, AccountingReportPermissions.View);
+            host.SeedEmployee(7);
+            await SeedSalesAsync(host);
+
+            // A narrow 4mm bottom margin, an EMPTY page header and a table: the three things that together put
+            // "Page 1 of N" on top of the rows.
+            var layout = Layout(l => l.Page = new ReportPageSetup
+            {
+                PageSize = ReportPageSize.A4, MarginTopMm = 10, MarginBottomMm = 4, MarginLeftMm = 10, MarginRightMm = 10,
+                Direction = ReportPageDirection.Ltr, ShowPageNumbers = true,
+            });
+            layout.Band(ReportBandKind.PageHeader)!.HeightMm = 12;
+            layout.Band(ReportBandKind.Detail)!.HeightMm = 8;
+            Put(layout, ReportBandKind.Detail, new ReportElement
+            {
+                Id = "tbl", Kind = ReportElementKind.Table, XMm = 0, YMm = 0, WidthMm = 150, HeightMm = 8,
+                Columns = { new ReportTableColumn { FieldKey = "InvoiceNo", WidthMm = 40 } },
+            });
+
+            var html = Encoding.UTF8.GetString((await Studio(host).RunAsync(Draft(layout, "InvoiceNo"),
+                ReportOutputFormat.PrintHtml, preview: false)).Artifact!.Content);
+
+            // The number is drawn by the layout, in its own strip, and the body gives up what the margin lacks.
+            Assert.Matches("<span class=\"cbv-foot-no\">Page 1 of 1</span>", html);
+            var contentH = ReportPaper.ContentHeightMm(layout.Page) - (9 - 4);
+            Assert.Contains($"height:{contentH.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}mm;}}", html);
+
+            // The empty page header is neither drawn nor allowed to push the table down.
+            Assert.DoesNotContain("cbv-band-pageheader", html);
+            Assert.Contains("cbv-band cbv-band-detail\" style=\"top:0mm", html);
+
+            // Every row is the height pagination charged for it.
+            Assert.Contains("--cbv-row:8mm", html);
+
+            // A layout with its own page-number element keeps its own, and only its own.
+            Put(layout, ReportBandKind.PageFooter, new ReportElement
+            {
+                Id = "pf", Kind = ReportElementKind.SystemField, SystemField = ReportSystemField.PageNumber,
+                XMm = 0, YMm = 0, WidthMm = 20, HeightMm = 5,
+            });
+            var own = Encoding.UTF8.GetString((await Studio(host).RunAsync(Draft(layout, "InvoiceNo"),
+                ReportOutputFormat.PrintHtml, preview: false)).Artifact!.Content);
+            Assert.DoesNotContain("class=\"cbv-foot\"", own);
         }
 
         [Fact] // 34
