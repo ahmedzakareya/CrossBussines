@@ -50,12 +50,40 @@ namespace CrossBuy.BL.Platform
         private readonly CrossDbContext _db;
         private readonly ILogger<OrgHierarchy> _log;
 
-        public OrgHierarchy(CrossDbContext db, ILogger<OrgHierarchy> log) { _db = db; _log = log; }
+        // HR0-FOLLOW-UP — the org-tree read right. Optional ONLY so the many hand-built fixtures that construct
+        // `new OrgHierarchy(db, log)` keep compiling; DI supplies it in production. When present, both walks read
+        // the WHOLE shared org tree and the Employee.EmpCompanyID intersection below does the company boundary,
+        // which is this class's whole purpose and exactly what its tests assert ("a raw walk can cross tenants;
+        // this proves the intersection"). HR0 (2026-11-11) added a company filter to Hierarchical for the org
+        // screen; under it these walks could only see the ambient company's nodes, so a foreign graft was hidden
+        // before the intersection ran and a cross-company report walk returned only self. This restores the
+        // designed whole-tree read through the audited mechanism. When absent, the walk falls back to the
+        // ambient-scoped read: narrower (it can under-report a team), never wider — safe, not a leak.
+        private readonly CompanyIsolationBypassAccess _bypass;
+
+        public OrgHierarchy(CrossDbContext db, ILogger<OrgHierarchy> log, ICompanyIsolationBypass? orgTreeBypass = null)
+        { _db = db; _log = log; _bypass = new CompanyIsolationBypassAccess(orgTreeBypass); }
+
+        // A tiny wrapper that takes OrgTreeRead ONLY when no bypass is already in force on this scope. OrgHierarchy
+        // is called from workers and escalation as well as interactive requests; if a cross-company bypass
+        // (PlatformDispatch, administration) is already active the tree is already visible, and taking a second
+        // one would hit the holder's deliberate no-nesting rule. Null when there is nothing to take.
+        private readonly struct CompanyIsolationBypassAccess
+        {
+            private readonly ICompanyIsolationBypass? _bypass;
+            public CompanyIsolationBypassAccess(ICompanyIsolationBypass? bypass) { _bypass = bypass; }
+            public IDisposable? Read(string reason)
+                => _bypass != null && _bypass.Current == null ? _bypass.BeginOrgTreeRead(reason) : null;
+        }
 
         public async Task<IReadOnlySet<int>> DirectAndIndirectReportsAsync(
             int companyId, int managerEmployeeId, CancellationToken cancellationToken = default)
         {
             if (companyId <= 0 || managerEmployeeId <= 0) return new HashSet<int>();
+
+            // Read the WHOLE tree so the EmpCompanyID intersection below does the boundary (see the field
+            // comment). A no-op when the right is not wired or a bypass is already in force.
+            using var _ = _bypass.Read($"Org-tree team walk for manager {managerEmployeeId} in company {companyId}");
 
             var team = new HashSet<int> { managerEmployeeId };
 
@@ -133,6 +161,9 @@ namespace CrossBuy.BL.Platform
             int companyId, int employeeId, CancellationToken cancellationToken = default)
         {
             if (companyId <= 0 || employeeId <= 0) return null;
+
+            // Whole-tree read; the EmpCompanyID checks below are the boundary (see the field comment).
+            using var _ = _bypass.Read($"Org-tree manager walk for employee {employeeId} in company {companyId}");
 
             var all = await _db.Hierarchicals.AsNoTracking()
                 .Select(h => new { h.H_ID, h.H_Parent, h.H_Type, h.H_ObjectID })

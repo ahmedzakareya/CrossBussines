@@ -51,7 +51,11 @@ namespace CrossBuy.Tests
             => new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance);
 
         private static IOrgHierarchy Org(PlatformTestHost host)
-            => new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance);
+            // HR0 (2026-11-11): Hierarchical is company-filtered now. The org walk reads the WHOLE tree under the
+            // OrgTreeRead right and intersects on Employee.EmpCompanyID — the behaviour this file's tests assert
+            // ("a raw walk can cross tenants; this proves the intersection"). host.HostBypass wraps host.Holder,
+            // the holder that filters host.Db, so taking the right actually unfilters the tree read.
+            => new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance, host.HostBypass());
 
         private static HrAccessService Hr(PlatformTestHost host)
             => new(host.Db, Directory(host), Org(host), B6TestWiring.Policies(host.Db),

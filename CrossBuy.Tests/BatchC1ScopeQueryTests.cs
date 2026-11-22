@@ -105,7 +105,9 @@ namespace CrossBuy.Tests
             => new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance);
 
         private static IOrgHierarchy RealOrg(PlatformTestHost host)
-            => new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance);
+            // HR0 (2026-11-11): the org walk reads the whole tree under the OrgTreeRead right and intersects on
+            // Employee.EmpCompanyID (see the graft test below). host.HostBypass wraps the holder that filters host.Db.
+            => new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance, host.HostBypass());
 
         private static TasksAccessService Tasks(
             PlatformTestHost host, IPlatformRoleDirectory? roles = null, IOrgHierarchy? org = null)
