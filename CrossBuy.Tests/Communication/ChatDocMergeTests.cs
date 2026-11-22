@@ -39,7 +39,7 @@ namespace CrossBuy.Tests.Communication
 		{
 			var r = ChatDocService.Merge3("a\nb\nc", "a\nmine\nc", "a\ntheirs\nc", "Sara", "Khaled");
 			Assert.True(r.conflict);
-			Assert.Equal("a\n<<<<<<< Sara\nmine\n=======\ntheirs\n>>>>>>> Khaled\nc", r.text);
+			Assert.Equal("a\n【 Sara 】\nmine\n【 Khaled 】\ntheirs\n【 】\nc", r.text);
 		}
 
 		[Fact]
@@ -47,7 +47,7 @@ namespace CrossBuy.Tests.Communication
 		{
 			var r = ChatDocService.Merge3("a\nb\nc\nd", "a\nb\nc\nmine", "a\nb\nC\ntheirs", "S", "K");
 			Assert.True(r.conflict);
-			Assert.Equal("a\nb\nC\n<<<<<<< S\nmine\n=======\ntheirs\n>>>>>>> K", r.text);
+			Assert.Equal("a\nb\nC\n【 S 】\nmine\n【 K 】\ntheirs\n【 】", r.text);
 		}
 
 		[Fact]

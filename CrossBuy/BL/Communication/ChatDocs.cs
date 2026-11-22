@@ -43,6 +43,14 @@ namespace CrossBuy.BL.Communication
 		public Task<int> ConversationOfAsync(int companyId, int docId)
 			=> _db.Set<ChatDoc>().AsNoTracking().Where(d => d.ID == docId && d.CompanyId == companyId && d.DeletedAt == null).Select(d => d.ConversationId).FirstOrDefaultAsync();
 
+		/// Each person as the screen shows them: the name in the reader's language and their photo (a person is shown, not a glyph).
+		private async Task<Dictionary<int, (string name, string? avatar)>> PeopleAsync(IEnumerable<int> ids)
+		{
+			var list = ids.Distinct().ToList(); if (list.Count == 0) return new();
+			var ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var rows = await _db.Employee.AsNoTracking().Where(e => list.Contains(e.ID)).Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage }).ToListAsync();
+			return rows.ToDictionary(e => e.ID, e => ((ar ? (e.FullName ?? e.FullNameEn) : (string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullName : e.FullNameEn)) ?? "-", string.IsNullOrEmpty(e.ProfileImage) ? (string?)null : e.ProfileImage));
+		}
 		private async Task<Dictionary<int, string>> NamesAsync(IEnumerable<int> ids)
 		{
 			var list = ids.Distinct().ToList(); if (list.Count == 0) return new();
@@ -81,13 +89,17 @@ namespace CrossBuy.BL.Communication
 		{
 			var d = await _db.Set<ChatDoc>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == docId && x.CompanyId == companyId && x.ConversationId == convId && x.DeletedAt == null);
 			if (d == null) return null;
-			var names = await NamesAsync(new[] { d.CreatedByEmployeeId, d.UpdatedByEmployeeId });
-			var editors = await _db.Set<ChatDocVersion>().AsNoTracking().Where(v => v.DocId == d.ID).Select(v => v.EmployeeId).Distinct().CountAsync();
+			var ids = await _db.Set<ChatDocVersion>().AsNoTracking().Where(v => v.DocId == d.ID).Select(v => v.EmployeeId).Distinct().ToListAsync();
+			var ppl = await PeopleAsync(ids.Append(d.CreatedByEmployeeId).Append(d.UpdatedByEmployeeId));
+			var names = ppl.ToDictionary(k => k.Key, v => v.Value.name);
+			var editors = ids.Count;
 			return new
 			{
 				id = d.ID, conversationId = d.ConversationId, title = d.Title, content = d.Content, version = d.Version,
 				createdBy = names.GetValueOrDefault(d.CreatedByEmployeeId), createdAt = U(d.CreatedAt),
-				updatedBy = names.GetValueOrDefault(d.UpdatedByEmployeeId), updatedById = d.UpdatedByEmployeeId, updatedAt = U(d.UpdatedAt), editors,
+				updatedBy = names.GetValueOrDefault(d.UpdatedByEmployeeId), updatedById = d.UpdatedByEmployeeId, updatedByAvatar = ppl.GetValueOrDefault(d.UpdatedByEmployeeId).avatar, updatedAt = U(d.UpdatedAt), editors,
+				// everyone who has written in it, with their photo: the editor shows a conflict's writers by face
+				people = ids.Where(ppl.ContainsKey).Select(i => new { id = i, name = ppl[i].name, avatar = ppl[i].avatar }).ToList(),
 			};
 		}
 
@@ -96,8 +108,8 @@ namespace CrossBuy.BL.Communication
 			if (!await _db.Set<ChatDoc>().AsNoTracking().AnyAsync(x => x.ID == docId && x.CompanyId == companyId && x.ConversationId == convId && x.DeletedAt == null)) return null;
 			var rows = await _db.Set<ChatDocVersion>().AsNoTracking().Where(v => v.DocId == docId).OrderByDescending(v => v.Version).Take(200)
 				.Select(v => new { v.Version, v.Title, v.EmployeeId, v.CreatedAt, v.Merged, Length = v.Content.Length }).ToListAsync();
-			var names = await NamesAsync(rows.Select(r => r.EmployeeId));
-			return rows.Select(r => new { version = r.Version, title = r.Title, by = names.GetValueOrDefault(r.EmployeeId), at = U(r.CreatedAt), merged = r.Merged, length = r.Length }).ToList();
+			var ppl = await PeopleAsync(rows.Select(r => r.EmployeeId));
+			return rows.Select(r => new { version = r.Version, title = r.Title, by = ppl.GetValueOrDefault(r.EmployeeId).name, avatar = ppl.GetValueOrDefault(r.EmployeeId).avatar, at = U(r.CreatedAt), merged = r.Merged, length = r.Length }).ToList();
 		}
 
 		public async Task<object?> VersionAsync(int companyId, int convId, int docId, int version)
@@ -220,18 +232,18 @@ namespace CrossBuy.BL.Communication
 							if (cb[q] == co[q] || ca[q] == cb[q]) { outp.Add(ca[q]); q++; continue; }
 							int e = q; while (e < co.Length && ca[e] != co[e] && cb[e] != co[e] && ca[e] != cb[e]) e++;
 							conflict = true;
-							outp.Add("<<<<<<< " + myName); outp.AddRange(ca[q..e]);
-							outp.Add("======="); outp.AddRange(cb[q..e]);
-							outp.Add(">>>>>>> " + theirName);
+							outp.Add(Mark(myName)); outp.AddRange(ca[q..e]);
+							outp.Add(Mark(theirName)); outp.AddRange(cb[q..e]);
+							outp.Add(EndMark);
 							q = e;
 						}
 					}
 					else
 					{
 						conflict = true;
-						outp.Add("<<<<<<< " + myName); outp.AddRange(ca);
-						outp.Add("======="); outp.AddRange(cb);
-						outp.Add(">>>>>>> " + theirName);
+						outp.Add(Mark(myName)); outp.AddRange(ca);
+						outp.Add(Mark(theirName)); outp.AddRange(cb);
+						outp.Add(EndMark);
 					}
 				}
 				if (s >= o.Length) break;
@@ -240,6 +252,10 @@ namespace CrossBuy.BL.Communication
 			}
 			return (string.Join("\n", outp), conflict);
 		}
+		/// The marks around a conflict: a writer's name in heavy brackets before their lines, an empty pair after both —
+		/// symbols that read the same in Arabic and in English, not code-tool arrows.
+		private static string Mark(string name) => "【 " + name + " 】";
+		private const string EndMark = "【 】";
 		private static string[] Lines(string s) => s.Length == 0 ? Array.Empty<string>() : s.Split('\n');
 		private static bool Same(string[] x, string[] y) => x.Length == y.Length && x.AsSpan().SequenceEqual(y);
 

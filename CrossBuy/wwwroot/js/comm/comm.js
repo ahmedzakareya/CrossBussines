@@ -497,6 +497,8 @@
 		var files = [].slice.call(thread.querySelectorAll('.cm-msg[data-file]')).reverse().slice(0, 5);
 		html += '<div class="sect"><h4>' + ico('folder', 15) + esc(t('Files & media')) + '</h4>' + (files.length ? files.map(function (el) {
 			var name = el.getAttribute('data-file'), kind = el.getAttribute('data-kind');
+			// a shared document opens its editor (comm-plus.js), it is not a file to download
+			if (kind === 'doc') return '<button type="button" class="cm-row border-0 bg-transparent w-100 text-start" data-doc="' + esc(String(el.getAttribute('data-href')).replace(/^doc:/, '')) + '"><span class="cm-fic">' + ico('file-text', 16) + '</span><div style="min-width:0"><div class="t" dir="auto">' + esc(name) + '</div><div class="s">' + esc(t('Shared document')) + ' · ' + num(el.getAttribute('data-when')) + '</div></div></button>';
 			return '<a class="cm-row text-decoration-none" href="' + esc(el.getAttribute('data-href')) + '" target="_blank" rel="noopener"><span class="cm-fic ' + (/\.pdf$/i.test(name) ? 'pdf' : '') + '">' + ico(kind === 'image' ? 'image' : kind === 'audio' ? 'mic' : fileIcon(name), 16) + '</span><div style="min-width:0"><div class="t">' + esc(name) + '</div><div class="s">' + num(el.getAttribute('data-when')) + '</div></div></a>';
 		}).join('') : '<div class="text-muted fs-7">' + esc(t('No files yet')) + '</div>') +
 			'<a class="cm-link" href="' + esc(CFG.fileManager || '/FileManager') + '">' + esc(t('Every file and recording in the File Manager')) + ' ' + ico(isRtl ? 'arrow-left' : 'arrow-right', 14) + '</a></div>';
@@ -682,7 +684,7 @@
 		el.setAttribute('data-name', mine ? t('You') : (m.senderName || ''));
 		// a11y: each message is one stop for the arrow keys (the list itself is the Tab stop), named by who and when
 		el.tabIndex = -1; el.setAttribute('role', 'article'); el.setAttribute('aria-label', (mine ? t('You') : (m.senderName || '')) + ' · ' + when(m.createdAt));
-		if (m.attachmentPath && !m.deleted) { el.setAttribute('data-file', m.attachmentName || (isImg(m) ? t('Picture') : 'file')); el.setAttribute('data-kind', isImg(m) ? 'image' : isAudio(m) ? 'audio' : 'file'); el.setAttribute('data-href', m.attachmentPath); el.setAttribute('data-when', when(m.createdAt)); }
+		if (m.attachmentPath && !m.deleted) { el.setAttribute('data-file', m.attachmentName || (isImg(m) ? t('Picture') : 'file')); el.setAttribute('data-kind', isImg(m) ? 'image' : isAudio(m) ? 'audio' : m.attachmentType === 'doc' ? 'doc' : 'file'); el.setAttribute('data-href', m.attachmentPath); el.setAttribute('data-when', when(m.createdAt)); }
 		var faceHtml = mine ? '' : '<span class="cm-msg-face">' + av(m.senderName, m.senderAvatar, 30) + '</span>';
 		var bar = m.deleted ? '' : '<div class="cm-hover">' + ib('smile-plus', t('React'), 'xs', 'data-act="react"') + ib('reply', t('Reply'), 'xs', 'data-act="reply"') + ib('ellipsis', t('More'), 'xs', 'data-act="more"') + '</div>';
 		el.innerHTML = faceHtml + '<div class="cm-bwrap"><div class="cm-bubble">' + bubbleInner(m) + '</div>' + bar + reactsHtml(m) + '</div>';
