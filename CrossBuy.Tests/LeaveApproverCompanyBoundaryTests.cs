@@ -100,7 +100,12 @@ namespace CrossBuy.Tests
 				// no recorder, exactly as before this file gained an actor - these scenarios assert chains and
 				// notifications, never Business Events
 				null!,
-				new ActingCaller(actingCompanyId, actingEmployeeId));
+				new ActingCaller(actingCompanyId, actingEmployeeId),
+				// THE ORG-TREE READ RIGHT, over the SAME holder that filters host.Db (host.HostBypass wraps
+				// host.Holder). This is what makes the climb read the whole tree and decide from the requester's
+				// own company — the production wiring. Without it the ambient-company test below could not pass,
+				// because the ambient scope (company TWO there) would hide the requester's own (company ONE) tree.
+				host.HostBypass());
 
 		/// The authenticated caller the service authorizes against. A test double for
 		/// IBusinessContextAccessor and nothing more - it grants no permission and bypasses no check; it

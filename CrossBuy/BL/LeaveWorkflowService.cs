@@ -65,6 +65,16 @@ namespace CrossBuy.BL
 		private readonly CrossBuy.BL.Platform.IBusinessEventService? _events;
 		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor? _contexts;
 
+		// HR0-FOLLOW-UP — the org-tree read right. Optional ONLY so the hand-built fixtures in other tabs'
+		// test files keep compiling on the shorter constructor shapes; DI always supplies it on the greediest
+		// constructor below. When present, the approver climb reads the WHOLE org tree (all companies) and
+		// decides the chain from the REQUESTER'S OWN company, independent of the ambient request's company —
+		// closing the HR0 regression where a company-filtered tree could hide a foreign graft and auto-approve.
+		// When absent (a fixture that did not wire it), the climb falls back to reading the ambient-scoped tree
+		// and failing CLOSED on an unresolved parent: safe (never a wrong/auto approval), only occasionally a
+		// false refusal when the ambient company differs from the requester's. A missing right never widens one.
+		private readonly CrossBuy.BL.Platform.ICompanyIsolationBypass? _orgTreeBypass;
+
 		public LeaveWorkflowService(
 			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
 			ILogger<LeaveWorkflowService> log)
@@ -98,8 +108,12 @@ namespace CrossBuy.BL
 		public LeaveWorkflowService(
 			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
 			ILogger<LeaveWorkflowService> log, CrossBuy.BL.Platform.IBusinessEventService events,
-			CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
-			: this(context, notifications, dashboard, log, events) { _contexts = contexts; }
+			CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
+			// Trailing and optional so the two-tab fixtures on the 6-parameter shape still compile; the container
+			// injects the real bypass here (it is registered), which is what makes the climb ambient-independent
+			// in production. See the _orgTreeBypass field comment for the fallback when it is absent.
+			CrossBuy.BL.Platform.ICompanyIsolationBypass? orgTreeBypass = null)
+			: this(context, notifications, dashboard, log, events) { _contexts = contexts; _orgTreeBypass = orgTreeBypass; }
 
 		// ---- the canonical leave fact -------------------------------------------------------
 		//
@@ -173,6 +187,18 @@ namespace CrossBuy.BL
 		// request instead of falling into its auto-approve branch.
 		public async Task<ApproverChain> ApproverChainAsync(int employeeId)
 		{
+			// HR0-FOLLOW-UP — read the org tree INDEPENDENTLY OF THE AMBIENT COMPANY. HR0 put a company filter on
+			// Hierarchical for the org-structure screen; under it this climb could only see the ambient request's
+			// company, so when that differed from the requester's own company a legitimate chain either vanished
+			// or a foreign graft became invisible. The OrgTreeRead right reads the WHOLE shared tree; the company
+			// boundary is then enforced below by intersecting every candidate against the requester's own
+			// Employee.EmpCompanyID — the one permitted basis — so a foreign node is SEEN and dropped as a defect,
+			// never auto-approved. Read-only and audited; it ends with this method. When the right is not wired
+			// (older fixtures) this is a no-op and the climb falls back to the ambient-scoped read, which fails
+			// CLOSED — safe, only occasionally a false refusal. The intersection is identical either way.
+			using var _ = _orgTreeBypass?.BeginOrgTreeRead(
+				$"Approver-chain org-tree read for employee {employeeId}");
+
 			var all = await _context.Hierarchicals.AsNoTracking().ToListAsync();
 			var byId = all.ToDictionary(h => h.H_ID);
 
@@ -213,14 +239,19 @@ namespace CrossBuy.BL
 
 			// the manager directly above: employee node → its position → the parent employee node.
 			//
-			// `hiddenParent` IS THE FOREIGN-COMPANY DEFENCE UNDER THE HR0 FILTER. `all` is company-scoped now
-			// (HR0 added a CompanyID filter to Hierarchical), so a node that belongs to ANOTHER company is simply
-			// absent from `byId`. A position whose parent node is referenced (H_Parent set) but absent is therefore
-			// a parent in a different company — the cross-company graft this climb exists to refuse. We must NOT read
-			// cross-company to see it (IgnoreQueryFilters is banned, and widening the read would be the leak): the
-			// ABSENCE of a referenced parent is itself the signal, and the climb fails CLOSED on it rather than
-			// mistaking it for "no manager above" and auto-approving. A genuine top attaches to a unit node of the
-			// SAME company, which stays visible, so the two cases do not collide.
+			// TWO LAYERS OF FOREIGN-COMPANY DEFENCE, and which one fires depends on whether the OrgTreeRead right
+			// is wired:
+			//   * PRIMARY (right wired): `all` is the WHOLE tree, so a foreign manager node is VISIBLE and resolves
+			//     to an employee id; the `sameCompany` intersection below then drops it as a defect. This is the
+			//     path production takes and it is what makes the climb independent of the ambient company.
+			//   * FALLBACK (right absent): `all` is the ambient-scoped tree, so a node in another company is simply
+			//     absent from `byId`. A position whose parent is REFERENCED (H_Parent set) but absent is then a
+			//     cross-company graft, and `hiddenParent` fails CLOSED on it rather than mistaking it for "no
+			//     manager above" and auto-approving. IgnoreQueryFilters is banned, so the fallback never widens
+			//     the read — the ABSENCE is the signal.
+			// `hiddenParent` also stays a genuine guard in BOTH modes: a referenced parent that does not exist at
+			// all (a corrupt or dangling H_Parent) is absent from `byId` too, and failing closed on it is correct.
+			// A genuine top attaches to a unit node, which is visible in either mode, so the cases do not collide.
 			(int? mgr, bool hiddenParent) ManagerOf(int empId)
 			{
 				var node = all.FirstOrDefault(h => h.H_Type == 5 && h.H_ObjectID == empId);

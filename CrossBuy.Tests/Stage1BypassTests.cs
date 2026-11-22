@@ -196,6 +196,7 @@ namespace CrossBuy.Tests
                 () => bypass.Begin(CompanyBypassKind.CrossCompanyAdministration, Admin(), reason!));
             Assert.Throws<CompanyBypassDeniedException>(() => bypass.BeginPlatformDispatch(reason!));
             Assert.Throws<CompanyBypassDeniedException>(() => bypass.BeginPublicCatalogRead(reason!));
+            Assert.Throws<CompanyBypassDeniedException>(() => bypass.BeginOrgTreeRead(reason!));
         }
 
         // The public catalogue's pin cannot be acquired through the authenticated administrative door, and the
@@ -212,9 +213,84 @@ namespace CrossBuy.Tests
             Assert.Contains("not obtainable through Begin()", denied.Message);
         }
 
+        // The org-tree read cannot be acquired through the administrative door either: it is a NARROWER right
+        // than CrossCompanyAdministration (read-only, single-consumer) and must not be reachable as the broader
+        // one. Its own entry point, BeginOrgTreeRead, is where it is obtained.
+        [Fact]
+        public void The_org_tree_read_is_not_reachable_through_the_administrative_entry_point()
+        {
+            var bypass = Bypass(new CompanyScopeHolder());
+
+            var denied = Assert.Throws<CompanyBypassDeniedException>(
+                () => bypass.Begin(CompanyBypassKind.OrgTreeRead, Admin(), Why));
+
+            Assert.Contains("not obtainable through Begin()", denied.Message);
+        }
+
         // =====================================================================================
         // 2. AN AUTHORIZED BYPASS SEES THE RECORDS IT NEEDS
         // =====================================================================================
+
+        // OrgTreeRead crosses companies (so the whole shared org tree is visible to intersect foreign nodes OUT)
+        // but is READ-ONLY, invents no actor, and ends with its lease. It takes no BusinessContext for the same
+        // reason the dispatcher does not — the climb runs FOR a subject employee, not AS them — and the reason
+        // string, not an identity, is what the audit line carries.
+        [Fact]
+        public void The_org_tree_read_crosses_companies_read_only_and_ends_with_its_lease()
+        {
+            var scope = new CompanyScopeHolder();
+            var audit = new RecordingAudit();
+            var bypass = Bypass(scope, audit: audit);
+            scope.Set(2, null);                 // the ambient request's company — company 2 here
+
+            Assert.False(scope.AllowsCrossCompany);
+
+            using (bypass.BeginOrgTreeRead("approver-chain read for employee 11"))
+            {
+                // The whole tree is visible: the B2 predicate confirms another company's row is now readable,
+                // which is what lets the climb SEE a foreign node and drop it on the EmpCompanyID intersection.
+                Assert.True(scope.AllowsCrossCompany);
+                Assert.True(NotificationCompanyPolicy.IsVisible(1, scope));
+                Assert.True(NotificationCompanyPolicy.IsVisible(2, scope));
+
+                var grant = Assert.Single(audit.Grants);
+                Assert.Equal(CompanyBypassKind.OrgTreeRead, grant.Kind);
+                Assert.True(grant.AllowsCrossCompany);
+                Assert.True(grant.Kind.IsReadOnly());
+                Assert.Null(grant.ActorEmployeeId);          // no identity invented
+                Assert.Equal(2, grant.ScopeCompanyId);       // the ambient company is recorded, not assumed
+                Assert.Contains("employee 11", grant.Reason);
+            }
+
+            // Ends with the lease, audited, and the scope keeps its own identity throughout.
+            Assert.False(scope.AllowsCrossCompany);
+            Assert.Equal(2, scope.CompanyId);
+            Assert.Single(audit.Releases);
+        }
+
+        // The read-only promise is ENFORCED, not advisory: a company-scoped write attempted under OrgTreeRead is
+        // refused by the write guard, exactly as it is for PublicCompanyRead and PlatformMonitoring. Reading the
+        // org tree and writing another company's row are different rights.
+        [Fact]
+        public async Task A_write_under_the_org_tree_read_is_refused_by_the_write_guard()
+        {
+            using var host = new PlatformTestHost(companyId: 1);
+            var scope = host.Holder;
+            var bypass = host.HostBypass();
+
+            using (bypass.BeginOrgTreeRead("approver-chain read"))
+            {
+                Assert.True(scope.AllowsCrossCompany);
+
+                // JobTitle is a guarded (pilot) entity. Adding one while the read-only right is held must be
+                // refused on save rather than silently persisted.
+                host.Db.JobTitles.Add(new JobTitle { CompanyID = 1, TitleAr = "ع", Title = "e", Description = "-" });
+
+                var denied = await Assert.ThrowsAsync<CompanyWriteDeniedException>(
+                    () => host.Db.SaveChangesAsync());
+                Assert.Contains("read-only", denied.Message);
+            }
+        }
 
         // The state a B2 filter reads. `AllowsCrossCompany` — not "a bypass is active" — is the flag, because
         // PublicCompanyRead is a bypass that PINS rather than unrestricts.

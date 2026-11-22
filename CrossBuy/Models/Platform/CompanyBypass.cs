@@ -33,6 +33,24 @@ namespace CrossBuy.Models.Platform
         // The anonymous public catalogue. NOT a bypass in the isolation sense: it pins the scope to the
         // configured public company and remains filtered. No identity, no elevation, no company from the request.
         PublicCompanyRead,
+
+        // HR0-FOLLOW-UP — the org-tree walk's cross-company READ, so an approver climb is decided from the
+        // REQUESTER'S OWN company rather than the ambient request's.
+        //
+        // WHY IT MUST CROSS COMPANIES EVEN THOUGH IT ENFORCES A BOUNDARY. `Hierarchical` has no CompanyID of
+        // its own meaning (B1 classified it CrossCompanyOperational) and the org tree is ONE shared structure
+        // that legitimately spans tenants. The approver climb (LeaveWorkflowService.ApproverChainAsync) reads
+        // the WHOLE tree and then intersects every candidate against Employee.EmpCompanyID — the requester's
+        // own company, read from their row — so a foreign node is SEEN and dropped as a defect rather than
+        // auto-approved. HR0 (2026-11-11) added a company query filter to Hierarchical for the org-structure
+        // SCREEN; under it the climb could no longer SEE a foreign node when the ambient company differed from
+        // the requester's, turning a cross-company graft into a false "top of tree". This kind restores the
+        // climb's intended whole-tree read through the audited mechanism instead of the (now absent) filter gap.
+        //
+        // It is READ-ONLY and crosses companies only to EXCLUDE: nothing cross-company escapes the walk, which
+        // returns employee-id sets already intersected to the one requester company. Obtained ONLY through
+        // BeginOrgTreeRead (never Begin), held for the smallest possible span around the tree read, and audited.
+        OrgTreeRead,
     }
 
     public static class CompanyBypassKinds
@@ -43,6 +61,7 @@ namespace CrossBuy.Models.Platform
             CompanyBypassKind.CrossCompanyAdministration => true,
             CompanyBypassKind.PlatformDispatch => true,
             CompanyBypassKind.PlatformMonitoring => true,
+            CompanyBypassKind.OrgTreeRead => true,        // sees the whole org tree, to intersect foreign nodes OUT
             CompanyBypassKind.PublicCompanyRead => false,
             _ => false,
         };
@@ -53,6 +72,7 @@ namespace CrossBuy.Models.Platform
         {
             CompanyBypassKind.PublicCompanyRead => true,
             CompanyBypassKind.PlatformMonitoring => true,
+            CompanyBypassKind.OrgTreeRead => true,        // reads the org tree to decide a chain; never writes
             _ => false,
         };
     }
@@ -96,6 +116,35 @@ namespace CrossBuy.Models.Platform
     }
 
     // Configuration for the public catalogue scope. Bound from the "Store" section.
+    // THE COMPANY THE TILL SELLS FOR. Same shape and same reason as PublicCatalogOptions below:
+    // PosAppController, HyperPosController, HyperController, PosSetupService and PosAccessService
+    // each carried their own `private const int PosCompanyId = 1`, reaching 127 lines between them.
+    //
+    // THE PINNING ITSELF IS NOT THE BUG. A till catalogue and its cash accounts genuinely live under
+    // one company while the branches sit under 65-79, so this company is a deployment fact rather
+    // than something a request can be asked for. The bug is that the fact was COMPILED IN: it could
+    // not be changed without a rebuild, it could not differ between installations, and five copies
+    // of it could drift from each other silently.
+    //
+    // It comes from configuration and nowhere else - never from a route value, a query string, a
+    // header or a cookie - exactly as the storefront company does.
+    public sealed class PosCompanyOptions
+    {
+        public int CatalogCompanyId { get; set; } = 1;
+
+        // HM-22 — WHAT ONE LOYALTY POINT IS WORTH AT THE TILL, in the document currency.
+        //
+        // ZERO MEANS REDEMPTION IS OFF, and that is the default on purpose. The earn rate cannot supply
+        // this number: redeeming at 1/earn-rate would hand the customer back 100% of what they spent,
+        // which is not a loyalty scheme, it is a refund. Deriving it would therefore be taking a pricing
+        // decision on the owner's behalf and hiding it in a formula, so the number is stated or nothing
+        // is redeemed.
+        //
+        // It lives in configuration rather than a column because it is one number for the deployment,
+        // the same way CatalogCompanyId is. A per-branch rate is a schema change and is not pretended at.
+        public decimal LoyaltyPointValue { get; set; } = 0m;
+    }
+
     public sealed class PublicCatalogOptions
     {
         // The ONE company the anonymous storefront may read. It comes from configuration and nowhere else:

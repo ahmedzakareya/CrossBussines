@@ -57,6 +57,25 @@ namespace CrossBuy.BL.Platform
         // It is not an administrative right and cannot become one — PublicCompanyRead.AllowsCrossCompany is false.
         IDisposable BeginPublicCatalogRead(string reason);
 
+        // The org-tree walk's cross-company READ (OrgTreeRead). Its own method, like the dispatch and public
+        // entry points and for the same structural reason: it is reachable ONLY here, never through Begin.
+        //
+        // AUTHORIZATION IS STRUCTURAL, NOT IDENTITY-BASED — identical in form to BeginPlatformDispatch:
+        //   * the right is read-only (CompanyBypassKind.OrgTreeRead.IsReadOnly() is true), so the write guard
+        //     refuses any company-scoped write taken under it — reading the org tree and writing are different
+        //     rights;
+        //   * it does NOT widen what business data a caller may read for its own sake: the only consumer, the
+        //     approver climb, returns employee-id sets already intersected to ONE company (the requester's own,
+        //     from their Employee row), so no other company's rows escape the walk;
+        //   * it carries no identity and invents no company — the climb is a routine operation on every leave
+        //     request, not an admin action, so requiring an admin role would break the ordinary path; the reason
+        //     string names the subject employee, and the grant is audited.
+        //
+        // It takes no BusinessContext for the same reason BeginPlatformDispatch does not: there is no single
+        // identity to record (the climb runs for a subject employee, not as them), and faking one would be worse
+        // than recording none. A reason is still required so the grant can be audited.
+        IDisposable BeginOrgTreeRead(string reason);
+
         // The company the public catalogue is pinned to, for callers that need to pass it to an existing
         // company-taking service signature (StoreCatalogService takes an int).
         int PublicCatalogCompanyId { get; }
@@ -114,6 +133,13 @@ namespace CrossBuy.BL.Platform
                     // Never reachable through Begin(); BeginPublicCatalogRead has its own path. Refusing here
                     // stops anyone acquiring the public pin through the authenticated entry point and vice versa.
                     return "PublicCompanyRead is not obtainable through Begin(); use BeginPublicCatalogRead().";
+
+                case CompanyBypassKind.OrgTreeRead:
+                    // Never reachable through Begin(); BeginOrgTreeRead has its own path, with structural
+                    // (read-only, single-consumer) authorization rather than an identity check. Refusing here
+                    // stops the org-tree read being acquired through the authenticated administrative door — it
+                    // is a narrower right than CrossCompanyAdministration and must not be reachable as one.
+                    return "OrgTreeRead is not obtainable through Begin(); use BeginOrgTreeRead().";
 
                 default:
                     return $"Unknown bypass kind '{kind}'.";
@@ -213,6 +239,31 @@ namespace CrossBuy.BL.Platform
             var grant = new CompanyBypassGrant
             {
                 Kind = CompanyBypassKind.PlatformDispatch,
+                Reason = reason.Trim(),
+                ActorEmployeeId = null,
+                ActorUserId = null,
+                ScopeCompanyId = _scope.IsResolved ? _scope.CompanyId : null,
+                CorrelationId = null,
+                GrantedAtUtc = DateTime.UtcNow,
+            };
+            return Grant(grant);
+        }
+
+        public IDisposable BeginOrgTreeRead(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                const string missing = "The org-tree read requires a reason so the grant can be audited.";
+                _audit.Refused(CompanyBypassKind.OrgTreeRead, null, missing);
+                throw new CompanyBypassDeniedException(CompanyBypassKind.OrgTreeRead, missing);
+            }
+
+            // No actor and no single company of its own — the walk runs for a subject employee, not as them, and
+            // spans the one shared org tree. The audit line records the scope's company if one is resolved (the
+            // ambient request's), and the reason names the subject; it never invents an identity or a company.
+            var grant = new CompanyBypassGrant
+            {
+                Kind = CompanyBypassKind.OrgTreeRead,
                 Reason = reason.Trim(),
                 ActorEmployeeId = null,
                 ActorUserId = null,
