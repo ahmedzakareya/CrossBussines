@@ -75,6 +75,18 @@ namespace CrossBuy.Tests
                 "uncommitted change to StockService by the parallel team. StockService is one of our two " +
                 "architectural-invariant writers, so the change is flagged for coordination (see the Batch B " +
                 "report) — its raw-SQL shape is identical to the first and carries the same verdict."),
+            ("BL/Hospital/HospitalPatientMergeService.cs", 5,
+                "A patient merge, which by its nature rewrites rows across many tables. Every one of the five " +
+                "statements carries an explicit CompanyId predicate: the two UPDATE loops take BOTH table and column " +
+                "from HospitalPatientMergeRules' constant lists, never from a request, with every VALUE a parameter " +
+                "({0},{1},{2}); the three DELETEs (portal family links, H70 SMS opt-outs, H163 contact preferences) " +
+                "are interpolated, so parameterised, and scoped CompanyId = {c} on the row they delete. Worth re-reading " +
+                "if those rule lists ever become configurable."),
+            ("BL/Hospital/HospitalOutpatientService.cs", 1,
+                "sp_getapplock only - it reads and writes NO rows. The lock resource names the RESOLVED company and the " +
+                "day (hospital-queue-{CompanyId}-{yyyyMMdd}), passed as a parameter, so two desks of one company cannot " +
+                "hand out the same queue number and another company's desks never wait on it. The number itself is " +
+                "then read through EF with an explicit CompanyId predicate."),
 
             ("BL/Platform/PlatformGrantWriter.cs", 1,
                 "ONE FromSqlRaw read of PlatformRoleAssignments under WITH (UPDLOCK, ROWLOCK), in " +
