@@ -107,5 +107,48 @@ namespace CrossBuy.Tests
 			HospitalSliceParity.ColumnsMatch(model, s, typeof(HospitalPayerClaimSheet), "HospitalPayerClaimSheets");
 			foreach (var d in HospitalClaimSheets.Delimiters) Assert.Contains("'" + d + "'", s);
 		}
+
+		// H229: a fixed column (the hospital's code at the payer, or kept empty) may repeat, keeps its value through saving,
+		// and lands on every row; a too-long value is refused.
+		[Fact]
+		public void A_fixed_column_repeats_keeps_its_value_and_is_on_every_row()
+		{
+			var cols = new[] { new HospitalClaimSheetColumn("Fixed", "Provider", "KW-HOSP-0091"), new HospitalClaimSheetColumn("ClaimNo", "Invoice"),
+				new HospitalClaimSheetColumn("Fixed", "Remarks", ""), new HospitalClaimSheetColumn("Claimed", "Net") };
+			Assert.Null(HospitalClaimSheets.Refusal(new HospitalClaimSheetInput { Columns = cols.ToList(), Delimiter = ",", DateFormat = "yyyy-MM-dd" }));
+			var back = HospitalClaimSheets.Unpack(HospitalClaimSheets.Pack(cols));
+			Assert.Equal(cols, back);
+			var csv = HospitalClaimSheets.Render(new HospitalClaimSheetSetup(back, ",", "yyyy-MM-dd", true), "CB-1", new[] { Claim("سارة", "Sara", ("85025", 12.5m, 10m), ("71045", 30m, 24m)) }, "KWD");
+			var rows = csv.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+			Assert.Equal(new[] { "Provider,Invoice,Remarks,Net", "KW-HOSP-0091,BILL-000101,,10.000", "KW-HOSP-0091,BILL-000101,,24.000" }, rows);
+			Assert.Equal("A fixed value is 100 characters at most", HospitalClaimSheets.Refusal(new HospitalClaimSheetInput
+				{ Columns = new() { new("Fixed", "X", new string('9', 101)) }, Delimiter = ",", DateFormat = "yyyy-MM-dd" }));
+			Assert.Equal("A column is chosen twice", HospitalClaimSheets.Refusal(new HospitalClaimSheetInput
+				{ Columns = new() { new("ClaimNo", "A"), new("ClaimNo", "B") }, Delimiter = ",", DateFormat = "yyyy-MM-dd" }));
+		}
+
+		[Fact]
+		public void A_payers_headings_are_matched_to_the_fields_they_mean()
+		{
+			var m = HospitalClaimSheets.Map(new[] { "S.No", "Card No.", "Patient Name", "CIVIL ID", "DOS", "ICD-10", "CPT", "Description", "Gross Amount", "Co-Pay", "Net Amount", "Provider Code", "Invoice No", "Card Number", "", "" });
+			Assert.Equal(new[] { "LineNo", "MemberNo", "PatientName", "CivilId", "VisitDate", "Diagnoses", "ServiceCode", "ServiceName", "Gross", "PatientShare", "Claimed", "Fixed", "ClaimNo", "Fixed" }, m.Select(x => x.Key));
+			Assert.Equal("Card Number", m[13].Header);   // a second "card" is not guessed again: the administrator decides
+			Assert.Equal("Fixed", HospitalClaimSheets.Guess("رمز مقدم الخدمة"));
+			Assert.Equal("CivilId", HospitalClaimSheets.Guess("الرقم المدني"));
+		}
+
+		[Fact]
+		public void The_headings_are_read_from_a_csv_or_an_excel_template()
+		{
+			var (h, d) = HospitalClaimSheets.CsvHeaders("\uFEFF\r\nMember No;\"Name; full\";DOS\r\n1;2;3");
+			Assert.Equal(new[] { "Member No", "Name; full", "DOS" }, h);
+			Assert.Equal(";", d);
+			Assert.Equal("TAB", HospitalClaimSheets.CsvHeaders("A\tB\tC").Delimiter);
+			using var wb = new ClosedXML.Excel.XLWorkbook();
+			var ws = wb.Worksheets.Add("Claims");
+			ws.Cell(3, 1).SetValue("Card No"); ws.Cell(3, 2).SetValue("CPT"); ws.Cell(3, 4).SetValue("Net");   // a title-less sheet whose headings start lower, one blank between
+			using var ms = new MemoryStream(); wb.SaveAs(ms); ms.Position = 0;
+			Assert.Equal(new[] { "Card No", "CPT", "", "Net" }, HospitalClaimSheets.XlsxHeaders(ms));
+		}
 	}
 }

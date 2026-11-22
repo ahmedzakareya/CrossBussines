@@ -3,7 +3,6 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalDiseaseReportRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
-@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @*
     H209 — notifiable diseases, composed from the theme (demo39): two stat badges, the register's filter bar and table
     (each case's disease and group, the visit's diagnosis, the time it is due by — overdue in red — and how it closed),
@@ -18,7 +17,7 @@
     bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
     var diseases = (ViewBag.Diseases as IReadOnlyList<HospitalNotifiableDisease>) ?? Array.Empty<HospitalNotifiableDisease>();
     string Link(int p, bool? od = null) => Url.Action("Notifiable", new { q, status, overdue = od ?? overdue, patient, page = p })!;
-    bool mohConnected = !string.IsNullOrWhiteSpace(Config["Hospital:MohGateway:Url"]);   // H225
+    bool mohConnected = ViewBag.MohConnected == true;   // H225; H229: the administrator's connection, not a server setting
     string Tone(string s) => s switch { HospitalDiseaseReportStatus.Due => "info", HospitalDiseaseReportStatus.Reported => "primary", _ => "secondary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />

@@ -30,6 +30,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Page = Math.Max(1, page); ViewBag.Pages = Math.Max(1, (total + size - 1) / size); ViewBag.Total = total; ViewBag.Due = due; ViewBag.Late = late; ViewBag.Ready = ready;
 			ViewBag.Diseases = ready ? await NotifSvc.DiseasesAsync(ctx, ct) : Array.Empty<HospitalNotifiableDisease>();
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			ViewBag.MohConnected = await HospitalMohGatewayService.ConnectedAsync(_db, ctx.CompanyId, ct);   // H229
 			return View(rows);
 		}
 

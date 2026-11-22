@@ -333,6 +333,11 @@
                 <select class="form-select form-select-sm form-select-solid" data-sheet-copy-from></select>
                 <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-copy>@T["Copy this payer's sheet"]</button>
             </div>
+            @* H229: the payer's own template - its headings, in its order, each matched to a field; reviewed before saving *@
+            <div class="d-flex gap-2 mb-5 align-items-center">
+                <input type="file" class="form-control form-control-sm form-control-solid" accept=".xlsx,.csv" data-sheet-file />
+                <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-sheet-read><i class="ki-outline ki-file-up fs-4"></i>@T["Read the payer's template"]</button>
+            </div>
             <div class="row g-4 mb-5">
                 <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Separator"]</label><select class="form-select form-select-solid" data-sheet="delimiter"><option value=",">@T["Comma"] ( , )</option><option value=";">@T["Semicolon"] ( ; )</option><option value="TAB">@T["Tab"]</option></select></div>
                 <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Date format"]</label><select class="form-select form-select-solid" data-sheet="dateFormat">@foreach (var f in HospitalClaimSheets.DateFormats) {<option value="@f">@f</option>}</select></div>
@@ -340,7 +345,9 @@
             <div class="table-responsive mh-400px scroll-y"><table class="table table-row-dashed align-middle gs-0 gy-2 my-0">
                 <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start w-50px"></th><th>@T["Field"]</th><th>@T["Header in the sheet"]</th><th class="text-end pe-4 rounded-end w-100px"></th></tr></thead>
                 <tbody data-sheet-rows></tbody>
-            </table></div>
+            </table>
+            <button type="button" class="btn btn-sm btn-light mt-3" data-sheet-fixed><i class="ki-outline ki-plus fs-4"></i>@T["Add a fixed column"]</button>
+            <div class="text-muted fs-8 mt-2">@T["A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty."]</div></div>
             <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-sheet-save>@T["Save"]</button></div>
         </div>
     </div></div></div>
@@ -437,8 +444,25 @@
         (function () {
             var m = document.getElementById('hp_sheet_modal'); if (!m) return;
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, payer = null, body = m.querySelector('[data-sheet-rows]');
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), fixedName: @Json.Serialize(T["Fixed value"].Value),
+                fixedHolder: @Json.Serialize(T["Value on every row (may be empty)"].Value), read: @Json.Serialize(T["The template's headings are in place: check each field, then save"].Value), file: @Json.Serialize(T["Choose the payer's template file"].Value) };
             function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+            var fields = [];
+            // H229: a fixed column - its value on every row, its header, removable
+            function fixedRow(header, value) {
+                return '<tr data-key="Fixed"><td class="ps-4"><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" checked data-on /></div></td>'
+                    + '<td><div class="fs-8 text-muted mb-1">' + esc(W.fixedName) + '</div><input class="form-control form-control-sm form-control-solid" maxlength="100" dir="auto" placeholder="' + esc(W.fixedHolder) + '" value="' + esc(value) + '" data-v /></td>'
+                    + '<td><input class="form-control form-control-sm form-control-solid" maxlength="60" dir="auto" value="' + esc(header) + '" data-h /></td>'
+                    + '<td class="text-end pe-4 text-nowrap"><button type="button" class="btn btn-sm btn-icon btn-bg-light" data-up><i class="ki-outline ki-arrow-up fs-4"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light ms-1" data-down><i class="ki-outline ki-arrow-down fs-4"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light ms-1" data-rm><i class="ki-outline ki-trash fs-4"></i></button></td></tr>';
+            }
+            // the columns in order (field or fixed), then every field not used, unticked
+            function render(cols) {
+                var byKey = {}; fields.forEach(function (f) { byKey[f.key] = f; });
+                var used = [], h = '';
+                cols.forEach(function (c) { if (c.key === 'Fixed') h += fixedRow(c.header, c.value || ''); else if (byKey[c.key] && used.indexOf(c.key) < 0) { used.push(c.key); h += row(byKey[c.key], true, c.header); } });
+                fields.forEach(function (f) { if (used.indexOf(f.key) < 0) h += row(f, false, null); });
+                body.innerHTML = h;
+            }
             function row(f, on, header) {
                 return '<tr data-key="' + esc(f.key) + '"><td class="ps-4"><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox"' + (on ? ' checked' : '') + ' data-on /></div></td>'
                     + '<td class="fs-7 fw-semibold text-gray-800">' + esc(f.name) + '</td>'
@@ -446,7 +470,24 @@
                     + '<td class="text-end pe-4 text-nowrap"><button type="button" class="btn btn-sm btn-icon btn-bg-light" data-up><i class="ki-outline ki-arrow-up fs-4"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light ms-1" data-down><i class="ki-outline ki-arrow-down fs-4"></i></button></td></tr>';
             }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-sheet-setup],[data-up],[data-down],[data-sheet-save],[data-sheet-copy]'); if (!t) return;
+                var t = e.target.closest('[data-sheet-setup],[data-up],[data-down],[data-sheet-save],[data-sheet-copy],[data-sheet-fixed],[data-rm],[data-sheet-read]'); if (!t) return;
+                if (t.hasAttribute('data-sheet-fixed')) { body.insertAdjacentHTML('afterbegin', fixedRow('', '')); return; }   // H229
+                if (t.hasAttribute('data-rm')) { t.closest('tr').remove(); return; }
+                if (t.hasAttribute('data-sheet-read')) {   // H229: the payer's template, read and matched; nothing saved yet
+                    var fi = m.querySelector('[data-sheet-file]');
+                    if (!fi.files.length) { toastr.error(W.file); return; }
+                    var fd = new FormData(); fd.append('file', fi.files[0]);
+                    t.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet/Template', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: fd })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) {
+                            t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            render(res.columns.map(function (c) { return { key: c.key, header: c.header, value: '' }; }));
+                            if (res.delimiter) { var el = m.querySelector('[data-sheet=delimiter]'); el.value = res.delimiter; if (window.jQuery) jQuery(el).trigger('change'); }
+                            toastr.info(W.read);
+                        });
+                    return;
+                }
                 if (t.hasAttribute('data-sheet-copy')) {
                     t.disabled = true;
                     fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet/CopyFrom/' + m.querySelector('[data-sheet-copy-from]').value, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
@@ -458,11 +499,8 @@
                     payer = t.getAttribute('data-sheet-setup');
                     fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
                         if (!d.ok) { toastr.error(W.failed); return; }
-                        var byKey = {}; d.fields.forEach(function (f) { byKey[f.key] = f; });
-                        var used = d.columns.map(function (c) { return c.key; }), h = '';
-                        d.columns.forEach(function (c) { if (byKey[c.key]) h += row(byKey[c.key], true, c.header); });
-                        d.fields.forEach(function (f) { if (used.indexOf(f.key) < 0) h += row(f, false, null); });
-                        body.innerHTML = h;
+                        fields = d.fields; render(d.columns);   // H229: fixed columns too
+                        m.querySelector('[data-sheet-file]').value = '';
                         [['delimiter', d.delimiter], ['dateFormat', d.dateFormat]].forEach(function (x) { var el = m.querySelector('[data-sheet=' + x[0] + ']'); el.value = x[1]; if (window.jQuery) jQuery(el).trigger('change'); });   // the theme makes these select2
                         m.querySelector('[data-sheet-std]').classList.toggle('d-none', !!d.saved);
                         // H223: copy another payer's sheet (a TPA serving several insurers takes one layout)
@@ -479,7 +517,7 @@
                     return;
                 }
                 var cols = Array.prototype.filter.call(body.querySelectorAll('tr'), function (r) { return r.querySelector('[data-on]').checked; })
-                    .map(function (r) { return { key: r.getAttribute('data-key'), header: r.querySelector('[data-h]').value }; });
+                    .map(function (r) { var v = r.querySelector('[data-v]'); return { key: r.getAttribute('data-key'), header: r.querySelector('[data-h]').value, value: v ? v.value : null }; });
                 t.disabled = true;
                 fetch(@Json.Serialize(Url.Content("~/Hospital/Insurance/Payers/")) + payer + '/Sheet', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
                     body: JSON.stringify({ columns: cols, delimiter: m.querySelector('[data-sheet=delimiter]').value, dateFormat: m.querySelector('[data-sheet=dateFormat]').value }) })

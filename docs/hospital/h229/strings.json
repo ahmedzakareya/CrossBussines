@@ -1,0 +1,145 @@
+{
+ "unit": "H229 - MOH gateway settings and payer sheet templates",
+ "strings": {
+  "Write the gateway address": {
+   "ar": "اكتب عنوان البوابة",
+   "en": "Write the gateway address",
+   "fr": "Saisissez l'adresse de la passerelle"
+  },
+  "The gateway address is too long": {
+   "ar": "عنوان البوابة طويل جدًا",
+   "en": "The gateway address is too long",
+   "fr": "L'adresse de la passerelle est trop longue"
+  },
+  "The gateway address must be a full https address": {
+   "ar": "يجب أن يكون عنوان البوابة عنوان https كاملًا",
+   "en": "The gateway address must be a full https address",
+   "fr": "L'adresse de la passerelle doit être une adresse https complète"
+  },
+  "The key is too long": {
+   "ar": "المفتاح طويل جدًا",
+   "en": "The key is too long",
+   "fr": "La clé est trop longue"
+  },
+  "The key cannot be stored on this server": {
+   "ar": "لا يمكن حفظ المفتاح على هذا الخادم",
+   "en": "The key cannot be stored on this server",
+   "fr": "La clé ne peut pas être enregistrée sur ce serveur"
+  },
+  "A fixed value is 100 characters at most": {
+   "ar": "القيمة الثابتة 100 حرف على الأكثر",
+   "en": "A fixed value is 100 characters at most",
+   "fr": "Une valeur fixe compte 100 caractères au plus"
+  },
+  "Choose the payer's template file": {
+   "ar": "اختر ملف نموذج الجهة الدافعة",
+   "en": "Choose the payer's template file",
+   "fr": "Choisissez le fichier modèle du payeur"
+  },
+  "The template must be an Excel (.xlsx) or CSV file": {
+   "ar": "يجب أن يكون النموذج ملف Excel (.xlsx) أو CSV",
+   "en": "The template must be an Excel (.xlsx) or CSV file",
+   "fr": "Le modèle doit être un fichier Excel (.xlsx) ou CSV"
+  },
+  "The template could not be read": {
+   "ar": "تعذّرت قراءة النموذج",
+   "en": "The template could not be read",
+   "fr": "Le modèle n'a pas pu être lu"
+  },
+  "No headings were found in the template": {
+   "ar": "لم يُعثر على عناوين أعمدة في النموذج",
+   "en": "No headings were found in the template",
+   "fr": "Aucun en-tête n'a été trouvé dans le modèle"
+  },
+  "Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key.": {
+   "ar": "الأجهزة التي تتصل بـ HL7 عبر MLLP فقط، وأجهزة الأشعة التي تقرأ قائمة عملها بـ DICOM، تتصل بالمنافذ التي يفتحها مسؤول الخادم لواجهة ومفتاحها.",
+   "en": "Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key.",
+   "fr": "Les appareils qui ne parlent que HL7 sur MLLP, et les appareils d'imagerie qui lisent leur liste de travail DICOM, se connectent aux ports que l'administrateur du serveur ouvre pour une interface et sa clé."
+  },
+  "Ministry of Health gateway": {
+   "ar": "بوابة وزارة الصحة",
+   "en": "Ministry of Health gateway",
+   "fr": "Passerelle du ministère de la Santé"
+  },
+  "Sick leave certificates and notifiable diseases are sent from their screens when it is on.": {
+   "ar": "تُرسل شهادات الإجازة المرضية والأمراض واجبة الإبلاغ من شاشاتها عند تشغيلها.",
+   "en": "Sick leave certificates and notifiable diseases are sent from their screens when it is on.",
+   "fr": "Les certificats d'arrêt maladie et les maladies à déclaration obligatoire sont envoyés depuis leurs écrans lorsqu'elle est activée."
+  },
+  "The gateway table is not created yet (hospital_h229_moh_settings.sql).": {
+   "ar": "جدول البوابة غير منشأ بعد (hospital_h229_moh_settings.sql).",
+   "en": "The gateway table is not created yet (hospital_h229_moh_settings.sql).",
+   "fr": "La table de la passerelle n'est pas encore créée (hospital_h229_moh_settings.sql)."
+  },
+  "Gateway address": {
+   "ar": "عنوان البوابة",
+   "en": "Gateway address",
+   "fr": "Adresse de la passerelle"
+  },
+  "The Ministry's endpoint, or the integrator's in front of it.": {
+   "ar": "عنوان نظام الوزارة، أو عنوان الجهة الوسيطة أمامه.",
+   "en": "The Ministry's endpoint, or the integrator's in front of it.",
+   "fr": "Le point d'accès du ministère, ou celui de l'intégrateur placé devant."
+  },
+  "Key": {
+   "ar": "المفتاح",
+   "en": "Key",
+   "fr": "Clé"
+  },
+  "A key is saved: leave empty to keep it": {
+   "ar": "يوجد مفتاح محفوظ: اتركه فارغًا للإبقاء عليه",
+   "en": "A key is saved: leave empty to keep it",
+   "fr": "Une clé est enregistrée : laissez vide pour la garder"
+  },
+  "The key the Ministry issued": {
+   "ar": "المفتاح الصادر من الوزارة",
+   "en": "The key the Ministry issued",
+   "fr": "La clé délivrée par le ministère"
+  },
+  "Remove the saved key": {
+   "ar": "حذف المفتاح المحفوظ",
+   "en": "Remove the saved key",
+   "fr": "Supprimer la clé enregistrée"
+  },
+  "Send to the Ministry from the screens": {
+   "ar": "الإرسال إلى الوزارة من الشاشات",
+   "en": "Send to the Ministry from the screens",
+   "fr": "Envoyer au ministère depuis les écrans"
+  },
+  "Last changed": {
+   "ar": "آخر تعديل",
+   "en": "Last changed",
+   "fr": "Dernière modification"
+  },
+  "Read the payer's template": {
+   "ar": "قراءة نموذج الجهة الدافعة",
+   "en": "Read the payer's template",
+   "fr": "Lire le modèle du payeur"
+  },
+  "Add a fixed column": {
+   "ar": "إضافة عمود ثابت",
+   "en": "Add a fixed column",
+   "fr": "Ajouter une colonne fixe"
+  },
+  "A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty.": {
+   "ar": "للعمود الثابت القيمة نفسها في كل صف - رمز المستشفى لدى الجهة الدافعة مثلًا - أو يبقى فارغًا.",
+   "en": "A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty.",
+   "fr": "Une colonne fixe a la même valeur sur chaque ligne - le code de l'hôpital chez le payeur, par exemple - ou reste vide."
+  },
+  "Fixed value": {
+   "ar": "قيمة ثابتة",
+   "en": "Fixed value",
+   "fr": "Valeur fixe"
+  },
+  "Value on every row (may be empty)": {
+   "ar": "القيمة في كل صف (يمكن أن تبقى فارغة)",
+   "en": "Value on every row (may be empty)",
+   "fr": "Valeur sur chaque ligne (peut rester vide)"
+  },
+  "The template's headings are in place: check each field, then save": {
+   "ar": "وُضعت عناوين النموذج: راجع كل حقل ثم احفظ",
+   "en": "The template's headings are in place: check each field, then save",
+   "fr": "Les en-têtes du modèle sont en place : vérifiez chaque champ, puis enregistrez"
+  }
+ }
+}

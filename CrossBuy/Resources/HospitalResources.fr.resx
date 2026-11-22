@@ -9640,4 +9640,32 @@
   <data name="Last copy" xml:space="preserve"><value>Dernière copie</value></data>
   <data name="made" xml:space="preserve"><value>établie</value></data>
   <data name="not made" xml:space="preserve"><value>non établie</value></data>
+  <data name="A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty." xml:space="preserve"><value>Une colonne fixe a la même valeur sur chaque ligne - le code de l'hôpital chez le payeur, par exemple - ou reste vide.</value></data>
+  <data name="A fixed value is 100 characters at most" xml:space="preserve"><value>Une valeur fixe compte 100 caractères au plus</value></data>
+  <data name="A key is saved: leave empty to keep it" xml:space="preserve"><value>Une clé est enregistrée : laissez vide pour la garder</value></data>
+  <data name="Add a fixed column" xml:space="preserve"><value>Ajouter une colonne fixe</value></data>
+  <data name="Choose the payer's template file" xml:space="preserve"><value>Choisissez le fichier modèle du payeur</value></data>
+  <data name="Fixed value" xml:space="preserve"><value>Valeur fixe</value></data>
+  <data name="Gateway address" xml:space="preserve"><value>Adresse de la passerelle</value></data>
+  <data name="Key" xml:space="preserve"><value>Clé</value></data>
+  <data name="Last changed" xml:space="preserve"><value>Dernière modification</value></data>
+  <data name="Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key." xml:space="preserve"><value>Les appareils qui ne parlent que HL7 sur MLLP, et les appareils d'imagerie qui lisent leur liste de travail DICOM, se connectent aux ports que l'administrateur du serveur ouvre pour une interface et sa clé.</value></data>
+  <data name="Ministry of Health gateway" xml:space="preserve"><value>Passerelle du ministère de la Santé</value></data>
+  <data name="No headings were found in the template" xml:space="preserve"><value>Aucun en-tête n'a été trouvé dans le modèle</value></data>
+  <data name="Read the payer's template" xml:space="preserve"><value>Lire le modèle du payeur</value></data>
+  <data name="Remove the saved key" xml:space="preserve"><value>Supprimer la clé enregistrée</value></data>
+  <data name="Send to the Ministry from the screens" xml:space="preserve"><value>Envoyer au ministère depuis les écrans</value></data>
+  <data name="Sick leave certificates and notifiable diseases are sent from their screens when it is on." xml:space="preserve"><value>Les certificats d'arrêt maladie et les maladies à déclaration obligatoire sont envoyés depuis leurs écrans lorsqu'elle est activée.</value></data>
+  <data name="The Ministry's endpoint, or the integrator's in front of it." xml:space="preserve"><value>Le point d'accès du ministère, ou celui de l'intégrateur placé devant.</value></data>
+  <data name="The gateway address is too long" xml:space="preserve"><value>L'adresse de la passerelle est trop longue</value></data>
+  <data name="The gateway address must be a full https address" xml:space="preserve"><value>L'adresse de la passerelle doit être une adresse https complète</value></data>
+  <data name="The gateway table is not created yet (hospital_h229_moh_settings.sql)." xml:space="preserve"><value>La table de la passerelle n'est pas encore créée (hospital_h229_moh_settings.sql).</value></data>
+  <data name="The key cannot be stored on this server" xml:space="preserve"><value>La clé ne peut pas être enregistrée sur ce serveur</value></data>
+  <data name="The key is too long" xml:space="preserve"><value>La clé est trop longue</value></data>
+  <data name="The key the Ministry issued" xml:space="preserve"><value>La clé délivrée par le ministère</value></data>
+  <data name="The template could not be read" xml:space="preserve"><value>Le modèle n'a pas pu être lu</value></data>
+  <data name="The template must be an Excel (.xlsx) or CSV file" xml:space="preserve"><value>Le modèle doit être un fichier Excel (.xlsx) ou CSV</value></data>
+  <data name="The template's headings are in place: check each field, then save" xml:space="preserve"><value>Les en-têtes du modèle sont en place : vérifiez chaque champ, puis enregistrez</value></data>
+  <data name="Value on every row (may be empty)" xml:space="preserve"><value>Valeur sur chaque ligne (peut rester vide)</value></data>
+  <data name="Write the gateway address" xml:space="preserve"><value>Saisissez l'adresse de la passerelle</value></data>
 </root>

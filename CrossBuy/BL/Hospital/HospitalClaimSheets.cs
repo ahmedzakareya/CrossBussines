@@ -14,7 +14,11 @@ namespace CrossBuy.BL.Hospital
 	//   · Amounts are written in the invariant culture with the currency's decimals (3 for KWD).
 	// ==========================================================================================
 	public sealed record HospitalClaimSheetField(string Key, string Ar, string En, bool Numeric);
-	public sealed record HospitalClaimSheetColumn(string Key, string Header);
+	/// A column of the payer's sheet: a field, or (H229) a FIXED value the TPA wants on every row - the hospital's provider
+	/// code, a plan code, or nothing at all for a column it keeps for itself.
+	public sealed record HospitalClaimSheetColumn(string Key, string Header, string? Value = null);
+	/// H229: a heading read from the payer's own template, and the field it most likely means (Fixed: none matched).
+	public sealed record HospitalClaimSheetTemplateColumn(string Header, string Key);
 	public sealed record HospitalClaimSheetSetup(IReadOnlyList<HospitalClaimSheetColumn> Columns, string Delimiter, string DateFormat, bool Saved);
 
 	public sealed class HospitalClaimSheetInput
@@ -60,24 +64,128 @@ namespace CrossBuy.BL.Hospital
 		public static readonly IReadOnlyList<string> DateFormats = new[] { "yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy", "dd-MM-yyyy" };
 
 		/// The sheet a payer gets until it has its own: every column, English headers, comma, ISO dates.
+		/// H229: a column with the same value on every row (empty when the TPA keeps it blank).
+		public const string FixedKey = "Fixed";
+
+		public static bool Known(string key) => key == FixedKey || Fields.Any(f => f.Key == key);
+
 		public static HospitalClaimSheetSetup Standard() => new(Fields.Where(f => f.Key != "PatientNameAr").Select(f => new HospitalClaimSheetColumn(f.Key, f.En)).ToList(), ",", "yyyy-MM-dd", false);
 
-		public static string Pack(IEnumerable<HospitalClaimSheetColumn> cols) => string.Join("|", cols.Select(c => c.Key + "=" + c.Header.Replace("|", "/").Replace("=", "-")));
+		private static string Safe(string? s) => (s ?? "").Replace("|", "/").Replace("=", "-").Replace("~", "-");
+
+		/// key=Header, or Fixed~value=Header for a fixed column.
+		public static string Pack(IEnumerable<HospitalClaimSheetColumn> cols) =>
+			string.Join("|", cols.Select(c => (c.Key == FixedKey ? FixedKey + "~" + Safe(c.Value) : c.Key) + "=" + Safe(c.Header)));
 
 		public static IReadOnlyList<HospitalClaimSheetColumn> Unpack(string? packed) =>
-			(packed ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries).Select(p => { int i = p.IndexOf('='); return i < 0 ? new HospitalClaimSheetColumn(p, p) : new HospitalClaimSheetColumn(p[..i], p[(i + 1)..]); })
-				.Where(c => Fields.Any(f => f.Key == c.Key)).ToList();
+			(packed ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries).Select(p =>
+			{
+				int i = p.IndexOf('=');
+				string k = i < 0 ? p : p[..i], h = i < 0 ? p : p[(i + 1)..];
+				if (k.StartsWith(FixedKey + "~", StringComparison.Ordinal)) return new HospitalClaimSheetColumn(FixedKey, h, k[(FixedKey.Length + 1)..]);
+				return new HospitalClaimSheetColumn(k, h);
+			}).Where(c => Known(c.Key)).ToList();
 
 		public static string? Refusal(HospitalClaimSheetInput i)
 		{
 			var cols = i.Columns ?? new();
 			if (cols.Count == 0) return "Choose at least one column";
-			if (cols.Any(c => c == null || !Fields.Any(f => f.Key == c.Key))) return "not_found";
-			if (cols.Select(c => c.Key).Distinct().Count() != cols.Count) return "A column is chosen twice";
+			if (cols.Any(c => c == null || !Known(c.Key))) return "not_found";
+			var fields = cols.Where(c => c.Key != FixedKey).Select(c => c.Key).ToList();   // a fixed column may repeat
+			if (fields.Distinct().Count() != fields.Count) return "A column is chosen twice";
+			if (cols.Any(c => c.Key == FixedKey && (c.Value ?? "").Trim().Length > 100)) return "A fixed value is 100 characters at most";
 			if (cols.Any(c => string.IsNullOrWhiteSpace(c.Header) || c.Header.Trim().Length > 60)) return "Every column needs a header of at most 60 characters";
 			if (Pack(cols.Select(c => c with { Header = c.Header.Trim() })).Length > 2000) return "The text is too long";
 			if (string.IsNullOrEmpty(i.Delimiter) || !Delimiters.Contains(i.Delimiter)) return "Choose the separator";
 			return string.IsNullOrEmpty(i.DateFormat) || !DateFormats.Contains(i.DateFormat) ? "Choose the date format" : null;
+		}
+
+		// ---- H229: the payer's own template ----------------------------------------------------------------------------
+		// Names TPAs use for the same thing, beside each field's own Arabic and English names. Compared after folding case,
+		// spaces and punctuation, so "Member No.", "member_no" and "MEMBER NO" are one heading.
+		private static readonly (string Key, string[] Names)[] Synonyms =
+		{
+			("ClaimNo", new[] { "claim no", "claim number", "invoice no", "invoice number", "bill no", "bill number", "رقم الفاتورة" }),
+			("MemberNo", new[] { "member no", "member id", "membership no", "card no", "card number", "insurance no", "policy no", "رقم البطاقة" }),
+			("MemberClass", new[] { "class", "plan", "network", "category of member", "الفئة التأمينية" }),
+			("PatientName", new[] { "patient name", "member name", "name", "insured name" }),
+			("CivilId", new[] { "civil id", "national id", "cid", "id no", "emirates id", "iqama", "الرقم المدني" }),
+			("FileNo", new[] { "file no", "mrn", "medical record no", "patient file", "رقم الملف" }),
+			("BirthDate", new[] { "dob", "date of birth", "birth date", "تاريخ الميلاد" }),
+			("Sex", new[] { "gender", "sex", "الجنس" }),
+			("VisitDate", new[] { "service date", "date of service", "visit date", "treatment date", "dos", "encounter date", "تاريخ الزيارة" }),
+			("VisitType", new[] { "visit type", "encounter type", "ip op", "patient type", "نوع الزيارة" }),
+			("Diagnoses", new[] { "icd", "icd10", "icd 10", "diagnosis code", "diagnosis codes", "dx", "رمز التشخيص" }),
+			("PrimaryDiagnosis", new[] { "diagnosis", "primary diagnosis", "principal diagnosis", "التشخيص" }),
+			("ApprovalNo", new[] { "approval", "approval no", "pre auth", "preauth", "prior approval", "authorization", "authorization no", "auth no", "رقم الموافقة" }),
+			("LineNo", new[] { "line", "line no", "item no", "seq", "serial", "s no", "م" }),
+			("ServiceCode", new[] { "cpt", "service code", "item code", "activity code", "procedure code", "code", "رمز الخدمة" }),
+			("ServiceName", new[] { "service", "service description", "description", "item", "activity", "procedure", "الخدمة" }),
+			("Category", new[] { "category", "service type", "benefit", "الفئة" }),
+			("Gross", new[] { "gross", "gross amount", "total", "amount", "charges", "price", "الإجمالي" }),
+			("PatientShare", new[] { "copay", "co pay", "copayment", "deductible", "patient share", "patient amount", "حصة المريض" }),
+			("Claimed", new[] { "net", "net amount", "claimed", "claimed amount", "payable", "insurer share", "company share", "المطالب به" }),
+			("Currency", new[] { "currency", "العملة" }),
+		};
+
+		public static string Fold(string? s) =>
+			new string((s ?? "").Trim().ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : ' ').ToArray()).Replace("  ", " ").Trim()
+				.Replace(" ", "");
+
+		/// The field a heading most likely means; Fixed (an empty column the administrator fills or leaves) when none does.
+		public static string Guess(string? header)
+		{
+			var h = Fold(header);
+			if (h.Length == 0) return FixedKey;
+			foreach (var f in Fields) if (Fold(f.Key) == h || Fold(f.En) == h || Fold(f.Ar) == h) return f.Key;
+			foreach (var (key, names) in Synonyms) if (names.Any(n => Fold(n) == h)) return key;
+			return FixedKey;
+		}
+
+		/// The headings of the payer's template, in its order, each with its guess; a field already guessed once is not
+		/// guessed again (the second becomes Fixed for the administrator to decide). Empty: nothing readable.
+		public static IReadOnlyList<HospitalClaimSheetTemplateColumn> Map(IEnumerable<string?> headers)
+		{
+			var taken = new HashSet<string>(); var outp = new List<HospitalClaimSheetTemplateColumn>();
+			foreach (var raw in headers)
+			{
+				var h = (raw ?? "").Trim();
+				if (h.Length > 60) h = h[..60];
+				var k = Guess(h);
+				if (k != FixedKey && !taken.Add(k)) k = FixedKey;
+				outp.Add(new HospitalClaimSheetTemplateColumn(h, k));
+			}
+			while (outp.Count > 0 && outp[^1].Header.Length == 0) outp.RemoveAt(outp.Count - 1);
+			return outp.Count > 60 ? outp.Take(60).ToList() : outp;
+		}
+
+		/// The heading row of a CSV template: its first non-empty line, split on the separator it uses most.
+		public static (IReadOnlyList<string> Headers, string Delimiter) CsvHeaders(string text)
+		{
+			var line = text.TrimStart('\uFEFF').Replace("\r\n", "\n").Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "";
+			var (sep, name) = new[] { ('\t', "TAB"), (';', ";"), (',', ",") }.OrderByDescending(d => line.Count(c => c == d.Item1)).First();
+			var cells = new List<string>(); var cur = new StringBuilder(); bool q = false;
+			for (int i = 0; i < line.Length; i++)
+			{
+				char c = line[i];
+				if (q) { if (c == '"' && i + 1 < line.Length && line[i + 1] == '"') { cur.Append('"'); i++; } else if (c == '"') q = false; else cur.Append(c); }
+				else if (c == '"') q = true;
+				else if (c == sep) { cells.Add(cur.ToString()); cur.Clear(); }
+				else cur.Append(c);
+			}
+			cells.Add(cur.ToString());
+			return (cells.Select(x => x.Trim()).ToList(), name);
+		}
+
+		/// The heading row of an Excel template: the first row of its first sheet that has any text.
+		public static IReadOnlyList<string> XlsxHeaders(Stream xlsx)
+		{
+			using var wb = new ClosedXML.Excel.XLWorkbook(xlsx);
+			var ws = wb.Worksheets.FirstOrDefault();
+			var row = ws?.RowsUsed().FirstOrDefault(r => r.CellsUsed().Any(c => c.GetString().Trim().Length > 0));
+			if (row == null) return Array.Empty<string>();
+			int last = row.LastCellUsed()!.Address.ColumnNumber;
+			return Enumerable.Range(1, Math.Min(last, 60)).Select(i => row.Cell(i).GetString().Trim()).ToList();
 		}
 
 		public static int Decimals(string currency) => currency is "KWD" or "BHD" or "OMR" or "JOD" or "IQD" or "LYD" or "TND" ? 3 : 2;
@@ -171,7 +279,7 @@ namespace CrossBuy.BL.Hospital
 						"Currency" => currency,
 						_ => null,
 					};
-					yield return setup.Columns.Select(c => V(c.Key)).ToArray();
+					yield return setup.Columns.Select(c => c.Key == FixedKey ? (c.Value ?? "") : V(c.Key)).ToArray();
 				}
 			}
 		}

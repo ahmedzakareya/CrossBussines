@@ -25,7 +25,19 @@ namespace CrossBuy.Controllers
 			var (rows, total, ready) = await IfSvc.ListAsync(ctx, q, page, size, ct);
 			ViewBag.Q = q; ViewBag.Page = Math.Max(1, page); ViewBag.Pages = Math.Max(1, (total + size - 1) / size); ViewBag.Total = total; ViewBag.Ready = ready;
 			ViewBag.Base = $"{Request.Scheme}://{Request.Host}{Url.Content("~/api/hospital/interfaces/")}";
+			ViewBag.Moh = await MohSvc.SettingsAsync(ctx, ct);   // H229
 			return View(rows);
+		}
+
+		// H229: the Ministry of Health gateway's address and key, kept here by the administrator instead of in server settings.
+		private HospitalMohGatewayService MohSvc => ActivatorUtilities.CreateInstance<HospitalMohGatewayService>(HttpContext.RequestServices);
+
+		[HttpPost("Interfaces/Moh"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> InterfaceMohSave([FromBody] HospitalMohSettingsInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await MohSvc.SaveSettingsAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Interfaces"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]

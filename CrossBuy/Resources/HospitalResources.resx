@@ -9638,4 +9638,32 @@
   <data name="Last copy" xml:space="preserve"><value>Last copy</value></data>
   <data name="made" xml:space="preserve"><value>made</value></data>
   <data name="not made" xml:space="preserve"><value>not made</value></data>
+  <data name="A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty." xml:space="preserve"><value>A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty.</value></data>
+  <data name="A fixed value is 100 characters at most" xml:space="preserve"><value>A fixed value is 100 characters at most</value></data>
+  <data name="A key is saved: leave empty to keep it" xml:space="preserve"><value>A key is saved: leave empty to keep it</value></data>
+  <data name="Add a fixed column" xml:space="preserve"><value>Add a fixed column</value></data>
+  <data name="Choose the payer's template file" xml:space="preserve"><value>Choose the payer's template file</value></data>
+  <data name="Fixed value" xml:space="preserve"><value>Fixed value</value></data>
+  <data name="Gateway address" xml:space="preserve"><value>Gateway address</value></data>
+  <data name="Key" xml:space="preserve"><value>Key</value></data>
+  <data name="Last changed" xml:space="preserve"><value>Last changed</value></data>
+  <data name="Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key." xml:space="preserve"><value>Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key.</value></data>
+  <data name="Ministry of Health gateway" xml:space="preserve"><value>Ministry of Health gateway</value></data>
+  <data name="No headings were found in the template" xml:space="preserve"><value>No headings were found in the template</value></data>
+  <data name="Read the payer's template" xml:space="preserve"><value>Read the payer's template</value></data>
+  <data name="Remove the saved key" xml:space="preserve"><value>Remove the saved key</value></data>
+  <data name="Send to the Ministry from the screens" xml:space="preserve"><value>Send to the Ministry from the screens</value></data>
+  <data name="Sick leave certificates and notifiable diseases are sent from their screens when it is on." xml:space="preserve"><value>Sick leave certificates and notifiable diseases are sent from their screens when it is on.</value></data>
+  <data name="The Ministry's endpoint, or the integrator's in front of it." xml:space="preserve"><value>The Ministry's endpoint, or the integrator's in front of it.</value></data>
+  <data name="The gateway address is too long" xml:space="preserve"><value>The gateway address is too long</value></data>
+  <data name="The gateway address must be a full https address" xml:space="preserve"><value>The gateway address must be a full https address</value></data>
+  <data name="The gateway table is not created yet (hospital_h229_moh_settings.sql)." xml:space="preserve"><value>The gateway table is not created yet (hospital_h229_moh_settings.sql).</value></data>
+  <data name="The key cannot be stored on this server" xml:space="preserve"><value>The key cannot be stored on this server</value></data>
+  <data name="The key is too long" xml:space="preserve"><value>The key is too long</value></data>
+  <data name="The key the Ministry issued" xml:space="preserve"><value>The key the Ministry issued</value></data>
+  <data name="The template could not be read" xml:space="preserve"><value>The template could not be read</value></data>
+  <data name="The template must be an Excel (.xlsx) or CSV file" xml:space="preserve"><value>The template must be an Excel (.xlsx) or CSV file</value></data>
+  <data name="The template's headings are in place: check each field, then save" xml:space="preserve"><value>The template's headings are in place: check each field, then save</value></data>
+  <data name="Value on every row (may be empty)" xml:space="preserve"><value>Value on every row (may be empty)</value></data>
+  <data name="Write the gateway address" xml:space="preserve"><value>Write the gateway address</value></data>
 </root>

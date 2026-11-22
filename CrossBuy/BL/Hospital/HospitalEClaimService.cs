@@ -303,7 +303,7 @@ namespace CrossBuy.BL.Hospital
 			if (HospitalClaimSheets.Refusal(input) is string why) return HospitalResult.Fail(why);
 			var s = await _db.Set<HospitalPayerClaimSheet>().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.PayerId == payerId, ct);
 			if (s == null) { s = new HospitalPayerClaimSheet { CompanyId = ctx.CompanyId, PayerId = payerId }; _db.Add(s); }
-			s.Columns = HospitalClaimSheets.Pack(input.Columns!.Select(c => c with { Header = c.Header.Trim() }));
+			s.Columns = HospitalClaimSheets.Pack(input.Columns!.Select(c => c with { Header = c.Header.Trim(), Value = c.Key == HospitalClaimSheets.FixedKey ? c.Value?.Trim() : null }));   // H229: fixed columns keep their value
 			s.Delimiter = input.Delimiter!; s.DateFormat = input.DateFormat!; s.UpdatedAt = nowUtc; s.UpdatedByEmployeeId = employeeId;
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(s.ID);

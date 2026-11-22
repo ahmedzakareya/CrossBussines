@@ -15,6 +15,8 @@
     int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, total = (int)ViewBag.Total; bool ready = ViewBag.Ready == true;
     string Link(int p) => Url.Action("Interfaces", new { q, page = p })!;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var moh = ViewBag.Moh as HospitalMohSettingsView;   // H229
+    bool mohOn = moh is { IsEnabled: true } && HospitalMohGatewayRules.UrlRefusal(moh.Url) == null;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -48,8 +50,54 @@
                 <div class="mt-2">@T["ECG machines: each study's measurements and reading (ORU^R01, the study number in OBR-2) are filed for the cardiologist to confirm."]</div>
                 <div class="mt-1"><code dir="ltr">POST @(bas){code}/ecg</code></div>
                 <div class="mt-2">@T["Every request carries the interface key in the header:"] <code dir="ltr">X-Interface-Key</code>. @T["A machine works with the rights of the person it acts for."]</div>
+                <div class="mt-2">@T["Machines that speak only HL7 over MLLP, and imaging machines that read their DICOM worklist, connect to the ports the server administrator opens for an interface and its key."]</div>
             </div>
         </div>
+
+        @if (moh != null)
+        {
+            @* H229: the Ministry of Health gateway - kept here by the administrator; the key is stored protected and never shown again *@
+            <div class="card card-flush mb-5" data-moh>
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Ministry of Health gateway"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Sick leave certificates and notifiable diseases are sent from their screens when it is on."]</span>
+                    </h3>
+                    <div class="card-toolbar">
+                        @if (mohOn) {<span class="badge badge-light-primary fs-7">@T["Connected"]</span>} else {<span class="badge badge-light-danger fs-7">@T["Not connected"]</span>}
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    @if (!moh.Ready)
+                    {
+                        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The gateway table is not created yet (hospital_h229_moh_settings.sql)."]</div></div>
+                    }
+                    else
+                    {
+                        <div class="row g-5">
+                            <div class="col-md-6">
+                                <label class="fs-6 fw-semibold mb-2">@T["Gateway address"]</label>
+                                <input class="form-control form-control-solid" dir="ltr" maxlength="300" placeholder="https://" value="@moh.Url" data-moh-url />
+                                <div class="text-muted fs-7 mt-1">@T["The Ministry's endpoint, or the integrator's in front of it."]</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fs-6 fw-semibold mb-2">@T["Key"]</label>
+                                <input class="form-control form-control-solid" dir="ltr" type="password" autocomplete="new-password" maxlength="500" data-moh-key
+                                       placeholder="@(moh.HasKey ? T["A key is saved: leave empty to keep it"].Value : T["The key the Ministry issued"].Value)" />
+                                @if (moh.HasKey) {<label class="form-check form-check-custom form-check-solid form-check-sm mt-3"><input class="form-check-input" type="checkbox" data-moh-clear /><span class="form-check-label fs-7">@T["Remove the saved key"]</span></label>}
+                            </div>
+                        </div>
+                        <div class="d-flex flex-stack flex-wrap gap-3 mt-6">
+                            <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" @(moh.IsEnabled ? "checked" : "") data-moh-on /><span class="form-check-label fw-semibold text-gray-700">@T["Send to the Ministry from the screens"]</span></label>
+                            <div class="d-flex align-items-center gap-3">
+                                @if (moh.UpdatedAt is DateTime mu) {<span class="text-muted fs-7 hp-num" dir="ltr">@T["Last changed"] @mu.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv)</span>}
+                                <button type="button" class="btn btn-sm btn-primary" data-moh-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
         <div class="card card-flush mb-5">
             <div class="card-header pt-5">
                 <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Interfaces"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} interfaces", total]</span></h3>
@@ -134,6 +182,14 @@
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
             function showKey(key) { mk.querySelector('[data-if-key]').value = key; bootstrap.Modal.getOrCreateInstance(mk).show(); }
             document.addEventListener('click', function (e) {
+                var ms = e.target.closest('[data-moh-save]');
+                if (ms) {   // H229
+                    var c = document.querySelector('[data-moh]'), clr = c.querySelector('[data-moh-clear]');
+                    ms.disabled = true;
+                    post(root + '/Moh', { url: c.querySelector('[data-moh-url]').value, key: c.querySelector('[data-moh-key]').value, clearKey: !!(clr && clr.checked), isEnabled: c.querySelector('[data-moh-on]').checked })
+                        .then(function (res) { ms.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); setTimeout(function () { location.reload(); }, 600); });
+                    return;
+                }
                 var t = e.target.closest('[data-if-new],[data-if-save],[data-if-rotate],[data-if-toggle],[data-if-copy],[data-if-done]'); if (!t) return;
                 if (t.hasAttribute('data-if-new')) { bootstrap.Modal.getOrCreateInstance(mn).show(); return; }
                 if (t.hasAttribute('data-if-copy')) { var k = mk.querySelector('[data-if-key]'); k.select(); (navigator.clipboard ? navigator.clipboard.writeText(k.value) : Promise.resolve(document.execCommand('copy'))).then(function () { toastr.success(W.copied); }); return; }

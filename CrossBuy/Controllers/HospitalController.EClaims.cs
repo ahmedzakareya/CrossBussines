@@ -53,8 +53,33 @@ namespace CrossBuy.Controllers
 			if (s == null) return NotFound(new { ok = false, code = "not_found" });
 			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			var others = (await EClaimSvc.PayersWithSheetsAsync(ctx, ct)).Where(p => p.Id != id).Select(p => new { id = p.Id, name = ar ? p.Name : (string.IsNullOrWhiteSpace(p.NameEn) ? p.Name : p.NameEn) });
-			return Json(new { ok = true, saved = s.Saved, delimiter = s.Delimiter, dateFormat = s.DateFormat, columns = s.Columns.Select(c => new { key = c.Key, header = c.Header }),
+			return Json(new { ok = true, saved = s.Saved, delimiter = s.Delimiter, dateFormat = s.DateFormat, columns = s.Columns.Select(c => new { key = c.Key, header = c.Header, value = c.Value }),   // H229: a fixed column's value
 				fields = HospitalClaimSheets.Fields.Select(f => new { key = f.Key, name = ar ? f.Ar : f.En, en = f.En }), others });
+		}
+
+		/// H229: the headings of the payer's own template (Excel or CSV), in its order, each with the field it most likely
+		/// means. Nothing is saved: the administrator reviews the columns and saves them as usual.
+		[HttpPost("Insurance/Payers/{id:int}/Sheet/Template"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		[RequestSizeLimit(3_000_000)]
+		public async Task<IActionResult> PayerClaimSheetTemplate(int id, IFormFile? file, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || await EClaimSvc.SheetAsync(ctx, id, ct) == null) return NotFound(new { ok = false, code = "not_found" });
+			if (file == null || file.Length == 0) return Json(new { ok = false, error = _t["Choose the payer's template file"].Value });
+			var ext = Path.GetExtension(file.FileName ?? "").ToLowerInvariant();
+			IReadOnlyList<string> headers; string? delimiter = null;
+			try
+			{
+				await using var st = file.OpenReadStream();
+				if (ext == ".xlsx") { using var ms = new MemoryStream(); await st.CopyToAsync(ms, ct); ms.Position = 0; headers = HospitalClaimSheets.XlsxHeaders(ms); }
+				else if (ext is ".csv" or ".txt") { using var rd = new StreamReader(st, Encoding.UTF8, true); var (h, d) = HospitalClaimSheets.CsvHeaders(await rd.ReadToEndAsync(ct)); headers = h; delimiter = d; }
+				else return Json(new { ok = false, error = _t["The template must be an Excel (.xlsx) or CSV file"].Value });
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)   // a damaged or foreign file: say so, never a 500
+			{ return Json(new { ok = false, error = _t["The template could not be read"].Value }); }
+			var cols = HospitalClaimSheets.Map(headers);
+			if (cols.Count == 0) return Json(new { ok = false, error = _t["No headings were found in the template"].Value });
+			return Json(new { ok = true, delimiter, columns = cols.Select(c => new { header = c.Header, key = c.Key }) });
 		}
 
 		[HttpPost("Insurance/Payers/{id:int}/Sheet/CopyFrom/{from:int}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]

@@ -3,6 +3,7 @@ using System.Text.Json;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
+using Microsoft.AspNetCore.DataProtection;   // H229: the string Protect/Unprotect overloads
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Models.Context.Hospital
@@ -23,13 +24,26 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime At { get; set; }
 		public int? ByEmployeeId { get; set; }
 	}
+
+	/// H229: the company's connection to the Ministry's system, kept by the administrator on the interfaces screen.
+	public class HospitalMohSettings
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public string? Url { get; set; }
+		/// The key, protected (ASP.NET Data Protection): never stored or shown in the clear.
+		public string? KeyProtected { get; set; }
+		public bool IsEnabled { get; set; }
+		public DateTime UpdatedAt { get; set; }
+		public int? UpdatedByEmployeeId { get; set; }
+	}
 }
 
 namespace CrossBuy.BL.Hospital
 {
 	// ==========================================================================================
-	// HOSPITAL H225 — the Ministry of Health gateway. When the hospital is connected (Hospital:MohGateway:Url and
-	// Hospital:MohGateway:Key — the Ministry's endpoint, or the integrator's in front of it), a sick leave certificate or a
+	// HOSPITAL H225 — the Ministry of Health gateway. When the hospital is connected (H229: the address and key the
+	// administrator keeps on the interfaces screen — the Ministry's endpoint, or the integrator's in front of it), a sick leave certificate or a
 	// notifiable case is SENT from its screen instead of typed: the record goes as JSON, and the reference that comes back
 	// is recorded through the SAME path as one typed by hand (its rules: once, never on a void certificate / closed case).
 	// Every attempt is kept (HospitalMohSubmission) with what came back or why it failed. Not connected → the screens say
@@ -50,11 +64,48 @@ namespace CrossBuy.BL.Hospital
 				e.HasIndex(x => new { x.CompanyId, x.Kind, x.RecordId });
 				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});
+			b.Entity<HospitalMohSettings>(e =>   // H229
+			{
+				e.ToTable("HospitalMohSettings");
+				e.Property(x => x.Url).HasMaxLength(300);
+				e.Property(x => x.KeyProtected).HasMaxLength(2000);
+				e.HasIndex(x => x.CompanyId).IsUnique();
+			});
 		}
 	}
 
+	public sealed class HospitalMohSettingsInput
+	{
+		public string? Url { get; set; }
+		/// A new key; empty keeps the saved one.
+		public string? Key { get; set; }
+		public bool ClearKey { get; set; }
+		public bool IsEnabled { get; set; }
+	}
+
+	public sealed record HospitalMohSettingsView(string? Url, bool HasKey, bool IsEnabled, DateTime? UpdatedAt, int? UpdatedByEmployeeId, bool Ready);
+	public sealed record HospitalMohConnection(string Url, string? Key);
+
 	public static class HospitalMohGatewayRules
 	{
+		/// H229: the gateway is a full https address (http only on this machine, for an integrator's local bridge).
+		public static string? UrlRefusal(string? url)
+		{
+			var u = (url ?? "").Trim();
+			if (u.Length == 0) return "Write the gateway address";
+			if (u.Length > 300) return "The gateway address is too long";
+			if (!Uri.TryCreate(u, UriKind.Absolute, out var uri)) return "The gateway address must be a full https address";
+			if (uri.Scheme == Uri.UriSchemeHttps) return null;
+			return uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback ? null : "The gateway address must be a full https address";
+		}
+
+		public static string? SettingsRefusal(HospitalMohSettingsInput i)
+		{
+			if ((i.Key ?? "").Trim().Length > 500) return "The key is too long";
+			if (!i.IsEnabled && string.IsNullOrWhiteSpace(i.Url)) return null;   // switched off with nothing yet: allowed
+			return UrlRefusal(i.Url);
+		}
+
 		/// The reference in the Ministry's answer: {"reference": "..."} (or "referenceNo" / "id"); null when none.
 		public static string? ReferenceIn(string? body)
 		{
@@ -79,12 +130,66 @@ namespace CrossBuy.BL.Hospital
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
 		private readonly IHttpClientFactory? _http;
-		private readonly Microsoft.Extensions.Configuration.IConfiguration? _config;
-		public HospitalMohGatewayService(CrossDbContext db, IHospitalAccessService access, IHttpClientFactory? http = null, Microsoft.Extensions.Configuration.IConfiguration? config = null)
-		{ _db = db; _access = access; _http = http; _config = config; }
+		private readonly Microsoft.AspNetCore.DataProtection.IDataProtector? _protector;
+		public HospitalMohGatewayService(CrossDbContext db, IHospitalAccessService access, IHttpClientFactory? http = null, Microsoft.AspNetCore.DataProtection.IDataProtectionProvider? dp = null)
+		{ _db = db; _access = access; _http = http; _protector = dp?.CreateProtector("CrossBuy.Hospital.MohGateway.v1"); }
 
 		public const string NotConnected = "The hospital is not connected to the Ministry's system: record the reference by hand";
-		public bool Connected => !string.IsNullOrWhiteSpace(_config?["Hospital:MohGateway:Url"]);
+
+		private static async Task<HospitalMohSettings?> SettingsRowAsync(CrossDbContext db, int companyId, CancellationToken ct)
+		{
+			try { return await db.Set<HospitalMohSettings>().AsNoTracking().FirstOrDefaultAsync(x => x.CompanyId == companyId, ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return null; }
+		}
+
+		/// H229: whether the screens offer "Send to the Ministry" - switched on with a valid address (the key is checked on sending).
+		public static async Task<bool> ConnectedAsync(CrossDbContext db, int companyId, CancellationToken ct = default)
+		{
+			var s = companyId > 0 ? await SettingsRowAsync(db, companyId, ct) : null;
+			return s is { IsEnabled: true } && HospitalMohGatewayRules.UrlRefusal(s.Url) == null;
+		}
+
+		/// The address and key to send with (null: not connected, or a key this server cannot read).
+		public async Task<HospitalMohConnection?> ConnectionAsync(int companyId, CancellationToken ct = default)
+		{
+			var s = companyId > 0 ? await SettingsRowAsync(_db, companyId, ct) : null;
+			if (s is not { IsEnabled: true } || HospitalMohGatewayRules.UrlRefusal(s.Url) != null) return null;
+			string? key = null;
+			if (s.KeyProtected != null)
+			{
+				if (_protector == null) return null;
+				try { key = _protector.Unprotect(s.KeyProtected); }
+				catch (System.Security.Cryptography.CryptographicException) { return null; }   // the server's keys changed: re-enter it
+			}
+			return new HospitalMohConnection(s.Url!.Trim(), key);
+		}
+
+		/// H229: the administrator's view of the connection - the address and whether a key is saved, never the key.
+		public async Task<HospitalMohSettingsView> SettingsAsync(BusinessContext ctx, CancellationToken ct = default)
+		{
+			bool ready = true;
+			HospitalMohSettings? s = null;
+			try { s = await _db.Set<HospitalMohSettings>().AsNoTracking().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId, ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { ready = false; }
+			return new HospitalMohSettingsView(s?.Url, s?.KeyProtected != null, s?.IsEnabled == true, s?.UpdatedAt, s?.UpdatedByEmployeeId, ready);
+		}
+
+		public async Task<HospitalResult> SaveSettingsAsync(BusinessContext ctx, HospitalMohSettingsInput input, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Manage, null, ct)) return HospitalResult.Fail("forbidden");
+			if (HospitalMohGatewayRules.SettingsRefusal(input) is string why) return HospitalResult.Fail(why);
+			var key = (input.Key ?? "").Trim();
+			if (key.Length > 0 && _protector == null) return HospitalResult.Fail("The key cannot be stored on this server");
+			var s = await _db.Set<HospitalMohSettings>().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId, ct);
+			if (s == null) { s = new HospitalMohSettings { CompanyId = ctx.CompanyId }; _db.Add(s); }
+			s.Url = string.IsNullOrWhiteSpace(input.Url) ? null : input.Url.Trim();
+			if (input.ClearKey) s.KeyProtected = null;
+			else if (key.Length > 0) s.KeyProtected = _protector!.Protect(key);
+			s.IsEnabled = input.IsEnabled;
+			s.UpdatedAt = nowUtc; s.UpdatedByEmployeeId = employeeId;
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(s.ID);
+		}
 
 		public async Task<IReadOnlyList<HospitalMohSubmission>> HistoryAsync(BusinessContext ctx, string kind, IReadOnlyCollection<int> recordIds, CancellationToken ct = default)
 		{
@@ -96,7 +201,8 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> SendSickLeaveAsync(BusinessContext ctx, HospitalSickLeaveService leaves, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Read, null, ct)) return HospitalResult.Fail("forbidden");
-			if (!Connected) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
+			var conn = await ConnectionAsync(ctx.CompanyId, ct);
+			if (conn == null) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
 			var l = await _db.Set<HospitalSickLeave>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
 			if (l == null) return HospitalResult.Fail("not_found");
 			if (HospitalSickLeaveRules.MohRefusal(l, "pending") is string why) return HospitalResult.Fail(why);
@@ -109,7 +215,7 @@ namespace CrossBuy.BL.Hospital
 				patient = new { civilId = p.NationalId, name = p.Name, nameEn = p.NameEn, birthDate = p.BirthDate?.ToString("yyyy-MM-dd"), sex = p.Sex },
 				doctor = doc == null ? null : new { name = doc.Name, nameEn = doc.NameEn, licence = doc.LicenseNumber },
 			};
-			var (ok, reference, error, status) = await PostAsync("sick-leaves", payload, ct);
+			var (ok, reference, error, status) = await PostAsync(conn, "sick-leaves", payload, ct);
 			await LogAsync(ctx, HospitalMohKind.SickLeave, l.ID, l.PatientId, ok, status, reference, error, employeeId, nowUtc, ct);
 			if (!ok) return HospitalResult.Fail(error ?? "The Ministry's system did not answer");
 			return await leaves.MohAuthAsync(ctx, l.ID, reference, employeeId, nowUtc, ct);
@@ -119,7 +225,8 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> SendDiseaseAsync(BusinessContext ctx, HospitalNotifiableService cases, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) return HospitalResult.Fail("forbidden");
-			if (!Connected) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
+			var conn = await ConnectionAsync(ctx.CompanyId, ct);
+			if (conn == null) return HospitalResult.Fail(NotConnected);   // nothing went out: no attempt to keep
 			var r = await _db.Set<HospitalDiseaseReport>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
 			if (r == null) return HospitalResult.Fail("not_found");
 			if (r.Status != HospitalDiseaseReportStatus.Due) return HospitalResult.Fail("This case is closed");
@@ -132,21 +239,21 @@ namespace CrossBuy.BL.Hospital
 				patient = new { civilId = p.NationalId, name = p.Name, nameEn = p.NameEn, birthDate = p.BirthDate?.ToString("yyyy-MM-dd"), sex = p.Sex, phone = p.Phone },
 				doctor = doc == null ? null : new { name = doc.Name, nameEn = doc.NameEn, licence = doc.LicenseNumber },
 			};
-			var (ok, reference, error, status) = await PostAsync("notifiable-diseases", payload, ct);
+			var (ok, reference, error, status) = await PostAsync(conn, "notifiable-diseases", payload, ct);
 			await LogAsync(ctx, HospitalMohKind.Disease, r.ID, r.PatientId, ok, status, reference, error, employeeId, nowUtc, ct);
 			if (!ok) return HospitalResult.Fail(error ?? "The Ministry's system did not answer");
 			return await cases.CloseAsync(ctx, r.ID, HospitalDiseaseReportStatus.Reported, reference, employeeId, nowUtc, ct);
 		}
 
-		private async Task<(bool Ok, string? Reference, string? Error, int? Status)> PostAsync(string path, object payload, CancellationToken ct)
+		private async Task<(bool Ok, string? Reference, string? Error, int? Status)> PostAsync(HospitalMohConnection conn, string path, object payload, CancellationToken ct)
 		{
-			if (!Connected || _http == null) return (false, null, NotConnected, null);
+			if (_http == null) return (false, null, NotConnected, null);
 			try
 			{
 				var client = _http.CreateClient("hospital-moh");
 				client.Timeout = TimeSpan.FromSeconds(30);
-				using var req = new HttpRequestMessage(HttpMethod.Post, _config!["Hospital:MohGateway:Url"]!.TrimEnd('/') + "/" + path) { Content = JsonContent.Create(payload) };
-				if (_config["Hospital:MohGateway:Key"] is { Length: > 0 } key) req.Headers.TryAddWithoutValidation("X-Api-Key", key);
+				using var req = new HttpRequestMessage(HttpMethod.Post, conn.Url.TrimEnd('/') + "/" + path) { Content = JsonContent.Create(payload) };
+				if (conn.Key is { Length: > 0 } key) req.Headers.TryAddWithoutValidation("X-Api-Key", key);
 				using var res = await client.SendAsync(req, ct);
 				var body = await res.Content.ReadAsStringAsync(ct);
 				if (!res.IsSuccessStatusCode) return (false, null, "The Ministry's system refused the record", (int)res.StatusCode);
