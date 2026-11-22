@@ -932,6 +932,40 @@ namespace CrossBuy.Tests
             Assert.DoesNotContain("class=\"cbv-foot\"", own);
         }
 
+        [Fact] // 33c — "56٫000" read as fifty-six thousand on the owner's Arabic invoice (2026-11-22)
+        public async Task An_arabic_document_writes_amounts_with_a_decimal_point()
+        {
+            using var host = new ReportingTestHost();
+            Grant(host, AccountingReportPermissions.View);
+            host.SeedEmployee(7);
+            await SeedSalesAsync(host);
+
+            var layout = Layout();
+            Put(layout, ReportBandKind.Detail, new ReportElement
+            {
+                Id = "gt", Kind = ReportElementKind.Field, FieldKey = "GrandTotal", XMm = 0, YMm = 0, WidthMm = 40, HeightMm = 6,
+                Style = new ReportElementStyle { NumberFormat = "N3" },
+            });
+
+            var before = (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture);
+            try
+            {
+                System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.CurrentUICulture =
+                    new System.Globalization.CultureInfo("ar");
+                var html = Encoding.UTF8.GetString((await Studio(host).RunAsync(Draft(layout, "GrandTotal"),
+                    ReportOutputFormat.PrintHtml, preview: false)).Artifact!.Content);
+
+                Assert.Contains("lang=\"ar\"", html);
+                Assert.Contains("114.000", html);
+                Assert.DoesNotContain("٫", html);   // the Arabic decimal separator, drawn like a comma
+            }
+            finally
+            {
+                System.Globalization.CultureInfo.CurrentCulture = before.Item1;
+                System.Globalization.CultureInfo.CurrentUICulture = before.Item2;
+            }
+        }
+
         [Fact] // 34
         public async Task The_preview_the_print_view_and_the_pdf_all_come_from_one_layout()
         {

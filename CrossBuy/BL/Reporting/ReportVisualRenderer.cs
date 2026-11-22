@@ -692,7 +692,7 @@ namespace CrossBuy.BL.Reporting
             sb.Append("<span class=\"cbv-delta ").Append(cls).Append("\">")
               .Append(arrow).Append("\u00A0")
               .Append(Enc(Math.Abs(Math.Round(pct, 1)).ToString("0.#",
-                  ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture)))
+                  ctx.Arabic ? ArabicDoc : CultureInfo.InvariantCulture)))
               .Append("%\u00A0<span class=\"cbv-delta-note\">").Append(Enc(label)).Append("</span></span>");
         }
 
@@ -1608,6 +1608,21 @@ namespace CrossBuy.BL.Reporting
             };
         }
 
+        // ARABIC WORDS, WESTERN NUMBER PUNCTUATION. The "ar" culture writes the decimal point as U+066B,
+        // which the document faces draw exactly like a comma: 56.000 dinars printed as "56٫000" and read as
+        // fifty-six thousand (owner's invoice test, 2026-11-22). Dates and month names stay Arabic; numbers
+        // take "." for the decimal and "," for thousands, as Gulf invoices are written.
+        private static readonly CultureInfo ArabicDoc = BuildArabicDoc();
+
+        private static CultureInfo BuildArabicDoc()
+        {
+            var c = (CultureInfo)new CultureInfo("ar").Clone();
+            var n = c.NumberFormat;
+            n.NumberDecimalSeparator = n.CurrencyDecimalSeparator = n.PercentDecimalSeparator = ".";
+            n.NumberGroupSeparator = n.CurrencyGroupSeparator = n.PercentGroupSeparator = ",";
+            return CultureInfo.ReadOnly(c);
+        }
+
         // The bottom-margin strip the automatic page number needs; a narrower margin is topped up from the body.
         private const double FootStripMm = 9;
 
@@ -1616,7 +1631,7 @@ namespace CrossBuy.BL.Reporting
 
         private static string System(ReportSystemField field, ReportVisualRenderContext ctx, int page, int total)
         {
-            var culture = ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture;
+            var culture = ctx.Arabic ? ArabicDoc : CultureInfo.InvariantCulture;
             return field switch
             {
                 ReportSystemField.CurrentDate => ctx.Now.ToString("yyyy-MM-dd", culture),
@@ -1651,7 +1666,7 @@ namespace CrossBuy.BL.Reporting
             // saved design outliving a renamed field must still render.
             if (column == null) return FormatValue(value, c.Format, ctx);
 
-            var culture = ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture;
+            var culture = ctx.Arabic ? ArabicDoc : CultureInfo.InvariantCulture;
 
             return string.IsNullOrWhiteSpace(c.Format)
                 ? ReportValues.Format(value, column, culture)
@@ -1679,7 +1694,7 @@ namespace CrossBuy.BL.Reporting
         private static string FormatValue(object? value, string? format, ReportVisualRenderContext ctx)
         {
             if (value == null) return "";
-            var culture = ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture;
+            var culture = ctx.Arabic ? ArabicDoc : CultureInfo.InvariantCulture;
 
             if (value is DateTime dt) return dt.ToString(format ?? "yyyy-MM-dd", culture);
 
