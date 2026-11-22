@@ -109,7 +109,7 @@
 		html, body { height: 100%; }
 		body { background: var(--cb-page); }
 
-		.cb-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(480px, 44%); }
+		.cb-page { overflow-x: clip; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(480px, 44%); }
 
 		/* ---------- the picture ------------------------------------------------------------------ */
 		.cb-hero {
@@ -124,7 +124,7 @@
 		.cb-hero-logo { width: 300px; max-width: 70%; height: auto; display: block; }
 		.cb-motto { margin-top: 18px; font-size: 14px; color: #C9D4EA; letter-spacing: .02em; }
 		.cb-motto::after { content: ""; display: block; width: 34px; height: 2px; border-radius: 2px; background: var(--cb-gold); margin-top: 16px; }
-		.cb-hero-copy { margin-top: auto; margin-bottom: auto; padding: 40px 0; }
+		.cb-hero-copy { margin-top: auto; padding: 32px 0 34px; }
 		.cb-headline { color: #fff; font-weight: 800; font-size: 46px; line-height: 1.2; margin: 0; letter-spacing: -.02em; }
 		html[lang="ar"] .cb-headline { letter-spacing: normal; line-height: 1.4; }
 		.cb-headline .cb-accent { color: #AFC3EA; }
@@ -213,6 +213,54 @@
 		.cb-error { border: 1px dashed #E3A7A5; background: #FBECEC; color: #B4322E; border-radius: 12px; padding: 12px 14px; font-size: 14px; }
 		.cb-caps { color: var(--cb-blue); font-size: 13px; font-weight: 600; }
 
+		/* ---------- the product, alive on the picture ------------------------------------------------
+		   Three moments from a working day — an approval waiting with the person's photo, the day's
+		   sales, a decision landing — as the mobile app's own white cards. Decorative (aria-hidden),
+		   they arrive one after another and then breathe; with reduced motion they simply sit there. */
+		.cb-moments { position: absolute; inset-inline-end: 56px; top: 150px; width: 300px; z-index: 1; }
+		.cb-m {
+			position: relative; background: rgba(255,255,255,.96); color: var(--cb-ink); border: 1px solid rgba(255,255,255,.9);
+			border-radius: 18px; padding: 14px 16px; box-shadow: 0 18px 40px rgba(11,22,48,.22);
+			opacity: 0; animation: cb-in .7s cubic-bezier(.2,.7,.2,1) forwards, cb-float 7s ease-in-out infinite;
+		}
+		.cb-m + .cb-m { margin-top: 14px; }
+		.cb-m-1 { animation-delay: .35s, 1.1s; }
+		.cb-m-2 { margin-inline-start: 46px; margin-inline-end: -46px; animation-delay: .7s, 2.4s; }
+		.cb-m-3 { margin-inline-start: 12px; margin-inline-end: -12px; animation-delay: 1.05s, 3.6s; }
+		@@keyframes cb-in { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+		@@keyframes cb-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+		.cb-m-who { display: flex; align-items: center; gap: 11px; }
+		.cb-m-who img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; flex: 0 0 40px; }
+		.cb-m-who b { display: block; font-size: 14px; font-weight: 700; }
+		.cb-m-who small { display: block; font-size: 12px; color: var(--cb-muted); }
+		.cb-m-acts { display: flex; gap: 8px; margin-top: 12px; }
+		.cb-m-acts span { flex: 1; text-align: center; font-size: 12px; font-weight: 600; border-radius: 10px; padding: 7px 0; border: 1px solid var(--cb-line); color: var(--cb-ink); }
+		.cb-m-acts .go { background: var(--cb-navy); border-color: var(--cb-navy); color: #fff; flex: 1.4; }
+		.cb-m-k { font-size: 12px; color: var(--cb-muted); display: flex; justify-content: space-between; align-items: center; }
+		.cb-m-k i { color: var(--cb-blue); font-size: 18px; }
+		.cb-m-v { font-size: 22px; font-weight: 800; margin-top: 2px; direction: ltr; text-align: start; unicode-bidi: plaintext; }
+		.cb-m-v small { font-size: 12px; font-weight: 600; color: var(--cb-muted); }
+		.cb-m-bars { display: flex; align-items: flex-end; gap: 6px; height: 38px; margin-top: 10px; direction: ltr; }
+		.cb-m-bars span { flex: 1; border-radius: 4px 4px 2px 2px; background: #DCE4F3; transform-origin: bottom; animation: cb-grow .9s cubic-bezier(.2,.7,.2,1) both; }
+		.cb-m-bars span:last-child { background: var(--cb-blue); }
+		@@keyframes cb-grow { from { transform: scaleY(0); } }
+		.cb-m-d { font-size: 12px; color: var(--cb-muted); margin-top: 8px; }
+		.cb-m-d bdi { color: var(--cb-blue); font-weight: 700; }
+		.cb-m-3 { display: flex; align-items: center; gap: 11px; padding: 11px 14px; }
+		.cb-m-3 .ic { width: 34px; height: 34px; border-radius: 11px; background: #EDF1F8; color: var(--cb-blue); display: grid; place-items: center; font-size: 19px; flex: 0 0 34px; }
+		.cb-m-3 b { display: block; font-size: 13px; font-weight: 600; }
+		.cb-m-3 small { font-size: 11px; color: var(--cb-muted); }
+		@@media (max-width: 1199.98px) { .cb-moments { display: none; } }
+		@@media (prefers-reduced-motion: reduce) { .cb-m, .cb-m-bars span, .cb-form-wrap { animation: none !important; opacity: 1; } }
+
+		/* ---------- the form side's own touches ---------------------------------------------------- */
+		.cb-side { position: relative; overflow: hidden; }
+		.cb-side > * { position: relative; z-index: 1; }
+		.cb-side > .cb-watermark { position: absolute; z-index: 0; inset-inline-end: -120px; bottom: -110px; width: 430px; height: auto; opacity: .05; pointer-events: none; }
+		.cb-form-wrap { animation: cb-in .6s cubic-bezier(.2,.7,.2,1) both; }
+		.cb-greet { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--cb-blue); background: #EDF1F8; border-radius: 999px; padding: 5px 12px; margin-bottom: 14px; }
+		.cb-greet i { font-size: 16px; }
+
 		/* ==========================================================================================
 		   PHONES AND NARROW WINDOWS — exactly the mobile prototype: the picture becomes a band at the
 		   top with the logo, and the form rises over it as a sheet with rounded shoulders.
@@ -223,7 +271,7 @@
 			.cb-hero-logo { width: 220px; }
 			.cb-motto::after { margin-inline: auto; }
 			.cb-hero-copy, .cb-hero-foot { display: none; }
-			.cb-side { flex: 1; margin-top: -32px; position: relative; border-radius: 28px 28px 0 0; padding: 22px 22px 18px; }
+			.cb-side { flex: 1; margin-top: -32px; position: relative; overflow: visible; border-radius: 28px 28px 0 0; padding: 22px 22px 18px; }
 			.cb-form-wrap { margin-top: 0; padding: 4px 0 24px; }
 			.cb-card-title { font-size: 24px; }
 		}
@@ -258,6 +306,33 @@
 				<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark"
 					 class="cb-hero-logo" asp-append-version="true" />
 				<div class="cb-motto">@CrossBuy.Resources.SharedResources.BrandTagline</div>
+
+				@{
+					string R(string key) => CrossBuy.Resources.SharedResources.ResourceManager.GetString(key, System.Globalization.CultureInfo.CurrentUICulture) ?? key;
+				}
+				<div class="cb-moments" aria-hidden="true">
+					<div class="cb-m cb-m-1">
+						<div class="cb-m-who">
+							<img src="~/Backend-assets/media/avatars/300-6.jpg" alt="" />
+							<span><b>@R("LoginDemoPerson")</b><small>@R("LoginDemoLeave")</small></span>
+						</div>
+						<div class="cb-m-acts"><span class="go">@R("LoginDemoApprove")</span><span>@R("LoginDemoLater")</span></div>
+					</div>
+					<div class="cb-m cb-m-2">
+						<div class="cb-m-k"><span>@R("LoginDemoSales")</span><i class="ki-outline ki-graph-up"></i></div>
+						<div class="cb-m-v">4,820<small>.500 @R("LoginDemoCurrency")</small></div>
+						<div class="cb-m-bars">
+							<span style="height:42%;animation-delay:1.0s"></span><span style="height:58%;animation-delay:1.06s"></span><span style="height:36%;animation-delay:1.12s"></span>
+							<span style="height:66%;animation-delay:1.18s"></span><span style="height:52%;animation-delay:1.24s"></span><span style="height:74%;animation-delay:1.3s"></span>
+							<span style="height:92%;animation-delay:1.36s"></span>
+						</div>
+						<div class="cb-m-d"><bdi dir="ltr">+12%</bdi> @R("LoginDemoDelta")</div>
+					</div>
+					<div class="cb-m cb-m-3">
+						<span class="ic"><i class="ki-outline ki-check-circle"></i></span>
+						<span><b>@R("LoginDemoDone") <bdi dir="ltr">PO-0248</bdi></b><small>@R("LoginDemoNow")</small></span>
+					</div>
+				</div>
 
 				<div class="cb-hero-copy">
 					<h1 class="cb-headline">
@@ -313,7 +388,21 @@
 				</div>
 			</div>
 
+			<img class="cb-watermark" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" alt="" aria-hidden="true" />
+
 			<div class="cb-form-wrap">
+				@* The greeting follows the visitor's own clock, not the server's: the page is read in the
+				   browser, and a Kuwait office at 8am should not be told good evening by a server in UTC. *@
+				<div class="cb-greet" id="cb-greet" data-morning="@R("LoginGreetMorning")" data-evening="@R("LoginGreetEvening")">
+					<i class="ki-outline ki-sun"></i><span>@R("LoginGreetMorning")</span>
+				</div>
+				<script>
+					(function () {
+						var g = document.getElementById("cb-greet"), h = new Date().getHours(), day = h >= 4 && h < 12;
+						g.querySelector("span").textContent = day ? g.dataset.morning : g.dataset.evening;
+						g.querySelector("i").className = "ki-outline " + (day ? "ki-sun" : "ki-moon");
+					})();
+				</script>
 				<h2 class="cb-card-title">@CrossBuy.Resources.SharedResources.WelcomeBackLead @CrossBuy.Resources.SharedResources.WelcomeBackAccent</h2>
 				<div class="cb-card-sub">@CrossBuy.Resources.SharedResources.SignInToYourAccount</div>
 

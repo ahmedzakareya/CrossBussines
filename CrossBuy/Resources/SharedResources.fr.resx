@@ -3414,4 +3414,37 @@
   <data name="Pathology" xml:space="preserve"><value>Anatomopathologie</value></data>
   <data name="Endoscopy" xml:space="preserve"><value>Endoscopie</value></data>
   <data name="Cardiology" xml:space="preserve"><value>Cardiologie</value></data>
+  <data name="LoginGreetMorning" xml:space="preserve">
+    <value>Bonjour</value>
+  </data>
+  <data name="LoginGreetEvening" xml:space="preserve">
+    <value>Bonsoir</value>
+  </data>
+  <data name="LoginDemoPerson" xml:space="preserve">
+    <value>Sara Ali</value>
+  </data>
+  <data name="LoginDemoLeave" xml:space="preserve">
+    <value>Congé annuel · 5 jours</value>
+  </data>
+  <data name="LoginDemoApprove" xml:space="preserve">
+    <value>Approuver</value>
+  </data>
+  <data name="LoginDemoLater" xml:space="preserve">
+    <value>Plus tard</value>
+  </data>
+  <data name="LoginDemoSales" xml:space="preserve">
+    <value>Ventes du jour</value>
+  </data>
+  <data name="LoginDemoCurrency" xml:space="preserve">
+    <value>KWD</value>
+  </data>
+  <data name="LoginDemoDelta" xml:space="preserve">
+    <value>par rapport à hier</value>
+  </data>
+  <data name="LoginDemoDone" xml:space="preserve">
+    <value>Bon de commande approuvé</value>
+  </data>
+  <data name="LoginDemoNow" xml:space="preserve">
+    <value>À l’instant</value>
+  </data>
 </root>

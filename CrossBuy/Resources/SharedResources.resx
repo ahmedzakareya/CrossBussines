@@ -1919,4 +1919,37 @@
   <data name="Pathology" xml:space="preserve"><value>Pathology</value></data>
   <data name="Endoscopy" xml:space="preserve"><value>Endoscopy</value></data>
   <data name="Cardiology" xml:space="preserve"><value>Cardiology</value></data>
+  <data name="LoginGreetMorning" xml:space="preserve">
+    <value>Good morning</value>
+  </data>
+  <data name="LoginGreetEvening" xml:space="preserve">
+    <value>Good evening</value>
+  </data>
+  <data name="LoginDemoPerson" xml:space="preserve">
+    <value>Sara Ali</value>
+  </data>
+  <data name="LoginDemoLeave" xml:space="preserve">
+    <value>Annual leave · 5 days</value>
+  </data>
+  <data name="LoginDemoApprove" xml:space="preserve">
+    <value>Approve</value>
+  </data>
+  <data name="LoginDemoLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="LoginDemoSales" xml:space="preserve">
+    <value>Sales today</value>
+  </data>
+  <data name="LoginDemoCurrency" xml:space="preserve">
+    <value>KWD</value>
+  </data>
+  <data name="LoginDemoDelta" xml:space="preserve">
+    <value>on yesterday</value>
+  </data>
+  <data name="LoginDemoDone" xml:space="preserve">
+    <value>Purchase order approved</value>
+  </data>
+  <data name="LoginDemoNow" xml:space="preserve">
+    <value>Just now</value>
+  </data>
 </root>
