@@ -645,6 +645,19 @@ class ApiService {
   String callRecordingMediaUrl(int id, {bool log = false}) => '${AppConfig.apiBaseUrl}/api/calls/recording/$id/media${log ? '?log=1' : ''}';
   Map<String, String> get authHeaders => {if (_token != null) 'Authorization': 'Bearer $_token'};
 
+  /// Push (2026-11-22): this phone's FCM token, registered after signing in and withdrawn before signing out.
+  Future<bool> pushRegister(String token, String platform) async {
+    try {
+      final d = (await _dio.post('/api/chat/push/register', data: FormData.fromMap({'token': token, 'platform': platform}))).data as Map;
+      return d['ok'] == true;
+    } on DioException {
+      return false;
+    }
+  }
+  Future<void> pushUnregister(String token) async {
+    try { await _dio.post('/api/chat/push/unregister', data: FormData.fromMap({'token': token})); } on DioException { /* signing out anyway */ }
+  }
+
   /// A voice or video message, or a call recording, as a local file for the native player. The player (ExoPlayer)
   /// fetches on its own TLS stack, which does not know the development certificate that this client is told to trust
   /// (dev_certificate.dart), so it failed with "trust anchor not found". Downloaded once into the app's cache, with the

@@ -174,6 +174,34 @@ namespace CrossBuy.BL.Communication
             // .sql file in the repository does not answer. Registering it does not activate anything;
             // it is what an operator runs BEFORE the line above is changed.
             services.AddScoped<ICommTaskLinkSchemaProbe, CommTaskLinkSchemaProbe>();
+
+            // -------------------------------------------------------------------------------------
+            // PUSH TOKENS (module 21 / gap G3) — same rule, decided the same way.
+            //
+            // CommPushTokens ships as its own slice and is applied nowhere yet, so the database is
+            // asked rather than told, exactly as it is for task links. On every deployment today the
+            // probe finds no table, ProbingCommPushTokenStore delegates to the unprovisioned store,
+            // and nothing observable changes: UnwiredCommNotificationChannel.Push() still answers
+            // Skip, because no push ADAPTER is registered either — and a store is not an adapter.
+            //
+            // THE KILL SWITCH IS NOT SYMMETRY FOR ITS OWN SAKE. A device token is a credential; if one
+            // leaks, an operator needs to stop the feature reading them NOW, without waiting for a
+            // schema change and without dropping a table that is also the evidence of what happened.
+            // `false` is that switch. As with task links the flag cannot GRANT — absent and `true`
+            // both mean "ask the database".
+            // -------------------------------------------------------------------------------------
+            services.AddScoped<ICommPushTokenSchemaProbe, CommPushTokenSchemaProbe>();
+
+            if (configuration?.GetValue<bool?>("CommunicationPlatform:PushTokensEnabled") == false)
+            {
+                services.AddScoped<ICommPushTokenStore, UnprovisionedCommPushTokenStore>();
+            }
+            else
+            {
+                services.AddSingleton<CommPushTokenProvisioning>();
+                services.AddScoped<EfCommPushTokenStore>();
+                services.AddScoped<ICommPushTokenStore, ProbingCommPushTokenStore>();
+            }
             return services;
         }
 

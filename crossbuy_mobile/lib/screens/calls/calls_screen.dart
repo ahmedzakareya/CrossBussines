@@ -113,9 +113,11 @@ class _CallsScreenState extends State<CallsScreen> {
   // ------------------------------------------------------------------------------------------ الأشخاص
   String _state(CallsProvider p, CallPerson x) => p.presenceOf(x.id, x.state);
 
+  // "phone" (push, 2026-11-22): the app is closed but a call rings it — a hollow brand ring
   Widget _dot(String st) => Container(
         width: 11, height: 11,
-        decoration: BoxDecoration(color: st == 'on' ? Brand.blue : st == 'busy' ? Brand.badC : const Color(0xFFB3BCCB), shape: BoxShape.circle, border: Border.all(color: Brand.paper, width: 2)),
+        decoration: BoxDecoration(color: st == 'on' ? Brand.blue : st == 'busy' ? Brand.badC : st == 'phone' ? Brand.paper : const Color(0xFFB3BCCB), shape: BoxShape.circle,
+            border: Border.all(color: st == 'phone' ? Brand.blue : Brand.paper, width: 2)),
       );
 
   Widget _face(CallPerson x, String st) => Stack(clipBehavior: Clip.none, children: [
@@ -137,8 +139,9 @@ class _CallsScreenState extends State<CallsScreen> {
 
   Widget _person(BuildContext context, CallsProvider p, CallPerson x) {
     final st = _state(p, x);
-    final can = st == 'on' && p.connected;
-    final label = st == 'on' ? L(context, 'متاح الآن', 'Available now') : st == 'busy' ? L(context, 'في مكالمة', 'In a call') : L(context, 'غير متصل', 'Offline');
+    final can = (st == 'on' || st == 'phone') && p.connected;
+    final label = st == 'on' ? L(context, 'متاح الآن', 'Available now') : st == 'busy' ? L(context, 'في مكالمة', 'In a call')
+        : st == 'phone' ? L(context, 'متاح على الهاتف', 'On their phone') : L(context, 'غير متصل', 'Offline');
     return Opacity(
       opacity: st == 'off' ? .62 : 1,
       child: Padding(
@@ -163,9 +166,9 @@ class _CallsScreenState extends State<CallsScreen> {
 
   List<Widget> _peopleTab(BuildContext context, CallsProvider p) {
     final list = _people;
-    const rank = {'on': 0, 'busy': 1, 'off': 2};
+    const rank = {'on': 0, 'busy': 1, 'phone': 2, 'off': 3};
     final sorted = list == null ? null : (List.of(list)..sort((a, b) {
-        final r = (rank[_state(p, a)] ?? 2).compareTo(rank[_state(p, b)] ?? 2);
+        final r = (rank[_state(p, a)] ?? 3).compareTo(rank[_state(p, b)] ?? 3);
         return r != 0 ? r : a.nameEn.toLowerCase().compareTo(b.nameEn.toLowerCase());
       }));
     final online = list?.where((x) => _state(p, x) == 'on').length ?? 0;
@@ -303,7 +306,7 @@ class _CallsScreenState extends State<CallsScreen> {
   // ------------------------------------------------------------------------------------------ مكالمة جماعية
   List<Widget> _groupTab(BuildContext context, CallsProvider p) {
     final cap = p.me?.groupMax ?? 4;
-    final list = (_people ?? []).where((x) => _state(p, x) != 'off').toList()
+    final list = (_people ?? []).where((x) => _state(p, x) != 'off' && _state(p, x) != 'phone').toList()   // a group call does not ring through push yet
       ..sort((a, b) => (_state(p, a) == 'on' ? 0 : 1).compareTo(_state(p, b) == 'on' ? 0 : 1));
     final chosen = (_people ?? []).where((x) => _picked.contains(x.id)).toList();
     Widget box(CallPerson x) {

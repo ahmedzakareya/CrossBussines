@@ -142,8 +142,9 @@ namespace CrossBuy.BL
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
 
         public ChatService(CrossDbContext db, IHubContext<ChatHub> hub, INotificationService notify,
-            ICommunicationAccessService access, CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
-        { _db = db; _hub = hub; _notify = notify; _access = access; _contexts = contexts; }
+            ICommunicationAccessService access, CrossBuy.BL.Platform.IBusinessContextAccessor contexts, IServiceProvider? services = null)
+        { _db = db; _hub = hub; _notify = notify; _access = access; _contexts = contexts; _services = services; }
+        private readonly IServiceProvider? _services;   // only to hand a wake-up to PushWake (owner 2026-11-22); optional for hand-built tests
 
         // The resolved request scope, or null when it cannot be established. Null means REFUSE — every
         // guard below treats an unresolved context exactly like a denied permission, so an unauthenticated
@@ -556,6 +557,8 @@ namespace CrossBuy.BL
                 }
                 catch { /* notifications never block chat */ }
             }
+            // a closed phone hears it too: whoever the bell tells above (PushWake — the kind of news only, never the text)
+            if (_services != null) CrossBuy.BL.Communication.PushWake.Enqueue(_services, companyId, members.Where(m => mset.Contains(m) || !muted.Contains(m)), "msg");
             return dto;
         }
 

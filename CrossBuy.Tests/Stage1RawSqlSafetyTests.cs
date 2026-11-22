@@ -40,6 +40,14 @@ namespace CrossBuy.Tests
         // gained or lost a call, so the reviewer's job is to add the verdict, not to silence the test.
         private static readonly (string File, int Count, string Verdict)[] ReviewedProductionRawSql =
         {
+            ("BL/Communication/CommPushTokenSchemaProbe.cs", 1,
+                "System catalogues ONLY - sys.tables and sys.indexes - asked whether the push-token slice has " +
+                "actually been applied to the connected database. Same shape and same verdict as " +
+                "CommTaskLinkSchemaProbe: no business table, no pilot entity, no row of customer data, so " +
+                "there is no company dimension for a predicate to scope. The question is about the SCHEMA, not " +
+                "about tenants. The identifiers interpolated into the text are compile-time constants of this " +
+                "class, never request input, and the query is a pure read - the probe reports an absent schema, " +
+                "it never creates or repairs one."),
             ("BL/AccountingPeriodControlService.cs", 1,
                 "Locked FiscalPeriods read has an explicit EXISTS on FiscalYears.CompanyID inside the raw query; caller authority is checked before locking."),
             ("BL/ProgressBillingService.cs", 1,

@@ -260,6 +260,45 @@ namespace CrossBuy.Models.Communication
         public static IReadOnlyCollection<string> Values => All;
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // WHICH TRANSPORT A REGISTERED DEVICE SPEAKS. (Module 21 / gap G3.)
+    //
+    // A SEPARATE VOCABULARY FROM CommChannel, and not a subdivision of it. CommChannel answers "by what
+    // means is this person told"; this answers "what kind of endpoint is this one device". Push is a
+    // single channel whose adapter needs the distinction, because FCM, APNs and WebPush are three
+    // different wire protocols with three different credentials.
+    //
+    // CLOSED, and mirrored by CK_CommPushTokens_Platform in deploy/sql/comm_push_tokens.sql. Unlike
+    // CommAuditEntries.Action (G7, deliberately unconstrained because its vocabulary grows with
+    // features), a push transport is a deployment capability: a value this product has no adapter for
+    // must not reach the table, or a notification is addressed to a device nobody can reach.
+    //
+    // LOWERCASE, because these are wire values rather than display words, and the CHECK constraint
+    // spells them that way. IsValid accepts any case so a client sending "iOS" is not refused over a
+    // capital letter; Canonical is what gets stored, so the column holds one spelling whatever the
+    // database's collation would have tolerated.
+    // ---------------------------------------------------------------------------------------------
+    public static class CommPushPlatform
+    {
+        public const string Web = "web";
+        public const string Android = "android";
+        public const string Ios = "ios";
+
+        private static readonly HashSet<string> All =
+            new(StringComparer.OrdinalIgnoreCase) { Web, Android, Ios };
+
+        // Trims before matching, because the two callers of this are a wire payload and a stored row,
+        // and neither is a place where a trailing space should mean "unknown platform".
+        public static bool IsValid(string? value) => value != null && All.Contains(value.Trim());
+
+        // The spelling that is written. Returns null for anything not in the set, so a caller cannot
+        // use this to launder an unknown platform into the column.
+        public static string? Canonical(string? value) =>
+            IsValid(value) ? value!.Trim().ToLowerInvariant() : null;
+
+        public static IReadOnlyCollection<string> Values => All;
+    }
+
     // Delivery state of ONE (notification, channel) pair. Mirrors BusinessEventDispatchStatus (ADR-003)
     // deliberately — an operator who has learned to read one queue can read the other — plus Skipped,
     // which the event dispatcher has no equivalent for because it never declines to deliver.

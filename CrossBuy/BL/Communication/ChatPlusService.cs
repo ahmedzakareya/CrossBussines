@@ -22,7 +22,8 @@ namespace CrossBuy.BL.Communication
 		private readonly CrossDbContext _db;
 		private readonly IHubContext<ChatHub> _hub;
 		private readonly INotificationService _notify;
-		public ChatPlusService(CrossDbContext db, IHubContext<ChatHub> hub, INotificationService notify) { _db = db; _hub = hub; _notify = notify; }
+		private readonly IServiceProvider? _services;   // only to hand a wake-up to PushWake; optional so a hand-built service still works
+		public ChatPlusService(CrossDbContext db, IHubContext<ChatHub> hub, INotificationService notify, IServiceProvider? services = null) { _db = db; _hub = hub; _notify = notify; _services = services; }
 
 		public const int MaxBody = 4000;
 		private static bool IsAr => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
@@ -146,6 +147,8 @@ namespace CrossBuy.BL.Communication
 				}
 				catch { /* a notice never blocks the message */ }
 			}
+			// a closed phone hears it too: whoever the bell tells above (PushWake — the kind of news only, never the text)
+			if (_services != null) PushWake.Enqueue(_services, companyId, audience.Where(m => mset.Contains(m) || !muted.Contains(m)), "msg");
 			return msg;
 		}
 

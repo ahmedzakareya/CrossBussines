@@ -39,6 +39,12 @@ namespace CrossBuy.Tests.Communication
         {
             "communication_platform_slice_001.sql",
             "communication_external_actor_3bb1.sql",
+
+            // Module 21 / G3. Authored and NOT APPLIED to any database — which this guard does not
+            // care about and must not start caring about: it reads the script as TEXT, so it asserts
+            // that the model and the DDL describe the same schema, never that somebody ran it. The
+            // probe (CommPushTokenSchemaProbe) is what answers the deployment question.
+            "comm_push_tokens.sql",
         };
 
         // Finds the deployment script by walking up to the repository root. The test project and the web project

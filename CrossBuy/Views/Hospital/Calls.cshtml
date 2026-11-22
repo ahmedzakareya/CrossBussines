@@ -33,6 +33,8 @@
 <style>
     .hc-pres{position:absolute;bottom:0;inset-inline-end:0;width:12px;height:12px;border-radius:50%;border:2px solid var(--bs-body-bg,#fff);background:#C4CADA}
     .hc-pres.on{background:var(--cb-brand,#3A5795)}.hc-pres.busy{background:#DC2626}
+    /* push (2026-11-22): the app is closed but a call rings the phone — a hollow brand ring */
+    .hc-pres.phone{background:var(--bs-body-bg,#fff);box-shadow:inset 0 0 0 2px var(--cb-brand,#3A5795)}
     .hc-row{border-radius:.75rem;transition:background .15s}.hc-row:hover{background:#F5F8FF}
     .hc-dir{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
     .hc-face{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;font-weight:700}
@@ -283,7 +285,7 @@
 @section Scripts {
 <script>
 (function () {
-    var W = { on: @Json.Serialize(T["Available"].Value), busy: @Json.Serialize(T["In a call"].Value), off: @Json.Serialize(T["Offline"].Value),
+    var W = { on: @Json.Serialize(T["Available"].Value), busy: @Json.Serialize(T["In a call"].Value), off: @Json.Serialize(T["Offline"].Value), phone: @Json.Serialize(T["On their phone"].Value),
               choosePatient: @Json.Serialize(T["Choose the patient"].Value), choosePerson: @Json.Serialize(T["Choose whom to call"].Value), noMatch: @Json.Serialize(T["No matching patient"].Value) };
     var searchUrl = @Json.Serialize(Url.Action("SearchPatients"));
     var recUrl = @Json.Serialize(Url.Content("~/Hospital/Calls/Recording/"));
@@ -302,9 +304,10 @@
         document.querySelectorAll('[data-emp="' + id + '"]').forEach(function (row) {
             var dot = row.querySelector('[data-pres]'); if (dot) dot.className = 'hc-pres ' + s;
             var lbl = row.querySelector('[data-plabel]');
-            if (lbl) { lbl.textContent = W[s]; lbl.className = s === 'on' ? 'text-primary fw-semibold' : s === 'busy' ? 'text-danger fw-semibold' : 'text-muted'; }
+            if (lbl) { lbl.textContent = W[s] || W.off; lbl.className = s === 'on' ? 'text-primary fw-semibold' : s === 'busy' ? 'text-danger fw-semibold' : s === 'phone' ? 'text-primary' : 'text-muted'; }
         });
-        document.querySelectorAll('[data-call="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on'; });
+        // "phone": a call rings it through push; a GROUP call does not yet, so it stays for the people who are here
+        document.querySelectorAll('[data-call="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on' && s !== 'phone'; });
         document.querySelectorAll('[data-gpick="' + id + '"]').forEach(function (b) { b.disabled = s !== 'on'; if (s !== 'on') b.checked = false; });
         groupCount();
         // only the people this directory lists (my own connection is announced too, and I am not in it)
@@ -314,7 +317,7 @@
         sortSoon();
     }
     // whoever is connected comes first, always: available, then in a call, then offline — each group keeps the name order
-    var RANK = { on: 0, busy: 1, off: 2 }, sortTimer = null;
+    var RANK = { on: 0, busy: 1, phone: 2, off: 3 }, sortTimer = null;
     function sortSoon() { clearTimeout(sortTimer); sortTimer = setTimeout(sortAll, 60); }
     function sortIn(box) {
         if (!box) return;

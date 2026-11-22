@@ -514,3 +514,7 @@ body[data-cb-chat-open] .cm-fab, body[data-cb-chat-open] .cm-fpanel { display: n
 .cm-dev .lvl { height: 6px; border-radius: 4px; background: #EEF0F4; margin-top: 7px; overflow: hidden; }
 .cm-dev .lvl i { display: block; height: 100%; width: 0; background: var(--cm-brand2, #3A5795); transition: width .08s linear; }
 .cm-dev .nt { font-size: 11.5px; color: var(--cm-muted, #738098); margin-top: 12px; line-height: 1.7; }
+
+/* presence "phone" (push, 2026-11-22): the app is closed but a call rings it — a hollow brand ring, between here and away */
+.cm-face .pres.phone { background: #fff; border-color: var(--cm-brand2); box-shadow: inset 0 0 0 2px #fff; }
+.cm-st.phone { color: var(--cm-brand2); }

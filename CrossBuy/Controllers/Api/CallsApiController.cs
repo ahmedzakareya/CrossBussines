@@ -97,12 +97,12 @@ namespace CrossBuy.Controllers.Api
 			if (!await svc.InstalledAsync(ct)) return Ok(new { ok = true, people = Array.Empty<object>() });
 			var all = await svc.PeopleAsync(me.CompanyId, DateTime.UtcNow, null, ct);
 			var term = (q ?? "").Trim();
-			var rank = new Dictionary<string, int> { ["on"] = 0, ["busy"] = 1, ["off"] = 2 };
+			var rank = new Dictionary<string, int> { ["on"] = 0, ["busy"] = 1, ["phone"] = 2, ["off"] = 3 };   // "phone": the app is closed but push rings it
 			var people = all.Where(p => p.EmployeeId != me.EmployeeId)
 				.Where(p => term.Length == 0 || p.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || p.NameEn.Contains(term, StringComparison.OrdinalIgnoreCase)
 					|| (p.Department ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) || (p.DepartmentEn ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)
 					|| (p.Title ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) || (p.TitleEn ?? "").Contains(term, StringComparison.OrdinalIgnoreCase))
-				.OrderBy(p => rank[HospitalCallHub.Presence(p.EmployeeId)]).ThenBy(p => p.NameEn, StringComparer.OrdinalIgnoreCase)
+				.OrderBy(p => rank.GetValueOrDefault(HospitalCallHub.Presence(p.EmployeeId), 3)).ThenBy(p => p.NameEn, StringComparer.OrdinalIgnoreCase)
 				.Take(300).Select(Card).ToList();
 			return Ok(new { ok = true, people });
 		}

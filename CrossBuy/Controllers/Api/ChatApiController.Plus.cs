@@ -171,6 +171,59 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { ok = r.Ok, text = r.Text, lang = r.Lang, code = r.Code });
 		}
 
+		// ---------------- push to a closed phone (owner 2026-11-22: FCM, no content) ----------------
+		// The app registers its FCM token after signing in and withdraws it on signing out. When Google wakes it (PushWake
+		// sends only the kind of news), it asks "summary" what is new, over this signed-in connection, and shows it itself.
+		[HttpPost("push/register")]
+		public async Task<IActionResult> PushRegister([FromForm] string token, [FromForm] string? platform, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || !await _comm.CanAsync(me, CommunicationActions.Read, null, ct)) return NotFound(Missing);   // may use communication at all
+			var store = _sp.GetService<ICommPushTokenStore>();
+			if (store == null || !store.IsProvisioned) return Ok(new { ok = false, code = "not_provisioned" });
+			var p = CrossBuy.Models.Communication.CommPushPlatform.Canonical(platform ?? "android");
+			if (p == null || p == "web" || string.IsNullOrWhiteSpace(token) || token.Length > 512) return BadRequest(new { ok = false });
+			var t = await store.RegisterAsync(me.CompanyId, me.EmployeeId!.Value, p, token.Trim(), me.EmployeeId, ct);
+			if (t != null && await PushWake.EnabledAsync(_sp)) CrossBuy.Hubs.HospitalCallHub.SetPhone(me.EmployeeId!.Value, true);   // callable with the app closed
+			return Ok(new { ok = t != null });
+		}
+
+		[HttpPost("push/unregister")]
+		public async Task<IActionResult> PushUnregister([FromForm] string token, CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || !await _comm.CanAsync(me, CommunicationActions.Read, null, ct)) return NotFound(Missing);   // may use communication at all
+			var store = _sp.GetService<ICommPushTokenStore>();
+			if (store == null || !store.IsProvisioned || string.IsNullOrWhiteSpace(token)) return Ok(new { ok = false });
+			// only my own device: a token registered to someone else is not mine to withdraw
+			var mine = (await store.ForRecipientAsync(me.CompanyId, me.EmployeeId!.Value, ct)).Any(x => x.Token == token.Trim());
+			var ok = mine && await store.RevokeAsync(me.CompanyId, token.Trim(), "signed_out", me.EmployeeId, ct);
+			if (ok && !(await store.ForRecipientAsync(me.CompanyId, me.EmployeeId!.Value, ct)).Any(x => x.Platform != "web")) CrossBuy.Hubs.HospitalCallHub.SetPhone(me.EmployeeId!.Value, false);
+			return Ok(new { ok });
+		}
+
+		/// What a woken phone shows: unread conversations that are not muted (newest first), a call ringing for me now,
+		/// and calls I missed in the last 15 minutes.
+		[HttpGet("push/summary")]
+		public async Task<IActionResult> PushSummary(CancellationToken ct)
+		{
+			var me = await MeAsync(ct); if (me == null || !await _comm.CanAsync(me, CommunicationActions.Read, null, ct)) return NotFound(Missing);   // may use communication at all
+			int emp = me.EmployeeId!.Value;
+			var convs = (await _chat.MyConversationsAsync(me.CompanyId, emp)).Where(c => c.Unread > 0 && !c.Muted).OrderByDescending(c => c.LastAt).Take(6)
+				.Select(c => new { conversationId = c.Id, title = c.Title, group = c.Kind != "Direct", preview = c.Preview, unread = c.Unread, lastAt = c.LastAt }).ToList();
+			object? call = null;
+			if (CrossBuy.Hubs.HospitalCallHub.RingingFor(emp) is var (callId, callerId, video))
+			{
+				var who = await _db.Employee.AsNoTracking().Where(e => e.ID == callerId).Select(e => new { e.FullName, e.FullNameEn, e.ProfileImage }).FirstOrDefaultAsync(ct);
+				call = new { callId, video, from = who == null ? "" : DisplayName.Or(who.FullNameEn, who.FullName), fromAr = who?.FullName, photo = who?.ProfileImage };
+			}
+			var since = DateTime.UtcNow.AddMinutes(-15);
+			var missed = await (from h in _db.Set<CrossBuy.Models.Context.Hospital.HospitalCall>().AsNoTracking()
+								join e in _db.Employee.AsNoTracking() on h.CallerEmployeeId equals e.ID
+								where h.CompanyId == me.CompanyId && h.CalleeEmployeeId == emp && h.Status == CrossBuy.Models.Context.Hospital.HospitalCallStatus.Missed && h.StartedAt >= since
+								orderby h.StartedAt descending
+								select new { callId = h.ID, video = h.IsVideo, fromAr = e.FullName, fromEn = e.FullNameEn ?? e.FullName, at = h.StartedAt }).Take(5).ToListAsync(ct);
+			return Ok(new { messages = convs, call, missed = missed.Select(m => new { m.callId, m.video, m.fromAr, @from = m.fromEn, at = DateTime.SpecifyKind(m.at, DateTimeKind.Utc) }) });
+		}
+
 		// ---------------- what I missed ----------------
 		[HttpGet("catchup")]
 		public async Task<IActionResult> CatchUp(int c, int since, CancellationToken ct)

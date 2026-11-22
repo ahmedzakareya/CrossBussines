@@ -101,14 +101,14 @@ namespace CrossBuy.Controllers
 		{
 			var me = await MeAsync(); if (me == null) return Unauthorized();
 			var people = await CallSvc.PeopleAsync(me.Value.companyId, DateTime.UtcNow, null);
-			var rank = new Dictionary<string, int> { ["on"] = 0, ["busy"] = 1, ["off"] = 2 };
+			var rank = new Dictionary<string, int> { ["on"] = 0, ["busy"] = 1, ["phone"] = 2, ["off"] = 3 };   // "phone": the app is closed but push rings it
 			// the hospital's on-call list, at the top of People: for someone with the hospital module, when it is switched on
 			bool onCallList = await HospitalOnAsync() && (await CallSvc.SettingsAsync(me.Value.companyId)).OnCallList;
 			return Json(new
 			{
 				ok = true,
 				onCall = onCallList ? people.Where(p => p.OnCall && p.EmployeeId != me.Value.empId).Select(p => p.EmployeeId) : Enumerable.Empty<int>(),
-				people = people.Where(p => p.EmployeeId != me.Value.empId).OrderBy(p => rank[HospitalCallHub.Presence(p.EmployeeId)]).ThenBy(p => p.NameEn, StringComparer.OrdinalIgnoreCase).Select(p => new
+				people = people.Where(p => p.EmployeeId != me.Value.empId).OrderBy(p => rank.GetValueOrDefault(HospitalCallHub.Presence(p.EmployeeId), 3)).ThenBy(p => p.NameEn, StringComparer.OrdinalIgnoreCase).Select(p => new
 				{
 					id = p.EmployeeId, name = DisplayName.Of(p.Name, p.NameEn), photo = p.Photo, initials = HospitalUi.Initials(p.NameEn),
 					title = p.Title == null && p.TitleEn == null ? null : DisplayName.Of(p.Title ?? p.TitleEn!, p.TitleEn ?? p.Title!),

@@ -457,6 +457,40 @@ namespace CrossBuy.Models.Context.Communication
                     .HasDatabaseName("IX_CommTaskLinks_Task")
                     .HasFilter("[RemovedAt] IS NULL");
             });
+
+            // -------------------------------------------------------------------------------------
+            // CommPushTokens (module 21 / gap G3). Its own slice, deploy/sql/comm_push_tokens.sql,
+            // authored and NOT APPLIED — the same SQL-before-code ordering the task-link slice uses.
+            //
+            // Mapping it here does not activate anything. ProbingCommPushTokenStore asks the database
+            // whether the table exists before the persistent store is ever reached, so a deployment
+            // that has not run the slice gets UnprovisionedCommPushTokenStore and an honest refusal
+            // rather than a SQL-208. What the mapping DOES do is make the table real for
+            // EnsureCreated, so an in-memory host builds it, and bring it under the parity guard.
+            // -------------------------------------------------------------------------------------
+            builder.Entity<CommPushTokenRecord>(e =>
+            {
+                e.ToTable("CommPushTokens");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).ValueGeneratedOnAdd();
+                e.Property(x => x.Platform).HasMaxLength(20).IsRequired();
+                e.Property(x => x.Token).HasMaxLength(512).IsRequired();
+                e.Property(x => x.RevokedReason).HasMaxLength(LabelLength);
+
+                // FILTERED ON RevokedAt, and that filter is the feature rather than an optimisation.
+                // Without it the retired row would permanently own the token value, so a device that
+                // re-registered after revocation could never enrol again — soft retirement would be
+                // impossible and the only way to re-enrol would be deleting the evidence.
+                e.HasIndex(x => new { x.CompanyID, x.Token })
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommPushTokens_Live")
+                    .HasFilter("[RevokedAt] IS NULL");
+
+                // The send path's read: every live token for one recipient in one company.
+                e.HasIndex(x => new { x.CompanyID, x.EmployeeId })
+                    .HasDatabaseName("IX_CommPushTokens_Recipient")
+                    .HasFilter("[RevokedAt] IS NULL");
+            });
         }
 
         // Every table this platform owns, in deployment order (parents before children). Read by
@@ -483,6 +517,11 @@ namespace CrossBuy.Models.Context.Communication
             // platform slice — that script is already deployed and editing a CREATE script to
             // describe a later migration would make a fresh deploy and an upgraded one diverge.
             "CommTaskLinks",
+
+            // Module 21 / G3. Also its own slice, deploy/sql/comm_push_tokens.sql, for the same
+            // reason: a table that some deployments have and others do not cannot be described by
+            // editing a CREATE script that is already deployed.
+            "CommPushTokens",
         };
     }
 }

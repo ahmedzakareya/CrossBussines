@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../services/push_service.dart';
 
 /// Tracks authentication state and drives navigation between login/home.
 class AuthProvider extends ChangeNotifier {
@@ -18,6 +19,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> bootstrap() async {
     await _api.loadToken();
     notifyListeners();
+    if (_api.isLoggedIn) PushService.register();   // a token may have rotated while the app was closed
   }
 
   Future<bool> login(String username, String password) async {
@@ -26,10 +28,12 @@ class AuthProvider extends ChangeNotifier {
     final ok = await _api.login(username, password);
     _loading = false;
     notifyListeners();
+    if (ok) PushService.register();
     return ok;
   }
 
   Future<void> logout() async {
+    await PushService.unregister();   // while still signed in: the server must know whose phone stops listening
     await _api.logout();
     notifyListeners();
   }

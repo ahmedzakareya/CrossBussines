@@ -47,7 +47,8 @@
 	function face(name, photo, size, state) { return '<div class="cm-face">' + av(name, photo, size) + (state ? '<span class="pres ' + state + '"></span>' : '') + '</div>'; }
 	function grpFace(size) { var s = size || 44; return '<div class="cm-grp" style="width:' + s + 'px;height:' + s + 'px">' + ico('users-round', Math.round(s * .42)) + '</div>'; }
 	function presText(state) {
-		return state === 'on' ? '<span class="cm-st on">' + t('Available now') + '</span>' : state === 'busy' ? '<span class="cm-st busy">' + t('In a call') + '</span>' : '<span class="cm-st">' + t('Offline') + '</span>';
+		return state === 'on' ? '<span class="cm-st on">' + t('Available now') + '</span>' : state === 'busy' ? '<span class="cm-st busy">' + t('In a call') + '</span>' :
+			state === 'phone' ? '<span class="cm-st phone">' + t('On their phone') + '</span>' : '<span class="cm-st">' + t('Offline') + '</span>';
 	}
 
 	/* ---------------- time ---------------- */
@@ -222,7 +223,7 @@
 		getJson('/Chat/CallPeople').then(function (r) { callPeople = r && r.people ? r.people : []; onCall = r && r.onCall ? r.onCall : []; callPeople.forEach(function (p) { pres[p.id] = p.state; }); if (tab === 'people') renderPeople(); });
 	}
 	function renderPeople() {
-		var s = q(), rank = { on: 0, busy: 1, off: 2 };
+		var s = q(), rank = { on: 0, busy: 1, phone: 2, off: 3 };
 		var list = callPeople.filter(function (p) { return !s || (p.name || '').toLowerCase().indexOf(s) !== -1 || (p.department || '').toLowerCase().indexOf(s) !== -1 || (p.title || '').toLowerCase().indexOf(s) !== -1; })
 			.sort(function (a, b) { return (rank[presOf(a.id)] - rank[presOf(b.id)]) || String(a.name).localeCompare(String(b.name)); });
 		var shown = list.slice(0, peopleLimit);
@@ -241,7 +242,8 @@
 				'<span class="d-flex gap-1">' + ib('message-circle', t('Chat'), 'sm', 'data-chatwith="' + p.id + '"') + ib('phone', t('Voice call'), 'sm', off + ' data-call="0" data-emp="' + p.id + '"') + ib('video', t('Video call'), 'sm fill', off + ' data-call="1" data-emp="' + p.id + '"') + '</span></div>';
 	}
 	var peopleLimit = 40;
-	function presLabel(st) { return st === 'on' ? t('Available now') : st === 'busy' ? t('In a call') : t('Offline'); }
+	// "phone": the app is closed but push rings it (owner 2026-11-22) — callable, after the people who are here
+	function presLabel(st) { return st === 'on' ? t('Available now') : st === 'busy' ? t('In a call') : st === 'phone' ? t('On their phone') : t('Offline'); }
 
 	/* ---------------- calls ---------------- */
 	var callLog = null;

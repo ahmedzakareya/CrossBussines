@@ -12,6 +12,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // flutter_local_notifications (push, 2026-11-22) uses java.time on older Android: desugared
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -56,4 +58,6 @@ dependencies {
     // (Apache-2.0; 1.2.2, published 2026-11-03 — the browser uses the same version and the same selfie model).
     implementation("io.github.webrtc-sdk:android:150.7871.04")
     implementation("com.google.mediapipe:tasks-vision:1.2.2")
+    // what flutter_local_notifications requires for the desugaring above
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

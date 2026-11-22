@@ -11,12 +11,14 @@ import 'screens/shell.dart';
 import 'screens/login_screen.dart';
 import 'services/app_nav.dart';
 import 'services/dev_certificate.dart';
+import 'services/push_service.dart';
 import 'theme/brand.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   trustDevCertificate();   // debug builds only: the development server's own certificate (10.0.2.2 / localhost)
 
+  await PushService.init();   // push with the app closed — off when the build carries no Firebase settings
   final locale = LocaleProvider();
   final auth = AuthProvider();
   await Future.wait([locale.load(), auth.bootstrap()]);

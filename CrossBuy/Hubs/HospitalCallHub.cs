@@ -33,12 +33,23 @@ namespace CrossBuy.Hubs
 			public string? CalleeConn;
 			public bool Video;
 			public DateTime? CallerAway, CalleeAway;   // when that side's tab dropped (the warden ends the call after 90 s)
+			public object? Offer;   // the ring as sent: a phone woken by push (PushWake) gets it when it connects
 		}
+
+		/// The call ringing for this person now, if any (the app's push summary shows it as an incoming call).
+		public static (int CallId, int CallerId, bool Video)? RingingFor(int employeeId)
+			=> _calls.Values.Where(l => l.CalleeId == employeeId && l.CalleeConn == null).Select(l => ((int, int, bool)?)(l.CallId, l.CallerId, l.Video)).FirstOrDefault();
 
 		private static readonly ConcurrentDictionary<int, int> _online = new();          // employee → connections
 		private static readonly ConcurrentDictionary<int, int> _company = new();         // employee → company
 		private static readonly ConcurrentDictionary<int, Live> _calls = new();          // call id → live call
 		private static readonly ConcurrentDictionary<int, int> _busy = new();            // employee → call id
+		// push (owner 2026-11-22): who can be rung on a phone with the app closed — "phone" rather than "off" in presence,
+		// so a call to them is offered (it rings through PushWake). Loaded per company on its first connection, kept
+		// current by the device registration endpoints and by PushWake retiring dead tokens.
+		private static readonly ConcurrentDictionary<int, bool> _phones = new();
+		private static readonly ConcurrentDictionary<int, bool> _phonesLoaded = new();   // company → loaded
+		public static void SetPhone(int employeeId, bool reachable) { if (reachable) _phones[employeeId] = true; else _phones.TryRemove(employeeId, out _); }
 		/// Connections from the mobile app (it connects with ?client=app): a phone cannot record a call, so a recording it
 		/// asks for is recorded by the browser at the other end.
 		private static readonly ConcurrentDictionary<string, bool> _appConns = new();
@@ -46,7 +57,7 @@ namespace CrossBuy.Hubs
 		public const string NeedsComputer = "Recording needs one side on a computer: a phone cannot record the call";
 
 		/// "busy" also while someone's screen is ringing: a second caller is told at once instead of waiting out the ring.
-		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) || RingingInGroup(employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : "off";
+		public static string Presence(int employeeId) => _busy.ContainsKey(employeeId) || _calls.Values.Any(l => l.CalleeId == employeeId) || RingingInGroup(employeeId) ? "busy" : _online.TryGetValue(employeeId, out var c) && c > 0 ? "on" : _phones.ContainsKey(employeeId) ? "phone" : "off";
 		public static int BusyCount(int companyId) => _busy.Keys.Count(e => _company.TryGetValue(e, out var c) && c == companyId);
 
 		private static string Emp(int id) => "hcall-e-" + id;
@@ -80,9 +91,13 @@ namespace CrossBuy.Hubs
 				await Groups.AddToGroupAsync(Context.ConnectionId, Emp(emp));
 				await Groups.AddToGroupAsync(Context.ConnectionId, Co(co));
 				_company[emp] = co;
+				if (_phonesLoaded.TryAdd(co, true)) await LoadPhonesAsync(co);
 				if (Context.GetHttpContext()?.Request.Query["client"].ToString() == "app") _appConns[Context.ConnectionId] = true;
 				StartWarden();
 				if (_online.AddOrUpdate(emp, 1, (_, n) => n + 1) == 1) await Clients.Group(Co(co)).SendAsync("presence", new { employeeId = emp, state = Presence(emp) });
+				// a call rang while this person had no connection (their phone was woken by push): it rings here now
+				foreach (var l in _calls.Values.Where(l => l.CalleeId == emp && l.CalleeConn == null && l.Offer != null).ToList())
+					await Clients.Caller.SendAsync("incoming", l.Offer);
 			}
 			await base.OnConnectedAsync();
 		}
@@ -134,6 +149,11 @@ namespace CrossBuy.Hubs
 				return new { ok = false, error = "{0} asked not to be disturbed — it is recorded as a missed call so they call you back", name = DisplayName.Of(callee.Name, callee.NameEn) };
 			}
 			string state = Presence(calleeId);
+			// owner 2026-11-22: an app that is closed is woken by push and rings — so "not connected" is not "missed" for
+			// someone with a registered phone (the ring time covers the phone waking and connecting)
+			bool byPush = state == "phone" && await CrossBuy.BL.Communication.PushWake.CanWakeAsync(_sp, co, calleeId);
+			if (state == "phone" && !byPush) { SetPhone(calleeId, false); state = "off"; }   // the phone is gone: the old rule
+			if (byPush) state = "on";
 			// Communication v2, call waiting: someone IN a call (not merely ringing, and not rung by another call now) hears
 			// this one waiting, and may end theirs to answer it
 			bool waiting = state == "busy" && _busy.ContainsKey(calleeId) && !_calls.Values.Any(l => l.CalleeId == calleeId && l.CalleeConn == null);
@@ -156,11 +176,14 @@ namespace CrossBuy.Hubs
 			var rec = RecSvc;
 			var (calleeMay, kind, _) = await rec.OptionsAsync(co, callee, video);
 			var (callerMay, _, _) = await rec.OptionsAsync(co, caller, video);
-			await Clients.Group(Emp(calleeId)).SendAsync("incoming", new
+			var offer = new
 			{
 				callId = row.ID, video, reason = row.Reason, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight,
 				caller = Card(caller), patient, canRecord = calleeMay, recKind = kind, waiting,
-			});
+			};
+			live.Offer = offer;
+			await Clients.Group(Emp(calleeId)).SendAsync("incoming", offer);
+			if (byPush) CrossBuy.BL.Communication.PushWake.Enqueue(_sp, co, new[] { calleeId }, "call");
 			return new { ok = true, callId = row.ID, ringSeconds = settings.RingSeconds, share = settings.ScreenShareEnabled, maxHeight = settings.MaxVideoHeight, video, callee = Card(callee), patient, canRecord = callerMay, recKind = kind };
 		}
 
@@ -181,8 +204,21 @@ namespace CrossBuy.Hubs
 					kindAr + " — يمكنك معاودة الاتصال من التواصل", kindEn + " — call back from Communication",
 					MissedNotificationType, callId, "/Chat?tab=calls", companyId, callerId,
 					priority: "High", category: "Hospital", dedupKey: $"hcall-missed-{callId}-{calleeId}", icon: "ki-call");
+				CrossBuy.BL.Communication.PushWake.Enqueue(_sp, companyId, new[] { calleeId }, "msg");   // a closed phone shows the missed call
 			}
 			catch (Exception) { }   // a failed notice never breaks the call flow
+		}
+
+		private async Task LoadPhonesAsync(int companyId)
+		{
+			try
+			{
+				if (!await CrossBuy.BL.Communication.PushWake.EnabledAsync(_sp)) return;
+				var ids = await _db.Set<CrossBuy.Models.Context.Communication.CommPushTokenRecord>().AsNoTracking()
+					.Where(t => t.CompanyID == companyId && t.RevokedAt == null && t.Platform != "web").Select(t => t.EmployeeId).Distinct().ToListAsync();
+				foreach (var id in ids) _phones[id] = true;
+			}
+			catch (Exception) { _phonesLoaded.TryRemove(companyId, out _); }   // the token table is not there yet: ask again next time
 		}
 
 		private static object Card(HospitalCallPerson p) => new
