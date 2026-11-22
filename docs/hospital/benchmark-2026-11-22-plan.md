@@ -113,3 +113,32 @@ Overall score: about 6.3 out of 10.
   - a positive blood culture is critical;
   - a verified MDRO opens a suspected infection-control case.
   - Verified live on TEST patient 25 (LAB-000017 → IC-000004).
+- **H231 (f6d0da3f)** — the cumulative antibiogram (first isolate per patient per organism), on screen and in Report Studio.
+- **H232 (967c6d6e)** — lab quality control: Levey-Jennings charts and Westgard rules. An out-of-control analyte blocks patient results.
+- **H233–H242 (one commit)**:
+  - H233 — lab: age/sex reference ranges, the delta check, and autoverification.
+  - H234 — medication safety: duplicate therapy and pregnancy/lactation checks.
+  - H235 — antimicrobial stewardship:
+    - approval of restricted agents;
+    - the 48–72 h time-out;
+    - days of therapy.
+  - H236 — alert-override analytics.
+  - H237 — ED time-critical pathways and ambulance pre-arrival:
+    - pathways for sepsis, stroke, STEMI and trauma;
+    - every step timed from the door.
+  - H238 — ICU:
+    - GCS and APACHE II;
+    - infusions titrated within a protocol;
+    - ventilator, central-line and catheter bundles with device-days.
+  - H239 — the capacity centre:
+    - beds now and a four-day forecast;
+    - ward occupancy;
+    - discharge plans with their barriers.
+  - H240 — the denial work-queue: root cause, owner, appeal deadline, and the overturn rate.
+  - H241 — DRG coding:
+    - the group table is entered by the administrator;
+    - the grouper;
+    - a frozen weight per stay and the case-mix index.
+  - H242 — FHIR eligibility and pre-authorisation:
+    - each payer's gateway is entered by the administrator and stays off until then;
+    - the file exchange keeps working until the gateway is on.

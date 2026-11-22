@@ -1,0 +1,171 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalErPathwayBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H237 — on the emergency board: ambulances on their way (pre-arrival) and the time-critical pathways running, each
+    step a chip coloured by its clock (on time, late, due, overdue, not indicated). Theme controls only.
+*@
+@{
+    bool canAdmit = ViewBag.CanAdmit == true;
+    var rows = ViewData["ErRows"] as IReadOnlyList<HospitalErRow> ?? Array.Empty<HospitalErRow>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Chip(string state) => state switch
+    {
+        HospitalErStepStatus.OnTime => "badge-light-primary", HospitalErStepStatus.Late => "badge-light-info", HospitalErStepStatus.Overdue => "badge-danger",
+        HospitalErStepStatus.NotIndicated => "badge-light text-gray-500", _ => "badge-light",
+    };
+    string PathTone(string k) => k == HospitalErPathwayKind.Sepsis || k == HospitalErPathwayKind.Trauma ? "danger" : "primary";
+}
+@if (!Model.Ready)
+{
+    <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T["The emergency pathways are not installed yet (hospital_h237_er_pathways.sql)."]</div></div>
+}
+else
+{
+<div class="row g-5 mb-5" data-erp>
+    <div class="col-xl-4">
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Ambulances on the way"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The pathway starts at the real door time"]</span></h3>
+                @if (canAdmit) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-erp-prealert><i class="ki-outline ki-truck fs-4"></i>@T["Pre-alert"]</button></div>}
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Incoming.Count == 0) {<div class="text-muted fs-7 py-4">@T["No ambulance expected."]</div>}
+                @foreach (var a in Model.Incoming)
+                {
+                    <div class="d-flex align-items-start gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+                        <span class="symbol symbol-40px flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-truck fs-2 text-danger"></i></span></span>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-bold text-gray-800 hp-num" dir="ltr" style="text-align:start" data-fmt data-utc="@a.ExpectedAt.ToString("o")">@a.ExpectedAt.ToLocalTime().ToString("HH:mm", inv)</div>
+                            <div class="fs-7 text-gray-700" dir="auto">@a.Complaint</div>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                @if (a.EsiEstimate is int e) {<span class="badge er-badge-@e fs-8">ESI @e</span>}
+                                @if (a.Pathway != null) {<span class="badge badge-light-@PathTone(a.Pathway) fs-8">@T["path:" + a.Pathway]</span>}
+                                @if (a.AgeText != null || a.Sex != null) {<span class="badge badge-light fs-8">@(a.Sex == "F" ? T["Female"] : a.Sex == "M" ? T["Male"] : "") @a.AgeText</span>}
+                                @if (a.Unit != null) {<span class="badge badge-light fs-8" dir="auto">@a.Unit</span>}
+                            </div>
+                        </div>
+                        @if (canAdmit)
+                        {
+                            <div class="d-flex flex-column gap-1">
+                                <button type="button" class="btn btn-sm btn-primary py-1 px-3" data-erp-receive="@a.ID">@T["Arrived"]</button>
+                                <button type="button" class="btn btn-sm btn-light py-1 px-3" data-erp-cancel="@a.ID">@T["Cancel"]</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Time-critical pathways"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each step against its target from the door"]</span></h3>
+                @if (canAdmit && rows.Count > 0) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-erp-new><i class="ki-outline ki-route fs-4"></i>@T["Start a pathway"]</button></div>}
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Active.Count == 0) {<div class="text-muted fs-7 py-4">@T["No pathway running."]</div>}
+                @foreach (var p in Model.Active)
+                {
+                    <div class="py-4 border-bottom border-gray-200 border-bottom-dashed">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            @HospitalUi.Avatar(p.Photo, DisplayName.Of(p.PatientName ?? "?", p.PatientNameEn), 35)
+                            <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800">@DisplayName.Of(p.PatientName ?? "?", p.PatientNameEn) <span class="badge badge-light-@PathTone(p.Pathway.Kind) fs-8 ms-1">@T["path:" + p.Pathway.Kind]</span>@if (p.Overdue > 0) {<span class="badge badge-danger fs-8 ms-1">@T["{0} overdue", p.Overdue]</span>}</div>
+                                <div class="text-muted fs-8 hp-num" dir="ltr" style="text-align:start">@p.Visit.VisitNo · @T["Arrived"] <span data-fmt data-utc="@p.Visit.ArrivedAt.ToString("o")">@p.Visit.ArrivedAt.ToLocalTime().ToString("HH:mm", inv)</span></div></div>
+                            @if (canAdmit) {<button type="button" class="btn btn-sm btn-icon btn-light" title="@T["Close the pathway"]" data-bs-toggle="tooltip" data-erp-close="@p.Pathway.ID"><i class="ki-outline ki-check-square fs-3"></i></button>}
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var s in p.Steps)
+                            {
+                                bool open = s.Done == null && canAdmit;
+                                <span class="badge @Chip(s.State) fs-7 py-2 px-3 @(open ? "cursor-pointer" : "")" @(open ? "data-erp-step=" + p.Pathway.ID : "") data-code="@s.Def.Code" data-label="@DisplayName.Of(s.Def.Ar, s.Def.En)"
+                                      title="@T["Target"] @s.Def.DueMinutes @T["min"]@(s.Minutes is int m ? " · " + m + " " + T["min"].Value : "")@(s.Done?.Note is string n ? " · " + n : "")" data-bs-toggle="tooltip">
+                                    @DisplayName.Of(s.Def.Ar, s.Def.En)
+                                    @if (s.Minutes is int mm) {<span class="hp-num ms-1" dir="ltr">@mm′</span>}
+                                    else if (s.Done == null) {<span class="hp-num ms-1" dir="ltr" data-fmt data-utc="@s.DueAtUtc.ToString("o")">≤ @s.DueAtUtc.ToLocalTime().ToString("HH:mm", inv)</span>}
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="erpNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Start a pathway"]</h1><div class="text-muted fw-semibold fs-6">@T["Its clock runs from the patient's arrival at the door."]</div></div>
+        <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["Patient"]</label>
+            <select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#erpNew" data-placeholder="@T["Choose the patient"]" data-erp-f="visitId">
+                <option></option>@foreach (var r in rows) {<option value="@r.Visit.ID">@(r.PatientName ?? r.Visit.UnknownLabel) — @r.Visit.Complaint</option>}</select></div>
+        <div class="d-flex flex-column gap-3">
+            @foreach (var k in HospitalErPathwayKind.All) {<label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="erp-kind" value="@k" /><span class="form-check-label fw-semibold text-gray-800">@T["path:" + k]</span></label>}
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-erp-start>@T["Start"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="erpPre" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Pre-alert"]</h1><div class="text-muted fw-semibold fs-6">@T["The ambulance's call before the patient is at the door."]</div></div>
+        <div class="row g-5">
+            <div class="col-md-4"><label class="required fs-6 fw-semibold mb-2">@T["Expected at"]</label><input type="time" class="form-control form-control-solid" data-erp-p="time" /></div>
+            <div class="col-md-8"><label class="fs-6 fw-semibold mb-2">@T["Ambulance / unit"]</label><input class="form-control form-control-solid" maxlength="60" dir="auto" data-erp-p="unit" /></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Complaint"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-erp-p="complaint" /></div>
+            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Age"]</label><input class="form-control form-control-solid" maxlength="20" dir="auto" data-erp-p="ageText" /></div>
+            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Sex"]</label><select class="form-select form-select-solid" data-erp-p="sex"><option value="">—</option><option value="M">@T["Male"]</option><option value="F">@T["Female"]</option></select></div>
+            <div class="col-md-2"><label class="fs-6 fw-semibold mb-2">ESI</label><select class="form-select form-select-solid" data-erp-p="esiEstimate"><option value="">—</option>@for (int n = 1; n <= 5; n++) {<option value="@n">@n</option>}</select></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Pathway"]</label><select class="form-select form-select-solid" data-erp-p="pathway"><option value="">—</option>@foreach (var k in HospitalErPathwayKind.All) {<option value="@k">@T["path:" + k]</option>}</select></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-erp-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+<script>
+    (function () {
+        var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Emergency"));
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), done: @Json.Serialize(T["Record {0} as done now?"].Value), why: @Json.Serialize(T["Not indicated — why?"].Value),
+            choose: @Json.Serialize(T["Choose the patient and the pathway"].Value), cancel: @Json.Serialize(T["Cancel this pre-alert?"].Value), close: @Json.Serialize(T["Close this pathway?"].Value), notInd: @Json.Serialize(T["Not indicated"].Value) };
+        function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+        function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+        document.addEventListener('click', function (e) {
+            var t = e.target.closest('[data-erp-prealert],[data-erp-save],[data-erp-new],[data-erp-start],[data-erp-step],[data-erp-receive],[data-erp-cancel],[data-erp-close]'); if (!t) return;
+            if (t.hasAttribute('data-erp-prealert')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('erpPre')).show(); return; }
+            if (t.hasAttribute('data-erp-new')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('erpNew')).show(); return; }
+            if (t.hasAttribute('data-erp-save')) {
+                var m = document.getElementById('erpPre'); function v(k) { return m.querySelector('[data-erp-p="' + k + '"]').value; }
+                var tm = v('time'), d = new Date(); if (tm) { var p = tm.split(':'); d.setHours(+p[0], +p[1], 0, 0); }
+                var iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':00';
+                t.disabled = true; post('/PreArrivals', { expectedAt: iso, unit: v('unit') || null, complaint: v('complaint'), ageText: v('ageText') || null, sex: v('sex') || null, esiEstimate: v('esiEstimate') ? +v('esiEstimate') : null, pathway: v('pathway') || null })
+                    .then(function (res) { t.disabled = false; after(res); });
+                return;
+            }
+            if (t.hasAttribute('data-erp-start')) {
+                var n = document.getElementById('erpNew'), k = n.querySelector('input[name=erp-kind]:checked'), vid = n.querySelector('[data-erp-f=visitId]').value;
+                if (!k || !vid) { toastr.error(W.choose); return; }
+                t.disabled = true; post('/Pathways', { visitId: +vid, kind: k.value }).then(function (res) { t.disabled = false; after(res); });
+                return;
+            }
+            if (t.hasAttribute('data-erp-step')) {
+                var id = t.getAttribute('data-erp-step'), code = t.getAttribute('data-code'), label = t.getAttribute('data-label');
+                Swal.fire({ text: W.done.replace('{0}', label), icon: 'question', showCancelButton: true, showDenyButton: true, confirmButtonText: @Json.Serialize(T["Done now"].Value), denyButtonText: W.notInd, cancelButtonText: @Json.Serialize(T["Cancel"].Value),
+                    buttonsStyling: false, customClass: { confirmButton: 'btn btn-primary', denyButton: 'btn btn-light-primary', cancelButton: 'btn btn-light' } })
+                    .then(function (r) {
+                        if (r.isConfirmed) post('/Pathways/' + id + '/Step', { code: code }).then(after);
+                        else if (r.isDenied) cbPrompt(W.why, { kind: 'primary' }).then(function (why) { if (why) post('/Pathways/' + id + '/Step', { code: code, notIndicated: true, note: why }).then(after); });
+                    });
+                return;
+            }
+            if (t.hasAttribute('data-erp-receive')) { t.disabled = true; post('/PreArrivals/' + t.getAttribute('data-erp-receive') + '/Receive', {}).then(function (res) { t.disabled = false; after(res); }); return; }
+            if (t.hasAttribute('data-erp-cancel')) { cbConfirm(W.cancel, { kind: 'danger' }).then(function (ok) { if (ok) post('/PreArrivals/' + t.getAttribute('data-erp-cancel') + '/Cancel').then(after); }); return; }
+            cbConfirm(W.close).then(function (ok) { if (ok) post('/Pathways/' + t.getAttribute('data-erp-close') + '/Close', {}).then(after); });
+        });
+    })();
+</script>
+}

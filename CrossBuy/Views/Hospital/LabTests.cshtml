@@ -77,7 +77,7 @@
                     <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0 fs-7">
                         <thead><tr class="fw-bold text-muted bg-light">
                             <th class="ps-4 min-w-80px rounded-start">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-80px">@T["Unit"]</th>
-                            <th class="min-w-70px">@T["Low"]</th><th class="min-w-70px">@T["High"]</th><th class="min-w-70px">@T["Critical low"]</th><th class="min-w-70px">@T["Critical high"]</th><th class="w-60px">@T["Decimals"]</th><th class="w-50px">@T["Active"]</th><th class="pe-4 w-60px rounded-end"></th>
+                            <th class="min-w-70px">@T["Low"]</th><th class="min-w-70px">@T["High"]</th><th class="min-w-70px">@T["Critical low"]</th><th class="min-w-70px">@T["Critical high"]</th><th class="w-60px">@T["Decimals"]</th><th class="w-70px" title="@T["Flag a change beyond this % from the previous result"]" data-bs-toggle="tooltip">@T["Delta %"]</th><th class="w-50px" title="@T["Release a normal value without a second person"]" data-bs-toggle="tooltip">@T["Auto"]</th><th class="w-50px">@T["Active"]</th><th class="pe-4 w-60px rounded-end"></th>
                         </tr></thead>
                         <tbody>
                             @foreach (var a in m.Analytes.Append(null))
@@ -93,8 +93,10 @@
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="criticalLow" data-n value="@Num(a?.CriticalLow)" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="criticalHigh" data-n value="@Num(a?.CriticalHigh)" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="numeric" data-k="decimals" data-n value="@(a?.Decimals ?? 1)" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="deltaPercent" data-n value="@Num(a?.DeltaPercent)" @ro /></td>
+                                    <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="autoVerify" @(a?.AutoVerify == true ? "checked" : "") @ro /></div></td>
                                     <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" @(a == null || a.IsActive ? "checked" : "") @ro /></div></td>
-                                    <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon @(a == null ? "btn-primary" : "btn-bg-light btn-active-color-primary")" data-save-analyte title="@(a == null ? T["Add"] : T["Save"])" data-bs-toggle="tooltip"><i class="ki-outline @(a == null ? "ki-plus" : "ki-check") fs-3"></i></button>}</td>
+                                    <td class="text-end pe-4 text-nowrap">@if (a != null) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" data-ranges="@a.ID" data-name="@DisplayName.Of(a.Name, a.NameEn)" title="@T["Ranges by age and sex"]" data-bs-toggle="tooltip"><i class="ki-outline ki-people fs-3"></i></button>}@if (canManage) {<button type="button" class="btn btn-sm btn-icon @(a == null ? "btn-primary" : "btn-bg-light btn-active-color-primary")" data-save-analyte title="@(a == null ? T["Add"] : T["Save"])" data-bs-toggle="tooltip"><i class="ki-outline @(a == null ? "ki-plus" : "ki-check") fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -104,6 +106,32 @@
         }
     </div></div>
 </div>
+
+@* H233: an analyte's reference ranges by sex and age band; the most specific that fits the patient is used *@
+<div class="modal fade" id="hp_ranges" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold mb-0">@T["Ranges by age and sex"] — <span data-rg-name></span></h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="text-muted fs-7 mb-5">@T["The most specific range that fits the patient wins: their sex before both, then the narrowest age band. None fits: the analyte's own limits."]</div>
+        <div class="table-responsive"><table class="table align-middle gs-0 gy-3 fs-7 mb-0">
+            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Sex"]</th><th>@T["Age from"]</th><th>@T["Age to"]</th><th>@T["Low"]</th><th>@T["High"]</th><th>@T["Critical low"]</th><th>@T["Critical high"]</th><th class="pe-4 rounded-end"></th></tr></thead>
+            <tbody data-rg-rows></tbody>
+            @if (canManage)
+            {
+                <tfoot><tr data-rg-new>
+                    <td class="ps-4"><select class="form-select form-select-sm form-select-solid" data-r="sex"><option value="">@T["Both"]</option><option value="M">@T["Male"]</option><option value="F">@T["Female"]</option></select></td>
+                    <td><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="ageFrom" value="0" /></td>
+                    <td><div class="d-flex gap-1"><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="ageTo" placeholder="∞" />
+                        <select class="form-select form-select-sm form-select-solid w-100px" data-r="ageUnit"><option value="years">@T["years"]</option><option value="months">@T["months"]</option><option value="days">@T["days"]</option></select></div></td>
+                    <td><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="refLow" /></td>
+                    <td><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="refHigh" /></td>
+                    <td><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="criticalLow" /></td>
+                    <td><input class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" inputmode="decimal" data-r="criticalHigh" /></td>
+                    <td class="pe-4"><button type="button" class="btn btn-sm btn-icon btn-primary" data-rg-add title="@T["Add"]"><i class="ki-outline ki-plus fs-3"></i></button></td>
+                </tr></tfoot>
+            }
+        </table></div>
+    </div>
+</div></div></div>
 
 @section Scripts {
     <script>
@@ -143,6 +171,37 @@
                 body.serviceId = Number(tr.getAttribute('data-service'));
                 body.id = tr.getAttribute('data-id') ? Number(tr.getAttribute('data-id')) : null;
                 post(root + '/Analyte', body).then(done(t));
+            });
+        })();
+    </script>
+
+    <script>
+        // H233: the ranges of one analyte
+        (function () {
+            var m = document.getElementById('hp_ranges'); if (!m) return;
+            var tk = document.querySelector('input[name="__RequestVerificationToken"]'), root = @Json.Serialize(Url.Content("~/Hospital/LabTests")), current = null;
+            var L = { both: @Json.Serialize(T["Both"].Value), M: @Json.Serialize(T["Male"].Value), F: @Json.Serialize(T["Female"].Value), years: @Json.Serialize(T["years"].Value), days: @Json.Serialize(T["days"].Value),
+                failed: @Json.Serialize(T["The change could not be saved"].Value), del: @Json.Serialize(T["Remove this range?"].Value), canManage: @Json.Serialize(canManage) };
+            function age(d) { if (d == null) return '∞'; return d % 365 === 0 || d >= 730 ? (Math.round(d / 365.25 * 10) / 10) + ' ' + L.years : d + ' ' + L.days; }
+            function n(v) { return v == null ? '—' : v; }
+            function load() {
+                return fetch(root + '/Analyte/' + current + '/Ranges', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
+                    m.querySelector('[data-rg-rows]').innerHTML = (d.rows || []).map(function (x) {
+                        return '<tr><td class="ps-4">' + (x.sex ? L[x.sex] : L.both) + '</td><td class="hp-num" dir="ltr">' + age(x.ageFromDays) + '</td><td class="hp-num" dir="ltr">' + age(x.ageToDays) + '</td><td class="hp-num" dir="ltr">' + n(x.refLow) + '</td><td class="hp-num" dir="ltr">' + n(x.refHigh) + '</td><td class="hp-num" dir="ltr">' + n(x.criticalLow) + '</td><td class="hp-num" dir="ltr">' + n(x.criticalHigh) + '</td><td class="pe-4">'
+                            + (L.canManage ? '<button type="button" class="btn btn-sm btn-icon btn-light-danger" data-rg-del="' + x.id + '"><i class="ki-outline ki-trash fs-4"></i></button>' : '') + '</td></tr>';
+                    }).join('');
+                });
+            }
+            function num(v) { v = (v || '').trim(); return v === '' ? null : Number(v); }
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tk.value }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-ranges],[data-rg-add],[data-rg-del]'); if (!t) return;
+                if (t.hasAttribute('data-ranges')) { current = t.getAttribute('data-ranges'); m.querySelector('[data-rg-name]').textContent = t.getAttribute('data-name'); load().then(function () { bootstrap.Modal.getOrCreateInstance(m).show(); }); return; }
+                if (t.hasAttribute('data-rg-del')) { cbConfirm(L.del, { kind: 'danger' }).then(function (ok) { if (!ok) return; post(root + '/Ranges/' + t.getAttribute('data-rg-del') + '/Delete').then(function (res) { if (!res.ok) { toastr.error(res.error || L.failed); return; } load(); }); }); return; }
+                var row = m.querySelector('[data-rg-new]'); function v(k) { return row.querySelector('[data-r="' + k + '"]').value; }
+                t.disabled = true;
+                post(root + '/Ranges', { analyteId: +current, sex: v('sex') || null, ageFrom: num(v('ageFrom')) || 0, ageTo: num(v('ageTo')), ageUnit: v('ageUnit'), refLow: num(v('refLow')), refHigh: num(v('refHigh')), criticalLow: num(v('criticalLow')), criticalHigh: num(v('criticalHigh')) })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || L.failed); return; } load(); });
             });
         })();
     </script>

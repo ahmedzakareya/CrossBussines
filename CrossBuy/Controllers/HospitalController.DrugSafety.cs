@@ -30,6 +30,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Counts = (pairs, limits, overrides);
 			ViewBag.Tab = DrugSafetyTabs.Contains(tab) ? tab : "interactions";
 			ViewBag.CanKeep = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			if ((string)ViewBag.Tab == "overrides") ViewBag.OverrideStats = await DrugSafetySvc.OverrideStatsAsync(ctx, 90, DateTime.UtcNow, ct);   // H236
 			return View();
 		}
 

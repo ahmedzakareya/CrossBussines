@@ -1,0 +1,210 @@
+{
+ "unit": "H242 - FHIR eligibility",
+ "strings": {
+  "Check eligibility": {
+   "ar": "التحقق من الأهلية",
+   "en": "Check eligibility",
+   "fr": "Vérifier l'éligibilité"
+  },
+  "Download the answer": {
+   "ar": "تنزيل الرد",
+   "en": "Download the answer",
+   "fr": "Télécharger la réponse"
+  },
+  "Download the request": {
+   "ar": "تنزيل الطلب",
+   "en": "Download the request",
+   "fr": "Télécharger la demande"
+  },
+  "Enter the gateway's https address": {
+   "ar": "أدخل عنوان البوابة الآمن (https)",
+   "en": "Enter the gateway's https address",
+   "fr": "Saisissez l'adresse https de la passerelle"
+  },
+  "Entered by the administrator when the payer gives the address and key": {
+   "ar": "يُدخلها المسؤول عندما تزوّده الجهة الدافعة بالعنوان والمفتاح",
+   "en": "Entered by the administrator when the payer gives the address and key",
+   "fr": "Saisie par l'administrateur quand le payeur fournit l'adresse et la clé"
+  },
+  "FHIR base address": {
+   "ar": "عنوان FHIR الأساسي",
+   "en": "FHIR base address",
+   "fr": "Adresse de base FHIR"
+  },
+  "FHIR eligibility is not installed yet (hospital_h242_fhir_eligibility.sql).": {
+   "ar": "التحقق من الأهلية عبر FHIR غير مثبت بعد (hospital_h242_fhir_eligibility.sql).",
+   "en": "FHIR eligibility is not installed yet (hospital_h242_fhir_eligibility.sql).",
+   "fr": "L'éligibilité FHIR n'est pas encore installée (hospital_h242_fhir_eligibility.sql)."
+  },
+  "Files only": {
+   "ar": "ملفات فقط",
+   "en": "Files only",
+   "fr": "Fichiers uniquement"
+  },
+  "Gateway off": {
+   "ar": "البوابة متوقفة",
+   "en": "Gateway off",
+   "fr": "Passerelle désactivée"
+  },
+  "Gateway on": {
+   "ar": "البوابة مفعّلة",
+   "en": "Gateway on",
+   "fr": "Passerelle active"
+  },
+  "Kept as a file": {
+   "ar": "محفوظ كملف",
+   "en": "Kept as a file",
+   "fr": "Conservé en fichier"
+  },
+  "Key header": {
+   "ar": "ترويسة المفتاح",
+   "en": "Key header",
+   "fr": "En-tête de la clé"
+  },
+  "Leave empty to keep the key already entered.": {
+   "ar": "اتركه فارغًا للإبقاء على المفتاح المُدخل سابقًا.",
+   "en": "Leave empty to keep the key already entered.",
+   "fr": "Laissez vide pour garder la clé déjà saisie."
+  },
+  "Name the header that carries the key": {
+   "ar": "اذكر اسم الترويسة التي تحمل المفتاح",
+   "en": "Name the header that carries the key",
+   "fr": "Nommez l'en-tête qui porte la clé"
+  },
+  "No payer yet.": {
+   "ar": "لا توجد جهة دافعة بعد.",
+   "en": "No payer yet.",
+   "fr": "Aucun payeur pour l'instant."
+  },
+  "No request is waiting.": {
+   "ar": "لا توجد طلبات منتظرة.",
+   "en": "No request is waiting.",
+   "fr": "Aucune demande en attente."
+  },
+  "Paste the payer's answer (FHIR JSON)": {
+   "ar": "الصق رد الجهة الدافعة (FHIR JSON)",
+   "en": "Paste the payer's answer (FHIR JSON)",
+   "fr": "Collez la réponse du payeur (FHIR JSON)"
+  },
+  "Payer gateway": {
+   "ar": "بوابة الجهة الدافعة",
+   "en": "Payer gateway",
+   "fr": "Passerelle du payeur"
+  },
+  "Payer gateways": {
+   "ar": "بوابات الجهات الدافعة",
+   "en": "Payer gateways",
+   "fr": "Passerelles des payeurs"
+  },
+  "Payer messages (FHIR)": {
+   "ar": "مراسلات الجهات الدافعة (FHIR)",
+   "en": "Payer messages (FHIR)",
+   "fr": "Messages payeurs (FHIR)"
+  },
+  "Search a patient or payer": {
+   "ar": "ابحث عن مريض أو جهة دافعة",
+   "en": "Search a patient or payer",
+   "fr": "Rechercher un patient ou un payeur"
+  },
+  "Send each to the payer as a FHIR request": {
+   "ar": "أرسل كل طلب إلى الجهة الدافعة بصيغة FHIR",
+   "en": "Send each to the payer as a FHIR request",
+   "fr": "Envoyez chacune au payeur en requête FHIR"
+  },
+  "Send messages through this gateway": {
+   "ar": "إرسال المراسلات عبر هذه البوابة",
+   "en": "Send messages through this gateway",
+   "fr": "Envoyer les messages par cette passerelle"
+  },
+  "Sent by gateway": {
+   "ar": "أُرسل عبر البوابة",
+   "en": "Sent by gateway",
+   "fr": "Envoyé par la passerelle"
+  },
+  "Sent through the payer's gateway when it is enabled; otherwise kept as a file to send and its answer loaded back": {
+   "ar": "تُرسل عبر بوابة الجهة الدافعة عند تفعيلها، وإلا تُحفظ ملفًا للإرسال ثم يُحمَّل ردها",
+   "en": "Sent through the payer's gateway when it is enabled; otherwise kept as a file to send and its answer loaded back",
+   "fr": "Envoyés par la passerelle du payeur si elle est active ; sinon conservés en fichier, et la réponse rechargée"
+  },
+  "The file holds no eligibility answer (CoverageEligibilityResponse)": {
+   "ar": "لا يحتوي الملف على رد أهلية (CoverageEligibilityResponse)",
+   "en": "The file holds no eligibility answer (CoverageEligibilityResponse)",
+   "fr": "Le fichier ne contient aucune réponse d'éligibilité (CoverageEligibilityResponse)"
+  },
+  "The header name has no spaces": {
+   "ar": "اسم الترويسة بلا مسافات",
+   "en": "The header name has no spaces",
+   "fr": "Le nom de l'en-tête est sans espace"
+  },
+  "The patient has no insurance policy": {
+   "ar": "لا توجد وثيقة تأمين للمريض",
+   "en": "The patient has no insurance policy",
+   "fr": "Le patient n'a pas de police d'assurance"
+  },
+  "The patient's active policy is asked of its payer.": {
+   "ar": "يُسأل عن وثيقة المريض السارية لدى جهتها الدافعة.",
+   "en": "The patient's active policy is asked of its payer.",
+   "fr": "La police active du patient est vérifiée auprès de son payeur."
+  },
+  "This answer is for another request": {
+   "ar": "هذا الرد يخص طلبًا آخر",
+   "en": "This answer is for another request",
+   "fr": "Cette réponse concerne une autre demande"
+  },
+  "This message is already answered": {
+   "ar": "تم الرد على هذه الرسالة بالفعل",
+   "en": "This message is already answered",
+   "fr": "Ce message a déjà une réponse"
+  },
+  "Waiting for the answer": {
+   "ar": "بانتظار الرد",
+   "en": "Waiting for the answer",
+   "fr": "En attente de réponse"
+  },
+  "Waiting pre-authorisations": {
+   "ar": "الموافقات المسبقة المنتظرة",
+   "en": "Waiting pre-authorisations",
+   "fr": "Accords préalables en attente"
+  },
+  "fx:Eligibility": {
+   "ar": "الأهلية",
+   "en": "Eligibility",
+   "fr": "Éligibilité"
+  },
+  "fx:Preauth": {
+   "ar": "موافقة مسبقة",
+   "en": "Pre-authorisation",
+   "fr": "Accord préalable"
+  },
+  "fxo:InForce": {
+   "ar": "التغطية سارية",
+   "en": "Coverage in force",
+   "fr": "Couverture active"
+  },
+  "fxo:NotInForce": {
+   "ar": "التغطية غير سارية",
+   "en": "Not in force",
+   "fr": "Non active"
+  },
+  "fxo:Approved": {
+   "ar": "موافق عليها",
+   "en": "Approved",
+   "fr": "Approuvé"
+  },
+  "fxo:Rejected": {
+   "ar": "مرفوضة",
+   "en": "Rejected",
+   "fr": "Refusé"
+  },
+  "fxo:Pending": {
+   "ar": "قيد المراجعة لدى الجهة",
+   "en": "Pending with the payer",
+   "fr": "En attente chez le payeur"
+  },
+  "fxo:Error": {
+   "ar": "خطأ",
+   "en": "Error",
+   "fr": "Erreur"
+  }
+ }
+}

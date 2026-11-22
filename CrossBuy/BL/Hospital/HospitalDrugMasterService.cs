@@ -45,6 +45,9 @@ namespace CrossBuy.BL.Hospital
 		public bool Hazardous { get; set; }
 		public bool ColdChain { get; set; }
 		public string? Ven { get; set; }
+		public string? PregnancyRisk { get; set; }   // H234
+		public string? LactationRisk { get; set; }   // H234
+		public bool IsAntimicrobial { get; set; }    // H235
 	}
 
 	public static class HospitalFormularyFilter
@@ -214,6 +217,9 @@ namespace CrossBuy.BL.Hospital
 			d.RestrictionNote = input.FormularyStatus == HospitalFormularyStatus.Formulary ? null : input.RestrictionNote;
 			d.HighAlert = input.HighAlert; d.LasaWith = input.LasaWith; d.ControlledSchedule = input.ControlledSchedule;
 			d.Hazardous = input.Hazardous; d.ColdChain = input.ColdChain; d.Ven = input.Ven;
+			d.PregnancyRisk = HospitalDrugRisk.All.Contains(input.PregnancyRisk ?? "") ? input.PregnancyRisk : null;   // H234
+			d.LactationRisk = HospitalDrugRisk.All.Contains(input.LactationRisk ?? "") ? input.LactationRisk : null;
+			d.IsAntimicrobial = input.IsAntimicrobial;   // H235
 			d.UpdatedAt = nowUtc; d.UpdatedByEmployeeId = employeeId;
 
 			// the ward's controlled register reads the H39 flag: keep it the schedule's shadow

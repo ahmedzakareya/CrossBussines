@@ -33,6 +33,23 @@ namespace CrossBuy.BL.Hospital
 		public decimal? CriticalHigh { get; set; }
 		public int Decimals { get; set; } = 1;
 		public bool IsActive { get; set; } = true;
+		public decimal? DeltaPercent { get; set; }   // H233
+		public bool AutoVerify { get; set; }          // H233
+	}
+
+	/// H233: a reference range for a sex and an age band; the band is given in days, months or years.
+	public sealed class HospitalLabRangeInput
+	{
+		public int AnalyteId { get; set; }
+		public string? Sex { get; set; }
+		public decimal AgeFrom { get; set; }
+		public decimal? AgeTo { get; set; }
+		/// days | months | years
+		public string? AgeUnit { get; set; }
+		public decimal? RefLow { get; set; }
+		public decimal? RefHigh { get; set; }
+		public decimal? CriticalLow { get; set; }
+		public decimal? CriticalHigh { get; set; }
 	}
 
 	public sealed class HospitalLabTestInput
@@ -272,6 +289,21 @@ namespace CrossBuy.BL.Hospital
 
 			var existing = await _db.HospitalLabResults.Where(r => r.CompanyId == ctx.CompanyId && r.LabOrderId == o.ID).ToListAsync(ct);
 			bool critical = false; int filled = 0, order = 0;
+			// H233: the patient's own range (age and sex at collection), the previous verified value for the delta check
+			var aIds = analytes.Select(x => x.ID).ToList();
+			var pat = await _db.HospitalPatients.AsNoTracking().Where(p => p.ID == o.PatientId && p.CompanyId == ctx.CompanyId).Select(p => new { p.Sex, p.BirthDate }).FirstOrDefaultAsync(ct);
+			int? ageDays = HospitalLabAutoRules.AgeDays(pat?.BirthDate, (o.CollectedAt ?? nowUtc).ToLocalTime());
+			List<HospitalLabRefRange> ranges;
+			try { ranges = await _db.Set<HospitalLabRefRange>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && aIds.Contains(r.AnalyteId)).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { ranges = new(); }
+			var since = nowUtc.AddDays(-HospitalLabAutoRules.DeltaWindowDays);
+			var previous = (await (from r in _db.HospitalLabResults.AsNoTracking()
+								   join po in _db.HospitalLabOrders.AsNoTracking() on r.LabOrderId equals po.ID
+								   where r.CompanyId == ctx.CompanyId && po.CompanyId == ctx.CompanyId && po.PatientId == o.PatientId && po.ID != o.ID
+									 && po.Status == HospitalLabStatus.Verified && po.VerifiedAt >= since && aIds.Contains(r.AnalyteId) && r.Value != null
+								   select new { r.AnalyteId, r.Value, po.VerifiedAt }).ToListAsync(ct))
+				.GroupBy(x => x.AnalyteId).ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.VerifiedAt).First().Value);
+			var auto = new List<(bool AutoVerify, string Flag, bool Delta, bool HasValue)>();
 			foreach (var a in analytes)
 			{
 				order++;
@@ -280,11 +312,14 @@ namespace CrossBuy.BL.Hospital
 				if (string.IsNullOrEmpty(raw)) { if (row != null) _db.HospitalLabResults.Remove(row); continue; }
 				decimal? num = decimal.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d) ? Math.Round(d, a.Decimals) : null;
 				if (num == null && a.Unit != null && (a.RefLow != null || a.RefHigh != null)) return HospitalResult.Fail("{0} needs a number", DisplayName.Of(a.Name, a.NameEn));
-				var flag = Flag(num, a.RefLow, a.RefHigh, a.CriticalLow, a.CriticalHigh);
+				var lim = HospitalLabAutoRules.Limits(a, ranges.Where(r => r.AnalyteId == a.ID), pat?.Sex, ageDays);   // H233
+				var flag = Flag(num, lim.RefLow, lim.RefHigh, lim.CriticalLow, lim.CriticalHigh);
 				critical |= IsCriticalFlag(flag);
 				row ??= _db.HospitalLabResults.Add(new HospitalLabResult { CompanyId = ctx.CompanyId, LabOrderId = o.ID, AnalyteId = a.ID }).Entity;
-				row.Name = a.Name; row.NameEn = a.NameEn; row.Unit = a.Unit; row.RefLow = a.RefLow; row.RefHigh = a.RefHigh; row.Decimals = a.Decimals; row.SortOrder = order;
+				row.Name = a.Name; row.NameEn = a.NameEn; row.Unit = a.Unit; row.RefLow = lim.RefLow; row.RefHigh = lim.RefHigh; row.Decimals = a.Decimals; row.SortOrder = order;
 				row.Value = num; row.TextValue = num == null ? raw[..Math.Min(200, raw.Length)] : null; row.Flag = flag;
+				row.DeltaPrevious = previous.GetValueOrDefault(a.ID); row.DeltaFailed = HospitalLabAutoRules.DeltaFailed(num, row.DeltaPrevious, a.DeltaPercent);   // H233
+				auto.Add((a.AutoVerify, flag, row.DeltaFailed, true));
 				filled++;
 			}
 			o.Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim()[..Math.Min(1000, comment.Trim().Length)];
@@ -293,8 +328,45 @@ namespace CrossBuy.BL.Hospital
 			// A critical value that appears raises the flag; a corrected one that is no longer critical lowers it.
 			if (critical && !o.IsCritical) { o.IsCritical = true; o.CriticalAcknowledgedAt = null; o.CriticalAcknowledgedByEmployeeId = null; o.CriticalNote = null; }
 			else if (!critical) { o.IsCritical = false; o.CriticalAcknowledgedAt = null; o.CriticalAcknowledgedByEmployeeId = null; o.CriticalNote = null; }
+			// H233: autoverification — every analyte allows it, every value within its range, no delta, nothing critical
+			bool autoVerified = o.Status == HospitalLabStatus.Resulted && !o.IsCritical && auto.Count == analytes.Count && HospitalLabAutoRules.CanAutoVerify(auto);
+			o.AutoVerified = autoVerified;
+			if (autoVerified) { o.Status = HospitalLabStatus.Verified; o.VerifiedAt = nowUtc; o.VerifiedByEmployeeId = null; }
 			await _db.SaveChangesAsync(ct);
+			if (autoVerified) await HospitalSmsService.QueueLabReadyAsync(_db, ctx.CompanyId, o.ID, employeeId, nowUtc, ct);
 			return HospitalResult.Success(o.ID);
+		}
+
+		// ---- H233: reference ranges by age and sex (the administrator's) ----
+		public async Task<IReadOnlyList<HospitalLabRefRange>> RangesAsync(BusinessContext ctx, int analyteId, CancellationToken ct = default)
+		{
+			try { return await _db.Set<HospitalLabRefRange>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && r.AnalyteId == analyteId).OrderBy(r => r.Sex).ThenBy(r => r.AgeFromDays).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return Array.Empty<HospitalLabRefRange>(); }
+		}
+
+		public static int Days(decimal v, string? unit) => (int)Math.Round(unit switch { "years" => v * 365.25m, "months" => v * 30.4375m, _ => v }, MidpointRounding.AwayFromZero);
+
+		public async Task<HospitalResult> SaveRangeAsync(BusinessContext ctx, HospitalLabRangeInput i, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
+			string? sex = string.IsNullOrWhiteSpace(i.Sex) ? null : i.Sex.Trim().ToUpperInvariant();
+			int from = Days(i.AgeFrom, i.AgeUnit); int? to = i.AgeTo is decimal t ? Days(t, i.AgeUnit) : null;
+			if (HospitalLabAutoRules.RangeRefusal(sex, from, to, i.RefLow, i.RefHigh) is string why) return HospitalResult.Fail(why);
+			if (!await _db.HospitalLabAnalytes.AnyAsync(a => a.ID == i.AnalyteId && a.CompanyId == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
+			try
+			{
+				var row = new HospitalLabRefRange { CompanyId = ctx.CompanyId, AnalyteId = i.AnalyteId, Sex = sex, AgeFromDays = from, AgeToDays = to, RefLow = i.RefLow, RefHigh = i.RefHigh, CriticalLow = i.CriticalLow, CriticalHigh = i.CriticalHigh };
+				_db.Add(row); await _db.SaveChangesAsync(ct); return HospitalResult.Success(row.ID);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return HospitalResult.Fail("Reference ranges are not installed yet (hospital_h233_lab_ranges_autoverify.sql)."); }
+		}
+
+		public async Task<HospitalResult> DeleteRangeAsync(BusinessContext ctx, int id, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
+			var row = await _db.Set<HospitalLabRefRange>().FirstOrDefaultAsync(r => r.ID == id && r.CompanyId == ctx.CompanyId, ct);
+			if (row == null) return HospitalResult.Fail("not_found");
+			_db.Remove(row); await _db.SaveChangesAsync(ct); return HospitalResult.Success(id);
 		}
 
 		/// The second step: a specialist verifies, and only then does the doctor see the result.
@@ -375,6 +447,8 @@ namespace CrossBuy.BL.Hospital
 			}
 			row.Code = code; row.Name = input.Name.Trim(); row.NameEn = input.NameEn.Trim(); row.Unit = string.IsNullOrWhiteSpace(input.Unit) ? null : input.Unit.Trim();
 			row.RefLow = input.RefLow; row.RefHigh = input.RefHigh; row.CriticalLow = input.CriticalLow; row.CriticalHigh = input.CriticalHigh; row.Decimals = input.Decimals; row.IsActive = input.IsActive;
+			if (input.DeltaPercent is < 0 or > 1000) return HospitalResult.Fail("The delta limit is 0 to 1000 %");
+			row.DeltaPercent = input.DeltaPercent is > 0 ? input.DeltaPercent : null; row.AutoVerify = input.AutoVerify;   // H233
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(row.ID);
 		}
 
@@ -401,6 +475,18 @@ namespace CrossBuy.BL.Hospital
 				}
 			}
 			await _db.SaveChangesAsync(ct);
+			// H233: the standard bands by age and sex, for analytes that have none yet
+			try
+			{
+				var codes = HospitalLabAutoRules.Standard.Select(x => x.Code).Distinct().ToList();
+				var targets = await _db.HospitalLabAnalytes.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && codes.Contains(a.Code)).Select(a => new { a.ID, a.Code }).ToListAsync(ct);
+				var withRanges = (await _db.Set<HospitalLabRefRange>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId).Select(r => r.AnalyteId).Distinct().ToListAsync(ct)).ToHashSet();
+				foreach (var t in targets.Where(t => !withRanges.Contains(t.ID)))
+					foreach (var b in HospitalLabAutoRules.Standard.Where(x => x.Code == t.Code))
+					{ _db.Add(new HospitalLabRefRange { CompanyId = ctx.CompanyId, AnalyteId = t.ID, Sex = b.Sex, AgeFromDays = b.From, AgeToDays = b.To, RefLow = b.Low, RefHigh = b.High }); added++; }
+				await _db.SaveChangesAsync(ct);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { }
 			return HospitalResult.Success(added);
 		}
 

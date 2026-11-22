@@ -1,0 +1,266 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalIcuCare
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H238 — the ICU patient's clinical depth under the flowsheet: the scores (GCS, APACHE II) with their trend, the
+    continuous infusions with their protocol and every titration, and the devices with their day count and today's bundle.
+    Part "cards" sits in the swapped content; part "modals" (with the script) sits outside it.
+*@
+@{
+    bool canRecord = ViewBag.CanAssess == true;
+    var part = ViewData["IcuCarePart"] as string ?? "cards";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string D(decimal v) => v.ToString("0.###", inv);
+    string Ward(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("dd/MM HH:mm", inv);
+}
+@if (part == "cards")
+{
+    @if (!Model.Ready)
+    {
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalIcuCareService.NoTables]</div></div>
+    }
+    else
+    {
+    <div class="row g-5 mb-5">
+        <div class="col-xl-4">
+            <div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Scores"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Glasgow Coma Scale and APACHE II"]</span></h3>
+                    @if (canRecord)
+                    {
+                        <div class="card-toolbar gap-2 d-print-none">
+                            <button type="button" class="btn btn-sm btn-light" data-icc-open="icuGcsModal">GCS</button>
+                            <button type="button" class="btn btn-sm btn-light-primary" data-icc-open="icuApacheModal">APACHE II</button>
+                        </div>
+                    }
+                </div>
+                <div class="card-body pt-2">
+                    <div class="d-flex gap-4 mb-4">
+                        @{ var g = Model.LatestGcs; var a = Model.LatestApache; }
+                        <div class="border border-dashed border-gray-300 rounded px-4 py-3 flex-grow-1">
+                            <div class="fs-2 fw-bold text-gray-900 hp-num">@(g?.Total.ToString(inv) ?? "—")@if (g?.Detail.Contains("V=T") == true) {<span class="fs-6">T</span>}</div>
+                            <div class="fw-semibold fs-7 text-gray-500">GCS @if (g != null) {<span class="badge badge-light-@(g.Total <= 8 ? "danger" : g.Total <= 12 ? "info" : "primary") fs-8 ms-1">@T["gcs:" + HospitalIcuCareRules.GcsBand(g.Total)]</span>}</div>
+                        </div>
+                        <div class="border border-dashed border-gray-300 rounded px-4 py-3 flex-grow-1">
+                            <div class="fs-2 fw-bold text-gray-900 hp-num">@(a?.Total.ToString(inv) ?? "—")</div>
+                            <div class="fw-semibold fs-7 text-gray-500">APACHE II @if (a != null) {<span class="badge badge-light-danger fs-8 ms-1" title="@T["Approximate hospital mortality for the score band (Knaus 1985)"]" data-bs-toggle="tooltip">≈ @HospitalIcuCareRules.ApproxMortality(a.Total)%</span>}</div>
+                        </div>
+                    </div>
+                    @if (Model.Scores.Count == 0) {<div class="text-muted fs-7">@T["No score recorded yet."]</div>}
+                    @foreach (var s in Model.Scores.Take(8))
+                    {
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-gray-200 border-bottom-dashed">
+                            <span class="fw-bold text-gray-800">@(s.Kind == HospitalIcuScoreKind.Gcs ? "GCS" : "APACHE II") <span class="hp-num ms-2">@s.Total</span></span>
+                            <span class="text-muted fs-8 hp-num" dir="ltr" title="@s.Detail" data-bs-toggle="tooltip">@Ward(s.At)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Continuous infusions"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Titrated within the protocol set at the start"]</span></h3>
+                    @if (canRecord) {<div class="card-toolbar d-print-none"><button type="button" class="btn btn-sm btn-light-primary" data-icc-open="icuInfModal"><i class="ki-outline ki-plus fs-4"></i>@T["Start"]</button></div>}
+                </div>
+                <div class="card-body pt-2">
+                    @if (Model.Infusions.Count == 0) {<div class="text-muted fs-7">@T["No infusion running."]</div>}
+                    @foreach (var x in Model.Infusions)
+                    {
+                        var i = x.Infusion;
+                        <div class="py-3 border-bottom border-gray-200 border-bottom-dashed">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div class="min-w-0"><div class="fw-bold text-gray-800" dir="auto">@i.Drug</div>
+                                    <div class="fs-7"><span class="fw-bold text-primary hp-num" dir="ltr">@D(i.Dose) @i.DoseUnit</span>@if (x.RateMlH is decimal r) {<span class="text-muted hp-num ms-2" dir="ltr">@D(r) mL/h</span>}</div>
+                                    <div class="text-muted fs-8"><span dir="auto">@T["Target"]: @i.Target</span> · <span class="hp-num" dir="ltr">@D(i.MinDose)–@D(i.MaxDose) / ±@D(i.MaxStep)</span></div></div>
+                                @if (canRecord)
+                                {
+                                    <div class="d-flex gap-1 flex-shrink-0">
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-icc-titrate="@i.ID" data-dose="@D(i.Dose)" data-min="@D(i.MinDose)" data-max="@D(i.MaxDose)" data-step="@D(i.MaxStep)" data-unit="@i.DoseUnit">@T["Titrate"]</button>
+                                        <button type="button" class="btn btn-sm btn-icon btn-light" title="@T["Stop"]" data-bs-toggle="tooltip" data-icc-stop="@i.ID"><i class="ki-outline ki-cross-square fs-3"></i></button>
+                                    </div>
+                                }
+                            </div>
+                            @if (x.Titrations.Count > 0)
+                            {
+                                <div class="mt-2 ps-3 border-start border-2 border-gray-200">
+                                    @foreach (var t in x.Titrations) {<div class="fs-8 text-gray-600"><span class="hp-num" dir="ltr">@Ward(t.At) · @D(t.FromDose) → @D(t.ToDose)</span> <span dir="auto">@t.Reason</span></div>}
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Devices and bundles"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each device's days and today's care bundle"]</span></h3>
+                    @if (canRecord) {<div class="card-toolbar d-print-none"><button type="button" class="btn btn-sm btn-light-primary" data-icc-open="icuDevModal"><i class="ki-outline ki-plus fs-4"></i>@T["Insert"]</button></div>}
+                </div>
+                <div class="card-body pt-2">
+                    @if (Model.Devices.Count == 0) {<div class="text-muted fs-7">@T["No device in place."]</div>}
+                    @foreach (var d in Model.Devices)
+                    {
+                        var items = HospitalIcuCareRules.Bundles[d.Device.Kind];
+                        var ticked = (d.Today?.Items ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        <div class="py-3 border-bottom border-gray-200 border-bottom-dashed" data-icc-device="@d.Device.ID">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                <div><span class="fw-bold text-gray-800">@T["dev:" + d.Device.Kind]</span>@if (d.Device.Site != null) {<span class="text-muted fs-7 ms-1" dir="auto">· @d.Device.Site</span>}
+                                    <span class="badge badge-light fs-8 ms-1">@T["Day {0}", d.Days]</span>
+                                    @if (d.Today?.Complete == true) {<span class="badge badge-light-primary fs-8 ms-1">@T["Bundle complete"]</span>} else {<span class="badge badge-light-danger fs-8 ms-1">@T["Bundle not complete"]</span>}</div>
+                                @if (canRecord) {<button type="button" class="btn btn-sm btn-icon btn-light flex-shrink-0" title="@T["Removed"]" data-bs-toggle="tooltip" data-icc-remove="@d.Device.ID"><i class="ki-outline ki-exit-up fs-3"></i></button>}
+                            </div>
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var it in items)
+                                {
+                                    <label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" value="@it.Code" checked="@ticked.Contains(it.Code)" disabled="@(!canRecord)" />
+                                        <span class="form-check-label fs-7 text-gray-700">@DisplayName.Of(it.Ar, it.En)</span></label>
+                                }
+                            </div>
+                            @if (canRecord) {<button type="button" class="btn btn-sm btn-light-primary mt-3 py-1" data-icc-bundle="@d.Device.ID">@T["Save today's check"]</button>}
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+}
+else if (Model.Ready && canRecord)
+{
+    <div class="modal fade" id="icuGcsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Glasgow Coma Scale"]</h1></div>
+            @foreach (var (key, label, max) in new[] { ("eye", T["Eye opening"].Value, 4), ("verbal", T["Verbal response"].Value, 5), ("motor", T["Motor response"].Value, 6) })
+            {
+                <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@label</label>
+                    <select class="form-select form-select-solid" data-gcs="@key">@for (int n = max; n >= 1; n--) {<option value="@n">@n — @T["gcs:" + key + n]</option>}</select></div>
+            }
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-gcs="intubated" /><span class="form-check-label fw-semibold text-gray-700">@T["Intubated (verbal recorded as T)"]</span></label>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icc-gcs>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="icuApacheModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-6 text-center"><h1 class="mb-3">APACHE II</h1><div class="text-muted fw-semibold fs-6">@T["The worst value of the first 24 hours; an empty value counts as normal."]</div></div>
+            <div class="row g-4">
+                @foreach (var (key, label, step) in new[] { ("tempC", "°C", "0.1"), ("map", "MAP mmHg", "1"), ("heartRate", "HR /min", "1"), ("respRate", "RR /min", "1"), ("fiO2", "FiO₂ (0.21–1)", "0.01"), ("paO2", "PaO₂ mmHg", "1"),
+                    ("aaGradient", "A–a mmHg", "1"), ("ph", "pH", "0.01"), ("sodium", "Na mmol/L", "1"), ("potassium", "K mmol/L", "0.1"), ("creatinine", "Creatinine mg/dL", "0.1"), ("hematocrit", "Hct %", "0.1"), ("wbc", "WBC ×10³", "0.1"), ("gcs", "GCS", "1") })
+                {
+                    <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-1" dir="ltr">@label</label><input type="number" step="@step" class="form-control form-control-solid form-control-sm hp-num" dir="ltr" data-ap="@key" /></div>
+                }
+                <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-1">@T["Admission"]</label><select class="form-select form-select-solid form-select-sm" data-ap="admission"><option value="NonOperative">@T["Non-operative"]</option><option value="Emergency">@T["Emergency surgery"]</option><option value="Elective">@T["Elective surgery"]</option></select></div>
+                <div class="col-md-6 d-flex flex-column gap-2 justify-content-end">
+                    <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" data-ap="acuteRenalFailure" /><span class="form-check-label fs-7">@T["Acute renal failure (creatinine counts double)"]</span></label>
+                    <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" data-ap="chronicHealth" /><span class="form-check-label fs-7">@T["Severe organ insufficiency or immunocompromised"]</span></label>
+                </div>
+            </div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icc-apache>@T["Calculate and save"]</button></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="icuInfModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-6 text-center"><h1 class="mb-3">@T["Start an infusion"]</h1><div class="text-muted fw-semibold fs-6">@T["The protocol bounds every later titration."]</div></div>
+            <div class="row g-4">
+                <div class="col-md-8"><label class="required fs-6 fw-semibold mb-2">@T["Drug"]</label><input class="form-control form-control-solid" maxlength="100" dir="auto" data-inf="drug" /></div>
+                <div class="col-md-4"><label class="required fs-6 fw-semibold mb-2">@T["Dose unit"]</label><select class="form-select form-select-solid" data-inf="doseUnit">@foreach (var u in HospitalIcuCareRules.DoseUnits) {<option value="@u">@u</option>}</select></div>
+                <div class="col-md-3 col-6"><label class="required fs-7 fw-semibold mb-1">@T["Starting dose"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-inf="dose" /></div>
+                <div class="col-md-3 col-6"><label class="required fs-7 fw-semibold mb-1">@T["Minimum"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-inf="minDose" /></div>
+                <div class="col-md-3 col-6"><label class="required fs-7 fw-semibold mb-1">@T["Maximum"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-inf="maxDose" /></div>
+                <div class="col-md-3 col-6"><label class="required fs-7 fw-semibold mb-1">@T["Largest step"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-inf="maxStep" /></div>
+                <div class="col-md-6"><label class="required fs-7 fw-semibold mb-1">@T["Target"]</label><input class="form-control form-control-solid" maxlength="100" dir="auto" placeholder="MAP ≥ 65" data-inf="target" /></div>
+                <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-1">@T["Strength per mL"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-inf="concPerMl" /></div>
+                <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-1">@T["Weight (kg)"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-inf="weightKg" /></div>
+            </div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icc-inf>@T["Start"]</button></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="icuTitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-6 text-center"><h1 class="mb-3">@T["Titrate"]</h1><div class="text-muted fw-semibold fs-6 hp-num" dir="ltr" data-tit="info"></div></div>
+            <div class="mb-4"><label class="required fs-6 fw-semibold mb-2">@T["New dose"]</label><input type="number" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-tit="dose" /></div>
+            <div><label class="required fs-6 fw-semibold mb-2">@T["Why"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" placeholder="MAP 58" data-tit="reason" /></div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icc-tit>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="icuDevModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 pt-0 pb-10">
+            <div class="mb-6 text-center"><h1 class="mb-3">@T["Insert a device"]</h1></div>
+            <div class="mb-4"><label class="required fs-6 fw-semibold mb-2">@T["Device"]</label><select class="form-select form-select-solid" data-dev="kind">@foreach (var k in HospitalIcuDeviceKind.All) {<option value="@k">@T["dev:" + k]</option>}</select></div>
+            <div class="mb-4"><label class="fs-6 fw-semibold mb-2">@T["Site"]</label><input class="form-control form-control-solid" maxlength="60" dir="auto" data-dev="site" /></div>
+            <div><label class="fs-6 fw-semibold mb-2">@T["Inserted at"]</label><input type="datetime-local" class="form-control form-control-solid" data-dev="insertedAt" /></div>
+            <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icc-dev>@T["Save"]</button></div>
+        </div>
+    </div></div></div>
+
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Icu"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Stop this infusion?"].Value), remove: @Json.Serialize(T["Record this device as removed now?"].Value) };
+            function adm() { var c = document.querySelector('[data-icu]'); return c ? +c.getAttribute('data-icu') : 0; }
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function swap() {
+                return fetch(root + '?admission=' + adm(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content'); if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(modal) { return function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); toastr.success(W.saved); swap(); }; }
+            function n(el) { return el.value === '' ? null : +el.value; }
+            var titId = 0;
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-icc-open],[data-icc-gcs],[data-icc-apache],[data-icc-inf],[data-icc-titrate],[data-icc-tit],[data-icc-stop],[data-icc-dev],[data-icc-remove],[data-icc-bundle]'); if (!t) return;
+                if (t.hasAttribute('data-icc-open')) { bootstrap.Modal.getOrCreateInstance(document.getElementById(t.getAttribute('data-icc-open'))).show(); return; }
+                if (t.hasAttribute('data-icc-gcs')) {
+                    var m = document.getElementById('icuGcsModal'); function v(k) { return +m.querySelector('[data-gcs=' + k + ']').value; }
+                    post('/Gcs', { admissionId: adm(), eye: v('eye'), verbal: v('verbal'), motor: v('motor'), intubated: m.querySelector('[data-gcs=intubated]').checked }).then(done(m)); return;
+                }
+                if (t.hasAttribute('data-icc-apache')) {
+                    var am = document.getElementById('icuApacheModal'), vals = {};
+                    am.querySelectorAll('input[data-ap]').forEach(function (i) { vals[i.getAttribute('data-ap')] = i.type === 'checkbox' ? i.checked : n(i); });
+                    vals.admission = am.querySelector('[data-ap=admission]').value;
+                    post('/Apache', { admissionId: adm(), values: vals }).then(done(am)); return;
+                }
+                if (t.hasAttribute('data-icc-inf')) {
+                    var im = document.getElementById('icuInfModal'), b = { admissionId: adm() };
+                    im.querySelectorAll('[data-inf]').forEach(function (i) { var k = i.getAttribute('data-inf'); b[k] = i.type === 'number' ? n(i) : (i.value || null); });
+                    ['dose', 'minDose', 'maxDose', 'maxStep'].forEach(function (k) { if (b[k] === null) b[k] = -1; });
+                    post('/Infusions', b).then(done(im)); return;
+                }
+                if (t.hasAttribute('data-icc-titrate')) {
+                    var tm = document.getElementById('icuTitModal'); titId = +t.getAttribute('data-icc-titrate');
+                    tm.querySelector('[data-tit=info]').textContent = t.getAttribute('data-dose') + ' ' + t.getAttribute('data-unit') + ' · ' + t.getAttribute('data-min') + '–' + t.getAttribute('data-max') + ' / ±' + t.getAttribute('data-step');
+                    tm.querySelector('[data-tit=dose]').value = t.getAttribute('data-dose'); tm.querySelector('[data-tit=reason]').value = '';
+                    bootstrap.Modal.getOrCreateInstance(tm).show(); return;
+                }
+                if (t.hasAttribute('data-icc-tit')) {
+                    var tm2 = document.getElementById('icuTitModal');
+                    post('/Infusions/' + titId + '/Titrate', { dose: n(tm2.querySelector('[data-tit=dose]')), reason: tm2.querySelector('[data-tit=reason]').value }).then(done(tm2)); return;
+                }
+                if (t.hasAttribute('data-icc-stop')) { cbConfirm(W.stop, { kind: 'danger' }).then(function (ok) { if (ok) post('/Infusions/' + t.getAttribute('data-icc-stop') + '/Stop').then(done(null)); }); return; }
+                if (t.hasAttribute('data-icc-dev')) {
+                    var dm = document.getElementById('icuDevModal'), at = dm.querySelector('[data-dev=insertedAt]').value;
+                    post('/Devices', { admissionId: adm(), kind: dm.querySelector('[data-dev=kind]').value, site: dm.querySelector('[data-dev=site]').value || null, insertedAt: at || null }).then(done(dm)); return;
+                }
+                if (t.hasAttribute('data-icc-remove')) { cbConfirm(W.remove).then(function (ok) { if (ok) post('/Devices/' + t.getAttribute('data-icc-remove') + '/Remove').then(done(null)); }); return; }
+                var box = t.closest('[data-icc-device]'), items = [];
+                box.querySelectorAll('input[type=checkbox]:checked').forEach(function (c) { items.push(c.value); });
+                post('/Devices/' + t.getAttribute('data-icc-bundle') + '/Bundle', { items: items }).then(done(null));
+            });
+        })();
+    </script>
+}

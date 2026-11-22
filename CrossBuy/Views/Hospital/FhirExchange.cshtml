@@ -1,0 +1,181 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalFhirPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H242 — eligibility checks and pre-authorisation requests with the payer as FHIR messages: check a patient, send a
+    waiting request, download a kept file, load the payer's answer file, and (administrator) each payer's gateway, off
+    until its address and key are entered. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Payer messages (FHIR)"].Value;
+    string q = ViewBag.Q as string ?? "", kind = ViewBag.Kind as string ?? ""; int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages; bool canManage = ViewBag.CanManage == true;
+    var pending = ViewBag.Pending as IReadOnlyList<HospitalPreauthRow> ?? Array.Empty<HospitalPreauthRow>();
+    string Link(int p, string? k = null) => Url.Action("FhirExchange", new { q, kind = k ?? kind, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Tone(string? o) => o switch { "InForce" or "Approved" => "primary", "NotInForce" or "Rejected" or "Error" => "danger", _ => "info" };
+    bool Answered(string? o) => o is "InForce" or "NotInForce" or "Approved" or "Rejected";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Payer messages (FHIR)"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Insurance")" class="text-muted text-hover-primary">@T["Insurance"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Payer messages (FHIR)"]</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-primary" data-fx-elig-open><i class="ki-outline ki-shield-search fs-4"></i>@T["Check eligibility"]</button></div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalFhirExchangeService.NoTables]</div></div>
+        }
+        <div class="row g-5">
+            <div class="col-xl-8">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Messages"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Sent through the payer's gateway when it is enabled; otherwise kept as a file to send and its answer loaded back"]</span></h3>
+                        <form class="card-toolbar gap-2" method="get" action="@Url.Action("FhirExchange")">
+                            <select name="kind" class="form-select form-select-sm form-select-solid w-150px"><option value="">@T["All"]</option>@foreach (var k in HospitalFhirMessageKind.All) {<option value="@k" selected="@(kind == k)">@T["fx:" + k]</option>}</select>
+                            <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                                <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search a patient or payer"]" /></div>
+                            <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                        </form>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Rows.Count == 0)
+                        {
+                            <div class="text-center py-15"><i class="ki-outline ki-message-text-2 fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No message yet."]</div></div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted fs-7"><th class="min-w-200px">@T["Patient"]</th><th>@T["Kind"]</th><th>@T["Payer"]</th><th class="min-w-175px">@T["Answer"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var r in Model.Rows)
+                                {
+                                    var m = r.Message;
+                                    <tr>
+                                        <td><div class="d-flex align-items-center gap-3">@HospitalUi.Avatar(r.Photo, DisplayName.Of(r.PatientName, r.PatientNameEn), 35)<div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = m.PatientId })" class="text-gray-900 fw-bold text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><span class="text-muted fs-8 hp-num" dir="ltr">@r.Mrn · @HospitalNursingService.UtcToWard(m.At).ToString("dd/MM HH:mm", inv)</span></div></div></td>
+                                        <td><span class="badge badge-light fs-8">@T["fx:" + m.Kind]</span>@if (r.PreauthNo != null) {<div class="text-muted fs-8 hp-num" dir="ltr">@r.PreauthNo</div>}<div class="text-muted fs-9">@(m.Sent ? T["Sent by gateway"] : T["Kept as a file"])</div></td>
+                                        <td class="fs-7">@DisplayName.Of(r.Payer, r.PayerEn)</td>
+                                        <td>@if (m.Outcome != null) {<span class="badge badge-light-@Tone(m.Outcome) fs-7">@T["fxo:" + m.Outcome]</span>} else {<span class="text-muted fs-7">@T["Waiting for the answer"]</span>}
+                                            @if (m.Detail != null) {<div class="text-muted fs-8 mt-1" dir="auto">@m.Detail</div>}</td>
+                                        <td class="text-end text-nowrap">
+                                            <a href="@Url.Action("FhirFile", new { id = m.ID })" class="btn btn-sm btn-icon btn-light" title="@T["Download the request"]" data-bs-toggle="tooltip"><i class="ki-outline ki-file-down fs-3"></i></a>
+                                            @if (m.Response != null) {<a href="@Url.Action("FhirFile", new { id = m.ID, answer = true })" class="btn btn-sm btn-icon btn-light ms-1" title="@T["Download the answer"]" data-bs-toggle="tooltip"><i class="ki-outline ki-file-added fs-3"></i></a>}
+                                            @if (!Answered(m.Outcome)) {<button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Load the payer's answer"]" data-bs-toggle="tooltip" data-fx-answer="@m.ID"><i class="ki-outline ki-file-up fs-3"></i></button>}
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                            @if (pages > 1)
+                            {
+                                <ul class="pagination mt-6">
+                                    <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                                    @for (int n = Math.Max(1, page - 3); n <= Math.Min(pages, page + 3); n++) {<li class="page-item @(n == page ? "active" : "")"><a class="page-link" href="@Link(n)">@n</a></li>}
+                                    <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                                </ul>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Waiting pre-authorisations"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Send each to the payer as a FHIR request"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (pending.Count == 0) {<div class="text-muted fs-7">@T["No request is waiting."]</div>}
+                        @foreach (var a in pending.Take(10))
+                        {
+                            <div class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
+                                @HospitalUi.Avatar(a.Photo, DisplayName.Of(a.PatientName, a.PatientNameEn), 30)
+                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800 fs-7 text-truncate">@DisplayName.Of(a.PatientName, a.PatientNameEn)</div><div class="text-muted fs-8 text-truncate">@DisplayName.Of(a.Service, a.ServiceEn) · @DisplayName.Of(a.Payer, a.PayerEn)</div></div>
+                                @if (Model.Ready) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-fx-preauth="@a.Preauth.ID">@T["Send"]</button>}
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Payer gateways"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Entered by the administrator when the payer gives the address and key"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Payers.Count == 0) {<div class="text-muted fs-7">@T["No payer yet."]</div>}
+                        @foreach (var p in Model.Payers)
+                        {
+                            var g = p.Gateway;
+                            <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-gray-200 border-bottom-dashed">
+                                <div class="min-w-0"><div class="fw-bold text-gray-800 fs-7">@DisplayName.Of(p.Payer.Name, p.Payer.NameEn)</div>
+                                    <div class="fs-8">@if (g?.Enabled == true) {<span class="badge badge-light-primary fs-8">@T["Gateway on"]</span>} else if (g != null) {<span class="badge badge-light fs-8">@T["Gateway off"]</span>} else {<span class="text-muted">@T["Files only"]</span>}</div></div>
+                                @if (canManage && Model.Ready) {<button type="button" class="btn btn-sm btn-icon btn-light" data-fx-gw="@p.Payer.ID" data-url="@g?.BaseUrl" data-header="@g?.KeyHeader" data-haskey="@(g?.ApiKey != null ? "1" : "")" data-on="@(g?.Enabled == true ? "1" : "")" data-name="@DisplayName.Of(p.Payer.Name, p.Payer.NameEn)"><i class="ki-outline ki-setting-2 fs-3"></i></button>}
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="fxElig" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Check eligibility"]</h1><div class="text-muted fw-semibold fs-6">@T["The patient's active policy is asked of its payer."]</div></div>
+        <select class="form-select form-select-solid" data-fx-patient data-placeholder="@T["Choose the patient"]"><option></option></select>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-fx-elig>@T["Check"]</button></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="fxGw" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Payer gateway"]</h1><div class="text-muted fw-semibold fs-6" data-gw="name"></div></div>
+        <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["FHIR base address"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="300" placeholder="https://" data-gw="baseUrl" /></div>
+        <div class="row g-5 mb-5">
+            <div class="col-md-5"><label class="fs-6 fw-semibold mb-2">@T["Key header"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" placeholder="Authorization" data-gw="keyHeader" /></div>
+            <div class="col-md-7"><label class="fs-6 fw-semibold mb-2">@T["Key"]</label><input type="password" autocomplete="new-password" class="form-control form-control-solid" dir="ltr" maxlength="500" data-gw="apiKey" /><div class="text-muted fs-8 mt-1" data-gw="keynote">@T["Leave empty to keep the key already entered."]</div></div>
+        </div>
+        <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-gw="enabled" /><span class="form-check-label fw-semibold">@T["Send messages through this gateway"]</span></label>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-gw-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Insurance/Fhir/")), patients = @Json.Serialize(Url.Action("SearchInsurancePatients"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), ask: @Json.Serialize(T["Paste the payer's answer (FHIR JSON)"].Value) }, isAr = document.documentElement.dir === 'rtl';
+            var em = document.getElementById('fxElig'), gm = document.getElementById('fxGw'), sel = em.querySelector('[data-fx-patient]'), gwId = 0;
+            $(sel).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(em), placeholder: sel.getAttribute('data-placeholder'),
+                ajax: { url: patients, dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            function g(k) { return gm.querySelector('[data-gw=' + k + ']'); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-fx-elig-open],[data-fx-elig],[data-fx-preauth],[data-fx-answer],[data-fx-gw],[data-gw-save]'); if (!t) return;
+                if (t.hasAttribute('data-fx-elig-open')) { bootstrap.Modal.getOrCreateInstance(em).show(); return; }
+                if (t.hasAttribute('data-fx-elig')) { if (!sel.value) return; t.disabled = true; post('Eligibility/' + sel.value).then(function (r) { t.disabled = false; after(r); }); return; }
+                if (t.hasAttribute('data-fx-preauth')) { t.disabled = true; post('Preauth/' + t.getAttribute('data-fx-preauth')).then(function (r) { t.disabled = false; after(r); }); return; }
+                if (t.hasAttribute('data-fx-answer')) { cbPrompt(W.ask, { kind: 'primary', textarea: true }).then(function (v) { if (v) post(t.getAttribute('data-fx-answer') + '/Answer', { raw: v }).then(after); }); return; }
+                if (t.hasAttribute('data-fx-gw')) {
+                    gwId = +t.getAttribute('data-fx-gw'); g('name').textContent = t.getAttribute('data-name');
+                    g('baseUrl').value = t.getAttribute('data-url') || ''; g('keyHeader').value = t.getAttribute('data-header') || ''; g('apiKey').value = '';
+                    g('keynote').classList.toggle('d-none', !t.getAttribute('data-haskey')); g('enabled').checked = !!t.getAttribute('data-on');
+                    bootstrap.Modal.getOrCreateInstance(gm).show(); return;
+                }
+                post('Gateway/' + gwId, { baseUrl: g('baseUrl').value, keyHeader: g('keyHeader').value || null, apiKey: g('apiKey').value || null, enabled: g('enabled').checked }).then(after);
+            });
+        })();
+    </script>
+}

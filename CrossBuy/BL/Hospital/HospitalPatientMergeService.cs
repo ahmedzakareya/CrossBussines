@@ -97,6 +97,15 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalMohSubmission), "HospitalMohSubmissions"),    // H225: what was sent to the Ministry follows its patient
 			(typeof(HospitalMicroCulture), "HospitalMicroCultures"),      // H230: cultures and their isolates follow the patient
 			(typeof(HospitalMicroIsolate), "HospitalMicroIsolates"),
+			(typeof(HospitalAbxReview), "HospitalAbxReviews"),            // H235: stewardship decisions follow the patient
+			(typeof(HospitalErPathway), "HospitalErPathways"),            // H237: emergency pathways follow the patient
+			(typeof(HospitalIcuScore), "HospitalIcuScores"),              // H238: ICU scores, infusions and devices follow the patient
+			(typeof(HospitalIcuInfusion), "HospitalIcuInfusions"),
+			(typeof(HospitalIcuDevice), "HospitalIcuDevices"),
+			(typeof(HospitalDischargePlan), "HospitalDischargePlans"),    // H239: the discharge plan follows the patient
+			(typeof(HospitalDenialWork), "HospitalDenialWork"),           // H240: denial work items follow the patient
+			(typeof(HospitalDrgAssignment), "HospitalDrgAssignments"),    // H241: DRG coding follows the patient
+			(typeof(HospitalFhirMessage), "HospitalFhirMessages"),        // H242: eligibility and pre-authorisation messages
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

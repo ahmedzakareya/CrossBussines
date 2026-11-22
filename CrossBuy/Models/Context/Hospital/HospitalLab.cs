@@ -72,6 +72,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public int Decimals { get; set; } = 1;
 		public int SortOrder { get; set; }
 		public bool IsActive { get; set; } = true;
+		/// H233: a change beyond this percentage from the patient's previous verified value is flagged (null: no check).
+		public decimal? DeltaPercent { get; set; }
+		/// H233: a normal value of this analyte may be released without a second person.
+		public bool AutoVerify { get; set; }
 	}
 
 	public class HospitalLabOrder
@@ -101,6 +105,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? VerifiedByEmployeeId { get; set; }
 		public string? Comment { get; set; }
 		public bool IsCritical { get; set; }
+		/// H233: released by the autoverification rules, not by a person.
+		public bool AutoVerified { get; set; }
 		public DateTime? CriticalAcknowledgedAt { get; set; }
 		public int? CriticalAcknowledgedByEmployeeId { get; set; }
 		public string? CriticalNote { get; set; }
@@ -123,6 +129,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public string Flag { get; set; } = HospitalLabFlag.Normal;
 		public int Decimals { get; set; } = 1;
 		public int SortOrder { get; set; }
+		/// H233: the previous verified value the delta check compared with, and whether the change was beyond the limit.
+		public decimal? DeltaPrevious { get; set; }
+		public bool DeltaFailed { get; set; }
 	}
 
 	public static class HospitalLabAlertLevel
@@ -184,6 +193,8 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalLabTest>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
 			HospitalMicroModel.Configure(b);   // H230: microbiology
 			HospitalLabQcModel.Configure(b);   // H232: quality control
+			HospitalLabRefRangeModel.Configure(b);   // H233: ranges by age and sex
+			b.Entity<HospitalLabAnalyte>(e => e.Property(x => x.DeltaPercent).HasPrecision(9, 2));   // H233
 			b.Entity<HospitalLabAnalyte>(e =>
 			{
 				foreach (var p in new[] { nameof(HospitalLabAnalyte.RefLow), nameof(HospitalLabAnalyte.RefHigh), nameof(HospitalLabAnalyte.CriticalLow), nameof(HospitalLabAnalyte.CriticalHigh) })
@@ -202,6 +213,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Value).HasPrecision(18, 4);
 				e.Property(x => x.RefLow).HasPrecision(18, 4);
 				e.Property(x => x.RefHigh).HasPrecision(18, 4);
+				e.Property(x => x.DeltaPrevious).HasPrecision(18, 4);   // H233
 				e.HasOne<HospitalLabOrder>().WithMany().HasForeignKey(x => x.LabOrderId).OnDelete(DeleteBehavior.NoAction);
 				e.HasIndex(x => new { x.LabOrderId, x.AnalyteId }).IsUnique();
 			});

@@ -1,0 +1,185 @@
+{
+ "unit": "H240 - Denial work-queue",
+ "strings": {
+  "Amount denied, and how many closed items were paid on appeal": {
+   "ar": "المبلغ المرفوض، وعدد البنود المغلقة التي دُفعت بعد الاعتراض",
+   "en": "Amount denied, and how many closed items were paid on appeal",
+   "fr": "Montant refusé, et combien d'éléments clos ont été payés en appel"
+  },
+  "Choose the root cause": {
+   "ar": "اختر السبب الجذري",
+   "en": "Choose the root cause",
+   "fr": "Choisissez la cause première"
+  },
+  "Deadline": {
+   "ar": "الموعد النهائي",
+   "en": "Deadline",
+   "fr": "Échéance"
+  },
+  "Denial work-queue": {
+   "ar": "قائمة عمل المرفوضات",
+   "en": "Denial work-queue",
+   "fr": "File de travail des refus"
+  },
+  "Denied lines": {
+   "ar": "البنود المرفوضة",
+   "en": "Denied lines",
+   "fr": "Lignes refusées"
+  },
+  "I take this item": {
+   "ar": "أتولى هذا البند",
+   "en": "I take this item",
+   "fr": "Je prends cet élément"
+  },
+  "Nearest deadline first; the root cause is suggested from the payer's code and reason": {
+   "ar": "الأقرب موعدًا أولًا؛ ويُقترح السبب الجذري من رمز الجهة الدافعة وسببها",
+   "en": "Nearest deadline first; the root cause is suggested from the payer's code and reason",
+   "fr": "Échéance la plus proche d'abord ; la cause est suggérée d'après le code et le motif du payeur"
+  },
+  "No denial here.": {
+   "ar": "لا توجد مرفوضات هنا.",
+   "en": "No denial here.",
+   "fr": "Aucun refus ici."
+  },
+  "No denial yet.": {
+   "ar": "لا توجد مرفوضات بعد.",
+   "en": "No denial yet.",
+   "fr": "Aucun refus pour l'instant."
+  },
+  "No open denial.": {
+   "ar": "لا توجد مرفوضات مفتوحة.",
+   "en": "No open denial.",
+   "fr": "Aucun refus ouvert."
+  },
+  "Open by payer": {
+   "ar": "المفتوح حسب الجهة الدافعة",
+   "en": "Open by payer",
+   "fr": "Ouverts par payeur"
+  },
+  "Open denials": {
+   "ar": "المرفوضات المفتوحة",
+   "en": "Open denials",
+   "fr": "Refus ouverts"
+  },
+  "Paid on appeal": {
+   "ar": "دُفع بعد الاعتراض",
+   "en": "Paid on appeal",
+   "fr": "Payé en appel"
+  },
+  "Past the appeal deadline": {
+   "ar": "تجاوزت موعد الاعتراض",
+   "en": "Past the appeal deadline",
+   "fr": "Délai d'appel dépassé"
+  },
+  "Payer's reason": {
+   "ar": "سبب الجهة الدافعة",
+   "en": "Payer's reason",
+   "fr": "Motif du payeur"
+  },
+  "Root causes": {
+   "ar": "الأسباب الجذرية",
+   "en": "Root causes",
+   "fr": "Causes premières"
+  },
+  "Search a patient, code, batch or payer": {
+   "ar": "ابحث عن مريض أو رمز أو دفعة أو جهة دافعة",
+   "en": "Search a patient, code, batch or payer",
+   "fr": "Rechercher un patient, un code, un lot ou un payeur"
+  },
+  "The deadline is within the next year": {
+   "ar": "الموعد النهائي خلال العام القادم",
+   "en": "The deadline is within the next year",
+   "fr": "L'échéance est dans l'année à venir"
+  },
+  "The denial work-queue is not installed yet (hospital_h240_denials.sql).": {
+   "ar": "قائمة عمل المرفوضات غير مثبتة بعد (hospital_h240_denials.sql).",
+   "en": "The denial work-queue is not installed yet (hospital_h240_denials.sql).",
+   "fr": "La file des refus n'est pas encore installée (hospital_h240_denials.sql)."
+  },
+  "This denial is already closed": {
+   "ar": "هذا الرفض مغلق بالفعل",
+   "en": "This denial is already closed",
+   "fr": "Ce refus est déjà clos"
+  },
+  "Work it": {
+   "ar": "معالجته",
+   "en": "Work it",
+   "fr": "Traiter"
+  },
+  "Work the denial": {
+   "ar": "معالجة الرفض",
+   "en": "Work the denial",
+   "fr": "Traiter le refus"
+  },
+  "Write why it is not pursued": {
+   "ar": "اكتب سبب عدم المتابعة",
+   "en": "Write why it is not pursued",
+   "fr": "Indiquez pourquoi il n'est pas poursuivi"
+  },
+  "dc:Authorization": {
+   "ar": "الموافقة المسبقة",
+   "en": "Prior authorisation",
+   "fr": "Accord préalable"
+  },
+  "dc:Eligibility": {
+   "ar": "الأهلية والتغطية",
+   "en": "Eligibility and coverage",
+   "fr": "Éligibilité et couverture"
+  },
+  "dc:Coding": {
+   "ar": "الترميز",
+   "en": "Coding",
+   "fr": "Codage"
+  },
+  "dc:Necessity": {
+   "ar": "الضرورة الطبية",
+   "en": "Medical necessity",
+   "fr": "Nécessité médicale"
+  },
+  "dc:Documentation": {
+   "ar": "المستندات",
+   "en": "Documentation",
+   "fr": "Documentation"
+  },
+  "dc:Duplicate": {
+   "ar": "مطالبة مكررة",
+   "en": "Duplicate claim",
+   "fr": "Demande en double"
+  },
+  "dc:Timely": {
+   "ar": "تأخر التقديم",
+   "en": "Late submission",
+   "fr": "Soumission tardive"
+  },
+  "dc:Pricing": {
+   "ar": "السعر والتعرفة",
+   "en": "Price and tariff",
+   "fr": "Prix et tarif"
+  },
+  "dc:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "ds:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "ds:Working": {
+   "ar": "قيد المعالجة",
+   "en": "Working",
+   "fr": "En cours"
+  },
+  "ds:Resubmitted": {
+   "ar": "أُعيد تقديمه",
+   "en": "Resubmitted",
+   "fr": "Resoumis"
+  },
+  "ds:NotPursued": {
+   "ar": "لن يُتابَع",
+   "en": "Not pursued",
+   "fr": "Non poursuivi"
+  }
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "unit": "H234 - medication safety",
+ "strings": {
+  "In pregnancy": {
+   "ar": "في الحمل",
+   "en": "In pregnancy",
+   "fr": "Pendant la grossesse"
+  },
+  "In breastfeeding": {
+   "ar": "في الرضاعة",
+   "en": "In breastfeeding",
+   "fr": "Pendant l'allaitement"
+  },
+  "No concern recorded": {
+   "ar": "لا ملاحظة مسجلة",
+   "en": "No concern recorded",
+   "fr": "Aucune réserve enregistrée"
+  },
+  "risk:Avoid": {
+   "ar": "يُتجنب",
+   "en": "Avoid",
+   "fr": "À éviter"
+  },
+  "risk:Caution": {
+   "ar": "بحذر",
+   "en": "Caution",
+   "fr": "Avec prudence"
+  },
+  "Antimicrobial (stewardship)": {
+   "ar": "مضاد ميكروبي (ترشيد الاستخدام)",
+   "en": "Antimicrobial (stewardship)",
+   "fr": "Antimicrobien (bon usage)"
+  },
+  "{0} duplicates {1}: the same therapeutic group": {
+   "ar": "{0} يكرر {1}: المجموعة العلاجية نفسها",
+   "en": "{0} duplicates {1}: the same therapeutic group",
+   "fr": "{0} fait double emploi avec {1} : même groupe thérapeutique"
+  },
+  "{0} is to be avoided in pregnancy, and the patient is pregnant": {
+   "ar": "{0} يُتجنب في الحمل، والمريضة حامل",
+   "en": "{0} is to be avoided in pregnancy, and the patient is pregnant",
+   "fr": "{0} est à éviter pendant la grossesse, et la patiente est enceinte"
+  },
+  "{0} needs caution in pregnancy, and the patient is pregnant": {
+   "ar": "{0} يحتاج إلى حذر في الحمل، والمريضة حامل",
+   "en": "{0} needs caution in pregnancy, and the patient is pregnant",
+   "fr": "{0} demande de la prudence pendant la grossesse, et la patiente est enceinte"
+  },
+  "{0} is to be avoided in breastfeeding, and the patient gave birth in the last six months": {
+   "ar": "{0} يُتجنب في الرضاعة، والمريضة ولدت خلال الأشهر الستة الأخيرة",
+   "en": "{0} is to be avoided in breastfeeding, and the patient gave birth in the last six months",
+   "fr": "{0} est à éviter pendant l'allaitement, et la patiente a accouché il y a moins de six mois"
+  },
+  "{0} needs caution in breastfeeding, and the patient gave birth in the last six months": {
+   "ar": "{0} يحتاج إلى حذر في الرضاعة، والمريضة ولدت خلال الأشهر الستة الأخيرة",
+   "en": "{0} needs caution in breastfeeding, and the patient gave birth in the last six months",
+   "fr": "{0} demande de la prudence pendant l'allaitement, et la patiente a accouché il y a moins de six mois"
+  },
+  "{0} is dosed by weight and no weight is recorded in the last 30 days, so the dose for the weight was not checked": {
+   "ar": "{0} يُحسب بالوزن ولا يوجد وزن مسجل خلال آخر 30 يومًا، فلم تُراجع الجرعة حسب الوزن",
+   "en": "{0} is dosed by weight and no weight is recorded in the last 30 days, so the dose for the weight was not checked",
+   "fr": "{0} se dose au poids et aucun poids n'est enregistré depuis 30 jours : la dose au poids n'a pas été vérifiée"
+  },
+  "{0}: {1} mg is above {2} mg for {3} kg ({4} mg/kg)": {
+   "ar": "{0}: {1} ملغ أعلى من {2} ملغ لوزن {3} كغ ({4} ملغ/كغ)",
+   "en": "{0}: {1} mg is above {2} mg for {3} kg ({4} mg/kg)",
+   "fr": "{0} : {1} mg dépasse {2} mg pour {3} kg ({4} mg/kg)"
+  },
+  "alertKind:Duplicate": {
+   "ar": "تكرار علاجي",
+   "en": "Duplicate therapy",
+   "fr": "Double emploi"
+  },
+  "alertKind:Pregnancy": {
+   "ar": "حمل أو رضاعة",
+   "en": "Pregnancy or breastfeeding",
+   "fr": "Grossesse ou allaitement"
+  }
+ }
+}

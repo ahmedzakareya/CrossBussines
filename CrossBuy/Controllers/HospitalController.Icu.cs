@@ -27,6 +27,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Ready = ready;
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.CanAssess = ViewBag.CanAdmit == true || await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			if (board.Selected != null) ViewBag.Care = await IcuCareSvc.CareAsync(ctx, board.Selected.AdmissionId, DateTime.UtcNow, ct);   // H238
 			return View(board);
 		}
 

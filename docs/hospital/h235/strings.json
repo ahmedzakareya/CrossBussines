@@ -1,0 +1,160 @@
+{
+ "unit": "H235 - antimicrobial stewardship",
+ "strings": {
+  "Antimicrobial stewardship": {
+   "ar": "ترشيد استخدام المضادات الحيوية",
+   "en": "Antimicrobial stewardship",
+   "fr": "Bon usage des antimicrobiens"
+  },
+  "Stewardship is not installed yet (hospital_h235_stewardship.sql).": {
+   "ar": "الترشيد غير مثبت بعد (hospital_h235_stewardship.sql).",
+   "en": "Stewardship is not installed yet (hospital_h235_stewardship.sql).",
+   "fr": "Le bon usage n'est pas encore installé (hospital_h235_stewardship.sql)."
+  },
+  "abx:ApprovalOverdue": {
+   "ar": "الموافقة متأخرة",
+   "en": "Approval overdue",
+   "fr": "Approbation en retard"
+  },
+  "abx:RejectedRunning": {
+   "ar": "مرفوض ولا يزال يُعطى",
+   "en": "Rejected but still running",
+   "fr": "Refusé mais toujours en cours"
+  },
+  "abx:TimeOutOverdue": {
+   "ar": "المراجعة متأخرة",
+   "en": "Time-out overdue",
+   "fr": "Réévaluation en retard"
+  },
+  "abx:AwaitingApproval": {
+   "ar": "بانتظار الموافقة",
+   "en": "Awaiting approval",
+   "fr": "En attente d'approbation"
+  },
+  "abx:TimeOutDue": {
+   "ar": "حان وقت المراجعة",
+   "en": "Time-out due",
+   "fr": "Réévaluation due"
+  },
+  "abx:Early": {
+   "ar": "في أول 48 ساعة",
+   "en": "In its first 48 h",
+   "fr": "Dans ses 48 premières heures"
+  },
+  "abx:Reviewed": {
+   "ar": "تمت مراجعته",
+   "en": "Reviewed",
+   "fr": "Réévalué"
+  },
+  "abxd:Approved": {
+   "ar": "موافق عليه",
+   "en": "Approved",
+   "fr": "Approuvé"
+  },
+  "abxd:Rejected": {
+   "ar": "مرفوض",
+   "en": "Rejected",
+   "fr": "Refusé"
+  },
+  "abxd:Continue": {
+   "ar": "يستمر",
+   "en": "Continue",
+   "fr": "Poursuivre"
+  },
+  "abxd:Narrow": {
+   "ar": "تضييق الطيف",
+   "en": "Narrow the spectrum",
+   "fr": "Restreindre le spectre"
+  },
+  "abxd:IvToPo": {
+   "ar": "التحويل من الوريد إلى الفم",
+   "en": "Switch IV to oral",
+   "fr": "Relais IV vers oral"
+  },
+  "abxd:Stop": {
+   "ar": "إيقاف",
+   "en": "Stop",
+   "fr": "Arrêter"
+  },
+  "Running antimicrobials": {
+   "ar": "المضادات الحيوية الجارية",
+   "en": "Running antimicrobials",
+   "fr": "Antimicrobiens en cours"
+  },
+  "A restricted agent needs approval within 24 h; every agent gets its time-out at 48–72 h.": {
+   "ar": "يحتاج المضاد المقيّد إلى موافقة خلال 24 ساعة، وكل مضاد يُراجع بين 48 و72 ساعة.",
+   "en": "A restricted agent needs approval within 24 h; every agent gets its time-out at 48–72 h.",
+   "fr": "Un agent restreint doit être approuvé sous 24 h ; chaque agent est réévalué entre 48 et 72 h."
+  },
+  "Search a patient or medicine": {
+   "ar": "ابحث عن مريض أو دواء",
+   "en": "Search a patient or medicine",
+   "fr": "Rechercher un patient ou un médicament"
+  },
+  "No running antimicrobial here.": {
+   "ar": "لا توجد مضادات حيوية جارية هنا.",
+   "en": "No running antimicrobial here.",
+   "fr": "Aucun antimicrobien en cours ici."
+  },
+  "On therapy": {
+   "ar": "مدة العلاج",
+   "en": "On therapy",
+   "fr": "Sous traitement"
+  },
+  "d": {
+   "ar": "يوم",
+   "en": "d",
+   "fr": "j"
+  },
+  "Restricted": {
+   "ar": "مقيّد",
+   "en": "Restricted",
+   "fr": "Restreint"
+  },
+  "Approve or reject": {
+   "ar": "موافقة أو رفض",
+   "en": "Approve or reject",
+   "fr": "Approuver ou refuser"
+  },
+  "Time-out": {
+   "ar": "مراجعة",
+   "en": "Time-out",
+   "fr": "Réévaluation"
+  },
+  "Use in the last 30 days": {
+   "ar": "الاستخدام في آخر 30 يومًا",
+   "en": "Use in the last 30 days",
+   "fr": "Consommation des 30 derniers jours"
+  },
+  "Days of therapy per 1 000 patient-days": {
+   "ar": "أيام العلاج لكل 1000 يوم مريض",
+   "en": "Days of therapy per 1 000 patient-days",
+   "fr": "Jours de traitement pour 1 000 journées-patients"
+  },
+  "No antimicrobial given in the period.": {
+   "ar": "لم يُعطَ أي مضاد حيوي في الفترة.",
+   "en": "No antimicrobial given in the period.",
+   "fr": "Aucun antimicrobien administré sur la période."
+  },
+  "Stop stops the order on the ward at once.": {
+   "ar": "الإيقاف يوقف الأمر في القسم فورًا.",
+   "en": "Stop stops the order on the ward at once.",
+   "fr": "Arrêter arrête la prescription au service immédiatement."
+  },
+  "The note is 500 characters at most": {
+   "ar": "الملاحظة 500 حرف على الأكثر",
+   "en": "The note is 500 characters at most",
+   "fr": "La note compte 500 caractères au plus"
+  },
+  "This medicine is not marked as an antimicrobial": {
+   "ar": "هذا الدواء غير معلَّم كمضاد ميكروبي",
+   "en": "This medicine is not marked as an antimicrobial",
+   "fr": "Ce médicament n'est pas marqué comme antimicrobien"
+  },
+  "Only a restricted antimicrobial needs approval": {
+   "ar": "المضاد المقيّد وحده يحتاج إلى موافقة",
+   "en": "Only a restricted antimicrobial needs approval",
+   "fr": "Seul un antimicrobien restreint nécessite une approbation"
+  }
+ }
+}

@@ -1,0 +1,230 @@
+{
+ "unit": "H239 - Capacity centre",
+ "strings": {
+  "Barriers": {
+   "ar": "العوائق",
+   "en": "Barriers",
+   "fr": "Obstacles"
+  },
+  "Capacity centre": {
+   "ar": "مركز إدارة السعة",
+   "en": "Capacity centre",
+   "fr": "Centre de gestion des capacités"
+  },
+  "Choose how sure the plan is": {
+   "ar": "اختر مدى تأكد الخطة",
+   "en": "Choose how sure the plan is",
+   "fr": "Choisissez le degré de certitude du plan"
+  },
+  "Clear the plan": {
+   "ar": "مسح الخطة",
+   "en": "Clear the plan",
+   "fr": "Effacer le plan"
+  },
+  "Clear this discharge plan?": {
+   "ar": "هل تريد مسح خطة الخروج هذه؟",
+   "en": "Clear this discharge plan?",
+   "fr": "Effacer ce plan de sortie ?"
+  },
+  "Discharge plan": {
+   "ar": "خطة الخروج",
+   "en": "Discharge plan",
+   "fr": "Plan de sortie"
+  },
+  "Discharge plans are not installed yet (hospital_h239_capacity.sql).": {
+   "ar": "خطط الخروج غير مثبتة بعد (hospital_h239_capacity.sql).",
+   "en": "Discharge plans are not installed yet (hospital_h239_capacity.sql).",
+   "fr": "Les plans de sortie ne sont pas encore installés (hospital_h239_capacity.sql)."
+  },
+  "Discharges": {
+   "ar": "حالات الخروج",
+   "en": "Discharges",
+   "fr": "Sorties"
+  },
+  "Emergency at disposition": {
+   "ar": "في الطوارئ بانتظار القرار",
+   "en": "Emergency at disposition",
+   "fr": "Urgences en attente de décision"
+  },
+  "End of day": {
+   "ar": "نهاية اليوم",
+   "en": "End of day",
+   "fr": "Fin de journée"
+  },
+  "Estimated from past stays": {
+   "ar": "تقدير من مدد الإقامة السابقة",
+   "en": "Estimated from past stays",
+   "fr": "Estimé d'après les séjours passés"
+  },
+  "Expected discharge": {
+   "ar": "الخروج المتوقع",
+   "en": "Expected discharge",
+   "fr": "Sortie prévue"
+  },
+  "Expected discharges today": {
+   "ar": "حالات الخروج المتوقعة اليوم",
+   "en": "Expected discharges today",
+   "fr": "Sorties prévues aujourd'hui"
+  },
+  "How sure": {
+   "ar": "درجة التأكد",
+   "en": "How sure",
+   "fr": "Certitude"
+  },
+  "Inpatients and expected discharge": {
+   "ar": "المرضى المنوَّمون وموعد الخروج المتوقع",
+   "en": "Inpatients and expected discharge",
+   "fr": "Patients hospitalisés et sortie prévue"
+  },
+  "No barrier recorded.": {
+   "ar": "لا توجد عوائق مسجلة.",
+   "en": "No barrier recorded.",
+   "fr": "Aucun obstacle enregistré."
+  },
+  "No bed is set up yet.": {
+   "ar": "لم يُجهَّز أي سرير بعد.",
+   "en": "No bed is set up yet.",
+   "fr": "Aucun lit n'est encore configuré."
+  },
+  "No inpatient here.": {
+   "ar": "لا يوجد مرضى منوَّمون هنا.",
+   "en": "No inpatient here.",
+   "fr": "Aucun patient hospitalisé ici."
+  },
+  "Not known": {
+   "ar": "غير معروف",
+   "en": "Not known",
+   "fr": "Inconnue"
+  },
+  "Occupancy": {
+   "ar": "نسبة الإشغال",
+   "en": "Occupancy",
+   "fr": "Taux d'occupation"
+  },
+  "Occupancy of the beds in service": {
+   "ar": "إشغال الأسرّة العاملة",
+   "en": "Occupancy of the beds in service",
+   "fr": "Occupation des lits en service"
+  },
+  "Occupied − expected discharges + expected admissions (the same weekday over 8 weeks)": {
+   "ar": "المشغول − الخروج المتوقع + الدخول المتوقع (اليوم نفسه من الأسبوع خلال 8 أسابيع)",
+   "en": "Occupied − expected discharges + expected admissions (the same weekday over 8 weeks)",
+   "fr": "Occupés − sorties prévues + admissions prévues (même jour de semaine sur 8 semaines)"
+  },
+  "Search a patient, bed or diagnosis": {
+   "ar": "ابحث عن مريض أو سرير أو تشخيص",
+   "en": "Search a patient, bed or diagnosis",
+   "fr": "Rechercher un patient, un lit ou un diagnostic"
+  },
+  "Stay": {
+   "ar": "الإقامة",
+   "en": "Stay",
+   "fr": "Séjour"
+  },
+  "Strain at 85 % occupancy, critical at 95 %.": {
+   "ar": "الضغط عند إشغال 85٪، والحرج عند 95٪.",
+   "en": "Strain at 85 % occupancy, critical at 95 %.",
+   "fr": "Tension à 85 % d'occupation, critique à 95 %."
+  },
+  "The expected day is today or later": {
+   "ar": "اليوم المتوقع هو اليوم أو بعده",
+   "en": "The expected day is today or later",
+   "fr": "Le jour prévu est aujourd'hui ou plus tard"
+  },
+  "The expected day is within the next 60 days": {
+   "ar": "اليوم المتوقع خلال الأيام الستين القادمة",
+   "en": "The expected day is within the next 60 days",
+   "fr": "Le jour prévu est dans les 60 prochains jours"
+  },
+  "The next four days": {
+   "ar": "الأيام الأربعة القادمة",
+   "en": "The next four days",
+   "fr": "Les quatre prochains jours"
+  },
+  "The team's plan when set, otherwise the median stay of past patients with the same diagnosis": {
+   "ar": "خطة الفريق إن وُجدت، وإلا فوسيط مدة إقامة المرضى السابقين بالتشخيص نفسه",
+   "en": "The team's plan when set, otherwise the median stay of past patients with the same diagnosis",
+   "fr": "Le plan de l'équipe s'il existe, sinon la durée médiane des séjours passés au même diagnostic"
+  },
+  "This admission is already discharged": {
+   "ar": "سبق خروج هذا المريض من التنويم",
+   "en": "This admission is already discharged",
+   "fr": "Cette hospitalisation est déjà clôturée"
+  },
+  "Vacant beds": {
+   "ar": "الأسرّة الشاغرة",
+   "en": "Vacant beds",
+   "fr": "Lits libres"
+  },
+  "What holds discharges": {
+   "ar": "ما يؤخر الخروج",
+   "en": "What holds discharges",
+   "fr": "Ce qui retient les sorties"
+  },
+  "{0} cleaning · {1} reserved": {
+   "ar": "{0} قيد التنظيف · {1} محجوز",
+   "en": "{0} cleaning · {1} reserved",
+   "fr": "{0} en nettoyage · {1} réservés"
+  },
+  "{0} in the department": {
+   "ar": "{0} في القسم",
+   "en": "{0} in the department",
+   "fr": "{0} dans le service"
+  },
+  "{0} of {1} beds in service": {
+   "ar": "{0} من {1} سريرًا عاملًا",
+   "en": "{0} of {1} beds in service",
+   "fr": "{0} sur {1} lits en service"
+  },
+  "{0} tomorrow": {
+   "ar": "{0} غدًا",
+   "en": "{0} tomorrow",
+   "fr": "{0} demain"
+  },
+  "conf:Likely": {
+   "ar": "مرجّح",
+   "en": "Likely",
+   "fr": "Probable"
+  },
+  "conf:Possible": {
+   "ar": "محتمل",
+   "en": "Possible",
+   "fr": "Possible"
+  },
+  "bar:Results": {
+   "ar": "نتائج معلّقة",
+   "en": "Pending results",
+   "fr": "Résultats en attente"
+  },
+  "bar:Consult": {
+   "ar": "استشارة معلّقة",
+   "en": "Pending consult",
+   "fr": "Avis en attente"
+  },
+  "bar:Pharmacy": {
+   "ar": "أدوية الخروج",
+   "en": "Discharge medicines",
+   "fr": "Médicaments de sortie"
+  },
+  "bar:Transport": {
+   "ar": "النقل",
+   "en": "Transport",
+   "fr": "Transport"
+  },
+  "bar:Family": {
+   "ar": "الأسرة",
+   "en": "Family",
+   "fr": "Famille"
+  },
+  "bar:Insurance": {
+   "ar": "موافقة التأمين",
+   "en": "Insurance approval",
+   "fr": "Accord de l'assurance"
+  },
+  "bar:Placement": {
+   "ar": "إيواء أو رعاية لاحقة",
+   "en": "Placement or after-care",
+   "fr": "Placement ou soins de suite"
+  }
+ }
+}

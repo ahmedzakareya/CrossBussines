@@ -110,6 +110,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalErPathwayModel.Configure(b);   // H237: time-critical pathways and ambulance pre-arrival
 			b.Entity<HospitalErBay>(e =>
 			{
 				e.ToTable("HospitalErBays");   // no DbSet: without this EF would look for dbo.HospitalErBay

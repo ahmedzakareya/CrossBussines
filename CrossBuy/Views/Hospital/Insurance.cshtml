@@ -47,6 +47,9 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("FhirExchange")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-message-text-2 fs-4"></i>@T["Payer messages (FHIR)"]</a>
+            <a href="@Url.Action("Drg")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-chart-simple fs-4"></i>@T["DRG coding"]</a>
+            <a href="@Url.Action("Denials")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Denial work-queue"]</a>
             <a href="@Url.Action("Payers")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Payers & contracts"]</a>
             @if (canBill)
             {

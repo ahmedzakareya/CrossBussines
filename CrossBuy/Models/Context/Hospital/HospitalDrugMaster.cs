@@ -95,8 +95,20 @@ namespace CrossBuy.Models.Context.Hospital
 		public bool Hazardous { get; set; }
 		public bool ColdChain { get; set; }
 		public string? Ven { get; set; }
+		/// H234: in pregnancy and in breastfeeding — Avoid (stops the order) or Caution (warns); null: no concern recorded.
+		public string? PregnancyRisk { get; set; }
+		public string? LactationRisk { get; set; }
+		/// H235: an antimicrobial — counted by stewardship (time-out, days of therapy); a Restricted one needs approval.
+		public bool IsAntimicrobial { get; set; }
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
+	}
+
+	public static class HospitalDrugRisk
+	{
+		public const string Avoid = "Avoid";
+		public const string Caution = "Caution";
+		public static readonly IReadOnlyList<string> All = new[] { Avoid, Caution };
 	}
 
 	public static class HospitalDrugModel
@@ -106,6 +118,7 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalDrug>(e =>
 			{
 				e.ToTable("HospitalDrugs");   // no DbSet: it names its table
+				e.Property(x => x.PregnancyRisk).HasMaxLength(10); e.Property(x => x.LactationRisk).HasMaxLength(10);   // H234
 				e.Property(x => x.GenericName).HasMaxLength(150);
 				e.Property(x => x.GenericNameEn).HasMaxLength(150);
 				e.Property(x => x.TallMan).HasMaxLength(150);

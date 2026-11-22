@@ -179,6 +179,8 @@ namespace CrossBuy.Models.Context.Hospital
 		{
 			HospitalClaimExchangeModel.Configure(b);   // H200: the batch's electronic files
 			HospitalClaimSheetModel.Configure(b);   // H210: a payer's claim sheet (the TPA's spreadsheet)
+			HospitalDenialModel.Configure(b);   // H240: the denial work-queue
+			HospitalPayerGatewayModel.Configure(b);   // H242: payer gateways and FHIR eligibility / pre-authorisation messages
 			b.Entity<HospitalPayer>(e =>
 			{
 				e.ToTable("HospitalPayers");   // no DbSet: without this EF would look for dbo.HospitalPayer

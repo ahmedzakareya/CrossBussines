@@ -40,6 +40,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
 			ViewBag.CanRegister = await _access.CanAsync(ctx, HospitalActions.Register, null, ct);
+			ViewBag.Pathways = await ErPathSvc.BoardAsync(ctx, DateTime.UtcNow, ct);   // H237
 			return View(await ErSvc.BoardAsync(ctx, DateTime.UtcNow, null, ct));
 		}
 

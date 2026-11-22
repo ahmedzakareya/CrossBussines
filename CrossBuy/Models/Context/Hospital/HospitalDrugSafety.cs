@@ -38,6 +38,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Interaction = "Interaction";
 		public const string Dose = "Dose";
 		public const string Allergy = "Allergy";
+		/// H234: another running medicine of the same therapeutic subgroup.
+		public const string Duplicate = "Duplicate";
+		/// H234: a medicine to avoid (or use with caution) in pregnancy or breastfeeding.
+		public const string Pregnancy = "Pregnancy";
 
 		/// WHAT THE CHECK COULD NOT CHECK. Not a clinical finding — the opposite: a statement that
 		/// no finding was possible, so that silence stops meaning safety. See the comment on
@@ -107,6 +111,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalStewardshipModel.Configure(b);   // H235: antimicrobial stewardship reviews
 			b.Entity<HospitalDrugInteraction>(e =>
 			{
 				e.ToTable("HospitalDrugInteractions");   // no DbSet: each names its table

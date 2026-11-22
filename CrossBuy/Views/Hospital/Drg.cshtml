@@ -1,0 +1,247 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDrgPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H241 — DRG coding: the discharged stays waiting for their principal diagnosis and those coded (group, frozen weight,
+    stay against the group's mean), the case-mix index of the last 90 days, the heaviest groups, and the facility's group
+    table (entered from the payer's or the ministry's grouper). Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["DRG coding"].Value;
+    string q = ViewBag.Q as string ?? "", view = ViewBag.View as string ?? "", gq = ViewBag.Gq as string ?? "";
+    int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages, gpage = (int)ViewBag.GPage, gpages = (int)ViewBag.GPages; bool canManage = ViewBag.CanManage == true;
+    string Link(int p, string? v = null, int? gp = null) => Url.Action("Drg", new { q, view = v ?? view, page = p, gq, gpage = gp ?? gpage })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string D(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("dd/MM/yyyy", inv);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["DRG coding"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Insurance")" class="text-muted text-hover-primary">@T["Insurance"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["DRG coding"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalDrgService.NoTables]</div></div>
+        }
+        else if (Model.GroupTotal == 0 && string.IsNullOrEmpty(gq))
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No DRG group is entered yet. The administrator enters the groups from the payer's or the ministry's grouper; until then a coded stay stays ungrouped."]</div></div>
+        }
+        <div class="row g-5 mb-5">
+            @foreach (var (v, num, label) in new[] { ("", Model.ToCode.ToString(inv), T["Stays to code"].Value), ("coded", Model.Coded.ToString(inv), T["Coded (90 days)"].Value) })
+            {
+                <div class="col-6 col-xl-3"><a href="@Link(1, v)" class="card card-flush h-100 @(view == v ? "border border-primary" : "") text-hover-primary"><div class="card-body d-flex flex-column justify-content-between py-6">
+                    <span class="fs-2hx fw-bold text-gray-900 hp-num">@num</span><span class="text-gray-600 fw-semibold fs-6">@label</span></div></a></div>
+            }
+            <div class="col-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-column justify-content-between py-6">
+                <span class="fs-2hx fw-bold text-primary hp-num">@(Model.Cmi?.ToString("0.000", inv) ?? "—")</span><span class="text-gray-600 fw-semibold fs-6">@T["Case-mix index"]</span></div></div></div>
+            <div class="col-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-column justify-content-between py-6">
+                <span class="fs-2hx fw-bold text-@(Model.Ungroupable > 0 ? "danger" : "gray-900") hp-num">@Model.Ungroupable</span><span class="text-gray-600 fw-semibold fs-6">@T["Ungroupable"]</span></div></div></div>
+        </div>
+
+        <div class="row g-5 mb-5">
+            <div class="col-xl-8">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@(view == "coded" ? T["Coded stays"] : T["Discharged stays to code"])</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The last 120 days; the grouper picks the group from the principal diagnosis and whether an operation was done"]</span></h3>
+                        <form class="card-toolbar gap-2" method="get" action="@Url.Action("Drg")">
+                            <input type="hidden" name="view" value="@view" /><input type="hidden" name="gq" value="@gq" />
+                            <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                                <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search a patient, diagnosis or group"]" /></div>
+                            <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                        </form>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Stays.Count == 0)
+                        {
+                            <div class="text-center py-15"><i class="ki-outline ki-file-sheet fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No stay here."]</div></div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted fs-7"><th class="min-w-200px">@T["Patient"]</th><th>@T["Discharged on"]</th><th>@T["Stay"]</th><th class="min-w-150px">@T["Diagnosis"]</th><th class="min-w-150px">@T["Group"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var s in Model.Stays)
+                                {
+                                    <tr>
+                                        <td><div class="d-flex align-items-center gap-3">@HospitalUi.Avatar(s.Photo, DisplayName.Of(s.Name, s.NameEn), 35)<div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = s.PatientId })" class="text-gray-900 fw-bold text-hover-primary">@DisplayName.Of(s.Name, s.NameEn)</a><span class="text-muted fs-8 hp-num" dir="ltr">@s.Mrn</span></div></div></td>
+                                        <td class="hp-num fs-7" dir="ltr">@D(s.DischargedAt)</td>
+                                        <td class="hp-num fs-7" dir="ltr">@s.LosDays @T["d"]@if (s.Drg?.MeanLos is decimal ml) {<span class="text-muted"> / @ml.ToString("0.#", inv)</span>}</td>
+                                        <td class="fs-7"><span dir="auto">@s.Diagnosis</span>@if (s.Surgical) {<span class="badge badge-light-primary fs-8 ms-1">@T["Operated"]</span>}</td>
+                                        <td>@if (s.Assignment is { } a)
+                                            {
+                                                <span class="badge badge-light fs-8 hp-num" dir="ltr">@a.PrincipalDx</span>
+                                                if (s.Drg != null) {<div class="fw-bold text-gray-800 fs-7 mt-1"><span class="hp-num" dir="ltr">@s.Drg.Code</span> · @DisplayName.Of(s.Drg.Name, s.Drg.NameEn) <span class="text-primary hp-num" dir="ltr">(@a.Weight.ToString("0.000", inv))</span>@if (a.Manual) {<span class="badge badge-light-info fs-9 ms-1">@T["Manual"]</span>}</div>}
+                                                else {<div class="badge badge-light-danger fs-8 mt-1">@T["Ungroupable"]</div>}
+                                            }</td>
+                                        <td class="text-end"><button type="button" class="btn btn-sm btn-light-primary" data-drg="@s.AdmissionId" data-name="@DisplayName.Of(s.Name, s.NameEn)" data-dx="@s.Assignment?.PrincipalDx" data-group="@s.Assignment?.DrgId">@(s.Assignment == null ? T["Code"] : T["Recode"])</button></td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                            @if (pages > 1)
+                            {
+                                <ul class="pagination mt-6">
+                                    <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                                    @for (int n = Math.Max(1, page - 3); n <= Math.Min(pages, page + 3); n++) {<li class="page-item @(n == page ? "active" : "")"><a class="page-link" href="@Link(n)">@n</a></li>}
+                                    <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                                </ul>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Heaviest groups (90 days)"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Cases, total weight, and stay against the group's mean"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Top.Count == 0) {<div class="text-muted fs-7">@T["No coded stay yet."]</div>}
+                        @foreach (var (g, st) in Model.Top)
+                        {
+                            <div class="py-2 border-bottom border-gray-200 border-bottom-dashed">
+                                <div class="d-flex justify-content-between"><span class="fw-bold text-gray-800 fs-7"><span class="hp-num" dir="ltr">@g.Code</span> · @DisplayName.Of(g.Name, g.NameEn)</span><span class="hp-num fs-7" dir="ltr">@st.Weight.ToString("0.00", inv)</span></div>
+                                <div class="text-muted fs-8">@T["{0} cases", st.Cases] · <span class="hp-num" dir="ltr">@st.AvgLos.ToString("0.#", inv) @T["d"]</span>@if (st.LosIndex is decimal li) {<span class="badge badge-light-@(li > 1.2m ? "danger" : "primary") fs-9 ms-1 hp-num" dir="ltr">×@li.ToString("0.00", inv)</span>}</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Ready)
+        {
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["DRG groups"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Entered from the payer's or the ministry's grouper"]</span></h3>
+                <div class="card-toolbar gap-2">
+                    <form class="d-flex gap-2" method="get" action="@Url.Action("Drg")">
+                        <input type="hidden" name="view" value="@view" /><input type="hidden" name="q" value="@q" />
+                        <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                            <input type="text" name="gq" value="@gq" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search a group or ICD-10 prefix"]" /></div>
+                        <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                    </form>
+                    @if (canManage) {<button type="button" class="btn btn-sm btn-primary" data-drg-group="0"><i class="ki-outline ki-plus fs-4"></i>@T["New group"]</button>}
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Groups.Count == 0) {<div class="text-muted fs-7 py-4">@T["No group here."]</div>}
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-7"><th>@T["Code"]</th><th class="min-w-200px">@T["Name"]</th><th>@T["ICD-10 prefixes"]</th><th>@T["Kind"]</th><th>@T["Age"]</th><th>@T["Weight"]</th><th>@T["Mean stay"]</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                        @foreach (var g in Model.Groups)
+                        {
+                            <tr class="@(g.IsActive ? "" : "opacity-50")">
+                                <td class="fw-bold hp-num" dir="ltr">@g.Code</td>
+                                <td class="fw-semibold text-gray-800">@DisplayName.Of(g.Name, g.NameEn)</td>
+                                <td class="fs-7 hp-num" dir="ltr">@g.DxPrefixes</td>
+                                <td><span class="badge badge-light fs-8">@(g.Surgical == true ? T["Surgical"] : g.Surgical == false ? T["Medical"] : T["Either"])</span></td>
+                                <td class="fs-7 hp-num" dir="ltr">@(g.MinAge == null && g.MaxAge == null ? "—" : (g.MinAge?.ToString(inv) ?? "0") + "–" + (g.MaxAge?.ToString(inv) ?? "…"))</td>
+                                <td class="fw-bold hp-num text-primary" dir="ltr">@g.Weight.ToString("0.000", inv)</td>
+                                <td class="hp-num" dir="ltr">@(g.MeanLos?.ToString("0.#", inv) ?? "—")</td>
+                                <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light" data-drg-group="@g.ID" data-g="@(Json.Serialize(new { g.ID, g.Code, g.Name, g.NameEn, g.DxPrefixes, g.Surgical, g.MinAge, g.MaxAge, g.Weight, g.MeanLos, g.IsActive }).ToString())"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    @if (gpages > 1)
+                    {
+                        <ul class="pagination mt-6">
+                            <li class="page-item previous @(gpage <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page, null, gpage - 1)"><i class="previous"></i></a></li>
+                            @for (int n = Math.Max(1, gpage - 3); n <= Math.Min(gpages, gpage + 3); n++) {<li class="page-item @(n == gpage ? "active" : "")"><a class="page-link" href="@Link(page, null, n)">@n</a></li>}
+                            <li class="page-item next @(gpage >= gpages ? "disabled" : "")"><a class="page-link" href="@Link(page, null, gpage + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+        }
+    </div></div>
+</div>
+
+<div class="modal fade" id="drgModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Code the stay"]</h1><div class="text-muted fw-semibold fs-6" data-drg-f="name"></div></div>
+        <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["Principal diagnosis (ICD-10)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="10" placeholder="I21.4" data-drg-f="dx" /></div>
+        <div><label class="fs-6 fw-semibold mb-2">@T["Group"]</label>
+            <select class="form-select form-select-solid" data-drg-f="group"><option value="">@T["Let the grouper choose"]</option>
+                @foreach (var g in Model.Groups.Where(x => x.IsActive)) {<option value="@g.ID">@g.Code · @DisplayName.Of(g.Name, g.NameEn)</option>}</select></div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-drg-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+
+@if (canManage)
+{
+<div class="modal fade" id="drgGroupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["DRG group"]</h1></div>
+        <div class="row g-5">
+            <div class="col-md-4"><label class="required fs-6 fw-semibold mb-2">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-dg="code" /></div>
+            <div class="col-md-8"><label class="required fs-6 fw-semibold mb-2">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" maxlength="200" dir="rtl" data-dg="name" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" maxlength="200" dir="ltr" data-dg="nameEn" /></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["ICD-10 prefixes"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="500" placeholder="I21,I22" data-dg="dxPrefixes" /></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Kind"]</label><select class="form-select form-select-solid" data-dg="surgical"><option value="">@T["Either"]</option><option value="true">@T["Surgical"]</option><option value="false">@T["Medical"]</option></select></div>
+            <div class="col-md-4 col-6"><label class="fs-6 fw-semibold mb-2">@T["From age"]</label><input type="number" min="0" class="form-control form-control-solid hp-num" dir="ltr" data-dg="minAge" /></div>
+            <div class="col-md-4 col-6"><label class="fs-6 fw-semibold mb-2">@T["To age"]</label><input type="number" min="0" class="form-control form-control-solid hp-num" dir="ltr" data-dg="maxAge" /></div>
+            <div class="col-md-4 col-6"><label class="required fs-6 fw-semibold mb-2">@T["Weight"]</label><input type="number" step="0.0001" class="form-control form-control-solid hp-num" dir="ltr" data-dg="weight" /></div>
+            <div class="col-md-4 col-6"><label class="fs-6 fw-semibold mb-2">@T["Mean stay"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-dg="meanLos" /></div>
+            <div class="col-md-4 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-dg="isActive" /><span class="form-check-label fw-semibold">@T["Active"]</span></label></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-dg-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+}
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Insurance/Drg/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value) }, m = document.getElementById('drgModal'), gm = document.getElementById('drgGroupModal'), id = 0, gid = null;
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            function g(k) { return gm.querySelector('[data-dg=' + k + ']'); }
+            function num(el) { return el.value === '' ? null : +el.value; }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-drg],[data-drg-save],[data-drg-group],[data-dg-save]'); if (!t) return;
+                if (t.hasAttribute('data-drg')) {
+                    id = +t.getAttribute('data-drg'); m.querySelector('[data-drg-f=name]').textContent = t.getAttribute('data-name');
+                    m.querySelector('[data-drg-f=dx]').value = t.getAttribute('data-dx') || ''; m.querySelector('[data-drg-f=group]').value = t.getAttribute('data-group') || '';
+                    bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                }
+                if (t.hasAttribute('data-drg-save')) {
+                    var grp = m.querySelector('[data-drg-f=group]').value;
+                    post(id + '/Code', { principalDx: m.querySelector('[data-drg-f=dx]').value, drgId: grp ? +grp : null }).then(after); return;
+                }
+                if (t.hasAttribute('data-drg-group')) {
+                    var d = t.getAttribute('data-g') ? JSON.parse(t.getAttribute('data-g')) : { isActive: true };
+                    gid = d.id || null;
+                    ['code', 'name', 'nameEn', 'dxPrefixes', 'minAge', 'maxAge', 'weight', 'meanLos'].forEach(function (k) { g(k).value = d[k] == null ? '' : d[k]; });
+                    g('surgical').value = d.surgical == null ? '' : String(d.surgical); g('isActive').checked = !!d.isActive;
+                    bootstrap.Modal.getOrCreateInstance(gm).show(); return;
+                }
+                var s = g('surgical').value;
+                post('Groups', { id: gid, code: g('code').value, name: g('name').value, nameEn: g('nameEn').value || null, dxPrefixes: g('dxPrefixes').value,
+                    surgical: s === '' ? null : s === 'true', minAge: num(g('minAge')), maxAge: num(g('maxAge')), weight: num(g('weight')) || 0, meanLos: num(g('meanLos')), isActive: g('isActive').checked }).then(after);
+            });
+        })();
+    </script>
+}

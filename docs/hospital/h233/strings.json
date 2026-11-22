@@ -1,0 +1,75 @@
+{
+ "unit": "H233 - lab ranges, delta, autoverification",
+ "strings": {
+  "Changed beyond the delta limit since {0}": {
+   "ar": "تغيّر بأكثر من حد الفرق منذ القيمة السابقة {0}",
+   "en": "Changed beyond the delta limit since {0}",
+   "fr": "Variation au-delà de la limite delta depuis {0}"
+  },
+  "Released by the autoverification rules: every value in range, no delta change, control in": {
+   "ar": "صدرت وفق قواعد الاعتماد التلقائي: كل القيم ضمن المدى، بلا فرق كبير، وضبط الجودة سليم",
+   "en": "Released by the autoverification rules: every value in range, no delta change, control in",
+   "fr": "Validé automatiquement : toutes les valeurs dans l'intervalle, pas de variation delta, contrôle conforme"
+  },
+  "Auto-verified": {
+   "ar": "اعتماد تلقائي",
+   "en": "Auto-verified",
+   "fr": "Validé automatiquement"
+  },
+  "Flag a change beyond this % from the previous result": {
+   "ar": "نبّه إلى تغيّر يتجاوز هذه النسبة عن النتيجة السابقة",
+   "en": "Flag a change beyond this % from the previous result",
+   "fr": "Signaler une variation au-delà de ce % par rapport au résultat précédent"
+  },
+  "Delta %": {
+   "ar": "حد الفرق ٪",
+   "en": "Delta %",
+   "fr": "Delta %"
+  },
+  "Release a normal value without a second person": {
+   "ar": "إصدار القيمة الطبيعية دون شخص ثانٍ",
+   "en": "Release a normal value without a second person",
+   "fr": "Publier une valeur normale sans seconde personne"
+  },
+  "Auto": {
+   "ar": "تلقائي",
+   "en": "Auto",
+   "fr": "Auto"
+  },
+  "Ranges by age and sex": {
+   "ar": "المدى الطبيعي حسب العمر والجنس",
+   "en": "Ranges by age and sex",
+   "fr": "Intervalles par âge et sexe"
+  },
+  "The most specific range that fits the patient wins: their sex before both, then the narrowest age band. None fits: the analyte's own limits.": {
+   "ar": "يُطبَّق المدى الأدق المطابق للمريض: جنسه قبل الجنسين، ثم أضيق فئة عمرية. وإن لم يطابق شيء: حدود المكوّن الأساسية.",
+   "en": "The most specific range that fits the patient wins: their sex before both, then the narrowest age band. None fits: the analyte's own limits.",
+   "fr": "L'intervalle le plus spécifique qui correspond au patient l'emporte : son sexe avant les deux, puis la tranche d'âge la plus étroite. Aucun : les limites propres du paramètre."
+  },
+  "Age to": {
+   "ar": "العمر إلى",
+   "en": "Age to",
+   "fr": "Âge à"
+  },
+  "The delta limit is 0 to 1000 %": {
+   "ar": "حد الفرق من 0 إلى 1000 ٪",
+   "en": "The delta limit is 0 to 1000 %",
+   "fr": "La limite delta va de 0 à 1000 %"
+  },
+  "The sex is M, F or both": {
+   "ar": "الجنس ذكر أو أنثى أو الجنسان",
+   "en": "The sex is M, F or both",
+   "fr": "Le sexe est H, F ou les deux"
+  },
+  "Enter at least one limit": {
+   "ar": "أدخل حدًا واحدًا على الأقل",
+   "en": "Enter at least one limit",
+   "fr": "Saisissez au moins une limite"
+  },
+  "Reference ranges are not installed yet (hospital_h233_lab_ranges_autoverify.sql).": {
+   "ar": "المدى المرجعي غير مثبت بعد (hospital_h233_lab_ranges_autoverify.sql).",
+   "en": "Reference ranges are not installed yet (hospital_h233_lab_ranges_autoverify.sql).",
+   "fr": "Les intervalles de référence ne sont pas encore installés (hospital_h233_lab_ranges_autoverify.sql)."
+  }
+ }
+}

@@ -101,6 +101,8 @@
             </div>
         }
 
+        @if (ViewBag.Pathways is HospitalErPathwayBoard erBoard) { ViewData["ErRows"] = Model; <partial name="_ErPathways" model="erBoard" /> }
+
         @if (bays.Count == 0)
         {
             <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">

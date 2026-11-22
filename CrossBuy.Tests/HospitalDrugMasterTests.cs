@@ -97,7 +97,7 @@ namespace CrossBuy.Tests
 		}
 
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDrugModel.Configure);
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h133_drug_master.sql");
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h133_drug_master.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h234_med_safety.sql");   // H234 pregnancy, lactation, antimicrobial
 
 		[Fact]
 		public void The_model_names_the_table_its_slice_creates() => HospitalSliceParity.NamesItsTable(Model(), Slice(), typeof(HospitalDrug), "HospitalDrugs");

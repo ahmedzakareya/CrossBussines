@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Every Razor view compiles into this one assembly, and together their literals passed the 16 MB user-string
+         heap (CS8103). Long literals go to the data section instead; behaviour is unchanged. -->
+    <Features>$(Features);experimental-data-section-string-literals</Features>
   </PropertyGroup>
 
   <!-- Stage 1 Batch B: the TestRun configuration is DECLARED, and defines DEBUG.

@@ -1,0 +1,180 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDenialQueue
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H240 — the denial work-queue: each rejected claim line with its root cause, owner (with their photo) and appeal
+    deadline; the denials by cause (amount, overturn rate) and the open amount by payer. Resubmission is the claim
+    batch's own action, reused here. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Denial work-queue"].Value;
+    string q = ViewBag.Q as string ?? "", view = ViewBag.View as string ?? "", cause = ViewBag.Cause as string ?? ""; int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages;
+    string Link(int p, string? v = null, string? c = null) => Url.Action("Denials", new { q, view = v ?? view, cause = c ?? cause, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v.ToString("#,0.000", inv);
+    string Tone(string s) => s switch { HospitalDenialStatus.Open => "danger", HospitalDenialStatus.Working => "info", _ => "primary" };
+    decimal maxCause = Model.ByCause.Count == 0 ? 1 : Math.Max(1, Model.ByCause.Max(c => c.Amount));
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Denial work-queue"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Insurance")" class="text-muted text-hover-primary">@T["Insurance"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Denial work-queue"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalDenialService.NoTables]</div></div>
+        }
+        <div class="row g-5 mb-5">
+            @foreach (var (v, num, label, tone) in new[] { ("", Model.Open.ToString(inv), T["Open denials"].Value, "primary"), ("overdue", Model.Overdue.ToString(inv), T["Past the appeal deadline"].Value, Model.Overdue > 0 ? "danger" : "primary"),
+                ("mine", "", T["Mine"].Value, "primary"), ("closed", "", T["Closed"].Value, "primary") })
+            {
+                <div class="col-6 col-xl-3"><a href="@Link(1, v, "")" class="card card-flush h-100 @(view == v ? "border border-primary" : "") text-hover-primary"><div class="card-body d-flex flex-column justify-content-between py-6">
+                    @if (num != "") {<span class="fs-2hx fw-bold text-@(tone == "danger" ? "danger" : "gray-900") hp-num">@num</span>} else {<i class="ki-outline ki-@(v == "mine" ? "user" : "archive") fs-2hx text-gray-400"></i>}
+                    <span class="text-gray-600 fw-semibold fs-6">@label@if (v == "") {<span class="text-muted fs-7 d-block hp-num" dir="ltr" style="text-align:start">@Money(Model.OpenAmount)</span>}</span>
+                </div></a></div>
+            }
+        </div>
+        <div class="row g-5">
+            <div class="col-xl-8">
+                <div class="card card-flush">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Denied lines"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Nearest deadline first; the root cause is suggested from the payer's code and reason"]</span></h3>
+                        <form class="card-toolbar gap-2" method="get" action="@Url.Action("Denials")">
+                            <input type="hidden" name="view" value="@view" /><input type="hidden" name="cause" value="@cause" />
+                            <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                                <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-225px ps-12" placeholder="@T["Search a patient, code, batch or payer"]" /></div>
+                            <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                        </form>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (cause != "") {<div class="mb-4"><a href="@Link(1, null, "")" class="badge badge-light-primary fs-7">@T["dc:" + cause] <i class="ki-outline ki-cross fs-7 ms-1"></i></a></div>}
+                        @if (Model.Rows.Count == 0)
+                        {
+                            <div class="text-center py-15"><i class="ki-outline ki-shield-tick fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No denial here."]</div></div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted fs-7"><th class="min-w-175px">@T["Patient"]</th><th class="min-w-175px">@T["Line"]</th><th class="min-w-150px">@T["Payer's reason"]</th><th>@T["Root cause"]</th><th>@T["Deadline"]</th><th>@T["Owner"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var r in Model.Rows)
+                                {
+                                    var active = HospitalDenialStatus.Active(r.Work.Status);
+                                    <tr>
+                                        <td><div class="d-flex align-items-center gap-3">@HospitalUi.Avatar(r.Photo, DisplayName.Of(r.PatientName, r.PatientNameEn), 35)<div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.Work.PatientId })" class="text-gray-900 fw-bold text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a>
+                                            <span class="text-muted fs-8">@DisplayName.Of(r.Payer, r.PayerEn) · <a href="@Url.Action("ClaimBatch", new { id = r.BatchId })" class="text-muted text-hover-primary hp-num" dir="ltr">@r.BatchNo</a></span></div></div></td>
+                                        <td><div class="fw-bold text-gray-800 fs-7">@DisplayName.Of(r.Line.Description, r.Line.DescriptionEn)</div><div class="text-muted fs-8 hp-num" dir="ltr">@r.Line.Code · @Money(r.Line.InsurerAmount)</div></td>
+                                        <td class="fs-7"><span class="badge badge-light fs-8 hp-num" dir="ltr">@r.Line.RejectCode</span> <span class="text-gray-700" dir="auto">@r.Line.RejectReason</span>@if (r.Work.Note != null) {<div class="text-muted fs-8 mt-1" dir="auto">@r.Work.Note</div>}</td>
+                                        <td><span class="badge badge-light-primary fs-8">@T["dc:" + r.Work.RootCause]</span></td>
+                                        <td>@if (active) {<span class="fw-bold fs-7 hp-num @(r.Overdue ? "text-danger" : "text-gray-800")" dir="ltr">@r.Work.DueDate.ToString("dd/MM/yyyy", inv)</span>}
+                                            <div><span class="badge badge-light-@Tone(r.Work.Status) fs-8">@T["ds:" + r.Work.Status]</span>@if (r.Paid) {<span class="badge badge-light-primary fs-8 ms-1">@T["Paid on appeal"]</span>}</div></td>
+                                        <td>@if (r.Owner is { } o) {<span title="@DisplayName.Of(o.Name ?? "", o.NameEn)" data-bs-toggle="tooltip">@HospitalUi.Avatar(o.Photo, DisplayName.Of(o.Name ?? "", o.NameEn), 30)</span>} else {<span class="text-muted fs-8">—</span>}</td>
+                                        <td class="text-end text-nowrap">@if (active)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-icon btn-light" title="@T["Work it"]" data-bs-toggle="tooltip" data-den="@r.Work.ID" data-cause="@r.Work.RootCause" data-due="@r.Work.DueDate.ToString("yyyy-MM-dd", inv)" data-note="@r.Work.Note"><i class="ki-outline ki-pencil fs-3"></i></button>
+                                                @if (r.Line.Status == HospitalClaimLineStatus.Rejected) {<button type="button" class="btn btn-sm btn-icon btn-light-primary ms-1" title="@T["Resubmit"]" data-bs-toggle="tooltip" data-den-resubmit="@r.Line.ID" data-ask="@string.Format(T["Resubmit {0} in this month's batch: write the justification the payer will read."].Value, DisplayName.Of(r.Line.Description, r.Line.DescriptionEn))"><i class="ki-outline ki-arrow-circle-right fs-3"></i></button>}
+                                            }</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                            @if (pages > 1)
+                            {
+                                <ul class="pagination mt-6">
+                                    <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                                    @for (int n = Math.Max(1, page - 3); n <= Math.Min(pages, page + 3); n++) {<li class="page-item @(n == page ? "active" : "")"><a class="page-link" href="@Link(n)">@n</a></li>}
+                                    <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                                </ul>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Root causes"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Amount denied, and how many closed items were paid on appeal"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.ByCause.Count == 0) {<div class="text-muted fs-7">@T["No denial yet."]</div>}
+                        @foreach (var c in Model.ByCause)
+                        {
+                            <a href="@Link(1, view, c.Cause)" class="d-block py-2 text-hover-primary">
+                                <div class="d-flex justify-content-between mb-1"><span class="fw-bold text-gray-800 fs-7">@T["dc:" + c.Cause] <span class="text-muted hp-num">(@c.Count)</span></span>
+                                    <span class="fs-7 hp-num text-gray-700" dir="ltr">@Money(c.Amount)@if (c.OverturnPct is decimal op) {<span class="text-primary ms-2">↺ @op.ToString("0", inv)%</span>}</span></div>
+                                <div class="progress h-6px bg-light"><div class="progress-bar bg-danger" style="width:@((c.Amount * 100m / maxCause).ToString("0", inv))%"></div></div>
+                            </a>
+                        }
+                    </div>
+                </div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Open by payer"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.ByPayer.Count == 0) {<div class="text-muted fs-7">@T["No open denial."]</div>}
+                        @foreach (var p in Model.ByPayer)
+                        {
+                            <div class="d-flex justify-content-between py-2 border-bottom border-gray-200 border-bottom-dashed"><span class="fw-bold text-gray-800 fs-7">@DisplayName.Of(p.Payer, p.PayerEn) <span class="text-muted hp-num">(@p.Count)</span></span><span class="fs-7 hp-num" dir="ltr">@Money(p.Amount)</span></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="denModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Work the denial"]</h1></div>
+        <div class="row g-5">
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Root cause"]</label><select class="form-select form-select-solid" data-den-f="rootCause">@foreach (var c in HospitalDenialCause.All) {<option value="@c">@T["dc:" + c]</option>}</select></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Deadline"]</label><input type="date" class="form-control form-control-solid" data-den-f="dueDate" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Status"]</label><select class="form-select form-select-solid" data-den-f="status">
+                @foreach (var s in new[] { HospitalDenialStatus.Open, HospitalDenialStatus.Working, HospitalDenialStatus.NotPursued }) {<option value="@s">@T["ds:" + s]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="500" dir="auto" data-den-f="note"></textarea></div>
+            <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-den-f="take" /><span class="form-check-label fw-semibold text-gray-700">@T["I take this item"]</span></label></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-den-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, m = document.getElementById('denModal'), id = 0;
+            var urls = { den: @Json.Serialize(Url.Content("~/Hospital/Insurance/Denials/")), line: @Json.Serialize(Url.Content("~/Hospital/Insurance/Line/")) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function f(k) { return m.querySelector('[data-den-f=' + k + ']'); }
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-den],[data-den-save],[data-den-resubmit]'); if (!t) return;
+                if (t.hasAttribute('data-den')) {
+                    id = +t.getAttribute('data-den'); f('rootCause').value = t.getAttribute('data-cause'); f('dueDate').value = t.getAttribute('data-due');
+                    f('note').value = t.getAttribute('data-note') || ''; f('status').value = 'Working'; f('take').checked = false;
+                    bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                }
+                if (t.hasAttribute('data-den-resubmit')) {
+                    cbPrompt(t.getAttribute('data-ask'), { kind: 'primary', textarea: true }).then(function (v) { if (v) post(urls.line + t.getAttribute('data-den-resubmit') + '/Resubmit', { justification: v }).then(after); });
+                    return;
+                }
+                t.disabled = true;
+                post(urls.den + id, { rootCause: f('rootCause').value, status: f('status').value, dueDate: f('dueDate').value || null, note: f('note').value, take: f('take').checked })
+                    .then(function (res) { t.disabled = false; after(res); });
+            });
+        })();
+    </script>
+}

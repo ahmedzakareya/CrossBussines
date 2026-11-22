@@ -50,6 +50,19 @@
                     </a></div>
                 }
             </div>
+            @if (ViewBag.OverrideStats is CrossBuy.BL.Hospital.HospitalOverrideStats st && st.Total > 0)
+            {
+                @* H236: what the alerts gone past say about the alerts — the committee's view *@
+                <div class="row g-5 mb-5">
+                    <div class="col-xl-4"><div class="card card-flush h-100"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["By kind"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} overrides in {1} days", st.Total, st.Days]</span></h3></div>
+                        <div class="card-body pt-2">@foreach (var (k, n) in st.ByKind) {<div class="d-flex flex-stack py-2 border-bottom border-gray-200 border-bottom-dashed"><span class="fw-semibold text-gray-800">@T["alertKind:" + k]</span><span class="badge badge-light-danger fs-7 hp-num">@n</span></div>}
+                            <div class="d-flex flex-wrap gap-2 mt-4">@foreach (var (mo, n) in st.ByMonth) {<span class="badge badge-light fs-8 hp-num" dir="ltr">@mo · @n</span>}</div></div></div></div>
+                    <div class="col-xl-5"><div class="card card-flush h-100"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Most overridden alerts"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Needed and ignored, or noise to tune: the committee decides"]</span></h3></div>
+                        <div class="card-body pt-2">@foreach (var (d, n) in st.TopAlerts) {<div class="d-flex flex-stack py-2 border-bottom border-gray-200 border-bottom-dashed gap-3"><bdi class="fs-7 text-gray-800" dir="ltr">@d</bdi><span class="badge badge-light-info fs-7 hp-num">@n</span></div>}</div></div></div>
+                    <div class="col-xl-3"><div class="card card-flush h-100"><div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Who overrides most"]</span></h3></div>
+                        <div class="card-body pt-2">@foreach (var (w, n) in st.TopPrescribers) {<div class="d-flex align-items-center gap-3 py-2">@CrossBuy.BL.Hospital.HospitalUi.Avatar(w.Photo, CrossBuy.BL.DisplayName.Of(w.Name ?? "—", w.NameEn), 30)<span class="fw-semibold text-gray-800 flex-grow-1">@CrossBuy.BL.DisplayName.Of(w.Name ?? "—", w.NameEn)</span><span class="badge badge-light fs-7 hp-num">@n</span></div>}</div></div></div>
+                </div>
+            }
             <div class="card card-flush">
                 <div class="card-header pt-5 flex-wrap gap-3">
                     <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@(tab == "limits" ? T["Dose limits"] : tab == "overrides" ? T["Alerts gone past"] : T["Interactions"])</span>

@@ -47,6 +47,9 @@ namespace CrossBuy.BL.Hospital
 	}
 
 	public sealed record HospitalOverrideRow(HospitalAlertOverride Row, string Patient, string PatientEn, string Mrn, string? By);
+	/// H236: what the alerts gone past say about the alerts — by kind, the most overridden, and who overrides most.
+	public sealed record HospitalOverrideStats(int Days, int Total, IReadOnlyList<(string Kind, int Count)> ByKind, IReadOnlyList<(string Detail, int Count)> TopAlerts,
+		IReadOnlyList<(HospitalFace Who, int Count)> TopPrescribers, IReadOnlyList<(string Month, int Count)> ByMonth);
 
 	public static class HospitalDrugSafetyRules
 	{
@@ -254,6 +257,9 @@ namespace CrossBuy.BL.Hospital
 						alerts.Add(new(HospitalAlertKind.Dose, HospitalInteractionSeverity.Moderate, false, "{0} with eGFR {1}: review the dose below {2}",
 							new[] { drug, HospitalDrugSafetyRules.Num(egfr.Value), HospitalDrugSafetyRules.Num(limit.RenalReviewBelow!.Value) }, null, null, $"{limit.Drug} renal review {egfr.Value} < {limit.RenalReviewBelow}"));
 			}
+			// ---- H234: duplicate therapy, pregnancy / breastfeeding, the dose for the patient's weight ----
+			await MoreChecksAsync(ctx, admissionId, drug, dose, route, running, alerts, ct);
+
 			// ---- WHAT THIS CHECK COULD NOT CHECK --------------------------------------------------
 			//
 			// SILENCE USED TO MEAN TWO OPPOSITE THINGS. An empty list came back both when the pair
@@ -309,6 +315,64 @@ namespace CrossBuy.BL.Hospital
 					new[] { drug, route }, null, null, "limits-unknown-drug"));
 
 			return alerts;
+		}
+
+		/// H234: the checks the drug master and the patient's record make possible. A drug master that is not installed
+		/// yet simply adds nothing here (the unchecked notices below still speak).
+		private async Task MoreChecksAsync(BusinessContext ctx, int admissionId, string drug, string? dose, string route, IReadOnlyList<string> running, List<HospitalDrugAlert> alerts, CancellationToken ct)
+		{
+			List<HospitalDrugFacts> facts;
+			try
+			{
+				facts = (await _db.Set<HospitalDrug>().AsNoTracking().Where(d => d.CompanyId == ctx.CompanyId)
+					.Select(d => new { d.GenericName, d.GenericNameEn, d.Atc, d.PregnancyRisk, d.LactationRisk, d.IsAntimicrobial, d.FormularyStatus }).ToListAsync(ct))
+					.Select(d => new HospitalDrugFacts(d.GenericName, d.GenericNameEn, d.Atc, d.PregnancyRisk, d.LactationRisk, d.IsAntimicrobial, d.FormularyStatus)).ToList();
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return; }
+
+			foreach (var other in HospitalMedSafetyRules.Duplicates(drug, running, facts))
+				alerts.Add(new(HospitalAlertKind.Duplicate, HospitalInteractionSeverity.Major, true, "{0} duplicates {1}: the same therapeutic group", new[] { drug, other }, null, null, $"duplicate {drug} / {other}"));
+
+			var me = HospitalMedSafetyRules.Find(drug, facts);
+			var patientId = await _db.Set<HospitalAdmission>().AsNoTracking().Where(a => a.ID == admissionId && a.CompanyId == ctx.CompanyId).Select(a => a.PatientId).FirstOrDefaultAsync(ct);
+			if (me != null && (me.PregnancyRisk != null || me.LactationRisk != null) && patientId > 0)
+			{
+				bool pregnant = false; DateTime? lastBirth = null;
+				try { pregnant = await _db.Set<HospitalPregnancy>().AsNoTracking().AnyAsync(p => p.CompanyId == ctx.CompanyId && p.PatientId == patientId && p.Status == HospitalPregnancyStatus.Active, ct); }
+				catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { }
+				try { lastBirth = await _db.Set<HospitalBirth>().AsNoTracking().Where(b => b.CompanyId == ctx.CompanyId && b.MotherPatientId == patientId).MaxAsync(b => (DateTime?)b.BornAt, ct); }
+				catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { }
+				if (pregnant && me.PregnancyRisk != null)
+					alerts.Add(new(HospitalAlertKind.Pregnancy, me.PregnancyRisk == HospitalDrugRisk.Avoid ? HospitalInteractionSeverity.Major : HospitalInteractionSeverity.Moderate, me.PregnancyRisk == HospitalDrugRisk.Avoid,
+						me.PregnancyRisk == HospitalDrugRisk.Avoid ? "{0} is to be avoided in pregnancy, and the patient is pregnant" : "{0} needs caution in pregnancy, and the patient is pregnant", new[] { drug }, null, null, $"pregnancy {me.PregnancyRisk} {drug}"));
+				else if (HospitalMedSafetyRules.Lactating(lastBirth, DateTime.UtcNow) && me.LactationRisk != null)
+					alerts.Add(new(HospitalAlertKind.Pregnancy, me.LactationRisk == HospitalDrugRisk.Avoid ? HospitalInteractionSeverity.Major : HospitalInteractionSeverity.Moderate, me.LactationRisk == HospitalDrugRisk.Avoid,
+						me.LactationRisk == HospitalDrugRisk.Avoid ? "{0} is to be avoided in breastfeeding, and the patient gave birth in the last six months" : "{0} needs caution in breastfeeding, and the patient gave birth in the last six months", new[] { drug }, null, null, $"lactation {me.LactationRisk} {drug}"));
+			}
+
+			// the dose for the weight, every age: a per-kg limit for this medicine and route
+			var limits = (await KbAsync(_db, ctx.CompanyId, ct)).Limits.Where(l => l.PerKgMg != null && HospitalDrugSafetyRules.Mentions(drug, l.Drug) && (l.Route == null || string.Equals(l.Route, route, StringComparison.OrdinalIgnoreCase))).ToList();
+			if (limits.Count == 0 || patientId <= 0) return;
+			var parsed = HospitalDrugSafetyRules.ParseDose(dose);
+			decimal? mg = parsed is { } p0 ? HospitalDrugSafetyRules.Convert(p0.Amount, p0.Unit, HospitalDoseUnit.Mg) : null;
+			decimal? kg = null;
+			try
+			{
+				var wc = await _db.Set<HospitalConcept>().AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId && c.Code == HospitalGrowthIndicator.Concept[HospitalGrowthIndicator.Weight]).Select(c => (int?)c.ID).FirstOrDefaultAsync(ct);
+				if (wc is int wid)
+					kg = await _db.Set<HospitalClinicalObservation>().AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.PatientId == patientId && o.ConceptId == wid && o.Value != null && o.ObservedAt >= DateTime.UtcNow.AddDays(-HospitalMedSafetyRules.WeightDays))
+						.OrderByDescending(o => o.ObservedAt).Select(o => o.Value).FirstOrDefaultAsync(ct);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { }
+			if (kg is not > 0)
+			{
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false, "{0} is dosed by weight and no weight is recorded in the last 30 days, so the dose for the weight was not checked", new[] { drug }, null, null, "weight-unknown"));
+				return;
+			}
+			foreach (var l in limits)
+				if (HospitalMedSafetyRules.PerKg(mg, l.PerKgMg, kg) is { Over: true } hit)
+					alerts.Add(new(HospitalAlertKind.Dose, HospitalInteractionSeverity.Major, true, "{0}: {1} mg is above {2} mg for {3} kg ({4} mg/kg)",
+						new[] { drug, HospitalDrugSafetyRules.Num(mg!.Value), HospitalDrugSafetyRules.Num(hit.Max), HospitalDrugSafetyRules.Num(kg.Value), HospitalDrugSafetyRules.Num(l.PerKgMg!.Value) }, null, null, $"{l.Drug} per-kg {mg} > {hit.Max}"));
 		}
 
 		/// Keeps the stopping alerts a doctor went past with their reason.
@@ -399,6 +463,25 @@ namespace CrossBuy.BL.Hospital
 				return (await rows.OrderBy(x => x.Drug).ThenBy(x => x.Route).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct), total);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (new(), 0); }
+		}
+
+		/// H236: the governance view of overrides. An alert gone past again and again is either needed and ignored, or
+		/// noise to tune — the committee reads it here; the reasons stay in the list below.
+		public async Task<HospitalOverrideStats?> OverrideStatsAsync(BusinessContext ctx, int days, DateTime nowUtc, CancellationToken ct = default)
+		{
+			try
+			{
+				var from = nowUtc.AddDays(-days);
+				var rows = await _db.Set<HospitalAlertOverride>().AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.At >= from)
+					.Select(o => new { o.Kind, o.Detail, o.ByEmployeeId, o.At }).ToListAsync(ct);
+				var byKind = rows.GroupBy(r => r.Kind).Select(g => (g.Key, g.Count())).OrderByDescending(x => x.Item2).ToList();
+				var top = rows.GroupBy(r => r.Detail).Select(g => (g.Key, g.Count())).OrderByDescending(x => x.Item2).ThenBy(x => x.Key).Take(8).ToList();
+				var who = rows.Where(r => r.ByEmployeeId != null).GroupBy(r => r.ByEmployeeId!.Value).Select(g => (g.Key, g.Count())).OrderByDescending(x => x.Item2).Take(5).ToList();
+				var faces = await HospitalFaces.OfEmployeesAsync(_db, ctx.CompanyId, who.Select(w => (int?)w.Key), ct);
+				var months = rows.GroupBy(r => r.At.ToLocalTime().ToString("yyyy-MM")).OrderBy(g => g.Key).Select(g => (g.Key, g.Count())).ToList();
+				return new HospitalOverrideStats(days, rows.Count, byKind, top, who.Select(w => (faces.GetValueOrDefault(w.Key) ?? new HospitalFace(null, null, null), w.Item2)).ToList(), months);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return null; }
 		}
 
 		public async Task<(List<HospitalOverrideRow> Rows, int Total)> OverridesAsync(BusinessContext ctx, string? q, int page, int pageSize, CancellationToken ct = default)

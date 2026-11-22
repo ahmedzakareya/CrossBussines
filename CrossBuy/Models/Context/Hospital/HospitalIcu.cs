@@ -50,6 +50,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalIcuCareModel.Configure(b);   // H238
 			b.Entity<HospitalIcuObservation>(e =>
 			{
 				e.ToTable("HospitalIcuObservations");   // no DbSet: each names its table

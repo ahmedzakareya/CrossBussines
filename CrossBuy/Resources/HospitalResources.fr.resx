@@ -9790,4 +9790,343 @@
   <data name="qc:Rejected" xml:space="preserve"><value>Rejetée</value></data>
   <data name="qc:Warning" xml:space="preserve"><value>Avertissement</value></data>
   <data name="{0} controls out" xml:space="preserve"><value>{0} contrôles hors limites</value></data>
+  <data name="Age to" xml:space="preserve"><value>Âge à</value></data>
+  <data name="Auto" xml:space="preserve"><value>Auto</value></data>
+  <data name="Auto-verified" xml:space="preserve"><value>Validé automatiquement</value></data>
+  <data name="Changed beyond the delta limit since {0}" xml:space="preserve"><value>Variation au-delà de la limite delta depuis {0}</value></data>
+  <data name="Delta %" xml:space="preserve"><value>Delta %</value></data>
+  <data name="Enter at least one limit" xml:space="preserve"><value>Saisissez au moins une limite</value></data>
+  <data name="Flag a change beyond this % from the previous result" xml:space="preserve"><value>Signaler une variation au-delà de ce % par rapport au résultat précédent</value></data>
+  <data name="Ranges by age and sex" xml:space="preserve"><value>Intervalles par âge et sexe</value></data>
+  <data name="Reference ranges are not installed yet (hospital_h233_lab_ranges_autoverify.sql)." xml:space="preserve"><value>Les intervalles de référence ne sont pas encore installés (hospital_h233_lab_ranges_autoverify.sql).</value></data>
+  <data name="Release a normal value without a second person" xml:space="preserve"><value>Publier une valeur normale sans seconde personne</value></data>
+  <data name="Released by the autoverification rules: every value in range, no delta change, control in" xml:space="preserve"><value>Validé automatiquement : toutes les valeurs dans l'intervalle, pas de variation delta, contrôle conforme</value></data>
+  <data name="The delta limit is 0 to 1000 %" xml:space="preserve"><value>La limite delta va de 0 à 1000 %</value></data>
+  <data name="The most specific range that fits the patient wins: their sex before both, then the narrowest age band. None fits: the analyte's own limits." xml:space="preserve"><value>L'intervalle le plus spécifique qui correspond au patient l'emporte : son sexe avant les deux, puis la tranche d'âge la plus étroite. Aucun : les limites propres du paramètre.</value></data>
+  <data name="The sex is M, F or both" xml:space="preserve"><value>Le sexe est H, F ou les deux</value></data>
+  <data name="Antimicrobial (stewardship)" xml:space="preserve"><value>Antimicrobien (bon usage)</value></data>
+  <data name="In breastfeeding" xml:space="preserve"><value>Pendant l'allaitement</value></data>
+  <data name="In pregnancy" xml:space="preserve"><value>Pendant la grossesse</value></data>
+  <data name="No concern recorded" xml:space="preserve"><value>Aucune réserve enregistrée</value></data>
+  <data name="risk:Avoid" xml:space="preserve"><value>À éviter</value></data>
+  <data name="risk:Caution" xml:space="preserve"><value>Avec prudence</value></data>
+  <data name="{0} duplicates {1}: the same therapeutic group" xml:space="preserve"><value>{0} fait double emploi avec {1} : même groupe thérapeutique</value></data>
+  <data name="{0} is dosed by weight and no weight is recorded in the last 30 days, so the dose for the weight was not checked" xml:space="preserve"><value>{0} se dose au poids et aucun poids n'est enregistré depuis 30 jours : la dose au poids n'a pas été vérifiée</value></data>
+  <data name="{0} is to be avoided in breastfeeding, and the patient gave birth in the last six months" xml:space="preserve"><value>{0} est à éviter pendant l'allaitement, et la patiente a accouché il y a moins de six mois</value></data>
+  <data name="{0} is to be avoided in pregnancy, and the patient is pregnant" xml:space="preserve"><value>{0} est à éviter pendant la grossesse, et la patiente est enceinte</value></data>
+  <data name="{0} needs caution in breastfeeding, and the patient gave birth in the last six months" xml:space="preserve"><value>{0} demande de la prudence pendant l'allaitement, et la patiente a accouché il y a moins de six mois</value></data>
+  <data name="{0} needs caution in pregnancy, and the patient is pregnant" xml:space="preserve"><value>{0} demande de la prudence pendant la grossesse, et la patiente est enceinte</value></data>
+  <data name="{0}: {1} mg is above {2} mg for {3} kg ({4} mg/kg)" xml:space="preserve"><value>{0} : {1} mg dépasse {2} mg pour {3} kg ({4} mg/kg)</value></data>
+  <data name="alertKind:Duplicate" xml:space="preserve"><value>Double emploi</value></data>
+  <data name="alertKind:Pregnancy" xml:space="preserve"><value>Grossesse ou allaitement</value></data>
+  <data name="A restricted agent needs approval within 24 h; every agent gets its time-out at 48–72 h." xml:space="preserve"><value>Un agent restreint doit être approuvé sous 24 h ; chaque agent est réévalué entre 48 et 72 h.</value></data>
+  <data name="Antimicrobial stewardship" xml:space="preserve"><value>Bon usage des antimicrobiens</value></data>
+  <data name="Approve or reject" xml:space="preserve"><value>Approuver ou refuser</value></data>
+  <data name="Days of therapy per 1 000 patient-days" xml:space="preserve"><value>Jours de traitement pour 1 000 journées-patients</value></data>
+  <data name="No antimicrobial given in the period." xml:space="preserve"><value>Aucun antimicrobien administré sur la période.</value></data>
+  <data name="No running antimicrobial here." xml:space="preserve"><value>Aucun antimicrobien en cours ici.</value></data>
+  <data name="On therapy" xml:space="preserve"><value>Sous traitement</value></data>
+  <data name="Only a restricted antimicrobial needs approval" xml:space="preserve"><value>Seul un antimicrobien restreint nécessite une approbation</value></data>
+  <data name="Restricted" xml:space="preserve"><value>Restreint</value></data>
+  <data name="Running antimicrobials" xml:space="preserve"><value>Antimicrobiens en cours</value></data>
+  <data name="Search a patient or medicine" xml:space="preserve"><value>Rechercher un patient ou un médicament</value></data>
+  <data name="Stewardship is not installed yet (hospital_h235_stewardship.sql)." xml:space="preserve"><value>Le bon usage n'est pas encore installé (hospital_h235_stewardship.sql).</value></data>
+  <data name="Stop stops the order on the ward at once." xml:space="preserve"><value>Arrêter arrête la prescription au service immédiatement.</value></data>
+  <data name="The note is 500 characters at most" xml:space="preserve"><value>La note compte 500 caractères au plus</value></data>
+  <data name="This medicine is not marked as an antimicrobial" xml:space="preserve"><value>Ce médicament n'est pas marqué comme antimicrobien</value></data>
+  <data name="Time-out" xml:space="preserve"><value>Réévaluation</value></data>
+  <data name="Use in the last 30 days" xml:space="preserve"><value>Consommation des 30 derniers jours</value></data>
+  <data name="abx:ApprovalOverdue" xml:space="preserve"><value>Approbation en retard</value></data>
+  <data name="abx:AwaitingApproval" xml:space="preserve"><value>En attente d'approbation</value></data>
+  <data name="abx:Early" xml:space="preserve"><value>Dans ses 48 premières heures</value></data>
+  <data name="abx:RejectedRunning" xml:space="preserve"><value>Refusé mais toujours en cours</value></data>
+  <data name="abx:Reviewed" xml:space="preserve"><value>Réévalué</value></data>
+  <data name="abx:TimeOutDue" xml:space="preserve"><value>Réévaluation due</value></data>
+  <data name="abx:TimeOutOverdue" xml:space="preserve"><value>Réévaluation en retard</value></data>
+  <data name="abxd:Approved" xml:space="preserve"><value>Approuvé</value></data>
+  <data name="abxd:Continue" xml:space="preserve"><value>Poursuivre</value></data>
+  <data name="abxd:IvToPo" xml:space="preserve"><value>Relais IV vers oral</value></data>
+  <data name="abxd:Narrow" xml:space="preserve"><value>Restreindre le spectre</value></data>
+  <data name="abxd:Rejected" xml:space="preserve"><value>Refusé</value></data>
+  <data name="abxd:Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="d" xml:space="preserve"><value>j</value></data>
+  <data name="By kind" xml:space="preserve"><value>Par type</value></data>
+  <data name="Most overridden alerts" xml:space="preserve"><value>Alertes les plus outrepassées</value></data>
+  <data name="Needed and ignored, or noise to tune: the committee decides" xml:space="preserve"><value>Nécessaire et ignorée, ou bruit à régler : le comité décide</value></data>
+  <data name="Who overrides most" xml:space="preserve"><value>Qui outrepasse le plus</value></data>
+  <data name="{0} overrides in {1} days" xml:space="preserve"><value>{0} passages outre en {1} jours</value></data>
+  <data name="Ambulance / unit" xml:space="preserve"><value>Ambulance / unité</value></data>
+  <data name="Ambulances on the way" xml:space="preserve"><value>Ambulances en route</value></data>
+  <data name="Cancel this pre-alert?" xml:space="preserve"><value>Annuler cette pré-alerte ?</value></data>
+  <data name="Choose the pathway" xml:space="preserve"><value>Choisissez la filière</value></data>
+  <data name="Choose the patient and the pathway" xml:space="preserve"><value>Choisissez le patient et la filière</value></data>
+  <data name="Close the pathway" xml:space="preserve"><value>Clôturer la filière</value></data>
+  <data name="Close this pathway?" xml:space="preserve"><value>Clôturer cette filière ?</value></data>
+  <data name="Done now" xml:space="preserve"><value>Fait maintenant</value></data>
+  <data name="ESI is 1 to 5" xml:space="preserve"><value>L'ESI va de 1 à 5</value></data>
+  <data name="Each step against its target from the door" xml:space="preserve"><value>Chaque étape face à son objectif depuis l'arrivée</value></data>
+  <data name="Expected at" xml:space="preserve"><value>Arrivée prévue</value></data>
+  <data name="Its clock runs from the patient's arrival at the door." xml:space="preserve"><value>Son chronomètre part de l'arrivée du patient.</value></data>
+  <data name="No ambulance expected." xml:space="preserve"><value>Aucune ambulance attendue.</value></data>
+  <data name="No pathway running." xml:space="preserve"><value>Aucune filière en cours.</value></data>
+  <data name="Not indicated" xml:space="preserve"><value>Non indiqué</value></data>
+  <data name="Not indicated — why?" xml:space="preserve"><value>Non indiqué — pourquoi ?</value></data>
+  <data name="Pathway" xml:space="preserve"><value>Filière</value></data>
+  <data name="Pre-alert" xml:space="preserve"><value>Pré-alerte</value></data>
+  <data name="Record {0} as done now?" xml:space="preserve"><value>Enregistrer « {0} » comme fait maintenant ?</value></data>
+  <data name="Start a pathway" xml:space="preserve"><value>Démarrer une filière</value></data>
+  <data name="The ambulance's call before the patient is at the door." xml:space="preserve"><value>L'appel de l'ambulance avant l'arrivée du patient.</value></data>
+  <data name="The emergency pathways are not installed yet (hospital_h237_er_pathways.sql)." xml:space="preserve"><value>Les filières d'urgence ne sont pas encore installées (hospital_h237_er_pathways.sql).</value></data>
+  <data name="The expected time is within the next 12 hours" xml:space="preserve"><value>L'heure prévue est dans les 12 prochaines heures</value></data>
+  <data name="The pathway starts at the real door time" xml:space="preserve"><value>La filière démarre à l'heure réelle d'arrivée</value></data>
+  <data name="This ambulance was already received or cancelled" xml:space="preserve"><value>Cette ambulance a déjà été reçue ou annulée</value></data>
+  <data name="This pathway is already active for the patient" xml:space="preserve"><value>Cette filière est déjà active pour ce patient</value></data>
+  <data name="This pathway is closed" xml:space="preserve"><value>Cette filière est clôturée</value></data>
+  <data name="This step is already recorded" xml:space="preserve"><value>Cette étape est déjà enregistrée</value></data>
+  <data name="Time-critical pathways" xml:space="preserve"><value>Filières à délai critique</value></data>
+  <data name="Write the complaint (300 characters at most)" xml:space="preserve"><value>Saisissez le motif (300 caractères au plus)</value></data>
+  <data name="Write why it is not indicated" xml:space="preserve"><value>Indiquez pourquoi ce n'est pas indiqué</value></data>
+  <data name="path:Sepsis" xml:space="preserve"><value>Filière sepsis</value></data>
+  <data name="path:Stemi" xml:space="preserve"><value>Filière SCA ST+</value></data>
+  <data name="path:Stroke" xml:space="preserve"><value>Filière AVC</value></data>
+  <data name="path:Trauma" xml:space="preserve"><value>Filière traumatologie</value></data>
+  <data name="A value is outside what can be measured" xml:space="preserve"><value>Une valeur est hors des limites mesurables</value></data>
+  <data name="Acute renal failure (creatinine counts double)" xml:space="preserve"><value>Insuffisance rénale aiguë (créatinine comptée double)</value></data>
+  <data name="Admission" xml:space="preserve"><value>Admission</value></data>
+  <data name="Approximate hospital mortality for the score band (Knaus 1985)" xml:space="preserve"><value>Mortalité hospitalière approximative pour cette tranche (Knaus 1985)</value></data>
+  <data name="Bundle complete" xml:space="preserve"><value>Bundle complet</value></data>
+  <data name="Bundle not complete" xml:space="preserve"><value>Bundle incomplet</value></data>
+  <data name="Calculate and save" xml:space="preserve"><value>Calculer et enregistrer</value></data>
+  <data name="Choose each part of the Glasgow scale" xml:space="preserve"><value>Choisissez chaque composante de l'échelle de Glasgow</value></data>
+  <data name="Choose the dose unit" xml:space="preserve"><value>Choisissez l'unité de dose</value></data>
+  <data name="Continuous infusions" xml:space="preserve"><value>Perfusions continues</value></data>
+  <data name="Devices and bundles" xml:space="preserve"><value>Dispositifs et bundles</value></data>
+  <data name="Each device's days and today's care bundle" xml:space="preserve"><value>Les jours de chaque dispositif et le bundle du jour</value></data>
+  <data name="Elective surgery" xml:space="preserve"><value>Chirurgie programmée</value></data>
+  <data name="Emergency surgery" xml:space="preserve"><value>Chirurgie urgente</value></data>
+  <data name="Enter the age" xml:space="preserve"><value>Saisissez l'âge</value></data>
+  <data name="Eye opening" xml:space="preserve"><value>Ouverture des yeux</value></data>
+  <data name="FiO2 is 0.21 to 1" xml:space="preserve"><value>La FiO2 va de 0,21 à 1</value></data>
+  <data name="GCS is 3 to 15" xml:space="preserve"><value>Le GCS va de 3 à 15</value></data>
+  <data name="Glasgow Coma Scale" xml:space="preserve"><value>Échelle de Glasgow</value></data>
+  <data name="Glasgow Coma Scale and APACHE II" xml:space="preserve"><value>Échelle de Glasgow et APACHE II</value></data>
+  <data name="Insert" xml:space="preserve"><value>Poser</value></data>
+  <data name="Insert a device" xml:space="preserve"><value>Poser un dispositif</value></data>
+  <data name="Intubated (verbal recorded as T)" xml:space="preserve"><value>Intubé (verbal noté T)</value></data>
+  <data name="Largest step" xml:space="preserve"><value>Palier maximal</value></data>
+  <data name="Maximum" xml:space="preserve"><value>Maximum</value></data>
+  <data name="Minimum" xml:space="preserve"><value>Minimum</value></data>
+  <data name="Motor response" xml:space="preserve"><value>Réponse motrice</value></data>
+  <data name="New dose" xml:space="preserve"><value>Nouvelle dose</value></data>
+  <data name="No device in place." xml:space="preserve"><value>Aucun dispositif en place.</value></data>
+  <data name="No infusion running." xml:space="preserve"><value>Aucune perfusion en cours.</value></data>
+  <data name="No score recorded yet." xml:space="preserve"><value>Aucun score enregistré.</value></data>
+  <data name="Non-operative" xml:space="preserve"><value>Non opératoire</value></data>
+  <data name="One change is at most the protocol's step" xml:space="preserve"><value>Un changement ne dépasse pas le palier du protocole</value></data>
+  <data name="Record this device as removed now?" xml:space="preserve"><value>Enregistrer le retrait de ce dispositif maintenant ?</value></data>
+  <data name="Save today's check" xml:space="preserve"><value>Enregistrer le contrôle du jour</value></data>
+  <data name="Scores" xml:space="preserve"><value>Scores</value></data>
+  <data name="Severe organ insufficiency or immunocompromised" xml:space="preserve"><value>Défaillance d'organe sévère ou immunodépression</value></data>
+  <data name="Start an infusion" xml:space="preserve"><value>Démarrer une perfusion</value></data>
+  <data name="Starting dose" xml:space="preserve"><value>Dose initiale</value></data>
+  <data name="Stop this infusion?" xml:space="preserve"><value>Arrêter cette perfusion ?</value></data>
+  <data name="Strength per mL" xml:space="preserve"><value>Concentration par mL</value></data>
+  <data name="The dose is outside the protocol's range" xml:space="preserve"><value>La dose est hors de la plage du protocole</value></data>
+  <data name="The insertion is within the last 90 days" xml:space="preserve"><value>La pose date des 90 derniers jours</value></data>
+  <data name="The insertion time has not come yet" xml:space="preserve"><value>L'heure de pose n'est pas encore arrivée</value></data>
+  <data name="The intensive-care care tables are not installed yet (hospital_h238_icu_care.sql)." xml:space="preserve"><value>Les tables de soins intensifs ne sont pas encore installées (hospital_h238_icu_care.sql).</value></data>
+  <data name="The largest step is above zero and within the range" xml:space="preserve"><value>Le palier maximal est positif et dans la plage</value></data>
+  <data name="The maximum dose must be above the minimum" xml:space="preserve"><value>La dose maximale doit dépasser la minimale</value></data>
+  <data name="The new dose is the current dose" xml:space="preserve"><value>La nouvelle dose est la dose actuelle</value></data>
+  <data name="The protocol bounds every later titration." xml:space="preserve"><value>Le protocole encadre chaque titration ultérieure.</value></data>
+  <data name="The site is 60 characters at most" xml:space="preserve"><value>Le site fait 60 caractères au plus</value></data>
+  <data name="The worst value of the first 24 hours; an empty value counts as normal." xml:space="preserve"><value>La pire valeur des 24 premières heures ; une valeur vide compte comme normale.</value></data>
+  <data name="This device is already removed" xml:space="preserve"><value>Ce dispositif est déjà retiré</value></data>
+  <data name="This infusion is stopped" xml:space="preserve"><value>Cette perfusion est arrêtée</value></data>
+  <data name="Titrate" xml:space="preserve"><value>Titrer</value></data>
+  <data name="Titrated within the protocol set at the start" xml:space="preserve"><value>Titrée dans le protocole fixé au départ</value></data>
+  <data name="Verbal response" xml:space="preserve"><value>Réponse verbale</value></data>
+  <data name="Write the target (for example MAP ≥ 65)" xml:space="preserve"><value>Indiquez la cible (par exemple PAM ≥ 65)</value></data>
+  <data name="Write why (the value against the target)" xml:space="preserve"><value>Indiquez pourquoi (la valeur face à la cible)</value></data>
+  <data name="dev:Catheter" xml:space="preserve"><value>Sonde urinaire</value></data>
+  <data name="gcs:Mild" xml:space="preserve"><value>Léger</value></data>
+  <data name="gcs:Moderate" xml:space="preserve"><value>Modéré</value></data>
+  <data name="gcs:Severe" xml:space="preserve"><value>Sévère</value></data>
+  <data name="gcs:eye1" xml:space="preserve"><value>Aucune</value></data>
+  <data name="gcs:eye2" xml:space="preserve"><value>À la pression</value></data>
+  <data name="gcs:eye3" xml:space="preserve"><value>Au bruit</value></data>
+  <data name="gcs:eye4" xml:space="preserve"><value>Spontanée</value></data>
+  <data name="gcs:motor1" xml:space="preserve"><value>Aucune</value></data>
+  <data name="gcs:motor2" xml:space="preserve"><value>Extension</value></data>
+  <data name="gcs:motor3" xml:space="preserve"><value>Flexion anormale</value></data>
+  <data name="gcs:motor4" xml:space="preserve"><value>Flexion normale</value></data>
+  <data name="gcs:motor5" xml:space="preserve"><value>Localise</value></data>
+  <data name="gcs:motor6" xml:space="preserve"><value>Obéit aux ordres</value></data>
+  <data name="gcs:verbal1" xml:space="preserve"><value>Aucune</value></data>
+  <data name="gcs:verbal2" xml:space="preserve"><value>Sons</value></data>
+  <data name="gcs:verbal3" xml:space="preserve"><value>Mots</value></data>
+  <data name="gcs:verbal4" xml:space="preserve"><value>Confuse</value></data>
+  <data name="gcs:verbal5" xml:space="preserve"><value>Orientée</value></data>
+  <data name="Barriers" xml:space="preserve"><value>Obstacles</value></data>
+  <data name="Capacity centre" xml:space="preserve"><value>Centre de gestion des capacités</value></data>
+  <data name="Choose how sure the plan is" xml:space="preserve"><value>Choisissez le degré de certitude du plan</value></data>
+  <data name="Clear the plan" xml:space="preserve"><value>Effacer le plan</value></data>
+  <data name="Clear this discharge plan?" xml:space="preserve"><value>Effacer ce plan de sortie ?</value></data>
+  <data name="Discharge plan" xml:space="preserve"><value>Plan de sortie</value></data>
+  <data name="Discharge plans are not installed yet (hospital_h239_capacity.sql)." xml:space="preserve"><value>Les plans de sortie ne sont pas encore installés (hospital_h239_capacity.sql).</value></data>
+  <data name="Discharges" xml:space="preserve"><value>Sorties</value></data>
+  <data name="Emergency at disposition" xml:space="preserve"><value>Urgences en attente de décision</value></data>
+  <data name="End of day" xml:space="preserve"><value>Fin de journée</value></data>
+  <data name="Estimated from past stays" xml:space="preserve"><value>Estimé d'après les séjours passés</value></data>
+  <data name="Expected discharge" xml:space="preserve"><value>Sortie prévue</value></data>
+  <data name="Expected discharges today" xml:space="preserve"><value>Sorties prévues aujourd'hui</value></data>
+  <data name="How sure" xml:space="preserve"><value>Certitude</value></data>
+  <data name="Inpatients and expected discharge" xml:space="preserve"><value>Patients hospitalisés et sortie prévue</value></data>
+  <data name="No barrier recorded." xml:space="preserve"><value>Aucun obstacle enregistré.</value></data>
+  <data name="No bed is set up yet." xml:space="preserve"><value>Aucun lit n'est encore configuré.</value></data>
+  <data name="No inpatient here." xml:space="preserve"><value>Aucun patient hospitalisé ici.</value></data>
+  <data name="Not known" xml:space="preserve"><value>Inconnue</value></data>
+  <data name="Occupancy" xml:space="preserve"><value>Taux d'occupation</value></data>
+  <data name="Occupancy of the beds in service" xml:space="preserve"><value>Occupation des lits en service</value></data>
+  <data name="Occupied − expected discharges + expected admissions (the same weekday over 8 weeks)" xml:space="preserve"><value>Occupés − sorties prévues + admissions prévues (même jour de semaine sur 8 semaines)</value></data>
+  <data name="Search a patient, bed or diagnosis" xml:space="preserve"><value>Rechercher un patient, un lit ou un diagnostic</value></data>
+  <data name="Stay" xml:space="preserve"><value>Séjour</value></data>
+  <data name="Strain at 85 % occupancy, critical at 95 %." xml:space="preserve"><value>Tension à 85 % d'occupation, critique à 95 %.</value></data>
+  <data name="The expected day is today or later" xml:space="preserve"><value>Le jour prévu est aujourd'hui ou plus tard</value></data>
+  <data name="The expected day is within the next 60 days" xml:space="preserve"><value>Le jour prévu est dans les 60 prochains jours</value></data>
+  <data name="The next four days" xml:space="preserve"><value>Les quatre prochains jours</value></data>
+  <data name="The team's plan when set, otherwise the median stay of past patients with the same diagnosis" xml:space="preserve"><value>Le plan de l'équipe s'il existe, sinon la durée médiane des séjours passés au même diagnostic</value></data>
+  <data name="This admission is already discharged" xml:space="preserve"><value>Cette hospitalisation est déjà clôturée</value></data>
+  <data name="Vacant beds" xml:space="preserve"><value>Lits libres</value></data>
+  <data name="What holds discharges" xml:space="preserve"><value>Ce qui retient les sorties</value></data>
+  <data name="bar:Consult" xml:space="preserve"><value>Avis en attente</value></data>
+  <data name="bar:Family" xml:space="preserve"><value>Famille</value></data>
+  <data name="bar:Insurance" xml:space="preserve"><value>Accord de l'assurance</value></data>
+  <data name="bar:Pharmacy" xml:space="preserve"><value>Médicaments de sortie</value></data>
+  <data name="bar:Placement" xml:space="preserve"><value>Placement ou soins de suite</value></data>
+  <data name="bar:Results" xml:space="preserve"><value>Résultats en attente</value></data>
+  <data name="bar:Transport" xml:space="preserve"><value>Transport</value></data>
+  <data name="conf:Likely" xml:space="preserve"><value>Probable</value></data>
+  <data name="conf:Possible" xml:space="preserve"><value>Possible</value></data>
+  <data name="{0} cleaning · {1} reserved" xml:space="preserve"><value>{0} en nettoyage · {1} réservés</value></data>
+  <data name="{0} in the department" xml:space="preserve"><value>{0} dans le service</value></data>
+  <data name="{0} of {1} beds in service" xml:space="preserve"><value>{0} sur {1} lits en service</value></data>
+  <data name="{0} tomorrow" xml:space="preserve"><value>{0} demain</value></data>
+  <data name="Amount denied, and how many closed items were paid on appeal" xml:space="preserve"><value>Montant refusé, et combien d'éléments clos ont été payés en appel</value></data>
+  <data name="Choose the root cause" xml:space="preserve"><value>Choisissez la cause première</value></data>
+  <data name="Deadline" xml:space="preserve"><value>Échéance</value></data>
+  <data name="Denial work-queue" xml:space="preserve"><value>File de travail des refus</value></data>
+  <data name="Denied lines" xml:space="preserve"><value>Lignes refusées</value></data>
+  <data name="I take this item" xml:space="preserve"><value>Je prends cet élément</value></data>
+  <data name="Nearest deadline first; the root cause is suggested from the payer's code and reason" xml:space="preserve"><value>Échéance la plus proche d'abord ; la cause est suggérée d'après le code et le motif du payeur</value></data>
+  <data name="No denial here." xml:space="preserve"><value>Aucun refus ici.</value></data>
+  <data name="No denial yet." xml:space="preserve"><value>Aucun refus pour l'instant.</value></data>
+  <data name="No open denial." xml:space="preserve"><value>Aucun refus ouvert.</value></data>
+  <data name="Open by payer" xml:space="preserve"><value>Ouverts par payeur</value></data>
+  <data name="Open denials" xml:space="preserve"><value>Refus ouverts</value></data>
+  <data name="Paid on appeal" xml:space="preserve"><value>Payé en appel</value></data>
+  <data name="Past the appeal deadline" xml:space="preserve"><value>Délai d'appel dépassé</value></data>
+  <data name="Payer's reason" xml:space="preserve"><value>Motif du payeur</value></data>
+  <data name="Root causes" xml:space="preserve"><value>Causes premières</value></data>
+  <data name="Search a patient, code, batch or payer" xml:space="preserve"><value>Rechercher un patient, un code, un lot ou un payeur</value></data>
+  <data name="The deadline is within the next year" xml:space="preserve"><value>L'échéance est dans l'année à venir</value></data>
+  <data name="The denial work-queue is not installed yet (hospital_h240_denials.sql)." xml:space="preserve"><value>La file des refus n'est pas encore installée (hospital_h240_denials.sql).</value></data>
+  <data name="This denial is already closed" xml:space="preserve"><value>Ce refus est déjà clos</value></data>
+  <data name="Work it" xml:space="preserve"><value>Traiter</value></data>
+  <data name="Work the denial" xml:space="preserve"><value>Traiter le refus</value></data>
+  <data name="Write why it is not pursued" xml:space="preserve"><value>Indiquez pourquoi il n'est pas poursuivi</value></data>
+  <data name="dc:Authorization" xml:space="preserve"><value>Accord préalable</value></data>
+  <data name="dc:Coding" xml:space="preserve"><value>Codage</value></data>
+  <data name="dc:Documentation" xml:space="preserve"><value>Documentation</value></data>
+  <data name="dc:Duplicate" xml:space="preserve"><value>Demande en double</value></data>
+  <data name="dc:Eligibility" xml:space="preserve"><value>Éligibilité et couverture</value></data>
+  <data name="dc:Necessity" xml:space="preserve"><value>Nécessité médicale</value></data>
+  <data name="dc:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="dc:Pricing" xml:space="preserve"><value>Prix et tarif</value></data>
+  <data name="dc:Timely" xml:space="preserve"><value>Soumission tardive</value></data>
+  <data name="ds:NotPursued" xml:space="preserve"><value>Non poursuivi</value></data>
+  <data name="ds:Open" xml:space="preserve"><value>Ouvert</value></data>
+  <data name="ds:Resubmitted" xml:space="preserve"><value>Resoumis</value></data>
+  <data name="ds:Working" xml:space="preserve"><value>En cours</value></data>
+  <data name="A stay is coded after its discharge" xml:space="preserve"><value>Un séjour est codé après la sortie</value></data>
+  <data name="Another group uses this code" xml:space="preserve"><value>Un autre groupe utilise ce code</value></data>
+  <data name="Case-mix index" xml:space="preserve"><value>Indice de case-mix</value></data>
+  <data name="Cases, total weight, and stay against the group's mean" xml:space="preserve"><value>Cas, poids total et séjour face à la moyenne du groupe</value></data>
+  <data name="Code the stay" xml:space="preserve"><value>Coder le séjour</value></data>
+  <data name="Coded (90 days)" xml:space="preserve"><value>Codés (90 jours)</value></data>
+  <data name="Coded stays" xml:space="preserve"><value>Séjours codés</value></data>
+  <data name="DRG coding" xml:space="preserve"><value>Codage GHM (DRG)</value></data>
+  <data name="DRG group" xml:space="preserve"><value>Groupe DRG</value></data>
+  <data name="DRG grouping is not installed yet (hospital_h241_drg.sql)." xml:space="preserve"><value>Le groupage DRG n'est pas encore installé (hospital_h241_drg.sql).</value></data>
+  <data name="DRG groups" xml:space="preserve"><value>Groupes DRG</value></data>
+  <data name="Discharged stays to code" xml:space="preserve"><value>Séjours terminés à coder</value></data>
+  <data name="Enter the ICD-10 prefixes, separated by commas (for example I21,I22)" xml:space="preserve"><value>Saisissez les préfixes CIM-10 séparés par des virgules (par exemple I21,I22)</value></data>
+  <data name="Enter the group's code" xml:space="preserve"><value>Saisissez le code du groupe</value></data>
+  <data name="Enter the group's name" xml:space="preserve"><value>Saisissez le nom du groupe</value></data>
+  <data name="Enter the principal diagnosis as an ICD-10 code" xml:space="preserve"><value>Saisissez le diagnostic principal en code CIM-10</value></data>
+  <data name="Entered from the payer's or the ministry's grouper" xml:space="preserve"><value>Saisis d'après le groupeur du payeur ou du ministère</value></data>
+  <data name="From age" xml:space="preserve"><value>Âge minimum</value></data>
+  <data name="Heaviest groups (90 days)" xml:space="preserve"><value>Groupes les plus lourds (90 jours)</value></data>
+  <data name="ICD-10 prefixes" xml:space="preserve"><value>Préfixes CIM-10</value></data>
+  <data name="Let the grouper choose" xml:space="preserve"><value>Laisser le groupeur choisir</value></data>
+  <data name="Manual" xml:space="preserve"><value>Manuel</value></data>
+  <data name="Mean stay" xml:space="preserve"><value>Séjour moyen</value></data>
+  <data name="Medical" xml:space="preserve"><value>Médical</value></data>
+  <data name="New group" xml:space="preserve"><value>Nouveau groupe</value></data>
+  <data name="No DRG group is entered yet. The administrator enters the groups from the payer's or the ministry's grouper; until then a coded stay stays ungrouped." xml:space="preserve"><value>Aucun groupe DRG n'est saisi. L'administrateur les saisit d'après le groupeur du payeur ou du ministère ; d'ici là, un séjour codé reste non groupé.</value></data>
+  <data name="No coded stay yet." xml:space="preserve"><value>Aucun séjour codé pour l'instant.</value></data>
+  <data name="No group here." xml:space="preserve"><value>Aucun groupe ici.</value></data>
+  <data name="No stay here." xml:space="preserve"><value>Aucun séjour ici.</value></data>
+  <data name="Operated" xml:space="preserve"><value>Opéré</value></data>
+  <data name="Principal diagnosis (ICD-10)" xml:space="preserve"><value>Diagnostic principal (CIM-10)</value></data>
+  <data name="Recode" xml:space="preserve"><value>Recoder</value></data>
+  <data name="Search a group or ICD-10 prefix" xml:space="preserve"><value>Rechercher un groupe ou un préfixe CIM-10</value></data>
+  <data name="Search a patient, diagnosis or group" xml:space="preserve"><value>Rechercher un patient, un diagnostic ou un groupe</value></data>
+  <data name="Stays to code" xml:space="preserve"><value>Séjours à coder</value></data>
+  <data name="Surgical" xml:space="preserve"><value>Chirurgical</value></data>
+  <data name="The last 120 days; the grouper picks the group from the principal diagnosis and whether an operation was done" xml:space="preserve"><value>Les 120 derniers jours ; le groupeur choisit d'après le diagnostic principal et la présence d'une opération</value></data>
+  <data name="The weight is above zero and at most 100" xml:space="preserve"><value>Le poids est positif et au plus 100</value></data>
+  <data name="To age" xml:space="preserve"><value>Âge maximum</value></data>
+  <data name="Ungroupable" xml:space="preserve"><value>Non groupable</value></data>
+  <data name="Check eligibility" xml:space="preserve"><value>Vérifier l'éligibilité</value></data>
+  <data name="Download the answer" xml:space="preserve"><value>Télécharger la réponse</value></data>
+  <data name="Download the request" xml:space="preserve"><value>Télécharger la demande</value></data>
+  <data name="Enter the gateway's https address" xml:space="preserve"><value>Saisissez l'adresse https de la passerelle</value></data>
+  <data name="Entered by the administrator when the payer gives the address and key" xml:space="preserve"><value>Saisie par l'administrateur quand le payeur fournit l'adresse et la clé</value></data>
+  <data name="FHIR base address" xml:space="preserve"><value>Adresse de base FHIR</value></data>
+  <data name="FHIR eligibility is not installed yet (hospital_h242_fhir_eligibility.sql)." xml:space="preserve"><value>L'éligibilité FHIR n'est pas encore installée (hospital_h242_fhir_eligibility.sql).</value></data>
+  <data name="Files only" xml:space="preserve"><value>Fichiers uniquement</value></data>
+  <data name="Gateway off" xml:space="preserve"><value>Passerelle désactivée</value></data>
+  <data name="Gateway on" xml:space="preserve"><value>Passerelle active</value></data>
+  <data name="Kept as a file" xml:space="preserve"><value>Conservé en fichier</value></data>
+  <data name="Key header" xml:space="preserve"><value>En-tête de la clé</value></data>
+  <data name="Leave empty to keep the key already entered." xml:space="preserve"><value>Laissez vide pour garder la clé déjà saisie.</value></data>
+  <data name="Name the header that carries the key" xml:space="preserve"><value>Nommez l'en-tête qui porte la clé</value></data>
+  <data name="No payer yet." xml:space="preserve"><value>Aucun payeur pour l'instant.</value></data>
+  <data name="No request is waiting." xml:space="preserve"><value>Aucune demande en attente.</value></data>
+  <data name="Paste the payer's answer (FHIR JSON)" xml:space="preserve"><value>Collez la réponse du payeur (FHIR JSON)</value></data>
+  <data name="Payer gateway" xml:space="preserve"><value>Passerelle du payeur</value></data>
+  <data name="Payer gateways" xml:space="preserve"><value>Passerelles des payeurs</value></data>
+  <data name="Payer messages (FHIR)" xml:space="preserve"><value>Messages payeurs (FHIR)</value></data>
+  <data name="Search a patient or payer" xml:space="preserve"><value>Rechercher un patient ou un payeur</value></data>
+  <data name="Send each to the payer as a FHIR request" xml:space="preserve"><value>Envoyez chacune au payeur en requête FHIR</value></data>
+  <data name="Send messages through this gateway" xml:space="preserve"><value>Envoyer les messages par cette passerelle</value></data>
+  <data name="Sent by gateway" xml:space="preserve"><value>Envoyé par la passerelle</value></data>
+  <data name="Sent through the payer's gateway when it is enabled; otherwise kept as a file to send and its answer loaded back" xml:space="preserve"><value>Envoyés par la passerelle du payeur si elle est active ; sinon conservés en fichier, et la réponse rechargée</value></data>
+  <data name="The file holds no eligibility answer (CoverageEligibilityResponse)" xml:space="preserve"><value>Le fichier ne contient aucune réponse d'éligibilité (CoverageEligibilityResponse)</value></data>
+  <data name="The header name has no spaces" xml:space="preserve"><value>Le nom de l'en-tête est sans espace</value></data>
+  <data name="The patient has no insurance policy" xml:space="preserve"><value>Le patient n'a pas de police d'assurance</value></data>
+  <data name="The patient's active policy is asked of its payer." xml:space="preserve"><value>La police active du patient est vérifiée auprès de son payeur.</value></data>
+  <data name="This answer is for another request" xml:space="preserve"><value>Cette réponse concerne une autre demande</value></data>
+  <data name="This message is already answered" xml:space="preserve"><value>Ce message a déjà une réponse</value></data>
+  <data name="Waiting for the answer" xml:space="preserve"><value>En attente de réponse</value></data>
+  <data name="Waiting pre-authorisations" xml:space="preserve"><value>Accords préalables en attente</value></data>
+  <data name="fx:Eligibility" xml:space="preserve"><value>Éligibilité</value></data>
+  <data name="fx:Preauth" xml:space="preserve"><value>Accord préalable</value></data>
+  <data name="fxo:Approved" xml:space="preserve"><value>Approuvé</value></data>
+  <data name="fxo:Error" xml:space="preserve"><value>Erreur</value></data>
+  <data name="fxo:InForce" xml:space="preserve"><value>Couverture active</value></data>
+  <data name="fxo:NotInForce" xml:space="preserve"><value>Non active</value></data>
+  <data name="fxo:Pending" xml:space="preserve"><value>En attente chez le payeur</value></data>
+  <data name="fxo:Rejected" xml:space="preserve"><value>Refusé</value></data>
 </root>

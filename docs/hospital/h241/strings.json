@@ -1,0 +1,205 @@
+{
+ "unit": "H241 - DRG coding",
+ "strings": {
+  "A stay is coded after its discharge": {
+   "ar": "تُرمَّز الإقامة بعد خروج المريض",
+   "en": "A stay is coded after its discharge",
+   "fr": "Un séjour est codé après la sortie"
+  },
+  "Another group uses this code": {
+   "ar": "مجموعة أخرى تستخدم هذا الرمز",
+   "en": "Another group uses this code",
+   "fr": "Un autre groupe utilise ce code"
+  },
+  "Case-mix index": {
+   "ar": "مؤشر مزيج الحالات",
+   "en": "Case-mix index",
+   "fr": "Indice de case-mix"
+  },
+  "Cases, total weight, and stay against the group's mean": {
+   "ar": "الحالات والوزن الإجمالي ومدة الإقامة مقابل متوسط المجموعة",
+   "en": "Cases, total weight, and stay against the group's mean",
+   "fr": "Cas, poids total et séjour face à la moyenne du groupe"
+  },
+  "Code the stay": {
+   "ar": "ترميز الإقامة",
+   "en": "Code the stay",
+   "fr": "Coder le séjour"
+  },
+  "Coded (90 days)": {
+   "ar": "مُرمَّزة (90 يومًا)",
+   "en": "Coded (90 days)",
+   "fr": "Codés (90 jours)"
+  },
+  "Coded stays": {
+   "ar": "الإقامات المُرمَّزة",
+   "en": "Coded stays",
+   "fr": "Séjours codés"
+  },
+  "DRG coding": {
+   "ar": "ترميز مجموعات التشخيص (DRG)",
+   "en": "DRG coding",
+   "fr": "Codage GHM (DRG)"
+  },
+  "DRG group": {
+   "ar": "مجموعة DRG",
+   "en": "DRG group",
+   "fr": "Groupe DRG"
+  },
+  "DRG grouping is not installed yet (hospital_h241_drg.sql).": {
+   "ar": "تجميع DRG غير مثبت بعد (hospital_h241_drg.sql).",
+   "en": "DRG grouping is not installed yet (hospital_h241_drg.sql).",
+   "fr": "Le groupage DRG n'est pas encore installé (hospital_h241_drg.sql)."
+  },
+  "DRG groups": {
+   "ar": "مجموعات DRG",
+   "en": "DRG groups",
+   "fr": "Groupes DRG"
+  },
+  "Discharged stays to code": {
+   "ar": "إقامات منتهية بانتظار الترميز",
+   "en": "Discharged stays to code",
+   "fr": "Séjours terminés à coder"
+  },
+  "Enter the ICD-10 prefixes, separated by commas (for example I21,I22)": {
+   "ar": "أدخل بادئات ICD-10 مفصولة بفواصل (مثل I21,I22)",
+   "en": "Enter the ICD-10 prefixes, separated by commas (for example I21,I22)",
+   "fr": "Saisissez les préfixes CIM-10 séparés par des virgules (par exemple I21,I22)"
+  },
+  "Enter the group's code": {
+   "ar": "أدخل رمز المجموعة",
+   "en": "Enter the group's code",
+   "fr": "Saisissez le code du groupe"
+  },
+  "Enter the group's name": {
+   "ar": "أدخل اسم المجموعة",
+   "en": "Enter the group's name",
+   "fr": "Saisissez le nom du groupe"
+  },
+  "Enter the principal diagnosis as an ICD-10 code": {
+   "ar": "أدخل التشخيص الرئيسي برمز ICD-10",
+   "en": "Enter the principal diagnosis as an ICD-10 code",
+   "fr": "Saisissez le diagnostic principal en code CIM-10"
+  },
+  "Entered from the payer's or the ministry's grouper": {
+   "ar": "مُدخلة من أداة التجميع لدى الجهة الدافعة أو الوزارة",
+   "en": "Entered from the payer's or the ministry's grouper",
+   "fr": "Saisis d'après le groupeur du payeur ou du ministère"
+  },
+  "From age": {
+   "ar": "من عمر",
+   "en": "From age",
+   "fr": "Âge minimum"
+  },
+  "Heaviest groups (90 days)": {
+   "ar": "المجموعات الأثقل وزنًا (90 يومًا)",
+   "en": "Heaviest groups (90 days)",
+   "fr": "Groupes les plus lourds (90 jours)"
+  },
+  "ICD-10 prefixes": {
+   "ar": "بادئات ICD-10",
+   "en": "ICD-10 prefixes",
+   "fr": "Préfixes CIM-10"
+  },
+  "Let the grouper choose": {
+   "ar": "دع أداة التجميع تختار",
+   "en": "Let the grouper choose",
+   "fr": "Laisser le groupeur choisir"
+  },
+  "Manual": {
+   "ar": "يدوي",
+   "en": "Manual",
+   "fr": "Manuel"
+  },
+  "Mean stay": {
+   "ar": "متوسط الإقامة",
+   "en": "Mean stay",
+   "fr": "Séjour moyen"
+  },
+  "Medical": {
+   "ar": "باطني",
+   "en": "Medical",
+   "fr": "Médical"
+  },
+  "New group": {
+   "ar": "مجموعة جديدة",
+   "en": "New group",
+   "fr": "Nouveau groupe"
+  },
+  "No DRG group is entered yet. The administrator enters the groups from the payer's or the ministry's grouper; until then a coded stay stays ungrouped.": {
+   "ar": "لم تُدخل أي مجموعة DRG بعد. يُدخل المسؤول المجموعات من أداة التجميع لدى الجهة الدافعة أو الوزارة، وحتى ذلك الحين تبقى الإقامة المرمّزة دون مجموعة.",
+   "en": "No DRG group is entered yet. The administrator enters the groups from the payer's or the ministry's grouper; until then a coded stay stays ungrouped.",
+   "fr": "Aucun groupe DRG n'est saisi. L'administrateur les saisit d'après le groupeur du payeur ou du ministère ; d'ici là, un séjour codé reste non groupé."
+  },
+  "No coded stay yet.": {
+   "ar": "لا توجد إقامة مُرمَّزة بعد.",
+   "en": "No coded stay yet.",
+   "fr": "Aucun séjour codé pour l'instant."
+  },
+  "No group here.": {
+   "ar": "لا توجد مجموعات هنا.",
+   "en": "No group here.",
+   "fr": "Aucun groupe ici."
+  },
+  "No stay here.": {
+   "ar": "لا توجد إقامات هنا.",
+   "en": "No stay here.",
+   "fr": "Aucun séjour ici."
+  },
+  "Operated": {
+   "ar": "أُجريت عملية",
+   "en": "Operated",
+   "fr": "Opéré"
+  },
+  "Principal diagnosis (ICD-10)": {
+   "ar": "التشخيص الرئيسي (ICD-10)",
+   "en": "Principal diagnosis (ICD-10)",
+   "fr": "Diagnostic principal (CIM-10)"
+  },
+  "Recode": {
+   "ar": "إعادة الترميز",
+   "en": "Recode",
+   "fr": "Recoder"
+  },
+  "Search a group or ICD-10 prefix": {
+   "ar": "ابحث عن مجموعة أو بادئة ICD-10",
+   "en": "Search a group or ICD-10 prefix",
+   "fr": "Rechercher un groupe ou un préfixe CIM-10"
+  },
+  "Search a patient, diagnosis or group": {
+   "ar": "ابحث عن مريض أو تشخيص أو مجموعة",
+   "en": "Search a patient, diagnosis or group",
+   "fr": "Rechercher un patient, un diagnostic ou un groupe"
+  },
+  "Stays to code": {
+   "ar": "إقامات بانتظار الترميز",
+   "en": "Stays to code",
+   "fr": "Séjours à coder"
+  },
+  "Surgical": {
+   "ar": "جراحي",
+   "en": "Surgical",
+   "fr": "Chirurgical"
+  },
+  "The last 120 days; the grouper picks the group from the principal diagnosis and whether an operation was done": {
+   "ar": "آخر 120 يومًا؛ تختار أداة التجميع المجموعة من التشخيص الرئيسي ووجود عملية جراحية",
+   "en": "The last 120 days; the grouper picks the group from the principal diagnosis and whether an operation was done",
+   "fr": "Les 120 derniers jours ; le groupeur choisit d'après le diagnostic principal et la présence d'une opération"
+  },
+  "The weight is above zero and at most 100": {
+   "ar": "الوزن أكبر من الصفر وبحد أقصى 100",
+   "en": "The weight is above zero and at most 100",
+   "fr": "Le poids est positif et au plus 100"
+  },
+  "To age": {
+   "ar": "إلى عمر",
+   "en": "To age",
+   "fr": "Âge maximum"
+  },
+  "Ungroupable": {
+   "ar": "غير قابلة للتجميع",
+   "en": "Ungroupable",
+   "fr": "Non groupable"
+  }
+ }
+}

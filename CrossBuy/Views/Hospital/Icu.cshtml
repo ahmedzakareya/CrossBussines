@@ -161,9 +161,11 @@
                     }
                 </div>
             </div>
+            @if (ViewBag.Care is HospitalIcuCare care) { ViewData["IcuCarePart"] = "cards"; <partial name="_IcuCare" model="care" /> }
         }
     </div></div>
 </div>
+@if (ViewBag.Care is HospitalIcuCare careM) { ViewData["IcuCarePart"] = "modals"; <partial name="_IcuCare" model="careM" /> }
 
 @if (p != null && ready && canAdmit)
 {

@@ -105,6 +105,7 @@
                         </h3>
                         <div class="card-toolbar">
                             <span class="badge badge-light-@(locked ? "primary" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7 fw-bold">@T["lab:" + o.Status]</span>
+                            @if (o.AutoVerified) {<span class="badge badge-light-info fs-7 fw-bold ms-1" title="@T["Released by the autoverification rules: every value in range, no delta change, control in"]" data-bs-toggle="tooltip">@T["Auto-verified"]</span>}
                         </div>
                     </div>
                     <div class="card-body pt-2">
@@ -153,7 +154,7 @@
                                             </td>
                                             <td class="text-muted fs-7" dir="ltr">@(r?.Unit ?? a.Unit)</td>
                                             <td class="hp-num text-gray-700"><bdi dir="ltr">@HospitalUi.LabRange(r?.RefLow ?? a.RefLow, r?.RefHigh ?? a.RefHigh, r?.Decimals ?? a.Decimals)</bdi></td>
-                                            <td class="text-center" data-flag-cell>@if (flag != HospitalLabFlag.Normal) {<span class="hp-flag hp-flag-@flag">@flag</span>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td class="text-center" data-flag-cell>@if (flag != HospitalLabFlag.Normal) {<span class="hp-flag hp-flag-@flag">@flag</span>} else if (r?.DeltaFailed != true) {<span class="text-gray-400">—</span>}@if (r?.DeltaFailed == true) {<span class="badge badge-light-danger fs-8 ms-1" title="@T["Changed beyond the delta limit since {0}", Num(r.DeltaPrevious, a.Decimals)]" data-bs-toggle="tooltip">D</span>}</td>
                                             <td class="pe-4 hp-num text-muted" dir="ltr">@(l.Previous != null ? Num(l.Previous, a.Decimals) : "—")</td>
                                         </tr>
                                     }

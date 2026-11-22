@@ -59,6 +59,8 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalCapacityModel.Configure(b);   // H239: discharge plans
+			HospitalDrgModel.Configure(b);   // H241: DRG groups and assignments
 			b.Entity<HospitalAdmission>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.PatientId }).IsUnique().HasFilter("[Status] = 'Active'").HasDatabaseName("UX_HospitalAdmissions_OneOpenPerPatient");

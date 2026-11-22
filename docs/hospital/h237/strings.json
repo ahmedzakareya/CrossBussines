@@ -1,0 +1,180 @@
+{
+ "unit": "H237 - ER pathways",
+ "strings": {
+  "Ambulance / unit": {
+   "ar": "سيارة الإسعاف / الوحدة",
+   "en": "Ambulance / unit",
+   "fr": "Ambulance / unité"
+  },
+  "Ambulances on the way": {
+   "ar": "سيارات إسعاف في الطريق",
+   "en": "Ambulances on the way",
+   "fr": "Ambulances en route"
+  },
+  "Cancel this pre-alert?": {
+   "ar": "هل تريد إلغاء هذا الإنذار المسبق؟",
+   "en": "Cancel this pre-alert?",
+   "fr": "Annuler cette pré-alerte ?"
+  },
+  "Choose the pathway": {
+   "ar": "اختر المسار",
+   "en": "Choose the pathway",
+   "fr": "Choisissez la filière"
+  },
+  "Choose the patient and the pathway": {
+   "ar": "اختر المريض والمسار",
+   "en": "Choose the patient and the pathway",
+   "fr": "Choisissez le patient et la filière"
+  },
+  "Close the pathway": {
+   "ar": "إغلاق المسار",
+   "en": "Close the pathway",
+   "fr": "Clôturer la filière"
+  },
+  "Close this pathway?": {
+   "ar": "هل تريد إغلاق هذا المسار؟",
+   "en": "Close this pathway?",
+   "fr": "Clôturer cette filière ?"
+  },
+  "Done now": {
+   "ar": "تم الآن",
+   "en": "Done now",
+   "fr": "Fait maintenant"
+  },
+  "ESI is 1 to 5": {
+   "ar": "مستوى ESI من 1 إلى 5",
+   "en": "ESI is 1 to 5",
+   "fr": "L'ESI va de 1 à 5"
+  },
+  "Each step against its target from the door": {
+   "ar": "كل خطوة مقابل هدفها الزمني من لحظة الوصول",
+   "en": "Each step against its target from the door",
+   "fr": "Chaque étape face à son objectif depuis l'arrivée"
+  },
+  "Expected at": {
+   "ar": "الوصول المتوقع",
+   "en": "Expected at",
+   "fr": "Arrivée prévue"
+  },
+  "Its clock runs from the patient's arrival at the door.": {
+   "ar": "يبدأ توقيته من لحظة وصول المريض إلى الباب.",
+   "en": "Its clock runs from the patient's arrival at the door.",
+   "fr": "Son chronomètre part de l'arrivée du patient."
+  },
+  "No ambulance expected.": {
+   "ar": "لا توجد سيارة إسعاف متوقعة.",
+   "en": "No ambulance expected.",
+   "fr": "Aucune ambulance attendue."
+  },
+  "No pathway running.": {
+   "ar": "لا يوجد مسار جارٍ.",
+   "en": "No pathway running.",
+   "fr": "Aucune filière en cours."
+  },
+  "Not indicated": {
+   "ar": "غير مستطب",
+   "en": "Not indicated",
+   "fr": "Non indiqué"
+  },
+  "Not indicated — why?": {
+   "ar": "غير مستطب — ما السبب؟",
+   "en": "Not indicated — why?",
+   "fr": "Non indiqué — pourquoi ?"
+  },
+  "Pathway": {
+   "ar": "المسار",
+   "en": "Pathway",
+   "fr": "Filière"
+  },
+  "Pre-alert": {
+   "ar": "إنذار مسبق",
+   "en": "Pre-alert",
+   "fr": "Pré-alerte"
+  },
+  "Record {0} as done now?": {
+   "ar": "هل تسجّل «{0}» منجزة الآن؟",
+   "en": "Record {0} as done now?",
+   "fr": "Enregistrer « {0} » comme fait maintenant ?"
+  },
+  "Start a pathway": {
+   "ar": "بدء مسار",
+   "en": "Start a pathway",
+   "fr": "Démarrer une filière"
+  },
+  "The ambulance's call before the patient is at the door.": {
+   "ar": "بلاغ الإسعاف قبل وصول المريض إلى الباب.",
+   "en": "The ambulance's call before the patient is at the door.",
+   "fr": "L'appel de l'ambulance avant l'arrivée du patient."
+  },
+  "The emergency pathways are not installed yet (hospital_h237_er_pathways.sql).": {
+   "ar": "مسارات الطوارئ غير مثبتة بعد (hospital_h237_er_pathways.sql).",
+   "en": "The emergency pathways are not installed yet (hospital_h237_er_pathways.sql).",
+   "fr": "Les filières d'urgence ne sont pas encore installées (hospital_h237_er_pathways.sql)."
+  },
+  "The expected time is within the next 12 hours": {
+   "ar": "الوقت المتوقع خلال الساعات الاثنتي عشرة القادمة",
+   "en": "The expected time is within the next 12 hours",
+   "fr": "L'heure prévue est dans les 12 prochaines heures"
+  },
+  "The pathway starts at the real door time": {
+   "ar": "يبدأ المسار من وقت الوصول الفعلي",
+   "en": "The pathway starts at the real door time",
+   "fr": "La filière démarre à l'heure réelle d'arrivée"
+  },
+  "This ambulance was already received or cancelled": {
+   "ar": "سبق استقبال هذه السيارة أو إلغاؤها",
+   "en": "This ambulance was already received or cancelled",
+   "fr": "Cette ambulance a déjà été reçue ou annulée"
+  },
+  "This pathway is already active for the patient": {
+   "ar": "هذا المسار مفعّل بالفعل لهذا المريض",
+   "en": "This pathway is already active for the patient",
+   "fr": "Cette filière est déjà active pour ce patient"
+  },
+  "This pathway is closed": {
+   "ar": "هذا المسار مغلق",
+   "en": "This pathway is closed",
+   "fr": "Cette filière est clôturée"
+  },
+  "This step is already recorded": {
+   "ar": "هذه الخطوة مسجلة بالفعل",
+   "en": "This step is already recorded",
+   "fr": "Cette étape est déjà enregistrée"
+  },
+  "Time-critical pathways": {
+   "ar": "المسارات الحرجة زمنيًا",
+   "en": "Time-critical pathways",
+   "fr": "Filières à délai critique"
+  },
+  "Write the complaint (300 characters at most)": {
+   "ar": "اكتب الشكوى (300 حرف كحد أقصى)",
+   "en": "Write the complaint (300 characters at most)",
+   "fr": "Saisissez le motif (300 caractères au plus)"
+  },
+  "Write why it is not indicated": {
+   "ar": "اكتب سبب عدم الاستطباب",
+   "en": "Write why it is not indicated",
+   "fr": "Indiquez pourquoi ce n'est pas indiqué"
+  },
+  "path:Sepsis": {
+   "ar": "مسار الإنتان",
+   "en": "Sepsis pathway",
+   "fr": "Filière sepsis"
+  },
+  "path:Stroke": {
+   "ar": "مسار السكتة الدماغية",
+   "en": "Stroke pathway",
+   "fr": "Filière AVC"
+  },
+  "path:Stemi": {
+   "ar": "مسار الاحتشاء القلبي",
+   "en": "STEMI pathway",
+   "fr": "Filière SCA ST+"
+  },
+  "path:Trauma": {
+   "ar": "مسار الإصابات",
+   "en": "Trauma pathway",
+   "fr": "Filière traumatologie"
+  }
+ }
+}

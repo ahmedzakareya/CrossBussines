@@ -1,0 +1,390 @@
+{
+ "unit": "H238 - ICU care",
+ "strings": {
+  "A value is outside what can be measured": {
+   "ar": "قيمة خارج حدود القياس",
+   "en": "A value is outside what can be measured",
+   "fr": "Une valeur est hors des limites mesurables"
+  },
+  "Acute renal failure (creatinine counts double)": {
+   "ar": "فشل كلوي حاد (تُحتسب نقاط الكرياتينين مضاعفة)",
+   "en": "Acute renal failure (creatinine counts double)",
+   "fr": "Insuffisance rénale aiguë (créatinine comptée double)"
+  },
+  "Admission": {
+   "ar": "نوع الدخول",
+   "en": "Admission",
+   "fr": "Admission"
+  },
+  "Approximate hospital mortality for the score band (Knaus 1985)": {
+   "ar": "الوفيات التقريبية في المستشفى لفئة هذه الدرجة (Knaus 1985)",
+   "en": "Approximate hospital mortality for the score band (Knaus 1985)",
+   "fr": "Mortalité hospitalière approximative pour cette tranche (Knaus 1985)"
+  },
+  "Bundle complete": {
+   "ar": "الحزمة مكتملة",
+   "en": "Bundle complete",
+   "fr": "Bundle complet"
+  },
+  "Bundle not complete": {
+   "ar": "الحزمة غير مكتملة",
+   "en": "Bundle not complete",
+   "fr": "Bundle incomplet"
+  },
+  "Calculate and save": {
+   "ar": "احسب واحفظ",
+   "en": "Calculate and save",
+   "fr": "Calculer et enregistrer"
+  },
+  "Choose each part of the Glasgow scale": {
+   "ar": "اختر كل جزء من مقياس غلاسكو",
+   "en": "Choose each part of the Glasgow scale",
+   "fr": "Choisissez chaque composante de l'échelle de Glasgow"
+  },
+  "Choose the dose unit": {
+   "ar": "اختر وحدة الجرعة",
+   "en": "Choose the dose unit",
+   "fr": "Choisissez l'unité de dose"
+  },
+  "Continuous infusions": {
+   "ar": "المحاليل المستمرة",
+   "en": "Continuous infusions",
+   "fr": "Perfusions continues"
+  },
+  "Devices and bundles": {
+   "ar": "الأجهزة وحزم الرعاية",
+   "en": "Devices and bundles",
+   "fr": "Dispositifs et bundles"
+  },
+  "Each device's days and today's care bundle": {
+   "ar": "أيام كل جهاز وحزمة رعاية اليوم",
+   "en": "Each device's days and today's care bundle",
+   "fr": "Les jours de chaque dispositif et le bundle du jour"
+  },
+  "Elective surgery": {
+   "ar": "جراحة مجدولة",
+   "en": "Elective surgery",
+   "fr": "Chirurgie programmée"
+  },
+  "Emergency surgery": {
+   "ar": "جراحة طارئة",
+   "en": "Emergency surgery",
+   "fr": "Chirurgie urgente"
+  },
+  "Enter the age": {
+   "ar": "أدخل العمر",
+   "en": "Enter the age",
+   "fr": "Saisissez l'âge"
+  },
+  "Eye opening": {
+   "ar": "فتح العينين",
+   "en": "Eye opening",
+   "fr": "Ouverture des yeux"
+  },
+  "FiO2 is 0.21 to 1": {
+   "ar": "نسبة الأكسجين المستنشق من 0.21 إلى 1",
+   "en": "FiO2 is 0.21 to 1",
+   "fr": "La FiO2 va de 0,21 à 1"
+  },
+  "GCS is 3 to 15": {
+   "ar": "مقياس غلاسكو من 3 إلى 15",
+   "en": "GCS is 3 to 15",
+   "fr": "Le GCS va de 3 à 15"
+  },
+  "Glasgow Coma Scale": {
+   "ar": "مقياس غلاسكو للغيبوبة",
+   "en": "Glasgow Coma Scale",
+   "fr": "Échelle de Glasgow"
+  },
+  "Glasgow Coma Scale and APACHE II": {
+   "ar": "مقياس غلاسكو للغيبوبة وAPACHE II",
+   "en": "Glasgow Coma Scale and APACHE II",
+   "fr": "Échelle de Glasgow et APACHE II"
+  },
+  "Insert": {
+   "ar": "تركيب",
+   "en": "Insert",
+   "fr": "Poser"
+  },
+  "Insert a device": {
+   "ar": "تركيب جهاز",
+   "en": "Insert a device",
+   "fr": "Poser un dispositif"
+  },
+  "Intubated (verbal recorded as T)": {
+   "ar": "مُنبَّب (تُسجَّل الاستجابة اللفظية T)",
+   "en": "Intubated (verbal recorded as T)",
+   "fr": "Intubé (verbal noté T)"
+  },
+  "Largest step": {
+   "ar": "أكبر خطوة",
+   "en": "Largest step",
+   "fr": "Palier maximal"
+  },
+  "Maximum": {
+   "ar": "الحد الأقصى",
+   "en": "Maximum",
+   "fr": "Maximum"
+  },
+  "Minimum": {
+   "ar": "الحد الأدنى",
+   "en": "Minimum",
+   "fr": "Minimum"
+  },
+  "Motor response": {
+   "ar": "الاستجابة الحركية",
+   "en": "Motor response",
+   "fr": "Réponse motrice"
+  },
+  "New dose": {
+   "ar": "الجرعة الجديدة",
+   "en": "New dose",
+   "fr": "Nouvelle dose"
+  },
+  "No device in place.": {
+   "ar": "لا يوجد جهاز مركّب.",
+   "en": "No device in place.",
+   "fr": "Aucun dispositif en place."
+  },
+  "No infusion running.": {
+   "ar": "لا يوجد محلول جارٍ.",
+   "en": "No infusion running.",
+   "fr": "Aucune perfusion en cours."
+  },
+  "No score recorded yet.": {
+   "ar": "لم تُسجَّل أي درجة بعد.",
+   "en": "No score recorded yet.",
+   "fr": "Aucun score enregistré."
+  },
+  "Non-operative": {
+   "ar": "غير جراحي",
+   "en": "Non-operative",
+   "fr": "Non opératoire"
+  },
+  "One change is at most the protocol's step": {
+   "ar": "التغيير الواحد لا يتجاوز خطوة البروتوكول",
+   "en": "One change is at most the protocol's step",
+   "fr": "Un changement ne dépasse pas le palier du protocole"
+  },
+  "Record this device as removed now?": {
+   "ar": "هل تسجّل إزالة هذا الجهاز الآن؟",
+   "en": "Record this device as removed now?",
+   "fr": "Enregistrer le retrait de ce dispositif maintenant ?"
+  },
+  "Save today's check": {
+   "ar": "حفظ مراجعة اليوم",
+   "en": "Save today's check",
+   "fr": "Enregistrer le contrôle du jour"
+  },
+  "Scores": {
+   "ar": "الدرجات",
+   "en": "Scores",
+   "fr": "Scores"
+  },
+  "Severe organ insufficiency or immunocompromised": {
+   "ar": "قصور عضوي شديد أو نقص المناعة",
+   "en": "Severe organ insufficiency or immunocompromised",
+   "fr": "Défaillance d'organe sévère ou immunodépression"
+  },
+  "Start an infusion": {
+   "ar": "بدء محلول",
+   "en": "Start an infusion",
+   "fr": "Démarrer une perfusion"
+  },
+  "Starting dose": {
+   "ar": "جرعة البدء",
+   "en": "Starting dose",
+   "fr": "Dose initiale"
+  },
+  "Stop this infusion?": {
+   "ar": "هل تريد إيقاف هذا المحلول؟",
+   "en": "Stop this infusion?",
+   "fr": "Arrêter cette perfusion ?"
+  },
+  "Strength per mL": {
+   "ar": "التركيز لكل مل",
+   "en": "Strength per mL",
+   "fr": "Concentration par mL"
+  },
+  "The dose is outside the protocol's range": {
+   "ar": "الجرعة خارج نطاق البروتوكول",
+   "en": "The dose is outside the protocol's range",
+   "fr": "La dose est hors de la plage du protocole"
+  },
+  "The insertion is within the last 90 days": {
+   "ar": "يكون التركيب خلال آخر 90 يومًا",
+   "en": "The insertion is within the last 90 days",
+   "fr": "La pose date des 90 derniers jours"
+  },
+  "The insertion time has not come yet": {
+   "ar": "وقت التركيب لم يحن بعد",
+   "en": "The insertion time has not come yet",
+   "fr": "L'heure de pose n'est pas encore arrivée"
+  },
+  "The intensive-care care tables are not installed yet (hospital_h238_icu_care.sql).": {
+   "ar": "جداول رعاية العناية المركزة غير مثبتة بعد (hospital_h238_icu_care.sql).",
+   "en": "The intensive-care care tables are not installed yet (hospital_h238_icu_care.sql).",
+   "fr": "Les tables de soins intensifs ne sont pas encore installées (hospital_h238_icu_care.sql)."
+  },
+  "The largest step is above zero and within the range": {
+   "ar": "أكبر خطوة أكبر من الصفر وضمن النطاق",
+   "en": "The largest step is above zero and within the range",
+   "fr": "Le palier maximal est positif et dans la plage"
+  },
+  "The maximum dose must be above the minimum": {
+   "ar": "يجب أن تكون الجرعة القصوى أعلى من الدنيا",
+   "en": "The maximum dose must be above the minimum",
+   "fr": "La dose maximale doit dépasser la minimale"
+  },
+  "The new dose is the current dose": {
+   "ar": "الجرعة الجديدة هي الجرعة الحالية",
+   "en": "The new dose is the current dose",
+   "fr": "La nouvelle dose est la dose actuelle"
+  },
+  "The protocol bounds every later titration.": {
+   "ar": "يحدّ البروتوكول كل معايرة لاحقة.",
+   "en": "The protocol bounds every later titration.",
+   "fr": "Le protocole encadre chaque titration ultérieure."
+  },
+  "The site is 60 characters at most": {
+   "ar": "الموضع 60 حرفًا كحد أقصى",
+   "en": "The site is 60 characters at most",
+   "fr": "Le site fait 60 caractères au plus"
+  },
+  "The worst value of the first 24 hours; an empty value counts as normal.": {
+   "ar": "أسوأ قيمة خلال أول 24 ساعة؛ وتُعدّ القيمة الفارغة طبيعية.",
+   "en": "The worst value of the first 24 hours; an empty value counts as normal.",
+   "fr": "La pire valeur des 24 premières heures ; une valeur vide compte comme normale."
+  },
+  "This device is already removed": {
+   "ar": "سبقت إزالة هذا الجهاز",
+   "en": "This device is already removed",
+   "fr": "Ce dispositif est déjà retiré"
+  },
+  "This infusion is stopped": {
+   "ar": "هذا المحلول موقوف",
+   "en": "This infusion is stopped",
+   "fr": "Cette perfusion est arrêtée"
+  },
+  "Titrate": {
+   "ar": "معايرة",
+   "en": "Titrate",
+   "fr": "Titrer"
+  },
+  "Titrated within the protocol set at the start": {
+   "ar": "تُعاير ضمن البروتوكول المحدد عند البدء",
+   "en": "Titrated within the protocol set at the start",
+   "fr": "Titrée dans le protocole fixé au départ"
+  },
+  "Verbal response": {
+   "ar": "الاستجابة اللفظية",
+   "en": "Verbal response",
+   "fr": "Réponse verbale"
+  },
+  "Write the target (for example MAP ≥ 65)": {
+   "ar": "اكتب الهدف (مثل MAP ≥ 65)",
+   "en": "Write the target (for example MAP ≥ 65)",
+   "fr": "Indiquez la cible (par exemple PAM ≥ 65)"
+  },
+  "Write why (the value against the target)": {
+   "ar": "اكتب السبب (القيمة مقابل الهدف)",
+   "en": "Write why (the value against the target)",
+   "fr": "Indiquez pourquoi (la valeur face à la cible)"
+  },
+  "gcs:Severe": {
+   "ar": "شديد",
+   "en": "Severe",
+   "fr": "Sévère"
+  },
+  "gcs:Moderate": {
+   "ar": "متوسط",
+   "en": "Moderate",
+   "fr": "Modéré"
+  },
+  "gcs:Mild": {
+   "ar": "خفيف",
+   "en": "Mild",
+   "fr": "Léger"
+  },
+  "gcs:eye4": {
+   "ar": "تلقائيًا",
+   "en": "Spontaneous",
+   "fr": "Spontanée"
+  },
+  "gcs:eye3": {
+   "ar": "عند الكلام",
+   "en": "To sound",
+   "fr": "Au bruit"
+  },
+  "gcs:eye2": {
+   "ar": "عند الألم",
+   "en": "To pressure",
+   "fr": "À la pression"
+  },
+  "gcs:eye1": {
+   "ar": "لا يفتح",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "gcs:verbal5": {
+   "ar": "واعٍ ومتوجّه",
+   "en": "Oriented",
+   "fr": "Orientée"
+  },
+  "gcs:verbal4": {
+   "ar": "مشوّش",
+   "en": "Confused",
+   "fr": "Confuse"
+  },
+  "gcs:verbal3": {
+   "ar": "كلمات",
+   "en": "Words",
+   "fr": "Mots"
+  },
+  "gcs:verbal2": {
+   "ar": "أصوات",
+   "en": "Sounds",
+   "fr": "Sons"
+  },
+  "gcs:verbal1": {
+   "ar": "لا استجابة",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "gcs:motor6": {
+   "ar": "يطيع الأوامر",
+   "en": "Obeys commands",
+   "fr": "Obéit aux ordres"
+  },
+  "gcs:motor5": {
+   "ar": "يحدد موضع الألم",
+   "en": "Localising",
+   "fr": "Localise"
+  },
+  "gcs:motor4": {
+   "ar": "انسحاب طبيعي",
+   "en": "Normal flexion",
+   "fr": "Flexion normale"
+  },
+  "gcs:motor3": {
+   "ar": "انثناء غير طبيعي",
+   "en": "Abnormal flexion",
+   "fr": "Flexion anormale"
+  },
+  "gcs:motor2": {
+   "ar": "انبساط",
+   "en": "Extension",
+   "fr": "Extension"
+  },
+  "gcs:motor1": {
+   "ar": "لا استجابة",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "dev:Catheter": {
+   "ar": "قسطرة بولية",
+   "en": "Urinary catheter",
+   "fr": "Sonde urinaire"
+  }
+ }
+}
