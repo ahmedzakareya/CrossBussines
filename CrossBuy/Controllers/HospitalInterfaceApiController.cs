@@ -26,10 +26,7 @@ namespace CrossBuy.Controllers
 
 		private async Task<(HospitalInterface I, BusinessContext Ctx)?> OpenAsync(string code, string kind, CancellationToken ct)
 		{
-			var i = await Interfaces.ByKeyAsync(code, Request.Headers[KeyHeader].FirstOrDefault(), kind, DateTime.UtcNow, ct);
-			if (i == null) return null;
-			var ctx = await _contexts.ForEmployeeAsync(i.ActsAsEmployeeId, null, ct);
-			return ctx == null || ctx.CompanyId != i.CompanyId ? null : (i, ctx);
+			return await HospitalInterfaceInbound.OpenAsync(HttpContext.RequestServices, code, Request.Headers[KeyHeader].FirstOrDefault(), new[] { kind }, ct);   // H227: shared with MLLP
 		}
 
 		[AllowAnonymous]
@@ -46,18 +43,7 @@ namespace CrossBuy.Controllers
 			if (open == null) return Unauthorized();
 			string raw;
 			using (var reader = new StreamReader(Request.Body, Encoding.UTF8)) raw = await reader.ReadToEndAsync(ct);
-			raw = raw.Trim('\v', '\x1c', '\r', '\n', ' ');   // an MLLP frame passed on as it came: its start and end bytes dropped
-			var svc = ActivatorUtilities.CreateInstance<HospitalLabDeviceService>(HttpContext.RequestServices);
-			var r = await svc.ReceiveAsync(open.Value.Ctx, raw, open.Value.I.ActsAsEmployeeId, DateTime.UtcNow, ct);
-			string control = HospitalInterfaceRules.ControlId(raw) ?? "";
-			string ack;
-			if (!r.Ok) ack = HospitalInterfaceRules.Ack(control, "AR", r.Error, DateTime.UtcNow);
-			else
-			{
-				var m = await _db.Set<HospitalDeviceMessage>().AsNoTracking().Where(x => x.ID == r.Id && x.CompanyId == open.Value.I.CompanyId).Select(x => new { x.Status, x.Detail }).FirstOrDefaultAsync(ct);
-				ack = HospitalInterfaceRules.Ack(control, HospitalInterfaceRules.AckCode(m?.Status ?? ""), m?.Detail, DateTime.UtcNow);
-			}
-			return Content(ack, "application/hl7-v2", Encoding.UTF8);
+			return Content(await HospitalInterfaceInbound.LabAsync(HttpContext.RequestServices, open.Value.I, open.Value.Ctx, raw, ct), "application/hl7-v2", Encoding.UTF8);   // H227: the path an MLLP port shares
 		}
 
 		[AllowAnonymous]
@@ -74,10 +60,7 @@ namespace CrossBuy.Controllers
 			if (open == null) return Unauthorized();
 			string raw;
 			using (var reader = new StreamReader(Request.Body, Encoding.UTF8)) raw = await reader.ReadToEndAsync(ct);
-			raw = raw.Trim('\v', '\x1c', '\r', '\n', ' ');
-			var svc = ActivatorUtilities.CreateInstance<HospitalCardiologyService>(HttpContext.RequestServices);
-			var r = await svc.ImportAsync(open.Value.Ctx, raw, DateTime.UtcNow, ct);
-			return Content(HospitalInterfaceRules.Ack(HospitalInterfaceRules.ControlId(raw) ?? "", r.Ack, r.Detail, DateTime.UtcNow), "application/hl7-v2", Encoding.UTF8);
+			return Content(await HospitalInterfaceInbound.EcgAsync(HttpContext.RequestServices, open.Value.Ctx, raw, ct), "application/hl7-v2", Encoding.UTF8);   // H227: the path an MLLP port shares
 		}
 
 		[AllowAnonymous]

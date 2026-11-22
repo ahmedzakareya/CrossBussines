@@ -128,6 +128,7 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // (some test hosts), so ContentRootPath is the fallback rather than letting the archive land in the binary dir.
     .UseArchiveRoot(Path.Combine(
         builder.Environment.WebRootPath ?? builder.Environment.ContentRootPath, "uploads", "reports"))
+    .BindScheduleWorker(builder.Configuration)   // H227 (owner-approved 2026-11-22): Reporting:ScheduleWorker:Enabled now decides; it was never read
     // Report permissions are FAIL-CLOSED: a permission key with no role mapping is denied. Module report keys are
     // mapped when those modules add their data sources. See IReportPermissionEvaluator — replacing the role-map
     // evaluator with one backed by the platform permission provider stays deferred until the first tab completes
@@ -861,6 +862,7 @@ builder.Services.AddHostedService<CrmReminderHostedService>();
 // other workers are listed here. It is DISABLED unless a host calls RunScheduledReports(), so adding
 // this line changes nothing on its own; see ReportScheduleHostedService for why that order matters.
 builder.Services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
+builder.Services.AddHostedService<CrossBuy.BL.Hospital.HospitalMllpListenerService>();   // H227 (owner-approved 2026-11-22): opens no port unless Hospital:Mllp:Listeners is configured
 builder.Services.AddHostedService<TaskGeneratorHostedService>();   // TM-7
 builder.Services.AddHostedService<TaskScheduleMatchHostedService>();   // TM-9-ب: scheduled-task matcher
 // Overdue manager escalation. It suppresses ITSELF when the host is a certification runtime, via
