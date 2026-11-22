@@ -863,6 +863,8 @@ builder.Services.AddHostedService<CrmReminderHostedService>();
 // this line changes nothing on its own; see ReportScheduleHostedService for why that order matters.
 builder.Services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
 builder.Services.AddHostedService<CrossBuy.BL.Hospital.HospitalMllpListenerService>();   // H227 (owner-approved 2026-11-22): opens no port unless Hospital:Mllp:Listeners is configured
+builder.Services.AddHostedService<CrossBuy.BL.Hospital.HospitalDicomWorklistService>();   // H228 (owner-approved 2026-11-22): opens no port unless Hospital:Dicom:Worklist is configured
+builder.Services.AddSingleton<CrossBuy.BL.Reporting.IReportMailSender, CrossBuy.BL.Reporting.SmtpReportMailSender>();   // H228 (owner-approved 2026-11-22, explicitly incl. patient data): real mail only when Smtp:Enabled AND Reporting:Delivery:Email:Enabled
 builder.Services.AddHostedService<TaskGeneratorHostedService>();   // TM-7
 builder.Services.AddHostedService<TaskScheduleMatchHostedService>();   // TM-9-ب: scheduled-task matcher
 // Overdue manager escalation. It suppresses ITSELF when the host is a certification runtime, via

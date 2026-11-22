@@ -55,6 +55,7 @@ namespace CrossBuy.Tests
             services.AddHostedService<IntegrityCheckHostedService>();
             services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
             services.AddHostedService<CrossBuy.BL.Hospital.HospitalMllpListenerService>();   // H227
+            services.AddHostedService<CrossBuy.BL.Hospital.HospitalDicomWorklistService>();   // H228
             services.AddHostedService<TaskGeneratorHostedService>();
             services.AddHostedService<TaskScheduleMatchHostedService>();
             services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHostedService>();
@@ -65,7 +66,7 @@ namespace CrossBuy.Tests
             });
             var first = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
             var second = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
-            Assert.Equal(9, first.Length);   // H227: + HospitalMllpListenerService
+            Assert.Equal(10, first.Length);   // H227: + HospitalMllpListenerService; H228: + HospitalDicomWorklistService
             for (var i = 0; i < first.Length; i++) Assert.Same(first[i], second[i]);
             // Constructing the production workers proves DI lifetime safety without
             // starting timers, sending messages or resolving a live database.
