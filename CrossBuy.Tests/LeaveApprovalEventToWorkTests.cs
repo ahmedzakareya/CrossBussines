@@ -880,14 +880,31 @@ namespace CrossBuy.Tests
             {
                 var lines = StripComments(SourceOf("CrossBuy", "BL", service))
                     .Split('\n').Select(l => l.Trim()).ToList();
-                var first = lines.FindIndex(l => l.Contains("chain.Count == 0", StringComparison.Ordinal));
+                // THE PROPERTY, NOT THE FIRST MATCH. This used to take FindIndex - the first line mentioning
+                // chain.Count == 0 - and demand the verified-root test on that exact line. LeaveWorkflowService
+                // later gained a benign early return above the real guard:
+                //
+                //     289:  if (chain.Count == 0) return chain;              <- returns, decides nothing
+                //     433:  if (chain.Count == 0 && (... || !chainResult.RequesterIsVerifiedRoot))   <- the guard
+                //
+                // so the test began reading line 289 and reporting a guard that was intact as missing. The claim
+                // it makes is "an empty chain is never BY ITSELF grounds for approval", which is about the
+                // DECIDING test, not about whichever line happens to come first.
+                var empties = lines.Where(l => l.Contains("chain.Count == 0", StringComparison.Ordinal)).ToList();
 
-                Assert.True(first >= 0, service + " no longer tests for an empty approver chain at all");
-                Assert.Contains("RequesterIsVerifiedRoot", lines[first], StringComparison.Ordinal);
-                Assert.Contains("HierarchyDefect", lines[first], StringComparison.Ordinal);
+                Assert.True(empties.Count > 0, service + " no longer tests for an empty approver chain at all");
+                Assert.True(empties.Any(l => l.Contains("RequesterIsVerifiedRoot", StringComparison.Ordinal)),
+                    service + " tests for an empty approver chain but never pairs it with RequesterIsVerifiedRoot, " +
+                    "so an empty chain alone could read as approval.");
+                // The GUARD line is the one that pairs the empty chain with the verified-root test; index from
+                // that rather than from the first mention, for the same reason as above.
+                var guardIndex = lines.FindIndex(l => l.Contains("chain.Count == 0", StringComparison.Ordinal)
+                                                   && l.Contains("RequesterIsVerifiedRoot", StringComparison.Ordinal));
+                Assert.True(guardIndex >= 0, service + " has no empty-chain guard carrying the verified-root test.");
+                Assert.Contains("HierarchyDefect", lines[guardIndex], StringComparison.Ordinal);
 
                 // and it must REFUSE - a guard that merely logged would satisfy every assertion above
-                var body = string.Concat(lines.Skip(first).Take(3));
+                var body = string.Concat(lines.Skip(guardIndex).Take(3));
                 Assert.Contains("return (false", body, StringComparison.Ordinal);
             }
 
@@ -945,15 +962,19 @@ namespace CrossBuy.Tests
             var everyone = new[] { Requester }.Concat(chain).Distinct().ToList();
             foreach (var id in new[] { Requester, Manager1, Manager2, Outsider })
                 db.Employee.Add(Emp(id, companyId));
-            db.LeaveTypes.Add(new LeaveTypes { ID = LeaveType, NameAr = "سنوية", NameEn = "Annual" });
+            // HR0 (2026-11-11): LeaveTypes is company-scoped — it belongs to the rig's company or the request
+            // fails "Invalid leave type" because a company-less type is hidden from the requester's company.
+            db.LeaveTypes.Add(new LeaveTypes { ID = LeaveType, CompanyID = companyId, NameAr = "سنوية", NameEn = "Annual" });
 
             // employee node -> position node -> manager employee node, the exact shape the climb walks
             var ladder = new[] { Requester }.Concat(chain).ToArray();
             for (var i = 0; i < ladder.Length - 1; i++)
             {
+                // HR0 (2026-11-11): Hierarchical is company-scoped now; a company-less node is hidden from the
+                // ambient-filtered climb and the chain fails closed. Every node carries the rig's company.
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
-                    new Hierarchical { H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
+                    new Hierarchical { CompanyID = companyId, H_ID = 100 + ladder[i], H_Type = 5, H_ObjectID = ladder[i], H_Parent = 200 + ladder[i] },
+                    new Hierarchical { CompanyID = companyId, H_ID = 200 + ladder[i], H_Type = 4, H_ObjectID = null, H_Parent = 100 + ladder[i + 1] });
             }
             // THE TOP OF THE LADDER IS A VERIFIED ROOT (RSK-31), not merely a node with nothing above
             // it. Those two used to be indistinguishable and an empty chain was read as approval; now a
@@ -962,9 +983,9 @@ namespace CrossBuy.Tests
             if (verifiedRoot)
             {
                 db.Hierarchicals.AddRange(
-                    new Hierarchical { H_ID = 900, H_Type = 1, H_ObjectID = null, H_Parent = null },
-                    new Hierarchical { H_ID = 200 + ladder[^1], H_Type = 4, H_ObjectID = null, H_Parent = 900 },
-                    new Hierarchical { H_ID = 100 + ladder[^1], H_Type = 5, H_ObjectID = ladder[^1], H_Parent = 200 + ladder[^1] });
+                    new Hierarchical { CompanyID = companyId, H_ID = 900, H_Type = 1, H_ObjectID = null, H_Parent = null },
+                    new Hierarchical { CompanyID = companyId, H_ID = 200 + ladder[^1], H_Type = 4, H_ObjectID = null, H_Parent = 900 },
+                    new Hierarchical { CompanyID = companyId, H_ID = 100 + ladder[^1], H_Type = 5, H_ObjectID = ladder[^1], H_Parent = 200 + ladder[^1] });
             }
 
             await db.SaveChangesAsync();

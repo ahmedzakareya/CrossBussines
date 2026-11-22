@@ -326,7 +326,7 @@ namespace CrossBuy.Tests
 
 			// Leave: same arrangement. LeaveRequests has no CompanyID, so the boundary is the requester's
 			// own Employee row.
-			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = OwnCompany, NameAr = "سنوية", NameEn = "Annual" });
 			host.Seed.SaveChanges();
 			host.Seed.LeaveRequests.AddRange(
 				new LeaveRequest
@@ -378,7 +378,7 @@ namespace CrossBuy.Tests
 				CompanyID = OwnCompany, EmployeeID = Requester1, RequestType = "Letter",
 				Status = 0, CurrentApproverEmployeeID = Clerk1, CreatedAt = DateTime.UnixEpoch,
 			});
-			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = OwnCompany, NameAr = "سنوية", NameEn = "Annual" });
 			host.Seed.SaveChanges();
 			host.Seed.LeaveRequests.Add(new LeaveRequest
 			{
@@ -408,7 +408,7 @@ namespace CrossBuy.Tests
 				CompanyID = OwnCompany, EmployeeID = Requester1, RequestType = "Letter",
 				Status = 1, CurrentApproverEmployeeID = Manager1, CreatedAt = DateTime.UnixEpoch,
 			});
-			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = OwnCompany, NameAr = "سنوية", NameEn = "Annual" });
 			host.Seed.SaveChanges();
 			host.Seed.LeaveRequests.Add(new LeaveRequest
 			{

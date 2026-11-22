@@ -77,7 +77,9 @@ namespace CrossBuy.Tests
 			host.Seed.Employee.AddRange(
 				Emp(Approver, OwnCompany), Emp(Stranger, OwnCompany), Emp(Requester, OwnCompany),
 				Emp(ForeignRequester, OtherCompany));
-			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
+			// HR0 (2026-11-11): LeaveTypes is company-scoped now — a company-less type is hidden from the
+			// requester's company and CreateAsync fails "Invalid leave type". It belongs to the requester's company.
+			host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, CompanyID = OwnCompany, NameAr = "سنوية", NameEn = "Annual" });
 			host.Seed.InventoryUserRoles.Add(new InventoryUserRole
 			{ CompanyID = OwnCompany, EmployeeId = Approver, Role = "InventoryManager" });
 
