@@ -18,6 +18,7 @@ namespace CrossBuy.BL.Reporting
         public const string Readmissions = "Hospital.Readmissions";
         public const string LabTurnaround = "Hospital.LabTurnaround";
         public const string CriticalValues = "Hospital.CriticalValues";
+        public const string Antibiogram = "Hospital.Antibiogram";   // H231
         public const string BedOccupancy = "Hospital.BedOccupancy";
         public const string ErWaiting = "Hospital.ErWaiting";
         public const string Theatre = "Hospital.TheatreUtilisation";
@@ -141,6 +142,18 @@ namespace CrossBuy.BL.Reporting
                     F("MinutesToAcknowledge", "زمن التأكيد (د)", "To acknowledge (min)", ReportFieldType.Integer, 22),
                     F("Acknowledged", "أُكّد", "Acknowledged", ReportFieldType.Integer, 14), F("Escalated", "صُعّد", "Escalated", ReportFieldType.Integer, 14),
                 }), "SentAt"),
+            // H231: the cumulative antibiogram (CLSI M39) — the first isolate of each organism per patient in the period
+            new HospitalManagementReport(HospitalReportGroups.Clinical, D(HospitalReportCodes.Antibiogram, C,
+                "خريطة الحساسية التراكمية للمضادات الحيوية", "Cumulative antibiogram",
+                "لكل كائن حي ومضاد حيوي: عدد العزلات المختبرة ونسبة الحساس، من أول عزلة لكل مريض في الفترة (معيار CLSI M39). أقل من ٣٠ عزلة يُقرأ بحذر.",
+                "Per organism and antibiotic: isolates tested and the percentage susceptible, from each patient's first isolate in the period (CLSI M39). Fewer than 30 isolates: read with caution.",
+                new[]
+                {
+                    F("Organism", "الكائن الحي", "Organism", width: 50), F("Isolates", "العزلات", "Isolates", ReportFieldType.Integer, 16),
+                    F("Antibiotic", "المضاد الحيوي", "Antibiotic", width: 45), F("Tested", "المختبرة", "Tested", ReportFieldType.Integer, 16),
+                    F("Susceptible", "الحساسة", "Susceptible", ReportFieldType.Integer, 16), F("SusceptiblePct", "نسبة الحساسية ٪", "Susceptible %", ReportFieldType.Decimal, 20),
+                    F("Caution", "أقل من ٣٠", "Under 30", ReportFieldType.Integer, 14),
+                }), "Organism"),
 
             // ---------------- operational ----------------
             new HospitalManagementReport(HospitalReportGroups.Operational, D(HospitalReportCodes.BedOccupancy, C,

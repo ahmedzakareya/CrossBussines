@@ -67,6 +67,22 @@ namespace CrossBuy.Controllers
 			return Result(await MicroSvc.CompleteAsync(ctx, id, input.Growth, input.Comment, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		/// H231: the cumulative antibiogram for a period (default: the last twelve months), organism by antibiotic.
+		[HttpGet("Lab/Antibiogram"), HospitalPerm(HospitalActions.ClinicalRead)]
+		public async Task<IActionResult> Antibiogram(DateTime? from, DateTime? to, string? q, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return RedirectToAction("Index", "Home");
+			Chrome();
+			var t = (to ?? DateTime.Today).Date; var f = (from ?? t.AddMonths(-12).AddDays(1)).Date;
+			if (f > t) (f, t) = (t, f);
+			var cells = await MicroSvc.AntibiogramAsync(ctx, DateTime.SpecifyKind(f, DateTimeKind.Local).ToUniversalTime(), DateTime.SpecifyKind(t.AddDays(1), DateTimeKind.Local).ToUniversalTime(), ct)
+				?? Array.Empty<HospitalAbgCell>();
+			if (!string.IsNullOrWhiteSpace(q)) cells = cells.Where(c => c.Organism.Contains(q.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+			ViewBag.From = f; ViewBag.To = t; ViewBag.Q = q;
+			return View(cells);
+		}
+
 		[HttpPost("LabTests/Micro/SeedStandard"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> MicroSeedStandard(CancellationToken ct = default)
 		{

@@ -1,0 +1,98 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalAbgCell>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H231 — the cumulative antibiogram (CLSI M39): organisms down, antibiotics across, the percentage susceptible from each
+    patient's first isolate in the period. Fewer than 30 tested isolates are shown muted with a caution. Prints through
+    Report Studio (Hospital.Antibiogram). Theme controls only; no green or amber — the brand's blue, light blue and red.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Antibiogram"].Value;
+    DateTime from = (DateTime)ViewBag.From, to = (DateTime)ViewBag.To; string q = ViewBag.Q as string ?? "";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var organisms = Model.GroupBy(c => (c.OrganismId, c.Organism, c.Isolates)).ToList();
+    var antibiotics = Model.Select(c => c.Antibiotic).Distinct().OrderBy(a => a).ToList();
+    string Tone(decimal? p) => p is null ? "light" : p >= 90 ? "light-primary" : p >= 70 ? "light-info" : "light-danger";
+    string print = Url.Content("~/Reports/Export") + "?id=Hospital.Antibiogram&format=PrintHtml&inline=true&From=" + from.ToString("yyyy-MM-dd", inv) + "&To=" + to.ToString("yyyy-MM-dd", inv);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Antibiogram"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Lab")" class="text-muted text-hover-primary">@T["Laboratory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Antibiogram"]</li>
+            </ul>
+        </div>
+        <a href="@print" target="_blank" class="btn btn-sm btn-light-primary d-print-none"><i class="ki-outline ki-printer fs-4"></i>@T["Print"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+            <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold fs-7 text-gray-700">@T["Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution."]</div>
+        </div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Susceptibility by organism"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num" dir="ltr">@from.ToString("yyyy-MM-dd", inv) → @to.ToString("yyyy-MM-dd", inv)</span>
+                </h3>
+                <form class="card-toolbar gap-2 flex-wrap" method="get" action="@Url.Action("Antibiogram")">
+                    <input type="date" name="from" value="@from.ToString("yyyy-MM-dd", inv)" class="form-control form-control-sm form-control-solid w-150px" />
+                    <input type="date" name="to" value="@to.ToString("yyyy-MM-dd", inv)" class="form-control form-control-sm form-control-solid w-150px" />
+                    <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search an organism"]" /></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (organisms.Count == 0)
+                {
+                    <div class="text-center py-15"><i class="ki-outline ki-chart-simple fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No verified cultures with susceptibility in this period."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-8">
+                            <th class="min-w-200px">@T["Organism"]</th><th class="text-center w-60px">n</th>
+                            @foreach (var a in antibiotics) {<th class="text-center min-w-70px" dir="ltr"><span class="d-inline-block" style="writing-mode:vertical-rl;transform:rotate(180deg);max-height:140px">@a</span></th>}
+                        </tr></thead>
+                        <tbody>
+                        @foreach (var o in organisms)
+                        {
+                            var byAbx = o.ToDictionary(c => c.Antibiotic);
+                            <tr>
+                                <td class="fw-semibold text-gray-800"><i dir="ltr">@o.Key.Organism</i></td>
+                                <td class="text-center"><span class="badge badge-light fs-7 hp-num @(o.Key.Isolates < HospitalAntibiogramRules.MinIsolates ? "text-muted" : "")">@o.Key.Isolates</span></td>
+                                @foreach (var a in antibiotics)
+                                {
+                                    var c = byAbx.GetValueOrDefault(a);
+                                    <td class="text-center">
+                                        @if (c?.Pct is decimal p)
+                                        {
+                                            <span class="badge badge-@Tone(p) fs-7 fw-bold hp-num @(c.Caution ? "opacity-50" : "")" title="@c.Susceptible / @c.Tested@(c.Caution ? " — " + T["fewer than 30 isolates"].Value : "")" data-bs-toggle="tooltip">@p.ToString("0", inv)</span>
+                                        }
+                                        else {<span class="text-gray-300">—</span>}
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    <div class="d-flex flex-wrap gap-4 mt-6 fs-8 text-gray-700">
+                        <span><span class="badge badge-light-primary me-1">≥ 90</span>@T["mostly susceptible"]</span>
+                        <span><span class="badge badge-light-info me-1">70–89</span>@T["variable"]</span>
+                        <span><span class="badge badge-light-danger me-1">&lt; 70</span>@T["often resistant"]</span>
+                        <span><span class="badge badge-light opacity-50 me-1">%</span>@T["fewer than 30 isolates"]</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>

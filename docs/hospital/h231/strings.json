@@ -1,0 +1,50 @@
+{
+ "unit": "H231 - antibiogram",
+ "strings": {
+  "Antibiogram": {
+   "ar": "خريطة الحساسية للمضادات الحيوية",
+   "en": "Antibiogram",
+   "fr": "Antibiogramme cumulé"
+  },
+  "Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution.": {
+   "ar": "تُحسب أول عزلة لكل كائن حي لكل مريض في الفترة مرة واحدة (معيار CLSI M39). الرقم هو نسبة العزلات الحساسة؛ وإذا قلّت العزلات عن 30 يظهر باهتًا: اقرأه بحذر.",
+   "en": "Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution.",
+   "fr": "Le premier isolat de chaque micro-organisme par patient sur la période compte une fois (CLSI M39). Le chiffre est le pourcentage rendu sensible ; sous 30 isolats il apparaît atténué : à lire avec prudence."
+  },
+  "Susceptibility by organism": {
+   "ar": "الحساسية حسب الكائن الحي",
+   "en": "Susceptibility by organism",
+   "fr": "Sensibilité par micro-organisme"
+  },
+  "Search an organism": {
+   "ar": "ابحث عن كائن حي",
+   "en": "Search an organism",
+   "fr": "Rechercher un micro-organisme"
+  },
+  "No verified cultures with susceptibility in this period.": {
+   "ar": "لا توجد مزارع معتمدة بنتائج حساسية في هذه الفترة.",
+   "en": "No verified cultures with susceptibility in this period.",
+   "fr": "Aucune culture validée avec antibiogramme sur cette période."
+  },
+  "fewer than 30 isolates": {
+   "ar": "أقل من 30 عزلة",
+   "en": "fewer than 30 isolates",
+   "fr": "moins de 30 isolats"
+  },
+  "mostly susceptible": {
+   "ar": "حساس غالبًا",
+   "en": "mostly susceptible",
+   "fr": "le plus souvent sensible"
+  },
+  "variable": {
+   "ar": "متفاوت",
+   "en": "variable",
+   "fr": "variable"
+  },
+  "often resistant": {
+   "ar": "مقاوم كثيرًا",
+   "en": "often resistant",
+   "fr": "souvent résistant"
+  }
+ }
+}

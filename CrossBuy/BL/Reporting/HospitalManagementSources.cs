@@ -178,6 +178,23 @@ namespace CrossBuy.BL.Reporting
         }
     }
 
+    /// H231: the cumulative antibiogram — the same cells the antibiogram screen shows (HospitalAntibiogramRules).
+    public sealed class HospitalAntibiogramSource(CrossDbContext db) : HospitalRegisterSource(db)
+    {
+        public override string Key => HospitalReportCodes.Antibiogram;
+        protected override async Task<List<Dictionary<string, object?>>> RowsAsync(BusinessContext ctx, HospitalReportWindow q, bool ar, CancellationToken ct)
+        {
+            var (_, _, f, t) = Period(q);
+            var cells = CrossBuy.BL.Hospital.HospitalAntibiogramRules.Build(await CrossBuy.BL.Hospital.HospitalMicroService.AntibiogramIsolatesAsync(Db, ctx.CompanyId, f, t, ct));
+            return cells.Select(x =>
+            {
+                var r = Row(); r["Organism"] = x.Organism; r["Isolates"] = x.Isolates; r["Antibiotic"] = x.Antibiotic; r["Tested"] = x.Tested;
+                r["Susceptible"] = x.Susceptible; r["SusceptiblePct"] = x.Pct; r["Caution"] = x.Caution ? 1 : 0;
+                return r;
+            }).ToList();
+        }
+    }
+
     public sealed class HospitalCriticalValuesSource(CrossDbContext db) : HospitalRegisterSource(db)
     {
         public override string Key => HospitalReportCodes.CriticalValues;

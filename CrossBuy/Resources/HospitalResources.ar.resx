@@ -9842,4 +9842,14 @@
   <data name="This group call goes through the company's own media server, which mixes the streams: it is encrypted on the way, inside the company network." xml:space="preserve">
     <value>تمر هذه المكالمة الجماعية عبر خادم الوسائط الخاص بالشركة الذي يجمع البث: وهي مشفّرة في الطريق، داخل شبكة الشركة.</value>
   </data>
+  <data name="Comment" xml:space="preserve"><value>تعليق</value></data>
+  <data name="Antibiogram" xml:space="preserve"><value>خريطة الحساسية للمضادات الحيوية</value></data>
+  <data name="Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution." xml:space="preserve"><value>تُحسب أول عزلة لكل كائن حي لكل مريض في الفترة مرة واحدة (معيار CLSI M39). الرقم هو نسبة العزلات الحساسة؛ وإذا قلّت العزلات عن 30 يظهر باهتًا: اقرأه بحذر.</value></data>
+  <data name="No verified cultures with susceptibility in this period." xml:space="preserve"><value>لا توجد مزارع معتمدة بنتائج حساسية في هذه الفترة.</value></data>
+  <data name="Search an organism" xml:space="preserve"><value>ابحث عن كائن حي</value></data>
+  <data name="Susceptibility by organism" xml:space="preserve"><value>الحساسية حسب الكائن الحي</value></data>
+  <data name="fewer than 30 isolates" xml:space="preserve"><value>أقل من 30 عزلة</value></data>
+  <data name="mostly susceptible" xml:space="preserve"><value>حساس غالبًا</value></data>
+  <data name="often resistant" xml:space="preserve"><value>مقاوم كثيرًا</value></data>
+  <data name="variable" xml:space="preserve"><value>متفاوت</value></data>
 </root>

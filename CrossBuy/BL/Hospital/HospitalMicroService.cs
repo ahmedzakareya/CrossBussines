@@ -276,6 +276,38 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		// ====================================================================================
+		// H231: the cumulative antibiogram — final cultures whose specimen was taken in the period
+		// ====================================================================================
+		public static async Task<IReadOnlyList<HospitalAbgIsolate>> AntibiogramIsolatesAsync(CrossDbContext db, int companyId, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default)
+		{
+			try
+			{
+				var rows = await (from c in db.Set<HospitalMicroCulture>().AsNoTracking()
+								  join o in db.HospitalLabOrders.AsNoTracking() on c.LabOrderId equals o.ID
+								  join i in db.Set<HospitalMicroIsolate>().AsNoTracking() on c.ID equals i.CultureId
+								  join g in db.Set<HospitalMicroOrganism>().AsNoTracking() on i.OrganismId equals g.ID
+								  where c.CompanyId == companyId && o.CompanyId == companyId && i.CompanyId == companyId && g.CompanyId == companyId
+									&& c.Status == HospitalMicroStatus.Final && (o.CollectedAt ?? o.ReceivedAt ?? o.OrderedAt) >= fromUtc && (o.CollectedAt ?? o.ReceivedAt ?? o.OrderedAt) < toUtc
+								  select new { i.ID, i.PatientId, i.OrganismId, g.NameEn, g.Group, At = o.CollectedAt ?? o.ReceivedAt ?? o.OrderedAt }).ToListAsync(ct);
+				var ids = rows.Select(r => r.ID).ToList();
+				var sus = await (from s in db.Set<HospitalMicroSusceptibility>().AsNoTracking()
+								 join a in db.Set<HospitalMicroAntibiotic>().AsNoTracking() on s.AntibioticId equals a.ID
+								 where s.CompanyId == companyId && ids.Contains(s.IsolateId)
+								 select new { s.IsolateId, s.AntibioticId, a.NameEn, s.Result }).ToListAsync(ct);
+				var byIso = sus.ToLookup(x => x.IsolateId);
+				return rows.Select(r => new HospitalAbgIsolate(r.ID, r.PatientId, r.OrganismId, r.NameEn, r.Group, r.At,
+					byIso[r.ID].Select(x => (x.AntibioticId, x.NameEn, x.Result)).ToList())).ToList();
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return Array.Empty<HospitalAbgIsolate>(); }
+		}
+
+		public async Task<IReadOnlyList<HospitalAbgCell>?> AntibiogramAsync(BusinessContext ctx, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) return null;
+			return HospitalAntibiogramRules.Build(await AntibiogramIsolatesAsync(_db, ctx.CompanyId, fromUtc, toUtc, ct));
+		}
+
+		// ====================================================================================
 		// THE STANDARD DICTIONARY (organisms, antibiotics, panels by group) — added where missing, never overwritten
 		// ====================================================================================
 		public static readonly (string Code, string Ar, string En, string Group, string Gram, bool Aureus)[] StandardOrganisms =

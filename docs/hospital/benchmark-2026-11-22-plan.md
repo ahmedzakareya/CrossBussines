@@ -107,3 +107,9 @@ Overall score: about 6.3 out of 10.
 ## Progress
 - Units continue from H230.
 - Each unit is committed as usual. Each unit's line is added here when it lands.
+- **H230 (5a339ac0)** — microbiology:
+  - cultures, isolates, S/I/R with cascade reporting;
+  - MRSA/VRE/ESBL/CRE/CRAB/CRPA flags;
+  - a positive blood culture is critical;
+  - a verified MDRO opens a suspected infection-control case.
+  - Verified live on TEST patient 25 (LAB-000017 → IC-000004).

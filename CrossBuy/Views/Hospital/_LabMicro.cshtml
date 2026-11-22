@@ -106,6 +106,7 @@ else
                         @foreach (var line in iv.Panel.Select(p => (p.AntibioticId, p.Name, Tier: (int?)p.Tier)).Concat(extra.Select(e => (e.AntibioticId, Name: Model.Antibiotics.FirstOrDefault(a => a.ID == e.AntibioticId)?.NameEn ?? "?", Tier: (int?)null))))
                         {
                             var r = byAbx.GetValueOrDefault(line.AntibioticId);
+                            if (!bench && r == null) { continue; }   @* read-only: only what was tested *@
                             <tr data-abx="@line.AntibioticId">
                                 <td class="fs-7 fw-semibold text-gray-800" dir="ltr">@line.Name</td>
                                 <td>@if (line.Tier == 2) {<span class="badge badge-light fs-8">@T["Tier 2"]</span>} else if (line.Tier == 1) {<span class="badge badge-light-primary fs-8">@T["Tier 1"]</span>}</td>
