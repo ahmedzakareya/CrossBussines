@@ -47,6 +47,31 @@ namespace CrossBuy.Models.Context.Chat
 		public DateTime? RevokedAt { get; set; }
 		public int? RevokedByEmployeeId { get; set; }
 	}
+	/// A guest from outside the company in one group conversation (comm_guests.sql): reads from the moment they were
+	/// invited, writes in it, nothing else. The link's secret is kept only as its SHA-256.
+	public class ChatGuest
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int ConversationId { get; set; }
+		public string Name { get; set; } = "";
+		public string TokenHash { get; set; } = "";
+		public int InvitedByEmployeeId { get; set; }
+		public int FirstMessageId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public DateTime ExpiresAt { get; set; }
+		public DateTime? LastSeenAt { get; set; }
+		public DateTime? RevokedAt { get; set; }
+		public int? RevokedByEmployeeId { get; set; }
+	}
+	/// Which message a guest wrote.
+	public class ChatGuestPost
+	{
+		public int MessageId { get; set; }
+		public int GuestId { get; set; }
+		public int CompanyId { get; set; }
+		public DateTime CreatedAt { get; set; }
+	}
 	/// Which message came through which webhook (the chat shows "via ...").
 	public class ChatWebhookPost
 	{
@@ -207,6 +232,8 @@ namespace CrossBuy.Models.Context.Chat
 		public static void Configure(ModelBuilder b)
 		{
 			b.Entity<CallSummary>(e => { e.ToTable("CallSummaries"); e.HasKey(x => x.RecordingId); e.Property(x => x.RecordingId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.JobId).HasMaxLength(32); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(120); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.Progress).HasPrecision(5, 3); e.Property(x => x.AudioSeconds).HasPrecision(9, 1); e.Property(x => x.WorkSeconds).HasPrecision(9, 1); });
+			b.Entity<ChatGuest>(e => { e.ToTable("ChatGuests"); e.Property(x => x.Name).HasMaxLength(80); e.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsFixedLength(); e.HasIndex(x => x.TokenHash).IsUnique(); });
+			b.Entity<ChatGuestPost>(e => { e.ToTable("ChatGuestPosts"); e.HasKey(x => x.MessageId); e.Property(x => x.MessageId).ValueGeneratedNever(); });
 			b.Entity<ChatWebhook>(e => { e.ToTable("ChatWebhooks"); e.Property(x => x.Name).HasMaxLength(60); e.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsFixedLength(); e.HasIndex(x => x.TokenHash).IsUnique(); });
 			b.Entity<ChatWebhookPost>(e => { e.ToTable("ChatWebhookPosts"); e.HasKey(x => x.MessageId); e.Property(x => x.MessageId).ValueGeneratedNever(); });
 			b.Entity<ChatTranslation>(e => { e.ToTable("ChatTranslations"); e.HasKey(x => new { x.MessageId, x.Lang }); e.Property(x => x.Lang).HasMaxLength(8); });

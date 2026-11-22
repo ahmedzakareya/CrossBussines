@@ -273,6 +273,34 @@ namespace CrossBuy.Controllers
 			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Read, null, HttpContext.RequestAborted)) return NotFound(new { ok = false });
 			return Json(new { ok = await Plus.JoinChannelAsync(me.Value.companyId, me.Value.empId, c) });
 		}
+		// ---------------- guests from outside the company: the group admin's (ChatGuestService) ----------------
+		private ChatGuestService GuestSvc => new(_db);
+		[HttpGet]
+		public async Task<IActionResult> Guests(int c)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound();
+			var l = await GuestSvc.ListAsync(me.Value.companyId, c, me.Value.empId);
+			return l == null ? NotFound() : Json(l);
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateGuest(int c, string? name, int days)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			var r = await GuestSvc.CreateAsync(me.Value.companyId, c, me.Value.empId, name, days <= 0 ? 7 : days);
+			if (r == null) return BadRequest(new { ok = false });
+			// the secret rides in the #fragment: a browser never sends it to a server or in a referrer
+			return Json(new { ok = true, id = r.Value.id, url = $"{Request.Scheme}://{Request.Host}{Url.Content("~/guest/chat.html")}#{r.Value.id}.{r.Value.token}" });
+		}
+		[HttpPost, ValidateAntiForgeryToken]
+		public async Task<IActionResult> RevokeGuest(int c, int id)
+		{
+			var me = await MeAsync(); var ctx = await CtxAsync();
+			if (me == null || ctx == null || !await Comm.CanAsync(ctx, CommunicationActions.Send, In(c), HttpContext.RequestAborted)) return NotFound(new { ok = false });
+			return Json(new { ok = await GuestSvc.RevokeAsync(me.Value.companyId, c, me.Value.empId, id) });
+		}
+
 		// ---------------- incoming webhooks: the group admin's (ChatWebhookService) ----------------
 		private ChatWebhookService Hooks => new(_db);
 		[HttpGet]

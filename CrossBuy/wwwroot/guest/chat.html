@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="referrer" content="no-referrer" />
+<meta name="robots" content="noindex, nofollow" />
+<title>محادثة · CrossBusiness</title>
+<style>
+	/* A guest from outside the company (owner 2026-11-22): this page, one conversation, nothing else of the system. */
+	/* the product's own Cairo, served by this server: a guest's browser contacts no one else */
+	@font-face { font-family: Cairo; src: url('/Backend-assets/fonts/cairo/Cairo-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+	@font-face { font-family: Cairo; src: url('/Backend-assets/fonts/cairo/Cairo-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+	@font-face { font-family: Cairo; src: url('/Backend-assets/fonts/cairo/Cairo-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+	:root { --brand: #1F2D4D; --brand2: #3A5795; --soft: #EEF2FA; --line: #E4E8F0; --ink: #1F2D4D; --muted: #738098; --bg: #F5F7FB; --red: #C0392B; }
+	* { box-sizing: border-box; }
+	html, body { margin: 0; height: 100%; }
+	body { font-family: Cairo, system-ui, sans-serif; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
+	header { background: var(--brand); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+	header .t { font-weight: 700; font-size: 16px; } header .s { font-size: 12px; opacity: .75; }
+	header .badge { margin-inline-start: auto; font-size: 11px; background: rgba(255,255,255,.12); padding: 3px 10px; border-radius: 20px; }
+	main { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+	.msg { max-width: min(560px, 85%); background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; align-self: flex-start; }
+	.msg.mine { align-self: flex-end; background: var(--brand2); color: #fff; border-color: var(--brand2); }
+	.msg .n { font-size: 11.5px; font-weight: 700; color: var(--brand2); margin-bottom: 2px; } .msg.mine .n { color: #DCE5F8; }
+	.msg .n .g { font-weight: 600; font-size: 10px; background: var(--soft); color: var(--brand2); border-radius: 6px; padding: 0 6px; margin-inline-start: 6px; }
+	.msg .x { font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; unicode-bidi: plaintext; }
+	.msg .w { font-size: 10.5px; opacity: .6; margin-top: 2px; direction: ltr; text-align: end; }
+	.msg .f { font-size: 12.5px; color: var(--muted); } .msg.mine .f { color: #DCE5F8; }
+	.empty { margin: auto; color: var(--muted); text-align: center; font-size: 14px; }
+	footer { background: #fff; border-top: 1px solid var(--line); padding: 10px 12px; display: flex; gap: 8px; }
+	textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; min-height: 44px; max-height: 140px; background: var(--bg); color: var(--ink); }
+	textarea:focus-visible, button:focus-visible { outline: 2px solid var(--brand2); outline-offset: 2px; }
+	button { border: 0; border-radius: 12px; background: var(--brand2); color: #fff; font: inherit; font-weight: 600; padding: 0 18px; cursor: pointer; }
+	button[disabled] { opacity: .5; cursor: default; }
+	.gone { margin: auto; max-width: 420px; text-align: center; padding: 24px; }
+	.gone h1 { font-size: 18px; margin: 0 0 8px; } .gone p { color: var(--muted); font-size: 14px; margin: 0; }
+	@media (prefers-color-scheme: dark) {
+		:root { --bg: #0F1626; --line: #26324A; --ink: #E6ECF7; --muted: #9AA6BF; --soft: #1C2742; }
+		.msg { background: #17213A; } footer { background: #131C31; } textarea { background: #0F1626; }
+	}
+</style>
+</head>
+<body>
+<header>
+	<div><div class="t" id="title">…</div><div class="s" id="sub"></div></div>
+	<span class="badge" id="badge">ضيف</span>
+</header>
+<main id="list" role="log" aria-live="polite" aria-label="الرسائل"><div class="empty">…</div></main>
+<footer id="composer" hidden>
+	<textarea id="box" rows="1" maxlength="2000" placeholder="اكتب رسالة" aria-label="اكتب رسالة"></textarea>
+	<button id="send" type="button">إرسال</button>
+</footer>
+<script>
+(function () {
+	'use strict';
+	// the key is in the #fragment: it is never sent to a server in the address or in a referrer
+	var key = decodeURIComponent((location.hash || '').slice(1));
+	var list = document.getElementById('list'), box = document.getElementById('box'), btn = document.getElementById('send');
+	var last = 0, seen = {}, timer = null, dead = false;
+	function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+	function time(iso) { try { return new Date(iso).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+	function gone() {
+		dead = true; clearTimeout(timer);
+		document.getElementById('composer').hidden = true;
+		list.innerHTML = '';
+		var g = el('div', 'gone'); g.appendChild(el('h1', null, 'انتهت صلاحية هذا الرابط')); g.appendChild(el('p', null, 'الرابط غير صالح أو انتهت مدته أو أُلغي. اطلب من الشخص الذي دعاك رابطاً جديداً.'));
+		list.appendChild(g); document.getElementById('title').textContent = 'محادثة';
+	}
+	function paint(m) {
+		if (seen[m.id]) return; seen[m.id] = 1;
+		var e = list.querySelector('.empty'); if (e) e.remove();
+		var d = el('div', 'msg' + (m.mine ? ' mine' : ''));
+		var n = el('div', 'n', m.mine ? 'أنت' : (m.from || '')); if (m.guest && !m.mine) n.appendChild(el('span', 'g', 'ضيف'));
+		d.appendChild(n);
+		if (m.deleted) d.appendChild(el('div', 'f', 'حُذفت هذه الرسالة'));
+		else { if (m.text) d.appendChild(el('div', 'x', m.text)); if (m.file) d.appendChild(el('div', 'f', m.file + ' (مرفق لا يُعرض للضيوف)')); }
+		d.appendChild(el('div', 'w', time(m.at)));
+		list.appendChild(d);
+	}
+	function load() {
+		if (dead) return;
+		fetch('/api/guest/chat?since=' + last, { headers: { 'X-Guest': key }, credentials: 'omit', cache: 'no-store' }).then(function (r) {
+			if (r.status === 404) { gone(); return null; }
+			return r.ok ? r.json() : null;
+		}).then(function (d) {
+			if (!d) return;
+			document.getElementById('title').textContent = d.conversation || 'محادثة';
+			document.getElementById('sub').textContent = 'أنت ' + d.guest + ' · تنتهي الدعوة ' + new Date(d.expiresAt).toLocaleDateString('ar');
+			document.getElementById('composer').hidden = false;
+			var near = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+			(d.messages || []).forEach(function (m) { paint(m); last = Math.max(last, m.id); });
+			if (!list.querySelector('.msg') && !list.querySelector('.empty')) list.appendChild(el('div', 'empty', 'لا رسائل بعد — ابدأ المحادثة'));
+			else if (list.querySelector('.empty') && list.querySelector('.msg')) list.querySelector('.empty').remove();
+			if (near) list.scrollTop = list.scrollHeight;
+		}).catch(function () { }).then(function () { if (!dead) timer = setTimeout(load, 3000); });
+	}
+	function send() {
+		var t = box.value.trim(); if (!t || dead) return;
+		btn.disabled = true;
+		var fd = new FormData(); fd.append('text', t);
+		fetch('/api/guest/chat', { method: 'POST', headers: { 'X-Guest': key }, credentials: 'omit', body: fd }).then(function (r) {
+			if (r.status === 404) { gone(); return; }
+			if (r.status === 429) { alertLine('أرسلت رسائل كثيرة خلال دقيقة — انتظر قليلاً'); return; }
+			if (!r.ok) { alertLine('لم تُرسَل الرسالة'); return; }
+			box.value = ''; clearTimeout(timer); load();
+		}).catch(function () { alertLine('لم تُرسَل الرسالة'); }).then(function () { btn.disabled = false; box.focus(); });
+	}
+	function alertLine(t) { var d = el('div', 'msg', null); d.appendChild(el('div', 'f', t)); list.appendChild(d); list.scrollTop = list.scrollHeight; }
+	btn.addEventListener('click', send);
+	box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+	if (!/^\d+\.[A-Za-z0-9_-]{20,}$/.test(key)) gone(); else load();
+})();
+</script>
+</body>
+</html>

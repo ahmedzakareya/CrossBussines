@@ -193,6 +193,7 @@ namespace CrossBuy.BL.Communication
 			var transcripts = await ChatTranscriber.StoredAsync(_db, own.Where(x => x.AttachmentType == "audio").Select(x => x.ID).ToList());
 			var translations = await ChatAssistant.StoredAsync(_db, okIds);
 			var via = await ChatWebhookService.ViaAsync(_db, okIds);
+			var guestOf = await ChatGuestService.GuestOfAsync(_db, okIds);
 			var names = await NamesAsync(threads.SelectMany(t => t.People).Concat(fwd.Select(f => f.SenderEmployeeId)).Concat(own.Where(o => o.PinnedByEmployeeId != null).Select(o => o.PinnedByEmployeeId!.Value)));
 			return own.Select(x =>
 			{
@@ -209,6 +210,7 @@ namespace CrossBuy.BL.Communication
 					transcript = transcripts.TryGetValue(x.ID, out var tr) ? new { status = tr.Status, text = tr.Text, language = tr.Language } : null,
 					translations = translations.TryGetValue(x.ID, out var tl) ? tl : null,
 					via = via.TryGetValue(x.ID, out var vh) ? vh : null,
+					guest = guestOf.TryGetValue(x.ID, out var gn) ? gn : null,
 				};
 			}).ToList();
 		}

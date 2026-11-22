@@ -51,6 +51,7 @@
 		// came in through a webhook
 		var vi = bub.querySelector('.cm-via'); if (vi) vi.remove();
 		if (r.via) bub.insertAdjacentHTML('afterbegin', '<div class="cm-via">' + ico('webhook', 12) + esc(t('via')) + ' <b dir="auto">' + esc(r.via) + '</b></div>');
+		else if (r.guest) bub.insertAdjacentHTML('afterbegin', '<div class="cm-via">' + ico('user-round', 12) + esc(t('Guest')) + ' · <b dir="auto">' + esc(r.guest) + '</b></div>');
 		// poll
 		if (r.poll) paintPoll(el, r.poll);
 		// a voice message's words
@@ -694,14 +695,66 @@
 				'<div class="fs-5 fw-bold text-gray-900 mt-3">' + (g.isPublic ? '#' : '') + esc(h.title) + '</div>' + (g.description ? '<div class="text-muted fs-7 mt-1" dir="auto">' + esc(g.description) + '</div>' : '') +
 				'<div class="fs-8 text-muted mt-1">' + esc(g.isPublic ? t('Public channel') : t('Private group')) + '</div>' +
 				'<div class="d-flex gap-2 justify-content-center flex-wrap mt-3">' + (h.isOwner ? '<button type="button" class="cm-pill light sm" data-gedit>' + ico('pencil', 13) + esc(t('Edit')) + '</button>' +
-					'<button type="button" class="cm-pill light sm" data-ghooks>' + ico('webhook', 13) + esc(t('Webhooks')) + '</button>' : '') +
+					'<button type="button" class="cm-pill light sm" data-ghooks>' + ico('webhook', 13) + esc(t('Webhooks')) + '</button>' +
+					'<button type="button" class="cm-pill light sm" data-gguests>' + ico('user-plus', 13) + esc(t('Guests')) + '</button>' : '') +
 				'<button type="button" class="cm-pill light sm" data-gmeet>' + ico('calendar-plus', 13) + esc(t('Meeting')) + '</button></div></div>';
 			first.insertAdjacentHTML('beforebegin', top);
 			var ed = box.querySelector('[data-gedit]'); if (ed) ed.onclick = function () { editGroup(g, h); };
 			var hk = box.querySelector('[data-ghooks]'); if (hk) hk.onclick = function () { hooksDialog(h); };
+			var gu = box.querySelector('[data-gguests]'); if (gu) gu.onclick = function () { guestsDialog(h); };
 			box.querySelector('[data-gmeet]').onclick = meetingDialog;
 		});
 	});
+	/* ---------------- guests from outside the company (the group admin): one link, one conversation ---------------- */
+	function guestsDialog(h) {
+		var c = C.cur(); if (!c) return;
+		var html = '<div class="cm-hooks text-start">' +
+			'<div class="nt">' + esc(t('A guest from outside the company opens a private link and sees only this conversation, from the moment they are invited. Their messages show their name.')) + '</div>' +
+			'<div class="d-flex gap-2 mt-4"><input id="gsN" class="form-control form-control-solid" maxlength="80" placeholder="' + esc(t('Guest name')) + '" />' +
+			'<select id="gsD" class="form-select form-select-solid w-auto"><option value="1">' + esc(t('1 day')) + '</option><option value="7" selected>' + esc(t('7 days')) + '</option><option value="30">' + esc(t('30 days')) + '</option></select>' +
+			'<button type="button" class="btn btn-primary text-nowrap" data-gs="add">' + ico('user-plus', 14) + ' ' + esc(t('Invite')) + '</button></div>' +
+			'<div id="gsNew"></div><div id="gsL" class="mt-4"></div></div>';
+		swal({ title: t('Guests') + ' · ' + h.title, html: html, showConfirmButton: false, cancelButtonText: t('Close'), width: 640 });
+		var pop = document.querySelector('.swal2-popup');
+		var STATE = { active: t('Active'), expired: t('Expired'), revoked: t('Revoked') };
+		function load() {
+			getJson('/Chat/Guests?c=' + c).then(function (rows) {
+				var l = pop.querySelector('#gsL'); if (!l) return;
+				if (!rows || !rows.length) { l.innerHTML = '<div class="cm-empty-sm">' + esc(t('No guests yet')) + '</div>'; return; }
+				l.innerHTML = rows.map(function (r) {
+					return '<div class="cm-hook' + (r.state !== 'active' ? ' off' : '') + '"><span class="ic">' + ico('user-round', 16) + '</span><div class="flex-grow-1 min-w-0">' +
+						'<div class="nm" dir="auto">' + esc(r.name) + (r.state !== 'active' ? ' <span class="tag">' + esc(STATE[r.state] || r.state) + '</span>' : '') + '</div>' +
+						'<div class="sub">' + esc(t('Until')) + ' ' + num(C.when(r.expiresAt)) + (r.lastSeenAt ? ' · ' + esc(t('last seen')) + ' ' + num(C.when(r.lastSeenAt)) : ' · ' + esc(t('not opened yet'))) + '</div></div>' +
+						(r.state === 'active' ? '<button type="button" class="btn btn-sm btn-light-danger text-nowrap" data-gs-revoke="' + r.id + '">' + esc(t('Revoke')) + '</button>' : '') + '</div>';
+				}).join('');
+			});
+		}
+		load();
+		pop.addEventListener('click', function (e) {
+			var a = e.target.closest('[data-gs="add"]');
+			if (a) {
+				var n = (pop.querySelector('#gsN').value || '').trim(); if (!n) { pop.querySelector('#gsN').focus(); return; }
+				a.disabled = true;
+				post('/Chat/CreateGuest', { c: c, name: n, days: pop.querySelector('#gsD').value }).then(function (x) {
+					a.disabled = false;
+					if (!x || !x.ok) { toast('error', t('The guest could not be invited — only the group admin can, and at most 20 at a time')); return; }
+					pop.querySelector('#gsN').value = '';
+					pop.querySelector('#gsNew').innerHTML = '<div class="cm-hooknew"><div class="lb">' + ico('key-round', 13) + esc(t('Send this link to the guest — it will not be shown again')) + '</div>' +
+						'<div class="d-flex gap-2 align-items-center"><code dir="ltr" class="flex-grow-1">' + esc(x.url) + '</code><button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-gs-copy="' + esc(x.url) + '">' + ico('copy', 13) + ' ' + esc(t('Copy')) + '</button></div></div>';
+					load();
+				});
+				return;
+			}
+			var cp = e.target.closest('[data-gs-copy]');
+			if (cp) { try { navigator.clipboard.writeText(cp.getAttribute('data-gs-copy')); toast('success', t('Copied')); } catch (x) { } return; }
+			var rv = e.target.closest('[data-gs-revoke]');
+			if (rv) {
+				if (rv.getAttribute('data-sure') !== '1') { rv.setAttribute('data-sure', '1'); rv.textContent = t('Revoke — sure?'); return; }   // a second click confirms (no browser confirm())
+				post('/Chat/RevokeGuest', { c: c, id: +rv.getAttribute('data-gs-revoke') }).then(function (x) { if (x && x.ok) { toast('success', t('Revoked')); load(); } });
+			}
+		});
+	}
+
 	/* ---------------- incoming webhooks (the group admin): another system posts into this conversation ---------------- */
 	function hooksDialog(h) {
 		var c = C.cur(); if (!c) return;
