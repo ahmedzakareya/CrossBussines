@@ -220,10 +220,10 @@
                 <div class="btn-group">
                     <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-preview" class="cbd-tb-btn"
                             title="@(arabic ? "معاينة" : "Preview")"
-                            aria-label="@(arabic ? "معاينة" : "Preview")">@Ico("eye")</button>
+                            aria-label="@(arabic ? "معاينة" : "Preview")">@Ico("eye")<span class="cbd-tb-btn-text">@(arabic ? "معاينة" : "Preview")</span></button>
                     <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-print" class="cbd-tb-btn"
                             title="@(arabic ? "طباعة" : "Print")"
-                            aria-label="@(arabic ? "طباعة" : "Print")">@Ico("printer")</button>
+                            aria-label="@(arabic ? "طباعة" : "Print")">@Ico("printer")<span class="cbd-tb-btn-text">@(arabic ? "طباعة" : "Print")</span></button>
                     <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-pdf" class="cbd-tb-btn"
                             title="PDF" aria-label="PDF">@Ico("pdf")</button>
                     <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-bs-toggle="dropdown" aria-expanded="false"
@@ -382,16 +382,18 @@
                     @* ---- WHAT PRINTS ---- *@
                     <span class="cbd-tb-label">@(arabic ? "يُطبع" : "Print")</span>
                     <input id="cbd-show-header" class="cbd-tgl-input" type="checkbox" />
-                    <label class="cbd-tb-btn" for="cbd-show-header"
+                    @* Page header / footer: read only by the column-table renderer, never by a designed layout,
+                       so here they were two buttons that did nothing. The inputs stay for the draft contract. *@
+                    <label class="cbd-tb-btn d-none" for="cbd-show-header"
                            title="@(arabic ? "ترويسة الصفحة" : "Page header")">@Ico("hdr")</label>
 
                     <input id="cbd-show-footer" class="cbd-tgl-input" type="checkbox" />
-                    <label class="cbd-tb-btn" for="cbd-show-footer"
+                    <label class="cbd-tb-btn d-none" for="cbd-show-footer"
                            title="@(arabic ? "تذييل الصفحة" : "Page footer")">@Ico("ftr")</label>
 
                     <input id="cbd-show-pageno" class="cbd-tgl-input" type="checkbox" />
                     <label class="cbd-tb-btn" for="cbd-show-pageno"
-                           title="@(arabic ? "أرقام الصفحات" : "Page numbers")">@Ico("pageno")</label>
+                           title="@(arabic ? "ترقيم الصفحات تلقائيًا أسفل كل صفحة" : "Number the pages automatically at the foot of each page")">@Ico("pageno")</label>
 
                     <input id="cbd-repeat-head" class="cbd-tgl-input" type="checkbox" />
                     <label class="cbd-tb-btn" for="cbd-repeat-head"
@@ -474,7 +476,7 @@
                         <div class="card-header min-h-40px px-3">
                             <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-8 fw-bold">
                                 <li class="nav-item"><a class="nav-link active py-2" data-bs-toggle="tab" href="#cbd-tab-toolbox">@(arabic ? "الأدوات" : "Toolbox")</a></li>
-                                <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-data">@(arabic ? "البيانات" : "Data")</a></li>
+                                <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-data">@(arabic ? "تصفية وترتيب" : "Filter & sort")</a></li>
                                 <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
                             </ul>
                             <div class="card-toolbar">
@@ -514,21 +516,9 @@
 
                                 @* ---- DATA ---- *@
                                 <div class="tab-pane fade" id="cbd-tab-data">
-                                    <label class="fs-8 fw-bold text-gray-700 mb-1" for="cbd-dataset">@(arabic ? "مجموعة البيانات" : "Data set")</label>
-                                    <select id="cbd-dataset" class="form-select form-select-sm mb-3">
-                                        <option value="">@(arabic ? "— اختر —" : "— choose —")</option>
-                                        @foreach (var d in Model.Datasets)
-                                        {
-                                            <option value="@d.DatasetCode" title="@d.Description">@d.Title (@d.Module)</option>
-                                        }
-                                    </select>
-
-                                    <div class="fs-8 fw-bold text-gray-700 mb-1">@(arabic ? "الحقول" : "Fields")</div>
-                                    <div class="text-muted fs-8 mb-2">@(arabic ? "اسحب حقلًا إلى الصفحة." : "Drag a field onto the page.")</div>
-                                    <div id="cbd-fields" class="d-flex flex-column gap-1 mb-3"></div>
-
-                                    <div class="separator my-3"></div>
-
+                                    @* The data source and its fields moved to the always-visible Data card beside the
+                                       canvas (owner 2026-11-22: "hard to tell which form and which fields"); what stays
+                                       here is the narrowing — parameters, filters, sorting. *@
                                     @* §9 — the parameters the dataset itself declares. *@
                                     <div class="fs-8 fw-bold text-gray-700 mb-1">@(arabic ? "المعاملات" : "Parameters")</div>
                                     <div id="cbd-params" class="d-flex flex-column gap-2 mb-2"></div>
@@ -620,6 +610,37 @@
 
                 @* ---------------- RIGHT RAIL: properties ---------------------------------------- *@
                 <div class="cbd-rail">
+                    @* ---- THE DATA CARD: what this layout prints, and its fields, always in view. It used to be a
+                           sub-tab two clicks inside the Tools fly-out, although nothing works before it is chosen. *@
+                    <div class="card card-flush mb-3 cbd-datacard">
+                        <div class="card-header min-h-40px px-3">
+                            <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">
+                                <i class="ki-outline ki-document fs-5 me-2 text-primary"></i>@(arabic ? "ماذا يطبع هذا النموذج؟" : "What this layout prints")
+                            </h3>
+                            <div class="card-toolbar">
+                                <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-start-open"
+                                        class="btn btn-sm btn-light-primary py-1 px-3 fs-8">@(arabic ? "تغيير" : "Change")</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <select id="cbd-dataset" class="form-select form-select-sm mb-3" aria-label="@(arabic ? "ماذا يطبع هذا النموذج؟" : "What this layout prints")">
+                                <option value="">@(arabic ? "— اختر ما تريد طباعته —" : "— choose what to print —")</option>
+                                @foreach (var d in Model.Datasets)
+                                {
+                                    <option value="@d.DatasetCode" title="@d.Description">@d.Title</option>
+                                }
+                            </select>
+                            <div class="position-relative mb-2">
+                                <i class="ki-outline ki-magnifier fs-6 text-gray-500 position-absolute top-50 translate-middle-y ms-3"></i>
+                                <input id="cbd-field-search" type="search" class="form-control form-control-sm ps-9"
+                                       placeholder="@(arabic ? "ابحث عن حقل…" : "Find a field…")" aria-label="@(arabic ? "ابحث عن حقل" : "Find a field")" />
+                            </div>
+                            <div class="text-muted fs-8 mb-2">@(arabic ? "انقر الحقل لإضافته، أو اسحبه إلى مكانه على الصفحة." : "Click a field to add it, or drag it to its place on the page.")</div>
+                            <div id="cbd-fields" class="d-flex flex-column gap-1 cbd-fieldlist"></div>
+                            <div id="cbd-fields-empty" class="text-muted fs-8 text-center py-4">@(arabic ? "اختر أولًا ما تريد طباعته." : "First choose what to print.")</div>
+                        </div>
+                    </div>
+
                     <div class="card card-flush">
                         <div class="card-header min-h-40px px-3">
                             <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">@(arabic ? "الخصائص" : "Properties")</h3>
@@ -658,12 +679,108 @@
     </div>
 </div>
 
+@* ---- START: "WHAT DO YOU WANT TO PRINT?" ------------------------------------------------------------
+   Every comparable designer (Business Central, Odoo Studio, DevExpress's wizard) starts a person from a
+   ready layout of the thing they print, not from an empty page of bands. A card opens the Studio with
+   ?code=, which the controller already turns into a starter layout over that data source (title, date,
+   and a table of the definition's own columns), so this adds no second way to build a layout. *@
+@if (!Model.HasNoDatasets)
+{
+    // A data set's Module is a CODE ("Hr", "Trade"); the heading is what the reader calls that area.
+    var moduleNames = new Dictionary<string, (string Ar, string En)>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Accounting"] = ("المحاسبة", "Accounting"), ["Admin"] = ("الإدارة", "Administration"),
+        ["Hospital"] = ("المستشفى", "Hospital"), ["Hr"] = ("الموارد البشرية", "Human resources"),
+        ["Inventory"] = ("المخزون", "Inventory"), ["Trade"] = ("المشتريات والمبيعات", "Purchasing & sales"),
+        ["Purchasing"] = ("المشتريات", "Purchasing"), ["Sales"] = ("المبيعات", "Sales"),
+        ["Crm"] = ("إدارة العلاقات", "Customer relations"), ["Projects"] = ("المشاريع", "Projects"),
+        ["Work"] = ("المهام والأعمال", "Work"), ["Hyper"] = ("هايبر ماركت", "Hypermarket"),
+        ["Platform"] = ("المنصة", "Platform"), ["Manufacturing"] = ("التصنيع", "Manufacturing"),
+    };
+    string ModuleName(string code) => moduleNames.TryGetValue(code, out var n) ? (arabic ? n.Ar : n.En) : code;
+    var groups = Model.Datasets.GroupBy(d => d.Module).OrderBy(g => ModuleName(g.Key), StringComparer.CurrentCulture);
+    <div class="modal fade" id="cbd-start-modal" tabindex="-1" aria-hidden="true" aria-labelledby="cbd-start-title">
+        <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-lg-down modal-xl">
+            <div class="modal-content">
+                <div class="modal-header py-4">
+                    <div>
+                        <h3 class="modal-title fs-3" id="cbd-start-title">@(arabic ? "ماذا تريد أن تطبع؟" : "What do you want to print?")</h3>
+                        <div class="text-muted fs-7 mt-1">@(arabic ? "اختر المستند أو التقرير، وسيُفتح لك نموذج جاهز تعدّله كما تريد." : "Pick the document or report, and a ready layout opens for you to adjust.")</div>
+                    </div>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="@(arabic ? "إغلاق" : "Close")">
+                        <i class="ki-outline ki-cross fs-2"></i>
+                    </div>
+                </div>
+                <div class="px-8 pt-5 pb-3 border-bottom">
+                    <div class="position-relative">
+                        <i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input id="cbd-start-search" type="search" class="form-control form-control-solid ps-12"
+                               placeholder="@(arabic ? "ابحث: فاتورة، أمر شراء، كشف حساب…" : "Search: invoice, purchase order, statement…")"
+                               aria-label="@(arabic ? "ابحث" : "Search")" />
+                    </div>
+                </div>
+                <div class="modal-body px-8">
+                    @foreach (var g in groups)
+                    {
+                        <div class="cbd-start-group mb-6">
+                            <div class="fs-6 fw-bold text-gray-700 mb-3">@ModuleName(g.Key)</div>
+                            <div class="row g-3">
+                                @foreach (var d in g.OrderBy(x => x.Title, StringComparer.CurrentCulture))
+                                {
+                                    <div class="col-12 col-md-6 col-xl-4 cbd-start-item" data-q="@((d.Title + " " + d.Description + " " + ModuleName(g.Key)).ToLowerInvariant())">
+                                        <a href="@Url.Action("Studio", "Reports", new { code = d.DatasetCode })" data-start-code="@d.DatasetCode"
+                                           class="cbd-start-card d-flex align-items-start gap-3 p-4 h-100 rounded border border-gray-300 text-gray-800 text-hover-primary">
+                                            <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-document fs-3 text-primary"></i></span></span>
+                                            <span class="d-flex flex-column min-w-0">
+                                                <span class="fw-bold fs-6">@d.Title</span>
+                                                @if (!string.IsNullOrWhiteSpace(d.Description))
+                                                {
+                                                    <span class="text-muted fs-8 cbd-start-desc">@d.Description</span>
+                                                }
+                                            </span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <div id="cbd-start-none" class="text-center text-muted py-10 d-none">@(arabic ? "لا يوجد ما يطابق بحثك." : "Nothing matches your search.")</div>
+                </div>
+                <div class="modal-footer py-3 justify-content-between">
+                    <button type="button" id="cbd-start-blank" class="btn btn-sm btn-light">
+                        <i class="ki-outline ki-file fs-5 me-1"></i>@(arabic ? "أو ابدأ من صفحة فارغة (للمتقدمين)" : "Or start from an empty page (advanced)")
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@(arabic ? "إغلاق" : "Close")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @* The antiforgery token every POST below carries: the Studio endpoints sit behind
    [AutoValidateAntiforgeryToken] because they authenticate by session cookie. *@
 @Html.AntiForgeryToken()
 
 @section Styles {
 <link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
+<style>
+    /* The Data card: the field list scrolls inside it, so Properties stays in reach below. */
+    .cbd-fieldlist { max-height: 34vh; overflow-y: auto; }
+    .cbd-datacard .cbd-tool { text-align: start; }
+    .cbd-start-card { background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .cbd-start-card:hover, .cbd-start-card:focus { border-color: #3A5795 !important; box-shadow: 0 2px 10px rgba(58,87,149,.12); }
+    .cbd-start-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    /* Where the automatic page number will print: drawn on the sheet so nobody designs over it. */
+    .cbd-pageno-zone { position: absolute; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        border-top: 1px dashed rgba(58,87,149,.35); color: #7e8299; font-size: 10px; pointer-events: none; padding: 0 2px; }
+    .cbd-pageno-zone b { color: #3A5795; font-weight: 600; }
+    /* Section labels show only on the section under the pointer, or the selected one: always shown, they sat
+       over the title and the table header, and beside the sheet there is no room at a fitted zoom. */
+    .cbd-band .cbd-band-tag { opacity: 0; transition: opacity .12s; z-index: 50; font-size: 10px; padding: 2px 6px;
+        background: #E7F0FF; color: #1F2D4D; white-space: nowrap; }
+    .cbd-band:hover .cbd-band-tag { opacity: 1; }
+    .cbd-band.sel .cbd-band-tag { opacity: 1; background: #3A5795; color: #fff; }
+</style>
 }
 
 @section Scripts {
@@ -702,6 +819,9 @@
 
         // A report opened from a link, resolved and re-validated server-side. null covers both
         // "nothing to open" and "not yours", which is one answer on purpose.
+        // Nothing was opened: greet the author with "what do you want to print?" instead of an empty sheet.
+        startOnOpen: @(openDraft == null && !Model.HasNoDatasets ? "true" : "false"),
+
         openDraft: @Html.Raw(openDraft == null
             ? "null"
             : System.Text.Json.JsonSerializer.Serialize(openDraft, new System.Text.Json.JsonSerializerOptions

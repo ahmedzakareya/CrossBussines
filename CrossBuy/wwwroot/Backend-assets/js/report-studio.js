@@ -59,14 +59,17 @@
     var SYS  = { CurrentDate: 0, CurrentDateTime: 1, PageNumber: 2, TotalPages: 3, PageXOfY: 4, ReportName: 5 };
     var AGG  = { None: 0, Sum: 1, Average: 2, Min: 3, Max: 4, Count: 5 };
 
+    // SAID AS WHERE IT PRINTS, not in report-designer jargon (owner 2026-11-22: an ordinary user could not
+    // work the Studio). "Detail" and "Group footer" mean nothing to someone printing an invoice; "the rows,
+    // repeated for each line" and "after each group" do.
     var BAND_LABEL = [
-        AR ? "رأس التقرير"  : "Report header",
-        AR ? "رأس الصفحة"   : "Page header",
-        AR ? "رأس المجموعة" : "Group header",
-        AR ? "التفاصيل"     : "Detail",
-        AR ? "ذيل المجموعة" : "Group footer",
-        AR ? "ذيل الصفحة"   : "Page footer",
-        AR ? "ذيل التقرير"  : "Report footer"
+        AR ? "أعلى الصفحة الأولى"     : "Top of the first page",
+        AR ? "أعلى كل صفحة"           : "Top of every page",
+        AR ? "قبل كل مجموعة"          : "Before each group",
+        AR ? "السطور — تتكرر لكل سطر" : "Rows — repeat for each line",
+        AR ? "بعد كل مجموعة"          : "After each group",
+        AR ? "أسفل كل صفحة"           : "Bottom of every page",
+        AR ? "نهاية التقرير"          : "End of the report"
     ];
 
     // Paper, in mm. The same table ReportPaper holds server-side; duplicated here ONLY to draw the sheet,
@@ -462,6 +465,7 @@
         }
 
         content.innerHTML = S.layout.bands.map(function (b) { return bandHtml(b, sc); }).join("");
+        renderPageNoZone(sc);
 
         wireBands(sc);
         wireElements(sc);
@@ -470,10 +474,28 @@
         renderStatus();
     }
 
+    // WHERE THE AUTOMATIC PAGE NUMBER PRINTS - the same strip ReportVisualRenderer reserves (the bottom
+    // margin, at least 9mm), drawn on the sheet so nobody places a field where the number will be.
+    function renderPageNoZone(sc) {
+        var pageEl = $("cbd-page"), pg = S.layout.page;
+        var zone = $("cbd-pageno-zone");
+        var own = S.layout.bands.some(function (b) {
+            return (b.elements || []).some(function (e) { return e.kind === KIND.SystemField && (e.systemField === SYS.PageNumber || e.systemField === SYS.TotalPages || e.systemField === SYS.PageXOfY); });
+        });
+        if (pg.showPageNumbers === false || own) { if (zone) { zone.remove(); } return; }
+        if (!zone) { zone = document.createElement("div"); zone.id = "cbd-pageno-zone"; zone.className = "cbd-pageno-zone"; pageEl.appendChild(zone); }
+        zone.style.bottom = "0";
+        zone.style.height = (Math.max(pg.marginBottomMm || 0, 9) * sc) + "px";
+        zone.style.insetInlineStart = (pg.marginLeftMm * sc) + "px";
+        zone.style.insetInlineEnd = (pg.marginRightMm * sc) + "px";
+        var name = (AR ? $("cbd-name").value : $("cbd-name-en").value) || (AR ? "اسم التقرير" : "Report name");
+        zone.innerHTML = "<span>" + esc(name) + "</span><b>" + (AR ? "صفحة 1 من 3" : "Page 1 of 3") + "</b>";
+    }
+
     function bandHtml(b, sc) {
         var h = Math.max(0, b.heightMm || 0) * sc;
         var selected = S.selectedBand === b.kind;
-        var tag = BAND_LABEL[b.kind] + " · " + (b.heightMm || 0) + "mm";
+        var tag = BAND_LABEL[b.kind];
 
         var inner = b.elements
             .slice()
@@ -654,8 +676,11 @@
                    ["start", "center", "end", "justify"][c.align || 0] + "'>" +
                    esc(c.headerText || (f ? f.title : c.fieldKey)) + "</th>";
         }).join("");
+        // The data row is a placeholder bar, not "{CustomerName}": the header already names the column, and a
+        // raw field code under it read as something the user had to understand.
         var row = e.columns.map(function (c) {
-            return "<td class='text-primary' style='" + cell + "'>{" + esc(c.fieldKey) + "}</td>";
+            return "<td style='" + cell + "text-align:" + ["start", "center", "end", "justify"][c.align || 0] + "'>" +
+                   "<span style='display:inline-block;height:.55em;width:70%;max-width:40px;background:#E7F0FF;border-radius:2px;vertical-align:middle'></span></td>";
         }).join("");
         // THE FACE HAS TO FIT THE BOX IT IS DRAWN IN.
         //
@@ -1933,8 +1958,9 @@
     // DATA TAB — fields, parameters, filters, sorts
     // =============================================================================================
     function renderFields() {
+        if ($("cbd-fields-empty")) { $("cbd-fields-empty").style.display = S.fields.length ? "none" : ""; }
         $("cbd-fields").innerHTML = S.fields.map(function (f) {
-            return "<button type='button' draggable='true' data-field='" + esc(f.key) + "' " +
+            return "<button type='button' draggable='true' data-field='" + esc(f.key) + "' data-q='" + esc((f.title + " " + f.key).toLowerCase()) + "' " +
                    "class='btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 cbd-tool'>" +
                    "<i class='ki-outline ki-abstract-25 fs-5 me-2 text-primary'></i>" + esc(f.title) + "</button>";
         }).join("");
@@ -1946,6 +1972,73 @@
             });
             b.addEventListener("click", function () { dropField(b.getAttribute("data-field"), null); });
         });
+        filterFields();
+    }
+
+    // The field list's search box: a dataset can carry forty fields, and nobody should scroll for "Total".
+    function filterFields() {
+        var box = $("cbd-field-search"); if (!box) { return; }
+        var q = box.value.trim().toLowerCase();
+        Array.prototype.forEach.call($("cbd-fields").querySelectorAll("[data-field]"), function (b) {
+            b.style.display = !q || b.getAttribute("data-q").indexOf(q) >= 0 ? "" : "none";
+        });
+    }
+
+    // =============================================================================================
+    // START - "what do you want to print?"
+    // =============================================================================================
+    // A card is a plain link to ?code=, which the server turns into a starter layout; the only thing done
+    // here is filtering, and the escape hatch to an empty page for the author who wants one.
+    function startModal() { var m = $("cbd-start-modal"); return m ? bootstrap.Modal.getOrCreateInstance(m) : null; }
+
+    function openStart() {
+        var m = startModal(); if (!m) { return; }
+        m.show();
+        setTimeout(function () { var q = $("cbd-start-search"); if (q) { q.focus(); } }, 300);
+    }
+
+    function hasDesign() {
+        return S.layout.bands.some(function (b) { return b.elements && b.elements.length; });
+    }
+
+    function wireStart() {
+        var q = $("cbd-start-search");
+        if (q) {
+            q.addEventListener("input", function () {
+                var t = q.value.trim().toLowerCase(), any = false;
+                Array.prototype.forEach.call(document.querySelectorAll(".cbd-start-group"), function (g) {
+                    var shown = 0;
+                    Array.prototype.forEach.call(g.querySelectorAll(".cbd-start-item"), function (it) {
+                        var ok = !t || it.getAttribute("data-q").indexOf(t) >= 0;
+                        it.style.display = ok ? "" : "none"; if (ok) { shown++; }
+                    });
+                    g.style.display = shown ? "" : "none"; if (shown) { any = true; }
+                });
+                $("cbd-start-none").classList.toggle("d-none", any);
+            });
+        }
+        var blank = $("cbd-start-blank");
+        if (blank) {
+            blank.addEventListener("click", function () {
+                startModal().hide();
+                S.assetTarget = null; showErrors(null);
+                applyDraft({ templateId: 0, datasetCode: "", name: "", nameEn: "", columns: [], filters: [], sorts: [], parameters: {}, visual: blankLayout() });
+            });
+        }
+        var change = $("cbd-start-open");
+        if (change) {
+            change.addEventListener("click", function () {
+                if (!hasDesign()) { openStart(); return; }
+                confirmThen(
+                    AR ? "تغيير ما يطبعه النموذج؟" : "Change what this layout prints?",
+                    AR ? "سيُفتح نموذج جاهز جديد لما تختاره، ويُلغى التصميم الحالي غير المحفوظ. أي نموذج محفوظ لا يتأثر."
+                       : "A new ready layout opens for what you pick, and the current unsaved design is discarded. Anything already saved is untouched.",
+                    AR ? "اختيار" : "Choose",
+                    openStart);
+            });
+        }
+        var search = $("cbd-field-search");
+        if (search) { search.addEventListener("input", filterFields); }
     }
 
     // §9. Rendered from the DESCRIPTORS the dataset declares — type, required, options, bounds — so a
@@ -2402,6 +2495,8 @@
                : "You will start from an empty page: the design, name, data set, filters and sorts are all discarded, and that cannot be undone. Anything already saved is untouched.",
             AR ? "تقرير جديد" : "New report",
             function () {
+                // A new report starts where every new report should: "what do you want to print?".
+                if (startModal()) { openStart(); return; }
                 S.assetTarget = null;
                 showErrors(null);
                 applyDraft({
@@ -2551,7 +2646,7 @@
         }
         bindFlag("cbd-show-header", function (v) { S.layout.page.showHeader = v; });
         bindFlag("cbd-show-footer", function (v) { S.layout.page.showFooter = v; });
-        bindFlag("cbd-show-pageno", function (v) { S.layout.page.showPageNumbers = v; });
+        bindFlag("cbd-show-pageno", function (v) { S.layout.page.showPageNumbers = v; renderCanvas(); });
         bindFlag("cbd-repeat-head", function (v) { S.layout.page.repeatHeaderRow = v; });
 
         $("cbd-snap").addEventListener("change", function () { S.layout.snapToGrid = $("cbd-snap").checked; });
@@ -2856,6 +2951,8 @@
     // A report opened from a link. The view resolved and re-validated it SERVER-SIDE; null means
     // there was nothing to open, or nothing this caller may open - the two are one answer.
     if (CBD.openDraft) applyDraft(CBD.openDraft);
+    wireStart();
+    if (CBD.startOnOpen) { openStart(); }
 
         // LAST, deliberately: the draft above can change the paper size, and fitting the previous one
         // would be fitting the wrong sheet.

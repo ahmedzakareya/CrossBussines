@@ -83,6 +83,15 @@
             Url.Action("Export", "Reports")!, route);
     }
 
+    string StudioUrl(ReportScreenBinding binding)
+    {
+        var route = new Dictionary<string, string?>(StringComparer.Ordinal) { ["code"] = binding.ReportCode };
+        if (!string.IsNullOrWhiteSpace(binding.IdParameter) && !string.IsNullOrWhiteSpace(Model.DocumentId))
+            route[binding.IdParameter!] = Model.DocumentId;
+        foreach (var (key, value) in Model.ExtraParameters) route[key] = value;
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Url.Action("Studio", "Reports")!, route);
+    }
+
     string Name(ReportTemplateSummary t) =>
         arabic ? t.Name : (string.IsNullOrWhiteSpace(t.NameEn) ? t.Name : t.NameEn!);
 
@@ -185,8 +194,10 @@ else
                    not, and without this the answer to "I want a second design" was still to leave the
                    screen and find the report by hand. *@
                 <div class="menu-item px-3">
+                    @* Straight into the Studio on a ready layout of this report, with this document as the
+                       sample (it went to the Viewer first, one more page to find "Design in Studio" on). *@
                     <a class="menu-link px-3 text-muted"
-                       href="@Url.Action("Viewer", "Reports", new { id = e.Binding.ReportCode })"
+                       href="@StudioUrl(e.Binding)"
                        target="_blank" rel="noopener">
                         <span class="menu-icon"><i class="ki-outline ki-plus-square fs-5"></i></span>
                         <span class="menu-title">@Localizer["Design a layout"]</span>
