@@ -9756,4 +9756,36 @@
   <data name="mostly susceptible" xml:space="preserve"><value>mostly susceptible</value></data>
   <data name="often resistant" xml:space="preserve"><value>often resistant</value></data>
   <data name="variable" xml:space="preserve"><value>variable</value></data>
+  <data name="Add a control material" xml:space="preserve"><value>Add a control material</value></data>
+  <data name="Choose the analyte" xml:space="preserve"><value>Choose the analyte</value></data>
+  <data name="Control materials" xml:space="preserve"><value>Control materials</value></data>
+  <data name="Corrective action (if rejected)" xml:space="preserve"><value>Corrective action (if rejected)</value></data>
+  <data name="Enter the measured value" xml:space="preserve"><value>Enter the measured value</value></data>
+  <data name="Level 1 (low)" xml:space="preserve"><value>Level 1 (low)</value></data>
+  <data name="Level 2 (normal)" xml:space="preserve"><value>Level 2 (normal)</value></data>
+  <data name="Level 3 (high)" xml:space="preserve"><value>Level 3 (high)</value></data>
+  <data name="Mean" xml:space="preserve"><value>Mean</value></data>
+  <data name="No control material yet." xml:space="preserve"><value>No control material yet.</value></data>
+  <data name="Quality control" xml:space="preserve"><value>Quality control</value></data>
+  <data name="Quality control is not installed yet (hospital_h232_lab_qc.sql)." xml:space="preserve"><value>Quality control is not installed yet (hospital_h232_lab_qc.sql).</value></data>
+  <data name="Quality control is out for {0}: run an accepted control before patient results" xml:space="preserve"><value>Quality control is out for {0}: run an accepted control before patient results</value></data>
+  <data name="Record the run" xml:space="preserve"><value>Record the run</value></data>
+  <data name="Retire this lot" xml:space="preserve"><value>Retire this lot</value></data>
+  <data name="Retire this lot? Its runs stay; it no longer gates the test." xml:space="preserve"><value>Retire this lot? Its runs stay; it no longer gates the test.</value></data>
+  <data name="SD" xml:space="preserve"><value>SD</value></data>
+  <data name="Search an analyte, test or lot" xml:space="preserve"><value>Search an analyte, test or lot</value></data>
+  <data name="The action is 300 characters at most" xml:space="preserve"><value>The action is 300 characters at most</value></data>
+  <data name="The level is 1, 2 or 3" xml:space="preserve"><value>The level is 1, 2 or 3</value></data>
+  <data name="The lot's target mean and standard deviation, from its insert or your own 20 runs." xml:space="preserve"><value>The lot's target mean and standard deviation, from its insert or your own 20 runs.</value></data>
+  <data name="The mean cannot be negative" xml:space="preserve"><value>The mean cannot be negative</value></data>
+  <data name="The standard deviation must be above zero" xml:space="preserve"><value>The standard deviation must be above zero</value></data>
+  <data name="Their tests take no patient result until a control of the same material is accepted." xml:space="preserve"><value>Their tests take no patient result until a control of the same material is accepted.</value></data>
+  <data name="This lot and level are already set for this analyte" xml:space="preserve"><value>This lot and level are already set for this analyte</value></data>
+  <data name="This lot has expired" xml:space="preserve"><value>This lot has expired</value></data>
+  <data name="Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject." xml:space="preserve"><value>Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject.</value></data>
+  <data name="Write the control lot (40 characters at most)" xml:space="preserve"><value>Write the control lot (40 characters at most)</value></data>
+  <data name="qc:Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="qc:Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="qc:Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="{0} controls out" xml:space="preserve"><value>{0} controls out</value></data>
 </root>

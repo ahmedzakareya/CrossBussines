@@ -263,6 +263,9 @@ namespace CrossBuy.BL.Hospital
 			if (o!.Status == HospitalLabStatus.Verified) return HospitalResult.Fail("This result is verified and locked");
 			if (o.Status is HospitalLabStatus.Ordered or HospitalLabStatus.Collected) return HospitalResult.Fail("Receive the specimen in the lab before entering results");
 			if (await HospitalMicroService.IsCultureAsync(_db, ctx.CompanyId, o.ServiceId, ct)) return HospitalResult.Fail("A culture is reported from its microbiology panel");   // H230
+			// H232: no patient result while the test's quality control is out — run a control that is accepted first
+			if (await HospitalLabQcService.OutOfControlAsync(_db, ctx.CompanyId, o.ServiceId, ct) is { Count: > 0 } outQc)
+				return HospitalResult.Fail("Quality control is out for {0}: run an accepted control before patient results", string.Join(", ", outQc));
 			var analytes = await _db.HospitalLabAnalytes.Where(a => a.CompanyId == ctx.CompanyId && a.ServiceId == o.ServiceId && a.IsActive).OrderBy(a => a.SortOrder).ThenBy(a => a.ID).ToListAsync(ct);
 			if (analytes.Count == 0) return HospitalResult.Fail("This test has no analytes yet. Set it up in lab tests first");
 			if (values.Keys.Any(k => analytes.All(a => a.ID != k))) return HospitalResult.Fail("not_found");

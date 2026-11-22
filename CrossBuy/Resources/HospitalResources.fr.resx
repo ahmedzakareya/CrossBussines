@@ -9758,4 +9758,36 @@
   <data name="mostly susceptible" xml:space="preserve"><value>le plus souvent sensible</value></data>
   <data name="often resistant" xml:space="preserve"><value>souvent résistant</value></data>
   <data name="variable" xml:space="preserve"><value>variable</value></data>
+  <data name="Add a control material" xml:space="preserve"><value>Ajouter un matériau de contrôle</value></data>
+  <data name="Choose the analyte" xml:space="preserve"><value>Choisissez le paramètre</value></data>
+  <data name="Control materials" xml:space="preserve"><value>Matériaux de contrôle</value></data>
+  <data name="Corrective action (if rejected)" xml:space="preserve"><value>Action corrective (en cas de rejet)</value></data>
+  <data name="Enter the measured value" xml:space="preserve"><value>Saisissez la valeur mesurée</value></data>
+  <data name="Level 1 (low)" xml:space="preserve"><value>Niveau 1 (bas)</value></data>
+  <data name="Level 2 (normal)" xml:space="preserve"><value>Niveau 2 (normal)</value></data>
+  <data name="Level 3 (high)" xml:space="preserve"><value>Niveau 3 (haut)</value></data>
+  <data name="Mean" xml:space="preserve"><value>Moyenne</value></data>
+  <data name="No control material yet." xml:space="preserve"><value>Aucun matériau de contrôle pour l'instant.</value></data>
+  <data name="Quality control" xml:space="preserve"><value>Contrôle qualité</value></data>
+  <data name="Quality control is not installed yet (hospital_h232_lab_qc.sql)." xml:space="preserve"><value>Le contrôle qualité n'est pas encore installé (hospital_h232_lab_qc.sql).</value></data>
+  <data name="Quality control is out for {0}: run an accepted control before patient results" xml:space="preserve"><value>Le contrôle qualité est hors limites pour {0} : passez un contrôle accepté avant les résultats patients</value></data>
+  <data name="Record the run" xml:space="preserve"><value>Enregistrer la mesure</value></data>
+  <data name="Retire this lot" xml:space="preserve"><value>Retirer ce lot</value></data>
+  <data name="Retire this lot? Its runs stay; it no longer gates the test." xml:space="preserve"><value>Retirer ce lot ? Ses mesures restent ; il ne conditionne plus l'analyse.</value></data>
+  <data name="SD" xml:space="preserve"><value>Écart-type</value></data>
+  <data name="Search an analyte, test or lot" xml:space="preserve"><value>Rechercher un paramètre, une analyse ou un lot</value></data>
+  <data name="The action is 300 characters at most" xml:space="preserve"><value>L'action compte 300 caractères au plus</value></data>
+  <data name="The level is 1, 2 or 3" xml:space="preserve"><value>Le niveau est 1, 2 ou 3</value></data>
+  <data name="The lot's target mean and standard deviation, from its insert or your own 20 runs." xml:space="preserve"><value>La moyenne cible et l'écart-type du lot, d'après sa notice ou vos 20 mesures.</value></data>
+  <data name="The mean cannot be negative" xml:space="preserve"><value>La moyenne ne peut pas être négative</value></data>
+  <data name="The standard deviation must be above zero" xml:space="preserve"><value>L'écart-type doit être supérieur à zéro</value></data>
+  <data name="Their tests take no patient result until a control of the same material is accepted." xml:space="preserve"><value>Leurs analyses ne prennent aucun résultat patient tant qu'un contrôle du même matériau n'est pas accepté.</value></data>
+  <data name="This lot and level are already set for this analyte" xml:space="preserve"><value>Ce lot et ce niveau sont déjà définis pour ce paramètre</value></data>
+  <data name="This lot has expired" xml:space="preserve"><value>Ce lot est périmé</value></data>
+  <data name="Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject." xml:space="preserve"><value>Règles de Westgard : 1-2s avertit ; 1-3s, 2-2s, R-4s, 4-1s et 10x rejettent.</value></data>
+  <data name="Write the control lot (40 characters at most)" xml:space="preserve"><value>Saisissez le lot du contrôle (40 caractères au plus)</value></data>
+  <data name="qc:Accepted" xml:space="preserve"><value>Acceptée</value></data>
+  <data name="qc:Rejected" xml:space="preserve"><value>Rejetée</value></data>
+  <data name="qc:Warning" xml:space="preserve"><value>Avertissement</value></data>
+  <data name="{0} controls out" xml:space="preserve"><value>{0} contrôles hors limites</value></data>
 </root>

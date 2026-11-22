@@ -1,0 +1,165 @@
+{
+ "unit": "H232 - lab quality control",
+ "strings": {
+  "Quality control": {
+   "ar": "ضبط الجودة",
+   "en": "Quality control",
+   "fr": "Contrôle qualité"
+  },
+  "Add a control material": {
+   "ar": "إضافة مادة ضبط",
+   "en": "Add a control material",
+   "fr": "Ajouter un matériau de contrôle"
+  },
+  "Quality control is not installed yet (hospital_h232_lab_qc.sql).": {
+   "ar": "ضبط الجودة غير مثبت بعد (hospital_h232_lab_qc.sql).",
+   "en": "Quality control is not installed yet (hospital_h232_lab_qc.sql).",
+   "fr": "Le contrôle qualité n'est pas encore installé (hospital_h232_lab_qc.sql)."
+  },
+  "{0} controls out": {
+   "ar": "{0} مواد ضبط خارج الحدود",
+   "en": "{0} controls out",
+   "fr": "{0} contrôles hors limites"
+  },
+  "Their tests take no patient result until a control of the same material is accepted.": {
+   "ar": "لا تقبل فحوصاتها نتائج مرضى حتى تُقبل قراءة ضبط من المادة نفسها.",
+   "en": "Their tests take no patient result until a control of the same material is accepted.",
+   "fr": "Leurs analyses ne prennent aucun résultat patient tant qu'un contrôle du même matériau n'est pas accepté."
+  },
+  "Control materials": {
+   "ar": "مواد الضبط",
+   "en": "Control materials",
+   "fr": "Matériaux de contrôle"
+  },
+  "Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject.": {
+   "ar": "قواعد وستغارد: ‎1-2s‎ تنبيه؛ و‎1-3s‎ و‎2-2s‎ و‎R-4s‎ و‎4-1s‎ و‎10x‎ رفض.",
+   "en": "Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject.",
+   "fr": "Règles de Westgard : 1-2s avertit ; 1-3s, 2-2s, R-4s, 4-1s et 10x rejettent."
+  },
+  "Search an analyte, test or lot": {
+   "ar": "ابحث عن مكوّن أو فحص أو تشغيلة",
+   "en": "Search an analyte, test or lot",
+   "fr": "Rechercher un paramètre, une analyse ou un lot"
+  },
+  "No control material yet.": {
+   "ar": "لا توجد مواد ضبط بعد.",
+   "en": "No control material yet.",
+   "fr": "Aucun matériau de contrôle pour l'instant."
+  },
+  "Retire this lot": {
+   "ar": "إيقاف هذه التشغيلة",
+   "en": "Retire this lot",
+   "fr": "Retirer ce lot"
+  },
+  "Corrective action (if rejected)": {
+   "ar": "الإجراء التصحيحي (عند الرفض)",
+   "en": "Corrective action (if rejected)",
+   "fr": "Action corrective (en cas de rejet)"
+  },
+  "Record the run": {
+   "ar": "تسجيل القراءة",
+   "en": "Record the run",
+   "fr": "Enregistrer la mesure"
+  },
+  "The lot's target mean and standard deviation, from its insert or your own 20 runs.": {
+   "ar": "المتوسط المستهدف والانحراف المعياري للتشغيلة، من نشرتها أو من 20 قراءة لديكم.",
+   "en": "The lot's target mean and standard deviation, from its insert or your own 20 runs.",
+   "fr": "La moyenne cible et l'écart-type du lot, d'après sa notice ou vos 20 mesures."
+  },
+  "Choose the analyte": {
+   "ar": "اختر المكوّن",
+   "en": "Choose the analyte",
+   "fr": "Choisissez le paramètre"
+  },
+  "Level 1 (low)": {
+   "ar": "المستوى 1 (منخفض)",
+   "en": "Level 1 (low)",
+   "fr": "Niveau 1 (bas)"
+  },
+  "Level 2 (normal)": {
+   "ar": "المستوى 2 (طبيعي)",
+   "en": "Level 2 (normal)",
+   "fr": "Niveau 2 (normal)"
+  },
+  "Level 3 (high)": {
+   "ar": "المستوى 3 (مرتفع)",
+   "en": "Level 3 (high)",
+   "fr": "Niveau 3 (haut)"
+  },
+  "Mean": {
+   "ar": "المتوسط",
+   "en": "Mean",
+   "fr": "Moyenne"
+  },
+  "SD": {
+   "ar": "الانحراف المعياري",
+   "en": "SD",
+   "fr": "Écart-type"
+  },
+  "Retire this lot? Its runs stay; it no longer gates the test.": {
+   "ar": "إيقاف هذه التشغيلة؟ تبقى قراءاتها ولا تعود تتحكم في الفحص.",
+   "en": "Retire this lot? Its runs stay; it no longer gates the test.",
+   "fr": "Retirer ce lot ? Ses mesures restent ; il ne conditionne plus l'analyse."
+  },
+  "Enter the measured value": {
+   "ar": "أدخل القيمة المقاسة",
+   "en": "Enter the measured value",
+   "fr": "Saisissez la valeur mesurée"
+  },
+  "qc:Accepted": {
+   "ar": "مقبولة",
+   "en": "Accepted",
+   "fr": "Acceptée"
+  },
+  "qc:Warning": {
+   "ar": "تنبيه",
+   "en": "Warning",
+   "fr": "Avertissement"
+  },
+  "qc:Rejected": {
+   "ar": "مرفوضة",
+   "en": "Rejected",
+   "fr": "Rejetée"
+  },
+  "Write the control lot (40 characters at most)": {
+   "ar": "اكتب تشغيلة مادة الضبط (40 حرفًا على الأكثر)",
+   "en": "Write the control lot (40 characters at most)",
+   "fr": "Saisissez le lot du contrôle (40 caractères au plus)"
+  },
+  "The level is 1, 2 or 3": {
+   "ar": "المستوى 1 أو 2 أو 3",
+   "en": "The level is 1, 2 or 3",
+   "fr": "Le niveau est 1, 2 ou 3"
+  },
+  "The standard deviation must be above zero": {
+   "ar": "يجب أن يكون الانحراف المعياري أكبر من صفر",
+   "en": "The standard deviation must be above zero",
+   "fr": "L'écart-type doit être supérieur à zéro"
+  },
+  "The mean cannot be negative": {
+   "ar": "لا يكون المتوسط سالبًا",
+   "en": "The mean cannot be negative",
+   "fr": "La moyenne ne peut pas être négative"
+  },
+  "This lot has expired": {
+   "ar": "انتهت صلاحية هذه التشغيلة",
+   "en": "This lot has expired",
+   "fr": "Ce lot est périmé"
+  },
+  "This lot and level are already set for this analyte": {
+   "ar": "هذه التشغيلة وهذا المستوى مضبوطان لهذا المكوّن مسبقًا",
+   "en": "This lot and level are already set for this analyte",
+   "fr": "Ce lot et ce niveau sont déjà définis pour ce paramètre"
+  },
+  "The action is 300 characters at most": {
+   "ar": "الإجراء 300 حرف على الأكثر",
+   "en": "The action is 300 characters at most",
+   "fr": "L'action compte 300 caractères au plus"
+  },
+  "Quality control is out for {0}: run an accepted control before patient results": {
+   "ar": "ضبط الجودة خارج الحدود لـ {0}: سجّل قراءة ضبط مقبولة قبل نتائج المرضى",
+   "en": "Quality control is out for {0}: run an accepted control before patient results",
+   "fr": "Le contrôle qualité est hors limites pour {0} : passez un contrôle accepté avant les résultats patients"
+  }
+ }
+}

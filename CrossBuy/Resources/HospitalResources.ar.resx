@@ -9852,4 +9852,36 @@
   <data name="mostly susceptible" xml:space="preserve"><value>حساس غالبًا</value></data>
   <data name="often resistant" xml:space="preserve"><value>مقاوم كثيرًا</value></data>
   <data name="variable" xml:space="preserve"><value>متفاوت</value></data>
+  <data name="Add a control material" xml:space="preserve"><value>إضافة مادة ضبط</value></data>
+  <data name="Choose the analyte" xml:space="preserve"><value>اختر المكوّن</value></data>
+  <data name="Control materials" xml:space="preserve"><value>مواد الضبط</value></data>
+  <data name="Corrective action (if rejected)" xml:space="preserve"><value>الإجراء التصحيحي (عند الرفض)</value></data>
+  <data name="Enter the measured value" xml:space="preserve"><value>أدخل القيمة المقاسة</value></data>
+  <data name="Level 1 (low)" xml:space="preserve"><value>المستوى 1 (منخفض)</value></data>
+  <data name="Level 2 (normal)" xml:space="preserve"><value>المستوى 2 (طبيعي)</value></data>
+  <data name="Level 3 (high)" xml:space="preserve"><value>المستوى 3 (مرتفع)</value></data>
+  <data name="Mean" xml:space="preserve"><value>المتوسط</value></data>
+  <data name="No control material yet." xml:space="preserve"><value>لا توجد مواد ضبط بعد.</value></data>
+  <data name="Quality control" xml:space="preserve"><value>ضبط الجودة</value></data>
+  <data name="Quality control is not installed yet (hospital_h232_lab_qc.sql)." xml:space="preserve"><value>ضبط الجودة غير مثبت بعد (hospital_h232_lab_qc.sql).</value></data>
+  <data name="Quality control is out for {0}: run an accepted control before patient results" xml:space="preserve"><value>ضبط الجودة خارج الحدود لـ {0}: سجّل قراءة ضبط مقبولة قبل نتائج المرضى</value></data>
+  <data name="Record the run" xml:space="preserve"><value>تسجيل القراءة</value></data>
+  <data name="Retire this lot" xml:space="preserve"><value>إيقاف هذه التشغيلة</value></data>
+  <data name="Retire this lot? Its runs stay; it no longer gates the test." xml:space="preserve"><value>إيقاف هذه التشغيلة؟ تبقى قراءاتها ولا تعود تتحكم في الفحص.</value></data>
+  <data name="SD" xml:space="preserve"><value>الانحراف المعياري</value></data>
+  <data name="Search an analyte, test or lot" xml:space="preserve"><value>ابحث عن مكوّن أو فحص أو تشغيلة</value></data>
+  <data name="The action is 300 characters at most" xml:space="preserve"><value>الإجراء 300 حرف على الأكثر</value></data>
+  <data name="The level is 1, 2 or 3" xml:space="preserve"><value>المستوى 1 أو 2 أو 3</value></data>
+  <data name="The lot's target mean and standard deviation, from its insert or your own 20 runs." xml:space="preserve"><value>المتوسط المستهدف والانحراف المعياري للتشغيلة، من نشرتها أو من 20 قراءة لديكم.</value></data>
+  <data name="The mean cannot be negative" xml:space="preserve"><value>لا يكون المتوسط سالبًا</value></data>
+  <data name="The standard deviation must be above zero" xml:space="preserve"><value>يجب أن يكون الانحراف المعياري أكبر من صفر</value></data>
+  <data name="Their tests take no patient result until a control of the same material is accepted." xml:space="preserve"><value>لا تقبل فحوصاتها نتائج مرضى حتى تُقبل قراءة ضبط من المادة نفسها.</value></data>
+  <data name="This lot and level are already set for this analyte" xml:space="preserve"><value>هذه التشغيلة وهذا المستوى مضبوطان لهذا المكوّن مسبقًا</value></data>
+  <data name="This lot has expired" xml:space="preserve"><value>انتهت صلاحية هذه التشغيلة</value></data>
+  <data name="Westgard rules: 1-2s warns; 1-3s, 2-2s, R-4s, 4-1s and 10x reject." xml:space="preserve"><value>قواعد وستغارد: ‎1-2s‎ تنبيه؛ و‎1-3s‎ و‎2-2s‎ و‎R-4s‎ و‎4-1s‎ و‎10x‎ رفض.</value></data>
+  <data name="Write the control lot (40 characters at most)" xml:space="preserve"><value>اكتب تشغيلة مادة الضبط (40 حرفًا على الأكثر)</value></data>
+  <data name="qc:Accepted" xml:space="preserve"><value>مقبولة</value></data>
+  <data name="qc:Rejected" xml:space="preserve"><value>مرفوضة</value></data>
+  <data name="qc:Warning" xml:space="preserve"><value>تنبيه</value></data>
+  <data name="{0} controls out" xml:space="preserve"><value>{0} مواد ضبط خارج الحدود</value></data>
 </root>

@@ -183,6 +183,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalLabDeviceModel.Configure(b);   // H198: the analysers' messages and code links
 			b.Entity<HospitalLabTest>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
 			HospitalMicroModel.Configure(b);   // H230: microbiology
+			HospitalLabQcModel.Configure(b);   // H232: quality control
 			b.Entity<HospitalLabAnalyte>(e =>
 			{
 				foreach (var p in new[] { nameof(HospitalLabAnalyte.RefLow), nameof(HospitalLabAnalyte.RefHigh), nameof(HospitalLabAnalyte.CriticalLow), nameof(HospitalLabAnalyte.CriticalHigh) })
