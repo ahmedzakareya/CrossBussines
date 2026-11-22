@@ -477,7 +477,7 @@
                             <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-8 fw-bold">
                                 <li class="nav-item"><a class="nav-link active py-2" data-bs-toggle="tab" href="#cbd-tab-toolbox">@(arabic ? "الأدوات" : "Toolbox")</a></li>
                                 <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-data">@(arabic ? "تصفية وترتيب" : "Filter & sort")</a></li>
-                                <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
+                                <li class="nav-item cbd-adv-only"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
                             </ul>
                             <div class="card-toolbar">
                                 <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-tools-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
@@ -491,8 +491,12 @@
 
                                 @* ---- TOOLBOX ---- *@
                                 <div class="tab-pane fade show active" id="cbd-tab-toolbox">
+                                    <div class="form-check form-switch form-check-custom form-check-solid form-check-sm mb-3">
+                                        <input class="form-check-input" type="checkbox" id="cbd-all-tools" />
+                                        <label class="form-check-label fs-8 fw-semibold text-gray-700" for="cbd-all-tools">@(arabic ? "عرض كل الأدوات (للمتقدمين)" : "Show every tool (advanced)")</label>
+                                    </div>
                                     <div class="text-muted fs-8 mb-2">
-                                        @(arabic ? "اسحب أداة إلى الصفحة، أو انقر لإضافتها إلى القسم المحدد." : "Drag a tool onto the page, or click to add it to the selected band.")
+                                        @(arabic ? "اسحب أداة إلى مكانها على الصفحة، أو انقرها لإضافتها." : "Drag a tool to its place on the page, or click it to add it.")
                                     </div>
                                     <div id="cbd-toolbox" class="d-flex flex-column gap-1"></div>
 
@@ -774,6 +778,8 @@
     .cbd-pageno-zone { position: absolute; display: flex; align-items: center; justify-content: space-between; gap: 8px;
         border-top: 1px dashed rgba(58,87,149,.35); color: #7e8299; font-size: 10px; pointer-events: none; padding: 0 2px; }
     .cbd-pageno-zone b { color: #3A5795; font-weight: 600; }
+    /* Simple mode: the section heights tab is for the advanced author (dragging a section's edge still works). */
+    body.cbd-simple .cbd-adv-only { display: none !important; }
     /* Section labels show only on the section under the pointer, or the selected one: always shown, they sat
        over the title and the table header, and beside the sheet there is no room at a fitted zoom. */
     .cbd-band .cbd-band-tag { opacity: 0; transition: opacity .12s; z-index: 50; font-size: 10px; padding: 2px 6px;

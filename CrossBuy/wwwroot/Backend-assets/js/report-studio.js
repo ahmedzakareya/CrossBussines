@@ -334,11 +334,37 @@
         return e;
     }
 
+    // THE TOOLBOX IN GROUPS, AND A SIMPLE MODE. Thirty-one tools in one column was a wall an ordinary user
+    // could not read (owner 2026-11-22). Simple mode keeps the dozen a printed document is made of; the switch
+    // shows everything, and the choice is remembered on this browser.
+    var TOOL_GROUPS = [
+        { t: AR ? "النصوص والبيانات" : "Text and data",       ids: ["title", "text", "field", "table", "date", "repname"] },
+        { t: AR ? "الصور والتوقيع"   : "Images and signature", ids: ["logo", "brlogo", "sign", "stamp", "image"] },
+        { t: AR ? "الإجماليات"        : "Totals",               ids: ["sum", "count", "avg", "min", "max"] },
+        { t: AR ? "خطوط وأشكال"       : "Lines and shapes",     ids: ["line-h", "line-v", "rect", "icon"] },
+        { t: AR ? "أرقام الصفحات"     : "Page numbers",         ids: ["pagexy", "pageno", "pages", "datetime"] },
+        { t: AR ? "متقدّم"             : "Advanced",             ids: ["qr", "colchart", "barchart", "linechart", "piechart", "crosstab", "subrep"] }
+    ];
+    var SIMPLE_TOOLS = ["title", "text", "field", "table", "date", "logo", "sign", "stamp", "sum", "count", "line-h", "qr"];
+
+    function allTools() {
+        try { return localStorage.getItem("cbd.allTools") === "1"; } catch (e) { return false; }
+    }
+
     function renderToolbox() {
-        $("cbd-toolbox").innerHTML = TOOLS.map(function (t) {
-            return "<button type='button' draggable='true' data-tool='" + t.id + "' " +
-                   "class='btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 cbd-tool'>" +
-                   "<i class='ki-outline " + t.icon + " fs-5 me-2'></i>" + esc(t.label) + "</button>";
+        var all = allTools();
+        var sw = $("cbd-all-tools"); if (sw) { sw.checked = all; }
+        document.body.classList.toggle("cbd-simple", !all);
+        $("cbd-toolbox").innerHTML = TOOL_GROUPS.map(function (g) {
+            var ids = g.ids.filter(function (id) { return all || SIMPLE_TOOLS.indexOf(id) >= 0; });
+            if (!ids.length) { return ""; }
+            return "<div class='fs-8 fw-bold text-gray-600 mt-2 mb-1'>" + esc(g.t) + "</div>" +
+                ids.map(function (id) {
+                    var t = toolById(id); if (!t) { return ""; }
+                    return "<button type='button' draggable='true' data-tool='" + t.id + "' " +
+                           "class='btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 cbd-tool'>" +
+                           "<i class='ki-outline " + t.icon + " fs-5 me-2'></i>" + esc(t.label) + "</button>";
+                }).join("");
         }).join("");
 
         Array.prototype.forEach.call($("cbd-toolbox").querySelectorAll("[data-tool]"), function (b) {
@@ -2952,6 +2978,12 @@
     // there was nothing to open, or nothing this caller may open - the two are one answer.
     if (CBD.openDraft) applyDraft(CBD.openDraft);
     wireStart();
+    if ($("cbd-all-tools")) {
+        $("cbd-all-tools").addEventListener("change", function () {
+            try { localStorage.setItem("cbd.allTools", this.checked ? "1" : "0"); } catch (e) { }
+            renderToolbox();
+        });
+    }
     if (CBD.startOnOpen) { openStart(); }
 
         // LAST, deliberately: the draft above can change the paper size, and fitting the previous one
