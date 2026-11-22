@@ -282,6 +282,7 @@
 			if (d.t === 'answer') return pc.setRemoteDescription(d.sdp).then(function () { flush(c); sendState(c); });
 			if (d.t === 'cand') { if (pc.remoteDescription) return pc.addIceCandidate(d.c).catch(function () { }); c.cands.push(d.c); return; }
 			if (d.t === 'state') { c.remote = { mic: d.mic, cam: d.cam, share: d.share }; paintRemote(c); return; }
+			if (d.t === 'captions') { captions(c, !!d.on, true); return; }
 			if (d.t === 'hand') { c.peerHand = !!d.on; paintFlags(c); if (d.on) toast('✋ ' + c.peer.name, 'info'); return; }
 			if (d.t === 'react') { floatReact(c, String(d.e || '').slice(0, 4), false); return; }
 			if (d.t === 'hold') { hold(c, !!d.on, false); return; }
@@ -419,6 +420,7 @@
 			(window.cbCallsGroup && window.cbCallsGroup.transfer ? '<button type="button" class="it" data-m="transfer">' + ico('phone-forwarded', 18) + '<span>' + esc(t('cmTransfer')) + '</span></button>' : '') +
 			'<button type="button" class="it" data-m="noise">' + ico('audio-lines', 18) + '<span>' + esc(t('cmNoise')) + '</span><b>' + esc(c.noiseOff ? t('cmOff') : t('cmOn')) + '</b></button>' +
 			(window.cbDevices ? '<button type="button" class="it" data-m="devices">' + ico('headphones', 18) + '<span>' + esc(t('cmDevTitle')) + '</span></button>' : '') +
+			(window.cbCaptions && window.cbCaptions.supported() ? '<button type="button" class="it" data-m="captions">' + ico('captions', 18) + '<span>' + esc(t('cmCaptions')) + '</span><b>' + esc(window.cbCaptions.active(c.id) ? t('cmOn') : t('cmOff')) + '</b></button>' : '') +
 			(window.cbBlur && window.cbBlur.supported() && (c.blur || (c.local && c.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(c.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
 		c.el.querySelector('.main').appendChild(m);
 		m.onclick = function (e) {
@@ -430,6 +432,7 @@
 			if (k === 'hold') hold(c, !c.held, true);
 			if (k === 'transfer') window.cbCallsGroup.transfer(c);
 			if (k === 'blur') toggleBlur(c);
+			if (k === 'captions') { var cOn = !window.cbCaptions.active(c.id); captions(c, cOn, true); send(c, { t: 'captions', on: cOn }); }
 			if (k === 'devices') window.cbDevices.open({ hasVideo: function () { return !!(c.local && c.local.getVideoTracks().length); }, videoBase: { height: { ideal: c.maxHeight || 720 } }, replace: function (kind, tr) { replaceDevice(c, kind, tr); } });
 			if (k === 'noise') {
 				c.noiseOff = !c.noiseOff;
@@ -644,8 +647,16 @@
 
 	function hangup(c) { if (connected()) conn.invoke('Hangup', c.id, false).catch(function () { teardown(c); }); else teardown(c); }
 
+	// live captions (2026-11-22): on for everyone in the call; each side sends its own voice (comm-captions.js)
+	function captions(c, on, say) {
+		if (!window.cbCaptions) return;
+		if (on) window.cbCaptions.start({ callId: c.id, mic: function () { return c.local && c.local.getAudioTracks()[0]; }, box: c.el && c.el.querySelector('.main') });
+		else window.cbCaptions.stop();
+		if (say) toast(on ? t('cmCaptionsOn') : t('cmCaptionsOff'), 'info');
+	}
 	function teardown(c) {
 		if (!c || c.closed) return; c.closed = true;
+		if (window.cbCaptions && window.cbCaptions.active(c.id)) window.cbCaptions.stop();
 		clearInterval(c.ringTimer); clearInterval(c.clock); clearInterval(c.quality); clearInterval(c.chatPoll); if (c.stopTone) c.stopTone();
 		saveNote(c);
 		if (c.rec && c.rec.recorder) recFinish(c);

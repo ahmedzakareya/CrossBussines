@@ -95,6 +95,31 @@ def transcribe_samples(samples, size: str, language: str | None = None) -> Trans
                           model=f"whisper-{chosen}")
 
 
+CAPTION_MAX_SECONDS = 8.0   # a caption chunk is about three seconds; anything much longer is not one
+CAPTION_WAIT = 2.0          # a busy model skips the chunk: a caption that arrives late is worth nothing
+
+
+def caption(audio: bytes, language: str | None = None) -> str | None:
+    """LIVE CAPTIONS in a call (owner 2026-11-22): a few seconds of one person's voice, as quickly as possible.
+    The small weights and greedy decoding (beam 1), silence skipped. None when the model stays busy past CAPTION_WAIT
+    (the chunk is dropped, never queued); "" when nothing was said."""
+    from faster_whisper.audio import decode_audio
+
+    samples = decode_audio(io.BytesIO(audio), sampling_rate=16000)
+    if len(samples) / 16000.0 > CAPTION_MAX_SECONDS:
+        samples = samples[: int(CAPTION_MAX_SECONDS * 16000)]
+    if not _lock.acquire(timeout=CAPTION_WAIT):
+        return None
+    try:
+        size = "small" if available("small") else "medium"
+        model = _load(size)
+        segments, _ = model.transcribe(samples, language=language or None, beam_size=1, vad_filter=True,
+                                       condition_on_previous_text=False, without_timestamps=True)
+        return " ".join(s.text.strip() for s in segments).strip()
+    finally:
+        _lock.release()
+
+
 def transcribe(audio: bytes, size: str, language: str | None = None) -> Transcript:
     """The words in one recording. language=None lets Whisper detect it (Arabic and English both occur)."""
     from faster_whisper.audio import decode_audio

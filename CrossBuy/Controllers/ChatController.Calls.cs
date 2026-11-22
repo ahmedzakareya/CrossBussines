@@ -1,5 +1,8 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
+using CrossBuy.BL.Platform.Ai;
+using CrossBuy.Models.Platform;
+using Microsoft.AspNetCore.SignalR;
 using CrossBuy.Hubs;
 using CrossBuy.Models.Context.Hospital;
 using Microsoft.AspNetCore.Mvc;
@@ -131,6 +134,38 @@ namespace CrossBuy.Controllers
 			int? patient = input.PatientId is int pid && await HospitalOnAsync() ? pid : null;   // a patient only through the hospital module
 			var r = await CallSvc.NoteAsync(me.Value.companyId, id, me.Value.empId, input.Note, patient);
 			return Json(new { ok = r.Ok, error = r.Error });
+		}
+
+		/// POST /Chat/CallCaption/{id}?lang= — LIVE CAPTIONS (owner 2026-11-22): a few seconds of MY OWN voice in a call I am
+		/// in; its words go to everyone in the call, under my name. Each person sends their own voice, so every line says who
+		/// spoke. Nothing is stored. The words come from the company's own AI service under the egress policy (speech, personal
+		/// data, internal only), and a busy model drops a chunk rather than delaying the next ones.
+		[HttpPost, ValidateAntiForgeryToken]
+		[RequestSizeLimit(300 * 1024)]
+		public async Task<IActionResult> CallCaption(int id, string? lang)
+		{
+			var me = await MeAsync(); if (me == null) return NotFound(new { ok = false });
+			var ct = HttpContext.RequestAborted;
+			var ctx = await _contexts.TryGetCurrentAsync(ct);
+			var sp = HttpContext.RequestServices;
+			if (ctx == null || !await sp.GetRequiredService<ICommunicationAccessService>().CanAsync(ctx, CommunicationActions.Send, null, ct)) return NotFound(new { ok = false });
+			var people = HospitalCallHub.ParticipantsOf(id, me.Value.empId);
+			if (people == null) return NotFound(new { ok = false });   // not in this call (or it is not live)
+			using var ms = new MemoryStream();
+			await Request.Body.CopyToAsync(ms, ct);
+			if (ms.Length < 512 || ms.Length > 280 * 1024) return BadRequest(new { ok = false });
+			var res = await CrossBuy.BL.Communication.CommAi.PostAsync(sp.GetRequiredService<IAiService>(), sp.GetRequiredService<IAiEgressPolicy>(), sp.GetRequiredService<IAiProviderAuthority>(),
+				sp.GetRequiredService<IConfiguration>(), sp.GetRequiredService<ILoggerFactory>().CreateLogger("CrossBuy.Captions"),
+				AiEgressPurpose.SpeechTranscription, AiDataClassification.PersonalData, me.Value.companyId, "/speech/caption",
+				new { audioBase64 = Convert.ToBase64String(ms.ToArray()), language = lang is "ar" or "en" ? lang : null }, ct);
+			if (res == null || res.Status != 200) return Json(new { ok = false });
+			var text = System.Text.Json.JsonDocument.Parse(res.Json).RootElement.GetProperty("text").GetString();
+			if (string.IsNullOrWhiteSpace(text)) return Json(new { ok = true, text = "" });
+			var who = await _db.Employee.AsNoTracking().Where(e => e.ID == me.Value.empId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
+			var hub = sp.GetRequiredService<IHubContext<HospitalCallHub>>();
+			foreach (var p in people)
+				await hub.Clients.Group(HospitalCallHub.EmployeeGroup(p)).SendAsync("caption", new { callId = id, from = me.Value.empId, nameAr = who?.FullName, nameEn = who?.FullNameEn ?? who?.FullName, text }, ct);
+			return Json(new { ok = true, text });
 		}
 
 		/// POST /Chat/CallRecordingChunk/{id}?seq=n — the next piece of a recording, from the browser that records it.

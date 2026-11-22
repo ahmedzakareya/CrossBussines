@@ -36,6 +36,16 @@ namespace CrossBuy.Hubs
 			public object? Offer;   // the ring as sent: a phone woken by push (PushWake) gets it when it connects
 		}
 
+		/// The people in a call right now, if this person is one of them — live captions (2026-11-22) reach exactly them.
+		public static IReadOnlyList<int>? ParticipantsOf(int callId, int employeeId)
+		{
+			if (_calls.TryGetValue(callId, out var l) && l.CalleeConn != null && (l.CallerId == employeeId || l.CalleeId == employeeId)) return new[] { l.CallerId, l.CalleeId };
+			if (_groups.TryGetValue(callId, out var g) && g.Joined.ContainsKey(employeeId)) return g.Joined.Keys.ToList();
+			return null;
+		}
+		/// A person's own group on this hub (every connection of theirs, web and app).
+		public static string EmployeeGroup(int employeeId) => Emp(employeeId);
+
 		/// The call ringing for this person now, if any (the app's push summary shows it as an incoming call).
 		public static (int CallId, int CallerId, bool Video)? RingingFor(int employeeId)
 			=> _calls.Values.Where(l => l.CalleeId == employeeId && l.CalleeConn == null).Select(l => ((int, int, bool)?)(l.CallId, l.CallerId, l.Video)).FirstOrDefault()

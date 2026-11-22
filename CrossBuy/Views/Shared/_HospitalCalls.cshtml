@@ -155,6 +155,7 @@
         people: @Json.Serialize(Url.Content("~/Chat/CallPeople")),
         livekit: @Json.Serialize(Url.Content("~/lib/livekit/livekit-client-2.5.7.umd.min.js")),
         recChunk: @Json.Serialize(Url.Content("~/Chat/CallRecordingChunk/__id__")),
+        caption: @Json.Serialize(Url.Content("~/Chat/CallCaption/__id__")),
         recFinish: @Json.Serialize(Url.Content("~/Chat/CallRecordingFinish/__id__")),
         lastWith: @Json.Serialize(Url.Content("~/Chat/LastWith")),
         chatStart: @Json.Serialize(Url.Content("~/Chat/StartDirect")),
@@ -196,6 +197,9 @@
         cmBlurOff: @Json.Serialize(S("The background is no longer blurred")),
         cmBlurStarting: @Json.Serialize(S("Preparing the blur…")),
         cmBlurFail: @Json.Serialize(S("The blur could not start on this device")),
+        cmCaptions: @Json.Serialize(S("Live captions")),
+        cmCaptionsOn: @Json.Serialize(S("Live captions are on for everyone in the call")),
+        cmCaptionsOff: @Json.Serialize(S("Live captions are off")),
         cmDevTitle: @Json.Serialize(S("Devices")),
         cmDevMic: @Json.Serialize(S("Microphone")),
         cmDevCam: @Json.Serialize(S("Camera")),
@@ -389,5 +393,6 @@
 <script src="~/js/hospital/hospital-calls-group.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-blur.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-devices.js" asp-append-version="true"></script>
+<script src="~/js/comm/comm-captions.js" asp-append-version="true"></script>
 <script src="~/js/comm/comm-everywhere.js" asp-append-version="true"></script>
 }

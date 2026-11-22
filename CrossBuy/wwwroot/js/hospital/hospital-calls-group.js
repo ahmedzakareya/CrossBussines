@@ -247,6 +247,7 @@
 		if (!g || g.id !== m.callId) return;
 		var d; try { d = JSON.parse(m.payload); } catch (e) { return; }
 		var x = g.members[m.fromId]; if (!x) return;
+		if (d.t === 'captions') { captions(!!d.on, true); return; }
 		if (d.t === 'hand') { x.hand = !!d.on; paintTiles(); if (d.on) toast('✋ ' + x.card.name, 'info'); return; }
 		if (d.t === 'react') { floatOn(String(m.fromId), String(d.e || '').slice(0, 4)); return; }
 		if (d.t === 'state' && g.room) { x.remote = { mic: d.mic, cam: d.cam, share: d.share }; paint(); return; }
@@ -420,13 +421,15 @@
 		m.innerHTML = '<div class="rx">' + ['👍', '👏', '❤️', '😂', '🎉', '🙏'].map(function (e) { return '<button type="button" data-rx="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
 			'<button type="button" class="it" data-m="hand">' + ico('hand', 18) + '<span>' + esc(g.hand ? t('cmLowerHand') : t('cmRaiseHand')) + '</span></button>' +
 			(window.cbBlur && window.cbBlur.supported() && (g.blur || (g.local && g.local.getVideoTracks().length)) ? '<button type="button" class="it" data-m="blur">' + ico('aperture', 18) + '<span>' + esc(t('cmBlur')) + '</span><b>' + esc(g.blur ? t('cmOn') : t('cmOff')) + '</b></button>' : '') +
-			(window.cbDevices ? '<button type="button" class="it" data-m="devices">' + ico('headphones', 18) + '<span>' + esc(t('cmDevTitle')) + '</span></button>' : '');
+			(window.cbDevices ? '<button type="button" class="it" data-m="devices">' + ico('headphones', 18) + '<span>' + esc(t('cmDevTitle')) + '</span></button>' : '') +
+			(window.cbCaptions && window.cbCaptions.supported() ? '<button type="button" class="it" data-m="captions">' + ico('captions', 18) + '<span>' + esc(t('cmCaptions')) + '</span><b>' + esc(window.cbCaptions.active(g.id) ? t('cmOn') : t('cmOff')) + '</b></button>' : '');
 		g.el.querySelector('.cbc-main').appendChild(m);
 		m.onclick = function (e) {
 			var b = e.target.closest('button'); if (!b) return; m.remove();
 			var rx = b.getAttribute('data-rx');
 			if (rx) { toAll({ t: 'react', e: rx }); floatOn('me', rx); return; }
 			if (b.getAttribute('data-m') === 'blur') { toggleBlur(); return; }
+			if (b.getAttribute('data-m') === 'captions') { var cOn = !window.cbCaptions.active(g.id); captions(cOn, true); toAll({ t: 'captions', on: cOn }); return; }
 			if (b.getAttribute('data-m') === 'devices') { window.cbDevices.open({ hasVideo: function () { return !!(g && g.local && g.local.getVideoTracks().length); }, videoBase: { height: { ideal: g.maxHeight } }, replace: replaceDevice }); return; }
 			g.hand = !g.hand; toAll({ t: 'hand', on: g.hand }); paintTiles(); paintBar();
 		};
@@ -488,8 +491,16 @@
 	}
 
 	function leave() { if (!g) return; var id = g.id; call('GroupLeave', id).catch(function () { }); close(); toast(t('grpYouLeft')); K.refreshLog(); }
+	// live captions (2026-11-22): on for everyone in the call; each person sends their own voice (comm-captions.js)
+	function captions(on, say) {
+		if (!window.cbCaptions || !g) return;
+		if (on) window.cbCaptions.start({ callId: g.id, mic: function () { return g && g.local && g.local.getAudioTracks()[0]; }, box: g.el && g.el.querySelector('.cbc-main') });
+		else window.cbCaptions.stop();
+		if (say) toast(on ? t('cmCaptionsOn') : t('cmCaptionsOff'), 'info');
+	}
 	function close() {
 		if (!g) return;
+		if (window.cbCaptions && window.cbCaptions.active(g.id)) window.cbCaptions.stop();
 		var x = g; g = null;
 		clearInterval(x.clock); clearInterval(x.speak); clearInterval(x.ping);
 		if (x.rec && x.rec.recorder) recFinish(x);

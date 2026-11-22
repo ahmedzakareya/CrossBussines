@@ -38,6 +38,27 @@ async def status() -> dict:
     return {"model": f"whisper-{size}", "available": speech.available(size), "maxSeconds": speech.MAX_SECONDS}
 
 
+class CaptionRequest(BaseModel):
+    audioBase64: str = Field(min_length=16, max_length=400_000)   # a few seconds of opus
+    language: str | None = Field(default=None, max_length=8)
+
+
+@router.post("/caption")
+async def caption(body: CaptionRequest) -> dict:
+    """Live captions: a few seconds of one participant's voice -> {text, skipped}. Nothing is kept."""
+    if not speech.available("small") and not speech.available("medium"):
+        raise HTTPException(status_code=503, detail="speech_model_missing")
+    try:
+        audio = base64.b64decode(body.audioBase64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail="audio_not_base64")
+    try:
+        text = await run_in_threadpool(speech.caption, audio, body.language)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"audio_unreadable:{type(e).__name__}")
+    return {"text": text or "", "skipped": text is None}
+
+
 @router.post("/transcribe", response_model=TranscribeResponse)
 async def transcribe(body: TranscribeRequest) -> TranscribeResponse:
     size = get_settings().whisper_model
