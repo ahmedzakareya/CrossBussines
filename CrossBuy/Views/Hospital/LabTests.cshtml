@@ -28,6 +28,7 @@
         {
             <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
                 <button type="button" class="btn btn-sm btn-light-primary" data-seed><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load the standard panels"]</button>
+                <button type="button" class="btn btn-sm btn-light-primary" data-fill-loinc title="@T["Give each analyte without a LOINC code the standard one"]" data-bs-toggle="tooltip"><i class="ki-outline ki-code fs-4"></i>@T["Fill the LOINC codes"]</button>
                 <button type="button" class="btn btn-sm btn-light-primary" data-seed-micro><i class="ki-outline ki-flask fs-4"></i>@T["Load the microbiology dictionary"]</button>
             </div>
         }
@@ -76,7 +77,7 @@
                     </div>
                     <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0 fs-7">
                         <thead><tr class="fw-bold text-muted bg-light">
-                            <th class="ps-4 min-w-80px rounded-start">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-80px">@T["Unit"]</th>
+                            <th class="ps-4 min-w-80px rounded-start">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-80px">@T["Unit"]</th><th class="min-w-90px" title="@T["The international code sent with the result"]" data-bs-toggle="tooltip">LOINC</th>
                             <th class="min-w-70px">@T["Low"]</th><th class="min-w-70px">@T["High"]</th><th class="min-w-70px">@T["Critical low"]</th><th class="min-w-70px">@T["Critical high"]</th><th class="w-60px">@T["Decimals"]</th><th class="w-70px" title="@T["Flag a change beyond this % from the previous result"]" data-bs-toggle="tooltip">@T["Delta %"]</th><th class="w-50px" title="@T["Release a normal value without a second person"]" data-bs-toggle="tooltip">@T["Auto"]</th><th class="w-50px">@T["Active"]</th><th class="pe-4 w-60px rounded-end"></th>
                         </tr></thead>
                         <tbody>
@@ -88,6 +89,7 @@
                                     <td><input class="form-control form-control-sm form-control-solid" data-k="name" value="@a?.Name" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="nameEn" value="@a?.NameEn" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="unit" value="@a?.Unit" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" maxlength="10" placeholder="0000-0" data-k="loinc" value="@a?.Loinc" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="refLow" data-n value="@Num(a?.RefLow)" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="refHigh" data-n value="@Num(a?.RefHigh)" @ro /></td>
                                     <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="criticalLow" data-n value="@Num(a?.CriticalLow)" @ro /></td>
@@ -162,9 +164,10 @@
             }
             function done(btn) { return function (res) { btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-seed],[data-seed-micro],[data-save-test],[data-save-analyte]'); if (!t) return;
+                var t = e.target.closest('[data-seed],[data-seed-micro],[data-fill-loinc],[data-save-test],[data-save-analyte]'); if (!t) return;
                 t.disabled = true;
                 if (t.hasAttribute('data-seed')) { post(root + '/SeedStandard').then(done(t)); return; }
+                if (t.hasAttribute('data-fill-loinc')) { post(root + '/FillLoinc').then(done(t)); return; }   // H261
                 if (t.hasAttribute('data-seed-micro')) { post(root + '/Micro/SeedStandard').then(done(t)); return; }   // H230
                 if (t.hasAttribute('data-save-test')) { post(root + '/' + t.getAttribute('data-save-test'), read(t.closest('.row'))).then(done(t)); return; }
                 var tr = t.closest('tr'), body = read(tr);

@@ -10607,4 +10607,40 @@
   <data name="peerdesc:1" xml:space="preserve"><value>أوافق على التفسير</value></data>
   <data name="peerdesc:2" xml:space="preserve"><value>تفسير مختلف لا يُتوقع عادةً اكتشافه</value></data>
   <data name="peerdesc:3" xml:space="preserve"><value>تفسير مختلف كان ينبغي اكتشافه في معظم الأحيان</value></data>
+  <data name="Cases of the last 30 days; a case closes only once its note is signed" xml:space="preserve"><value>عمليات آخر 30 يومًا، ولا تُغلق العملية إلا بعد توقيع تقريرها</value></data>
+  <data name="Complete the operative note before signing: {0}" xml:space="preserve"><value>أكمل تقرير العملية قبل التوقيع: {0}</value></data>
+  <data name="Drains" xml:space="preserve"><value>المصارف</value></data>
+  <data name="Enter the blood loss in millilitres (0 to 20000)" xml:space="preserve"><value>أدخل كمية الدم المفقود بالمليلتر (من 0 إلى 20000)</value></data>
+  <data name="Estimated blood loss" xml:space="preserve"><value>الدم المفقود التقديري</value></data>
+  <data name="Implants used" xml:space="preserve"><value>الغرسات المستخدمة</value></data>
+  <data name="No implant recorded on this case." xml:space="preserve"><value>لم تُسجَّل غرسات لهذه العملية.</value></data>
+  <data name="No operative note here." xml:space="preserve"><value>لا توجد تقارير عمليات هنا.</value></data>
+  <data name="Not signed — the case cannot close" xml:space="preserve"><value>غير موقّع، ولا يمكن إغلاق العملية</value></data>
+  <data name="Notes to sign" xml:space="preserve"><value>تقارير بانتظار التوقيع</value></data>
+  <data name="Only the case's surgeon signs the operative note" xml:space="preserve"><value>لا يوقّع تقرير العملية إلا جرّاحها</value></data>
+  <data name="Operative note" xml:space="preserve"><value>تقرير العملية</value></data>
+  <data name="Operative notes" xml:space="preserve"><value>تقارير العمليات</value></data>
+  <data name="Operative notes are not installed yet (hospital_h260_operative_notes.sql)." xml:space="preserve"><value>تقارير العمليات غير مثبّتة بعد (hospital_h260_operative_notes.sql).</value></data>
+  <data name="Overdue (over 24 hours)" xml:space="preserve"><value>متأخرة (أكثر من 24 ساعة)</value></data>
+  <data name="Post-operative diagnosis" xml:space="preserve"><value>التشخيص بعد العملية</value></data>
+  <data name="Post-operative plan" xml:space="preserve"><value>خطة ما بعد العملية</value></data>
+  <data name="Pre-operative diagnosis" xml:space="preserve"><value>التشخيص قبل العملية</value></data>
+  <data name="Procedure booked" xml:space="preserve"><value>الإجراء المحجوز</value></data>
+  <data name="Procedure performed" xml:space="preserve"><value>الإجراء المُنفَّذ</value></data>
+  <data name="Search a patient, case or procedure" xml:space="preserve"><value>ابحث عن مريض أو رقم عملية أو إجراء</value></data>
+  <data name="Sign the note" xml:space="preserve"><value>توقيع التقرير</value></data>
+  <data name="Sign the operative note before closing the case" xml:space="preserve"><value>وقّع تقرير العملية قبل إغلاقها</value></data>
+  <data name="Sign the operative note? Once signed it is locked and the case can close." xml:space="preserve"><value>توقيع تقرير العملية؟ بعد التوقيع يُقفل التقرير ويمكن إغلاق العملية.</value></data>
+  <data name="Signed notes" xml:space="preserve"><value>التقارير الموقّعة</value></data>
+  <data name="Specimens" xml:space="preserve"><value>العينات</value></data>
+  <data name="Technique" xml:space="preserve"><value>طريقة الإجراء</value></data>
+  <data name="The operative note is signed and locked" xml:space="preserve"><value>تقرير العملية موقّع ومقفل</value></data>
+  <data name="The operative note is written once the operation has started" xml:space="preserve"><value>يُكتب تقرير العملية بعد بدئها</value></data>
+  <data name="Unsigned notes" xml:space="preserve"><value>تقارير غير موقّعة</value></data>
+  <data name="You can draft this note; only the case's surgeon signs it." xml:space="preserve"><value>يمكنك كتابة مسودة هذا التقرير، ولا يوقّعه إلا جرّاح العملية.</value></data>
+  <data name="Write &quot;none&quot; when there were none." xml:space="preserve"><value>اكتب «لا يوجد» إن لم توجد مضاعفات.</value></data>
+  <data name="Give each analyte without a LOINC code the standard one" xml:space="preserve"><value>أعطِ كل تحليل لا يحمل رمز LOINC رمزه القياسي</value></data>
+  <data name="Fill the LOINC codes" xml:space="preserve"><value>تعبئة رموز LOINC</value></data>
+  <data name="The international code sent with the result" xml:space="preserve"><value>الرمز الدولي الذي يُرسل مع النتيجة</value></data>
+  <data name="This is not a LOINC code (digits, a hyphen and its check digit)" xml:space="preserve"><value>هذا ليس رمز LOINC (أرقام ثم شرطة ثم رقم التحقق)</value></data>
 </root>

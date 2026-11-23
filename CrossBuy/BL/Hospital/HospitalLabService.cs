@@ -35,6 +35,7 @@ namespace CrossBuy.BL.Hospital
 		public bool IsActive { get; set; } = true;
 		public decimal? DeltaPercent { get; set; }   // H233
 		public bool AutoVerify { get; set; }          // H233
+		public string? Loinc { get; set; }            // H261
 	}
 
 	/// H233: a reference range for a sex and an age band; the band is given in days, months or years.
@@ -430,6 +431,7 @@ namespace CrossBuy.BL.Hospital
 			if (input.RefLow > input.RefHigh) return HospitalResult.Fail("The low limit is above the high limit");
 			if (input.CriticalLow > input.RefLow || input.CriticalHigh < input.RefHigh) return HospitalResult.Fail("A critical limit lies outside the reference range");
 			if (input.Decimals is < 0 or > 4) return HospitalResult.Fail("Decimals are 0 to 4");
+			if (HospitalLoinc.Refusal(input.Loinc) is string badLoinc) return HospitalResult.Fail(badLoinc);   // H261
 			if (!await _db.HospitalServices.AnyAsync(s => s.ID == input.ServiceId && s.CompanyId == ctx.CompanyId && s.Category == HospitalServiceCategories.Lab, ct)) return HospitalResult.Fail("not_found");
 			int self = input.Id ?? 0;
 			if (await _db.HospitalLabAnalytes.AnyAsync(a => a.CompanyId == ctx.CompanyId && a.ServiceId == input.ServiceId && a.Code == code && a.ID != self, ct)) return HospitalResult.Fail("Another analyte of this test uses this code");
@@ -449,11 +451,23 @@ namespace CrossBuy.BL.Hospital
 			row.RefLow = input.RefLow; row.RefHigh = input.RefHigh; row.CriticalLow = input.CriticalLow; row.CriticalHigh = input.CriticalHigh; row.Decimals = input.Decimals; row.IsActive = input.IsActive;
 			if (input.DeltaPercent is < 0 or > 1000) return HospitalResult.Fail("The delta limit is 0 to 1000 %");
 			row.DeltaPercent = input.DeltaPercent is > 0 ? input.DeltaPercent : null; row.AutoVerify = input.AutoVerify;   // H233
+			row.Loinc = string.IsNullOrWhiteSpace(input.Loinc) ? null : input.Loinc.Trim();   // H261
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(row.ID);
 		}
 
 		/// The common panels for the starter lab services (codes from the billing seed), with adult ranges.
 		/// Ranges are typical textbook values to be confirmed by the lab director, not a clinical standard.
+		/// H261: gives the analytes that have no LOINC yet the starter code of their local code. Returns how many.
+		public async Task<HospitalResult> FillLoincAsync(BusinessContext ctx, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
+			var rows = await _db.HospitalLabAnalytes.Where(a => a.CompanyId == ctx.CompanyId && a.Loinc == null).ToListAsync(ct);
+			int n = 0;
+			foreach (var a in rows) if (HospitalLoinc.Starter.TryGetValue(a.Code, out var l)) { a.Loinc = l; n++; }
+			await _db.SaveChangesAsync(ct);
+			return HospitalResult.Success(n);
+		}
+
 		public async Task<HospitalResult> SeedStandardAsync(BusinessContext ctx, CancellationToken ct = default)
 		{
 			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
@@ -470,7 +484,7 @@ namespace CrossBuy.BL.Hospital
 				{
 					sort += 10;
 					if (haveAnalytes.Contains(sid + "|" + a.Code)) continue;
-					_db.HospitalLabAnalytes.Add(new HospitalLabAnalyte { CompanyId = ctx.CompanyId, ServiceId = sid, Code = a.Code, Name = a.Ar, NameEn = a.En, Unit = a.Unit, RefLow = a.Lo, RefHigh = a.Hi, CriticalLow = a.CLo, CriticalHigh = a.CHi, Decimals = a.Dec, SortOrder = sort });
+					_db.HospitalLabAnalytes.Add(new HospitalLabAnalyte { CompanyId = ctx.CompanyId, ServiceId = sid, Code = a.Code, Name = a.Ar, NameEn = a.En, Unit = a.Unit, RefLow = a.Lo, RefHigh = a.Hi, CriticalLow = a.CLo, CriticalHigh = a.CHi, Decimals = a.Dec, SortOrder = sort, Loinc = HospitalLoinc.Starter.GetValueOrDefault(a.Code) });
 					added++;
 				}
 			}

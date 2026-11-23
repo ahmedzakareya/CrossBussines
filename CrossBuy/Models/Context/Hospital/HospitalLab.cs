@@ -76,6 +76,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public decimal? DeltaPercent { get; set; }
 		/// H233: a normal value of this analyte may be released without a second person.
 		public bool AutoVerify { get; set; }
+		/// H261: the analyte's LOINC code (sent beside the local code in HL7 and FHIR; null: none recorded).
+		public string? Loinc { get; set; }
 	}
 
 	public class HospitalLabOrder
@@ -195,6 +197,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalLabQcModel.Configure(b);   // H232: quality control
 			HospitalLabRefRangeModel.Configure(b);   // H233: ranges by age and sex
 			b.Entity<HospitalLabAnalyte>(e => e.Property(x => x.DeltaPercent).HasPrecision(9, 2));   // H233
+			b.Entity<HospitalLabAnalyte>(e => e.Property(x => x.Loinc).HasMaxLength(10));   // H261
 			b.Entity<HospitalLabAnalyte>(e =>
 			{
 				foreach (var p in new[] { nameof(HospitalLabAnalyte.RefLow), nameof(HospitalLabAnalyte.RefHigh), nameof(HospitalLabAnalyte.CriticalLow), nameof(HospitalLabAnalyte.CriticalHigh) })

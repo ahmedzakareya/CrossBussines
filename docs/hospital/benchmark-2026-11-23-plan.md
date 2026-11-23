@@ -69,3 +69,5 @@ The remaining gaps fall into two groups:
 
 ## Progress
   - H259 — structured radiology report templates (required sections gate signing) and RADPEER peer review with per-radiologist rates.
+  - H260 — structured operative note per theatre case, signed by its surgeon; a case does not close while it is unsigned; worklist of unsigned notes.
+  - H261 — LOINC on laboratory analytes (check-digit validated, starter map for the standard panels), sent first in HL7 OBX-3 and FHIR Observation.code.

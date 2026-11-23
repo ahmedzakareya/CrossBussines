@@ -1,0 +1,132 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@using Microsoft.AspNetCore.Html
+@model HospitalOperativeNoteView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H260 — the structured operative note of a theatre case: drafted by the team, signed by the case's surgeon and
+    locked once signed; the case does not close while it is unsigned. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Operative note"].Value;
+    var c = Model.Case; var n = Model.Note; bool edit = Model.CanEdit, signed = n?.SignedAt != null;
+    var implants = (ViewBag.Implants as IReadOnlyList<HospitalConsignmentRow>) ?? Array.Empty<HospitalConsignmentRow>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string pname = DisplayName.Of(Model.PatientName, Model.PatientNameEn);
+    string sname = Model.SurgeonFace != null ? DisplayName.Of(Model.SurgeonFace.Name ?? "", Model.SurgeonFace.NameEn ?? Model.SurgeonFace.Name ?? "") : Model.Surgeon == null ? "—" : DisplayName.Of(Model.Surgeon.Name, Model.Surgeon.NameEn);
+    var required = HospitalOperativeNoteRules.Required.Select(r => r.Key).ToHashSet();
+    IHtmlContent Field(string key, string label, string? value, int rows, int max)
+    {
+        var req = required.Contains(key) ? "required " : "";
+        if (!edit) return new HtmlString("<div class=\"mb-6\"><div class=\"text-gray-500 fs-7 fw-bold mb-1\">" + System.Net.WebUtility.HtmlEncode(T[label].Value) + "</div><div class=\"text-gray-800 fs-6\" style=\"white-space:pre-line\" dir=\"auto\">" + System.Net.WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(value) ? "—" : value) + "</div></div>");
+        var input = rows <= 1
+            ? "<input class=\"form-control form-control-solid\" maxlength=\"" + max + "\" dir=\"auto\" data-on=\"" + key + "\" value=\"" + System.Net.WebUtility.HtmlEncode(value ?? "") + "\" />"
+            : "<textarea class=\"form-control form-control-solid\" rows=\"" + rows + "\" maxlength=\"" + max + "\" dir=\"auto\" data-on=\"" + key + "\">" + System.Net.WebUtility.HtmlEncode(value ?? "") + "</textarea>";
+        return new HtmlString("<div class=\"mb-6\"><label class=\"" + req + "fs-6 fw-semibold mb-2\">" + System.Net.WebUtility.HtmlEncode(T[label].Value) + "</label>" + input + "</div>");
+    }
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Operative note"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Theatre", new { day = c.CaseDate.ToString("yyyy-MM-dd", inv), @case = c.ID })" class="text-muted text-hover-primary">@T["Theatre"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num" dir="ltr">@c.CaseNo</li>
+            </ul>
+        </div>
+        @if (edit)
+        {
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-light-primary" data-on-save><i class="ki-outline ki-check fs-4"></i>@T["Save draft"]</button>
+                @if (Model.CanSign) { <button type="button" class="btn btn-sm btn-primary" data-on-sign><i class="ki-outline ki-shield-tick fs-4"></i>@T["Sign the note"]</button> }
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush mb-5"><div class="card-body py-6 d-flex flex-wrap align-items-center gap-6">
+            <div class="d-flex align-items-center gap-3">@HospitalUi.Avatar(Model.Photo, pname, 50)<div><div class="fw-bold fs-5 text-gray-900">@pname</div><div class="text-muted fs-7 hp-num" dir="ltr">@Model.Mrn</div></div></div>
+            <div class="vr d-none d-md-block"></div>
+            <div><div class="text-muted fs-8">@T["Procedure booked"]</div><div class="fw-bold text-gray-800">@DisplayName.Of(c.Name, c.NameEn) <span class="text-muted fs-8 hp-num" dir="ltr">@c.Code</span></div></div>
+            <div class="d-flex align-items-center gap-2"><div class="text-end"><div class="text-muted fs-8">@T["Surgeon"]</div><div class="fw-bold text-gray-800">@sname</div></div>@HospitalUi.Avatar(Model.SurgeonFace?.Photo, sname, 35)</div>
+            <div class="ms-auto">
+                @if (signed)
+                {
+                    <span class="badge badge-light-primary fs-7 py-2 px-3"><i class="ki-outline ki-shield-tick fs-5 text-primary me-1"></i>@T["Signed by"] @(Model.SignedBy == null ? "—" : DisplayName.Of(Model.SignedBy.Name ?? "", Model.SignedBy.NameEn ?? Model.SignedBy.Name ?? "")) · <span class="hp-num" data-fmt data-utc="@n!.SignedAt?.ToString("o")">@n!.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv)</span></span>
+                }
+                else
+                {
+                    <span class="badge badge-light-danger fs-7 py-2 px-3">@T["Not signed — the case cannot close"]</span>
+                }
+            </div>
+        </div></div>
+        @if (edit && !Model.CanSign)
+        {
+            <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700">@T["You can draft this note; only the case's surgeon signs it."]</div></div>
+        }
+        <div class="row g-5">
+            <div class="col-xl-8">
+                <div class="card card-flush"><div class="card-body pt-8">
+                    <div class="row g-x-5">
+                        <div class="col-md-6">@Field("preOpDiagnosis", "Pre-operative diagnosis", n?.PreOpDiagnosis, 1, 300)</div>
+                        <div class="col-md-6">@Field("postOpDiagnosis", "Post-operative diagnosis", n?.PostOpDiagnosis, 1, 300)</div>
+                    </div>
+                    @Field("procedurePerformed", "Procedure performed", n?.ProcedurePerformed ?? (edit ? DisplayName.Of(c.Name, c.NameEn) : null), 1, 300)
+                    @Field("indication", "Indication", n?.Indication, 2, 1000)
+                    @Field("findings", "Findings", n?.Findings, 4, 2000)
+                    @Field("technique", "Technique", n?.Technique, 7, 4000)
+                    @Field("postOpPlan", "Post-operative plan", n?.PostOpPlan, 3, 2000)
+                </div></div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card card-flush mb-5"><div class="card-body pt-8">
+                    @if (edit)
+                    {
+                        <div class="mb-6"><label class="required fs-6 fw-semibold mb-2">@T["Estimated blood loss"] (ml)</label><input type="number" min="0" max="20000" step="10" class="form-control form-control-solid" dir="ltr" data-on="bloodLossMl" value="@n?.BloodLossMl" /></div>
+                    }
+                    else
+                    {
+                        <div class="mb-6"><div class="text-gray-500 fs-7 fw-bold mb-1">@T["Estimated blood loss"]</div><div class="fw-bold fs-4 hp-num" dir="ltr">@(n?.BloodLossMl == null ? "—" : n.BloodLossMl.Value.ToString(inv) + " ml")</div></div>
+                    }
+                    @Field("specimens", "Specimens", n?.Specimens, 2, 500)
+                    @Field("drains", "Drains", n?.Drains, 1, 300)
+                    @Field("complications", "Complications", n?.Complications, 2, 1000)
+                    @if (edit) {<div class="text-muted fs-8 mt-n4 mb-4">@T["Write \"none\" when there were none."]</div>}
+                </div></div>
+                <div class="card card-flush"><div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Implants used"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (implants.Count == 0) {<div class="text-muted fs-7">@T["No implant recorded on this case."]</div>}
+                        @foreach (var im in implants) {<div class="d-flex flex-stack py-2 border-bottom border-gray-200 border-bottom-dashed"><span class="fs-7 fw-semibold text-gray-800">@DisplayName.Of(im.Item, im.ItemEn)</span><span class="text-muted fs-8 hp-num" dir="ltr">@im.ItemCode</span></div>}
+                    </div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Action("OperativeNote", new { id = c.ID }));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), sign: @Json.Serialize(T["Sign the operative note? Once signed it is locked and the case can close."].Value) };
+            function body() {
+                var b = {}; document.querySelectorAll('[data-on]').forEach(function (e) { var k = e.getAttribute('data-on'); b[k] = k === 'bloodLossMl' ? (e.value === '' ? null : +e.value) : (e.value || null); });
+                return b;
+            }
+            function post(u) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body()) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-on-save],[data-on-sign]'); if (!t) return;
+                if (t.hasAttribute('data-on-save')) { t.disabled = true; post('').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); }); return; }
+                cbConfirm(W.sign).then(function (ok) {
+                    if (!ok) return;
+                    t.disabled = true; post('/Sign').then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); });
+                });
+            });
+        })();
+    </script>
+}

@@ -224,5 +224,14 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await _lab.SeedStandardAsync(ctx, ct));
 		}
+
+		/// H261: the analytes without a LOINC take the starter code of their local code.
+		[HttpPost("LabTests/FillLoinc"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> FillLabLoinc(CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await _lab.FillLoincAsync(ctx, ct));
+		}
 	}
 }

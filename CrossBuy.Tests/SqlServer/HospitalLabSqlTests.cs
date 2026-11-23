@@ -34,7 +34,7 @@ namespace CrossBuy.Tests.SqlServer
 			await using var c = new SqlConnection(_probe!.ConnectionString);
 			await c.OpenAsync();
 			foreach (var s in new[] { "hospital_h1_facility.sql", "hospital_h2_patients.sql", "hospital_h3_admissions.sql", "hospital_h4_outpatient.sql",
-				"hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql", "hospital_h8_lab.sql", "hospital_h230_microbiology.sql", "hospital_h232_lab_qc.sql", "hospital_h233_lab_ranges_autoverify.sql" })   // H230: the culture flag on lab tests
+				"hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql", "hospital_h8_lab.sql", "hospital_h230_microbiology.sql", "hospital_h232_lab_qc.sql", "hospital_h233_lab_ranges_autoverify.sql", "hospital_h261_lab_loinc.sql" })   // H230: the culture flag on lab tests
 				await _sql.RunScriptAsync(c, s);
 		}
 

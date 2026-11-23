@@ -78,6 +78,9 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			// H260: a case is not closed while its operative note is unsigned
+			if (input.To == HospitalSurgeryStatus.Done && !await OpNoteSvc.SignedOrNotInstalledAsync(ctx.CompanyId, id, ct))
+				return Result(HospitalResult.Fail("Sign the operative note before closing the case"));
 			var r = await TheatreSvc.MoveAsync(ctx, id, input, ctx.EmployeeId, DateTime.Now, ct);
 			// H37: a closed case's kit leaves the theatre store now; a short store never undoes the close — the card keeps
 			// "not issued" and the reason, and the kit is issued from there once the store is stocked

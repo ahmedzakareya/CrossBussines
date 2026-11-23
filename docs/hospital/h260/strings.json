@@ -1,0 +1,165 @@
+{
+ "unit": "H260 - Structured operative note",
+ "strings": {
+  "Cases of the last 30 days; a case closes only once its note is signed": {
+   "ar": "عمليات آخر 30 يومًا، ولا تُغلق العملية إلا بعد توقيع تقريرها",
+   "en": "Cases of the last 30 days; a case closes only once its note is signed",
+   "fr": "Interventions des 30 derniers jours ; une intervention ne se clôt qu'une fois son compte rendu signé"
+  },
+  "Complete the operative note before signing: {0}": {
+   "ar": "أكمل تقرير العملية قبل التوقيع: {0}",
+   "en": "Complete the operative note before signing: {0}",
+   "fr": "Complétez le compte rendu opératoire avant de signer : {0}"
+  },
+  "Drains": {
+   "ar": "المصارف",
+   "en": "Drains",
+   "fr": "Drains"
+  },
+  "Enter the blood loss in millilitres (0 to 20000)": {
+   "ar": "أدخل كمية الدم المفقود بالمليلتر (من 0 إلى 20000)",
+   "en": "Enter the blood loss in millilitres (0 to 20000)",
+   "fr": "Saisissez la perte sanguine en millilitres (0 à 20000)"
+  },
+  "Estimated blood loss": {
+   "ar": "الدم المفقود التقديري",
+   "en": "Estimated blood loss",
+   "fr": "Perte sanguine estimée"
+  },
+  "Implants used": {
+   "ar": "الغرسات المستخدمة",
+   "en": "Implants used",
+   "fr": "Implants utilisés"
+  },
+  "No implant recorded on this case.": {
+   "ar": "لم تُسجَّل غرسات لهذه العملية.",
+   "en": "No implant recorded on this case.",
+   "fr": "Aucun implant enregistré pour cette intervention."
+  },
+  "No operative note here.": {
+   "ar": "لا توجد تقارير عمليات هنا.",
+   "en": "No operative note here.",
+   "fr": "Aucun compte rendu opératoire ici."
+  },
+  "Not signed — the case cannot close": {
+   "ar": "غير موقّع، ولا يمكن إغلاق العملية",
+   "en": "Not signed — the case cannot close",
+   "fr": "Non signé — l'intervention ne peut pas être clôturée"
+  },
+  "Notes to sign": {
+   "ar": "تقارير بانتظار التوقيع",
+   "en": "Notes to sign",
+   "fr": "Comptes rendus à signer"
+  },
+  "Only the case's surgeon signs the operative note": {
+   "ar": "لا يوقّع تقرير العملية إلا جرّاحها",
+   "en": "Only the case's surgeon signs the operative note",
+   "fr": "Seul le chirurgien de l'intervention signe le compte rendu opératoire"
+  },
+  "Operative note": {
+   "ar": "تقرير العملية",
+   "en": "Operative note",
+   "fr": "Compte rendu opératoire"
+  },
+  "Operative notes": {
+   "ar": "تقارير العمليات",
+   "en": "Operative notes",
+   "fr": "Comptes rendus opératoires"
+  },
+  "Operative notes are not installed yet (hospital_h260_operative_notes.sql).": {
+   "ar": "تقارير العمليات غير مثبّتة بعد (hospital_h260_operative_notes.sql).",
+   "en": "Operative notes are not installed yet (hospital_h260_operative_notes.sql).",
+   "fr": "Les comptes rendus opératoires ne sont pas encore installés (hospital_h260_operative_notes.sql)."
+  },
+  "Overdue (over 24 hours)": {
+   "ar": "متأخرة (أكثر من 24 ساعة)",
+   "en": "Overdue (over 24 hours)",
+   "fr": "En retard (plus de 24 heures)"
+  },
+  "Post-operative diagnosis": {
+   "ar": "التشخيص بعد العملية",
+   "en": "Post-operative diagnosis",
+   "fr": "Diagnostic postopératoire"
+  },
+  "Post-operative plan": {
+   "ar": "خطة ما بعد العملية",
+   "en": "Post-operative plan",
+   "fr": "Plan postopératoire"
+  },
+  "Pre-operative diagnosis": {
+   "ar": "التشخيص قبل العملية",
+   "en": "Pre-operative diagnosis",
+   "fr": "Diagnostic préopératoire"
+  },
+  "Procedure booked": {
+   "ar": "الإجراء المحجوز",
+   "en": "Procedure booked",
+   "fr": "Acte programmé"
+  },
+  "Procedure performed": {
+   "ar": "الإجراء المُنفَّذ",
+   "en": "Procedure performed",
+   "fr": "Acte réalisé"
+  },
+  "Search a patient, case or procedure": {
+   "ar": "ابحث عن مريض أو رقم عملية أو إجراء",
+   "en": "Search a patient, case or procedure",
+   "fr": "Rechercher un patient, une intervention ou un acte"
+  },
+  "Sign the note": {
+   "ar": "توقيع التقرير",
+   "en": "Sign the note",
+   "fr": "Signer le compte rendu"
+  },
+  "Sign the operative note before closing the case": {
+   "ar": "وقّع تقرير العملية قبل إغلاقها",
+   "en": "Sign the operative note before closing the case",
+   "fr": "Signez le compte rendu opératoire avant de clôturer l'intervention"
+  },
+  "Sign the operative note? Once signed it is locked and the case can close.": {
+   "ar": "توقيع تقرير العملية؟ بعد التوقيع يُقفل التقرير ويمكن إغلاق العملية.",
+   "en": "Sign the operative note? Once signed it is locked and the case can close.",
+   "fr": "Signer le compte rendu opératoire ? Une fois signé, il est verrouillé et l'intervention peut être clôturée."
+  },
+  "Signed notes": {
+   "ar": "التقارير الموقّعة",
+   "en": "Signed notes",
+   "fr": "Comptes rendus signés"
+  },
+  "Specimens": {
+   "ar": "العينات",
+   "en": "Specimens",
+   "fr": "Prélèvements"
+  },
+  "Technique": {
+   "ar": "طريقة الإجراء",
+   "en": "Technique",
+   "fr": "Technique"
+  },
+  "The operative note is signed and locked": {
+   "ar": "تقرير العملية موقّع ومقفل",
+   "en": "The operative note is signed and locked",
+   "fr": "Le compte rendu opératoire est signé et verrouillé"
+  },
+  "The operative note is written once the operation has started": {
+   "ar": "يُكتب تقرير العملية بعد بدئها",
+   "en": "The operative note is written once the operation has started",
+   "fr": "Le compte rendu opératoire s'écrit une fois l'intervention commencée"
+  },
+  "Unsigned notes": {
+   "ar": "تقارير غير موقّعة",
+   "en": "Unsigned notes",
+   "fr": "Comptes rendus non signés"
+  },
+  "You can draft this note; only the case's surgeon signs it.": {
+   "ar": "يمكنك كتابة مسودة هذا التقرير، ولا يوقّعه إلا جرّاح العملية.",
+   "en": "You can draft this note; only the case's surgeon signs it.",
+   "fr": "Vous pouvez rédiger ce compte rendu ; seul le chirurgien de l'intervention le signe."
+  },
+  "Write \"none\" when there were none.": {
+   "ar": "اكتب «لا يوجد» إن لم توجد مضاعفات.",
+   "en": "Write \"none\" when there were none.",
+   "fr": "Écrivez « aucune » s'il n'y en a pas eu."
+  }
+ }
+}

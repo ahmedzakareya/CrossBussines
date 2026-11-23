@@ -166,7 +166,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				var key = "R01:lab:" + o.ID; var ctl = Control(f.ID, key);
 				var res = results.Where(r => r.LabOrderId == o.ID).Select(r => new HospitalHl7Result(analytes.GetValueOrDefault(r.AnalyteId)?.Code ?? r.AnalyteId.ToString(), string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn,
-					r.Value is decimal v ? Math.Round(v, r.Decimals).ToString(System.Globalization.CultureInfo.InvariantCulture) : r.TextValue, r.Value != null ? "NM" : "ST", r.Unit, HospitalHl7Out.Range(r.RefLow, r.RefHigh), HospitalHl7Out.Flag(r.Flag))).ToList();
+					r.Value is decimal v ? Math.Round(v, r.Decimals).ToString(System.Globalization.CultureInfo.InvariantCulture) : r.TextValue, r.Value != null ? "NM" : "ST", r.Unit, HospitalHl7Out.Range(r.RefLow, r.RefHigh), HospitalHl7Out.Flag(r.Flag), analytes.GetValueOrDefault(r.AnalyteId)?.Loinc)).ToList();
 				return new HospitalOutboundMessage
 				{
 					CompanyId = companyId, FeedId = f.ID, EventKey = key, MessageType = "ORU^R01", PatientId = o.PatientId, ControlId = ctl, EventAt = o.VerifiedAt!.Value, CreatedAt = nowUtc,

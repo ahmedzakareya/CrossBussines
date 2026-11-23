@@ -5,7 +5,7 @@ using CrossBuy.Models.Context.Hospital;
 namespace CrossBuy.BL.Hospital
 {
 	public sealed record HospitalHl7Visit(string AdmissionNo, string? Ward, string? Room, string? Bed, string? Attending, DateTime AdmittedAt, DateTime? DischargedAt);
-	public sealed record HospitalHl7Result(string Code, string Name, string? Value, string ValueType, string? Unit, string? Range, string? Flag);
+	public sealed record HospitalHl7Result(string Code, string Name, string? Value, string ValueType, string? Unit, string? Range, string? Flag, string? Loinc = null);
 
 	// ==========================================================================================
 	// HOSPITAL H247 — building HL7 v2.5.1 messages (the reader is HospitalHl7, H198). Encoding |^~\&, segments end with a
@@ -68,7 +68,7 @@ namespace CrossBuy.BL.Hospital
 			};
 			int i = 0;
 			foreach (var r in results)
-				lines.Add($"OBX|{++i}|{r.ValueType}|{Esc(r.Code)}^{Esc(r.Name)}||{Esc(r.Value)}|{Esc(r.Unit)}|{Esc(r.Range)}|{Esc(r.Flag)}|||F");
+				lines.Add($"OBX|{++i}|{r.ValueType}|{HospitalLoinc.Obx3(r.Code, r.Name, r.Loinc, Esc)}||{Esc(r.Value)}|{Esc(r.Unit)}|{Esc(r.Range)}|{Esc(r.Flag)}|||F");   // H261: LOINC first when known
 			return string.Join("\r", lines) + "\r";
 		}
 

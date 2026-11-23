@@ -65,6 +65,7 @@
             <input type="date" class="form-control form-control-sm form-control-solid w-150px hp-num" dir="ltr" value="@day.ToString("yyyy-MM-dd", inv)" data-theatre-day />
             <a href="@Url.Action("Theatre", new { day = day.AddDays(1).ToString("yyyy-MM-dd", inv) })" class="btn btn-sm btn-icon btn-light" title="@T["Next day"]"><i class="ki-outline @(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "ki-arrow-left" : "ki-arrow-right") fs-4"></i></a>
             <a href="@Url.Action("TheatreBlocks")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-time fs-4"></i>@T["Blocks and preference cards"]</a>
+            <a href="@Url.Action("OperativeNotes")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Operative notes"]</a>
             @if (canBook && ready && rooms.Count > 0) { <button type="button" class="btn btn-sm btn-primary" data-case-open><i class="ki-outline ki-plus fs-4"></i>@T["Book a case"]</button> }
         </div>
     </div></div>
@@ -155,6 +156,7 @@
                             <div class="card-toolbar gap-2">
                                 <span class="badge badge-light-@(sc.Status == HospitalSurgeryStatus.Done ? "primary" : sc.Status == HospitalSurgeryStatus.InProgress ? "primary" : "secondary") fs-7 fw-bold">@T["or:" + sc.Status]</span>
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-primary" data-case-move="InProgress" data-id="@sc.ID"><i class="ki-outline ki-time fs-4"></i>@T["Start"]</button> }
+                                @if (sc.Status is HospitalSurgeryStatus.InProgress or HospitalSurgeryStatus.Done) { <a href="@Url.Action("OperativeNote", new { id = sc.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Operative note"]</a> }   @* H260 *@
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.InProgress) { <button type="button" class="btn btn-sm btn-primary" data-case-move="Done" data-id="@sc.ID"><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the case"]</button> }
                                 @if (canBook && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-case-move="Cancelled" data-id="@sc.ID" title="@T["Cancel"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-2"></i></button> }
                             </div>

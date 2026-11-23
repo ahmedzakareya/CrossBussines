@@ -56,7 +56,7 @@ namespace CrossBuy.BL.Hospital
 			HospitalLabFlag.High => "H", HospitalLabFlag.Low => "L", HospitalLabFlag.CriticalHigh => "HH", HospitalLabFlag.CriticalLow => "LL", HospitalLabFlag.Normal => "N", _ => null,
 		};
 
-		public static JsonObject Observation(HospitalLabResult r, HospitalLabOrder o, string code)
+		public static JsonObject Observation(HospitalLabResult r, HospitalLabOrder o, string code, string? loinc = null)
 		{
 			var obs = new JsonObject
 			{
@@ -66,6 +66,8 @@ namespace CrossBuy.BL.Hospital
 				["subject"] = Ref("Patient", o.PatientId),
 				["effectiveDateTime"] = Iso(o.CollectedAt ?? o.OrderedAt), ["issued"] = Iso(o.VerifiedAt ?? o.OrderedAt),
 			};
+			// H261: the LOINC code first, the local analyte code after it
+			if (!string.IsNullOrWhiteSpace(loinc)) obs["code"]!["coding"]!.AsArray().Insert(0, new JsonObject { ["system"] = "http://loinc.org", ["code"] = loinc, ["display"] = string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn });
 			if (r.Value is decimal v) obs["valueQuantity"] = new JsonObject { ["value"] = Math.Round(v, r.Decimals), ["unit"] = r.Unit };
 			else if (!string.IsNullOrWhiteSpace(r.TextValue)) obs["valueString"] = r.TextValue;
 			if (r.RefLow != null || r.RefHigh != null)
@@ -167,13 +169,13 @@ namespace CrossBuy.BL.Hospital
 			(await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId).OrderByDescending(a => a.AdmittedAt).Take(100).ToListAsync(ct))
 				.Select(HospitalFhirResources.Encounter).ToList();
 
-		private async Task<(List<HospitalLabOrder> Orders, List<HospitalLabResult> Results, Dictionary<int, string> Codes)> LabAsync(BusinessContext ctx, int patientId, CancellationToken ct)
+		private async Task<(List<HospitalLabOrder> Orders, List<HospitalLabResult> Results, Dictionary<int, (string Code, string? Loinc)> Codes)> LabAsync(BusinessContext ctx, int patientId, CancellationToken ct)
 		{
 			var orders = await _db.Set<HospitalLabOrder>().AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.PatientId == patientId && o.VerifiedAt != null).OrderByDescending(o => o.VerifiedAt).Take(200).ToListAsync(ct);
 			var ids = orders.Select(o => o.ID).ToList();
 			var results = await _db.Set<HospitalLabResult>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && ids.Contains(r.LabOrderId)).OrderBy(r => r.SortOrder).ToListAsync(ct);
 			var aids = results.Select(r => r.AnalyteId).Distinct().ToList();
-			var codes = await _db.Set<HospitalLabAnalyte>().AsNoTracking().Where(a => aids.Contains(a.ID)).ToDictionaryAsync(a => a.ID, a => a.Code, ct);
+			var codes = await _db.Set<HospitalLabAnalyte>().AsNoTracking().Where(a => aids.Contains(a.ID)).ToDictionaryAsync(a => a.ID, a => (a.Code, a.Loinc), ct);
 			return (orders, results, codes);
 		}
 
@@ -181,7 +183,7 @@ namespace CrossBuy.BL.Hospital
 		{
 			var (orders, results, codes) = await LabAsync(ctx, patientId, ct);
 			var byId = orders.ToDictionary(o => o.ID);
-			return results.Select(r => HospitalFhirResources.Observation(r, byId[r.LabOrderId], codes.GetValueOrDefault(r.AnalyteId) ?? r.AnalyteId.ToString(CultureInfo.InvariantCulture))).ToList();
+			return results.Select(r => HospitalFhirResources.Observation(r, byId[r.LabOrderId], codes.TryGetValue(r.AnalyteId, out var c) ? c.Code : r.AnalyteId.ToString(CultureInfo.InvariantCulture), codes.TryGetValue(r.AnalyteId, out var l) ? l.Loinc : null)).ToList();
 		}
 
 		public async Task<IReadOnlyList<JsonObject>> ReportsAsync(BusinessContext ctx, int patientId, CancellationToken ct = default)

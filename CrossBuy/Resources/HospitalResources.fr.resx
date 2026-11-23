@@ -10507,4 +10507,40 @@
   <data name="peerdesc:1" xml:space="preserve"><value>J'approuve l'interprétation</value></data>
   <data name="peerdesc:2" xml:space="preserve"><value>Une interprétation différente qu'on ne s'attend pas habituellement à faire</value></data>
   <data name="peerdesc:3" xml:space="preserve"><value>Une interprétation différente qui devrait être faite la plupart du temps</value></data>
+  <data name="Cases of the last 30 days; a case closes only once its note is signed" xml:space="preserve"><value>Interventions des 30 derniers jours ; une intervention ne se clôt qu'une fois son compte rendu signé</value></data>
+  <data name="Complete the operative note before signing: {0}" xml:space="preserve"><value>Complétez le compte rendu opératoire avant de signer : {0}</value></data>
+  <data name="Drains" xml:space="preserve"><value>Drains</value></data>
+  <data name="Enter the blood loss in millilitres (0 to 20000)" xml:space="preserve"><value>Saisissez la perte sanguine en millilitres (0 à 20000)</value></data>
+  <data name="Estimated blood loss" xml:space="preserve"><value>Perte sanguine estimée</value></data>
+  <data name="Implants used" xml:space="preserve"><value>Implants utilisés</value></data>
+  <data name="No implant recorded on this case." xml:space="preserve"><value>Aucun implant enregistré pour cette intervention.</value></data>
+  <data name="No operative note here." xml:space="preserve"><value>Aucun compte rendu opératoire ici.</value></data>
+  <data name="Not signed — the case cannot close" xml:space="preserve"><value>Non signé — l'intervention ne peut pas être clôturée</value></data>
+  <data name="Notes to sign" xml:space="preserve"><value>Comptes rendus à signer</value></data>
+  <data name="Only the case's surgeon signs the operative note" xml:space="preserve"><value>Seul le chirurgien de l'intervention signe le compte rendu opératoire</value></data>
+  <data name="Operative note" xml:space="preserve"><value>Compte rendu opératoire</value></data>
+  <data name="Operative notes" xml:space="preserve"><value>Comptes rendus opératoires</value></data>
+  <data name="Operative notes are not installed yet (hospital_h260_operative_notes.sql)." xml:space="preserve"><value>Les comptes rendus opératoires ne sont pas encore installés (hospital_h260_operative_notes.sql).</value></data>
+  <data name="Overdue (over 24 hours)" xml:space="preserve"><value>En retard (plus de 24 heures)</value></data>
+  <data name="Post-operative diagnosis" xml:space="preserve"><value>Diagnostic postopératoire</value></data>
+  <data name="Post-operative plan" xml:space="preserve"><value>Plan postopératoire</value></data>
+  <data name="Pre-operative diagnosis" xml:space="preserve"><value>Diagnostic préopératoire</value></data>
+  <data name="Procedure booked" xml:space="preserve"><value>Acte programmé</value></data>
+  <data name="Procedure performed" xml:space="preserve"><value>Acte réalisé</value></data>
+  <data name="Search a patient, case or procedure" xml:space="preserve"><value>Rechercher un patient, une intervention ou un acte</value></data>
+  <data name="Sign the note" xml:space="preserve"><value>Signer le compte rendu</value></data>
+  <data name="Sign the operative note before closing the case" xml:space="preserve"><value>Signez le compte rendu opératoire avant de clôturer l'intervention</value></data>
+  <data name="Sign the operative note? Once signed it is locked and the case can close." xml:space="preserve"><value>Signer le compte rendu opératoire ? Une fois signé, il est verrouillé et l'intervention peut être clôturée.</value></data>
+  <data name="Signed notes" xml:space="preserve"><value>Comptes rendus signés</value></data>
+  <data name="Specimens" xml:space="preserve"><value>Prélèvements</value></data>
+  <data name="Technique" xml:space="preserve"><value>Technique</value></data>
+  <data name="The operative note is signed and locked" xml:space="preserve"><value>Le compte rendu opératoire est signé et verrouillé</value></data>
+  <data name="The operative note is written once the operation has started" xml:space="preserve"><value>Le compte rendu opératoire s'écrit une fois l'intervention commencée</value></data>
+  <data name="Unsigned notes" xml:space="preserve"><value>Comptes rendus non signés</value></data>
+  <data name="You can draft this note; only the case's surgeon signs it." xml:space="preserve"><value>Vous pouvez rédiger ce compte rendu ; seul le chirurgien de l'intervention le signe.</value></data>
+  <data name="Write &quot;none&quot; when there were none." xml:space="preserve"><value>Écrivez « aucune » s'il n'y en a pas eu.</value></data>
+  <data name="Give each analyte without a LOINC code the standard one" xml:space="preserve"><value>Attribuer à chaque analyte sans code LOINC son code standard</value></data>
+  <data name="Fill the LOINC codes" xml:space="preserve"><value>Remplir les codes LOINC</value></data>
+  <data name="The international code sent with the result" xml:space="preserve"><value>Le code international envoyé avec le résultat</value></data>
+  <data name="This is not a LOINC code (digits, a hyphen and its check digit)" xml:space="preserve"><value>Ce n'est pas un code LOINC (des chiffres, un tiret et le chiffre de contrôle)</value></data>
 </root>

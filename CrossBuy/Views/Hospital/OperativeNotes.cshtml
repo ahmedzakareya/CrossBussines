@@ -1,0 +1,93 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalOperativeNotePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H260 — the operative notes of the last 30 days' cases: unsigned first (those of a case started over 24 hours ago
+    are overdue), or the signed ones. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Operative notes"].Value;
+    string q = ViewBag.Q as string ?? "", view = ViewBag.View as string ?? ""; int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages;
+    string Link(int p, string? v = null) => Url.Action("OperativeNotes", new { q, view = v ?? view, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Operative notes"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Theatre")" class="text-muted text-hover-primary">@T["Theatre"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Operative notes"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalOperativeNoteService.NoTables]</div></div>
+        }
+        <div class="row g-5 mb-5">
+            @foreach (var (v, num, label, danger) in new[] { ("", Model.Unsigned.ToString(inv), T["Unsigned notes"].Value, false), ("", Model.Overdue.ToString(inv), T["Overdue (over 24 hours)"].Value, Model.Overdue > 0), ("signed", "", T["Signed"].Value, false) })
+            {
+                <div class="col-6 col-xl-3"><a href="@Link(1, v)" class="card card-flush h-100 @(view == v && (v != "" || label == T["Unsigned notes"].Value) ? "border border-primary" : "") text-hover-primary"><div class="card-body d-flex flex-column justify-content-between py-6">
+                    @if (num != "") {<span class="fs-2hx fw-bold text-@(danger ? "danger" : "gray-900") hp-num">@num</span>} else {<i class="ki-outline ki-shield-tick fs-2hx text-gray-400"></i>}
+                    <span class="text-gray-600 fw-semibold fs-6">@label</span></div></a></div>
+            }
+        </div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@(view == "signed" ? T["Signed notes"] : T["Notes to sign"])</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Cases of the last 30 days; a case closes only once its note is signed"]</span></h3>
+                <form class="card-toolbar gap-2" method="get" action="@Url.Action("OperativeNotes")">
+                    <input type="hidden" name="view" value="@view" />
+                    <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-225px ps-12" placeholder="@T["Search a patient, case or procedure"]" /></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Rows.Count == 0)
+                {
+                    <div class="text-center py-15"><i class="ki-outline ki-notepad-edit fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No operative note here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-7"><th class="min-w-200px">@T["Patient"]</th><th class="min-w-175px">@T["Procedure"]</th><th class="min-w-150px">@T["Surgeon"]</th><th>@T["Note"]</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            var sn = r.Surgeon == null ? "—" : DisplayName.Of(r.Surgeon.Name ?? "", r.Surgeon.NameEn ?? r.Surgeon.Name ?? "");
+                            <tr>
+                                <td><div class="d-flex align-items-center gap-3">@HospitalUi.Avatar(r.Photo, DisplayName.Of(r.PatientName, r.PatientNameEn), 35)<div class="d-flex flex-column"><span class="text-gray-900 fw-bold">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><span class="text-muted fs-8 hp-num" dir="ltr">@r.Mrn</span></div></div></td>
+                                <td><div class="fw-bold text-gray-800 fs-7">@DisplayName.Of(r.Case.Name, r.Case.NameEn)</div><div class="text-muted fs-8 hp-num" dir="ltr">@r.Case.CaseNo · @r.Case.CaseDate.ToString("dd/MM/yyyy", inv)</div></td>
+                                <td><div class="d-flex align-items-center gap-2">@HospitalUi.Avatar(r.Surgeon?.Photo, sn, 30)<span class="fs-7 fw-semibold text-gray-800">@sn</span></div></td>
+                                <td>@if (r.Note?.SignedAt != null) {<span class="badge badge-light-primary fs-8">@T["Signed"]</span>}
+                                    else if (r.Overdue) {<span class="badge badge-light-danger fs-8">@T["Overdue"]</span>}
+                                    else if (r.Note != null) {<span class="badge badge-light-info fs-8">@T["Draft"]</span>}
+                                    else {<span class="badge badge-light fs-8">@T["Not started"]</span>}</td>
+                                <td class="text-end"><a href="@Url.Action("OperativeNote", new { id = r.Case.ID })" class="btn btn-sm btn-light-primary">@T["Open"]</a></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination mt-6">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int x = Math.Max(1, page - 3); x <= Math.Min(pages, page + 3); x++) {<li class="page-item @(x == page ? "active" : "")"><a class="page-link" href="@Link(x)">@x</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>

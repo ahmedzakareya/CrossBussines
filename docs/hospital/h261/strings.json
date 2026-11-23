@@ -1,0 +1,25 @@
+{
+ "unit": "H261 - LOINC on lab analytes",
+ "strings": {
+  "Give each analyte without a LOINC code the standard one": {
+   "ar": "أعطِ كل تحليل لا يحمل رمز LOINC رمزه القياسي",
+   "en": "Give each analyte without a LOINC code the standard one",
+   "fr": "Attribuer à chaque analyte sans code LOINC son code standard"
+  },
+  "Fill the LOINC codes": {
+   "ar": "تعبئة رموز LOINC",
+   "en": "Fill the LOINC codes",
+   "fr": "Remplir les codes LOINC"
+  },
+  "The international code sent with the result": {
+   "ar": "الرمز الدولي الذي يُرسل مع النتيجة",
+   "en": "The international code sent with the result",
+   "fr": "Le code international envoyé avec le résultat"
+  },
+  "This is not a LOINC code (digits, a hyphen and its check digit)": {
+   "ar": "هذا ليس رمز LOINC (أرقام ثم شرطة ثم رقم التحقق)",
+   "en": "This is not a LOINC code (digits, a hyphen and its check digit)",
+   "fr": "Ce n'est pas un code LOINC (des chiffres, un tiret et le chiffre de contrôle)"
+  }
+ }
+}
