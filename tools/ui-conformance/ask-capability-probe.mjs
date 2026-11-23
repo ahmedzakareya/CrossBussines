@@ -490,7 +490,19 @@ const THREAD = [
 ];
 
 try {
-  const conv = `talk${Date.now()}`;
+  // `probe:`, LIKE EVERY OTHER LOOP IN THIS FILE — and it was the one that did not have it.
+  //
+  // AskRefusalLog drops a refusal whose conversation id starts with this marker, so the screen that
+  // ranks "questions worth building next" is not ranking the developer's own testing. Six of the
+  // seven request sites here carry it. This one did not, because it needs a STABLE id across the
+  // thread rather than a fresh one per question, and the marker was lost when it was written.
+  //
+  // The cost was measured, not guessed: this loop ends with a question that MUST be refused, so
+  // every run wrote one more copy of it. It is in the refusal log 31 times across five days — 17%
+  // of all 180 recorded refusals, and the second most frequent question in the whole file. The
+  // prefix is only a prefix; the id stays stable, so the subject-memory assertions below are
+  // unaffected.
+  const conv = `probe:talk${Date.now()}`;
   for (const [q, want, why] of THREAD) {
     const r = await page.evaluate(async ([base, question, c]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=${c}`,
