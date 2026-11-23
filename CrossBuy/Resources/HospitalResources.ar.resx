@@ -10557,4 +10557,5 @@
   <data name="This is the test exchange: no money is taken and the bill is not marked paid." xml:space="preserve"><value>هذه بيئة الاختبار: لا يُخصَم أي مبلغ، ولا تُسجَّل الفاتورة مدفوعة.</value></data>
   <data name="Pay (test)" xml:space="preserve"><value>ادفع (تجريبي)</value></data>
   <data name="Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement." xml:space="preserve"><value>سُجِّلت عملية تجريبية ولم يُخصَم أي مبلغ. يقيّد أمين الصندوق المدفوعات الحقيقية من كشف مزوّد الدفع.</value></data>
+  <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once." xml:space="preserve"><value>لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها، ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل وتُرسل تلقائيًا كل دقيقة، ويرسلها الزر فورًا.</value></data>
 </root>

@@ -1,0 +1,10 @@
+{
+ "unit": "H258 - Outbound notice: background sending",
+ "strings": {
+  "A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once.": {
+   "ar": "لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها، ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل وتُرسل تلقائيًا كل دقيقة، ويرسلها الزر فورًا.",
+   "en": "A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once.",
+   "fr": "Un canal n'envoie rien tant qu'il n'est pas activé avec son hôte et son port ; l'activation part de cet instant (l'historique n'est pas renvoyé). Les messages sont collectés et envoyés automatiquement chaque minute ; le bouton les envoie immédiatement."
+  }
+ }
+}

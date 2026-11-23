@@ -32,7 +32,7 @@
         {
             <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalOutboundService.NoTables]</div></div>
         }
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button."]</div></div>
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once."]</div></div>
         <div class="row g-5 mb-5">
             @if (Model.Feeds.Count == 0) {<div class="col-12"><div class="card card-flush"><div class="card-body text-muted fs-7">@T["No feed yet."]</div></div></div>}
             @foreach (var f in Model.Feeds)
