@@ -40,9 +40,10 @@
                 <div class="card card-flush mb-0"><div class="card-body">
                     <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
                     <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary">
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Inbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-directbox-default fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Inbox"]</span>@{ var unread = (ViewBag.Counts as CrossBuy.BL.MailCounts)?.Unread ?? 0; }@if (unread > 0){<span class="badge badge-primary">@unread</span>}</a></div>
                         <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "All" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary">@cAll</span></a></div>
-                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Outbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-warning">@cOut</span>}</a></div>
-                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Sent" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-success">@cSent</span>}</a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Outbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-info">@cOut</span>}</a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Sent" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-primary">@cSent</span>}</a></div>
                         <div class="menu-item"><a href="@Url.Action("Index","Comm", new { folder = "Failed" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span>@if (cFail > 0){<span class="badge badge-light-danger">@cFail</span>}</a></div>
                     </div>
                 </div></div>
@@ -148,6 +149,10 @@
         statusbar: false,
         branding: false,
         directionality: '@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "rtl" : "ltr")',
+        // A LINK IN A MAIL IS READ OUTSIDE THIS APP, so it must stay absolute. TinyMCE rewrites
+        // urls to be relative to the page by default, and with no document_base_url it produced
+        // href="../../../../undefined//Crm/..." - a dead link in every mail that carried one.
+        convert_urls: false,
         plugins: 'lists link table code autolink',
         toolbar: 'undo redo | formatselect fontselect fontsizeselect | bold italic underline strikethrough forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link table | removeformat code',
         content_style: 'body{font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;color:#181c32}'
@@ -200,7 +205,7 @@
         function renderChips() {
             hidden.value = Object.keys(selected).join(',');
             chips.innerHTML = Object.keys(selected).map(function (id) {
-                return '<span class="badge badge-light-success d-inline-flex align-items-center gap-1 py-2" data-id="' + id + '"><i class="ki-outline ki-paper-clip fs-6"></i>' + esc(selected[id].name) + ' <i class="ki-outline ki-cross fs-7 cursor-pointer cb-rm"></i></span>';
+                return '<span class="badge badge-light-primary d-inline-flex align-items-center gap-1 py-2" data-id="' + id + '"><i class="ki-outline ki-paper-clip fs-6"></i>' + esc(selected[id].name) + ' <i class="ki-outline ki-cross fs-7 cursor-pointer cb-rm"></i></span>';
             }).join('');
             chips.querySelectorAll('.cb-rm').forEach(function (x) { x.addEventListener('click', function () { var id = x.closest('[data-id]').getAttribute('data-id'); delete selected[id]; renderChips(); }); });
         }

@@ -96,6 +96,22 @@
                            The earlier messages of this thread that the reader holds, oldest first, folded to one
                            line each; a click opens one in place (the same sandbox as the message itself - no
                            scripts) without leaving the one being read. *@
+                        @* ---- THE ASSISTANT (phase 4): a summary of this conversation, a draft reply, a translation - on
+                           the company's own AI service. A draft is never sent by the assistant: "use this reply" opens
+                           the reply box with it, for the reader to edit and send. *@
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-6">
+                            <span class="fs-7 fw-bold text-gray-700 me-1"><i class="ki-outline ki-abstract-26 fs-3 text-primary me-1"></i>@Localizer["Assistant"]</span>
+                            <button type="button" class="btn btn-sm btn-light-primary cb-ai" data-mode="summary"><i class="ki-outline ki-document fs-5"></i>@Localizer["Summarize the conversation"]</button>
+                            <button type="button" class="btn btn-sm btn-light-primary cb-ai" data-mode="reply"><i class="ki-outline ki-pencil fs-5"></i>@Localizer["Suggest a reply"]</button>
+                            <input type="text" id="cb-ai-hint" maxlength="300" class="form-control form-control-sm form-control-solid w-250px" placeholder="@Localizer["Instruction for the reply (optional)"]" />
+                            <button type="button" class="btn btn-sm btn-light-primary cb-ai" data-mode="translate"><i class="ki-outline ki-switch fs-5"></i>@Localizer["Translate"]</button>
+                        </div>
+                        <div id="cb-ai-out" class="d-none rounded border border-dashed border-primary bg-light-primary p-5 mb-6"></div>
+                        <form id="cb-ai-use" method="post" asp-action="UseDraft" asp-controller="Comm" class="d-none">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="text" />
+                        </form>
                         @{ var thread = ViewBag.Thread as List<MailThreadItem> ?? new List<MailThreadItem>(); }
                         @if (thread.Count > 0)
                         {
@@ -484,6 +500,77 @@
             }
         });
     });
+</script>
+<script>
+    // ---- THE ASSISTANT (phase 4) ----------------------------------------------------------------------
+    // Text only: every piece of the answer is set with textContent, never as HTML.
+    (function () {
+        var out = document.getElementById('cb-ai-out'); if (!out) return;
+        var T = @Html.Raw(Json.Serialize(new {
+            working = Localizer["The assistant is working..."].Value, failed = Localizer["The assistant could not answer now. Try again in a moment."].Value,
+            tooShort = Localizer["This conversation is too short to summarize."].Value, overview = Localizer["Overview"].Value,
+            points = Localizer["Key points"].Value, decisions = Localizer["Decisions"].Value, actions = Localizer["Tasks"].Value,
+            use = Localizer["Use this reply"].Value, draft = Localizer["Suggested reply"].Value, translation = Localizer["Translation"].Value,
+            seconds = Localizer["s"].Value, unassigned = Localizer["Unassigned"].Value
+        }));
+        var token = document.querySelector('#cb-ai-use input[name="__RequestVerificationToken"]').value;
+        var busy = false;
+        function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+        function show(nodes) { out.innerHTML = ''; nodes.forEach(function (n) { out.appendChild(n); }); out.classList.remove('d-none'); }
+        function list(title, items, fmt) {
+            var box = el('div', 'mb-4'); box.appendChild(el('div', 'fw-bold fs-7 text-gray-800 mb-2', title));
+            var ul = el('ul', 'mb-0 ps-5'); items.forEach(function (x) { var li = el('li', 'fs-7 text-gray-800 mb-1', fmt ? fmt(x) : x); li.dir = 'auto'; ul.appendChild(li); });
+            box.appendChild(ul); return box;
+        }
+        function render(mode, r) {
+            if (mode === 'summary') {
+                if (!r || r.tooShort) { show([el('div', 'fs-7 text-gray-700', T.tooShort)]); return; }
+                var nodes = [];
+                if (r.overview) { var o = el('div', 'mb-4'); o.appendChild(el('div', 'fw-bold fs-7 text-gray-800 mb-1', T.overview)); var p = el('div', 'fs-7 text-gray-800', r.overview); p.dir = 'auto'; o.appendChild(p); nodes.push(o); }
+                if (r.points && r.points.length) nodes.push(list(T.points, r.points));
+                if (r.decisions && r.decisions.length) nodes.push(list(T.decisions, r.decisions));
+                if (r.actions && r.actions.length) nodes.push(list(T.actions, r.actions, function (a) { return (a.owner || T.unassigned) + ' — ' + a.task; }));
+                show(nodes.length ? nodes : [el('div', 'fs-7 text-gray-700', T.tooShort)]);
+            } else if (mode === 'reply') {
+                var ta = el('textarea', 'form-control form-control-solid fs-7 mb-3'); ta.rows = 7; ta.value = (r && r.text) || ''; ta.dir = 'auto';
+                var b = el('button', 'btn btn-sm btn-primary', T.use); b.type = 'button';
+                b.addEventListener('click', function () { var f = document.getElementById('cb-ai-use'); f.querySelector('input[name="text"]').value = ta.value; f.submit(); });
+                show([el('div', 'fw-bold fs-7 text-gray-800 mb-2', T.draft), ta, b]);
+            } else {
+                var t = el('div', 'fs-6 text-gray-800', (r && r.text) || ''); t.dir = 'auto'; t.style.whiteSpace = 'pre-wrap';
+                show([el('div', 'fw-bold fs-7 text-gray-800 mb-2', T.translation), t]);
+            }
+        }
+        function poll(job, mode, t0) {
+            fetch('@Url.Action("AssistStatus","Comm")?job=' + encodeURIComponent(job), { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : { status: 'failed' }; })
+                .then(function (s) {
+                    if (s.status === 'working') {
+                        out.querySelector('.cb-ai-secs').textContent = Math.round((Date.now() - t0) / 1000) + ' ' + T.seconds;
+                        setTimeout(function () { poll(job, mode, t0); }, 2000); return;
+                    }
+                    busy = false;
+                    if (s.status === 'done') render(mode, s.result); else show([el('div', 'fs-7 text-danger', T.failed)]);
+                }).catch(function () { busy = false; show([el('div', 'fs-7 text-danger', T.failed)]); });
+        }
+        document.querySelectorAll('.cb-ai').forEach(function (b) {
+            b.addEventListener('click', function () {
+                if (busy) return; busy = true;
+                var mode = b.getAttribute('data-mode');
+                var spin = el('div', 'd-flex align-items-center gap-3 fs-7 text-gray-700');
+                spin.appendChild(el('span', 'spinner-border spinner-border-sm text-primary')); spin.appendChild(el('span', '', T.working)); spin.appendChild(el('span', 'cb-ai-secs text-muted', ''));
+                show([spin]);
+                var fd = new FormData();
+                fd.append('id', '@Model.Id'); fd.append('mode', mode);
+                fd.append('instruction', document.getElementById('cb-ai-hint').value || '');
+                fd.append('__RequestVerificationToken', token);
+                fetch('@Url.Action("Assist","Comm")', { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(function (r) { return r.ok ? r.json() : { ok: false }; })
+                    .then(function (r) { if (r.ok && r.job) poll(r.job, mode, Date.now()); else { busy = false; show([el('div', 'fs-7 text-danger', T.failed)]); } })
+                    .catch(function () { busy = false; show([el('div', 'fs-7 text-danger', T.failed)]); });
+            });
+        });
+    })();
 </script>
 <script>
     // THE CONVERSATION: a folded message opens in place; its frame is sized to what it holds.

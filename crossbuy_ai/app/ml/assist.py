@@ -44,6 +44,7 @@ ASK_SCHEMA = {
     "required": ["found", "answer", "messageIds"],
 }
 TRANSLATE_SCHEMA = {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}
+REPLY_SCHEMA = TRANSLATE_SCHEMA
 
 
 def _lines(messages: list[dict]) -> tuple[str, dict[int, str], bool]:
@@ -123,6 +124,32 @@ def _ask(messages: list[dict], question: str, lang: str) -> dict:
     return {"found": True, "answer": answer, "messageIds": ids, "cut": cut}
 
 
+# ------------------------------------------------------------------------------------------------ reply (email)
+def _reply(messages: list[dict], lang: str, participants: list[str], instruction: str | None) -> dict:
+    """A DRAFT answer to the last message of a mail conversation, written for participants[0] to edit and send
+    (owner 2026-11-23: mail like the chat, with the assistant). It answers only what was written: no number, date or
+    promise that is not in the conversation or in the writer's own instruction."""
+    text, _, cut = _lines(messages)
+    if not text.strip():
+        return {"text": "", "cut": cut}
+    me = (participants[0] if participants else "").strip()
+    hint = (instruction or "").strip()
+    if lang == "ar":
+        system = ("أنت تكتب مسودة رد على رسالة بريد عمل" + (f" باسم {me}" if me else "") + ". اكتب بالعربية الفصحى وحدها، "
+                  "بنبرة مهنية مهذبة، في فقرة أو فقرتين قصيرتين. أجب عن آخر رسالة في المحادثة مستنداً إلى ما ورد فيها فقط، "
+                  "ولا تخترع أرقاماً أو مواعيد أو التزامات غير مذكورة. لا تكتب سطر الموضوع ولا التوقيع."
+                  + (f" التزم بتوجيه الكاتب: {hint}" if hint else ""))
+        lead = "المحادثة (الأقدم أولاً):\n"
+    else:
+        system = ("You write a draft reply to a business email" + (f" on behalf of {me}" if me else "") + ". Write plain, "
+                  "polite, professional English in one or two short paragraphs. Answer the LAST message using only what the "
+                  "conversation says; do not invent numbers, dates or commitments. No subject line, no signature."
+                  + (f" Follow the writer's instruction: {hint}" if hint else ""))
+        lead = "The conversation (oldest first):\n"
+    r = _complete(system, lead + text[-calls.CHUNK_CHARS * 2:], REPLY_SCHEMA, 600)
+    return {"text": (r.get("text") or "").strip(), "cut": cut}
+
+
 # ------------------------------------------------------------------------------------------------ jobs
 def _sweep() -> None:
     now = time.time()
@@ -148,7 +175,9 @@ def start(mode: str, messages: list[dict], lang: str, participants: list[str], q
                     raise TimeoutError("the model was busy")
                 result = {"text": text}
             else:
-                result = _ask(messages, question or "", lang) if mode == "ask" else _summary(messages, lang, participants)
+                result = (_ask(messages, question or "", lang) if mode == "ask"
+                          else _reply(messages, lang, participants, question) if mode == "reply"
+                          else _summary(messages, lang, participants))
             with _jobs_lock:
                 _jobs[job].update(status="done", result=result, seconds=round(time.perf_counter() - started, 1))
         except Exception as e:     # a failed job says so; it never takes the service down

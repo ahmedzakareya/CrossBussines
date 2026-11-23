@@ -159,4 +159,55 @@
   <data name="External" xml:space="preserve">
     <value>خارجي</value>
   </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>المساعد</value>
+  </data>
+  <data name="Summarize the conversation" xml:space="preserve">
+    <value>تلخيص المحادثة</value>
+  </data>
+  <data name="Suggest a reply" xml:space="preserve">
+    <value>اقتراح رد</value>
+  </data>
+  <data name="Instruction for the reply (optional)" xml:space="preserve">
+    <value>توجيه للرد (اختياري)</value>
+  </data>
+  <data name="Translate" xml:space="preserve">
+    <value>ترجمة</value>
+  </data>
+  <data name="The assistant is working..." xml:space="preserve">
+    <value>المساعد يعمل...</value>
+  </data>
+  <data name="The assistant could not answer now. Try again in a moment." xml:space="preserve">
+    <value>تعذّر على المساعد الإجابة الآن. حاول بعد قليل.</value>
+  </data>
+  <data name="This conversation is too short to summarize." xml:space="preserve">
+    <value>المحادثة أقصر من أن تُلخَّص.</value>
+  </data>
+  <data name="Overview" xml:space="preserve">
+    <value>نظرة عامة</value>
+  </data>
+  <data name="Key points" xml:space="preserve">
+    <value>أهم النقاط</value>
+  </data>
+  <data name="Decisions" xml:space="preserve">
+    <value>القرارات</value>
+  </data>
+  <data name="Tasks" xml:space="preserve">
+    <value>المهام</value>
+  </data>
+  <data name="Use this reply" xml:space="preserve">
+    <value>استخدم هذا الرد</value>
+  </data>
+  <data name="Suggested reply" xml:space="preserve">
+    <value>الرد المقترح</value>
+  </data>
+  <data name="Translation" xml:space="preserve">
+    <value>الترجمة</value>
+  </data>
+  <data name="s" xml:space="preserve">
+    <value>ث</value>
+  </data>
+  <data name="Unassigned" xml:space="preserve">
+    <value>غير محدد</value>
+  </data>
 </root>

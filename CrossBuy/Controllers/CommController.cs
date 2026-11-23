@@ -144,6 +144,10 @@ namespace CrossBuy.Controllers
                     else { ViewBag.To = src.ToAddress; ViewBag.Cc = kind == "ReplyAll" ? (src.Cc ?? "") : ""; ViewBag.Subject = "Re: " + baseSubj; ViewBag.Body = quote; }
                 }
             }
+            // A DRAFT FROM THE ASSISTANT (phase 4) leads the body, as plain paragraphs above the quoted message.
+            if (TempData["MailDraft"] is string draft && !string.IsNullOrWhiteSpace(draft))
+                ViewBag.Body = string.Concat(draft.Replace("\r\n", "\n").Split("\n\n", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(par => "<p>" + System.Net.WebUtility.HtmlEncode(par.Trim()).Replace("\n", "<br>") + "</p>")) + (ViewBag.Body as string ?? "");
             return View();
         }
 
@@ -269,6 +273,41 @@ namespace CrossBuy.Controllers
             var url = string.IsNullOrWhiteSpace(link.Url) ? null
                 : $"{Request.Scheme}://{Request.Host}{link.Url}";
             return Json(new { ok = true, subject = (type + " " + link.Label).Trim(), label = link.Label, url });
+        }
+
+        // ---- THE ASSISTANT IN THE MAILBOX (phase 4) ----------------------------------------------------
+        // A summary of the conversation, a draft reply, a translation - on the company's own AI service. Only for
+        // mail the reader holds (MailAssistant reads through the reader's mailbox); a job is read by its starter only.
+        private CrossBuy.BL.Comm.MailAssistant Assistant => ActivatorUtilities.CreateInstance<CrossBuy.BL.Comm.MailAssistant>(HttpContext.RequestServices);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Assist(int id, string mode, string? instruction)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            if (!await MayUseMailAsync()) return Forbid();
+            var r = await Assistant.StartAsync(me.Value.companyId, me.Value.empId, id, mode, instruction, await MayManageOutboxAsync(), HttpContext.RequestAborted);
+            return Json(new { ok = r.Ok, job = r.Job, code = r.Code });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AssistStatus(string job)
+        {
+            var me = await MeAsync(); if (me == null || string.IsNullOrEmpty(job)) return NotFound(new { ok = false });
+            var s = await Assistant.StatusAsync(me.Value.companyId, me.Value.empId, job, HttpContext.RequestAborted);
+            return s == null ? NotFound(new { ok = false }) : Json(s);
+        }
+
+        /// "Use this reply": the draft goes into the reply's compose box (as its first paragraph, above the quote),
+        /// where the reader edits it and sends it - the assistant never sends anything itself.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UseDraft(int id, string? text, string? kind)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            if (!await MayUseMailAsync()) return Forbid();
+            if (!string.IsNullOrWhiteSpace(text)) TempData["MailDraft"] = text.Length > 8000 ? text[..8000] : text;
+            return RedirectToAction("Compose", new { parentId = id, kind = kind == "ReplyAll" ? "ReplyAll" : "Reply" });
         }
 
         /// The reader's badges, for the inbox to stay current without a reload (phase 3: live mailbox).
