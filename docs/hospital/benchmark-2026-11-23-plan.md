@@ -76,3 +76,12 @@ The remaining gaps fall into two groups:
   - H264 — audit viewer of patient-file access by person, patient, day range and action.
   - H265 — professional licences ahead of their lapse, with reminders at 60/30/7 days and on lapse.
   - H266 — the patient's assistant on the portal: own appointments, released results, dues and medicines from the portal's own services; emergencies get the number, clinical questions go to the clinic, unknown is refused.
+  - H267 — restricted files (H64) are left out of population lists (registries, peer-review sample, operative-note
+    worklist) for viewers who are not privileged.
+
+## Re-score after the plan (2026-11-23)
+
+Radiology 7.5, surgery 7.5, laboratory 8, interoperability 7.5, analytics 7, security 8.5, staff 7, portal 8,
+registration 8.5; the rest unchanged. **Overall about 7.6 out of 10.** What separates the rest from the leaders is
+external (licensed drug knowledge, device integration, the civil-ID lookup, live payer and exchange addresses) and
+real-world use (acceptance with the clinical staff).

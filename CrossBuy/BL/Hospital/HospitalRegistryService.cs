@@ -62,6 +62,8 @@ namespace CrossBuy.BL.Hospital
 			registry = HospitalRegistryKind.All.Contains(registry ?? "") ? registry! : HospitalRegistryKind.Diabetes;
 			var people = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.IsActive && p.DeceasedAt == null)
 				.Select(p => new { p.ID, p.Name, p.NameEn, p.PhotoPath, p.Mrn, p.BirthDate, p.Sex }).ToListAsync(ct);
+			var hidden = await HospitalRestrictedLists.HiddenAsync(_db, _access, ctx, ct);   // H267: a restricted file is not swept into the list
+			people = people.Where(p => !hidden.Contains(p.ID)).ToList();
 			var facts = await FactsAsync(ctx.CompanyId, people.ToDictionary(p => p.ID, p => ((DateTime?)p.BirthDate, (string?)p.Sex)), nowUtc, ct);
 			var counts = HospitalRegistryKind.All.Select(k =>
 			{

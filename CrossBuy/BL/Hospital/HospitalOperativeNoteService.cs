@@ -106,6 +106,8 @@ namespace CrossBuy.BL.Hospital
 							join p in _db.HospitalPatients.AsNoTracking() on c.PatientId equals p.ID
 							where c.CompanyId == ctx.CompanyId && (c.Status == HospitalSurgeryStatus.InProgress || c.Status == HospitalSurgeryStatus.Done) && c.CaseDate >= since
 							select new { c, p.Name, p.NameEn, p.PhotoPath, p.Mrn, Signed = notes.Any(n => n.SurgeryId == c.ID && n.SignedAt != null) };
+				var hidden = (await HospitalRestrictedLists.HiddenAsync(_db, _access, ctx, ct)).ToList();   // H267
+				if (hidden.Count > 0) cases = cases.Where(x => !hidden.Contains(x.c.PatientId));
 				int unsigned = await cases.CountAsync(x => !x.Signed, ct);
 				var overdueCut = now.AddHours(-24);
 				int overdue = await cases.CountAsync(x => !x.Signed && x.c.StartedAt != null && x.c.StartedAt < overdueCut, ct);

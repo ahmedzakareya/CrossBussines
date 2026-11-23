@@ -152,6 +152,8 @@ namespace CrossBuy.BL.Hospital
 							where o.CompanyId == ctx.CompanyId && o.Status == HospitalRadStatus.Signed && o.SignedByEmployeeId != null && o.SignedByEmployeeId != me && o.SignedAt >= since
 							select new { o, p.Name, p.NameEn, p.PhotoPath, p.Mrn };
 				query = view == "mine" ? query.Where(x => reviewedByMe.Contains(x.o.ID)) : query.Where(x => !reviewedByMe.Contains(x.o.ID));
+				var hidden = (await HospitalRestrictedLists.HiddenAsync(_db, _access, ctx, ct)).ToList();   // H267
+				if (hidden.Count > 0) query = query.Where(x => !hidden.Contains(x.o.PatientId));
 				if (!string.IsNullOrWhiteSpace(q)) { var s = q.Trim(); query = query.Where(x => x.Name.Contains(s) || (x.NameEn ?? "").Contains(s) || x.Mrn.Contains(s) || x.o.AccessionNo.Contains(s) || x.o.Name.Contains(s) || x.o.NameEn.Contains(s)); }
 				int total = await query.CountAsync(ct);
 				var all = await query.Select(x => x.o.ID).ToListAsync(ct);
