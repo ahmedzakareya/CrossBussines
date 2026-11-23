@@ -42,6 +42,7 @@
       none:  isAr ? 'لا نتائج لـ'      : 'Nothing matched',
       scope: isAr ? 'ضمن صلاحيتك'      : 'within what you may view',
       more:  isAr ? 'أول النتائج فقط'  : 'first matches only',
+      listOnly: isAr ? 'في القائمة' : 'in the list',
     };
 
     var box = null, timer = null, lastTerm = '', activeIndex = -1;
@@ -117,9 +118,15 @@
           (g.hits || []).forEach(function (h) {
             var label = esc(h.Label || h.label || '');
             if (h.url) {
+              // SAYS WHAT IT OPENS. A type with no detail screen can only reach a list — filtered to
+              // this record where the list reads the term, the whole list where it does not. Offering
+              // that as the record is how one employee's hit opened every employee.
+              var note = h.opensList
+                ? '<span class="text-muted fs-8 ms-2 flex-shrink-0">' + esc(T.listOnly) + '</span>'
+                : '';
               html += '<div class="menu-item px-3">' +
-                        '<a href="' + esc(h.url) + '" data-cb-hit="1" class="menu-link px-3">' +
-                          '<bdi class="text-truncate">' + label + '</bdi>' +
+                        '<a href="' + esc(h.url) + '" data-cb-hit="1" class="menu-link px-3 d-flex align-items-center justify-content-between">' +
+                          '<bdi class="text-truncate">' + label + '</bdi>' + note +
                         '</a>' +
                       '</div>';
             } else {

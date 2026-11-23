@@ -35,7 +35,7 @@ namespace CrossBuy.Controllers
                     code = g.Code,
                     label = ar ? g.LabelAr : g.LabelEn,
                     icon = g.Icon,
-                    hits = g.Hits.Select(h => new { h.Id, h.Label, url = h.Url })
+                    hits = g.Hits.Select(h => new { h.Id, h.Label, url = h.Url, opensList = h.OpensList })
                 })
             });
         }
@@ -66,7 +66,7 @@ namespace CrossBuy.Controllers
 
             var all = res.Groups
                 .SelectMany(g => g.Hits.Select(h => new GlobalSearchRow(
-                    g.Code, g.LabelAr, g.LabelEn, g.Icon, h.Id, h.Label, h.Url)))
+                    g.Code, g.LabelAr, g.LabelEn, g.Icon, h.Id, h.Label, h.Url, h.OpensList)))
                 .ToList();
 
             if (page < 1) page = 1;

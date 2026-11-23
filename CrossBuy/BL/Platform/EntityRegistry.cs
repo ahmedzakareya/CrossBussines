@@ -941,12 +941,32 @@ namespace CrossBuy.BL.Platform
                 _ => new List<(int, string)>(),
             };
 
-            return rows.Select(r => new EntitySearchResult
+            // A type with no detail screen has no {id} in its template, so BuildUrl can only return
+            // the list. Handing that back unchanged is what made every employee hit open the whole
+            // roster. The term goes on the address instead, which the list screens seed their search
+            // box from, and the row says plainly that a list is what opens.
+            bool opensList = !string.IsNullOrEmpty(def.RouteTemplate)
+                             && !def.RouteTemplate.Contains("{id}", StringComparison.Ordinal);
+
+            return rows.Select(r =>
             {
-                EntityCode = def.Code,
-                EntityId = r.Id,
-                Label = r.Label,
-                Url = BuildUrl(def.Code, r.Id),
+                var url = BuildUrl(def.Code, r.Id);
+                if (opensList && !string.IsNullOrEmpty(url) && !string.IsNullOrWhiteSpace(r.Label))
+                {
+                    // The label is the thing the search matched on, so it is the term most likely to
+                    // find the row again. '|' separates terms in the tag box, so a label carrying one
+                    // would arrive as two filters and match nothing.
+                    url += (url.Contains('?', StringComparison.Ordinal) ? "&" : "?")
+                         + "q=" + Uri.EscapeDataString(r.Label.Replace("|", " ", StringComparison.Ordinal));
+                }
+                return new EntitySearchResult
+                {
+                    EntityCode = def.Code,
+                    EntityId = r.Id,
+                    Label = r.Label,
+                    Url = url,
+                    OpensList = opensList,
+                };
             }).ToList();
         }
 

@@ -32,10 +32,19 @@
                 <span class="text-gray-600 fw-semibold"><bdi>@r.Label</bdi></span>
             }
         </td>
-        <td class="text-end w-100px">
+        <td class="text-end w-150px">
+            @*
+                THE BUTTON SAYS WHAT IT OPENS. Eight registry types have no detail screen, so their
+                link can only reach a list — filtered to this record where the list reads the term,
+                and the whole list where it does not. Calling that "Open" is how one employee's
+                result opened every employee, looking as though it had worked. "Open list" keeps its
+                word in both cases.
+            *@
             @if (!string.IsNullOrEmpty(r.Url))
             {
-                <a href="@r.Url" class="btn btn-sm btn-light btn-active-light-primary">@L("فتح", "Open")</a>
+                <a href="@r.Url" class="btn btn-sm btn-light btn-active-light-primary">
+                    @(r.OpensList ? L("فتح القائمة", "Open list") : L("فتح", "Open"))
+                </a>
             }
         </td>
     </tr>

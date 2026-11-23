@@ -14,7 +14,10 @@ namespace CrossBuy.BL.Platform
         Task<GlobalSearchResponse> SearchAsync(BusinessContext? context, string? term, int perType = 6, CancellationToken cancellationToken = default);
     }
 
-    public sealed record GlobalSearchHit(int Id, string Label, string? Url);
+    /// <param name="OpensList">The Url opens a LIST filtered to this record rather than the record
+    /// itself — true for the types that have no detail screen. A caller must SAY so instead of
+    /// offering it as the record.</param>
+    public sealed record GlobalSearchHit(int Id, string Label, string? Url, bool OpensList = false);
     /// <param name="Truncated">
     /// More rows matched this type than are being shown. The page says so instead of letting the
     /// count read as the whole answer: each type is capped twice — EntityRegistry.SearchTake caps
@@ -41,7 +44,7 @@ namespace CrossBuy.BL.Platform
     /// moves from the markup into a column.
     /// </remarks>
     public sealed record GlobalSearchRow(string TypeCode, string TypeLabelAr, string TypeLabelEn, string Icon,
-                                         int Id, string Label, string? Url);
+                                         int Id, string Label, string? Url, bool OpensList = false);
 
     public sealed class GlobalSearchService : IGlobalSearchService
     {
@@ -94,7 +97,8 @@ namespace CrossBuy.BL.Platform
                 if (rows.Count == 0) continue;
 
                 var hits = rows.Take(perType)
-                    .Select(r => new GlobalSearchHit(r.EntityId, r.Label, r.Url ?? _registry.BuildUrl(def.Code, r.EntityId)))
+                    .Select(r => new GlobalSearchHit(r.EntityId, r.Label,
+                        r.Url ?? _registry.BuildUrl(def.Code, r.EntityId), r.OpensList))
                     .ToList();
                 total += hits.Count;
                 groups.Add(new GlobalSearchGroup(def.Code, def.DisplayNameAr, def.DisplayNameEn, def.Icon, def.Color,

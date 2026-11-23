@@ -69,6 +69,23 @@ namespace CrossBuy.Models.Platform
         public required int EntityId { get; init; }
         public required string Label { get; init; }
         public string? Url { get; init; }
+
+        /// <summary>
+        /// True when <see cref="Url"/> opens a LIST rather than this record.
+        /// </summary>
+        /// <remarks>
+        /// Eight of the registry's types have no detail screen, so their route template carries no
+        /// {id} and every hit on them resolved to the same list address. Searching for one employee
+        /// by name and opening the result landed on ALL employees — the link looked like it had
+        /// worked, which is worse than no link at all, and it was true of leads, opportunities,
+        /// projects, leave and the rest alike.
+        ///
+        /// Such a URL now carries ?q=&lt;label&gt;, so a list that reads the term lands filtered to
+        /// the record. Not every list does, and the registry cannot know which — so the flag travels
+        /// with the row and the caller SAYS it is opening a list. A screen that promises a record and
+        /// delivers a list is the defect; one that says "open list" keeps its word either way.
+        /// </remarks>
+        public bool OpensList { get; init; }
     }
 
     // The outcome of resolving (code, id) to a displayable, navigable record.
