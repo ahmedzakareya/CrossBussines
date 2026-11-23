@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 import shutil
 import threading
@@ -45,7 +46,8 @@ _queue: list[str] = []
 _cv = threading.Condition()
 _worker: threading.Thread | None = None
 _llm = None
-_llm_lock = threading.Lock()
+_llm_lock = threading.RLock()   # re-entrant: the card's fallback loads the CPU engine while its caller holds it
+log = logging.getLogger("crossbuy.calls")
 
 SCHEMA = {
     "type": "object",
@@ -221,7 +223,7 @@ def _process(job: str) -> None:
 
 
 # ---------------------------------------------------------------------------------------------- the summary
-def _engine():
+def _cpu_engine():
     global _llm
     with _llm_lock:
         if _llm is None:
@@ -231,6 +233,32 @@ def _engine():
             from llama_cpp import Llama
             _llm = Llama(model_path=path, n_ctx=8192, n_threads=max(1, min(8, (os.cpu_count() or 2) // 2)), verbose=False)
         return _llm
+
+
+class _CardOrCpu:
+    """The graphics card's engine (gpu_llm), and the CPU's the moment it fails — the caller never sees which."""
+    def __init__(self, card):
+        self._card = card
+
+    def create_chat_completion(self, **kw):
+        try:
+            return self._card.create_chat_completion(**kw)
+        except Exception as e:
+            from app.ml import gpu_llm
+            log.warning("summary engine: the graphics card failed (%s); the CPU answers", e)
+            gpu_llm.mark_failed()
+            return _cpu_engine().create_chat_completion(**kw)
+
+
+def _engine():
+    """The engine of the summaries, the assistant and translation: on the graphics card when it can be had
+    (gpu_llm: ~4x faster here), else on the CPU as before."""
+    path = find_model()
+    if not path:
+        raise FileNotFoundError("no .gguf in models/")
+    from app.ml import gpu_llm
+    card = gpu_llm.server(path)
+    return _CardOrCpu(card) if card is not None else _cpu_engine()
 
 
 def _ask(system: str, user: str) -> dict:
