@@ -84,8 +84,8 @@ Nile Co sales	Accounting:report-read	pinned-ok
 [en] asthma cases	Hospital:consult	pinned-ok
 [en] critical lab results	Hospital:lab	unpinned
 [en] diagnoses by department	Hospital:consult	pinned-ok
-[ar] كام حالة صداع نصفي	Hospital:consult	unpinned
-[en] how many migraine cases	Hospital:consult	unpinned
+[ar] كام حالة صداع نصفي	Hospital:consult	pinned-ok
+[en] how many migraine cases	Hospital:consult	pinned-ok
 [ar] المطالبات المرفوضة	Hospital:read	unpinned
 [en] rejected claims	Hospital:read	unpinned
 [ar] كام زيارة عندنا	Hospital:read	unpinned

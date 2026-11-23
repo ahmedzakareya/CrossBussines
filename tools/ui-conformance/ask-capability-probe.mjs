@@ -312,7 +312,7 @@ const NAMED = [
 
 const PEOPLE = [
   ['في موظف اسمه احمد زكريا ؟',   'found',   'he is on the roster', 'Hr'],
-  ['بسأل عن احمد زكريا موظف',     'found',   "the owner's original wording", 'Hr'],
+  ['بسأل عن احمد زكريا موظف',     'found',   "the owner's original wording", 'Hr', 'Hr', 'Hr'],
   ['في موظف اسمه زغلول الفيشاوي ؟', 'missing', 'nobody by that name: answered, not refused', 'Hr'],
 ];
 
@@ -691,12 +691,12 @@ const MISSINGVALUE = [
   // fifty-three codes have ever been used, so most of this hospital's own vocabulary names zero
   // rows — and a question using one of those words is the easiest place for this surface to answer
   // confidently about everything instead of admitting it found nothing.
-  ['ar', 'كام حالة صداع نصفي',    'a code in the catalogue that no doctor has recorded'],
-  ['en', 'how many migraine cases', 'the same absent value, asked in the other language'],
+  ['ar', 'كام حالة صداع نصفي',    'a code in the catalogue that no doctor has recorded', 'Hospital'],
+  ['en', 'how many migraine cases', 'the same absent value, asked in the other language', 'Hospital'],
 ];
 
 try {
-  for (const [culture, q, why] of MISSINGVALUE) {
+  for (const [culture, q, why, wantAuth] of MISSINGVALUE) {
     await page.goto(`${BASE}/Account/SetLanguage?culture=${culture}&returnUrl=%2F`, { waitUntil: 'domcontentloaded' }).catch(() => {});
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:mv${Date.now()}`,
@@ -710,9 +710,12 @@ try {
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
     const said = `${r.say} ${r.understood}`;
-    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', 'unpinned']);
+    // The surface must also be the RIGHT one. "I could not find that" from the wrong module is
+    // still the wrong module answering - it just happens to be admitting something while it does it.
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
     const admits = said.includes('مالقيتش') || /could not find|couldn't find|no .* found/i.test(said);
-    const good = r.status === 200 && admits;
+    const good = r.status === 200 && admits && !authWrong;
     if (good) { pass++; }
     else { failures.push({ q: `[${culture}] ${q}`, want: 'says the value was not found', why, ...r, say: said.slice(0, 130) }); }
     total++;
