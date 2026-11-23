@@ -75,3 +75,4 @@ The remaining gaps fall into two groups:
   - H263 — no-show risk in readable points for the coming week, validated on the past year (AUC, observed rate per band).
   - H264 — audit viewer of patient-file access by person, patient, day range and action.
   - H265 — professional licences ahead of their lapse, with reminders at 60/30/7 days and on lapse.
+  - H266 — the patient's assistant on the portal: own appointments, released results, dues and medicines from the portal's own services; emergencies get the number, clinical questions go to the clinic, unknown is refused.

@@ -38,6 +38,38 @@
                     <div class="fs-6 text-gray-700">@T["Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly."]</div></div>
             </div>
         }
+        @* H266: the patient's assistant — questions about the account's own file; never medical advice *@
+        <div class="card card-flush mb-5 mb-xl-10" id="ppAsk">
+            <div class="card-header pt-7"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-900"><i class="ki-outline ki-message-question fs-2 text-primary me-2"></i>@T["Ask about your file"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Your appointments, results, bills and medicines — for medical questions, message the clinic"]</span></h3></div>
+            <div class="card-body pt-4">
+                <form class="d-flex gap-2" data-pp-ask-form><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-pp-ask placeholder="@T["For example: when is my next appointment?"]" /><button type="submit" class="btn btn-primary">@T["Ask"]</button></form>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    @foreach (var s in new[] { "When is my next appointment?", "My latest results", "How much do I owe?", "My medicines" }) {<button type="button" class="btn btn-sm btn-light-primary" data-pp-chip>@T[s]</button>}
+                </div>
+                <div class="d-none mt-5 rounded border border-dashed p-5" data-pp-ans><div class="fw-bold fs-6 text-gray-900 mb-2" data-pp-ans-title></div><ul class="mb-3 ps-5 fs-7 text-gray-700" data-pp-ans-lines dir="auto"></ul><a class="btn btn-sm btn-light-primary d-none" data-pp-ans-link></a></div>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var box = document.getElementById('ppAsk'), url = @Json.Serialize(Url.Action("Assistant"));
+                function ask(q) {
+                    if (!q || !q.trim()) return;
+                    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': window.pp.token() }, body: JSON.stringify({ question: q }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) {
+                            if (!res.ok) return;
+                            var a = box.querySelector('[data-pp-ans]'), ul = a.querySelector('[data-pp-ans-lines]'), ln = a.querySelector('[data-pp-ans-link]');
+                            a.classList.remove('d-none'); a.classList.toggle('border-danger', res.intent === 'Emergency'); a.classList.toggle('bg-light-danger', res.intent === 'Emergency');
+                            a.querySelector('[data-pp-ans-title]').textContent = res.title;
+                            ul.innerHTML = ''; (res.lines || []).forEach(function (l) { var li = document.createElement('li'); li.textContent = l; ul.appendChild(li); });
+                            if (res.link) { ln.href = res.link; ln.textContent = res.linkLabel; ln.classList.remove('d-none'); } else ln.classList.add('d-none');
+                        });
+                }
+                box.querySelector('[data-pp-ask-form]').addEventListener('submit', function (e) { e.preventDefault(); ask(box.querySelector('[data-pp-ask]').value); });
+                box.addEventListener('click', function (e) { var c = e.target.closest('[data-pp-chip]'); if (!c) return; box.querySelector('[data-pp-ask]').value = c.textContent.trim(); ask(c.textContent); });
+            })();
+        </script>
         <div class="card card-flush mb-5 mb-xl-10">
             <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["Your next appointment"]</span></h3>
                 <div class="card-toolbar"><a href="@Url.Action("Appointments")" class="btn btn-sm btn-light">@T["All appointments"]</a></div></div>

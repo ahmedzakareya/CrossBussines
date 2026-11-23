@@ -1,0 +1,165 @@
+{
+ "unit": "H266 - Patient portal assistant",
+ "strings": {
+  "Ask about your file": {
+   "ar": "اسأل عن ملفك",
+   "en": "Ask about your file",
+   "fr": "Questions sur votre dossier"
+  },
+  "Your appointments, results, bills and medicines — for medical questions, message the clinic": {
+   "ar": "مواعيدك ونتائجك وفواتيرك وأدويتك، وللأسئلة الطبية راسل العيادة",
+   "en": "Your appointments, results, bills and medicines — for medical questions, message the clinic",
+   "fr": "Vos rendez-vous, résultats, factures et médicaments — pour les questions médicales, écrivez à la clinique"
+  },
+  "For example: when is my next appointment?": {
+   "ar": "مثلًا: متى موعدي القادم؟",
+   "en": "For example: when is my next appointment?",
+   "fr": "Par exemple : quand est mon prochain rendez-vous ?"
+  },
+  "Ask": {
+   "ar": "اسأل",
+   "en": "Ask",
+   "fr": "Demander"
+  },
+  "When is my next appointment?": {
+   "ar": "متى موعدي القادم؟",
+   "en": "When is my next appointment?",
+   "fr": "Quand est mon prochain rendez-vous ?"
+  },
+  "My latest results": {
+   "ar": "آخر نتائجي",
+   "en": "My latest results",
+   "fr": "Mes derniers résultats"
+  },
+  "How much do I owe?": {
+   "ar": "كم المبلغ المستحق علي؟",
+   "en": "How much do I owe?",
+   "fr": "Combien dois-je ?"
+  },
+  "This may be an emergency": {
+   "ar": "قد تكون هذه حالة طارئة",
+   "en": "This may be an emergency",
+   "fr": "Il s'agit peut-être d'une urgence"
+  },
+  "Call {0} now, or go to the nearest emergency department. Do not wait for a reply here.": {
+   "ar": "اتصل بالرقم {0} الآن، أو توجّه إلى أقرب قسم طوارئ، ولا تنتظر ردًّا هنا.",
+   "en": "Call {0} now, or go to the nearest emergency department. Do not wait for a reply here.",
+   "fr": "Appelez le {0} maintenant ou rendez-vous aux urgences les plus proches. N'attendez pas de réponse ici."
+  },
+  "This is a question for your doctor": {
+   "ar": "هذا سؤال لطبيبك",
+   "en": "This is a question for your doctor",
+   "fr": "C'est une question pour votre médecin"
+  },
+  "I cannot give medical advice. Send your question to the clinic and the care team will answer.": {
+   "ar": "لا أستطيع تقديم نصيحة طبية. أرسل سؤالك إلى العيادة وسيجيبك فريق الرعاية.",
+   "en": "I cannot give medical advice. Send your question to the clinic and the care team will answer.",
+   "fr": "Je ne peux pas donner d'avis médical. Envoyez votre question à la clinique ; l'équipe soignante répondra."
+  },
+  "Message the clinic": {
+   "ar": "راسل العيادة",
+   "en": "Message the clinic",
+   "fr": "Écrire à la clinique"
+  },
+  "Choose the clinic, the doctor and a free time.": {
+   "ar": "اختر العيادة والطبيب ووقتًا متاحًا.",
+   "en": "Choose the clinic, the doctor and a free time.",
+   "fr": "Choisissez la clinique, le médecin et un créneau libre."
+  },
+  "Your appointments": {
+   "ar": "مواعيدك",
+   "en": "Your appointments",
+   "fr": "Vos rendez-vous"
+  },
+  "You have no appointment booked.": {
+   "ar": "لا توجد لديك مواعيد محجوزة.",
+   "en": "You have no appointment booked.",
+   "fr": "Vous n'avez aucun rendez-vous."
+  },
+  "Your next appointments": {
+   "ar": "مواعيدك القادمة",
+   "en": "Your next appointments",
+   "fr": "Vos prochains rendez-vous"
+  },
+  "{0} — {1} at {2} with {3} ({4})": {
+   "ar": "{0} — {1} الساعة {2} مع {3} ({4})",
+   "en": "{0} — {1} at {2} with {3} ({4})",
+   "fr": "{0} — {1} à {2} avec {3} ({4})"
+  },
+  "{0}: {1} of {2} — some values are outside the normal range; your doctor will explain them": {
+   "ar": "{0}: {1} بتاريخ {2} — بعض القيم خارج المعدل الطبيعي، وسيشرحها لك طبيبك",
+   "en": "{0}: {1} of {2} — some values are outside the normal range; your doctor will explain them",
+   "fr": "{0} : {1} du {2} — certaines valeurs sont hors normes ; votre médecin vous les expliquera"
+  },
+  "{0}: {1} of {2} — within the normal range": {
+   "ar": "{0}: {1} بتاريخ {2} — ضمن المعدل الطبيعي",
+   "en": "{0}: {1} of {2} — within the normal range",
+   "fr": "{0} : {1} du {2} — dans les normes"
+  },
+  "{0} result(s) are with your doctor and will appear once released.": {
+   "ar": "{0} من النتائج لدى طبيبك، وستظهر بعد أن يتيحها لك.",
+   "en": "{0} result(s) are with your doctor and will appear once released.",
+   "fr": "{0} résultat(s) sont chez votre médecin et apparaîtront une fois publiés."
+  },
+  "No result has been released to you yet.": {
+   "ar": "لم تُتَح لك أي نتيجة بعد.",
+   "en": "No result has been released to you yet.",
+   "fr": "Aucun résultat ne vous a encore été communiqué."
+  },
+  "Your results": {
+   "ar": "نتائجك",
+   "en": "Your results",
+   "fr": "Vos résultats"
+  },
+  "My results": {
+   "ar": "نتائجي",
+   "en": "My results",
+   "fr": "Mes résultats"
+  },
+  "Your bills": {
+   "ar": "فواتيرك",
+   "en": "Your bills",
+   "fr": "Vos factures"
+  },
+  "Nothing is due on your bills.": {
+   "ar": "لا توجد مبالغ مستحقة على فواتيرك.",
+   "en": "Nothing is due on your bills.",
+   "fr": "Rien n'est dû sur vos factures."
+  },
+  "Due: {0} {1} on {2} bill(s)": {
+   "ar": "المستحق: {0} {1} على {2} من الفواتير",
+   "en": "Due: {0} {1} on {2} bill(s)",
+   "fr": "Dû : {0} {1} sur {2} facture(s)"
+  },
+  "My bills": {
+   "ar": "فواتيري",
+   "en": "My bills",
+   "fr": "Mes factures"
+  },
+  "Your medicines": {
+   "ar": "أدويتك",
+   "en": "Your medicines",
+   "fr": "Vos médicaments"
+  },
+  "No current medicine is on your file.": {
+   "ar": "لا توجد أدوية حالية في ملفك.",
+   "en": "No current medicine is on your file.",
+   "fr": "Aucun médicament en cours dans votre dossier."
+  },
+  "{0} — {1}": {
+   "ar": "{0} — {1}",
+   "en": "{0} — {1}",
+   "fr": "{0} — {1}"
+  },
+  "I did not understand": {
+   "ar": "لم أفهم السؤال",
+   "en": "I did not understand",
+   "fr": "Je n'ai pas compris"
+  },
+  "I can tell you your next appointment, your released results, what you owe and your medicines. For anything else, message the clinic.": {
+   "ar": "أستطيع إخبارك بموعدك القادم ونتائجك المتاحة والمبلغ المستحق عليك وأدويتك. ولأي أمر آخر راسل العيادة.",
+   "en": "I can tell you your next appointment, your released results, what you owe and your medicines. For anything else, message the clinic.",
+   "fr": "Je peux vous indiquer votre prochain rendez-vous, vos résultats publiés, ce que vous devez et vos médicaments. Pour le reste, écrivez à la clinique."
+  }
+ }
+}
