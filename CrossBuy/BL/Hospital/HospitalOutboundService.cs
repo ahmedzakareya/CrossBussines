@@ -19,8 +19,9 @@ namespace CrossBuy.BL.Hospital
 
 	// ==========================================================================================
 	// HOSPITAL H247 — collecting the hospital's events into each enabled feed's queue (once per event: the key is unique)
-	// and sending them over MLLP. Collection runs when the feeds page is opened or "collect" is pressed; a background
-	// sender would need its own approved line in Program.cs and is not wired. The administrator (`manage`) runs it.
+	// and sending them over MLLP. Collection runs when the feeds page is opened or "collect" is pressed, and every minute
+	// in the background (HospitalOutboundSenderService, owner-approved 2026-11-23), which also sends. The administrator
+	// (`manage`) runs it by hand; the background sender runs the same core for each company.
 	// ==========================================================================================
 	public sealed class HospitalOutboundService
 	{
@@ -85,15 +86,18 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// Queues every new event of every enabled feed. Returns how many messages were queued.
-		public async Task<int> CollectAsync(BusinessContext ctx, string facility, DateTime nowUtc, CancellationToken ct = default)
+		public Task<int> CollectAsync(BusinessContext ctx, string facility, DateTime nowUtc, CancellationToken ct = default) => CollectForAsync(ctx.CompanyId, facility, nowUtc, ct);
+
+		/// The background sender's entry: the same collection for one company (no person; the worker scope is bound to it).
+		public async Task<int> CollectForAsync(int companyId, string facility, DateTime nowUtc, CancellationToken ct = default)
 		{
-			var feeds = await _db.Set<HospitalOutboundFeed>().AsNoTracking().Where(f => f.CompanyId == ctx.CompanyId && f.Enabled).ToListAsync(ct);
+			var feeds = await _db.Set<HospitalOutboundFeed>().AsNoTracking().Where(f => f.CompanyId == companyId && f.Enabled).ToListAsync(ct);
 			int added = 0;
 			foreach (var f in feeds)
 			{
-				var have = (await _db.Set<HospitalOutboundMessage>().AsNoTracking().Where(m => m.CompanyId == ctx.CompanyId && m.FeedId == f.ID && m.EventAt >= f.StartFrom)
+				var have = (await _db.Set<HospitalOutboundMessage>().AsNoTracking().Where(m => m.CompanyId == companyId && m.FeedId == f.ID && m.EventAt >= f.StartFrom)
 					.Select(m => m.EventKey).ToListAsync(ct)).ToHashSet();
-				var events = f.Kind == HospitalFeedKind.Adt ? await AdtEventsAsync(ctx, f, facility, nowUtc, have, ct) : await OruEventsAsync(ctx, f, facility, nowUtc, have, ct);
+				var events = f.Kind == HospitalFeedKind.Adt ? await AdtEventsAsync(companyId, f, facility, nowUtc, have, ct) : await OruEventsAsync(companyId, f, facility, nowUtc, have, ct);
 				foreach (var m in events.Take(500)) { _db.Add(m); added++; }
 			}
 			if (added > 0)
@@ -105,19 +109,19 @@ namespace CrossBuy.BL.Hospital
 
 		private static string Control(int feedId, string key) => ("F" + feedId + "-" + key).Replace(":", "-")[..Math.Min(30, ("F" + feedId + "-" + key).Length)];
 
-		private async Task<List<HospitalOutboundMessage>> AdtEventsAsync(BusinessContext ctx, HospitalOutboundFeed f, string facility, DateTime nowUtc, HashSet<string> have, CancellationToken ct)
+		private async Task<List<HospitalOutboundMessage>> AdtEventsAsync(int companyId, HospitalOutboundFeed f, string facility, DateTime nowUtc, HashSet<string> have, CancellationToken ct)
 		{
 			var since = f.StartFrom;
-			var adms = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && (a.AdmittedAt >= since || (a.DischargedAt != null && a.DischargedAt >= since))).ToListAsync(ct);
+			var adms = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == companyId && (a.AdmittedAt >= since || (a.DischargedAt != null && a.DischargedAt >= since))).ToListAsync(ct);
 			var ids = adms.Select(a => a.ID).ToList();
 			var stays = await (from s in _db.HospitalBedStays.AsNoTracking()
 							   join b in _db.HospitalBeds.AsNoTracking() on s.BedId equals b.ID
 							   join r in _db.HospitalRooms.AsNoTracking() on s.RoomId equals r.ID
-							   where s.CompanyId == ctx.CompanyId && (ids.Contains(s.AdmissionId) || s.StartedAt >= since)
+							   where s.CompanyId == companyId && (ids.Contains(s.AdmissionId) || s.StartedAt >= since)
 							   select new StayInfo(s.ID, s.AdmissionId, s.StartedAt, b.Code, r.Number, r.WardId)).ToListAsync(ct);
 			var moreIds = stays.Select(s => s.AdmissionId).Except(ids).ToList();
 			if (moreIds.Count > 0) adms.AddRange(await _db.HospitalAdmissions.AsNoTracking().Where(a => moreIds.Contains(a.ID)).ToListAsync(ct));
-			var wards = await _db.Set<HospitalWard>().AsNoTracking().Where(w => w.CompanyId == ctx.CompanyId).ToDictionaryAsync(w => w.ID, w => w.Code, ct);
+			var wards = await _db.Set<HospitalWard>().AsNoTracking().Where(w => w.CompanyId == companyId).ToDictionaryAsync(w => w.ID, w => w.Code, ct);
 			var pids = adms.Select(a => a.PatientId).Distinct().ToList();
 			var pats = await _db.HospitalPatients.AsNoTracking().Where(p => pids.Contains(p.ID)).ToDictionaryAsync(p => p.ID, ct);
 			var list = new List<HospitalOutboundMessage>();
@@ -133,7 +137,7 @@ namespace CrossBuy.BL.Hospital
 					var ctl = Control(f.ID, key);
 					list.Add(new HospitalOutboundMessage
 					{
-						CompanyId = ctx.CompanyId, FeedId = f.ID, EventKey = key, MessageType = "ADT^" + trigger, PatientId = p.ID, ControlId = ctl, EventAt = atUtc, CreatedAt = nowUtc,
+						CompanyId = companyId, FeedId = f.ID, EventKey = key, MessageType = "ADT^" + trigger, PatientId = p.ID, ControlId = ctl, EventAt = atUtc, CreatedAt = nowUtc,
 						Raw = HospitalHl7Out.Adt(trigger, ctl, p, V(stay), f.ReceivingApp, f.ReceivingFacility, facility, Ward(atUtc), now),
 					});
 				}
@@ -144,12 +148,12 @@ namespace CrossBuy.BL.Hospital
 			return list;
 		}
 
-		private async Task<List<HospitalOutboundMessage>> OruEventsAsync(BusinessContext ctx, HospitalOutboundFeed f, string facility, DateTime nowUtc, HashSet<string> have, CancellationToken ct)
+		private async Task<List<HospitalOutboundMessage>> OruEventsAsync(int companyId, HospitalOutboundFeed f, string facility, DateTime nowUtc, HashSet<string> have, CancellationToken ct)
 		{
-			var orders = await _db.Set<HospitalLabOrder>().AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.VerifiedAt != null && o.VerifiedAt >= f.StartFrom).ToListAsync(ct);
+			var orders = await _db.Set<HospitalLabOrder>().AsNoTracking().Where(o => o.CompanyId == companyId && o.VerifiedAt != null && o.VerifiedAt >= f.StartFrom).ToListAsync(ct);
 			orders = orders.Where(o => !have.Contains("R01:lab:" + o.ID)).ToList();
 			var ids = orders.Select(o => o.ID).ToList();
-			var results = await _db.Set<HospitalLabResult>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && ids.Contains(r.LabOrderId)).OrderBy(r => r.SortOrder).ToListAsync(ct);
+			var results = await _db.Set<HospitalLabResult>().AsNoTracking().Where(r => r.CompanyId == companyId && ids.Contains(r.LabOrderId)).OrderBy(r => r.SortOrder).ToListAsync(ct);
 			var analytes = await _db.Set<HospitalLabAnalyte>().AsNoTracking().Where(a => results.Select(r => r.AnalyteId).Contains(a.ID)).ToDictionaryAsync(a => a.ID, ct);
 			var pids = orders.Select(o => o.PatientId).Distinct().ToList();
 			var pats = await _db.HospitalPatients.AsNoTracking().Where(p => pids.Contains(p.ID)).ToDictionaryAsync(p => p.ID, ct);
@@ -161,7 +165,7 @@ namespace CrossBuy.BL.Hospital
 					r.Value is decimal v ? Math.Round(v, r.Decimals).ToString(System.Globalization.CultureInfo.InvariantCulture) : r.TextValue, r.Value != null ? "NM" : "ST", r.Unit, HospitalHl7Out.Range(r.RefLow, r.RefHigh), HospitalHl7Out.Flag(r.Flag))).ToList();
 				return new HospitalOutboundMessage
 				{
-					CompanyId = ctx.CompanyId, FeedId = f.ID, EventKey = key, MessageType = "ORU^R01", PatientId = o.PatientId, ControlId = ctl, EventAt = o.VerifiedAt!.Value, CreatedAt = nowUtc,
+					CompanyId = companyId, FeedId = f.ID, EventKey = key, MessageType = "ORU^R01", PatientId = o.PatientId, ControlId = ctl, EventAt = o.VerifiedAt!.Value, CreatedAt = nowUtc,
 					Raw = HospitalHl7Out.Oru(ctl, pats[o.PatientId], o.AccessionNo, o.Code, string.IsNullOrWhiteSpace(o.NameEn) ? o.Name : o.NameEn, o.CollectedAt is DateTime c ? Ward(c) : null, Ward(o.VerifiedAt!.Value), res, f.ReceivingApp, f.ReceivingFacility, facility, now),
 				};
 			}).ToList();
@@ -171,12 +175,18 @@ namespace CrossBuy.BL.Hospital
 		public async Task<HospitalResult> SendAsync(BusinessContext ctx, int feedId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Manage, null, ct)) return HospitalResult.Fail("forbidden");
+			return await SendForAsync(ctx.CompanyId, feedId, nowUtc, ct);
+		}
+
+		/// The background sender's entry: the same send for one company's feed.
+		public async Task<HospitalResult> SendForAsync(int companyId, int feedId, DateTime nowUtc, CancellationToken ct = default)
+		{
 			try
 			{
-				var f = await _db.Set<HospitalOutboundFeed>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == feedId && x.CompanyId == ctx.CompanyId, ct);
+				var f = await _db.Set<HospitalOutboundFeed>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == feedId && x.CompanyId == companyId, ct);
 				if (f == null) return HospitalResult.Fail("not_found");
 				if (!f.Enabled || f.Host == null || f.Port == null) return HospitalResult.Fail("The feed is off");
-				var queue = await _db.Set<HospitalOutboundMessage>().Where(m => m.CompanyId == ctx.CompanyId && m.FeedId == f.ID && m.Status != HospitalFeedStatus.Sent).OrderBy(m => m.EventAt).Take(50).ToListAsync(ct);
+				var queue = await _db.Set<HospitalOutboundMessage>().Where(m => m.CompanyId == companyId && m.FeedId == f.ID && m.Status != HospitalFeedStatus.Sent).OrderBy(m => m.EventAt).Take(50).ToListAsync(ct);
 				int sent = 0;
 				foreach (var m in queue)
 				{
@@ -201,6 +211,10 @@ namespace CrossBuy.BL.Hospital
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { _db.ChangeTracker.Clear(); return HospitalResult.Fail(NoTables); }
 		}
+
+		/// The enabled feeds that have somewhere to send (the background sender's list for one company).
+		public async Task<List<int>> SendableFeedsAsync(int companyId, CancellationToken ct = default) =>
+			await _db.Set<HospitalOutboundFeed>().AsNoTracking().Where(f => f.CompanyId == companyId && f.Enabled && f.Host != null && f.Port != null).Select(f => f.ID).ToListAsync(ct);
 
 		private static async Task<string> TcpAsync(string host, int port, byte[] frame, CancellationToken ct)
 		{

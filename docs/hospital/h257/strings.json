@@ -1,0 +1,30 @@
+{
+ "unit": "H257 - Test exchange and background sender",
+ "strings": {
+  "Test checkout": {
+   "ar": "صفحة الدفع التجريبية",
+   "en": "Test checkout",
+   "fr": "Paiement de test"
+  },
+  "Test exchange": {
+   "ar": "بيئة الاختبار",
+   "en": "Test exchange",
+   "fr": "Environnement de test"
+  },
+  "This is the test exchange: no money is taken and the bill is not marked paid.": {
+   "ar": "هذه بيئة الاختبار: لا يُخصَم أي مبلغ، ولا تُسجَّل الفاتورة مدفوعة.",
+   "en": "This is the test exchange: no money is taken and the bill is not marked paid.",
+   "fr": "Ceci est l'environnement de test : aucun montant n'est prélevé et la facture n'est pas marquée payée."
+  },
+  "Pay (test)": {
+   "ar": "ادفع (تجريبي)",
+   "en": "Pay (test)",
+   "fr": "Payer (test)"
+  },
+  "Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement.": {
+   "ar": "سُجِّلت عملية تجريبية ولم يُخصَم أي مبلغ. يقيّد أمين الصندوق المدفوعات الحقيقية من كشف مزوّد الدفع.",
+   "en": "Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement.",
+   "fr": "Paiement de test enregistré — rien n'a été prélevé. Le caissier enregistre les vrais paiements à partir du relevé du prestataire."
+  }
+ }
+}

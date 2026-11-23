@@ -173,3 +173,5 @@ Overall score: about 6.3 out of 10.
     - the recording is never stored.
   - H255 — behavioural privacy monitoring from the access log.
   - H256 — read-only downtime copy through Report Studio.
+  - H257 — while in test: the outbound feeds send every minute in the background (owner-approved line), and a
+    Development-only test exchange stands in for the payer gateway, the feeds' receiver and the payment provider.

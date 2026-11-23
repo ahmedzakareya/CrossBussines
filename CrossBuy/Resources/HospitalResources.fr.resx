@@ -10452,4 +10452,9 @@
   <data name="ps:Confirmed" xml:space="preserve"><value>Violation confirmée</value></data>
   <data name="ps:Open" xml:space="preserve"><value>Ouvert</value></data>
   <data name="Downtime copy" xml:space="preserve"><value>Copie de secours</value></data>
+  <data name="Test checkout" xml:space="preserve"><value>Paiement de test</value></data>
+  <data name="Test exchange" xml:space="preserve"><value>Environnement de test</value></data>
+  <data name="This is the test exchange: no money is taken and the bill is not marked paid." xml:space="preserve"><value>Ceci est l'environnement de test : aucun montant n'est prélevé et la facture n'est pas marquée payée.</value></data>
+  <data name="Pay (test)" xml:space="preserve"><value>Payer (test)</value></data>
+  <data name="Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement." xml:space="preserve"><value>Paiement de test enregistré — rien n'a été prélevé. Le caissier enregistre les vrais paiements à partir du relevé du prestataire.</value></data>
 </root>

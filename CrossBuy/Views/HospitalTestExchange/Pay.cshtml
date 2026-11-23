@@ -1,0 +1,55 @@
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    HOSPITAL H257 — the test checkout behind the portal's "pay online" link while the hospital is in test
+    (HospitalTestExchangeController, Development only). It takes no money and marks nothing paid.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <title>@T["Test checkout"]</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link href="/portal-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="/portal-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    @if (isAr)
+    {
+        <link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+        <style>html[lang="ar"] body, html[lang="ar"] .btn, html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3 { font-family: 'Cairo', sans-serif; }</style>
+    }
+    <style>.te-num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }</style>
+</head>
+<body class="bg-light">
+    <script>document.documentElement.setAttribute("data-bs-theme", "light");</script>
+    <div class="d-flex flex-column flex-center min-vh-100 p-5">
+        <div class="card shadow-sm w-100 mw-450px">
+            <div class="card-header">
+                <h3 class="card-title fw-bold"><i class="ki-outline ki-credit-cart fs-2 text-primary me-2"></i>@T["Test checkout"]</h3>
+                <div class="card-toolbar"><span class="badge badge-light-info">@T["Test exchange"]</span></div>
+            </div>
+            <div class="card-body">
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-6">
+                    <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                    <div class="fs-7 text-gray-700">@T["This is the test exchange: no money is taken and the bill is not marked paid."]</div>
+                </div>
+                <div class="d-flex justify-content-between border-bottom border-gray-200 py-3"><span class="text-gray-600">@T["Bill"]</span><span class="fw-bold te-num">@ViewBag.Ref</span></div>
+                <div class="d-flex justify-content-between py-3"><span class="text-gray-600">@T["Amount due"]</span><span class="fw-bolder fs-3 te-num">@ViewBag.Amount @ViewBag.Currency</span></div>
+                <button type="button" id="te-pay" class="btn btn-primary w-100 mt-4">@T["Pay (test)"]</button>
+                <div id="te-done" class="alert alert-primary d-none mt-4 mb-0 fs-7">@T["Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement."]</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('te-pay').addEventListener('click', function () {
+            this.disabled = true;
+            document.getElementById('te-done').classList.remove('d-none');
+        });
+    </script>
+</body>
+</html>
