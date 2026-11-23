@@ -311,6 +311,9 @@ namespace CrossBuy.BL.Hospital
 			var o = await _db.HospitalRadOrders.FirstAsync(r => r.ID == id && r.CompanyId == ctx.CompanyId, ct);
 			if (o.Findings == null || o.Impression == null) return HospitalResult.Fail("Write the findings and the impression before signing");
 			if (o.ImpressionCategory == null) return HospitalResult.Fail("Choose whether the result is normal, abnormal or critical");
+			// H259: a study reported on a template is not signed while one of its required sections is empty
+			var missing = await HospitalRadReportingService.MissingAsync(_db, ctx.CompanyId, o.ID, o.Findings, o.FindingsEn, ct);
+			if (missing.Count > 0) return HospitalResult.Fail("Write the required sections before signing: {0}", string.Join(" · ", missing.Select(m => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? m.Heading : m.HeadingEn)));
 			o.Status = HospitalRadStatus.Signed; o.SignedAt = nowUtc; o.SignedByEmployeeId = employeeId;
 			o.IsCritical = o.ImpressionCategory == HospitalRadImpression.Critical;
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);

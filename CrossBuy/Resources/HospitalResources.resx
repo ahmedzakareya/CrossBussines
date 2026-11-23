@@ -10456,4 +10456,53 @@
   <data name="Pay (test)" xml:space="preserve"><value>Pay (test)</value></data>
   <data name="Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement." xml:space="preserve"><value>Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement.</value></data>
   <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once." xml:space="preserve"><value>A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once.</value></data>
+  <data name="A template is chosen while the report is written" xml:space="preserve"><value>A template is chosen while the report is written</value></data>
+  <data name="Add a section" xml:space="preserve"><value>Add a section</value></data>
+  <data name="Add the standard templates" xml:space="preserve"><value>Add the standard templates</value></data>
+  <data name="Another template uses this code" xml:space="preserve"><value>Another template uses this code</value></data>
+  <data name="Apply the template" xml:space="preserve"><value>Apply the template</value></data>
+  <data name="Choose the score: 1, 2 or 3" xml:space="preserve"><value>Choose the score: 1, 2 or 3</value></data>
+  <data name="Clinically significant" xml:space="preserve"><value>Clinically significant</value></data>
+  <data name="Discrepancy rates" xml:space="preserve"><value>Discrepancy rates</value></data>
+  <data name="Each section has an Arabic and an English heading" xml:space="preserve"><value>Each section has an Arabic and an English heading</value></data>
+  <data name="Every study" xml:space="preserve"><value>Every study</value></data>
+  <data name="Heading" xml:space="preserve"><value>Heading</value></data>
+  <data name="Last 12 months, per radiologist" xml:space="preserve"><value>Last 12 months, per radiologist</value></data>
+  <data name="No report here." xml:space="preserve"><value>No report here.</value></data>
+  <data name="No review yet." xml:space="preserve"><value>No review yet.</value></data>
+  <data name="Peer review" xml:space="preserve"><value>Peer review</value></data>
+  <data name="Per modality, or for every study" xml:space="preserve"><value>Per modality, or for every study</value></data>
+  <data name="Radiologist" xml:space="preserve"><value>Radiologist</value></data>
+  <data name="Read the report and its images, then score it" xml:space="preserve"><value>Read the report and its images, then score it</value></data>
+  <data name="Report templates" xml:space="preserve"><value>Report templates</value></data>
+  <data name="Reports signed by other radiologists in the last 90 days, in a random sample order" xml:space="preserve"><value>Reports signed by other radiologists in the last 90 days, in a random sample order</value></data>
+  <data name="Required" xml:space="preserve"><value>Required</value></data>
+  <data name="Required sections are checked before signing" xml:space="preserve"><value>Required sections are checked before signing</value></data>
+  <data name="Reviewed reports" xml:space="preserve"><value>Reviewed reports</value></data>
+  <data name="Reviewed by me" xml:space="preserve"><value>Reviewed by me</value></data>
+  <data name="Search a code or name" xml:space="preserve"><value>Search a code or name</value></data>
+  <data name="Search a patient, accession or study" xml:space="preserve"><value>Search a patient, accession or study</value></data>
+  <data name="Sections" xml:space="preserve"><value>Sections</value></data>
+  <data name="Significant" xml:space="preserve"><value>Significant</value></data>
+  <data name="Templates added: {0}" xml:space="preserve"><value>Templates added: {0}</value></data>
+  <data name="The radiologist applies a template while writing the report; the report cannot be signed while a required section is empty." xml:space="preserve"><value>The radiologist applies a template while writing the report; the report cannot be signed while a required section is empty.</value></data>
+  <data name="The sections are written into the report in this order" xml:space="preserve"><value>The sections are written into the report in this order</value></data>
+  <data name="This report is not signed" xml:space="preserve"><value>This report is not signed</value></data>
+  <data name="This template is not for this study" xml:space="preserve"><value>This template is not for this study</value></data>
+  <data name="Write the required sections before signing: {0}" xml:space="preserve"><value>Write the required sections before signing: {0}</value></data>
+  <data name="Enter the name in Arabic and in English" xml:space="preserve"><value>Enter the name in Arabic and in English</value></data>
+  <data name="Add at least one section" xml:space="preserve"><value>Add at least one section</value></data>
+  <data name="A template has 15 sections at most" xml:space="preserve"><value>A template has 15 sections at most</value></data>
+  <data name="Mark at least one section as required" xml:space="preserve"><value>Mark at least one section as required</value></data>
+  <data name="Two sections have the same heading" xml:space="preserve"><value>Two sections have the same heading</value></data>
+  <data name="The sections are too long" xml:space="preserve"><value>The sections are too long</value></data>
+  <data name="A report is reviewed by another radiologist" xml:space="preserve"><value>A report is reviewed by another radiologist</value></data>
+  <data name="Describe the discrepancy" xml:space="preserve"><value>Describe the discrepancy</value></data>
+  <data name="Agreement is not clinically significant" xml:space="preserve"><value>Agreement is not clinically significant</value></data>
+  <data name="peer:1" xml:space="preserve"><value>1 — Agree</value></data>
+  <data name="peer:2" xml:space="preserve"><value>2 — Discrepancy, not usually caught</value></data>
+  <data name="peer:3" xml:space="preserve"><value>3 — Discrepancy that should be caught</value></data>
+  <data name="peerdesc:1" xml:space="preserve"><value>I agree with the interpretation</value></data>
+  <data name="peerdesc:2" xml:space="preserve"><value>A different interpretation not ordinarily expected to be made</value></data>
+  <data name="peerdesc:3" xml:space="preserve"><value>A different interpretation that should be made most of the time</value></data>
 </root>

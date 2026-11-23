@@ -10458,4 +10458,53 @@
   <data name="Pay (test)" xml:space="preserve"><value>Payer (test)</value></data>
   <data name="Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement." xml:space="preserve"><value>Paiement de test enregistré — rien n'a été prélevé. Le caissier enregistre les vrais paiements à partir du relevé du prestataire.</value></data>
   <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once." xml:space="preserve"><value>Un canal n'envoie rien tant qu'il n'est pas activé avec son hôte et son port ; l'activation part de cet instant (l'historique n'est pas renvoyé). Les messages sont collectés et envoyés automatiquement chaque minute ; le bouton les envoie immédiatement.</value></data>
+  <data name="A template is chosen while the report is written" xml:space="preserve"><value>Le modèle se choisit pendant la rédaction du compte rendu</value></data>
+  <data name="Add a section" xml:space="preserve"><value>Ajouter une section</value></data>
+  <data name="Add the standard templates" xml:space="preserve"><value>Ajouter les modèles standard</value></data>
+  <data name="Another template uses this code" xml:space="preserve"><value>Un autre modèle utilise ce code</value></data>
+  <data name="Apply the template" xml:space="preserve"><value>Appliquer le modèle</value></data>
+  <data name="Choose the score: 1, 2 or 3" xml:space="preserve"><value>Choisissez le score : 1, 2 ou 3</value></data>
+  <data name="Clinically significant" xml:space="preserve"><value>Cliniquement significatif</value></data>
+  <data name="Discrepancy rates" xml:space="preserve"><value>Taux de discordance</value></data>
+  <data name="Each section has an Arabic and an English heading" xml:space="preserve"><value>Chaque section a un titre en arabe et en anglais</value></data>
+  <data name="Every study" xml:space="preserve"><value>Tous les examens</value></data>
+  <data name="Heading" xml:space="preserve"><value>Titre</value></data>
+  <data name="Last 12 months, per radiologist" xml:space="preserve"><value>12 derniers mois, par radiologue</value></data>
+  <data name="No report here." xml:space="preserve"><value>Aucun compte rendu ici.</value></data>
+  <data name="No review yet." xml:space="preserve"><value>Aucune relecture pour l'instant.</value></data>
+  <data name="Peer review" xml:space="preserve"><value>Relecture par les pairs</value></data>
+  <data name="Per modality, or for every study" xml:space="preserve"><value>Par modalité, ou pour tous les examens</value></data>
+  <data name="Radiologist" xml:space="preserve"><value>Radiologue</value></data>
+  <data name="Read the report and its images, then score it" xml:space="preserve"><value>Lisez le compte rendu et ses images, puis notez-le</value></data>
+  <data name="Report templates" xml:space="preserve"><value>Modèles de comptes rendus</value></data>
+  <data name="Reports signed by other radiologists in the last 90 days, in a random sample order" xml:space="preserve"><value>Comptes rendus signés par d'autres radiologues ces 90 derniers jours, dans un ordre d'échantillon aléatoire</value></data>
+  <data name="Required" xml:space="preserve"><value>Obligatoire</value></data>
+  <data name="Required sections are checked before signing" xml:space="preserve"><value>Les sections obligatoires sont vérifiées avant la signature</value></data>
+  <data name="Reviewed reports" xml:space="preserve"><value>Comptes rendus relus</value></data>
+  <data name="Reviewed by me" xml:space="preserve"><value>Relus par moi</value></data>
+  <data name="Search a code or name" xml:space="preserve"><value>Rechercher un code ou un nom</value></data>
+  <data name="Search a patient, accession or study" xml:space="preserve"><value>Rechercher un patient, un numéro d'examen ou une étude</value></data>
+  <data name="Sections" xml:space="preserve"><value>Sections</value></data>
+  <data name="Significant" xml:space="preserve"><value>Significatif</value></data>
+  <data name="Templates added: {0}" xml:space="preserve"><value>Modèles ajoutés : {0}</value></data>
+  <data name="The radiologist applies a template while writing the report; the report cannot be signed while a required section is empty." xml:space="preserve"><value>Le radiologue applique un modèle en rédigeant le compte rendu ; il ne peut être signé tant qu'une section obligatoire est vide.</value></data>
+  <data name="The sections are written into the report in this order" xml:space="preserve"><value>Les sections sont écrites dans le compte rendu dans cet ordre</value></data>
+  <data name="This report is not signed" xml:space="preserve"><value>Ce compte rendu n'est pas signé</value></data>
+  <data name="This template is not for this study" xml:space="preserve"><value>Ce modèle ne convient pas à cet examen</value></data>
+  <data name="Write the required sections before signing: {0}" xml:space="preserve"><value>Rédigez les sections obligatoires avant de signer : {0}</value></data>
+  <data name="Enter the name in Arabic and in English" xml:space="preserve"><value>Saisissez le nom en arabe et en anglais</value></data>
+  <data name="Add at least one section" xml:space="preserve"><value>Ajoutez au moins une section</value></data>
+  <data name="A template has 15 sections at most" xml:space="preserve"><value>Un modèle compte 15 sections au plus</value></data>
+  <data name="Mark at least one section as required" xml:space="preserve"><value>Marquez au moins une section comme obligatoire</value></data>
+  <data name="Two sections have the same heading" xml:space="preserve"><value>Deux sections ont le même titre</value></data>
+  <data name="The sections are too long" xml:space="preserve"><value>Les sections sont trop longues</value></data>
+  <data name="A report is reviewed by another radiologist" xml:space="preserve"><value>Un compte rendu est relu par un autre radiologue</value></data>
+  <data name="Describe the discrepancy" xml:space="preserve"><value>Décrivez la discordance</value></data>
+  <data name="Agreement is not clinically significant" xml:space="preserve"><value>Un accord n'est pas cliniquement significatif</value></data>
+  <data name="peer:1" xml:space="preserve"><value>1 — Accord</value></data>
+  <data name="peer:2" xml:space="preserve"><value>2 — Discordance difficile à détecter</value></data>
+  <data name="peer:3" xml:space="preserve"><value>3 — Discordance qui aurait dû être détectée</value></data>
+  <data name="peerdesc:1" xml:space="preserve"><value>J'approuve l'interprétation</value></data>
+  <data name="peerdesc:2" xml:space="preserve"><value>Une interprétation différente qu'on ne s'attend pas habituellement à faire</value></data>
+  <data name="peerdesc:3" xml:space="preserve"><value>Une interprétation différente qui devrait être faite la plupart du temps</value></data>
 </root>

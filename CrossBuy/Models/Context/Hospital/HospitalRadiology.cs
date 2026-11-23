@@ -121,6 +121,7 @@ namespace CrossBuy.Models.Context.Hospital
 		public static void Configure(ModelBuilder b)
 		{
 			HospitalRadQualityModel.Configure(b);   // H243: structured category, follow-up and dose
+			HospitalRadReportingModel.Configure(b);   // H259: report templates and peer review
 			HospitalPacsModel.Configure(b);   // H199: the imaging archive's viewer and order address
 			b.Entity<HospitalRadExam>(e => e.HasIndex(x => new { x.CompanyId, x.ServiceId }).IsUnique());
 			b.Entity<HospitalRadRoom>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());

@@ -131,6 +131,17 @@
                                     </select></div>
                                 <div class="col-md-6 d-flex align-items-end">@if (pacsLink != null) {<a href="@pacsLink" target="_blank" rel="noopener noreferrer" class="btn btn-light-primary w-100"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"]</a>} else {<button type="button" class="btn btn-light-primary w-100" disabled title="@T["Not connected yet"]"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"] <span class="text-muted fs-8 ms-1">— @T["Not connected yet"]</span></button>}</div>
                             </div>
+                            @* H259: a structured template writes its section headings; its required sections are checked before signing *@
+                            @if ((ViewBag.RadTemplates as IReadOnlyList<HospitalRadTemplate>) is { Count: > 0 } rts)
+                            {
+                                var used = ViewBag.RadTemplateUsed as int?;
+                                <div class="d-flex flex-wrap gap-3 align-items-end mb-5">
+                                    <div class="flex-grow-1 mw-400px"><label class="fs-6 fw-semibold mb-2">@T["Report template"]</label>
+                                        <select class="form-select form-select-solid" data-rt-pick>@foreach (var t in rts) {<option value="@t.ID" selected="@(used == t.ID)">@DisplayName.Of(t.Name, t.NameEn)</option>}</select></div>
+                                    <button type="button" class="btn btn-light-primary" data-rt-apply><i class="ki-outline ki-row-horizontal fs-4"></i>@T["Apply the template"]</button>
+                                    @if (used != null) {<span class="badge badge-light-primary fs-8 py-2">@T["Required sections are checked before signing"]</span>}
+                                </div>
+                            }
                             @* H33: the patient reads the report in their language — both are written; English is optional *@
                             <div class="row g-4">
                                 <div class="col-xl-6"><label class="fs-6 fw-semibold mb-2">@T["Findings"] — @T["Arabic"]</label>
@@ -300,6 +311,20 @@
                 return fetch(base + '/' + step, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
             }
+            // H259: apply a report template — its headings go into an empty report, or after what is already written
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-rt-apply]'); if (!t) return;
+                var pick = document.querySelector('[data-rt-pick]'); if (!pick) return;
+                t.disabled = true;
+                post('Template', { templateId: +pick.value }).then(function (res) {
+                    t.disabled = false;
+                    if (!res.ok) { toast('error', res.error || W.failed); return; }
+                    [['findings', res.arabic], ['findingsEn', res.english]].forEach(function (x) {
+                        var ta = document.querySelector('[data-k="' + x[0] + '"]'); if (!ta) return;
+                        ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n\n' + x[1] : x[1];
+                    });
+                });
+            });
             // In place, never a reload: the page is rendered again and its content and actions swapped.
             function swap() {
                 return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {

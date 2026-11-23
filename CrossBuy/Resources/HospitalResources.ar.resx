@@ -10558,4 +10558,53 @@
   <data name="Pay (test)" xml:space="preserve"><value>ادفع (تجريبي)</value></data>
   <data name="Test payment recorded — nothing was charged. The cashier posts real payments from the provider's statement." xml:space="preserve"><value>سُجِّلت عملية تجريبية ولم يُخصَم أي مبلغ. يقيّد أمين الصندوق المدفوعات الحقيقية من كشف مزوّد الدفع.</value></data>
   <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected and sent every minute by themselves; the button sends at once." xml:space="preserve"><value>لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها، ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل وتُرسل تلقائيًا كل دقيقة، ويرسلها الزر فورًا.</value></data>
+  <data name="A template is chosen while the report is written" xml:space="preserve"><value>يُختار القالب أثناء كتابة التقرير</value></data>
+  <data name="Add a section" xml:space="preserve"><value>إضافة قسم</value></data>
+  <data name="Add the standard templates" xml:space="preserve"><value>إضافة القوالب القياسية</value></data>
+  <data name="Another template uses this code" xml:space="preserve"><value>قالب آخر يستخدم هذا الرمز</value></data>
+  <data name="Apply the template" xml:space="preserve"><value>تطبيق القالب</value></data>
+  <data name="Choose the score: 1, 2 or 3" xml:space="preserve"><value>اختر الدرجة: 1 أو 2 أو 3</value></data>
+  <data name="Clinically significant" xml:space="preserve"><value>ذو أهمية سريرية</value></data>
+  <data name="Discrepancy rates" xml:space="preserve"><value>معدلات التباين</value></data>
+  <data name="Each section has an Arabic and an English heading" xml:space="preserve"><value>لكل قسم عنوان بالعربية وآخر بالإنجليزية</value></data>
+  <data name="Every study" xml:space="preserve"><value>كل الفحوص</value></data>
+  <data name="Heading" xml:space="preserve"><value>العنوان</value></data>
+  <data name="Last 12 months, per radiologist" xml:space="preserve"><value>آخر 12 شهرًا، لكل أخصائي أشعة</value></data>
+  <data name="No report here." xml:space="preserve"><value>لا توجد تقارير هنا.</value></data>
+  <data name="No review yet." xml:space="preserve"><value>لا توجد مراجعات بعد.</value></data>
+  <data name="Peer review" xml:space="preserve"><value>مراجعة الأقران</value></data>
+  <data name="Per modality, or for every study" xml:space="preserve"><value>لكل نوع فحص، أو لكل الفحوص</value></data>
+  <data name="Radiologist" xml:space="preserve"><value>أخصائي الأشعة</value></data>
+  <data name="Read the report and its images, then score it" xml:space="preserve"><value>اقرأ التقرير وصوره، ثم قيّمه</value></data>
+  <data name="Report templates" xml:space="preserve"><value>قوالب التقارير</value></data>
+  <data name="Reports signed by other radiologists in the last 90 days, in a random sample order" xml:space="preserve"><value>تقارير وقّعها أخصائيو أشعة آخرون خلال آخر 90 يومًا، بترتيب عينة عشوائية</value></data>
+  <data name="Required" xml:space="preserve"><value>إلزامي</value></data>
+  <data name="Required sections are checked before signing" xml:space="preserve"><value>تُفحص الأقسام الإلزامية قبل التوقيع</value></data>
+  <data name="Reviewed reports" xml:space="preserve"><value>التقارير المراجَعة</value></data>
+  <data name="Reviewed by me" xml:space="preserve"><value>راجعتُها</value></data>
+  <data name="Search a code or name" xml:space="preserve"><value>ابحث برمز أو اسم</value></data>
+  <data name="Search a patient, accession or study" xml:space="preserve"><value>ابحث عن مريض أو رقم فحص أو دراسة</value></data>
+  <data name="Sections" xml:space="preserve"><value>الأقسام</value></data>
+  <data name="Significant" xml:space="preserve"><value>ذو أهمية</value></data>
+  <data name="Templates added: {0}" xml:space="preserve"><value>أُضيفت قوالب: {0}</value></data>
+  <data name="The radiologist applies a template while writing the report; the report cannot be signed while a required section is empty." xml:space="preserve"><value>يطبّق أخصائي الأشعة القالب أثناء كتابة التقرير، ولا يمكن توقيع التقرير ما دام أحد أقسامه الإلزامية فارغًا.</value></data>
+  <data name="The sections are written into the report in this order" xml:space="preserve"><value>تُكتب الأقسام في التقرير بهذا الترتيب</value></data>
+  <data name="This report is not signed" xml:space="preserve"><value>هذا التقرير غير موقّع</value></data>
+  <data name="This template is not for this study" xml:space="preserve"><value>هذا القالب ليس لهذا الفحص</value></data>
+  <data name="Write the required sections before signing: {0}" xml:space="preserve"><value>اكتب الأقسام الإلزامية قبل التوقيع: {0}</value></data>
+  <data name="Enter the name in Arabic and in English" xml:space="preserve"><value>أدخل الاسم بالعربية والإنجليزية</value></data>
+  <data name="Add at least one section" xml:space="preserve"><value>أضف قسمًا واحدًا على الأقل</value></data>
+  <data name="A template has 15 sections at most" xml:space="preserve"><value>للقالب 15 قسمًا على الأكثر</value></data>
+  <data name="Mark at least one section as required" xml:space="preserve"><value>حدّد قسمًا إلزاميًا واحدًا على الأقل</value></data>
+  <data name="Two sections have the same heading" xml:space="preserve"><value>قسمان لهما العنوان نفسه</value></data>
+  <data name="The sections are too long" xml:space="preserve"><value>الأقسام أطول من المسموح</value></data>
+  <data name="A report is reviewed by another radiologist" xml:space="preserve"><value>يراجع التقرير أخصائي أشعة آخر</value></data>
+  <data name="Describe the discrepancy" xml:space="preserve"><value>صف التباين</value></data>
+  <data name="Agreement is not clinically significant" xml:space="preserve"><value>الاتفاق لا يكون ذا أهمية سريرية</value></data>
+  <data name="peer:1" xml:space="preserve"><value>1 — اتفاق</value></data>
+  <data name="peer:2" xml:space="preserve"><value>2 — تباين يصعب اكتشافه</value></data>
+  <data name="peer:3" xml:space="preserve"><value>3 — تباين كان ينبغي اكتشافه</value></data>
+  <data name="peerdesc:1" xml:space="preserve"><value>أوافق على التفسير</value></data>
+  <data name="peerdesc:2" xml:space="preserve"><value>تفسير مختلف لا يُتوقع عادةً اكتشافه</value></data>
+  <data name="peerdesc:3" xml:space="preserve"><value>تفسير مختلف كان ينبغي اكتشافه في معظم الأحيان</value></data>
 </root>

@@ -54,6 +54,8 @@ namespace CrossBuy.Controllers
 			ViewBag.Images = (await RadImageSvc.OfOrdersAsync(ctx, new[] { id }, ct)).GetValueOrDefault(id) ?? Array.Empty<HospitalRadImageRow>();
 			ViewBag.PacsLink = HospitalPacsRules.ViewerLink((await PacsSvc.GetAsync(ctx, ct)).ViewerUrl, v.Order.AccessionNo, v.Patient.Mrn);   // H199
 			ViewBag.RadQuality = await RadQSvc.PanelAsync(ctx, id, v.Patient.ID, DateTime.UtcNow, ct);   // H243
+			ViewBag.RadTemplates = await RadRepSvc.ForModalityAsync(ctx, v.Order.Modality, ct);   // H259
+			ViewBag.RadTemplateUsed = await RadRepSvc.UsedTemplateAsync(ctx, id, ct);
 			return View(v);
 		}
 
