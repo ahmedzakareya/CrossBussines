@@ -58,7 +58,6 @@
                         <span class="text-muted mt-1 fw-semibold fs-7" id="resultCount">—</span>
                     </div>
                     <div class="card-toolbar gap-3">
-                        <div class="w-450px mw-100"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("بحث بالاسم أو المسمى أو الفرع أو البريد...", "Search name, title, branch or email...")" /></div>
                         <div class="btn-group" role="group" id="empStatus">
                             <button type="button" class="btn btn-sm btn-light-primary active" data-status="all">@L("الكل", "All")</button>
                             <button type="button" class="btn btn-sm btn-light-primary" data-status="1">@L("على رأس العمل", "Active")</button>
@@ -68,7 +67,8 @@
                         <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
                     </div>
                 </div>
-                <div class="card-body pt-4">
+                <div class="card-body pt-2">
+                    <div class="mb-5"><input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@L("بحث بالاسم أو المسمى أو الفرع أو البريد...", "Search name, title, branch or email...")" /></div>
                     <div class="table-responsive">
                         <table class="table align-middle gy-4 mb-0 hr-table" id="empTable">
                             <thead>
