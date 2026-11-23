@@ -99,6 +99,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalScribeModel.Configure(b);   // H254: ambient documentation trail
 			b.Entity<HospitalDiagnosisCode>(e => e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique());
 			b.Entity<HospitalEncounter>(e =>
 			{

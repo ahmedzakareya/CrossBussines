@@ -178,6 +178,41 @@ namespace CrossBuy.BL.Reporting
         }
     }
 
+    /// H256: the read-only downtime copy — the inpatients now, their allergies and running medicines (the period is ignored:
+    /// it is always the moment it is printed).
+    public sealed class HospitalDowntimeCensusSource(CrossDbContext db) : HospitalRegisterSource(db)
+    {
+        public override string Key => HospitalReportCodes.DowntimeCensus;
+        protected override async Task<List<Dictionary<string, object?>>> RowsAsync(BusinessContext ctx, HospitalReportWindow q, bool ar, CancellationToken ct)
+        {
+            int c = ctx.CompanyId;
+            var stays = await (from s in Db.HospitalBedStays.AsNoTracking()
+                               join b in Db.HospitalBeds.AsNoTracking() on s.BedId equals b.ID
+                               join r in Db.HospitalRooms.AsNoTracking() on s.RoomId equals r.ID
+                               join a in Db.HospitalAdmissions.AsNoTracking() on s.AdmissionId equals a.ID
+                               join p in Db.HospitalPatients.AsNoTracking() on s.PatientId equals p.ID
+                               where s.CompanyId == c && s.EndedAt == null && a.Status == HospitalAdmissionStatus.Active
+                               select new { AdmissionId = a.ID, a.AdmittedAt, a.Diagnosis, a.AttendingEmployeeId, Bed = b.Code, r.WardId, p.Name, p.NameEn, p.Mrn, p.Sex, p.BirthDate, p.Allergies }).ToListAsync(ct);
+            var wards = await Db.Set<HospitalWard>().AsNoTracking().Where(w => w.CompanyId == c).ToDictionaryAsync(w => w.ID, w => P(ar, w.Name, w.NameEn), ct);
+            var ids = stays.Select(x => x.AdmissionId).ToList();
+            var meds = await Db.Set<HospitalMedOrder>().AsNoTracking().Where(m => m.CompanyId == c && ids.Contains(m.AdmissionId) && m.Status == HospitalMedOrderStatus.Active).OrderBy(m => m.StartAt).ToListAsync(ct);
+            var docIds = stays.Where(x => x.AttendingEmployeeId != null).Select(x => x.AttendingEmployeeId!.Value).Distinct().ToList();
+            var docs = await Db.Employee.AsNoTracking().Where(e => docIds.Contains(e.ID) && e.EmpCompanyID == c).ToDictionaryAsync(e => e.ID, e => P(ar, e.FullName, e.FullNameEn), ct);
+            var today = DateTime.Now;
+            return stays.OrderBy(x => x.WardId).ThenBy(x => x.Bed).Select(x =>
+            {
+                var r = Row();
+                r["Ward"] = x.WardId is int w ? wards.GetValueOrDefault(w) : null; r["Bed"] = x.Bed; r["PatientName"] = P(ar, x.Name, x.NameEn); r["Mrn"] = x.Mrn;
+                r["AgeSex"] = (HospitalPatientService.AgeOn(x.BirthDate, today)?.ToString() ?? "") + " " + x.Sex;
+                r["Allergies"] = string.IsNullOrWhiteSpace(x.Allergies) ? (ar ? "لا يوجد مسجل" : "None recorded") : x.Allergies.Replace("\n", "; ");
+                r["Diagnosis"] = x.Diagnosis; r["Attending"] = x.AttendingEmployeeId is int d ? docs.GetValueOrDefault(d) : null;
+                r["Medicines"] = string.Join(" | ", meds.Where(m => m.AdmissionId == x.AdmissionId).Select(m => m.Drug + " " + m.Dose + " " + m.Route + (m.AsNeeded ? " PRN" : string.IsNullOrWhiteSpace(m.Hours) ? "" : " @ " + m.Hours) + (m.Controlled ? " (CD)" : "")));
+                r["AdmittedAt"] = Local(x.AdmittedAt);
+                return r;
+            }).ToList();
+        }
+    }
+
     /// H231: the cumulative antibiogram — the same cells the antibiogram screen shows (HospitalAntibiogramRules).
     public sealed class HospitalAntibiogramSource(CrossDbContext db) : HospitalRegisterSource(db)
     {

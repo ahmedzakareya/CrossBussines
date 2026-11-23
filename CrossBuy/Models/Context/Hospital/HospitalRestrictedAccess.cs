@@ -49,6 +49,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalPrivacyModel.Configure(b);   // H255: behavioural privacy alerts
 			b.Entity<HospitalRestrictedFile>(e =>
 			{
 				e.ToTable("HospitalRestrictedFiles");   // no DbSet: each names its table

@@ -20,6 +20,7 @@ namespace CrossBuy.BL.Reporting
         public const string CriticalValues = "Hospital.CriticalValues";
         public const string Antibiogram = "Hospital.Antibiogram";   // H231
         public const string BedOccupancy = "Hospital.BedOccupancy";
+        public const string DowntimeCensus = "Hospital.DowntimeCensus";   // H256
         public const string ErWaiting = "Hospital.ErWaiting";
         public const string Theatre = "Hospital.TheatreUtilisation";
         public const string DoctorProductivity = "Hospital.DoctorProductivity";
@@ -168,6 +169,18 @@ namespace CrossBuy.BL.Reporting
                     F("OccupancyPct", "الإشغال ٪", "Occupancy %", ReportFieldType.Decimal, 18),
                     F("StaysStarted", "دخول", "Stays begun", ReportFieldType.Integer, 16), F("StaysEnded", "خروج", "Stays ended", ReportFieldType.Integer, 16),
                     F("AverageStayDays", "متوسط الإقامة (يوم)", "Average stay (days)", ReportFieldType.Decimal, 22),
+                }), "Ward"),
+            // H256: the read-only downtime copy — printed on paper so the wards keep working when the system is down
+            new HospitalManagementReport(HospitalReportGroups.Operational, D(HospitalReportCodes.DowntimeCensus, C,
+                "نسخة التعطل: المنوَّمون والأدوية الجارية", "Downtime copy: inpatients and running medicines",
+                "نسخة ورقية للعمل حين يتعطل النظام: كل منوَّم الآن بسريره وجناحه، والحساسية، والتشخيص، والطبيب المعالج، وكل دواء جارٍ بجرعته وطريقته ومواعيده. تُطبع في بداية كل مناوبة.",
+                "A paper copy to work from when the system is down: every inpatient now with bed and ward, allergies, diagnosis, attending doctor, and every running medicine with dose, route and times. Print at the start of each shift.",
+                new[]
+                {
+                    F("Ward", "الجناح", "Ward", width: 30), F("Bed", "السرير", "Bed", width: 16), F("PatientName", "المريض", "Patient", width: 45), F("Mrn", "رقم الملف", "MRN", width: 22),
+                    F("AgeSex", "العمر والجنس", "Age / sex", width: 16), F("Allergies", "الحساسية", "Allergies", width: 40), F("Diagnosis", "التشخيص", "Diagnosis", width: 45),
+                    F("Attending", "الطبيب المعالج", "Attending", width: 35), F("Medicines", "الأدوية الجارية", "Running medicines", width: 120),
+                    F("AdmittedAt", "الدخول", "Admitted", ReportFieldType.DateTime, 24),
                 }), "Ward"),
             new HospitalManagementReport(HospitalReportGroups.Operational, D(HospitalReportCodes.ErWaiting, C,
                 "أوقات الانتظار في الطوارئ", "ER waiting times",

@@ -1,0 +1,105 @@
+{
+ "unit": "H253 - Predictive models",
+ "strings": {
+  "0.5 is chance; 0.7 or more is useful": {
+   "ar": "0.5 تعني الصدفة؛ و0.7 فأكثر مفيدة",
+   "en": "0.5 is chance; 0.7 or more is useful",
+   "fr": "0,5 correspond au hasard ; 0,7 ou plus est utile"
+  },
+  "30-day readmission (LACE index)": {
+   "ar": "إعادة التنويم خلال 30 يومًا (مؤشر LACE)",
+   "en": "30-day readmission (LACE index)",
+   "fr": "Réhospitalisation à 30 jours (indice LACE)"
+  },
+  "A good score climbs band by band. Until enough discharges are measured here, read it as a prompt for discharge planning, not a prediction.": {
+   "ar": "المؤشر الجيد يرتفع فئةً بعد فئة. وإلى أن يُقاس على عدد كافٍ من حالات الخروج هنا، اقرأه تنبيهًا لتخطيط الخروج لا تنبؤًا.",
+   "en": "A good score climbs band by band. Until enough discharges are measured here, read it as a prompt for discharge planning, not a prediction.",
+   "fr": "Un bon score monte de tranche en tranche. Tant qu'assez de sorties ne sont pas mesurées ici, lisez-le comme un rappel pour préparer la sortie, pas comme une prédiction."
+  },
+  "Discharges measured": {
+   "ar": "حالات الخروج المقيسة",
+   "en": "Discharges measured",
+   "fr": "Sorties mesurées"
+  },
+  "Discrimination (AUC)": {
+   "ar": "القدرة التمييزية (AUC)",
+   "en": "Discrimination (AUC)",
+   "fr": "Discrimination (AUC)"
+  },
+  "Drift (PSI)": {
+   "ar": "الانحراف (PSI)",
+   "en": "Drift (PSI)",
+   "fr": "Dérive (PSI)"
+  },
+  "Inpatients at high risk (LACE ≥ 10)": {
+   "ar": "منوَّمون بخطورة عالية (LACE ≥ 10)",
+   "en": "Inpatients at high risk (LACE ≥ 10)",
+   "fr": "Patients à haut risque (LACE ≥ 10)"
+  },
+  "Inpatients by readmission risk": {
+   "ar": "المنوَّمون حسب خطورة إعادة التنويم",
+   "en": "Inpatients by readmission risk",
+   "fr": "Patients selon le risque de réhospitalisation"
+  },
+  "Last 90 days ({0}) against the year before ({1})": {
+   "ar": "آخر 90 يومًا ({0}) مقابل السنة السابقة ({1})",
+   "en": "Last 90 days ({0}) against the year before ({1})",
+   "fr": "90 derniers jours ({0}) contre l'année précédente ({1})"
+  },
+  "Length of stay, acute admission, comorbidity (Charlson), emergency visits in six months — measured here before it is relied on": {
+   "ar": "مدة الإقامة، والدخول الطارئ، والأمراض المصاحبة (تشارلسون)، وزيارات الطوارئ خلال ستة أشهر — يُقاس هنا قبل الاعتماد عليه",
+   "en": "Length of stay, acute admission, comorbidity (Charlson), emergency visits in six months — measured here before it is relied on",
+   "fr": "Durée de séjour, admission aiguë, comorbidité (Charlson), passages aux urgences sur six mois — mesuré ici avant d'être utilisé"
+  },
+  "Observed rate": {
+   "ar": "المعدل الملاحظ",
+   "en": "Observed rate",
+   "fr": "Taux observé"
+  },
+  "Predictive models": {
+   "ar": "النماذج التنبؤية",
+   "en": "Predictive models",
+   "fr": "Modèles prédictifs"
+  },
+  "Readmitted": {
+   "ar": "أُعيد تنويمهم",
+   "en": "Readmitted",
+   "fr": "Réhospitalisés"
+  },
+  "Score band": {
+   "ar": "فئة الدرجة",
+   "en": "Score band",
+   "fr": "Tranche de score"
+  },
+  "Search a patient": {
+   "ar": "ابحث عن مريض",
+   "en": "Search a patient",
+   "fr": "Rechercher un patient"
+  },
+  "{0} readmitted within 30 days": {
+   "ar": "{0} أُعيد تنويمهم خلال 30 يومًا",
+   "en": "{0} readmitted within 30 days",
+   "fr": "{0} réhospitalisés sous 30 jours"
+  },
+  "drift:Stable": {
+   "ar": "مستقر",
+   "en": "Stable",
+   "fr": "Stable"
+  },
+  "drift:Watch": {
+   "ar": "للمراقبة",
+   "en": "Watch",
+   "fr": "À surveiller"
+  },
+  "drift:Shifted": {
+   "ar": "تغيّرت الفئة السكانية",
+   "en": "Population shifted",
+   "fr": "Population déplacée"
+  },
+  "drift:Unknown": {
+   "ar": "غير معروف",
+   "en": "Unknown",
+   "fr": "Inconnu"
+  }
+ }
+}

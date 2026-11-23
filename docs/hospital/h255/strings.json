@@ -1,0 +1,130 @@
+{
+ "unit": "H255 - Privacy monitoring",
+ "strings": {
+  "An alert about you is reviewed by another officer": {
+   "ar": "التنبيه الذي يخصك يراجعه مسؤول آخر",
+   "en": "An alert about you is reviewed by another officer",
+   "fr": "Une alerte vous concernant est revue par un autre responsable"
+  },
+  "Open alerts": {
+   "ar": "التنبيهات المفتوحة",
+   "en": "Open alerts",
+   "fr": "Alertes ouvertes"
+  },
+  "Pattern": {
+   "ar": "النمط",
+   "en": "Pattern",
+   "fr": "Motif"
+  },
+  "Privacy monitoring": {
+   "ar": "مراقبة الخصوصية",
+   "en": "Privacy monitoring",
+   "fr": "Surveillance de la confidentialité"
+  },
+  "Privacy monitoring is not installed yet (hospital_h255_privacy.sql).": {
+   "ar": "مراقبة الخصوصية غير مثبتة بعد (hospital_h255_privacy.sql).",
+   "en": "Privacy monitoring is not installed yet (hospital_h255_privacy.sql).",
+   "fr": "La surveillance de la confidentialité n'est pas encore installée (hospital_h255_privacy.sql)."
+  },
+  "Read from the record-access log of the last 14 days; the log itself is never changed": {
+   "ar": "مستخرجة من سجل الاطلاع على الملفات لآخر 14 يومًا؛ ولا يُعدَّل السجل نفسه أبدًا",
+   "en": "Read from the record-access log of the last 14 days; the log itself is never changed",
+   "fr": "Tirées du journal d'accès aux dossiers des 14 derniers jours ; le journal n'est jamais modifié"
+  },
+  "Review": {
+   "ar": "المراجعة",
+   "en": "Review",
+   "fr": "Revue"
+  },
+  "Reviewed alerts": {
+   "ar": "التنبيهات المُراجَعة",
+   "en": "Reviewed alerts",
+   "fr": "Alertes revues"
+  },
+  "Search an employee or patient": {
+   "ar": "ابحث عن موظف أو مريض",
+   "en": "Search an employee or patient",
+   "fr": "Rechercher un employé ou un patient"
+  },
+  "This alert is already reviewed": {
+   "ar": "تمت مراجعة هذا التنبيه",
+   "en": "This alert is already reviewed",
+   "fr": "Cette alerte est déjà revue"
+  },
+  "What explains this access?": {
+   "ar": "ما الذي يبرر هذا الاطلاع؟",
+   "en": "What explains this access?",
+   "fr": "Qu'est-ce qui explique cet accès ?"
+  },
+  "What was found, and what follows?": {
+   "ar": "ما الذي تبيّن، وما الإجراء التالي؟",
+   "en": "What was found, and what follows?",
+   "fr": "Qu'a-t-on constaté, et quelle suite ?"
+  },
+  "Write what was found": {
+   "ar": "اكتب ما تبيّن",
+   "en": "Write what was found",
+   "fr": "Indiquez ce qui a été constaté"
+  },
+  "{0} files in the day": {
+   "ar": "{0} ملفًا في اليوم",
+   "en": "{0} files in the day",
+   "fr": "{0} dossiers dans la journée"
+  },
+  "pk:SameFamily": {
+   "ar": "اسم العائلة نفسه",
+   "en": "Same family name",
+   "fr": "Même nom de famille"
+  },
+  "pk:NoCareLink": {
+   "ar": "دون علاقة علاجية",
+   "en": "No care relationship",
+   "fr": "Sans lien de soins"
+  },
+  "pk:Volume": {
+   "ar": "عدد غير معتاد",
+   "en": "Unusual volume",
+   "fr": "Volume inhabituel"
+  },
+  "pk:AfterHours": {
+   "ar": "ملف مقيّد خارج الدوام",
+   "en": "Restricted file after hours",
+   "fr": "Dossier restreint hors heures"
+  },
+  "pkh:SameFamily": {
+   "ar": "قد يكون اطلاعًا على ملف قريب",
+   "en": "May be looking up a relative",
+   "fr": "Peut-être un proche"
+  },
+  "pkh:NoCareLink": {
+   "ar": "طبيب دون موعد أو تنويم أو طلب لهذا المريض",
+   "en": "A doctor with no visit, stay or order for this patient",
+   "fr": "Un médecin sans visite, séjour ni demande pour ce patient"
+  },
+  "pkh:Volume": {
+   "ar": "أكثر من 30 ملفًا وثلاثة أضعاف المعتاد",
+   "en": "Over 30 files and three times their usual",
+   "fr": "Plus de 30 dossiers et le triple de l'habituel"
+  },
+  "pkh:AfterHours": {
+   "ar": "بين 22:00 و06:00",
+   "en": "Between 22:00 and 06:00",
+   "fr": "Entre 22h00 et 06h00"
+  },
+  "ps:Cleared": {
+   "ar": "مُبرَّر",
+   "en": "Cleared",
+   "fr": "Justifié"
+  },
+  "ps:Confirmed": {
+   "ar": "مُخالفة مؤكدة",
+   "en": "Confirmed breach",
+   "fr": "Violation confirmée"
+  },
+  "ps:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  }
+ }
+}

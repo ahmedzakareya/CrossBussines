@@ -112,6 +112,9 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalOutboundMessage), "HospitalOutboundMessages"),// H247: outbound HL7 messages follow the patient
 			(typeof(HospitalPortalThread), "HospitalPortalThreads"),      // H249: portal conversations follow the patient
 			(typeof(HospitalQuestionnaire), "HospitalQuestionnaires"),    // H250: questionnaires follow the patient
+			(typeof(HospitalNicuDay), "HospitalNicuDays"),                // H252: the neonatal record follows the baby
+			(typeof(HospitalScribeLog), "HospitalScribeLogs"),            // H254: the documentation trail follows the patient
+			(typeof(HospitalPrivacyAlert), "HospitalPrivacyAlerts"),      // H255: privacy alerts follow the patient
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

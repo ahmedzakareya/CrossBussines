@@ -98,7 +98,11 @@
                 <div class="card card-flush mb-5">
                     <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
                         <span class="card-label fw-bold text-gray-800">@T["Clinical note"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7" dir="ltr">SOAP</span>
-                    </h3></div>
+                    </h3>
+                    @* H254: ambient documentation — record the visit, the hospital's own speech service drafts the note *@
+                    @if (canEdit) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-scribe data-rec="@T["Record the visit"]" data-stop="@T["Stop and draft"]"><i class="ki-outline ki-microphone-2 fs-4"></i><span>@T["Record the visit"]</span></button></div>}
+                    </div>
+                    <div class="px-9 d-none" data-scribe-out><div class="notice d-flex rounded border border-dashed p-4 hp-notice"><div class="fs-7 text-gray-700"><div class="fw-bold mb-1">@T["Heard"]</div><div dir="auto" data-scribe-text></div><div class="text-muted fs-8 mt-2">@T["The draft filled the empty fields and was added to the others: read and correct before saving."]</div></div></div></div>
                     <div class="card-body pt-4">
                         <div class="row g-6">
                             <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Chief complaint"]</label><input name="chiefComplaint" value="@e.ChiefComplaint" maxlength="400" class="form-control form-control-solid" @ro /></div>
@@ -238,6 +242,41 @@
 @await Html.PartialAsync("_ReportPreviewModal", (object)(T["Prescription"].Value + " " + name))
 
 @section Scripts {
+    <script>
+        (function () {
+            var btn = document.querySelector('[data-scribe]'); if (!btn || !navigator.mediaDevices || !window.MediaRecorder) { if (btn) btn.classList.add('d-none'); return; }
+            var url = @Json.Serialize(Url.Content("~/Hospital/Consult/" + e.ID + "/Scribe")), rec = null, chunks = [], label = btn.querySelector('span');
+            var W = { failed: @Json.Serialize(T["The visit could not be transcribed"].Value), off: @Json.Serialize(T["The speech service is not available now"].Value), long: @Json.Serialize(T["The recording is too long: record the visit in parts of about a minute"].Value) };
+            function put(name, v, append) {
+                var el = document.querySelector('#encForm [name=' + name + ']'); if (!el || v == null || v === '') return;
+                if (!el.value) el.value = v; else if (append) el.value = el.value + '\n' + v;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            btn.addEventListener('click', function () {
+                if (rec && rec.state === 'recording') { rec.stop(); return; }
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+                    chunks = []; rec = new MediaRecorder(stream);
+                    rec.ondataavailable = function (ev) { if (ev.data.size) chunks.push(ev.data); };
+                    rec.onstop = function () {
+                        stream.getTracks().forEach(function (t) { t.stop(); });
+                        label.textContent = btn.getAttribute('data-rec'); btn.classList.remove('btn-danger'); btn.disabled = true;
+                        var fd = new FormData(); fd.append('audio', new Blob(chunks, { type: rec.mimeType || 'audio/webm' }), 'visit.webm');
+                        fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: fd })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                            .then(function (res) {
+                                btn.disabled = false;
+                                if (!res.ok) { toastr.error(res.code === 'not_available' ? W.off : res.code === 'too_long' ? W.long : W.failed); return; }
+                                var d = res.draft || {};
+                                put('chiefComplaint', d.chiefComplaint, false); put('history', d.history, true); put('examination', d.examination, true); put('planNote', d.plan, true);
+                                ['bpSystolic', 'bpDiastolic', 'heartRate', 'temperatureC', 'spO2', 'weightKg'].forEach(function (k) { put(k, d[k], false); });
+                                var out = document.querySelector('[data-scribe-out]'); out.classList.remove('d-none'); out.querySelector('[data-scribe-text]').textContent = res.transcript || '';
+                            });
+                    };
+                    rec.start(); label.textContent = btn.getAttribute('data-stop'); btn.classList.add('btn-danger');
+                }).catch(function () { toastr.error(W.failed); });
+            });
+        })();
+    </script>
     <script>
         (function () {
             var $ = window.jQuery, isAr = @Json.Serialize(DisplayName.IsArabic), canEdit = @Json.Serialize(canEdit);

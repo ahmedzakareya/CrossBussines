@@ -1,0 +1,135 @@
+{
+ "unit": "H252 - Neonatal unit",
+ "strings": {
+  "A day is recorded on it or in the two days after": {
+   "ar": "يُسجَّل اليوم في يومه أو خلال اليومين التاليين",
+   "en": "A day is recorded on it or in the two days after",
+   "fr": "Un jour se saisit le jour même ou dans les deux jours suivants"
+  },
+  "Bilirubin": {
+   "ar": "البيليروبين",
+   "en": "Bilirubin",
+   "fr": "Bilirubine"
+  },
+  "Born at {0} weeks": {
+   "ar": "وُلد في الأسبوع {0}",
+   "en": "Born at {0} weeks",
+   "fr": "Né à {0} semaines"
+  },
+  "Day of life {0}": {
+   "ar": "اليوم {0} من العمر",
+   "en": "Day of life {0}",
+   "fr": "Jour de vie {0}"
+  },
+  "Feeds today": {
+   "ar": "الرضاعة اليوم",
+   "en": "Feeds today",
+   "fr": "Alimentation du jour"
+  },
+  "Growth (7 days)": {
+   "ar": "النمو (7 أيام)",
+   "en": "Growth (7 days)",
+   "fr": "Croissance (7 jours)"
+  },
+  "Head": {
+   "ar": "محيط الرأس",
+   "en": "Head",
+   "fr": "Périmètre crânien"
+  },
+  "Neonatal unit": {
+   "ar": "وحدة حديثي الولادة",
+   "en": "Neonatal unit",
+   "fr": "Unité néonatale"
+  },
+  "No newborn is admitted.": {
+   "ar": "لا يوجد مولود منوَّم.",
+   "en": "No newborn is admitted.",
+   "fr": "Aucun nouveau-né hospitalisé."
+  },
+  "Phototherapy": {
+   "ar": "العلاج الضوئي",
+   "en": "Phototherapy",
+   "fr": "Photothérapie"
+  },
+  "Search a baby": {
+   "ar": "ابحث عن مولود",
+   "en": "Search a baby",
+   "fr": "Rechercher un bébé"
+  },
+  "The bilirubin is 0 to 900 µmol/L": {
+   "ar": "البيليروبين من 0 إلى 900 ميكرومول/لتر",
+   "en": "The bilirubin is 0 to 900 µmol/L",
+   "fr": "La bilirubine va de 0 à 900 µmol/L"
+  },
+  "The day's feeds are 0 to 2000 mL": {
+   "ar": "رضاعة اليوم من 0 إلى 2000 مل",
+   "en": "The day's feeds are 0 to 2000 mL",
+   "fr": "L'alimentation du jour va de 0 à 2000 mL"
+  },
+  "The neonatal record is not installed yet (hospital_h252_nicu.sql).": {
+   "ar": "سجل حديثي الولادة غير مثبت بعد (hospital_h252_nicu.sql).",
+   "en": "The neonatal record is not installed yet (hospital_h252_nicu.sql).",
+   "fr": "Le dossier néonatal n'est pas encore installé (hospital_h252_nicu.sql)."
+  },
+  "The weight is 300 to 7000 g": {
+   "ar": "الوزن من 300 إلى 7000 غرام",
+   "en": "The weight is 300 to 7000 g",
+   "fr": "Le poids va de 300 à 7000 g"
+  },
+  "Today's record": {
+   "ar": "سجل اليوم",
+   "en": "Today's record",
+   "fr": "Saisie du jour"
+  },
+  "birth": {
+   "ar": "الولادة",
+   "en": "birth",
+   "fr": "naissance"
+  },
+  "bw:LBW": {
+   "ar": "وزن منخفض عند الولادة",
+   "en": "Low birth weight",
+   "fr": "Faible poids de naissance"
+  },
+  "bw:VLBW": {
+   "ar": "وزن منخفض جدًا عند الولادة",
+   "en": "Very low birth weight",
+   "fr": "Très faible poids de naissance"
+  },
+  "bw:ELBW": {
+   "ar": "وزن منخفض للغاية عند الولادة",
+   "en": "Extremely low birth weight",
+   "fr": "Poids de naissance extrêmement faible"
+  },
+  "feed:Breast": {
+   "ar": "رضاعة طبيعية",
+   "en": "Breastfeeding",
+   "fr": "Allaitement"
+  },
+  "feed:Expressed": {
+   "ar": "حليب الأم المعصور",
+   "en": "Expressed breast milk",
+   "fr": "Lait maternel tiré"
+  },
+  "feed:Donor": {
+   "ar": "حليب متبرع",
+   "en": "Donor milk",
+   "fr": "Lait de donneuse"
+  },
+  "feed:Formula": {
+   "ar": "حليب صناعي",
+   "en": "Formula",
+   "fr": "Lait artificiel"
+  },
+  "feed:Mixed": {
+   "ar": "مختلطة",
+   "en": "Mixed",
+   "fr": "Mixte"
+  },
+  "feed:Nil": {
+   "ar": "صائم",
+   "en": "Nil by mouth",
+   "fr": "À jeun"
+  }
+ }
+}

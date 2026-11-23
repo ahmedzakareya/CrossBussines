@@ -31,7 +31,7 @@
         @if (ready && canWard && cands.Count > 0)
         {
             <div class="d-flex gap-2 align-items-center">
-                <button type="button" class="btn btn-sm btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#startModal"><i class="ki-outline ki-plus fs-4"></i>@T["Start a partograph"]</button>
+                <a href="@Url.Action("Nicu")" class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-heart fs-4"></i>@T["Neonatal unit"]</a><button type="button" class="btn btn-sm btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#startModal"><i class="ki-outline ki-plus fs-4"></i>@T["Start a partograph"]</button>
             </div>
         }
     </div></div>

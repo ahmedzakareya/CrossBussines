@@ -30,6 +30,8 @@
                 <li class="breadcrumb-item text-muted">@T["Capacity centre"]</li>
             </ul>
         </div>
+        @* H256: the read-only downtime copy, printed through Report Studio *@
+        <a href="@Url.Action("Viewer", "Reports", new { id = CrossBuy.BL.Reporting.HospitalReportCodes.DowntimeCensus, run = true })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-4"></i>@T["Downtime copy"]</a>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">

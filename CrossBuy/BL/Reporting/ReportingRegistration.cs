@@ -260,6 +260,7 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HospitalReadmissionsSource>();
             services.AddScoped<IReportDataSource, HospitalLabTurnaroundSource>();
             services.AddScoped<IReportDataSource, HospitalAntibiogramSource>();   // H231
+            services.AddScoped<IReportDataSource, HospitalDowntimeCensusSource>();   // H256
             services.AddScoped<IReportDataSource, HospitalCriticalValuesSource>();
             services.AddScoped<IReportDataSource, HospitalBedOccupancySource>();
             services.AddScoped<IReportDataSource, HospitalErWaitingSource>();

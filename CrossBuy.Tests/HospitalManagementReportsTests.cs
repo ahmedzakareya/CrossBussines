@@ -16,9 +16,9 @@ namespace CrossBuy.Tests
 		[Fact]
 		public void The_prototypes_fifteen_reports_in_its_four_groups()
 		{
-			Assert.Equal(16, Reports.Count);   // H231: + the antibiogram
-			Assert.Equal(new[] { 5, 4, 4, 3 }, HospitalReportGroups.All.Select(g => Reports.Count(r => r.Group == g)));
-			Assert.Equal(16, Reports.Select(r => r.Dataset.DatasetCode).Distinct().Count());
+			Assert.Equal(17, Reports.Count);   // H231: + the antibiogram; H256: + the downtime copy
+			Assert.Equal(new[] { 5, 5, 4, 3 }, HospitalReportGroups.All.Select(g => Reports.Count(r => r.Group == g)));
+			Assert.Equal(17, Reports.Select(r => r.Dataset.DatasetCode).Distinct().Count());
 			Assert.All(Reports, r => Assert.StartsWith("Hospital.", r.Dataset.DatasetCode));
 		}
 
@@ -59,7 +59,7 @@ namespace CrossBuy.Tests
 		public void The_default_sort_is_a_field_of_the_report_and_the_provider_agrees_with_the_datasets()
 		{
 			var defs = new HospitalManagementReportProvider().GetDefinitions().ToList();
-			Assert.Equal(16, defs.Count);
+			Assert.Equal(17, defs.Count);
 			foreach (var r in Reports)
 			{
 				Assert.Contains(r.Dataset.Fields, f => f.Key == r.Sort);

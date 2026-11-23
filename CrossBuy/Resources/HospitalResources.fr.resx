@@ -10373,4 +10373,83 @@
   <data name="The end date is in the future" xml:space="preserve"><value>La date de fin est dans le futur</value></data>
   <data name="proxy:Full" xml:space="preserve"><value>Le dossier complet</value></data>
   <data name="proxy:Booking" xml:space="preserve"><value>Les rendez-vous seulement</value></data>
+  <data name="A day is recorded on it or in the two days after" xml:space="preserve"><value>Un jour se saisit le jour même ou dans les deux jours suivants</value></data>
+  <data name="Bilirubin" xml:space="preserve"><value>Bilirubine</value></data>
+  <data name="Born at {0} weeks" xml:space="preserve"><value>Né à {0} semaines</value></data>
+  <data name="Day of life {0}" xml:space="preserve"><value>Jour de vie {0}</value></data>
+  <data name="Feeds today" xml:space="preserve"><value>Alimentation du jour</value></data>
+  <data name="Growth (7 days)" xml:space="preserve"><value>Croissance (7 jours)</value></data>
+  <data name="Head" xml:space="preserve"><value>Périmètre crânien</value></data>
+  <data name="Neonatal unit" xml:space="preserve"><value>Unité néonatale</value></data>
+  <data name="No newborn is admitted." xml:space="preserve"><value>Aucun nouveau-né hospitalisé.</value></data>
+  <data name="Phototherapy" xml:space="preserve"><value>Photothérapie</value></data>
+  <data name="Search a baby" xml:space="preserve"><value>Rechercher un bébé</value></data>
+  <data name="The bilirubin is 0 to 900 µmol/L" xml:space="preserve"><value>La bilirubine va de 0 à 900 µmol/L</value></data>
+  <data name="The day's feeds are 0 to 2000 mL" xml:space="preserve"><value>L'alimentation du jour va de 0 à 2000 mL</value></data>
+  <data name="The neonatal record is not installed yet (hospital_h252_nicu.sql)." xml:space="preserve"><value>Le dossier néonatal n'est pas encore installé (hospital_h252_nicu.sql).</value></data>
+  <data name="The weight is 300 to 7000 g" xml:space="preserve"><value>Le poids va de 300 à 7000 g</value></data>
+  <data name="Today's record" xml:space="preserve"><value>Saisie du jour</value></data>
+  <data name="birth" xml:space="preserve"><value>naissance</value></data>
+  <data name="bw:LBW" xml:space="preserve"><value>Faible poids de naissance</value></data>
+  <data name="bw:VLBW" xml:space="preserve"><value>Très faible poids de naissance</value></data>
+  <data name="bw:ELBW" xml:space="preserve"><value>Poids de naissance extrêmement faible</value></data>
+  <data name="feed:Breast" xml:space="preserve"><value>Allaitement</value></data>
+  <data name="feed:Expressed" xml:space="preserve"><value>Lait maternel tiré</value></data>
+  <data name="feed:Donor" xml:space="preserve"><value>Lait de donneuse</value></data>
+  <data name="feed:Formula" xml:space="preserve"><value>Lait artificiel</value></data>
+  <data name="feed:Mixed" xml:space="preserve"><value>Mixte</value></data>
+  <data name="feed:Nil" xml:space="preserve"><value>À jeun</value></data>
+  <data name="Record the visit" xml:space="preserve"><value>Enregistrer la consultation</value></data>
+  <data name="Stop and draft" xml:space="preserve"><value>Arrêter et rédiger</value></data>
+  <data name="Heard" xml:space="preserve"><value>Entendu</value></data>
+  <data name="The draft filled the empty fields and was added to the others: read and correct before saving." xml:space="preserve"><value>Le brouillon a rempli les champs vides et complété les autres : relisez et corrigez avant d'enregistrer.</value></data>
+  <data name="The visit could not be transcribed" xml:space="preserve"><value>La consultation n'a pas pu être transcrite</value></data>
+  <data name="The speech service is not available now" xml:space="preserve"><value>Le service vocal n'est pas disponible pour l'instant</value></data>
+  <data name="The recording is too long: record the visit in parts of about a minute" xml:space="preserve"><value>L'enregistrement est trop long : enregistrez la consultation par parties d'environ une minute</value></data>
+  <data name="0.5 is chance; 0.7 or more is useful" xml:space="preserve"><value>0,5 correspond au hasard ; 0,7 ou plus est utile</value></data>
+  <data name="30-day readmission (LACE index)" xml:space="preserve"><value>Réhospitalisation à 30 jours (indice LACE)</value></data>
+  <data name="A good score climbs band by band. Until enough discharges are measured here, read it as a prompt for discharge planning, not a prediction." xml:space="preserve"><value>Un bon score monte de tranche en tranche. Tant qu'assez de sorties ne sont pas mesurées ici, lisez-le comme un rappel pour préparer la sortie, pas comme une prédiction.</value></data>
+  <data name="Discharges measured" xml:space="preserve"><value>Sorties mesurées</value></data>
+  <data name="Discrimination (AUC)" xml:space="preserve"><value>Discrimination (AUC)</value></data>
+  <data name="Drift (PSI)" xml:space="preserve"><value>Dérive (PSI)</value></data>
+  <data name="Inpatients at high risk (LACE ≥ 10)" xml:space="preserve"><value>Patients à haut risque (LACE ≥ 10)</value></data>
+  <data name="Inpatients by readmission risk" xml:space="preserve"><value>Patients selon le risque de réhospitalisation</value></data>
+  <data name="Last 90 days ({0}) against the year before ({1})" xml:space="preserve"><value>90 derniers jours ({0}) contre l'année précédente ({1})</value></data>
+  <data name="Length of stay, acute admission, comorbidity (Charlson), emergency visits in six months — measured here before it is relied on" xml:space="preserve"><value>Durée de séjour, admission aiguë, comorbidité (Charlson), passages aux urgences sur six mois — mesuré ici avant d'être utilisé</value></data>
+  <data name="Observed rate" xml:space="preserve"><value>Taux observé</value></data>
+  <data name="Predictive models" xml:space="preserve"><value>Modèles prédictifs</value></data>
+  <data name="Readmitted" xml:space="preserve"><value>Réhospitalisés</value></data>
+  <data name="Score band" xml:space="preserve"><value>Tranche de score</value></data>
+  <data name="Search a patient" xml:space="preserve"><value>Rechercher un patient</value></data>
+  <data name="{0} readmitted within 30 days" xml:space="preserve"><value>{0} réhospitalisés sous 30 jours</value></data>
+  <data name="drift:Stable" xml:space="preserve"><value>Stable</value></data>
+  <data name="drift:Watch" xml:space="preserve"><value>À surveiller</value></data>
+  <data name="drift:Shifted" xml:space="preserve"><value>Population déplacée</value></data>
+  <data name="drift:Unknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="An alert about you is reviewed by another officer" xml:space="preserve"><value>Une alerte vous concernant est revue par un autre responsable</value></data>
+  <data name="Open alerts" xml:space="preserve"><value>Alertes ouvertes</value></data>
+  <data name="Pattern" xml:space="preserve"><value>Motif</value></data>
+  <data name="Privacy monitoring" xml:space="preserve"><value>Surveillance de la confidentialité</value></data>
+  <data name="Privacy monitoring is not installed yet (hospital_h255_privacy.sql)." xml:space="preserve"><value>La surveillance de la confidentialité n'est pas encore installée (hospital_h255_privacy.sql).</value></data>
+  <data name="Read from the record-access log of the last 14 days; the log itself is never changed" xml:space="preserve"><value>Tirées du journal d'accès aux dossiers des 14 derniers jours ; le journal n'est jamais modifié</value></data>
+  <data name="Review" xml:space="preserve"><value>Revue</value></data>
+  <data name="Reviewed alerts" xml:space="preserve"><value>Alertes revues</value></data>
+  <data name="Search an employee or patient" xml:space="preserve"><value>Rechercher un employé ou un patient</value></data>
+  <data name="This alert is already reviewed" xml:space="preserve"><value>Cette alerte est déjà revue</value></data>
+  <data name="What explains this access?" xml:space="preserve"><value>Qu'est-ce qui explique cet accès ?</value></data>
+  <data name="What was found, and what follows?" xml:space="preserve"><value>Qu'a-t-on constaté, et quelle suite ?</value></data>
+  <data name="Write what was found" xml:space="preserve"><value>Indiquez ce qui a été constaté</value></data>
+  <data name="{0} files in the day" xml:space="preserve"><value>{0} dossiers dans la journée</value></data>
+  <data name="pk:SameFamily" xml:space="preserve"><value>Même nom de famille</value></data>
+  <data name="pk:NoCareLink" xml:space="preserve"><value>Sans lien de soins</value></data>
+  <data name="pk:Volume" xml:space="preserve"><value>Volume inhabituel</value></data>
+  <data name="pk:AfterHours" xml:space="preserve"><value>Dossier restreint hors heures</value></data>
+  <data name="pkh:SameFamily" xml:space="preserve"><value>Peut-être un proche</value></data>
+  <data name="pkh:NoCareLink" xml:space="preserve"><value>Un médecin sans visite, séjour ni demande pour ce patient</value></data>
+  <data name="pkh:Volume" xml:space="preserve"><value>Plus de 30 dossiers et le triple de l'habituel</value></data>
+  <data name="pkh:AfterHours" xml:space="preserve"><value>Entre 22h00 et 06h00</value></data>
+  <data name="ps:Cleared" xml:space="preserve"><value>Justifié</value></data>
+  <data name="ps:Confirmed" xml:space="preserve"><value>Violation confirmée</value></data>
+  <data name="ps:Open" xml:space="preserve"><value>Ouvert</value></data>
+  <data name="Downtime copy" xml:space="preserve"><value>Copie de secours</value></data>
 </root>

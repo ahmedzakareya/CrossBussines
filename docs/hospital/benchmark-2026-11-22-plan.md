@@ -142,3 +142,34 @@ Overall score: about 6.3 out of 10.
   - H242 — FHIR eligibility and pre-authorisation:
     - each payer's gateway is entered by the administrator and stays off until then;
     - the file exchange keeps working until the gateway is on.
+- **H243–H245 (af0a3f77)**:
+  - H243 — radiology:
+    - structured categories (BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS);
+    - follow-ups tracked to the answering study;
+    - dose with effective-dose estimate, reference-level flag and 12-month cumulative dose.
+  - H244 — theatre: block time and utilisation; preference cards.
+  - H245 — biomedical engineering over the fixed assets:
+    - device register;
+    - out of service / back in service;
+    - safety tests and recalls;
+    - preventive maintenance through the asset module.
+- **H246–H248 (b9ab59cc)**:
+  - H246 — acuity-based staffing.
+  - H247 — outbound HL7 ADT/ORU feeds (off until enabled).
+  - H248 — FHIR R4 clinical read API behind a ClinicalRead key.
+- **H249–H251 (d9181286)** — portal:
+  - secure messaging;
+  - questionnaires (PHQ-9, GAD-7, AUDIT-C);
+  - proxy scope and end date;
+  - online bill payment link (entered by the administrator; empty = the cashier).
+- **H252–H256**:
+  - H252 — NICU:
+    - day of life and postmenstrual age;
+    - growth velocity and feeds per kg.
+  - H253 — LACE readmission model, validated on local discharges: AUC, calibration, PSI drift.
+  - H254 — Arabic/English ambient documentation:
+    - the internal speech service;
+    - a rule-based SOAP draft;
+    - the recording is never stored.
+  - H255 — behavioural privacy monitoring from the access log.
+  - H256 — read-only downtime copy through Report Studio.
