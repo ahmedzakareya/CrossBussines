@@ -588,6 +588,73 @@
             }
         }
 
+        // ===== THE TRANSCRIPT SURVIVES A RELOAD =====
+        //
+        // It used to live only in the DOM, so a refresh wiped it — and because the assistant is
+        // rendered into every back-office layout, so did moving to another SCREEN, which is the
+        // more common case. The conversation id above already survived both, so the server went on
+        // remembering the subject while the panel showed nothing: a follow-up like «وايه المتوسط؟»
+        // was answered against a context the asker could no longer see. An assumption the asker
+        // cannot see is an assumption they cannot correct, so the two halves have to agree.
+        //
+        // sessionStorage, keyed BY CONVERSATION ID, so the transcript has exactly the lifetime of
+        // the id it belongs to: it survives a reload and a navigation, and dies with the tab. That
+        // is the decision the id already made; this only stops the panel from contradicting it.
+        //
+        // WHAT IS STORED IS THE ANSWER'S JSON, NOT ITS RENDERED HTML. Replaying it through the same
+        // addAnswer() that drew it live keeps one renderer: a stored transcript cannot drift away
+        // from how a fresh answer looks, and a change to the rendering reaches the restored history
+        // for free. Storing HTML would have been a second copy of the rendering, and would have
+        // meant trusting markup out of storage.
+        var HISTORY_KEY = 'cbAiLog:';
+        var HISTORY_MAX = 12;          // exchanges kept — a panel, not an archive
+        var HISTORY_BYTES = 300000;    // well inside the ~5MB quota, with room for other tabs
+
+        function historyRead() {
+            try {
+                var raw = sessionStorage.getItem(HISTORY_KEY + convId());
+                if (!raw) return [];
+                var v = JSON.parse(raw);
+                return Object.prototype.toString.call(v) === '[object Array]' ? v : [];
+            } catch (e) { return []; }   // private window, cleared storage, or anything unparseable
+        }
+
+        function historyWrite(list) {
+            // Drop from the OLDEST end until it fits, rather than refusing to save the newest: the
+            // exchange on screen is the one the asker is most likely to come back to.
+            try {
+                var keep = list.slice(-HISTORY_MAX);
+                while (keep.length) {
+                    var s = JSON.stringify(keep);
+                    if (s.length <= HISTORY_BYTES) { sessionStorage.setItem(HISTORY_KEY + convId(), s); return; }
+                    keep = keep.slice(1);
+                }
+                sessionStorage.removeItem(HISTORY_KEY + convId());
+            } catch (e) { /* never let bookkeeping break the answer that is already on screen */ }
+        }
+
+        function historyAdd(q, d) {
+            var list = historyRead();
+            list.push({ q: q, d: d });
+            historyWrite(list);
+        }
+
+        function historyRestore() {
+            var list = historyRead();
+            if (!list.length) return;
+            var intro = document.getElementById('cbAiIntro');
+            if (intro) intro.remove();
+            var sugs = document.getElementById('cbAiSugs');
+            if (sugs) sugs.remove();
+            for (var i = 0; i < list.length; i++) {
+                var e = list[i];
+                if (!e || typeof e.q !== 'string' || !e.d) continue;
+                body.appendChild(el('div', 'cb-ai-q', e.q));
+                try { addAnswer(e.d); } catch (err) { /* one unreadable entry must not hide the rest */ }
+            }
+            body.scrollTop = body.scrollHeight;
+        }
+
         function ask(q) {
             q = (q || '').trim();
             if (!q) return;
@@ -623,7 +690,11 @@
                     if (!r.ok) throw new Error('http ' + r.status);
                     return r.json();
                 })
-                .then(function (d) { waiting.remove(); addAnswer(d); })
+                // Saved only once the answer has actually been drawn. An outage is not part of the
+                // conversation — restoring "could not reach the assistant" after a reload would
+                // replay a moment that has since passed, and offer a retry button for a request
+                // that is no longer in flight.
+                .then(function (d) { waiting.remove(); addAnswer(d); historyAdd(q, d); })
                 .catch(function () { waiting.remove(); addUnreachable(q); })
                 .finally(function () { send.disabled = false; input.focus(); });
         }
@@ -633,6 +704,9 @@
         document.querySelectorAll('.cb-ai-example').forEach(function (b) {
             b.addEventListener('click', function () { ask(b.getAttribute('data-q')); });
         });
+
+        // Last, so every renderer it replays through is already defined.
+        historyRestore();
     })();
     </script>
 }
