@@ -9,7 +9,7 @@ namespace CrossBuy.Controllers
 	// the payment provider while the hospital is in test (HospitalTestExchange). [DevOnly]: 404 outside a local
 	// Development process. The payer endpoint needs the test key; the checkout page takes no money and marks nothing paid.
 	// ==========================================================================================
-	[Route("dev/hospital-exchange")]
+	[Route("api/dev/hospital-exchange")]
 	[AllowAnonymous]
 	[CrossBuy.Models.DevOnly]
 	[IgnoreAntiforgeryToken]
@@ -21,7 +21,7 @@ namespace CrossBuy.Controllers
 			"It stands in for an outside payer's FHIR gateway, which the hospital's server calls with no session: it checks the test " +
 			"exchange's key in the X-Api-Key header instead, writes nothing, and [DevOnly] makes it 404 outside a local Development process.";
 
-		// POST dev/hospital-exchange/payer/CoverageEligibilityRequest | Claim
+		// POST api/dev/hospital-exchange/payer/CoverageEligibilityRequest | Claim
 		[HttpPost("payer/{resource}"), CrossBuy.Models.Platform.AnonymousByDesign(PayerWhy)]
 		public async Task<IActionResult> Payer(string resource, CancellationToken ct)
 		{
@@ -37,11 +37,11 @@ namespace CrossBuy.Controllers
 			return answer == null ? Fhir(HospitalTestExchange.Error("The test exchange does not read this message"), 400) : Fhir(answer);
 		}
 
-		// GET dev/hospital-exchange/received — what the MLLP test receiver took (in memory)
+		// GET api/dev/hospital-exchange/received — what the MLLP test receiver took (in memory)
 		[HttpGet("received")]
 		public IActionResult Received() => Json(HospitalTestReceiverLog.Recent());
 
-		// GET dev/hospital-exchange/pay?ref=&amount=&currency= — the test checkout
+		// GET api/dev/hospital-exchange/pay?ref=&amount=&currency= — the test checkout
 		[HttpGet("pay")]
 		public IActionResult Pay([FromQuery(Name = "ref")] string? billNo, string? amount, string? currency)
 		{

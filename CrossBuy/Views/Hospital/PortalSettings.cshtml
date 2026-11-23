@@ -88,7 +88,7 @@
                     @* H251: the payment provider's checkout address — entered when the facility has one; empty = pay at the cashier *@
                     <div class="col-12"><div class="border border-gray-300 border-dashed rounded p-4"><label class="fs-6 fw-semibold mb-2">@T["Online bill payment link"]</label>
                         <input class="form-control form-control-solid" dir="ltr" maxlength="300" name="payLinkTemplate" value="@s.PayLinkTemplate" placeholder="https://pay.example.com/checkout?ref={ref}&amount={amount}&currency={currency}" />
-                        <div class="text-muted fs-8 mt-2">@T["The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier."]</div></div></div>
+                        <div class="text-muted fs-8 mt-2">@T["The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier."].Value</div></div></div>
                 </div>
             </div>
         </div>

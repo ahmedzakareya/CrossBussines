@@ -114,12 +114,16 @@ namespace CrossBuy.BL.Hospital
 			var since = f.StartFrom;
 			var adms = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == companyId && (a.AdmittedAt >= since || (a.DischargedAt != null && a.DischargedAt >= since))).ToListAsync(ct);
 			var ids = adms.Select(a => a.ID).ToList();
+			// a transfer of a patient admitted BEFORE the feed was switched on is still an event: take every stay of the
+			// admissions that moved since, so the move is never mistaken for the admission's first bed (live, 2026-11-23)
+			var moved = await _db.HospitalBedStays.AsNoTracking().Where(s => s.CompanyId == companyId && s.StartedAt >= since).Select(s => s.AdmissionId).Distinct().ToListAsync(ct);
+			var all = ids.Union(moved).ToList();
 			var stays = await (from s in _db.HospitalBedStays.AsNoTracking()
 							   join b in _db.HospitalBeds.AsNoTracking() on s.BedId equals b.ID
 							   join r in _db.HospitalRooms.AsNoTracking() on s.RoomId equals r.ID
-							   where s.CompanyId == companyId && (ids.Contains(s.AdmissionId) || s.StartedAt >= since)
+							   where s.CompanyId == companyId && all.Contains(s.AdmissionId)
 							   select new StayInfo(s.ID, s.AdmissionId, s.StartedAt, b.Code, r.Number, r.WardId)).ToListAsync(ct);
-			var moreIds = stays.Select(s => s.AdmissionId).Except(ids).ToList();
+			var moreIds = stays.Select(s => s.AdmissionId).Except(ids).Distinct().ToList();
 			if (moreIds.Count > 0) adms.AddRange(await _db.HospitalAdmissions.AsNoTracking().Where(a => moreIds.Contains(a.ID)).ToListAsync(ct));
 			var wards = await _db.Set<HospitalWard>().AsNoTracking().Where(w => w.CompanyId == companyId).ToDictionaryAsync(w => w.ID, w => w.Code, ct);
 			var pids = adms.Select(a => a.PatientId).Distinct().ToList();

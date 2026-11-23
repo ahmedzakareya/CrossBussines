@@ -21,6 +21,8 @@ namespace CrossBuy.BL.Hospital
 		private static readonly string[] Exam = { "بالفحص", "الفحص", "فحص", "بالسماعة", "سماع", "البطن لين", "الصدر", "on examination", "examination", "exam", "auscultation", "tender", "chest is", "abdomen is" };
 		private static readonly string[] Plan = { "الخطة", "خطة", "سنطلب", "نطلب", "نبدأ", "وصفت", "سأصف", "نصف", "تحليل", "أشعة", "متابعة", "مراجعة بعد", "يراجع", "plan", "prescribe", "start", "order", "follow up", "follow-up", "review in", "refer" };
 
+		private static readonly Regex Reading = new(@"(?:ضغط|نبض|حرارة|تشبع|وزن|blood pressure|\bbp\b|pulse|heart rate|temperature|\btemp\b|saturation|\bsats\b|spo2|weight)\D{0,15}\d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
 		public static string LatinDigits(string s)
 		{
 			var b = new StringBuilder(s.Length);
@@ -34,6 +36,8 @@ namespace CrossBuy.BL.Hospital
 			if (Plan.Any(w => s.Contains(w))) return "P";
 			if (Exam.Any(w => s.Contains(w))) return "O";
 			if (Complaint.Any(w => s.Contains(w))) return "C";
+			// a sentence of readings said aloud is examination, not history (live test with a microphone, 2026-11-23)
+			if (Reading.IsMatch(s)) return "O";
 			return "S";
 		}
 

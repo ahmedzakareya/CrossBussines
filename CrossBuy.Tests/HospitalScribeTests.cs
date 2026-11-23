@@ -35,6 +35,20 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public void A_sentence_of_readings_is_examination_not_history()
+		{
+			// the live microphone test's transcript: the readings sentence had landed in the history
+			var d = HospitalScribeRules.Draft("The patient complains of a dry cough and fever for three days. On examination the chest is clear and the throat is red. Blood pressure is 128 over 82, pulse 92, temperature 38.4 degrees. Plan, paracetamol, plenty of fluids, and review in three days if the fever continues.");
+			Assert.DoesNotContain("Blood pressure", d.History);
+			Assert.Contains("Blood pressure is 128 over 82", d.Examination);
+			Assert.Equal((128, 82, 92, 38.4m), (d.BpSystolic!.Value, d.BpDiastolic!.Value, d.HeartRate!.Value, d.TemperatureC!.Value));
+			var a = HospitalScribeRules.Draft("يشكو من صداع. الضغط ١٤٠ على ٩٠. لا يدخن.");
+			Assert.Contains("الضغط 140 على 90", a.Examination); Assert.Equal("لا يدخن", a.History);
+			// a complaint that names a reading stays the complaint
+			Assert.StartsWith("يشكو من حرارة 39", HospitalScribeRules.Draft("يشكو من حرارة 39 منذ أمس.").ChiefComplaint);
+		}
+
+		[Fact]
 		public void Impossible_readings_and_empty_words_give_nothing()
 		{
 			var d = HospitalScribeRules.Draft("الحرارة 98 والنبض 400");
