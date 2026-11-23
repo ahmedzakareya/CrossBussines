@@ -270,17 +270,26 @@ namespace CrossBuy.Controllers
             _ => T($"Follow-up — {subject}", $"Follow up — {subject}"),
         };
 
+        // THE REASON NAMES THE ANALYSIS, NOT THE SCREEN.
+        //
+        // The English halves of the three inventory reasons used to say "Created from Inventory Risk
+        // Insights". That was true while the risk screen was the only way to reach this form, and it
+        // stopped being true the moment the assistant could offer the same task from an answer: the
+        // box would tell someone the task came from a screen they had not opened. The Arabic halves
+        // already named the analysis rather than the place, which is true from either entry point, so
+        // the English now says the same thing. Nothing about the task's identity changes — the audit
+        // stamp appended at save is InsightActions.OriginLine, which names no screen and never did.
         private string ComposeReason(string key, string subject) => key switch
         {
             "task.reason.stockout" => T(
                 $"Created from inventory risk analytics: item {subject} is out of stock while there is recent demand.",
-                $"Created from Inventory Risk Insights: {subject} is out of stock with recent demand."),
+                $"Created from inventory risk analysis: {subject} is out of stock with recent demand."),
             "task.reason.reorder" => T(
                 $"Created from inventory risk analytics: item {subject} is below its reorder point, or its cover is low.",
-                $"Created from Inventory Risk Insights: {subject} is below its reorder point or has low days-of-cover."),
+                $"Created from inventory risk analysis: {subject} is below its reorder point or has low days-of-cover."),
             "task.reason.slowstock" => T(
                 $"Created from inventory risk analytics: item {subject} is slow-moving and has not been issued within the given window.",
-                $"Created from Inventory Risk Insights: {subject} is slow moving with no issues in the window."),
+                $"Created from inventory risk analysis: {subject} is slow moving with no issues in the window."),
             "task.reason.oppOverdue" => T(
                 $"Created from opportunity analytics: opportunity {subject} is past its expected close date.",
                 $"Created from CRM Opportunity Insights: {subject} is past its expected close date."),

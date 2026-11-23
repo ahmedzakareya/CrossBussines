@@ -9,6 +9,23 @@
     duplicate protection: the server's open-task check is what actually prevents a second task, because
     a browser guard is one refresh away from being bypassed.
 *@
+@{
+    // INCLUDED ONCE PER PAGE, EVEN WHEN ASKED FOR TWICE.
+    //
+    // The insight screens include this directly, and the assistant panel in the layout now includes
+    // it too, so a page can ask for it twice. Rendered twice it would put two elements under the
+    // same id and register the delegated click handler twice: getElementById takes the first modal,
+    // both handlers fire, the form is fetched twice and shown twice — and a double submit would be
+    // caught only by the server's open-task check rather than never being sent.
+    //
+    // HttpContext.Items, not ViewData: it is per REQUEST, so it survives from a layout partial into
+    // a view partial regardless of which renders first.
+    const string RenderedKey = "_InsightActionScripts.rendered";
+    var alreadyRendered = Context.Items.ContainsKey(RenderedKey);
+    Context.Items[RenderedKey] = true;
+}
+@if (!alreadyRendered)
+{
 <div class="modal fade" id="insightActionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content" id="insightActionModalContent"></div>
@@ -96,3 +113,4 @@
     }
 })();
 </script>
+}

@@ -803,6 +803,59 @@ try {
   process.exit(2);
 }
 
+// ---- AN ANSWER THAT NAMES WORK CAN START IT ---------------------------------------------------
+//
+// The dormant-stock answer offers a follow-up task per row, through the EXISTING insight→task
+// flow: the row carries the source, the entity id and the finding, and the panel turns those into
+// the same button the insight screens use. Nothing here writes; the keys are an address for a form
+// a person still has to review and submit.
+//
+// WHAT IS ASSERTED IS THE PAIRING, not merely that the keys exist. An action offered on a row that
+// does NOT resolve to one record would be a task about "many items", which nobody can do.
+//
+// The pairing is checked against the row's CODE, not against its drill-down link. Both come from
+// the same resolved item, so either would express the rule — but the link is being added to this
+// handler by someone else and is not in HEAD yet, and a check that fails on a clean checkout
+// because of a colleague's unlanded work is a check that will be ignored the first time it goes
+// red. The code is already there, and it means the same thing: this row names one item.
+try {
+  total++;
+  const r = await page.evaluate(async (base) => {
+    const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent('ايه الاصناف الراكدة')}&c=probe:act${Date.now()}`,
+      { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+    const d = await res.json().catch(() => null);
+    const rows = (d && d.rows) || [];
+    return {
+      ok: d ? d.ok : null,
+      rows: rows.length,
+      offered: rows.filter(x => x.taskSource && x.taskEntityId && x.taskFinding).length,
+      resolved: rows.filter(x => x.code).length,
+      mismatched: rows.filter(x => !!x.code !== !!(x.taskSource && x.taskEntityId && x.taskFinding)).length,
+      source: rows.find(x => x.taskSource)?.taskSource ?? '',
+      finding: rows.find(x => x.taskFinding)?.taskFinding ?? '',
+    };
+  }, BASE);
+
+  // The vocabulary is asserted too. These two strings are what InsightActions already defines for
+  // slow stock; if either drifts, the button would open a form the server refuses, and the refusal
+  // would look like a permission problem rather than a wiring one.
+  const good = r.ok === true && r.rows > 0 && r.offered > 0 && r.mismatched === 0
+    && r.source === 'InventoryItem' && r.finding === 'slow';
+  if (good) { pass++; }
+  else {
+    failures.push({
+      q: 'ايه الاصناف الراكدة', want: 'a follow-up task offered on exactly the rows that resolve to one item',
+      why: 'the answer should be able to start the work it names',
+      ok: r.ok, rows: r.rows, status: 200,
+      say: `offered=${r.offered} resolved=${r.resolved} mismatched=${r.mismatched} source="${r.source}" finding="${r.finding}"`,
+    });
+  }
+} catch (e) {
+  console.error('NOT VERIFIED (row action) —', e?.message ?? e);
+  await browser.close();
+  process.exit(2);
+}
+
 await browser.close();
 
 console.log(`ask capability probe: ${pass} / ${total} passed`);

@@ -78,6 +78,13 @@
             border:1px solid #D6E2F3;background:var(--cb-ai-surface);color:var(--cb-ai-brand);
             text-align:start;transition:background .14s ease,border-color .14s ease}
         .cb-ai-sug:hover{background:var(--cb-ai-brand-soft);border-color:#B9D0EE}
+        /* The act offered on a row. Deliberately QUIETER than a suggestion chip: a suggestion is
+           another question and costs nothing, while this opens a form that creates real work, and
+           the louder control should not be the one with consequences. Brand, never green. */
+        .cb-ai-act{display:inline-block;margin-top:5px;font-size:.72rem;line-height:1.3;
+            padding:3px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--cb-ai-line);
+            background:transparent;color:var(--cb-ai-brand)}
+        .cb-ai-act:hover{background:var(--cb-ai-brand-soft);border-color:var(--cb-ai-brand)}
         .cb-ai-sug:focus-visible{outline:2px solid var(--cb-ai-brand);outline-offset:2px}
 
         /* ---- messages ---- */
@@ -271,7 +278,10 @@
             unreachable: '@Localizer["I could not reach the server. It may be restarting."]',
             retry: '@Localizer["Try again"]',
             looking: '@Localizer["Looking…"]',
-            why: '@Localizer["How this was worked out"]'
+            why: '@Localizer["How this was worked out"]',
+            // Names the DEED, not the mechanism. "Create a task" describes the form that opens;
+            // "Act on this" would promise the assistant does something, and it does not.
+            act: '@Localizer["Create a task"]'
         };
 
         function el(tag, cls, text) {
@@ -521,6 +531,28 @@
                     k.appendChild(dl);
                 }
                 if (r.warehouse) k.appendChild(el('span', 'cb-ai-note', r.warehouse));
+
+                // AN ANSWER THAT NAMES WORK CAN START IT.
+                //
+                // Nothing here writes. The button carries the same data attributes the insight
+                // screens use, and the delegated handler in _InsightActionScripts opens the SAME
+                // review form, which the person edits and submits through the same guarded POST.
+                // So this is one more place to reach an existing act, not a second way to perform
+                // it: the server re-authorises from scratch when the form comes back, and would
+                // refuse exactly as it does from any other page.
+                //
+                // Only when the server put all three keys on the row, which it does only where the
+                // row resolves to one real record and the finding still offers a task.
+                if (r.taskSource && r.taskEntityId && r.taskFinding) {
+                    var act = el('button', 'cb-ai-act');
+                    act.type = 'button';
+                    act.setAttribute('data-insight-action', 'task');
+                    act.setAttribute('data-source', r.taskSource);
+                    act.setAttribute('data-entity-id', r.taskEntityId);
+                    act.setAttribute('data-finding', r.taskFinding);
+                    act.appendChild(document.createTextNode(L.act));
+                    k.appendChild(act);
+                }
                 row.appendChild(k);
                 // A ROW WITH NO FIGURE HAS NO FIGURE CELL. The em-dash is the placeholder for a
                 // value that was not RECORDED, which is a claim about the data; a person answering
@@ -714,4 +746,10 @@
         historyRestore();
     })();
     </script>
+
+    @* THE FORM THE ROW BUTTONS OPEN, AND THE HANDLER THAT OPENS IT.
+       Included rather than reimplemented: this panel adds a place to reach the insight→task flow,
+       not a second copy of it. The partial renders once per request even if an insight screen has
+       already asked for it, so the delegated click handler is never registered twice. *@
+    @await Html.PartialAsync("_InsightActionScripts")
 }

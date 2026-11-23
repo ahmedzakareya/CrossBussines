@@ -127,6 +127,27 @@ namespace CrossBuy.BL.Platform.Ai
 				{
 					["name"] = it == null ? null : (isArabic ? it.Name : (it.NameEn ?? it.Name)),
 					["code"] = it?.ItemCode,
+
+					// AN ANSWER THAT NAMES WORK CAN START IT.
+					//
+					// Until now the assistant could only tell you an item has been still for months; acting on
+					// it meant leaving the conversation, finding the item and raising a task by hand. These
+					// three keys let the panel offer the task, and they offer it through the EXISTING path:
+					// InsightActions already defines "slow" on an inventory item and already allows a
+					// follow-up task for it. So no new vocabulary, no new mutation route, and nothing here
+					// writes anything — the keys are an address for a form the person still has to review
+					// and submit, and that form re-authorises from scratch when it comes back.
+					//
+					// Offered only where THIS row resolves to one real item, on the same condition as the
+					// link above: a monthly total covers many items, and a task about "many" is a task
+					// nobody can do.
+					//
+					// AllowsTask is asked rather than assumed. If the finding ever stops offering a task,
+					// the button disappears here instead of becoming a request the server has to refuse.
+					["taskSource"] = it == null || !InsightActions.AllowsTask(InsightActions.Sources.InventoryItem, "slow")
+						? null : InsightActions.Sources.InventoryItem,
+					["taskEntityId"] = it?.ID,
+					["taskFinding"] = it == null ? null : "slow",
 					["warehouse"] = isArabic
 						? $"ساكن {days} يومًا · الرصيد {decimal.Round(q.QtyOnHand, 2).ToString(inv)}"
 						: $"still {days} days · qty {decimal.Round(q.QtyOnHand, 2).ToString(inv)}",
