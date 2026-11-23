@@ -10645,4 +10645,41 @@
   <data name="{0} — {1}" xml:space="preserve"><value>{0} — {1}</value></data>
   <data name="I did not understand" xml:space="preserve"><value>I did not understand</value></data>
   <data name="I can tell you your next appointment, your released results, what you owe and your medicines. For anything else, message the clinic." xml:space="preserve"><value>I can tell you your next appointment, your released results, what you owe and your medicines. For anything else, message the clinic.</value></data>
+  <data name="Add the specialty pack" xml:space="preserve"><value>Add the specialty pack</value></data>
+  <data name="Added: {0} clinics, {1} forms" xml:space="preserve"><value>Added: {0} clinics, {1} forms</value></data>
+  <data name="The pack is already in place" xml:space="preserve"><value>The pack is already in place</value></data>
+  <data name="spc:neuro" xml:space="preserve"><value>Neurology</value></data>
+  <data name="spc:neuro:1" xml:space="preserve"><value>Modified Rankin scale for function</value></data>
+  <data name="spc:neuro:2" xml:space="preserve"><value>Seizures per month</value></data>
+  <data name="spc:neuro:3" xml:space="preserve"><value>MIDAS headache disability</value></data>
+  <data name="spc:neuro:alert" xml:space="preserve"><value>More than 3 seizures a month</value></data>
+  <data name="spc:uro" xml:space="preserve"><value>Urology</value></data>
+  <data name="spc:uro:1" xml:space="preserve"><value>IPSS (7 items) and quality of life</value></data>
+  <data name="spc:uro:2" xml:space="preserve"><value>Post-void residual</value></data>
+  <data name="spc:uro:3" xml:space="preserve"><value>PSA</value></data>
+  <data name="spc:uro:alert" xml:space="preserve"><value>Residual over 200 mL or PSA over 4</value></data>
+  <data name="spc:gi" xml:space="preserve"><value>Gastroenterology</value></data>
+  <data name="spc:gi:1" xml:space="preserve"><value>Bristol stool form</value></data>
+  <data name="spc:gi:2" xml:space="preserve"><value>Heartburn days a week</value></data>
+  <data name="spc:gi:3" xml:space="preserve"><value>Alarm features and weight</value></data>
+  <data name="spc:gi:alert" xml:space="preserve"><value>An alarm feature present</value></data>
+  <data name="spc:pulm" xml:space="preserve"><value>Pulmonology</value></data>
+  <data name="spc:pulm:1" xml:space="preserve"><value>CAT (8 items)</value></data>
+  <data name="spc:pulm:2" xml:space="preserve"><value>mMRC dyspnoea</value></data>
+  <data name="spc:pulm:3" xml:space="preserve"><value>SpO2, FEV1 and exacerbations</value></data>
+  <data name="spc:pulm:alert" xml:space="preserve"><value>SpO2 below 90% or two exacerbations a year</value></data>
+  <data name="spc:rheum" xml:space="preserve"><value>Rheumatology</value></data>
+  <data name="spc:rheum:1" xml:space="preserve"><value>Tender and swollen joints (28)</value></data>
+  <data name="spc:rheum:2" xml:space="preserve"><value>CDAI disease activity</value></data>
+  <data name="spc:rheum:alert" xml:space="preserve"><value>CDAI above 22</value></data>
+  <data name="spc:neph" xml:space="preserve"><value>Nephrology</value></data>
+  <data name="spc:neph:1" xml:space="preserve"><value>Creatinine and eGFR</value></data>
+  <data name="spc:neph:2" xml:space="preserve"><value>Urine albumin/creatinine ratio</value></data>
+  <data name="spc:neph:3" xml:space="preserve"><value>Potassium and blood pressure</value></data>
+  <data name="spc:neph:alert" xml:space="preserve"><value>Potassium above 5.5</value></data>
+  <data name="spc:surg" xml:space="preserve"><value>General surgery clinic</value></data>
+  <data name="spc:surg:1" xml:space="preserve"><value>Wound</value></data>
+  <data name="spc:surg:2" xml:space="preserve"><value>Pain, temperature and drain output</value></data>
+  <data name="spc:surg:3" xml:space="preserve"><value>Clavien-Dindo grade</value></data>
+  <data name="spc:surg:alert" xml:space="preserve"><value>Temperature of 38 or more after surgery</value></data>
 </root>

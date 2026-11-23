@@ -71,7 +71,7 @@ namespace CrossBuy.Tests
 			Assert.Null(HospitalConceptRules.Band(new HospitalConcept { ValueType = HospitalConceptType.Number, Choices = "0|x|y" }, 3));   // only a score has bands
 			var i = new HospitalConceptInput { Code = "PHQ", CodeSystem = "LOINC", Name = "س", NameEn = "x", ValueType = "Score", Calculator = "Sum", CalcInputs = "Q1", Choices = "low|منخفض|Low" };
 			Assert.Equal("A score's band starts with the lowest value of the band", HospitalConceptRules.Refusal(i));
-			Assert.Equal(7, HospitalSpecialtyCatalog.Others.Count);   // the prototype's seven
+			Assert.Equal(14, HospitalSpecialtyCatalog.Others.Count);   // the prototype's seven + the H268 specialty pack's seven
 		}
 
 		[Fact]

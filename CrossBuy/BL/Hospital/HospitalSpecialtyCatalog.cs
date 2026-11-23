@@ -33,6 +33,14 @@ namespace CrossBuy.BL.Hospital
 			new HospitalSpecialtyEntry("orth", "ki-abstract-14", "ORTH", Array.Empty<string>(), new[] { "1", "2", "3", "4" }, "alert", "Template"),
 			new HospitalSpecialtyEntry("psy", "ki-brain", "PSY", new[] { "PSY-SCR" }, new[] { "1", "2", "3", "4" }, "alert", "Template"),
 			new HospitalSpecialtyEntry("endo", "ki-chart-line", "ENDO", new[] { "THY-FU", "BONE-DXA" }, new[] { "1", "2", "3", "4" }, "alert", "Template"),   // H189: thyroid (TI-RADS) and bone density
+			// H268: the specialty pack (HospitalSpecialtyPack)
+			new HospitalSpecialtyEntry("neuro", "ki-abstract-26", "NEURO", new[] { "NEURO-FU" }, new[] { "1", "2", "3" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("uro", "ki-drop", "URO", new[] { "URO-LUTS" }, new[] { "1", "2", "3" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("gi", "ki-abstract-39", "GI", new[] { "GI-FU" }, new[] { "1", "2", "3" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("pulm", "ki-wind", "PULM", new[] { "PULM-COPD" }, new[] { "1", "2", "3" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("rheum", "ki-abstract-41", "RHEUM", new[] { "RHEUM-RA" }, new[] { "1", "2" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("neph", "ki-filter-search", "NEPH", new[] { "NEPH-CKD" }, new[] { "1", "2", "3" }, "alert", "Template"),
+			new HospitalSpecialtyEntry("surg", "ki-abstract-35", "SURG", new[] { "SURG-PO" }, new[] { "1", "2", "3" }, "alert", "Template"),
 		};
 
 		/// The cards, with their clinic, published templates (the clinic's, or the listed codes) and visits, read from the system.

@@ -21,7 +21,11 @@
             <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Specialty catalogue"]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["The catalogue"]</li></ul>
         </div>
-        <a href="@Url.Action("Templates")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Template designer"]</a>
+        <div class="d-flex gap-2">
+            @* H268: the standard forms of the clinics that had none (managers; idempotent) *@
+            @if (ViewBag.CanManagePack == true) {@Html.AntiForgeryToken()<button type="button" class="btn btn-sm btn-light-primary" id="spcPack"><i class="ki-outline ki-add-files fs-4"></i>@T["Add the specialty pack"]</button>}
+            <a href="@Url.Action("Templates")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Template designer"]</a>
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
@@ -79,3 +83,22 @@
         </div>
     </div></div>
 </div>
+@section Scripts {
+    <script>
+        (function () {
+            var b = document.getElementById('spcPack'); if (!b) return;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), done: @Json.Serialize(T["Added: {0} clinics, {1} forms"].Value), none: @Json.Serialize(T["The pack is already in place"].Value) };
+            b.addEventListener('click', function () {
+                b.disabled = true;
+                fetch(@Json.Serialize(Url.Action("SpecialtyPack")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }, body: '{}' })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        b.disabled = false;
+                        if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                        toastr.success(res.templates === 0 && res.departments === 0 ? W.none : W.done.replace('{0}', res.departments).replace('{1}', res.templates));
+                        setTimeout(function () { location.reload(); }, 900);
+                    });
+            });
+        })();
+    </script>
+}

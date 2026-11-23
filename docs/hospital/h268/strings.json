@@ -1,0 +1,190 @@
+{
+ "unit": "H268 - Specialty pack",
+ "strings": {
+  "Add the specialty pack": {
+   "ar": "إضافة حزمة التخصصات",
+   "en": "Add the specialty pack",
+   "fr": "Ajouter le pack de spécialités"
+  },
+  "Added: {0} clinics, {1} forms": {
+   "ar": "أُضيفت {0} عيادات و{1} نماذج",
+   "en": "Added: {0} clinics, {1} forms",
+   "fr": "Ajouté : {0} cliniques, {1} formulaires"
+  },
+  "The pack is already in place": {
+   "ar": "الحزمة مضافة من قبل",
+   "en": "The pack is already in place",
+   "fr": "Le pack est déjà en place"
+  },
+  "spc:neuro": {
+   "ar": "المخ والأعصاب",
+   "en": "Neurology",
+   "fr": "Neurologie"
+  },
+  "spc:neuro:1": {
+   "ar": "مقياس رانكن المعدّل للوظيفة",
+   "en": "Modified Rankin scale for function",
+   "fr": "Échelle de Rankin modifiée"
+  },
+  "spc:neuro:2": {
+   "ar": "عدد النوبات في الشهر",
+   "en": "Seizures per month",
+   "fr": "Crises par mois"
+  },
+  "spc:neuro:3": {
+   "ar": "مقياس MIDAS لإعاقة الصداع",
+   "en": "MIDAS headache disability",
+   "fr": "Handicap céphalalgique MIDAS"
+  },
+  "spc:neuro:alert": {
+   "ar": "أكثر من 3 نوبات في الشهر",
+   "en": "More than 3 seizures a month",
+   "fr": "Plus de 3 crises par mois"
+  },
+  "spc:uro": {
+   "ar": "المسالك البولية",
+   "en": "Urology",
+   "fr": "Urologie"
+  },
+  "spc:uro:1": {
+   "ar": "مقياس IPSS بسبعة بنود وجودة الحياة",
+   "en": "IPSS (7 items) and quality of life",
+   "fr": "IPSS (7 items) et qualité de vie"
+  },
+  "spc:uro:2": {
+   "ar": "البول المتبقي بعد الإفراغ",
+   "en": "Post-void residual",
+   "fr": "Résidu post-mictionnel"
+  },
+  "spc:uro:3": {
+   "ar": "مستضد البروستاتا النوعي",
+   "en": "PSA",
+   "fr": "PSA"
+  },
+  "spc:uro:alert": {
+   "ar": "بول متبقٍّ أكثر من 200 مل أو مستضد أعلى من 4",
+   "en": "Residual over 200 mL or PSA over 4",
+   "fr": "Résidu > 200 mL ou PSA > 4"
+  },
+  "spc:gi": {
+   "ar": "الجهاز الهضمي",
+   "en": "Gastroenterology",
+   "fr": "Gastro-entérologie"
+  },
+  "spc:gi:1": {
+   "ar": "مقياس بريستول للبراز",
+   "en": "Bristol stool form",
+   "fr": "Échelle de Bristol"
+  },
+  "spc:gi:2": {
+   "ar": "أيام الحرقة في الأسبوع",
+   "en": "Heartburn days a week",
+   "fr": "Jours de brûlures par semaine"
+  },
+  "spc:gi:3": {
+   "ar": "علامات الإنذار والوزن",
+   "en": "Alarm features and weight",
+   "fr": "Signes d'alarme et poids"
+  },
+  "spc:gi:alert": {
+   "ar": "وجود علامة إنذار",
+   "en": "An alarm feature present",
+   "fr": "Un signe d'alarme présent"
+  },
+  "spc:pulm": {
+   "ar": "الصدرية",
+   "en": "Pulmonology",
+   "fr": "Pneumologie"
+  },
+  "spc:pulm:1": {
+   "ar": "اختبار CAT بثمانية بنود",
+   "en": "CAT (8 items)",
+   "fr": "CAT (8 items)"
+  },
+  "spc:pulm:2": {
+   "ar": "مقياس ضيق النفس mMRC",
+   "en": "mMRC dyspnoea",
+   "fr": "Dyspnée mMRC"
+  },
+  "spc:pulm:3": {
+   "ar": "تشبع الأكسجين وFEV1 والنوبات الحادة",
+   "en": "SpO2, FEV1 and exacerbations",
+   "fr": "SpO2, VEMS et exacerbations"
+  },
+  "spc:pulm:alert": {
+   "ar": "تشبع أقل من 90% أو نوبتان في السنة",
+   "en": "SpO2 below 90% or two exacerbations a year",
+   "fr": "SpO2 < 90 % ou deux exacerbations par an"
+  },
+  "spc:rheum": {
+   "ar": "الروماتيزم",
+   "en": "Rheumatology",
+   "fr": "Rhumatologie"
+  },
+  "spc:rheum:1": {
+   "ar": "عدد المفاصل المؤلمة والمتورمة (28)",
+   "en": "Tender and swollen joints (28)",
+   "fr": "Articulations douloureuses et gonflées (28)"
+  },
+  "spc:rheum:2": {
+   "ar": "مؤشر نشاط المرض CDAI",
+   "en": "CDAI disease activity",
+   "fr": "Activité CDAI"
+  },
+  "spc:rheum:alert": {
+   "ar": "مؤشر CDAI أعلى من 22",
+   "en": "CDAI above 22",
+   "fr": "CDAI > 22"
+  },
+  "spc:neph": {
+   "ar": "الكلى",
+   "en": "Nephrology",
+   "fr": "Néphrologie"
+  },
+  "spc:neph:1": {
+   "ar": "الكرياتينين ومعدل الترشيح",
+   "en": "Creatinine and eGFR",
+   "fr": "Créatinine et DFG"
+  },
+  "spc:neph:2": {
+   "ar": "نسبة الألبومين في البول",
+   "en": "Urine albumin/creatinine ratio",
+   "fr": "Rapport albumine/créatinine urinaire"
+  },
+  "spc:neph:3": {
+   "ar": "البوتاسيوم وضغط الدم",
+   "en": "Potassium and blood pressure",
+   "fr": "Potassium et tension"
+  },
+  "spc:neph:alert": {
+   "ar": "بوتاسيوم أعلى من 5.5",
+   "en": "Potassium above 5.5",
+   "fr": "Potassium > 5,5"
+  },
+  "spc:surg": {
+   "ar": "عيادة الجراحة العامة",
+   "en": "General surgery clinic",
+   "fr": "Clinique de chirurgie générale"
+  },
+  "spc:surg:1": {
+   "ar": "حالة الجرح",
+   "en": "Wound",
+   "fr": "Plaie"
+  },
+  "spc:surg:2": {
+   "ar": "الألم والحرارة وناتج المصرف",
+   "en": "Pain, temperature and drain output",
+   "fr": "Douleur, température et drainage"
+  },
+  "spc:surg:3": {
+   "ar": "تصنيف كلافيان-ديندو للمضاعفات",
+   "en": "Clavien-Dindo grade",
+   "fr": "Grade de Clavien-Dindo"
+  },
+  "spc:surg:alert": {
+   "ar": "حرارة 38 أو أكثر بعد العملية",
+   "en": "Temperature of 38 or more after surgery",
+   "fr": "Température ≥ 38 après l'intervention"
+  }
+ }
+}

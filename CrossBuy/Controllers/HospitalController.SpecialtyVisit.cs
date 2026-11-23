@@ -31,6 +31,7 @@ namespace CrossBuy.Controllers
 			Chrome();
 			var (built, others) = await HospitalSpecialtyCatalog.CardsAsync(_db, ctx, ct);
 			ViewBag.Built = built;
+			ViewBag.CanManagePack = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);   // H268
 			return View(others);
 		}
 
