@@ -91,6 +91,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalRegistryModel.Configure(b);   // H262: disease registries (outreach)
 			b.Entity<HospitalProblem>(e =>
 			{
 				e.ToTable("HospitalProblems");   // no DbSet: each names its table

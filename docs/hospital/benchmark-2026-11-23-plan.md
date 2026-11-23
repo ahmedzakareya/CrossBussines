@@ -71,3 +71,7 @@ The remaining gaps fall into two groups:
   - H259 — structured radiology report templates (required sections gate signing) and RADPEER peer review with per-radiologist rates.
   - H260 — structured operative note per theatre case, signed by its surgeon; a case does not close while it is unsigned; worklist of unsigned notes.
   - H261 — LOINC on laboratory analytes (check-digit validated, starter map for the standard panels), sent first in HL7 OBX-3 and FHIR Observation.code.
+  - H262 — disease registries (diabetes, hypertension, CKD) computed from the record, with care gaps and recorded outreach.
+  - H263 — no-show risk in readable points for the coming week, validated on the past year (AUC, observed rate per band).
+  - H264 — audit viewer of patient-file access by person, patient, day range and action.
+  - H265 — professional licences ahead of their lapse, with reminders at 60/30/7 days and on lapse.

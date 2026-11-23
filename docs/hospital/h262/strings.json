@@ -1,0 +1,135 @@
+{
+ "unit": "H262 - Disease registries",
+ "strings": {
+  "All members": {
+   "ar": "كل الأعضاء",
+   "en": "All members",
+   "fr": "Tous les membres"
+  },
+  "Blood pressure above target (≥ 140/90)": {
+   "ar": "ضغط الدم أعلى من المستهدف (≥ 140/90)",
+   "en": "Blood pressure above target (≥ 140/90)",
+   "fr": "Tension au-dessus de la cible (≥ 140/90)"
+  },
+  "Choose the registry": {
+   "ar": "اختر السجل",
+   "en": "Choose the registry",
+   "fr": "Choisissez le registre"
+  },
+  "Disease registries": {
+   "ar": "سجلات الأمراض المزمنة",
+   "en": "Disease registries",
+   "fr": "Registres de maladies"
+  },
+  "Disease registries are not installed yet (hospital_h262_registries.sql).": {
+   "ar": "سجلات الأمراض غير مثبّتة بعد (hospital_h262_registries.sql).",
+   "en": "Disease registries are not installed yet (hospital_h262_registries.sql).",
+   "fr": "Les registres de maladies ne sont pas encore installés (hospital_h262_registries.sql)."
+  },
+  "Drawn from the problem list, signed diagnoses, laboratory results and recorded blood pressure": {
+   "ar": "مستمدّة من قائمة المشكلات والتشخيصات الموقّعة ونتائج المختبر وقراءات ضغط الدم المسجلة",
+   "en": "Drawn from the problem list, signed diagnoses, laboratory results and recorded blood pressure",
+   "fr": "Tirés de la liste des problèmes, des diagnostics signés, des résultats de laboratoire et des tensions relevées"
+  },
+  "HbA1c above target (≥ 8 %)": {
+   "ar": "السكر التراكمي أعلى من المستهدف (≥ 8 %)",
+   "en": "HbA1c above target (≥ 8 %)",
+   "fr": "HbA1c au-dessus de la cible (≥ 8 %)"
+  },
+  "HbA1c not done in 6 months": {
+   "ar": "لم يُجرَ السكر التراكمي منذ 6 أشهر",
+   "en": "HbA1c not done in 6 months",
+   "fr": "HbA1c non faite depuis 6 mois"
+  },
+  "Kidney function not checked in 12 months": {
+   "ar": "لم تُفحص وظائف الكلى منذ 12 شهرًا",
+   "en": "Kidney function not checked in 12 months",
+   "fr": "Fonction rénale non contrôlée depuis 12 mois"
+  },
+  "Kidney function not checked in 6 months": {
+   "ar": "لم تُفحص وظائف الكلى منذ 6 أشهر",
+   "en": "Kidney function not checked in 6 months",
+   "fr": "Fonction rénale non contrôlée depuis 6 mois"
+  },
+  "Last outreach": {
+   "ar": "آخر تواصل",
+   "en": "Last outreach",
+   "fr": "Dernier contact"
+  },
+  "Latest": {
+   "ar": "الأحدث",
+   "en": "Latest",
+   "fr": "Dernier"
+  },
+  "Members": {
+   "ar": "الأعضاء",
+   "en": "Members",
+   "fr": "Membres"
+  },
+  "No blood pressure in 6 months": {
+   "ar": "لا قراءة ضغط منذ 6 أشهر",
+   "en": "No blood pressure in 6 months",
+   "fr": "Aucune tension depuis 6 mois"
+  },
+  "No gap": {
+   "ar": "لا فجوة",
+   "en": "No gap",
+   "fr": "Aucun manque"
+  },
+  "No patient here.": {
+   "ar": "لا يوجد مرضى هنا.",
+   "en": "No patient here.",
+   "fr": "Aucun patient ici."
+  },
+  "Record outreach": {
+   "ar": "تسجيل تواصل",
+   "en": "Record outreach",
+   "fr": "Enregistrer un contact"
+  },
+  "Search a patient or MRN": {
+   "ar": "ابحث عن مريض أو رقم ملف",
+   "en": "Search a patient or MRN",
+   "fr": "Rechercher un patient ou un numéro de dossier"
+  },
+  "Targets follow common guidelines (ADA, ESC/ESH, KDIGO) and are to be confirmed by the clinical lead.": {
+   "ar": "تتبع المستهدفات الإرشادات الشائعة (ADA وESC/ESH وKDIGO)، ويعتمدها المسؤول السريري.",
+   "en": "Targets follow common guidelines (ADA, ESC/ESH, KDIGO) and are to be confirmed by the clinical lead.",
+   "fr": "Les cibles suivent les recommandations courantes (ADA, ESC/ESH, KDIGO) et sont à confirmer par le responsable clinique."
+  },
+  "What was agreed with the patient?": {
+   "ar": "ما الذي اتُّفق عليه مع المريض؟",
+   "en": "What was agreed with the patient?",
+   "fr": "Qu'a-t-il été convenu avec le patient ?"
+  },
+  "Write what was agreed with the patient": {
+   "ar": "اكتب ما اتُّفق عليه مع المريض",
+   "en": "Write what was agreed with the patient",
+   "fr": "Écrivez ce qui a été convenu avec le patient"
+  },
+  "with a care gap": {
+   "ar": "لديهم فجوة رعاية",
+   "en": "with a care gap",
+   "fr": "avec un manque de soins"
+  },
+  "eGFR below 30: nephrology review": {
+   "ar": "معدل الترشيح أقل من 30: مراجعة طبيب الكلى",
+   "en": "eGFR below 30: nephrology review",
+   "fr": "DFG inférieur à 30 : avis néphrologique"
+  },
+  "reg:Diabetes": {
+   "ar": "السكري",
+   "en": "Diabetes",
+   "fr": "Diabète"
+  },
+  "reg:Hypertension": {
+   "ar": "ارتفاع ضغط الدم",
+   "en": "Hypertension",
+   "fr": "Hypertension"
+  },
+  "reg:Ckd": {
+   "ar": "مرض الكلى المزمن",
+   "en": "Chronic kidney disease",
+   "fr": "Maladie rénale chronique"
+  }
+ }
+}

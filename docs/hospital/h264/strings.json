@@ -1,0 +1,120 @@
+{
+ "unit": "H264 - Audit viewer and licence alerts",
+ "strings": {
+  "A lapsed licence already stops bookings, theatre and on-call; each doctor is reminded at 60, 30 and 7 days": {
+   "ar": "انتهاء الترخيص يوقف الحجوزات والعمليات والمناوبات تلقائيًا، ويُذكَّر كل طبيب قبل 60 و30 و7 أيام",
+   "en": "A lapsed licence already stops bookings, theatre and on-call; each doctor is reminded at 60, 30 and 7 days",
+   "fr": "Une licence expirée bloque déjà les rendez-vous, le bloc et les gardes ; chaque médecin est prévenu à 60, 30 et 7 jours"
+  },
+  "Action": {
+   "ar": "الإجراء",
+   "en": "Action",
+   "fr": "Action"
+  },
+  "At most 92 days at a time": {
+   "ar": "92 يومًا على الأكثر في كل بحث",
+   "en": "At most 92 days at a time",
+   "fr": "92 jours au plus à la fois"
+  },
+  "Every licence is valid for more than 60 days.": {
+   "ar": "كل التراخيص سارية لأكثر من 60 يومًا.",
+   "en": "Every licence is valid for more than 60 days.",
+   "fr": "Toutes les licences sont valides plus de 60 jours."
+  },
+  "Licence number": {
+   "ar": "رقم الترخيص",
+   "en": "Licence number",
+   "fr": "Numéro de licence"
+  },
+  "Licences": {
+   "ar": "التراخيص المهنية",
+   "en": "Licences",
+   "fr": "Licences"
+  },
+  "Licences needing attention": {
+   "ar": "تراخيص تحتاج إلى متابعة",
+   "en": "Licences needing attention",
+   "fr": "Licences à traiter"
+  },
+  "Member of staff": {
+   "ar": "الموظف",
+   "en": "Member of staff",
+   "fr": "Membre du personnel"
+  },
+  "Name or MRN": {
+   "ar": "الاسم أو رقم الملف",
+   "en": "Name or MRN",
+   "fr": "Nom ou numéro de dossier"
+  },
+  "Nothing in this range.": {
+   "ar": "لا شيء في هذه الفترة.",
+   "en": "Nothing in this range.",
+   "fr": "Rien sur cette période."
+  },
+  "Search a doctor or licence number": {
+   "ar": "ابحث عن طبيب أو رقم ترخيص",
+   "en": "Search a doctor or licence number",
+   "fr": "Rechercher un médecin ou un numéro de licence"
+  },
+  "Update": {
+   "ar": "تحديث",
+   "en": "Update",
+   "fr": "Mettre à jour"
+  },
+  "entries": {
+   "ar": "سجلًا",
+   "en": "entries",
+   "fr": "entrées"
+  },
+  "files": {
+   "ar": "ملفًا",
+   "en": "files",
+   "fr": "dossiers"
+  },
+  "in {0} days": {
+   "ar": "بعد {0} يومًا",
+   "en": "in {0} days",
+   "fr": "dans {0} jours"
+  },
+  "members of staff": {
+   "ar": "موظفًا",
+   "en": "members of staff",
+   "fr": "membres du personnel"
+  },
+  "pal:open": {
+   "ar": "فتح الملف",
+   "en": "Opened",
+   "fr": "Ouverture"
+  },
+  "pal:create": {
+   "ar": "إنشاء الملف",
+   "en": "Created",
+   "fr": "Création"
+  },
+  "pal:update": {
+   "ar": "تعديل الملف",
+   "en": "Changed",
+   "fr": "Modification"
+  },
+  "lic:Expired": {
+   "ar": "منتهية",
+   "en": "Expired",
+   "fr": "Expirées"
+  },
+  "lic:Expiring": {
+   "ar": "تنتهي خلال 60 يومًا",
+   "en": "Ending within 60 days",
+   "fr": "Expirent sous 60 jours"
+  },
+  "lic:Missing": {
+   "ar": "غير مسجلة",
+   "en": "Not on file",
+   "fr": "Non renseignées"
+  },
+  "lic:Valid": {
+   "ar": "سارية",
+   "en": "Valid",
+   "fr": "Valides"
+  }
+ }
+}

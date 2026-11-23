@@ -10543,4 +10543,74 @@
   <data name="Fill the LOINC codes" xml:space="preserve"><value>Fill the LOINC codes</value></data>
   <data name="The international code sent with the result" xml:space="preserve"><value>The international code sent with the result</value></data>
   <data name="This is not a LOINC code (digits, a hyphen and its check digit)" xml:space="preserve"><value>This is not a LOINC code (digits, a hyphen and its check digit)</value></data>
+  <data name="All members" xml:space="preserve"><value>All members</value></data>
+  <data name="Blood pressure above target (≥ 140/90)" xml:space="preserve"><value>Blood pressure above target (≥ 140/90)</value></data>
+  <data name="Choose the registry" xml:space="preserve"><value>Choose the registry</value></data>
+  <data name="Disease registries" xml:space="preserve"><value>Disease registries</value></data>
+  <data name="Disease registries are not installed yet (hospital_h262_registries.sql)." xml:space="preserve"><value>Disease registries are not installed yet (hospital_h262_registries.sql).</value></data>
+  <data name="Drawn from the problem list, signed diagnoses, laboratory results and recorded blood pressure" xml:space="preserve"><value>Drawn from the problem list, signed diagnoses, laboratory results and recorded blood pressure</value></data>
+  <data name="HbA1c above target (≥ 8 %)" xml:space="preserve"><value>HbA1c above target (≥ 8 %)</value></data>
+  <data name="HbA1c not done in 6 months" xml:space="preserve"><value>HbA1c not done in 6 months</value></data>
+  <data name="Kidney function not checked in 12 months" xml:space="preserve"><value>Kidney function not checked in 12 months</value></data>
+  <data name="Kidney function not checked in 6 months" xml:space="preserve"><value>Kidney function not checked in 6 months</value></data>
+  <data name="Last outreach" xml:space="preserve"><value>Last outreach</value></data>
+  <data name="Latest" xml:space="preserve"><value>Latest</value></data>
+  <data name="Members" xml:space="preserve"><value>Members</value></data>
+  <data name="No blood pressure in 6 months" xml:space="preserve"><value>No blood pressure in 6 months</value></data>
+  <data name="No gap" xml:space="preserve"><value>No gap</value></data>
+  <data name="No patient here." xml:space="preserve"><value>No patient here.</value></data>
+  <data name="Record outreach" xml:space="preserve"><value>Record outreach</value></data>
+  <data name="Search a patient or MRN" xml:space="preserve"><value>Search a patient or MRN</value></data>
+  <data name="Targets follow common guidelines (ADA, ESC/ESH, KDIGO) and are to be confirmed by the clinical lead." xml:space="preserve"><value>Targets follow common guidelines (ADA, ESC/ESH, KDIGO) and are to be confirmed by the clinical lead.</value></data>
+  <data name="What was agreed with the patient?" xml:space="preserve"><value>What was agreed with the patient?</value></data>
+  <data name="Write what was agreed with the patient" xml:space="preserve"><value>Write what was agreed with the patient</value></data>
+  <data name="with a care gap" xml:space="preserve"><value>with a care gap</value></data>
+  <data name="eGFR below 30: nephrology review" xml:space="preserve"><value>eGFR below 30: nephrology review</value></data>
+  <data name="reg:Diabetes" xml:space="preserve"><value>Diabetes</value></data>
+  <data name="reg:Hypertension" xml:space="preserve"><value>Hypertension</value></data>
+  <data name="reg:Ckd" xml:space="preserve"><value>Chronic kidney disease</value></data>
+  <data name="Booked for the next 7 days" xml:space="preserve"><value>Booked for the next 7 days</value></data>
+  <data name="Booked long in advance" xml:space="preserve"><value>Booked long in advance</value></data>
+  <data name="Confirmation call" xml:space="preserve"><value>Confirmation call</value></data>
+  <data name="Confirmed" xml:space="preserve"><value>Confirmed</value></data>
+  <data name="Confirmed by phone" xml:space="preserve"><value>Confirmed by phone</value></data>
+  <data name="Did not answer the confirmation call" xml:space="preserve"><value>Did not answer the confirmation call</value></data>
+  <data name="Fewer than {0} no-shows on record: the validation is not reliable yet; the points follow published risk factors." xml:space="preserve"><value>Fewer than {0} no-shows on record: the validation is not reliable yet; the points follow published risk factors.</value></data>
+  <data name="High-risk appointments this week" xml:space="preserve"><value>High-risk appointments this week</value></data>
+  <data name="Highest risk first: call them to confirm" xml:space="preserve"><value>Highest risk first: call them to confirm</value></data>
+  <data name="Missed one earlier appointment" xml:space="preserve"><value>Missed one earlier appointment</value></data>
+  <data name="Missed several earlier appointments" xml:space="preserve"><value>Missed several earlier appointments</value></data>
+  <data name="No appointment here." xml:space="preserve"><value>No appointment here.</value></data>
+  <data name="No-show risk" xml:space="preserve"><value>No-show risk</value></data>
+  <data name="Search a patient, MRN or phone" xml:space="preserve"><value>Search a patient, MRN or phone</value></data>
+  <data name="Validated on the last 12 months" xml:space="preserve"><value>Validated on the last 12 months</value></data>
+  <data name="Young adult" xml:space="preserve"><value>Young adult</value></data>
+  <data name="appointments on record" xml:space="preserve"><value>appointments on record</value></data>
+  <data name="of them missed" xml:space="preserve"><value>of them missed</value></data>
+  <data name="nsb:Low" xml:space="preserve"><value>Low</value></data>
+  <data name="nsb:Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="nsb:High" xml:space="preserve"><value>High</value></data>
+  <data name="A lapsed licence already stops bookings, theatre and on-call; each doctor is reminded at 60, 30 and 7 days" xml:space="preserve"><value>A lapsed licence already stops bookings, theatre and on-call; each doctor is reminded at 60, 30 and 7 days</value></data>
+  <data name="Action" xml:space="preserve"><value>Action</value></data>
+  <data name="At most 92 days at a time" xml:space="preserve"><value>At most 92 days at a time</value></data>
+  <data name="Every licence is valid for more than 60 days." xml:space="preserve"><value>Every licence is valid for more than 60 days.</value></data>
+  <data name="Licence number" xml:space="preserve"><value>Licence number</value></data>
+  <data name="Licences" xml:space="preserve"><value>Licences</value></data>
+  <data name="Licences needing attention" xml:space="preserve"><value>Licences needing attention</value></data>
+  <data name="Member of staff" xml:space="preserve"><value>Member of staff</value></data>
+  <data name="Name or MRN" xml:space="preserve"><value>Name or MRN</value></data>
+  <data name="Nothing in this range." xml:space="preserve"><value>Nothing in this range.</value></data>
+  <data name="Search a doctor or licence number" xml:space="preserve"><value>Search a doctor or licence number</value></data>
+  <data name="Update" xml:space="preserve"><value>Update</value></data>
+  <data name="entries" xml:space="preserve"><value>entries</value></data>
+  <data name="files" xml:space="preserve"><value>files</value></data>
+  <data name="in {0} days" xml:space="preserve"><value>in {0} days</value></data>
+  <data name="members of staff" xml:space="preserve"><value>members of staff</value></data>
+  <data name="pal:open" xml:space="preserve"><value>Opened</value></data>
+  <data name="pal:create" xml:space="preserve"><value>Created</value></data>
+  <data name="pal:update" xml:space="preserve"><value>Changed</value></data>
+  <data name="lic:Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="lic:Expiring" xml:space="preserve"><value>Ending within 60 days</value></data>
+  <data name="lic:Missing" xml:space="preserve"><value>Not on file</value></data>
+  <data name="lic:Valid" xml:space="preserve"><value>Valid</value></data>
 </root>

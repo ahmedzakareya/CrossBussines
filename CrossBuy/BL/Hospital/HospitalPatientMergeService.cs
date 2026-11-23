@@ -116,6 +116,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalScribeLog), "HospitalScribeLogs"),            // H254: the documentation trail follows the patient
 			(typeof(HospitalPrivacyAlert), "HospitalPrivacyAlerts"),      // H255: privacy alerts follow the patient
 			(typeof(HospitalOperativeNote), "HospitalOperativeNotes"),    // H260: the operative note follows the patient
+			(typeof(HospitalRegistryOutreach), "HospitalRegistryOutreach"),// H262: registry outreach follows the patient
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

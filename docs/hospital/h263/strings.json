@@ -1,0 +1,110 @@
+{
+ "unit": "H263 - No-show prediction",
+ "strings": {
+  "Booked for the next 7 days": {
+   "ar": "محجوزة للأيام السبعة القادمة",
+   "en": "Booked for the next 7 days",
+   "fr": "Réservés pour les 7 prochains jours"
+  },
+  "Booked long in advance": {
+   "ar": "حُجز قبل موعده بوقت طويل",
+   "en": "Booked long in advance",
+   "fr": "Réservé longtemps à l'avance"
+  },
+  "Confirmation call": {
+   "ar": "اتصال التأكيد",
+   "en": "Confirmation call",
+   "fr": "Appel de confirmation"
+  },
+  "Confirmed": {
+   "ar": "مؤكَّد",
+   "en": "Confirmed",
+   "fr": "Confirmé"
+  },
+  "Confirmed by phone": {
+   "ar": "أُكّد بالهاتف",
+   "en": "Confirmed by phone",
+   "fr": "Confirmé par téléphone"
+  },
+  "Did not answer the confirmation call": {
+   "ar": "لم يرد على اتصال التأكيد",
+   "en": "Did not answer the confirmation call",
+   "fr": "N'a pas répondu à l'appel de confirmation"
+  },
+  "Fewer than {0} no-shows on record: the validation is not reliable yet; the points follow published risk factors.": {
+   "ar": "السجل يضم أقل من {0} حالة تغيّب، فالتحقق غير موثوق بعد، والنقاط تتبع عوامل الخطر المنشورة.",
+   "en": "Fewer than {0} no-shows on record: the validation is not reliable yet; the points follow published risk factors.",
+   "fr": "Moins de {0} absences enregistrées : la validation n'est pas encore fiable ; les points suivent les facteurs de risque publiés."
+  },
+  "High-risk appointments this week": {
+   "ar": "مواعيد عالية الخطورة هذا الأسبوع",
+   "en": "High-risk appointments this week",
+   "fr": "Rendez-vous à haut risque cette semaine"
+  },
+  "Highest risk first: call them to confirm": {
+   "ar": "الأعلى خطورة أولًا: اتصل بهم للتأكيد",
+   "en": "Highest risk first: call them to confirm",
+   "fr": "Les plus à risque d'abord : appelez-les pour confirmer"
+  },
+  "Missed one earlier appointment": {
+   "ar": "تغيّب عن موعد سابق",
+   "en": "Missed one earlier appointment",
+   "fr": "A manqué un rendez-vous précédent"
+  },
+  "Missed several earlier appointments": {
+   "ar": "تغيّب عن عدة مواعيد سابقة",
+   "en": "Missed several earlier appointments",
+   "fr": "A manqué plusieurs rendez-vous précédents"
+  },
+  "No appointment here.": {
+   "ar": "لا توجد مواعيد هنا.",
+   "en": "No appointment here.",
+   "fr": "Aucun rendez-vous ici."
+  },
+  "No-show risk": {
+   "ar": "خطر التغيّب",
+   "en": "No-show risk",
+   "fr": "Risque d'absence"
+  },
+  "Search a patient, MRN or phone": {
+   "ar": "ابحث عن مريض أو رقم ملف أو هاتف",
+   "en": "Search a patient, MRN or phone",
+   "fr": "Rechercher un patient, un dossier ou un téléphone"
+  },
+  "Validated on the last 12 months": {
+   "ar": "تحقُّق على آخر 12 شهرًا",
+   "en": "Validated on the last 12 months",
+   "fr": "Validé sur les 12 derniers mois"
+  },
+  "Young adult": {
+   "ar": "شاب بالغ",
+   "en": "Young adult",
+   "fr": "Jeune adulte"
+  },
+  "appointments on record": {
+   "ar": "موعدًا مسجلًا",
+   "en": "appointments on record",
+   "fr": "rendez-vous enregistrés"
+  },
+  "of them missed": {
+   "ar": "منها حالات تغيّب",
+   "en": "of them missed",
+   "fr": "dont manqués"
+  },
+  "nsb:Low": {
+   "ar": "منخفض",
+   "en": "Low",
+   "fr": "Faible"
+  },
+  "nsb:Medium": {
+   "ar": "متوسط",
+   "en": "Medium",
+   "fr": "Moyen"
+  },
+  "nsb:High": {
+   "ar": "مرتفع",
+   "en": "High",
+   "fr": "Élevé"
+  }
+ }
+}

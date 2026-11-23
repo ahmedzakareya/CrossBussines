@@ -10643,4 +10643,74 @@
   <data name="Fill the LOINC codes" xml:space="preserve"><value>تعبئة رموز LOINC</value></data>
   <data name="The international code sent with the result" xml:space="preserve"><value>الرمز الدولي الذي يُرسل مع النتيجة</value></data>
   <data name="This is not a LOINC code (digits, a hyphen and its check digit)" xml:space="preserve"><value>هذا ليس رمز LOINC (أرقام ثم شرطة ثم رقم التحقق)</value></data>
+  <data name="All members" xml:space="preserve"><value>كل الأعضاء</value></data>
+  <data name="Blood pressure above target (≥ 140/90)" xml:space="preserve"><value>ضغط الدم أعلى من المستهدف (≥ 140/90)</value></data>
+  <data name="Choose the registry" xml:space="preserve"><value>اختر السجل</value></data>
+  <data name="Disease registries" xml:space="preserve"><value>سجلات الأمراض المزمنة</value></data>
+  <data name="Disease registries are not installed yet (hospital_h262_registries.sql)." xml:space="preserve"><value>سجلات الأمراض غير مثبّتة بعد (hospital_h262_registries.sql).</value></data>
+  <data name="Drawn from the problem list, signed diagnoses, laboratory results and recorded blood pressure" xml:space="preserve"><value>مستمدّة من قائمة المشكلات والتشخيصات الموقّعة ونتائج المختبر وقراءات ضغط الدم المسجلة</value></data>
+  <data name="HbA1c above target (≥ 8 %)" xml:space="preserve"><value>السكر التراكمي أعلى من المستهدف (≥ 8 %)</value></data>
+  <data name="HbA1c not done in 6 months" xml:space="preserve"><value>لم يُجرَ السكر التراكمي منذ 6 أشهر</value></data>
+  <data name="Kidney function not checked in 12 months" xml:space="preserve"><value>لم تُفحص وظائف الكلى منذ 12 شهرًا</value></data>
+  <data name="Kidney function not checked in 6 months" xml:space="preserve"><value>لم تُفحص وظائف الكلى منذ 6 أشهر</value></data>
+  <data name="Last outreach" xml:space="preserve"><value>آخر تواصل</value></data>
+  <data name="Latest" xml:space="preserve"><value>الأحدث</value></data>
+  <data name="Members" xml:space="preserve"><value>الأعضاء</value></data>
+  <data name="No blood pressure in 6 months" xml:space="preserve"><value>لا قراءة ضغط منذ 6 أشهر</value></data>
+  <data name="No gap" xml:space="preserve"><value>لا فجوة</value></data>
+  <data name="No patient here." xml:space="preserve"><value>لا يوجد مرضى هنا.</value></data>
+  <data name="Record outreach" xml:space="preserve"><value>تسجيل تواصل</value></data>
+  <data name="Search a patient or MRN" xml:space="preserve"><value>ابحث عن مريض أو رقم ملف</value></data>
+  <data name="Targets follow common guidelines (ADA, ESC/ESH, KDIGO) and are to be confirmed by the clinical lead." xml:space="preserve"><value>تتبع المستهدفات الإرشادات الشائعة (ADA وESC/ESH وKDIGO)، ويعتمدها المسؤول السريري.</value></data>
+  <data name="What was agreed with the patient?" xml:space="preserve"><value>ما الذي اتُّفق عليه مع المريض؟</value></data>
+  <data name="Write what was agreed with the patient" xml:space="preserve"><value>اكتب ما اتُّفق عليه مع المريض</value></data>
+  <data name="with a care gap" xml:space="preserve"><value>لديهم فجوة رعاية</value></data>
+  <data name="eGFR below 30: nephrology review" xml:space="preserve"><value>معدل الترشيح أقل من 30: مراجعة طبيب الكلى</value></data>
+  <data name="reg:Diabetes" xml:space="preserve"><value>السكري</value></data>
+  <data name="reg:Hypertension" xml:space="preserve"><value>ارتفاع ضغط الدم</value></data>
+  <data name="reg:Ckd" xml:space="preserve"><value>مرض الكلى المزمن</value></data>
+  <data name="Booked for the next 7 days" xml:space="preserve"><value>محجوزة للأيام السبعة القادمة</value></data>
+  <data name="Booked long in advance" xml:space="preserve"><value>حُجز قبل موعده بوقت طويل</value></data>
+  <data name="Confirmation call" xml:space="preserve"><value>اتصال التأكيد</value></data>
+  <data name="Confirmed" xml:space="preserve"><value>مؤكَّد</value></data>
+  <data name="Confirmed by phone" xml:space="preserve"><value>أُكّد بالهاتف</value></data>
+  <data name="Did not answer the confirmation call" xml:space="preserve"><value>لم يرد على اتصال التأكيد</value></data>
+  <data name="Fewer than {0} no-shows on record: the validation is not reliable yet; the points follow published risk factors." xml:space="preserve"><value>السجل يضم أقل من {0} حالة تغيّب، فالتحقق غير موثوق بعد، والنقاط تتبع عوامل الخطر المنشورة.</value></data>
+  <data name="High-risk appointments this week" xml:space="preserve"><value>مواعيد عالية الخطورة هذا الأسبوع</value></data>
+  <data name="Highest risk first: call them to confirm" xml:space="preserve"><value>الأعلى خطورة أولًا: اتصل بهم للتأكيد</value></data>
+  <data name="Missed one earlier appointment" xml:space="preserve"><value>تغيّب عن موعد سابق</value></data>
+  <data name="Missed several earlier appointments" xml:space="preserve"><value>تغيّب عن عدة مواعيد سابقة</value></data>
+  <data name="No appointment here." xml:space="preserve"><value>لا توجد مواعيد هنا.</value></data>
+  <data name="No-show risk" xml:space="preserve"><value>خطر التغيّب</value></data>
+  <data name="Search a patient, MRN or phone" xml:space="preserve"><value>ابحث عن مريض أو رقم ملف أو هاتف</value></data>
+  <data name="Validated on the last 12 months" xml:space="preserve"><value>تحقُّق على آخر 12 شهرًا</value></data>
+  <data name="Young adult" xml:space="preserve"><value>شاب بالغ</value></data>
+  <data name="appointments on record" xml:space="preserve"><value>موعدًا مسجلًا</value></data>
+  <data name="of them missed" xml:space="preserve"><value>منها حالات تغيّب</value></data>
+  <data name="nsb:Low" xml:space="preserve"><value>منخفض</value></data>
+  <data name="nsb:Medium" xml:space="preserve"><value>متوسط</value></data>
+  <data name="nsb:High" xml:space="preserve"><value>مرتفع</value></data>
+  <data name="A lapsed licence already stops bookings, theatre and on-call; each doctor is reminded at 60, 30 and 7 days" xml:space="preserve"><value>انتهاء الترخيص يوقف الحجوزات والعمليات والمناوبات تلقائيًا، ويُذكَّر كل طبيب قبل 60 و30 و7 أيام</value></data>
+  <data name="Action" xml:space="preserve"><value>الإجراء</value></data>
+  <data name="At most 92 days at a time" xml:space="preserve"><value>92 يومًا على الأكثر في كل بحث</value></data>
+  <data name="Every licence is valid for more than 60 days." xml:space="preserve"><value>كل التراخيص سارية لأكثر من 60 يومًا.</value></data>
+  <data name="Licence number" xml:space="preserve"><value>رقم الترخيص</value></data>
+  <data name="Licences" xml:space="preserve"><value>التراخيص المهنية</value></data>
+  <data name="Licences needing attention" xml:space="preserve"><value>تراخيص تحتاج إلى متابعة</value></data>
+  <data name="Member of staff" xml:space="preserve"><value>الموظف</value></data>
+  <data name="Name or MRN" xml:space="preserve"><value>الاسم أو رقم الملف</value></data>
+  <data name="Nothing in this range." xml:space="preserve"><value>لا شيء في هذه الفترة.</value></data>
+  <data name="Search a doctor or licence number" xml:space="preserve"><value>ابحث عن طبيب أو رقم ترخيص</value></data>
+  <data name="Update" xml:space="preserve"><value>تحديث</value></data>
+  <data name="entries" xml:space="preserve"><value>سجلًا</value></data>
+  <data name="files" xml:space="preserve"><value>ملفًا</value></data>
+  <data name="in {0} days" xml:space="preserve"><value>بعد {0} يومًا</value></data>
+  <data name="members of staff" xml:space="preserve"><value>موظفًا</value></data>
+  <data name="pal:open" xml:space="preserve"><value>فتح الملف</value></data>
+  <data name="pal:create" xml:space="preserve"><value>إنشاء الملف</value></data>
+  <data name="pal:update" xml:space="preserve"><value>تعديل الملف</value></data>
+  <data name="lic:Expired" xml:space="preserve"><value>منتهية</value></data>
+  <data name="lic:Expiring" xml:space="preserve"><value>تنتهي خلال 60 يومًا</value></data>
+  <data name="lic:Missing" xml:space="preserve"><value>غير مسجلة</value></data>
+  <data name="lic:Valid" xml:space="preserve"><value>سارية</value></data>
 </root>

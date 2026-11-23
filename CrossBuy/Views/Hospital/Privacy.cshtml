@@ -27,6 +27,7 @@
         <div class="d-flex gap-2">
             <a href="@Link(1, "", "")" class="btn btn-sm @(view == "" ? "btn-primary" : "btn-light")">@T["Open alerts"] (@Model.Open)</a>
             <a href="@Link(1, "reviewed", "")" class="btn btn-sm @(view == "reviewed" ? "btn-primary" : "btn-light")">@T["Reviewed alerts"]</a>
+            <a href="@Url.Action("AccessLog")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-eye fs-4"></i>@T["Access log"]</a>
         </div>
     </div></div>
 

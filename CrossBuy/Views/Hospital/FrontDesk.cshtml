@@ -81,6 +81,7 @@
             <span class="badge badge-light-primary fs-8 fw-semibold py-2 px-3" data-conn title="@T["The desk asks the server every half minute"]" data-bs-toggle="tooltip"><i class="ki-outline ki-wifi fs-6 me-1" data-conn-icon></i><span data-conn-text>@T["Connected"]</span></span>   @* H166 *@
             <button type="button" class="btn btn-sm btn-danger" data-desk-arrival=""><i class="ki-outline ki-heart-circle fs-4"></i>@T["Urgent help"]</button>
             <a href="@Url.Action("ClinicDisruptions", new { declare = 1 })" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-information-2 fs-4"></i>@T["Clinic disruption"]</a>
+            <a href="@Url.Action("NoShowRisk")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-calendar-remove fs-4"></i>@T["No-show risk"]</a>
             <a href="@Url.Action("Emergency")" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-truck fs-4"></i>@T["Emergency arrival"]</a>
             <a href="@Url.Action("Unidentified")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-question-2 fs-4"></i>@T["Unidentified patient"]</a>
             <button type="button" class="btn btn-sm btn-primary" data-desk-register><i class="ki-outline ki-user-tick fs-4"></i>@T["Register a patient"]</button>
