@@ -215,6 +215,12 @@
 .tagify__dropdown{ z-index:1056; }
 .tagify__dropdown .tagify__dropdown__item--active,
 .tagify__dropdown .tagify__dropdown__item:hover{ background:#E7F0FF; color:#1F2D4D; }
+/* a list toolbar's search (cbServerList makes it a tagify field): tags and the typing caret share ONE line, so the box
+   keeps the height of the buttons beside it instead of dropping the caret to a second row (owner: «راكب على بعضه») */
+.card-toolbar .tagify { overflow: hidden; flex-wrap: nowrap; align-items: center; }
+.card-toolbar .tagify .tagify__tag { flex: 0 0 auto; max-width: 70%; }
+.card-toolbar .tagify .tagify__input { white-space: nowrap; flex: 1 1 0; min-width: 2rem; }
+.card-toolbar .tagify .tagify__input::before { display: inline; white-space: nowrap; }
 
 /* ---- progress / spinner / active accents ---- */
 .progress-bar { background-color: #3A5795; }

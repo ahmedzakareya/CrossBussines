@@ -166,12 +166,6 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 .hp-or-block.Done { background: var(--bs-light-success); color: #0e7a39; border-inline-start-color: var(--bs-success); }
 .hp-or-block.sel { box-shadow: 0 0 0 2px var(--cb-brand, #3A5795); }
 
-/* a list toolbar's search (cbServerList makes it a tagify field): keep the hint on one line so the box keeps its height */
-/* (clipping the field itself, as first written, shrank it to 12px and cut the hint in half — the owner saw it) */
-.card-toolbar .tagify { overflow: hidden; flex-wrap: nowrap; }
-.card-toolbar .tagify .tagify__input { white-space: nowrap; flex: 1 1 0; min-width: 0; }
-.card-toolbar .tagify .tagify__input::before { display: inline; white-space: nowrap; }
-
 /* A dashed row separator ("border-bottom border-dashed"): the theme dashes all four sides, so the three without a width
    took the default medium width and drew a box around every row (H85 pregnancy, H87 dialysis, the nursing form). */
 .border-bottom.border-dashed:not(.border) { border-top-width: 0 !important; border-left-width: 0 !important; border-right-width: 0 !important; }
