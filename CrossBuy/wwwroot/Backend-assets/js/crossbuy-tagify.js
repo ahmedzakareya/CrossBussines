@@ -93,6 +93,7 @@
         var loading = document.getElementById('loadingRow'), empty = document.getElementById('emptyRow');
         // the genuine "no rows" markup, kept so an error can borrow the element and give it back
         var emptyHtml = empty ? empty.innerHTML : '';
+        var lastHeaders = null;
         var pager = document.getElementById('pager'), pageInfo = document.getElementById('pageInfo');
         var resultCount = document.getElementById('resultCount'), grand = document.getElementById('grandValue');
         var size = document.getElementById('f_size');
@@ -122,6 +123,7 @@
                     total = parseInt(r.headers.get('X-Total') || '0');
                     page = parseInt(r.headers.get('X-Page') || '1');
                     pages = parseInt(r.headers.get('X-Pages') || '1');
+                    lastHeaders = r.headers;
                     if (grand) { var gv = parseFloat(r.headers.get('X-GrandValue') || '0'); grand.textContent = gv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
                     return r.text();
                 })
@@ -131,6 +133,16 @@
                     if (empty) { empty.innerHTML = emptyHtml; empty.classList.toggle('d-none', total !== 0); }
                     if (resultCount) resultCount.textContent = isAr ? ('النتائج: ' + total.toLocaleString()) : (total.toLocaleString() + ' results');
                     renderPager();
+                    // A list may need to say something its rows cannot: how wide a search was, or
+                    // that the answer hit a ceiling, or WHICH empty table this is. Called here, after
+                    // the empty block has been restored from its original markup a few lines above —
+                    // called any earlier and a screen's change to that block is wiped by the restore,
+                    // silently, which is exactly what happened the first time this hook was added.
+                    // Optional, additive and wrapped: a screen's extra line must never be able to
+                    // stop its rows arriving.
+                    if (typeof opts.onLoaded === 'function' && lastHeaders) {
+                        try { opts.onLoaded(lastHeaders, { total: total, page: page, pages: pages }); } catch (e) { }
+                    }
                 })
                 .catch(function (err) {
                     if (loading) loading.classList.add('d-none');

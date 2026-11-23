@@ -1,154 +1,157 @@
-@model CrossBuy.BL.Platform.GlobalSearchResponse
+@model string
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     string L(string ar, string en) => isAr ? ar : en;
     ViewData["Title"] = L("نتائج البحث", "Search results");
-    var typed = !string.IsNullOrWhiteSpace(Model.Term) && Model.Term.Length >= 2;
-    var anyTruncated = Model.Groups.Any(g => g.Truncated);
 }
 @*
-    THE RESULTS READ DOWN ONE COLUMN, NOT ACROSS TWO.
+    A LIST SCREEN LIKE EVERY OTHER ONE IN THE PRODUCT.
 
-    This page used to lay the groups out two-across on a full-width container. With the one or two
-    groups a real search usually returns, that put a half-width card in the top corner of an empty
-    page — which is what made it look unfinished rather than merely sparse. Search results are read
-    in order of relevance, so a single column is both the better scan and the layout that does not
-    collapse when there is one answer. The column is capped at a readable width instead of being
-    stretched across the screen, because a result line that runs the width of a monitor is harder
-    to read, not more generous.
+    This page used to be served whole: changing the search meant a full navigation, so the shell,
+    the menu and every script were fetched again to change a table. The other ninety-six list
+    screens load their shell once and then fetch rows — cbServerList, with a fixed set of element
+    ids and a Data action that answers with a partial of rows plus X-Total / X-Page / X-Pages.
+    This is now one of them, so it searches without reloading and it looks like the rest of the
+    product because it is built the same way, not because its styling was copied.
+
+    The grouping moved from cards into a Type column: cbServerList injects into one tbody, and a
+    table is also what someone arriving from the header box expects to be able to page and resize.
 *@
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
         <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
             <div class="page-title d-flex flex-column justify-content-center gap-1">
                 <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("نتائج البحث", "Search results")</h1>
-                @*
-                    THE TERM IS ISOLATED. An Arabic term inside an English sentence — or the reverse —
-                    reorders around the punctuation and the count, and the line came out as
-                    `for "1 · "موز result(s)`: the number had jumped inside the quotes. <bdi> isolates
-                    the term so the sentence around it keeps its own direction whatever was typed.
-                *@
                 <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
-                    <li class="breadcrumb-item text-muted">
-                        @if (!typed)
-                        {
-                            @L("اكتب كلمة للبحث", "Type a term to search")
-                        }
-                        else
-                        {
-                            @L("عن", "for")<text>&nbsp;</text><bdi class="text-gray-800 fw-bold">@Model.Term</bdi>
-                            <text>&nbsp;·&nbsp;</text>
-                            @* The figure is what is SHOWN, and says so, because each type is capped twice. *@
-                            <span>@(anyTruncated
-                                     ? L($"أول {Model.Total} نتيجة", $"first {Model.Total} shown")
-                                     : L($"{Model.Total} نتيجة", $"{Model.Total} result(s)"))</span>
-                            @*
-                                HOW WIDE THE SEARCH WAS. "1 result" on its own leaves the reader unable to
-                                tell a single match from a search that only looked in one place — and only
-                                types WITH hits appear below, so the breadth is otherwise invisible exactly
-                                when the answer is thin and the doubt is sharpest.
-                            *@
-                            @if (Model.TypesSearched > 0)
-                            {
-                                <text>&nbsp;·&nbsp;</text>
-                                <span>@L($"بحثنا في {Model.TypesSearched} نوعًا من السجلات", $"across {Model.TypesSearched} record types")</span>
-                            }
-                        }
-                    </li>
+                    <li class="breadcrumb-item text-muted" id="searchScope">@L("ابحث عبر كل ما تملك صلاحية رؤيته", "Search across everything you may view")</li>
                 </ul>
             </div>
-            <form method="get" asp-action="Results" class="d-flex align-items-center position-relative">
-                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
-                <input type="text" name="q" value="@Model.Term" class="form-control form-control-solid w-250px ps-12"
-                       placeholder="@L("ابحث في كل شيء…", "Search everything…")" autofocus />
-            </form>
         </div>
     </div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
-            <div class="mw-900px">
-                @if (!typed)
-                {
-                    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
-                        <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
-                        <div class="fs-7 text-gray-700">@L("اكتب حرفين على الأقل للبحث عبر العملاء والموردين والفواتير والقيود والمهام والمشاريع وكل كيان لديك صلاحية رؤيته.", "Type at least two characters to search across customers, suppliers, invoices, journals, tasks, projects and every entity you may view.")</div>
+
+            <div class="card mb-5">
+                <div class="card-body py-5">
+                    <div class="row g-4 align-items-end">
+                        <div class="col-md-10">
+                            <label class="form-label fs-7 text-muted">@L("كلمات البحث", "Search terms")</label>
+                            <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off"
+                                   placeholder="@L("أضف كلمات للبحث…", "Add search terms…")" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" id="f_reset" class="btn btn-light w-100" title="@L("إعادة تعيين", "Reset")">
+                                <i class="ki-outline ki-arrows-circle fs-3"></i> @L("إعادة تعيين", "Reset")
+                            </button>
+                        </div>
                     </div>
-                }
-                else if (Model.Total == 0)
-                {
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true">
+                            <option value="25">25</option><option value="50">50</option><option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-row-bordered align-middle gy-3" id="t">
+                            <thead>
+                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
+                                    <th>@L("النوع", "Type")</th>
+                                    <th>@L("السجل", "Record")</th>
+                                    <th class="text-end">@L("إجراء", "Action")</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow">
+                        <span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ البحث…", "Searching…")
+                    </div>
                     @*
-                        NOTHING MATCHED IS NOT THE SAME CLAIM AS NOTHING EXISTS. Every type here is
-                        filtered by what this person may see, so the honest sentence names that limit
-                        rather than implying the record is not in the system.
+                        NOTHING MATCHED IS NOT THE SAME CLAIM AS NOTHING EXISTS. Every type is filtered
+                        by what this person may see, so the sentence names that limit rather than
+                        implying the record is absent from the system.
                     *@
-                    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
-                        <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
-                        <div>
-                            <div class="fs-6 fw-bold text-gray-800 mb-1">
-                                @L("لا نتائج لـ", "Nothing matched")&nbsp;<bdi>@Model.Term</bdi>
-                            </div>
-                            <div class="fs-7 text-gray-600">@L("ضمن ما تملك صلاحية رؤيته. جرّب جزءًا من الاسم أو الكود بدل الكلمة كاملة.", "within what you may view. Try part of the name or the code rather than the whole word.")</div>
+                    @*
+                        TWO DIFFERENT EMPTY TABLES, AND THEY MUST NOT SAY THE SAME THING.
+                        Arriving from the menu with nothing typed, the list loads once and comes back
+                        with no rows — which is not "nothing matched", it is "nothing was asked". The
+                        first version told someone who had just opened the page that their search had
+                        failed, before they had made one.
+                    *@
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">
+                        <div id="emptyPrompt">
+                            <div class="fs-6 fw-semibold text-gray-700">@L("اكتب كلمتين على الأقل للبحث", "Type at least two characters to search")</div>
+                            <div class="fs-7 mt-1">@L("يبحث عبر العملاء والموردين والفواتير والقيود والمهام والمشاريع وكل كيان لديك صلاحية رؤيته.", "Across customers, suppliers, invoices, journals, tasks, projects and every entity you may view.")</div>
+                        </div>
+                        <div id="emptyNoMatch" class="d-none">
+                            <div class="fs-6 fw-semibold text-gray-700">@L("لا نتائج ضمن ما تملك صلاحية رؤيته", "Nothing matched within what you may view")</div>
+                            <div class="fs-7 mt-1">@L("جرّب جزءًا من الاسم أو الكود بدل الكلمة كاملة.", "Try part of the name or the code rather than the whole word.")</div>
                         </div>
                     </div>
-                }
-                else
-                {
-                    foreach (var g in Model.Groups)
-                    {
-                        <div class="card card-flush mb-5">
-                            <div class="card-header align-items-center pt-5 min-h-auto pb-3">
-                                <div class="card-title d-flex align-items-center gap-3 m-0">
-                                    <span class="symbol symbol-35px">
-                                        @* g.Icon already carries its own `ki-outline` prefix — every one of the
-                                           registry's definitions does — so the class must not be added again. *@
-                                        <span class="symbol-label bg-light-primary"><i class="@g.Icon fs-4 text-primary"></i></span>
-                                    </span>
-                                    <h3 class="m-0 fs-5 text-gray-900">@(isAr ? g.LabelAr : g.LabelEn)</h3>
-                                    <span class="badge badge-light-primary">@g.Hits.Count</span>
-                                </div>
-                            </div>
-                            <div class="card-body pt-0 pb-3">
-                                @foreach (var h in g.Hits)
-                                {
-                                    @*
-                                        A whole row is the target, not the few words of the label: a link
-                                        you have to hit exactly is a link you miss. The chevron follows the
-                                        UI direction, and the label is isolated so an Arabic name on an
-                                        English screen does not drag the chevron across it.
-                                    *@
-                                    if (!string.IsNullOrEmpty(h.Url))
-                                    {
-                                        <a href="@h.Url" class="d-flex align-items-center justify-content-between gap-3 px-3 py-3 rounded text-gray-800 text-hover-primary bg-hover-light-primary">
-                                            <bdi class="fw-semibold fs-7">@h.Label</bdi>
-                                            <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-5 text-muted flex-shrink-0"></i>
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        @*
-                                            NO URL MEANS THE RECORD HAS NO SCREEN TO OPEN, which is a fact
-                                            about the product rather than a fault. It is shown, not hidden,
-                                            and it is plainly not a link.
-                                        *@
-                                        <div class="d-flex align-items-center gap-3 px-3 py-3 text-gray-600">
-                                            <bdi class="fw-semibold fs-7">@h.Label</bdi>
-                                        </div>
-                                    }
-                                }
-                                @if (g.Truncated)
-                                {
-                                    <div class="d-flex align-items-center gap-2 px-3 pt-3 border-top border-gray-200 mt-2">
-                                        <i class="ki-outline ki-information-5 fs-6 text-muted"></i>
-                                        <span class="fs-8 text-muted">@L($"هذه أول {g.Hits.Count} فقط — ضيّق البحث لرؤية غيرها.", $"These are the first {g.Hits.Count} only — narrow the search to reach the rest.")</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                }
+                    <div class="d-flex flex-stack flex-wrap pt-5">
+                        <div class="fs-7 text-muted" id="pageInfo"></div>
+                        <ul class="pagination" id="pager"></ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+@*
+    The list helper, loaded here rather than assumed. _LayoutAccounting ships it for its own list
+    screens; _LayoutBackend does not, so on this page cbServerList was simply undefined and the
+    table stayed empty with nothing in the console to say why. Loading it from the page that needs
+    it keeps the five shared layouts untouched; it only defines functions, so a layout that later
+    includes it as well costs nothing.
+*@
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+(function () {
+    // The term in the address bar is NOT seeded here: cbServerList already reads ?q= before its
+    // first load, so arriving from the header box, a link or a bookmark lands already searching.
+    // Doing it again here would fire a second identical request for the same rows.
+    var scope = document.getElementById('searchScope');
+    var idle = '@L("ابحث عبر كل ما تملك صلاحية رؤيته", "Search across everything you may view")';
+
+    cbServerList({
+        url: '@Url.Action("ResultsData", "Search")',
+        isAr: @(isAr ? "true" : "false"),
+
+        // HOW WIDE THE SEARCH WAS, SAID OUT LOUD.
+        //
+        // "12 results" leaves a real doubt unanswered: twelve matches, or only one place looked?
+        // Only types WITH hits come back, so the breadth is invisible exactly when the answer is
+        // thin and the doubt is sharpest. The rows cannot carry this, so the Data action reports it
+        // in headers — how many types were actually searched, and whether any hit its own ceiling.
+        onLoaded: function (headers) {
+            // Which empty table this is — from the server, which knows what it was asked.
+            var asked = headers.get('X-Asked') === '1';
+            var prompt = document.getElementById('emptyPrompt'), noMatch = document.getElementById('emptyNoMatch');
+            if (prompt && noMatch) {
+                prompt.classList.toggle('d-none', asked);
+                noMatch.classList.toggle('d-none', !asked);
+            }
+
+            if (!scope) return;
+            var types = parseInt(headers.get('X-Types') || '0', 10);
+            var cut = headers.get('X-Truncated') === '1';
+            var bits = [];
+            if (types > 0) bits.push(@Html.Raw(isAr ? "'بحثنا في ' + types + ' نوعًا من السجلات'" : "'across ' + types + ' record types'"));
+            if (cut) bits.push('@L("أول النتائج فقط — ضيّق البحث لرؤية غيرها", "first matches only — narrow the search to reach the rest")');
+            scope.textContent = bits.length ? bits.join(' · ') : idle;
+        }
+    });
+})();
+</script>
+}

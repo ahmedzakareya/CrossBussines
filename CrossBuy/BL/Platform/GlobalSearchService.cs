@@ -31,6 +31,18 @@ namespace CrossBuy.BL.Platform
     /// </param>
     public sealed record GlobalSearchResponse(string Term, int Total, IReadOnlyList<GlobalSearchGroup> Groups, int TypesSearched = 0);
 
+    /// <summary>
+    /// One hit, flattened out of its group and carrying its type with it.
+    /// </summary>
+    /// <remarks>
+    /// The results PAGE is a list screen like the ninety-six others in the product: one table, one
+    /// search box, a page size and a pager, with rows fetched and injected rather than the page
+    /// being reloaded. That shape needs a flat row that knows its own type, because the grouping
+    /// moves from the markup into a column.
+    /// </remarks>
+    public sealed record GlobalSearchRow(string TypeCode, string TypeLabelAr, string TypeLabelEn, string Icon,
+                                         int Id, string Label, string? Url);
+
     public sealed class GlobalSearchService : IGlobalSearchService
     {
         private readonly IEntityRegistry _registry;

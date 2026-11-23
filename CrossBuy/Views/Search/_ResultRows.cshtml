@@ -1,0 +1,42 @@
+@model IReadOnlyList<CrossBuy.BL.Platform.GlobalSearchRow>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+}
+@*
+    One page of results, as the other list screens render theirs: a plain tbody fragment, nothing
+    around it. It is injected into #rows by cbServerList, so it must not carry a <table>, a header
+    or a wrapper of its own.
+*@
+@foreach (var r in Model)
+{
+    <tr>
+        <td class="w-150px">
+            <span class="d-inline-flex align-items-center gap-2 text-muted fs-7">
+                @* The icon string already carries its own ki-outline prefix. *@
+                <i class="@r.Icon fs-6"></i>@(isAr ? r.TypeLabelAr : r.TypeLabelEn)
+            </span>
+        </td>
+        <td>
+            @*
+                The label is isolated: an Arabic name on an English page, or the reverse, otherwise
+                drags the punctuation around it to the wrong side of the cell.
+            *@
+            @if (!string.IsNullOrEmpty(r.Url))
+            {
+                <a href="@r.Url" class="text-gray-800 text-hover-primary fw-semibold"><bdi>@r.Label</bdi></a>
+            }
+            else
+            {
+                @* No screen to open is a fact about the product, not a fault — shown, plainly not a link. *@
+                <span class="text-gray-600 fw-semibold"><bdi>@r.Label</bdi></span>
+            }
+        </td>
+        <td class="text-end w-100px">
+            @if (!string.IsNullOrEmpty(r.Url))
+            {
+                <a href="@r.Url" class="btn btn-sm btn-light btn-active-light-primary">@L("فتح", "Open")</a>
+            }
+        </td>
+    </tr>
+}

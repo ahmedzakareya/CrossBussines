@@ -604,6 +604,11 @@
 			new() { LabelAr = "عام", LabelEn = "General", Icon = "ki-outline ki-element-11", Items = new()
 			{
 				new() { LabelAr = "لوحة الموارد البشرية", LabelEn = "HR Dashboard", Action = "Index", Controller = "Admin" },
+				// REACHABLE WITHOUT KNOWING IT IS THERE. The results page could only be opened by typing
+				// in the header box and pressing Enter, or through the dropdown's "all results" link —
+				// so a person who had not already started a search had no way to find it, and nothing
+				// in the product said it existed. It sits beside the other cross-cutting tools.
+				new() { LabelAr = "البحث", LabelEn = "Search", Action = "Results", Controller = "Search" },
 				new() { LabelAr = "المحادثات", LabelEn = "Chat", Action = "Index", Controller = "Chat" },
 				new() { LabelAr = "الإشعارات", LabelEn = "Notifications", Action = "Index", Controller = "Notifications" },
 				new() { LabelAr = "موافقاتي", LabelEn = "My approvals", Action = "Index", Controller = "Approvals" },
