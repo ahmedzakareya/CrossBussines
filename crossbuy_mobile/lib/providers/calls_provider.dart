@@ -752,7 +752,7 @@ class CallsProvider extends ChangeNotifier {
     final others = members.where((x) => x['card'] is Map && x['host'] != true && _r(x['card'])['id'] != myId).map((x) => CallPerson.fromJson(_r(x['card']))).toList();
     ring = Ring(callId: (m['callId'] as num).toInt(), video: m['video'] == true, caller: CallPerson.fromJson(_r(m['host'])), patient: CallPatient.fromJson(m['patient']),
         reason: m['reason']?.toString(), group: true, others: others, members: members.length, joined: members.where((x) => x['state'] == 'joined').length,
-        recording: m['recording'] != null, left: (m['ringSeconds'] as num?)?.toInt() ?? 30);
+        recording: m['recording'] == true || m['recording'] is Map, left: (m['ringSeconds'] as num?)?.toInt() ?? 30);   // the ring sends true/false (a rejoin sends the recording's card)
     _ringClock();
     _playTone('assets/sounds/ring.wav');
     _openStage();

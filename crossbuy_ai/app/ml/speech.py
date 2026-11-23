@@ -115,9 +115,20 @@ def caption(audio: bytes, language: str | None = None) -> str | None:
         model = _load(size)
         segments, _ = model.transcribe(samples, language=language or None, beam_size=1, vad_filter=True,
                                        condition_on_previous_text=False, without_timestamps=True)
-        return " ".join(s.text.strip() for s in segments).strip()
+        text = " ".join(s.text.strip() for s in segments).strip()
+        # Whisper's known inventions on near-silence (it was trained on subtitled video): a caption line nobody said
+        # is worse than none, so these alone are dropped.
+        return "" if text.strip(" .!؟?،,").lower() in _CAPTION_NOISE else text
     finally:
         _lock.release()
+
+
+# Only lines nobody says alone in a call — "thank you", «شكراً», "okay" are real and stay.
+_CAPTION_NOISE = {
+    "you", "thanks for watching", "thank you for watching", "please subscribe", "subscribe to the channel",
+    "ترجمة نانسي قنقر", "اشتركوا في القناة", "شكرا على المشاهدة", "شكراً على المشاهدة", "شكرا للمشاهدة",
+    "موسيقى", "[موسيقى]", "music", "[music]",
+}
 
 
 def transcribe(audio: bytes, size: str, language: str | None = None) -> Transcript:
