@@ -727,18 +727,14 @@ License: For each use you must have a valid license purchased only from above li
 <script src="~/Backend-assets/plugins/custom/jstree/jstree.bundle.js" asp-append-version="true"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
-<!-- ✅ AmCharts Plugins -->
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/map.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/geodata/continentsLow.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/geodata/usaLow.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/geodata/worldTimeZonesLow.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/geodata/worldTimeZoneAreasLow.js"></script>
+
+@* AmCharts was loaded here and used by NOTHING. Eleven script tags, on every page this layout
+   serves, fetched from cdn.amcharts.com — a host outside this network. No view and no script of
+   ours references am5; the only file that does is Metronic demo asset
+   (js/custom/pages/testimonials/testimonials-1.js), which nothing includes. A page that waits on
+   an outside CDN it does not need is a page that hangs wherever that CDN cannot be reached, and
+   the live server sits behind a firewall. Removed; if a chart is ever needed, add the library it
+   actually uses, served from this application. *@
 
 <!-- ✅ Custom Scripts (مخصصة للوظائف والصفحات) -->
 <script src="~/Backend-assets/js/widgets.bundle.js" asp-append-version="true"></script>
