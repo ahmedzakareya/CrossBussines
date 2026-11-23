@@ -4,15 +4,19 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
-    var folder = (ViewBag.Folder as string) ?? "All";
+    var folder = (ViewBag.Folder as string) ?? "Inbox";
+    // ONE PERSON'S MAILBOX (owner, 2026-11-23). The company outbox is shown only to whoever manages it.
+    var counts = ViewBag.Counts as MailCounts ?? new MailCounts();
+    var manager = ViewBag.Manager is bool mg && mg;
+    var company = folder == "Company";
     var q = ViewBag.Q as string;
     var configured = ViewBag.Configured is bool b && b;
     int cAll = ViewBag.CountAll ?? 0, cSent = ViewBag.CountSent ?? 0, cOut = ViewBag.CountOutbox ?? 0, cFail = ViewBag.CountFailed ?? 0, cTrash = ViewBag.CountTrash ?? 0, cStar = ViewBag.CountStarred ?? 0;
     string act(string f) => f == folder ? "active" : "";
     string url(string f) => Url.Action("Index", "Comm", new { folder = f, q })!;
-    string sBadge(string s) => s switch { "Sent" => "badge-light-success", "Failed" => "badge-light-danger", _ => "badge-light-warning" };
+    string sBadge(string s) => s switch { "Sent" => "badge-light-primary", "Failed" => "badge-light-danger", _ => "badge-light-info" };
     string sLabel(string s) => s switch { "Sent" => Localizer["Sent"].Value, "Failed" => Localizer["Failed"].Value, _ => Localizer["Queued"].Value };
-    var avatarBg = new[] { "bg-light-primary text-primary", "bg-light-danger text-danger", "bg-light-warning text-warning", "bg-light-info text-info", "bg-light-success text-success" };
+    var avatarBg = new[] { "bg-light-primary text-primary", "bg-light-danger text-danger", "bg-light-info text-info", "bg-light text-gray-700" };
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -30,7 +34,7 @@
         @{ var sent = TempData["MailSent"] as string; var sentErr = TempData["MailSentError"] as string; }
         @if (sent == "Sent")
         {
-            <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 text-success me-3"></i><div class="fs-7">@Localizer["Email sent"]</div></div>
+            <div class="alert alert-primary d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 text-primary me-3"></i><div class="fs-7">@Localizer["Email sent"]</div></div>
         }
         else if (sent == "Queued")
         {
@@ -47,12 +51,19 @@
                     <div class="card-body">
                         <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
                         <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary mb-6">
-                            <div class="menu-item mb-2"><a href="@url("All")" class="menu-link @act("All")"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary cb-count @(cAll > 0 ? "" : "d-none")" data-count="all">@cAll</span></a></div>
-                            <div class="menu-item mb-2"><a href="@url("Starred")" class="menu-link @act("Starred")"><span class="menu-icon"><i class="ki-outline ki-star fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Starred"]</span><span class="badge badge-light-warning cb-count @(cStar > 0 ? "" : "d-none")" data-count="starred">@cStar</span></a></div>
-                            <div class="menu-item mb-2"><a href="@url("Outbox")" class="menu-link @act("Outbox")"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span><span class="badge badge-light-warning cb-count @(cOut > 0 ? "" : "d-none")" data-count="outbox">@cOut</span></a></div>
-                            <div class="menu-item mb-2"><a href="@url("Sent")" class="menu-link @act("Sent")"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span><span class="badge badge-light-success cb-count @(cSent > 0 ? "" : "d-none")" data-count="sent">@cSent</span></a></div>
+                            @* THE INBOX COUNTS WHAT IS UNREAD - the number that asks for attention - like every mail client. *@
+                            <div class="menu-item mb-2"><a href="@url("Inbox")" class="menu-link @act("Inbox")"><span class="menu-icon"><i class="ki-outline ki-directbox-default fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Inbox"]</span><span class="badge badge-primary cb-count @(counts.Unread > 0 ? "" : "d-none")" data-count="inbox">@counts.Unread</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Starred")" class="menu-link @act("Starred")"><span class="menu-icon"><i class="ki-outline ki-star fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Starred"]</span><span class="badge badge-light-primary cb-count @(cStar > 0 ? "" : "d-none")" data-count="starred">@cStar</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Outbox")" class="menu-link @act("Outbox")"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span><span class="badge badge-light-info cb-count @(cOut > 0 ? "" : "d-none")" data-count="outbox">@cOut</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Sent")" class="menu-link @act("Sent")"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span><span class="badge badge-light-primary cb-count @(cSent > 0 ? "" : "d-none")" data-count="sent">@cSent</span></a></div>
                             <div class="menu-item mb-2"><a href="@url("Failed")" class="menu-link @act("Failed")"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span><span class="badge badge-light-danger cb-count @(cFail > 0 ? "" : "d-none")" data-count="failed">@cFail</span></a></div>
-                            <div class="menu-item"><a href="@url("Trash")" class="menu-link @act("Trash")"><span class="menu-icon"><i class="ki-outline ki-trash fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Trash"]</span><span class="badge badge-light cb-count @(cTrash > 0 ? "" : "d-none")" data-count="trash">@cTrash</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("All")" class="menu-link @act("All")"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary cb-count @(cAll > 0 ? "" : "d-none")" data-count="all">@cAll</span></a></div>
+                            <div class="menu-item @(manager ? "mb-2" : "")"><a href="@url("Trash")" class="menu-link @act("Trash")"><span class="menu-icon"><i class="ki-outline ki-trash fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Trash"]</span><span class="badge badge-light cb-count @(cTrash > 0 ? "" : "d-none")" data-count="trash">@cTrash</span></a></div>
+                            @if (manager)
+                            {
+                                <div class="separator my-3"></div>
+                                <div class="menu-item"><a href="@url("Company")" class="menu-link @act("Company")"><span class="menu-icon"><i class="ki-outline ki-office-bag fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Company outbox"]</span><span class="badge badge-light cb-count" data-count="company">@(counts.Company ?? 0)</span></a></div>
+                            }
                         </div>
                         @{ var libFolders = ViewBag.LibFolders as List<CrossBuy.BL.LibItemDto>; }
                         <!--begin::Document library (SharePoint) — folders link straight into the library-->
@@ -75,8 +86,8 @@
                         </div>
                         @if (!configured)
                         {
-                            <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-4">
-                                <i class="ki-outline ki-information-5 fs-2 text-warning me-3"></i>
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4">
+                                <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
                                 <div class="fs-8 text-gray-700">@Localizer["SMTP not set — messages are queued and sent once configured."]</div>
                             </div>
                         }
@@ -89,7 +100,7 @@
                 <div class="card">
                     <div class="card-header align-items-center py-5 gap-2 gap-md-5">
                         <div class="d-flex align-items-center">
-                            <span class="fw-bold fs-4 text-gray-900 me-2">@(folder == "All" ? Localizer["All"].Value : (folder == "Outbox" ? Localizer["Outbox"].Value : (folder == "Trash" ? Localizer["Trash"].Value : (folder == "Starred" ? Localizer["Starred"].Value : sLabel(folder)))))</span>
+                            <span class="fw-bold fs-4 text-gray-900 me-2">@(folder switch { "Inbox" => Localizer["Inbox"].Value, "All" => Localizer["All"].Value, "Outbox" => Localizer["Outbox"].Value, "Trash" => Localizer["Trash"].Value, "Starred" => Localizer["Starred"].Value, "Company" => Localizer["Company outbox"].Value, _ => sLabel(folder) })</span>
                             <span class="badge badge-light-primary" id="cb-folder-count">@Model.Count</span>
 
                             @* The token every mutation on this page posts. The page had none: its only
@@ -99,7 +110,7 @@
                             @* SELECT ALL lives here rather than in a header row, because this table has
                                no <thead> and inventing one to hold a checkbox would change the layout
                                for a control that belongs with the other list actions anyway. *@
-                            @if (Model.Count > 0)
+                            @if (Model.Count > 0 && !company)
                             {
                                 <div class="form-check form-check-sm form-check-custom form-check-solid ms-4">
                                     <input class="form-check-input" type="checkbox" id="cb-all" aria-label="@Localizer["Select all messages"]" />
@@ -164,12 +175,16 @@
                             <tbody>
                             @if (!Model.Any())
                             {
-                                <tr><td class="text-center text-muted py-15">@Localizer["No messages yet"]</td></tr>
+                                <tr><td class="text-center text-muted py-15">@(folder == "Inbox" ? Localizer["Your inbox is empty"].Value : Localizer["No messages yet"].Value)</td></tr>
                             }
                             @foreach (var m in Model)
                             {
-                                var initial = string.IsNullOrEmpty(m.ToAddress) ? "?" : m.ToAddress.Substring(0, 1).ToUpper();
-                                var col = avatarBg[Math.Abs(m.ToAddress.GetHashCode()) % avatarBg.Length];
+                                // WHO THE ROW IS ABOUT: the writer for mail I received, the recipient for mail I sent.
+                                var received = m.Box == "Inbox";
+                                var who = received ? (m.FromName ?? m.FromAddress ?? "") : m.ToAddress;
+                                var whoPhoto = received ? m.FromPhoto : m.RecipientPhoto;
+                                var initial = string.IsNullOrEmpty(who) ? "?" : who.Substring(0, 1).ToUpper();
+                                var col = avatarBg[Math.Abs((who ?? "").GetHashCode()) % avatarBg.Length];
 
                                 @* The row-selection checkbox had NO accessible name of any kind — no id, no
                                    <label>, no aria-label — so axe reported `label` (Critical) once per row: 14
@@ -185,10 +200,13 @@
                                     Localizer["Select message"].Value,
                                     string.IsNullOrWhiteSpace(m.ToAddress) ? Localizer["Unknown recipient"].Value : m.ToAddress,
                                     string.IsNullOrWhiteSpace(m.Subject) ? Localizer["No subject"].Value : m.Subject);
-                                <tr data-row="@m.Id">
-                                    <td class="ps-9 w-40px"><div class="form-check form-check-sm form-check-custom form-check-solid mt-2"><input class="form-check-input cb-pick" type="checkbox" value="@m.Id" aria-label="@selectLabel" /></div></td>
+                                <tr data-row="@m.Id" class="@(m.Unread ? "cb-unread" : "")">
+                                    <td class="ps-9 w-40px">@if (!company) {<div class="form-check form-check-sm form-check-custom form-check-solid mt-2"><input class="form-check-input cb-pick" type="checkbox" value="@m.Id" aria-label="@selectLabel" /></div>}</td>
                                     <td class="w-40px">
-                                        <a href="#" class="btn btn-icon btn-color-gray-500 btn-active-color-primary w-30px h-30px cb-star" data-id="@m.Id" title="@Localizer["Star"]"><i class="ki-@(m.Starred ? "solid" : "outline") ki-star fs-3 @(m.Starred ? "text-warning" : "")"></i></a>
+                                        @if (!company)
+                                        {
+                                            <a href="#" class="btn btn-icon btn-color-gray-500 btn-active-color-primary w-30px h-30px cb-star" data-id="@m.Id" title="@Localizer["Star"]"><i class="ki-@(m.Starred ? "solid" : "outline") ki-star fs-3 @(m.Starred ? "text-primary" : "")"></i></a>
+                                        }
                                     </td>
                                     <td class="w-150px w-xl-250px">
                                         <a href="@Url.Action("View","Comm", new { id = m.Id })" class="d-flex align-items-center text-gray-900">
@@ -196,9 +214,9 @@
                                                mail goes to customers and vendors who have no employee record, so the
                                                initial is the ordinary case rather than a failure state. *@
                                             <div class="symbol symbol-35px me-3">
-                                                @if (!string.IsNullOrWhiteSpace(m.RecipientPhoto))
+                                                @if (!string.IsNullOrWhiteSpace(whoPhoto))
                                                 {
-                                                    <img src="@Url.Content("~" + m.RecipientPhoto.Replace("\\", "/"))" alt="@m.ToAddress" class="symbol-label" style="object-fit:cover;" />
+                                                    <img src="@Url.Content("~" + whoPhoto.Replace("\\", "/"))" alt="@who" class="symbol-label" style="object-fit:cover;" />
                                                 }
                                                 else
                                                 {
@@ -209,7 +227,15 @@
                                                truncation clipped from the WRONG END - "ahmed.zakarya@alprimecap.com" rendered
                                                as "...cap.com", hiding the only part that identifies anyone. The domain is
                                                what repeats; the local part is what differs. *@
-                                            <bdi dir="ltr" class="fw-semibold text-truncate">@m.ToAddress</bdi>
+                                            @if (received)
+                                            {
+                                                @* A colleague's NAME, in its own direction (Arabic or Latin). *@
+                                                <bdi class="@(m.Unread ? "fw-bolder" : "fw-semibold") text-truncate" style="unicode-bidi:plaintext">@who</bdi>
+                                            }
+                                            else
+                                            {
+                                                <bdi dir="ltr" class="fw-semibold text-truncate">@m.ToAddress</bdi>
+                                            }
                                         </a>
                                     </td>
                                     @* ONE LINE, TRUNCATED. The actions used to float INSIDE this cell, so the
@@ -225,25 +251,27 @@
                                        end in an ellipsis instead of wrapping the row to four lines. *@
                                     <td class="text-truncate">
                                         <a href="@Url.Action("View","Comm", new { id = m.Id })" class="text-gray-900">
-                                            <span class="fw-bold">@m.Subject</span>
+                                            @if (m.Unread) { <span class="bullet bullet-dot bg-primary h-8px w-8px me-2" title="@Localizer["Unread"]"></span> }
+                                            <span class="@(m.Unread ? "fw-bolder" : "fw-semibold")">@m.Subject</span>
                                             @if (!string.IsNullOrWhiteSpace(m.Preview)) { <span class="fw-bold d-none d-md-inline">-</span> <span class="d-none d-md-inline text-muted">@m.Preview</span> }
                                         </a>
                                         @if (m.HasAttachment) { <i class="ki-outline ki-paper-clip fs-6 text-muted ms-1"></i> }
-                                        @if (m.Kind == "Forward") { <span class="badge badge-light-warning ms-1 fs-9">@Localizer["Forward"]</span> }
+                                        @if (m.Kind == "Forward") { <span class="badge badge-light-info ms-1 fs-9">@Localizer["Forward"]</span> }
                                         else if (m.Kind is "Reply" or "ReplyAll") { <span class="badge badge-light-info ms-1 fs-9">@Localizer["Reply"]</span> }
                                     </td>
                                     @* Dropped below xl. With a folder sidebar beside it this panel is about 540px, and six fixed
                                        columns left the SUBJECT - the one people actually scan - with no room at all.
                                        Status is the cheapest to lose: almost every row in a sent mailbox says the
                                        same word, and the row still carries it at xl and on the message itself. *@
-                                    <td class="w-90px text-end d-none d-xl-table-cell"><span class="badge @sBadge(m.Status)">@sLabel(m.Status)</span></td>
+                                    <td class="w-90px text-end d-none d-xl-table-cell">@if (!received) {<span class="badge @sBadge(m.Status)">@sLabel(m.Status)</span>}</td>
 
                                     @* THEIR OWN COLUMN, fixed width, so the subject beside them is never squeezed
                                        by how many controls this folder happens to show. Deleted Items has two,
                                        every other folder has one, and the column is sized for two either way -
                                        otherwise the subject column would jump width when you change folder. *@
                                     <td class="w-70px text-end text-nowrap">
-                                        @if (folder == "Trash")
+                                        @if (company) { }
+                                        else if (folder == "Trash")
                                         {
                                             @* RESTORE FIRST, because it is the recoverable one: a row whose only
                                                control was a permanent delete made "put it back" reachable solely
@@ -258,6 +286,7 @@
                                         }
                                         @* Icon-only by design here: a visible word on every row would compete
                                            with the subject for the eye. The accessible name carries it instead. *@
+                                        @if (!company) {
                                         <button type="button"
                                                 class="btn btn-icon btn-sm btn-active-light-danger cb-del-one"
                                                 data-id="@m.Id"
@@ -265,6 +294,7 @@
                                                 aria-label="@(folder == "Trash" ? Localizer["Delete permanently"].Value : SR["Delete"].Value)">
                                             <i class="ki-outline ki-trash fs-5"></i>
                                         </button>
+                                        }
                                     </td>
                                     @* text-nowrap because "10/08 14:44" was breaking after the slash and rendering as two
                                        stacked fragments - a date that wraps is not a date. *@
@@ -338,7 +368,7 @@
                 var n = counts[b.getAttribute('data-count')];
                 if (typeof n !== 'number') return;
                 b.textContent = n;
-                b.classList.toggle('d-none', n === 0 && b.getAttribute('data-count') !== 'all');
+                b.classList.toggle('d-none', n === 0 && b.getAttribute('data-count') !== 'all' && b.getAttribute('data-count') !== 'company');
             });
             var open = document.getElementById('cb-folder-count');
             if (open) open.textContent = document.querySelectorAll('tr[data-row]').length;
@@ -380,7 +410,7 @@
                     cancelButtonText: @Html.Raw(Json.Serialize(SR["Cancel"].Value)),
                     customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
                 }).then(function (r) { if (r.isConfirmed) onYes(); });
-            } else if (confirm(text)) { onYes(); }
+            }
         }
 
         function remove(ids) {
@@ -432,7 +462,7 @@
                     cancelButtonText: @Html.Raw(Json.Serialize(SR["Cancel"].Value)),
                     customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } })
                     .then(function (r) { if (r.isConfirmed) go(); });
-            } else if (confirm(text)) { go(); }
+            }
         });
 
         // STAR LIVES IN HERE TOO, because it needs paint() and sync(): it used to sit outside this
@@ -442,7 +472,8 @@
                 e.preventDefault();
                 var fd = new FormData();
                 fd.append('id', a.getAttribute('data-id'));
-                fetch('@Url.Action("Star","Comm")', { method: 'POST', credentials: 'same-origin', body: fd })
+                var tok = document.querySelector('input[name="__RequestVerificationToken"]');
+                fetch('@Url.Action("Star","Comm")', { method: 'POST', credentials: 'same-origin', headers: { 'RequestVerificationToken': tok ? tok.value : '' }, body: fd })
                     .then(function (r) { return r.json(); })
                     .then(function (res) {
                         if (!res || !res.ok) return;
@@ -451,7 +482,7 @@
                         var on = i.classList.contains('ki-solid');
                         i.classList.toggle('ki-solid', !on);
                         i.classList.toggle('ki-outline', on);
-                        i.classList.toggle('text-warning', !on);
+                        i.classList.toggle('text-primary', !on);
 
                         paint(res.counts);
 

@@ -36,6 +36,8 @@ namespace CrossBuy.BL
         public const string DocComment = "doc_comment";
         // ----- Calendar -----
         public const string CalendarEvent = "calendar_event";
+        // ----- Email: a message delivered to a colleague's mailbox inside the system -----
+        public const string MailReceived = "mail_received";
         // ----- Manufacturing (Platform Kernel slice 2) — first notifications this module has ever had -----
         public const string WorkOrderReleased = "work_order_released";
         public const string WorkOrderCompleted = "work_order_completed";
@@ -62,6 +64,7 @@ namespace CrossBuy.BL
             "announcement" => ("Announcement", "ki-notification-bing", nameof(Prio.High)),
             "doc_comment" => ("Comments", "ki-message-text", nameof(Prio.Normal)),
             "calendar_event" => ("Calendar", "ki-calendar-tick", nameof(Prio.Normal)),
+            "mail_received" => ("Mail", "ki-sms", nameof(Prio.Normal)),
             "work_order_released" => ("Manufacturing", "ki-rocket", nameof(Prio.Normal)),
             "work_order_completed" => ("Manufacturing", "ki-check-circle", nameof(Prio.Normal)),
             _ => ("General", "ki-notification-status", nameof(Prio.Normal)),
@@ -91,6 +94,7 @@ namespace CrossBuy.BL
             "chat_removed" => "/Chat",
             "announcement" => "/Announcements",
             "calendar_event" => "/Calendar/Index",
+            "mail_received" => refId.HasValue ? $"/Comm/View/{refId.Value}" : "/Comm",
             // Slice 2: NotificationProjection always supplies a per-record deep link through
             // IEntityRegistry.BuildUrl, so these are only the fallback for a caller that supplies none.
             "work_order_released" or "work_order_completed" => refId.HasValue ? $"/Inventory/WorkOrderDetails?id={refId.Value}" : "/Inventory/WorkOrders",

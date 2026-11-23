@@ -4,9 +4,9 @@
   "frozenBaseline": {
     "mutating": 566,
     "attributeProtected": 255,
-    "inBodyProtected": 219,
+    "inBodyProtected": 222,
     "anonymousByDesign": 1,
-    "gaps": 91
+    "gaps": 88
   },
   "rules": [
     "This baseline may only SHRINK. CI rejects any commit that adds an entry.",
@@ -16,7 +16,7 @@
     "No blanket suppression. No project-wide disable switch.",
     "The 'gaps' figure and the entries list are the ENFORCED invariant and may only shrink. The mutating, attributeProtected and inBodyProtected figures are descriptive totals of the tree and legitimately grow when protected endpoints are added; frozenBaselineHistory records every such change with its reason."
   ],
-  "count": 91,
+  "count": 88,
   "entries": [
     {
       "id": "AccountController.ChangePassword",
@@ -362,48 +362,6 @@
       "module": "Communication",
       "isApi": false,
       "file": "CrossBuy/Controllers/ChatController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CommController.Resend",
-      "controller": "CommController",
-      "action": "Resend",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CommController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CommController.Send",
-      "controller": "CommController",
-      "action": "Send",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CommController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CommController.Star",
-      "controller": "CommController",
-      "action": "Star",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CommController.cs",
       "inheritedGuard": "SessionValidation",
       "classification": "AuthorizationGap",
       "targetWave": "Wave 3-6",
@@ -1535,6 +1493,27 @@
       "inBodyProtected": 219,
       "anonymousByDesign": 1,
       "gaps": 91
+    },
+    {
+      "stage": "Email: a mailbox per employee (owner 2026-11-23)",
+      "date": "2026-11-23",
+      "change": "CommController.Send, Star and Resend now ask ICommunicationAccessService (CommunicationActions.Read) before writing, so all three leave the gap set as IN-BODY protected. Delete, Restore and EmptyTrash moved from OutboxManage to the same Read floor because they now act only on the caller's own mailbox copies (CommMailboxItems); they stay in-body protected. No endpoint created, no attribute added.",
+      "gapEntriesRemoved": 3,
+      "gapEntriesAdded": 0,
+      "previous": {
+        "mutating": 566,
+        "attributeProtected": 255,
+        "inBodyProtected": 219,
+        "anonymousByDesign": 1,
+        "gaps": 91
+      },
+      "measured": {
+        "mutating": 566,
+        "attributeProtected": 255,
+        "inBodyProtected": 222,
+        "anonymousByDesign": 1,
+        "gaps": 88
+      }
     }
   ]
 }

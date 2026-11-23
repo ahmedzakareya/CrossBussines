@@ -260,6 +260,7 @@ namespace CrossBuy.Models.Context.Chat
 		public static void Configure(ModelBuilder b)
 		{
 			b.Entity<CallSummary>(e => { e.ToTable("CallSummaries"); e.HasKey(x => x.RecordingId); e.Property(x => x.RecordingId).ValueGeneratedNever(); e.Property(x => x.Status).HasMaxLength(16); e.Property(x => x.JobId).HasMaxLength(32); e.Property(x => x.Language).HasMaxLength(8); e.Property(x => x.Model).HasMaxLength(120); e.Property(x => x.Error).HasMaxLength(200); e.Property(x => x.Progress).HasPrecision(5, 3); e.Property(x => x.AudioSeconds).HasPrecision(9, 1); e.Property(x => x.WorkSeconds).HasPrecision(9, 1); });
+			b.Entity<Comm.CommMailboxItem>(e => { e.ToTable("CommMailboxItems"); e.Property(x => x.Box).HasMaxLength(10); e.Property(x => x.Address).HasMaxLength(260); e.HasIndex(x => new { x.MessageId, x.EmployeeId, x.Box }).IsUnique().HasDatabaseName("UX_CommMailboxItems_Message_Employee_Box"); });
 			b.Entity<ChatDoc>(e => { e.ToTable("ChatDocs"); e.Property(x => x.Title).HasMaxLength(150); e.Property(x => x.FilePath).HasMaxLength(400); });
 			b.Entity<ChatDocVersion>(e => { e.ToTable("ChatDocVersions"); e.HasKey(x => new { x.DocId, x.Version }); e.Property(x => x.Title).HasMaxLength(150); });
 			b.Entity<ChatGuest>(e => { e.ToTable("ChatGuests"); e.Property(x => x.Name).HasMaxLength(80); e.Property(x => x.TokenHash).HasMaxLength(64).IsUnicode(false).IsFixedLength(); e.HasIndex(x => x.TokenHash).IsUnique(); });

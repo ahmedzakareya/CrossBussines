@@ -5,8 +5,14 @@
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     int cAll = ViewBag.CountAll ?? 0, cSent = ViewBag.CountSent ?? 0, cOut = ViewBag.CountOutbox ?? 0, cFail = ViewBag.CountFailed ?? 0;
-    var initial = string.IsNullOrEmpty(Model.ToAddress) ? "?" : Model.ToAddress.Substring(0, 1).ToUpper();
-    string sBadge = Model.Status switch { "Sent" => "badge-light-success", "Failed" => "badge-light-danger", _ => "badge-light-warning" };
+    // WHO THIS IS ABOUT: the colleague who wrote it, for mail I received; the recipient, for mail I sent.
+    var received = Model.Box == "Inbox";
+    var counts = ViewBag.Counts as MailCounts ?? new MailCounts();
+    var manager = ViewBag.Manager is bool mg && mg;
+    var headName = received ? (Model.FromName ?? Model.FromAddress ?? "") : Model.ToAddress;
+    var headPhoto = received ? Model.FromPhoto : Model.RecipientPhoto;
+    var initial = string.IsNullOrEmpty(headName) ? "?" : headName.Substring(0, 1).ToUpper();
+    string sBadge = Model.Status switch { "Sent" => "badge-light-primary", "Failed" => "badge-light-danger", _ => "badge-light-info" };
     string sLabel = Model.Status switch { "Sent" => Localizer["Sent"].Value, "Failed" => Localizer["Failed"].Value, _ => Localizer["Queued"].Value };
     string human(long n) => n < 1024 ? $"{n} B" : n < 1048576 ? $"{n / 1024} KB" : $"{n / 1048576.0:0.#} MB";
 }
@@ -29,9 +35,10 @@
                 <div class="card card-flush mb-0"><div class="card-body">
                     <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
                     <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary">
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Inbox" })" class="menu-link @(received ? "active" : "")"><span class="menu-icon"><i class="ki-outline ki-directbox-default fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Inbox"]</span>@if (counts.Unread > 0){<span class="badge badge-primary">@counts.Unread</span>}</a></div>
                         <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "All" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary">@cAll</span></a></div>
-                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Outbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-warning">@cOut</span>}</a></div>
-                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Sent" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-success">@cSent</span>}</a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Outbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-info">@cOut</span>}</a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Sent" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-primary">@cSent</span>}</a></div>
                         <div class="menu-item"><a href="@Url.Action("Index","Comm", new { folder = "Failed" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span>@if (cFail > 0){<span class="badge badge-light-danger">@cFail</span>}</a></div>
                     </div>
                 </div></div>
@@ -41,15 +48,16 @@
             <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
                 <div class="card">
                     <div class="card-header align-items-center py-4 gap-2 flex-wrap">
-                        <a href="@Url.Action("Index","Comm")" class="btn btn-sm btn-icon btn-light" title="@SR["Back"]"><i class="ki-outline ki-arrow-left fs-2"></i></a>
+                        <a href="@Url.Action("Index","Comm", new { folder = received ? "Inbox" : (Model.Box == "Sent" ? "Sent" : (manager && Model.Box == null ? "Company" : "Inbox")) })" class="btn btn-sm btn-icon btn-light" title="@SR["Back"]"><i class="ki-outline ki-arrow-left fs-2"></i></a>
                         <h2 class="fw-bold fs-4 m-0 flex-grow-1 text-truncate">@Model.Subject</h2>
                         <div class="d-flex gap-2">
                             <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "Reply" })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrow-left fs-5"></i>@Localizer["Reply"]</a>
                             <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "ReplyAll" })" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-mix fs-5"></i>@Localizer["Reply all"]</a>
                             <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "Forward" })" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-5"></i>@Localizer["Forward"]</a>
-                            @if (Model.Status != "Sent")
+                            @* RETRY IS THE SENDER'S (or the outbox manager's): a recipient has nothing to send again. *@
+                            @if (Model.Status != "Sent" && (Model.Box == "Sent" || manager))
                             {
-                                <form method="post" asp-action="Resend" asp-controller="Comm" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-warning"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Retry"]</button></form>
+                                <form method="post" asp-action="Resend" asp-controller="Comm" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Retry"]</button></form>
                             }
                             @{ var inTrash = Model.DeletedAt != null; }
                             @* IT NOW CARRIES VISIBLE TEXT, like every sibling in this row. It used to be
@@ -62,6 +70,7 @@
                             @* The confirm is attached in script rather than as a conditional attribute:
                                Razor does not allow C# inside a tag-helper's attribute declaration, and
                                only the irreversible branch asks at all. *@
+                            @if (Model.Box != null) {
                             <form method="post" asp-action="Delete" asp-controller="Comm" class="d-inline"
                                   data-confirm="@(inTrash ? Localizer["Delete permanently? This cannot be undone."].Value : Localizer["Move to Deleted Items?"].Value)">
                                 @Html.AntiForgeryToken()
@@ -71,13 +80,14 @@
                                     <i class="ki-outline ki-trash fs-5"></i>@(inTrash ? @Localizer["Delete permanently"] : @SR["Delete"])
                                 </button>
                             </form>
-                            @if (inTrash)
+                            if (inTrash)
                             {
                                 <form method="post" asp-action="Restore" asp-controller="Comm" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="ids" value="@Model.Id" />
                                     <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@Localizer["Restore"]</button>
                                 </form>
+                            }
                             }
                         </div>
                     </div>
@@ -88,10 +98,10 @@
                                coloured initial stays the fallback, because most mail goes to customers
                                and vendors who have no employee record. *@
                             <div class="symbol symbol-45px me-4">
-                                @if (!string.IsNullOrWhiteSpace(Model.RecipientPhoto))
+                                @if (!string.IsNullOrWhiteSpace(headPhoto))
                                 {
-                                    <img src="@Url.Content("~" + Model.RecipientPhoto.Replace("\\", "/"))"
-                                         alt="@Model.ToAddress" class="symbol-label" style="object-fit:cover;" />
+                                    <img src="@Url.Content("~" + headPhoto.Replace("\\", "/"))"
+                                         alt="@headName" class="symbol-label" style="object-fit:cover;" />
                                 }
                                 else
                                 {
@@ -99,11 +109,14 @@
                                 }
                             </div>
                             <div class="flex-grow-1">
-                                <div class="fw-bold text-gray-900 fs-5"><span class="text-muted fw-semibold fs-7">@SR["To"]:</span> @Model.ToAddress</div>
+                                @* FROM, THEN TO - the order of every mail client. The writer is a colleague's name (or the
+                                   system's, for automated mail); the address follows in its own direction. *@
+                                <div class="fw-bold text-gray-900 fs-5"><span class="text-muted fw-semibold fs-7">@Localizer["From"]:</span> <bdi style="unicode-bidi:plaintext">@Model.FromName</bdi> <bdi dir="ltr" class="text-muted fw-semibold fs-7">&lt;@Model.FromAddress&gt;</bdi></div>
+                                <div class="fs-7 text-gray-700"><span class="text-muted fw-semibold">@SR["To"]:</span> <bdi dir="ltr">@Model.ToAddress</bdi></div>
                                 @if (!string.IsNullOrWhiteSpace(Model.Cc)) { <div class="fs-8 text-muted">@SR["Cc"]: @Model.Cc</div> }
                                 <div class="fs-8 text-muted">@(Model.SentAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm") ?? Model.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
                             </div>
-                            <span class="badge @sBadge fs-7">@sLabel</span>
+                            @if (!received) {<span class="badge @sBadge fs-7">@sLabel</span>}
                         </div>
                         @if (Model.Status == "Failed" && !string.IsNullOrEmpty(Model.Error))
                         {
@@ -425,7 +438,7 @@
                     confirmButtonText: '@SR["Yes"]', cancelButtonText: '@SR["Cancel"]',
                     customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
                 }).then(function (r) { if (r.isConfirmed) { f.dataset.confirmed = '1'; f.submit(); } });
-            } else if (confirm(msg)) { f.dataset.confirmed = '1'; f.submit(); }
+            }
         });
     });
 </script>

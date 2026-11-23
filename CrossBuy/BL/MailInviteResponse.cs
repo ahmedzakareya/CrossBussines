@@ -115,7 +115,7 @@ namespace CrossBuy.BL
         {
             if (companyId <= 0 || employeeId <= 0) return (false, 0, null);
 
-            var mail = await _comm.GetAsync(companyId, messageId);
+            var mail = await _comm.GetAsync(companyId, employeeId, messageId);
             var invite = mail?.Invite;
             if (invite?.StartsAt is not { } startsAt || string.IsNullOrWhiteSpace(invite.Title))
                 return (false, 0, null);
@@ -160,7 +160,7 @@ namespace CrossBuy.BL
         {
             if (companyId <= 0 || employeeId <= 0) return (false, false, "Unresolved caller", 0, null);
 
-            var mail = await _comm.GetAsync(companyId, messageId);
+            var mail = await _comm.GetAsync(companyId, employeeId, messageId);
             var invite = mail?.Invite;
             if (invite?.StartsAt is not { } startsAt || string.IsNullOrWhiteSpace(invite.Title))
                 return (false, false, "This message carries no meeting", 0, null);
@@ -250,7 +250,7 @@ namespace CrossBuy.BL
 
             // The message is read through the ordinary service, so its company predicate applies and
             // a message id from another tenant resolves to nothing.
-            var mail = await _comm.GetAsync(companyId, messageId);
+            var mail = await _comm.GetAsync(companyId, employeeId, messageId);
             var invite = mail?.Invite;
             if (invite?.StartsAt is not { } startsAt || string.IsNullOrWhiteSpace(invite.Title))
                 return null;

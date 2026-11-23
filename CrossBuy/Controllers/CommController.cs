@@ -28,10 +28,16 @@ namespace CrossBuy.Controllers
         private readonly ICommunicationAccessService _access;
         private readonly IBusinessContextAccessor _contexts;
 
+        // THE REGISTRY DIRECTLY, not ITaskLinkResolver. That wrapper refuses any type the record
+        // PICKER does not list - JournalEntry among them - and picker membership has nothing to do
+        // with whether a document can be named in a subject line. A mail about JV-2026-003637 should
+        // say so whether or not a task may be linked to it.
+        private readonly CrossBuy.BL.Platform.IEntityRegistry _registry;
+
         public CommController(ICommService comm, IEmployeeService employees, CrossDbContext db, IWebHostEnvironment env, IFileManagerService fm,
             ICommunicationAccessService access, IBusinessContextAccessor contexts,
-            IMailInviteResponder invites)
-        { _comm = comm; _employees = employees; _db = db; _env = env; _fm = fm; _access = access; _contexts = contexts; _invites = invites; }
+            IMailInviteResponder invites, CrossBuy.BL.Platform.IEntityRegistry registry)
+        { _comm = comm; _employees = employees; _db = db; _env = env; _fm = fm; _access = access; _contexts = contexts; _invites = invites; _registry = registry; }
 
         /// May this caller manage the mailbox? `outbox-manage` is the module's own name for exactly
         /// this - the email outbox - so deleting mail answers to the same right that already governs
@@ -41,6 +47,15 @@ namespace CrossBuy.Controllers
             var ctx = await _contexts.TryGetCurrentAsync(cancellationToken);
             if (ctx is null || ctx.CompanyId <= 0) return false;      // unresolved tenant decides nothing
             return await _access.CanAsync(ctx, CommunicationActions.OutboxManage, null, cancellationToken);
+        }
+
+        /// THE MODULE'S FLOOR for acting on one's own mailbox: may this caller use communications at all? Which
+        /// messages they may touch is decided by the service, which matches only their own copies.
+        private async Task<bool> MayUseMailAsync(CancellationToken cancellationToken = default)
+        {
+            var ctx = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (ctx is null || ctx.CompanyId <= 0) return false;
+            return await _access.CanAsync(ctx, CommunicationActions.Read, null, cancellationToken);
         }
 
         private async Task<(int empId, int companyId)?> MeAsync()
@@ -55,17 +70,22 @@ namespace CrossBuy.Controllers
 
         /// The folder badges, in one shape. FillCountsAsync puts them on the ViewBag for the first
         /// render; this returns the same six for every mutation that follows.
-        private async Task<object> CountsAsync(int companyId)
+        // ONE PERSON'S BADGES (owner, 2026-11-23: a mailbox per employee). `company` is present only for whoever
+        // manages the company outbox.
+        private async Task<object> CountsAsync(int companyId, int empId)
         {
-            var c = await _comm.CountsAsync(companyId);
-            return new { all = c.all, sent = c.sent, outbox = c.outbox, failed = c.failed, trash = c.trash, starred = c.starred };
+            var c = await _comm.CountsAsync(companyId, empId, await MayManageOutboxAsync());
+            return new { inbox = c.Unread, all = c.All, sent = c.Sent, outbox = c.Outbox, failed = c.Failed, trash = c.Trash, starred = c.Starred, company = c.Company };
         }
 
-        private async Task FillCountsAsync(int companyId)
+        private async Task FillCountsAsync(int companyId, int empId)
         {
-            var c = await _comm.CountsAsync(companyId);
-            ViewBag.CountAll = c.all; ViewBag.CountSent = c.sent; ViewBag.CountOutbox = c.outbox;
-            ViewBag.CountFailed = c.failed; ViewBag.CountTrash = c.trash; ViewBag.CountStarred = c.starred;
+            var manager = await MayManageOutboxAsync();
+            var c = await _comm.CountsAsync(companyId, empId, manager);
+            ViewBag.Counts = c;
+            ViewBag.Manager = manager;
+            ViewBag.CountAll = c.All; ViewBag.CountSent = c.Sent; ViewBag.CountOutbox = c.Outbox;
+            ViewBag.CountFailed = c.Failed; ViewBag.CountTrash = c.Trash; ViewBag.CountStarred = c.Starred;
             ViewBag.Configured = _comm.SmtpConfigured;
         }
 
@@ -73,27 +93,29 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Index(string? folder, string? q)
         {
             var me = await MeAsync(); if (me == null) return RedirectToAction("Login", "Account");
-            folder = string.IsNullOrWhiteSpace(folder) ? "All" : folder;
+            folder = string.IsNullOrWhiteSpace(folder) ? "Inbox" : folder;
+            var manager = await MayManageOutboxAsync();
+            if (folder == "Company" && !manager) folder = "Inbox";      // the company outbox is its manager's alone
             ViewBag.Folder = folder; ViewBag.Q = q;
-            await FillCountsAsync(me.Value.companyId);
+            await FillCountsAsync(me.Value.companyId, me.Value.empId);
             // SharePoint-style: surface the top-level document-library folders in the mail sidebar
             var lib = await _fm.ListAsync(me.Value.companyId, null, null);
             ViewBag.LibFolders = lib.items.Where(i => i.isFolder).Take(8).ToList();
-            return View(await _comm.ListAsync(me.Value.companyId, folder, q));
+            return View(await _comm.ListAsync(me.Value.companyId, me.Value.empId, folder, q, manager));
         }
 
         [HttpGet]
         public async Task<IActionResult> Compose(int? parentId, string? kind)
         {
             var me = await MeAsync(); if (me == null) return RedirectToAction("Login", "Account");
-            await FillCountsAsync(me.Value.companyId);
+            await FillCountsAsync(me.Value.companyId, me.Value.empId);
             kind = string.IsNullOrWhiteSpace(kind) ? "New" : kind;
             ViewBag.Kind = kind; ViewBag.ParentId = parentId;
             ViewBag.To = ""; ViewBag.Cc = ""; ViewBag.Subject = ""; ViewBag.Body = "";
             ViewBag.Inherited = new List<MailAttachmentDto>();
             if (parentId.HasValue)
             {
-                var src = await _comm.GetAsync(me.Value.companyId, parentId.Value);
+                var src = await _comm.GetAsync(me.Value.companyId, me.Value.empId, parentId.Value, await MayManageOutboxAsync());
                 if (src != null)
                 {
                     // body is rich HTML now → build an HTML quote (subject encoded, original body kept as-is)
@@ -105,6 +127,19 @@ namespace CrossBuy.Controllers
                         ViewBag.Subject = "Fwd: " + baseSubj; ViewBag.Body = quote;
                         ViewBag.Inherited = src.Attachments;
                     }
+                    else if (src.Box == "Inbox")
+                    {
+                        // A REPLY TO MAIL I RECEIVED GOES TO WHOEVER WROTE IT. Reply-all adds everyone else it was
+                        // addressed to, without me (I am writing) and without the writer twice.
+                        var mine = await _db.Employee.AsNoTracking().Where(e => e.ID == me.Value.empId).Select(e => e.Email).FirstOrDefaultAsync();
+                        string[] split(string? s) => (s ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        bool same(string a, string? b) => string.Equals(a.Trim(), (b ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+                        ViewBag.To = src.FromAddress ?? "";
+                        ViewBag.Cc = kind == "ReplyAll"
+                            ? string.Join(", ", split(src.ToAddress).Concat(split(src.Cc)).Where(a => !same(a, mine) && !same(a, src.FromAddress)).Distinct(StringComparer.OrdinalIgnoreCase))
+                            : "";
+                        ViewBag.Subject = "Re: " + baseSubj; ViewBag.Body = quote;
+                    }
                     else { ViewBag.To = src.ToAddress; ViewBag.Cc = kind == "ReplyAll" ? (src.Cc ?? "") : ""; ViewBag.Subject = "Re: " + baseSubj; ViewBag.Body = quote; }
                 }
             }
@@ -115,9 +150,10 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> View(int id)
         {
             var me = await MeAsync(); if (me == null) return RedirectToAction("Login", "Account");
-            var m = await _comm.GetAsync(me.Value.companyId, id);
+            // OPENING IT READS IT: the reader's Inbox copy is stamped read on the way in.
+            var m = await _comm.GetAsync(me.Value.companyId, me.Value.empId, id, await MayManageOutboxAsync(), markRead: true);
             if (m == null) return NotFound();
-            await FillCountsAsync(me.Value.companyId);
+            await FillCountsAsync(me.Value.companyId, me.Value.empId);
 
             // WHETHER TO OFFER THE THREE BUTTONS AT ALL. Asking the responder is the same question
             // it will ask again when the answer is posted - "is there an attendee row for you on this
@@ -146,14 +182,19 @@ namespace CrossBuy.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(52_428_800)]
+        // `ajax` is how the MODAL sends. Everything below is unchanged - same validation, same
+        // attachments, same ICommService.SendAsync - only the ANSWER differs: a fetch cannot follow
+        // a redirect into a folder listing, and a modal must not navigate the page it sits on.
         public async Task<IActionResult> Send(string to, string? cc, string subject, string? body, int? parentId, string? kind,
-            List<Microsoft.AspNetCore.Http.IFormFile>? files, string? libraryFileIds)
+            List<Microsoft.AspNetCore.Http.IFormFile>? files, string? libraryFileIds, bool ajax = false)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
+            if (!await MayUseMailAsync()) return Forbid();
             kind = string.IsNullOrWhiteSpace(kind) ? "New" : kind;
             // safety net (client also has `required`): don't create junk rows for empty recipient/subject
             if (string.IsNullOrWhiteSpace(to) || string.IsNullOrWhiteSpace(subject))
             {
+                if (ajax) return Json(new { ok = false, error = Ar() ? "المستلم والموضوع مطلوبان" : "Recipient and subject are required" });
                 TempData["MailError"] = "recipient_subject_required";
                 return RedirectToAction("Compose", new { parentId, kind });
             }
@@ -172,7 +213,7 @@ namespace CrossBuy.Controllers
             }
             if (kind == "Forward" && parentId.HasValue)
             {
-                var src = await _comm.GetAsync(me.Value.companyId, parentId.Value);
+                var src = await _comm.GetAsync(me.Value.companyId, me.Value.empId, parentId.Value, await MayManageOutboxAsync());
                 if (src != null) foreach (var a in src.Attachments) attach.Add(new MailFile(a.FilePath, a.FileName, a.Size));
             }
             // attach files chosen from the document library — reference the stored file directly (no re-upload)
@@ -185,11 +226,45 @@ namespace CrossBuy.Controllers
                         if (!string.IsNullOrEmpty(lf.StoredPath)) attach.Add(new MailFile(lf.StoredPath, lf.Name, lf.Size));
             }
             var (_, status, error) = await _comm.SendAsync(me.Value.companyId, me.Value.empId, to, cc, subject ?? "", body ?? "", attach, parentId, kind);
+            // The modal reports the SAME three states the folder landing encodes - queued is not a
+            // failure and must not be shown as one.
+            if (ajax) return Json(new { ok = status != "Failed", status, error });
+
             TempData["MailSent"] = status;                       // Sent | Queued | Failed
             if (!string.IsNullOrEmpty(error)) TempData["MailSentError"] = error;
             // land on a folder where the new message is actually visible (Queued → Outbox, else its status folder)
             var landing = status == "Sent" ? "Sent" : status == "Failed" ? "Failed" : "Outbox";
             return RedirectToAction("Index", new { folder = landing });
+        }
+
+        // THE SUBJECT A RECORD DESERVES, resolved rather than typed.
+        //
+        // The modal opens from a screen that is already showing one document, so the subject and a
+        // link to it are facts the system holds - asking the sender to restate them is how a mail
+        // about invoice SV-2026-12546 ends up titled "re: the invoice".
+        // This controller has no IStringLocalizer; the module states its few strings inline,
+        // as its views do. One helper so both new answers speak the reader’s language.
+        private static bool Ar() => System.Globalization.CultureInfo.CurrentUICulture
+            .TwoLetterISOLanguageName == "ar";
+
+        [HttpGet]
+        public async Task<IActionResult> RecordSubject(string? entity, int id)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(entity) || id <= 0) return Json(new { ok = false });
+
+            if (!_registry.TryGetDefinition(entity, out var def) || def == null) return Json(new { ok = false });
+
+            // ForSystem(company): this is a LABEL read for a caller already standing on the record,
+            // and the registry still scopes the row to that company - a wrong id answers "#id".
+            var link = await _registry.ResolveAsync(def.Code, id,
+                CrossBuy.Models.Platform.BusinessContext.ForSystem(me.Value.companyId));
+
+            var type = Ar() ? def.DisplayNameAr : def.DisplayNameEn;
+            // An ABSOLUTE url: the mail is read outside this tab, often outside the browser.
+            var url = string.IsNullOrWhiteSpace(link.Url) ? null
+                : $"{Request.Scheme}://{Request.Host}{link.Url}";
+            return Json(new { ok = true, subject = (type + " " + link.Label).Trim(), label = link.Label, url });
         }
 
         // people-picker: company employees (name + email + photo) matching a query, for the To/Cc autocomplete
@@ -222,12 +297,14 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Delete(int[] ids, string? folder, bool ajax = false)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            if (!await MayManageOutboxAsync()) return Forbid();
+            // NO outbox-manage GATE ANY MORE: this deletes the caller's OWN copies (owner, 2026-11-23: a mailbox per
+            // employee). The service matches only rows of this employee, so no id reaches a colleague's mail.
+            if (!await MayUseMailAsync()) return Forbid();
 
             bool permanent = string.Equals(folder, "Trash", StringComparison.OrdinalIgnoreCase);
             int affected = permanent
-                ? await _comm.DeleteForeverAsync(me.Value.companyId, ids ?? Array.Empty<int>())
-                : await _comm.TrashAsync(me.Value.companyId, ids ?? Array.Empty<int>());
+                ? await _comm.DeleteForeverAsync(me.Value.companyId, me.Value.empId, ids ?? Array.Empty<int>())
+                : await _comm.TrashAsync(me.Value.companyId, me.Value.empId, ids ?? Array.Empty<int>());
 
             // A LIST MUTATION ANSWERS IN PLACE. The page removes the rows it just acted on rather than
             // reloading - a reload would lose the scroll position and the user's place in a mailbox.
@@ -236,7 +313,7 @@ namespace CrossBuy.Controllers
             // truthful. Recomputed server-side rather than decremented in the browser: the client
             // knows how many rows it removed, not how many were already trashed, starred or failed,
             // and a badge that drifts from the folder it names is worse than no badge.
-            if (ajax) return Json(new { ok = true, affected, permanent, counts = await CountsAsync(me.Value.companyId) });
+            if (ajax) return Json(new { ok = true, affected, permanent, counts = await CountsAsync(me.Value.companyId, me.Value.empId) });
             return RedirectToAction("Index", new { folder });
         }
 
@@ -298,9 +375,9 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Restore(int[] ids, bool ajax = false)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            if (!await MayManageOutboxAsync()) return Forbid();
-            int affected = await _comm.RestoreAsync(me.Value.companyId, ids ?? Array.Empty<int>());
-            if (ajax) return Json(new { ok = true, affected, counts = await CountsAsync(me.Value.companyId) });
+            if (!await MayUseMailAsync()) return Forbid();
+            int affected = await _comm.RestoreAsync(me.Value.companyId, me.Value.empId, ids ?? Array.Empty<int>());
+            if (ajax) return Json(new { ok = true, affected, counts = await CountsAsync(me.Value.companyId, me.Value.empId) });
             return RedirectToAction("Index", new { folder = "Trash" });
         }
 
@@ -312,22 +389,24 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> EmptyTrash(bool ajax = false)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            if (!await MayManageOutboxAsync()) return Forbid();
-            int affected = await _comm.EmptyTrashAsync(me.Value.companyId);
-            if (ajax) return Json(new { ok = true, affected, counts = await CountsAsync(me.Value.companyId) });
+            if (!await MayUseMailAsync()) return Forbid();
+            int affected = await _comm.EmptyTrashAsync(me.Value.companyId, me.Value.empId);
+            if (ajax) return Json(new { ok = true, affected, counts = await CountsAsync(me.Value.companyId, me.Value.empId) });
             return RedirectToAction("Index", new { folder = "Trash" });
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Star(int id)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            var ok = await _comm.ToggleStarAsync(me.Value.companyId, id);
+            if (!await MayUseMailAsync()) return Forbid();
+            var ok = await _comm.ToggleStarAsync(me.Value.companyId, me.Value.empId, id);
 
             // STARRING MOVES A FOLDER COUNT, so it answers with the counts for the same reason delete
             // does: the Starred badge names a set this action just changed, and a badge that only
             // catches up on the next page load is wrong in between.
-            return Json(new { ok, counts = await CountsAsync(me.Value.companyId) });
+            return Json(new { ok, counts = await CountsAsync(me.Value.companyId, me.Value.empId) });
         }
 
         [HttpPost]
@@ -335,7 +414,10 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Resend(int id)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            var owns = await _db.CommMessages.AsNoTracking().AnyAsync(x => x.Id == id && x.CompanyID == me.Value.companyId);
+            // ONLY THE ONE WHO WROTE IT (or the outbox's manager) sends it again.
+            if (!await MayUseMailAsync()) return Forbid();
+            var owns = await _comm.IsSenderAsync(me.Value.companyId, me.Value.empId, id)
+                || (await MayManageOutboxAsync() && await _db.CommMessages.AsNoTracking().AnyAsync(x => x.Id == id && x.CompanyID == me.Value.companyId));
             if (!owns) return NotFound();
             await _comm.TrySendAsync(id);
             return RedirectToAction("View", new { id });

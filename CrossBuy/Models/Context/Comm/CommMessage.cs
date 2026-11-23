@@ -16,7 +16,10 @@ namespace CrossBuy.Models.Context.Comm
         public int? ParentId { get; set; }                // reply/forward source
         public string Kind { get; set; } = "New";         // New | Reply | ReplyAll | Forward
         public bool Starred { get; set; }
-        public DateTime? DeletedAt { get; set; }          // Trash
+        public DateTime? DeletedAt { get; set; }          // Trash (the company outbox's own; a person's is CommMailboxItem.DeletedAt)
+
+        /// The first message of the conversation this one belongs to (a reply carries its parent's). deploy/sql/comm_mailboxes.sql
+        public int? ThreadId { get; set; }
 
         // ---- Stage 0 (Slice-003) outbox dispatch state, additive + nullable ----
         // CommMessage was already outbox-SHAPED (Status/Attempts/Error/SentAt) but nothing drained it: sending
@@ -32,6 +35,24 @@ namespace CrossBuy.Models.Context.Comm
         // that means the same thing. (deploy/sql/comm_outbox_slice_003.sql guards on COL_LENGTH, so it reports
         // UpdatedAt as already present.)
         public DateTime? ClaimedAt { get; set; }
+    }
+
+    /// ONE PERSON'S COPY OF A MESSAGE (owner, 2026-11-23). The message is one row; who may see it is this row:
+    /// 'Sent' for the employee who wrote it, 'Inbox' for every recipient who is an employee of the same company —
+    /// delivered here, inside the system, never through SMTP. Read, starred and deleted belong to the person, so one
+    /// reader deleting a message does not take it from the others. deploy/sql/comm_mailboxes.sql
+    public class CommMailboxItem
+    {
+        public int Id { get; set; }
+        public int CompanyID { get; set; }
+        public int MessageId { get; set; }
+        public int EmployeeId { get; set; }
+        public string Box { get; set; } = "Inbox";        // Inbox | Sent
+        public string? Address { get; set; }
+        public DateTime? ReadAt { get; set; }
+        public bool Starred { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class CommAttachment
