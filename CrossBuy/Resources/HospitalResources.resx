@@ -10127,4 +10127,120 @@
   <data name="fxo:NotInForce" xml:space="preserve"><value>Not in force</value></data>
   <data name="fxo:Pending" xml:space="preserve"><value>Pending with the payer</value></data>
   <data name="fxo:Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="A CT dose needs its DLP" xml:space="preserve"><value>A CT dose needs its DLP</value></data>
+  <data name="Above the diagnostic reference level" xml:space="preserve"><value>Above the diagnostic reference level</value></data>
+  <data name="Answered" xml:space="preserve"><value>Answered</value></data>
+  <data name="BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS" xml:space="preserve"><value>BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS</value></data>
+  <data name="Category and follow-up" xml:space="preserve"><value>Category and follow-up</value></data>
+  <data name="Close with a reason" xml:space="preserve"><value>Close with a reason</value></data>
+  <data name="Empty: from the category's interval." xml:space="preserve"><value>Empty: from the category's interval.</value></data>
+  <data name="Enter the accession number of the patient's later study" xml:space="preserve"><value>Enter the accession number of the patient's later study</value></data>
+  <data name="Follow-up due" xml:space="preserve"><value>Follow-up due</value></data>
+  <data name="From the scanner's dose report." xml:space="preserve"><value>From the scanner's dose report.</value></data>
+  <data name="Imaging follow-ups" xml:space="preserve"><value>Imaging follow-ups</value></data>
+  <data name="Nearest due first; each stays open until the later study answers it" xml:space="preserve"><value>Nearest due first; each stays open until the later study answers it</value></data>
+  <data name="No category given." xml:space="preserve"><value>No category given.</value></data>
+  <data name="No dose recorded." xml:space="preserve"><value>No dose recorded.</value></data>
+  <data name="No follow-up here." xml:space="preserve"><value>No follow-up here.</value></data>
+  <data name="Open follow-ups" xml:space="preserve"><value>Open follow-ups</value></data>
+  <data name="Radiation dose" xml:space="preserve"><value>Radiation dose</value></data>
+  <data name="Radiology follow-up and dose are not installed yet (hospital_h243_rad_quality.sql)." xml:space="preserve"><value>Radiology follow-up and dose are not installed yet (hospital_h243_rad_quality.sql).</value></data>
+  <data name="Recommended follow-ups" xml:space="preserve"><value>Recommended follow-ups</value></data>
+  <data name="Search a patient, accession or system" xml:space="preserve"><value>Search a patient, accession or system</value></data>
+  <data name="The accession number of the later study that answers it" xml:space="preserve"><value>The accession number of the later study that answers it</value></data>
+  <data name="The category is given once the scan is done" xml:space="preserve"><value>The category is given once the scan is done</value></data>
+  <data name="The dose is recorded once the scan has started" xml:space="preserve"><value>The dose is recorded once the scan has started</value></data>
+  <data name="The follow-up is due within the next three years" xml:space="preserve"><value>The follow-up is due within the next three years</value></data>
+  <data name="This exam uses no ionising radiation" xml:space="preserve"><value>This exam uses no ionising radiation</value></data>
+  <data name="This patient, last 12 months:" xml:space="preserve"><value>This patient, last 12 months:</value></data>
+  <data name="Why is the follow-up closed?" xml:space="preserve"><value>Why is the follow-up closed?</value></data>
+  <data name="Write why the follow-up is closed" xml:space="preserve"><value>Write why the follow-up is closed</value></data>
+  <data name="dr:AbdPelvis" xml:space="preserve"><value>Abdomen and pelvis</value></data>
+  <data name="dr:Chest" xml:space="preserve"><value>Chest</value></data>
+  <data name="dr:ChestAbdPelvis" xml:space="preserve"><value>Chest, abdomen and pelvis</value></data>
+  <data name="dr:Head" xml:space="preserve"><value>Head</value></data>
+  <data name="dr:Neck" xml:space="preserve"><value>Neck</value></data>
+  <data name="dr:Other" xml:space="preserve"><value>Other</value></data>
+  <data name="dr:Spine" xml:space="preserve"><value>Spine</value></data>
+  <data name="rfu:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="rfu:Done" xml:space="preserve"><value>Done</value></data>
+  <data name="rfu:Open" xml:space="preserve"><value>Open</value></data>
+  <data name="A block is at least an hour within the day" xml:space="preserve"><value>A block is at least an hour within the day</value></data>
+  <data name="Another block holds this theatre at that time" xml:space="preserve"><value>Another block holds this theatre at that time</value></data>
+  <data name="Block utilisation" xml:space="preserve"><value>Block utilisation</value></data>
+  <data name="Blocks and preference cards" xml:space="preserve"><value>Blocks and preference cards</value></data>
+  <data name="Choose the surgeon or name the service line" xml:space="preserve"><value>Choose the surgeon or name the service line</value></data>
+  <data name="Each surgeon's way of doing a procedure, shown on the case" xml:space="preserve"><value>Each surgeon's way of doing a procedure, shown on the case</value></data>
+  <data name="Equipment" xml:space="preserve"><value>Equipment</value></data>
+  <data name="Fill at least one part of the card" xml:space="preserve"><value>Fill at least one part of the card</value></data>
+  <data name="Gloves" xml:space="preserve"><value>Gloves</value></data>
+  <data name="Instruments" xml:space="preserve"><value>Instruments</value></data>
+  <data name="New block" xml:space="preserve"><value>New block</value></data>
+  <data name="New card" xml:space="preserve"><value>New card</value></data>
+  <data name="No block is set." xml:space="preserve"><value>No block is set.</value></data>
+  <data name="No preference card here." xml:space="preserve"><value>No preference card here.</value></data>
+  <data name="Others in the block" xml:space="preserve"><value>Others in the block</value></data>
+  <data name="Position" xml:space="preserve"><value>Position</value></data>
+  <data name="Preference card" xml:space="preserve"><value>Preference card</value></data>
+  <data name="Preference cards" xml:space="preserve"><value>Preference cards</value></data>
+  <data name="Search a surgeon or procedure" xml:space="preserve"><value>Search a surgeon or procedure</value></data>
+  <data name="Service line" xml:space="preserve"><value>Service line</value></data>
+  <data name="Skin preparation" xml:space="preserve"><value>Skin preparation</value></data>
+  <data name="Sutures" xml:space="preserve"><value>Sutures</value></data>
+  <data name="The name is 100 characters at most" xml:space="preserve"><value>The name is 100 characters at most</value></data>
+  <data name="The owner's case minutes inside the block; target 75 %, under 50 % suggests release" xml:space="preserve"><value>The owner's case minutes inside the block; target 75 %, under 50 % suggests release</value></data>
+  <data name="Theatre block" xml:space="preserve"><value>Theatre block</value></data>
+  <data name="Utilisation" xml:space="preserve"><value>Utilisation</value></data>
+  <data name="A device is one of the company's fixed assets; its maintenance schedules stay on the asset." xml:space="preserve"><value>A device is one of the company's fixed assets; its maintenance schedules stay on the asset.</value></data>
+  <data name="A failed test takes the device out of service." xml:space="preserve"><value>A failed test takes the device out of service.</value></data>
+  <data name="A value is too long" xml:space="preserve"><value>A value is too long</value></data>
+  <data name="Back in service" xml:space="preserve"><value>Back in service</value></data>
+  <data name="Biomedical engineering is not installed yet (hospital_h245_biomed.sql)." xml:space="preserve"><value>Biomedical engineering is not installed yet (hospital_h245_biomed.sql).</value></data>
+  <data name="Choose pass or fail" xml:space="preserve"><value>Choose pass or fail</value></data>
+  <data name="Choose the asset" xml:space="preserve"><value>Choose the asset</value></data>
+  <data name="Choose the risk class" xml:space="preserve"><value>Choose the risk class</value></data>
+  <data name="Devices in the register" xml:space="preserve"><value>Devices in the register</value></data>
+  <data name="Electrical-safety test" xml:space="preserve"><value>Electrical-safety test</value></data>
+  <data name="Fixed asset" xml:space="preserve"><value>Fixed asset</value></data>
+  <data name="In the register" xml:space="preserve"><value>In the register</value></data>
+  <data name="Manufacturer" xml:space="preserve"><value>Manufacturer</value></data>
+  <data name="Medical device" xml:space="preserve"><value>Medical device</value></data>
+  <data name="Medical devices" xml:space="preserve"><value>Medical devices</value></data>
+  <data name="Model" xml:space="preserve"><value>Model</value></data>
+  <data name="Never tested" xml:space="preserve"><value>Never tested</value></data>
+  <data name="Next PM" xml:space="preserve"><value>Next PM</value></data>
+  <data name="No device here." xml:space="preserve"><value>No device here.</value></data>
+  <data name="No schedule" xml:space="preserve"><value>No schedule</value></data>
+  <data name="Out of service" xml:space="preserve"><value>Out of service</value></data>
+  <data name="Out of service first, then overdue, high risk before others" xml:space="preserve"><value>Out of service first, then overdue, high risk before others</value></data>
+  <data name="Out of service now" xml:space="preserve"><value>Out of service now</value></data>
+  <data name="PM compliance · availability (30 days)" xml:space="preserve"><value>PM compliance · availability (30 days)</value></data>
+  <data name="PM done today" xml:space="preserve"><value>PM done today</value></data>
+  <data name="Put the device back in service?" xml:space="preserve"><value>Put the device back in service?</value></data>
+  <data name="Readings or what failed" xml:space="preserve"><value>Readings or what failed</value></data>
+  <data name="Record this preventive maintenance as done today?" xml:space="preserve"><value>Record this preventive maintenance as done today?</value></data>
+  <data name="Register a device" xml:space="preserve"><value>Register a device</value></data>
+  <data name="Risk" xml:space="preserve"><value>Risk</value></data>
+  <data name="Safety test" xml:space="preserve"><value>Safety test</value></data>
+  <data name="Safety test overdue" xml:space="preserve"><value>Safety test overdue</value></data>
+  <data name="Search a device, serial or room" xml:space="preserve"><value>Search a device, serial or room</value></data>
+  <data name="The device is already out of service" xml:space="preserve"><value>The device is already out of service</value></data>
+  <data name="The device is in service" xml:space="preserve"><value>The device is in service</value></data>
+  <data name="This device is retired" xml:space="preserve"><value>This device is retired</value></data>
+  <data name="What is wrong with the device?" xml:space="preserve"><value>What is wrong with the device?</value></data>
+  <data name="Write the recall reference" xml:space="preserve"><value>Write the recall reference</value></data>
+  <data name="Write what failed" xml:space="preserve"><value>Write what failed</value></data>
+  <data name="Write what is wrong" xml:space="preserve"><value>Write what is wrong</value></data>
+  <data name="bmc:Diagnostic" xml:space="preserve"><value>Diagnostic</value></data>
+  <data name="bmc:Laboratory" xml:space="preserve"><value>Laboratory</value></data>
+  <data name="bmc:LifeSupport" xml:space="preserve"><value>Life support</value></data>
+  <data name="bmc:Monitoring" xml:space="preserve"><value>Monitoring</value></data>
+  <data name="bmc:Other" xml:space="preserve"><value>Other</value></data>
+  <data name="bmc:Therapeutic" xml:space="preserve"><value>Therapeutic</value></data>
+  <data name="bmr:High" xml:space="preserve"><value>High</value></data>
+  <data name="bmr:Low" xml:space="preserve"><value>Low</value></data>
+  <data name="bmr:Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="bms:Down" xml:space="preserve"><value>Out of service</value></data>
+  <data name="bms:InService" xml:space="preserve"><value>In service</value></data>
+  <data name="bms:Retired" xml:space="preserve"><value>Retired</value></data>
 </root>

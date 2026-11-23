@@ -106,6 +106,8 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalDenialWork), "HospitalDenialWork"),           // H240: denial work items follow the patient
 			(typeof(HospitalDrgAssignment), "HospitalDrgAssignments"),    // H241: DRG coding follows the patient
 			(typeof(HospitalFhirMessage), "HospitalFhirMessages"),        // H242: eligibility and pre-authorisation messages
+			(typeof(HospitalRadFollowUp), "HospitalRadFollowUps"),        // H243: imaging follow-ups and doses follow the patient
+			(typeof(HospitalRadDose), "HospitalRadDoses"),
 			(typeof(HospitalRiskAssessment), "HospitalRiskAssessments"),   // H71: the falls and pressure-injury assessments
 			(typeof(HospitalMedReconLine), "HospitalMedReconLines"),       // H72: the medicines reconciled
 			(typeof(HospitalMedRecon), "HospitalMedRecons"),               // H72: the signed stages

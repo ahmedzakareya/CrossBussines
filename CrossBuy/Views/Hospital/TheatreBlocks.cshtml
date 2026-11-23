@@ -1,0 +1,192 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalBlocksPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H244 — block time and preference cards: each theatre block with its owner (photo) and its utilisation over the
+    weeks looked at, and the surgeons' preference cards. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Blocks and preference cards"].Value;
+    int weeks = (int)ViewBag.Weeks, page = (int)ViewBag.Page, pages = (int)ViewBag.Pages; string q = ViewBag.Q as string ?? "";
+    bool canManage = ViewBag.CanManage == true, canCard = ViewBag.CanCard == true;
+    var procs = ViewBag.Procedures as IReadOnlyList<CrossBuy.Controllers.HospitalController.HospitalChoice> ?? Array.Empty<CrossBuy.Controllers.HospitalController.HospitalChoice>();
+    string Link(int p, int? w = null) => Url.Action("TheatreBlocks", new { weeks = w ?? weeks, q, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var cul = System.Globalization.CultureInfo.CurrentUICulture;
+    string Hm(int m) => (m / 60).ToString("00", inv) + ":" + (m % 60).ToString("00", inv);
+    string Tone(decimal? p) => HospitalTheatreBlockRules.Level(p) switch { "Good" => "primary", "Release" => "danger", "Low" => "info", _ => "secondary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Blocks and preference cards"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Theatre")" class="text-muted text-hover-primary">@T["Theatre"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Blocks and preference cards"]</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2">
+            @foreach (var w in new[] { 4, 8, 13 }) {<a href="@Link(page, w)" class="btn btn-sm @(weeks == w ? "btn-primary" : "btn-light")">@T["{0} weeks", w]</a>}
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalTheatreBlockService.NoTables]</div></div>
+        }
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Block utilisation"] @if (Model.Overall is decimal ov) {<span class="badge badge-light-@Tone(ov) fs-6 ms-2 hp-num" dir="ltr">@ov.ToString("0", inv)%</span>}</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num" dir="ltr">@Model.From.ToString("dd/MM", inv) – @Model.To.ToString("dd/MM", inv)</span> · @T["The owner's case minutes inside the block; target 75 %, under 50 % suggests release"]</span></h3>
+                @if (canManage && Model.Ready && Model.Rooms.Count > 0) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-blk="0"><i class="ki-outline ki-plus fs-4"></i>@T["New block"]</button></div>}
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Blocks.Count == 0) {<div class="text-muted fs-7 py-4">@T["No block is set."]</div>}
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-7"><th>@T["Theatre"]</th><th>@T["Day"]</th><th>@T["Time"]</th><th class="min-w-200px">@T["Owner"]</th><th class="min-w-200px">@T["Utilisation"]</th><th>@T["Others in the block"]</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in Model.Blocks)
+                        {
+                            var b = r.Block; var pct = r.Use.UtilisationPct;
+                            <tr class="@(b.IsActive ? "" : "opacity-50")">
+                                <td class="fw-bold">@(r.Room == null ? "—" : DisplayName.Of(r.Room.Name, r.Room.NameEn))</td>
+                                <td>@cul.DateTimeFormat.GetDayName((DayOfWeek)b.Weekday)</td>
+                                <td class="hp-num" dir="ltr">@Hm(b.StartMinute)–@Hm(b.EndMinute)</td>
+                                <td>@if (r.Surgeon != null) {<div class="d-flex align-items-center gap-2">@HospitalUi.Avatar(r.Surgeon.Photo, DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn), 30)<span class="fw-semibold">@DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn)</span></div>}
+                                    @if (b.Label != null) {<div class="text-muted fs-8" dir="auto">@b.Label</div>}</td>
+                                <td><div class="d-flex align-items-center gap-3"><div class="progress h-8px flex-grow-1 bg-light"><div class="progress-bar bg-@Tone(pct)" style="width:@(Math.Min(100m, pct ?? 0).ToString("0", inv))%"></div></div>
+                                    <span class="fw-bold hp-num w-50px text-end text-@Tone(pct)" dir="ltr">@(pct?.ToString("0", inv) ?? "—")%</span></div>
+                                    <div class="text-muted fs-8 hp-num" dir="ltr">@r.Use.UsedMinutes / @r.Use.BlockMinutes min · @r.Use.Sessions</div></td>
+                                <td class="hp-num fs-7" dir="ltr">@(r.Use.OthersMinutes > 0 ? r.Use.OthersMinutes + " min" : "—")</td>
+                                <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light" data-blk="@b.ID" data-b="@(Json.Serialize(new { b.ID, b.RoomId, b.Weekday, start = Hm(b.StartMinute), end = Hm(b.EndMinute), b.SurgeonId, b.Label, b.IsActive }).ToString())"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Preference cards"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each surgeon's way of doing a procedure, shown on the case"]</span></h3>
+                <div class="card-toolbar gap-2">
+                    <form class="d-flex gap-2" method="get" action="@Url.Action("TheatreBlocks")"><input type="hidden" name="weeks" value="@weeks" />
+                        <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                            <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search a surgeon or procedure"]" /></div>
+                        <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button></form>
+                    @if (canCard && Model.Ready) {<button type="button" class="btn btn-sm btn-primary" data-card="new"><i class="ki-outline ki-plus fs-4"></i>@T["New card"]</button>}
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Cards.Count == 0) {<div class="text-muted fs-7 py-4">@T["No preference card here."]</div>}
+                <div class="row g-5">
+                @foreach (var c in Model.Cards)
+                {
+                    var k = c.Card;
+                    <div class="col-md-6 col-xl-4"><div class="border border-gray-300 border-dashed rounded p-5 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            @if (c.Surgeon != null) {@HospitalUi.Avatar(c.Surgeon.Photo, DisplayName.Of(c.Surgeon.Name, c.Surgeon.NameEn), 35)}
+                            <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800 text-truncate">@DisplayName.Of(c.Procedure, c.ProcedureEn)</div><div class="text-muted fs-8">@(c.Surgeon == null ? "" : DisplayName.Of(c.Surgeon.Name, c.Surgeon.NameEn)) · <span class="hp-num" dir="ltr">@c.Code</span></div></div>
+                            @if (canCard) {<button type="button" class="btn btn-sm btn-icon btn-light" data-card="@k.ID" data-c="@(Json.Serialize(new { k.SurgeonId, k.ServiceId, k.Position, k.SkinPrep, k.Gloves, k.Instruments, k.Equipment, k.Sutures, k.Notes }).ToString())"><i class="ki-outline ki-pencil fs-3"></i></button>}
+                        </div>
+                        @foreach (var (label, val) in new[] { (T["Position"].Value, k.Position), (T["Skin preparation"].Value, k.SkinPrep), (T["Gloves"].Value, k.Gloves), (T["Instruments"].Value, k.Instruments), (T["Equipment"].Value, k.Equipment), (T["Sutures"].Value, k.Sutures), (T["Notes"].Value, k.Notes) })
+                        {
+                            if (val != null) {<div class="fs-7 mb-1"><span class="text-muted">@label:</span> <span class="text-gray-800" dir="auto" style="white-space:pre-line">@val</span></div>}
+                        }
+                    </div></div>
+                }
+                </div>
+                @if (pages > 1)
+                {
+                    <ul class="pagination mt-6">
+                        <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                        @for (int n = Math.Max(1, page - 3); n <= Math.Min(pages, page + 3); n++) {<li class="page-item @(n == page ? "active" : "")"><a class="page-link" href="@Link(n)">@n</a></li>}
+                        <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                    </ul>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canManage && Model.Ready)
+{
+<div class="modal fade" id="blkModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Theatre block"]</h1></div>
+        <div class="row g-5">
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Theatre"]</label><select class="form-select form-select-solid" data-bk="roomId">@foreach (var r in Model.Rooms) {<option value="@r.Id">@DisplayName.Of(r.Name, r.NameEn)</option>}</select></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Day"]</label><select class="form-select form-select-solid" data-bk="weekday">@for (int d = 0; d < 7; d++) {<option value="@d">@cul.DateTimeFormat.GetDayName((DayOfWeek)d)</option>}</select></div>
+            <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["From"]</label><input type="time" class="form-control form-control-solid" data-bk="start" value="08:00" /></div>
+            <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["To"]</label><input type="time" class="form-control form-control-solid" data-bk="end" value="14:00" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Surgeon"]</label><select class="form-select form-select-solid" data-bk="surgeonId"><option value="">—</option>@foreach (var s in Model.Surgeons) {<option value="@s.Id">@DisplayName.Of(s.Name, s.NameEn)</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Service line"]</label><input class="form-control form-control-solid" maxlength="100" dir="auto" data-bk="label" /></div>
+            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-bk="isActive" checked /><span class="form-check-label fw-semibold">@T["Active"]</span></label></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-blk-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+}
+@if (canCard && Model.Ready)
+{
+<div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Preference card"]</h1></div>
+        <div class="row g-5">
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Surgeon"]</label><select class="form-select form-select-solid" data-cd="surgeonId">@foreach (var s in Model.Surgeons) {<option value="@s.Id">@DisplayName.Of(s.Name, s.NameEn)</option>}</select></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Procedure"]</label><select class="form-select form-select-solid" data-cd="serviceId">@foreach (var p in procs) {<option value="@p.Id">@p.Label · @DisplayName.Of(p.Name, p.NameEn)</option>}</select></div>
+            @foreach (var (key, label, rows) in new[] { ("position", T["Position"].Value, 1), ("skinPrep", T["Skin preparation"].Value, 1), ("gloves", T["Gloves"].Value, 1), ("instruments", T["Instruments"].Value, 3), ("equipment", T["Equipment"].Value, 2), ("sutures", T["Sutures"].Value, 2), ("notes", T["Notes"].Value, 2) })
+            {
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@label</label><textarea class="form-control form-control-solid" rows="@rows" dir="auto" data-cd="@key"></textarea></div>
+            }
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-card-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+}
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Theatre/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value) }, bm = document.getElementById('blkModal'), cm = document.getElementById('cardModal'), bid = null;
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            function mins(v) { var p = (v || '0:0').split(':'); return (+p[0]) * 60 + (+p[1]); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-blk],[data-blk-save],[data-card],[data-card-save]'); if (!t) return;
+                if (t.hasAttribute('data-blk')) {
+                    var d = t.getAttribute('data-b') ? JSON.parse(t.getAttribute('data-b')) : null; bid = d ? d.id : null;
+                    function f(k) { return bm.querySelector('[data-bk=' + k + ']'); }
+                    if (d) { f('roomId').value = d.roomId; f('weekday').value = d.weekday; f('start').value = d.start; f('end').value = d.end; f('surgeonId').value = d.surgeonId || ''; f('label').value = d.label || ''; f('isActive').checked = d.isActive; }
+                    bootstrap.Modal.getOrCreateInstance(bm).show(); return;
+                }
+                if (t.hasAttribute('data-blk-save')) {
+                    function g(k) { return bm.querySelector('[data-bk=' + k + ']'); }
+                    post('Blocks', { id: bid, roomId: +g('roomId').value, weekday: +g('weekday').value, startMinute: mins(g('start').value), endMinute: mins(g('end').value),
+                        surgeonId: g('surgeonId').value ? +g('surgeonId').value : null, label: g('label').value || null, isActive: g('isActive').checked }).then(after); return;
+                }
+                if (t.hasAttribute('data-card')) {
+                    var c = t.getAttribute('data-c') ? JSON.parse(t.getAttribute('data-c')) : {};
+                    cm.querySelectorAll('[data-cd]').forEach(function (el) { var k = el.getAttribute('data-cd'); if (el.tagName === 'SELECT') { if (c[k]) el.value = c[k]; } else el.value = c[k] || ''; });
+                    bootstrap.Modal.getOrCreateInstance(cm).show(); return;
+                }
+                var body = {}; cm.querySelectorAll('[data-cd]').forEach(function (el) { var k = el.getAttribute('data-cd'); body[k] = el.tagName === 'SELECT' ? +el.value : (el.value || null); });
+                post('Cards', body).then(after);
+            });
+        })();
+    </script>
+}

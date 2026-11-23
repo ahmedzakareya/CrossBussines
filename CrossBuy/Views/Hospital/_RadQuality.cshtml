@@ -1,0 +1,126 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalRadQualityPanel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H243 — on the exam: the structured category (ACR systems) with its follow-up, and the radiation dose with the
+    patient's dose of the last 12 months. ViewData: RadOrder (HospitalRadOrder), CanRad, CanReport.
+*@
+@{
+    var o = (HospitalRadOrder)ViewData["RadOrder"]!;
+    bool canRad = ViewData["CanRad"] as bool? == true, canReport = ViewData["CanReport"] as bool? == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var f = Model.FollowUp; var d = Model.Dose;
+    var cat = f == null ? null : HospitalRadQualityRules.Find(f.System, f.Category);
+    bool ionising = o.Modality is HospitalRadModality.CT or HospitalRadModality.XRay;
+    bool canCategorize = canReport && o.Status is HospitalRadStatus.Reporting or HospitalRadStatus.Signed && (f == null || f.Status == HospitalRadFollowUpStatus.Open || f.DueDate == null);
+}
+@if (!Model.Ready)
+{
+    <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalRadQualityService.NoTables]</div></div>
+}
+else
+{
+    <div class="card card-flush mb-5">
+        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Category and follow-up"]</span>
+            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS"]</span></h3>
+            @if (canCategorize) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rq-cat>@(f == null ? T["Set"] : T["Change"])</button></div>}
+        </div>
+        <div class="card-body pt-2">
+            @if (f == null) {<div class="text-muted fs-7">@T["No category given."]</div>}
+            else
+            {
+                <div class="d-flex align-items-center gap-3 mb-2"><span class="badge badge-light-primary fs-6 hp-num" dir="ltr">@f.System @f.Category</span><span class="fw-semibold text-gray-800 fs-7">@(cat == null ? "" : DisplayName.Of(cat.Ar, cat.En))</span></div>
+                @if (f.Recommendation != null) {<div class="text-gray-700 fs-7 mb-2" dir="auto">@f.Recommendation</div>}
+                @if (f.DueDate is DateTime due)
+                {
+                    <div class="d-flex align-items-center gap-2 fs-7"><i class="ki-outline ki-calendar fs-4 text-gray-500"></i><span class="hp-num" dir="ltr">@due.ToString("dd/MM/yyyy", inv)</span>
+                        <span class="badge badge-light-@(f.Status == HospitalRadFollowUpStatus.Open ? (HospitalRadQualityRules.Overdue(f, DateTime.Today) ? "danger" : "info") : "primary") fs-8">@T["rfu:" + f.Status]</span>
+                        @if (Model.AnsweredBy != null) {<span class="text-muted hp-num" dir="ltr">→ @Model.AnsweredBy</span>}</div>
+                }
+            }
+        </div>
+    </div>
+    @if (ionising)
+    {
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Radiation dose"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["This patient, last 12 months:"] <span class="hp-num" dir="ltr">@Model.CumulativeMsv12.ToString("0.##", inv) mSv · @Model.Exams12</span></span></h3>
+                @if (canRad && o.ScanStartedAt != null) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rq-dose>@(d == null ? T["Record"] : T["Change"])</button></div>}
+            </div>
+            <div class="card-body pt-2">
+                @if (d == null) {<div class="text-muted fs-7">@T["No dose recorded."]</div>}
+                else
+                {
+                    <div class="d-flex flex-wrap gap-4 fs-7">
+                        <span>@T["dr:" + d.Region]</span>
+                        @if (d.CtdiVol is decimal c) {<span class="hp-num" dir="ltr">CTDIvol @c.ToString("0.##", inv) mGy</span>}
+                        @if (d.Dlp is decimal l) {<span class="hp-num" dir="ltr">DLP @l.ToString("0.#", inv) mGy·cm</span>}
+                        @if (d.Dap is decimal a) {<span class="hp-num" dir="ltr">DAP @a.ToString("0.##", inv) Gy·cm²</span>}
+                        @if (d.EffectiveMsv is decimal e) {<span class="fw-bold hp-num" dir="ltr">≈ @e.ToString("0.##", inv) mSv</span>}
+                    </div>
+                    @if (d.AboveReference) {<div class="badge badge-light-danger fs-8 mt-2">@T["Above the diagnostic reference level"]</div>}
+                }
+            </div>
+        </div>
+    }
+
+    @if (canCategorize)
+    {
+        <div class="modal fade" id="rqCat" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+            <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <div class="modal-body px-10 pt-0 pb-10">
+                <div class="mb-8 text-center"><h1 class="mb-3">@T["Category and follow-up"]</h1></div>
+                <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["Category"]</label>
+                    <select class="form-select form-select-solid" data-rq="cat">
+                        @foreach (var g in HospitalRadQualityRules.Categories.GroupBy(c => c.System))
+                        {
+                            <optgroup label="@g.Key">@foreach (var c in g) {<option value="@c.System|@c.Code" data-rec="@c.Recommendation" data-months="@c.FollowUpMonths" selected="@(f?.System == c.System && f?.Category == c.Code)">@c.System @c.Code — @DisplayName.Of(c.Ar, c.En)</option>}</optgroup>
+                        }
+                    </select></div>
+                <div class="mb-5"><label class="fs-6 fw-semibold mb-2">@T["Recommendation"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-rq="rec" value="@f?.Recommendation" /></div>
+                <div><label class="fs-6 fw-semibold mb-2">@T["Follow-up due"]</label><input type="date" class="form-control form-control-solid" data-rq="due" value="@f?.DueDate?.ToString("yyyy-MM-dd", inv)" /><div class="text-muted fs-8 mt-1">@T["Empty: from the category's interval."]</div></div>
+                <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rq-cat-save>@T["Save"]</button></div>
+            </div>
+        </div></div></div>
+    }
+    @if (ionising && canRad && o.ScanStartedAt != null)
+    {
+        <div class="modal fade" id="rqDose" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+            <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <div class="modal-body px-10 pt-0 pb-10">
+                <div class="mb-8 text-center"><h1 class="mb-3">@T["Radiation dose"]</h1><div class="text-muted fw-semibold fs-6">@T["From the scanner's dose report."]</div></div>
+                <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["Body region"]</label><select class="form-select form-select-solid" data-rq="region">@foreach (var r in HospitalRadQualityRules.Regions.Keys) {<option value="@r" selected="@(d?.Region == r)">@T["dr:" + r]</option>}</select></div>
+                <div class="row g-4">
+                    <div class="col-4"><label class="fs-7 fw-semibold mb-1" dir="ltr">CTDIvol (mGy)</label><input type="number" step="0.01" class="form-control form-control-solid hp-num" dir="ltr" data-rq="ctdiVol" value="@d?.CtdiVol?.ToString(inv)" /></div>
+                    <div class="col-4"><label class="fs-7 fw-semibold mb-1" dir="ltr">DLP (mGy·cm)</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-rq="dlp" value="@d?.Dlp?.ToString(inv)" /></div>
+                    <div class="col-4"><label class="fs-7 fw-semibold mb-1" dir="ltr">DAP (Gy·cm²)</label><input type="number" step="0.01" class="form-control form-control-solid hp-num" dir="ltr" data-rq="dap" value="@d?.Dap?.ToString(inv)" /></div>
+                </div>
+                <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rq-dose-save>@T["Save"]</button></div>
+            </div>
+        </div></div></div>
+    }
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Radiology/" + o.ID + "/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            function v(m, k) { var el = m.querySelector('[data-rq=' + k + ']'); return el.value === '' ? null : el.value; }
+            var cm = document.getElementById('rqCat');
+            if (cm) cm.querySelector('[data-rq=cat]').addEventListener('change', function () { var op = this.selectedOptions[0]; cm.querySelector('[data-rq=rec]').value = op.getAttribute('data-rec') || ''; cm.querySelector('[data-rq=due]').value = ''; });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-rq-cat],[data-rq-cat-save],[data-rq-dose],[data-rq-dose-save]'); if (!t) return;
+                if (t.hasAttribute('data-rq-cat')) { bootstrap.Modal.getOrCreateInstance(cm).show(); return; }
+                if (t.hasAttribute('data-rq-dose')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('rqDose')).show(); return; }
+                if (t.hasAttribute('data-rq-cat-save')) {
+                    var sc = cm.querySelector('[data-rq=cat]').value.split('|');
+                    post('Category', { system: sc[0], code: sc[1], recommendation: v(cm, 'rec'), dueDate: v(cm, 'due') }).then(after); return;
+                }
+                var dm = document.getElementById('rqDose');
+                post('Dose', { region: v(dm, 'region'), ctdiVol: v(dm, 'ctdiVol') === null ? null : +v(dm, 'ctdiVol'), dlp: v(dm, 'dlp') === null ? null : +v(dm, 'dlp'), dap: v(dm, 'dap') === null ? null : +v(dm, 'dap') }).then(after);
+            });
+        })();
+    </script>
+}

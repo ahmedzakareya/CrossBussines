@@ -179,6 +179,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalBiomedModel.Configure(b);   // H245: biomedical devices over the fixed assets
 			b.Entity<HospitalRoomType>(e =>
 			{
 				e.Property(x => x.DailyRate).HasPrecision(18, 4);

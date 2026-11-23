@@ -1,0 +1,181 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalBiomedPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H245 — biomedical engineering: the medical devices (fixed assets) with their location, risk class, next
+    preventive maintenance and electrical-safety test, and whether they are in service. The schedules themselves are
+    kept on the asset (accounting) screen. Theme controls only.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Biomedical engineering"].Value;
+    string q = ViewBag.Q as string ?? "", view = ViewBag.View as string ?? ""; int page = (int)ViewBag.Page, pages = (int)ViewBag.Pages; bool canManage = ViewBag.CanManage == true;
+    string Link(int p, string? v = null) => Url.Action("Biomed", new { q, view = v ?? view, page = p })!;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy", inv) ?? "—";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Biomedical engineering"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Facility"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Biomedical engineering"]</li></ul>
+        </div>
+        @if (canManage && Model.Ready) {<button type="button" class="btn btn-sm btn-primary" data-bm-dev="0"><i class="ki-outline ki-plus fs-4"></i>@T["Register a device"]</button>}
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><div class="fs-6 text-gray-700 fw-semibold">@T[HospitalBiomedService.NoTables]</div></div>
+        }
+        <div class="row g-5 mb-5">
+            @foreach (var (v, num, label, danger) in new[]
+            {
+                ("", Model.Devices.ToString(inv), T["Devices in the register"].Value, false),
+                ("down", Model.DownNow.ToString(inv), T["Out of service now"].Value, Model.DownNow > 0),
+                ("overdue", Model.SafetyOverdue.ToString(inv), T["Safety test overdue"].Value, Model.SafetyOverdue > 0),
+                ("", (Model.PmCompliance?.ToString("0", inv) ?? "—") + "% · " + (Model.Availability30?.ToString("0.#", inv) ?? "—") + "%", T["PM compliance · availability (30 days)"].Value, false),
+            })
+            {
+                <div class="col-6 col-xl-3"><a href="@Link(1, v)" class="card card-flush h-100 @(view == v && v != "" ? "border border-primary" : "") text-hover-primary"><div class="card-body d-flex flex-column justify-content-between py-6">
+                    <span class="fs-2hx fw-bold text-@(danger ? "danger" : "gray-900") hp-num" dir="ltr" style="text-align:start">@num</span><span class="text-gray-600 fw-semibold fs-6">@label</span></div></a></div>
+            }
+        </div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Medical devices"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Out of service first, then overdue, high risk before others"]</span></h3>
+                <form class="card-toolbar gap-2" method="get" action="@Url.Action("Biomed")">
+                    <select name="view" class="form-select form-select-sm form-select-solid w-150px"><option value="">@T["In the register"]</option><option value="down" selected="@(view == "down")">@T["Out of service"]</option><option value="overdue" selected="@(view == "overdue")">@T["Overdue"]</option><option value="retired" selected="@(view == "retired")">@T["Retired"]</option></select>
+                    <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-12" placeholder="@T["Search a device, serial or room"]" /></div>
+                    <button type="submit" class="btn btn-sm btn-light-primary">@T["Search"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Rows.Count == 0)
+                {
+                    <div class="text-center py-15"><i class="ki-outline ki-technology-2 fs-3tx text-gray-300 mb-4"></i><div class="text-gray-600 fw-semibold fs-6">@T["No device here."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted fs-7"><th class="min-w-200px">@T["Device"]</th><th>@T["Room"]</th><th>@T["Risk"]</th><th class="min-w-150px">@T["Next PM"]</th><th>@T["Safety test"]</th><th>@T["Status"]</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            var d = r.Device;
+                            <tr>
+                                <td><a href="@Url.Action("FixedAssetDetail", "Accounting", new { id = d.AssetId })" class="fw-bold text-gray-800 text-hover-primary">@DisplayName.Of(r.AssetName, r.AssetNameEn)</a>
+                                    <div class="text-muted fs-8">@T["bmc:" + d.Category]@if (d.Manufacturer != null || d.ModelName != null) {<text> · <span dir="auto">@d.Manufacturer @d.ModelName</span></text>}@if (d.SerialNo != null) {<text> · <span class="hp-num" dir="ltr">SN @d.SerialNo</span></text>}</div></td>
+                                <td class="fs-7">@(r.Room ?? "—")</td>
+                                <td><span class="badge badge-light-@(d.RiskClass == HospitalBiomedRisk.High ? "danger" : "primary") fs-8">@T["bmr:" + d.RiskClass]</span></td>
+                                <td>@if (r.NextPm != null) {<span class="fw-bold fs-7 hp-num @(r.PmOverdue ? "text-danger" : "text-gray-800")" dir="ltr">@D(r.NextPm)</span><div class="text-muted fs-8" dir="auto">@r.NextPmTitle</div>} else {<span class="text-muted fs-8">@T["No schedule"]</span>}</td>
+                                <td>@if (r.LastSafety != null) {<span class="badge badge-light-@(r.LastSafetyPassed == true ? "primary" : "danger") fs-8">@(r.LastSafetyPassed == true ? T["Pass"] : T["Fail"])</span><div class="fs-8 hp-num @(r.SafetyOverdue ? "text-danger" : "text-muted")" dir="ltr">@D(HospitalNursingService.UtcToWard(r.LastSafety.Value))</div>}
+                                    else if (d.Status != HospitalBiomedStatus.Retired) {<span class="badge badge-light-danger fs-8">@T["Never tested"]</span>}</td>
+                                <td><span class="badge badge-light-@(d.Status == HospitalBiomedStatus.Down ? "danger" : d.Status == HospitalBiomedStatus.Retired ? "secondary" : "primary") fs-7">@T["bms:" + d.Status]</span>@if (r.DownHours30 > 0) {<div class="text-muted fs-8 hp-num" dir="ltr">@r.DownHours30.ToString("0.#", inv) h / 30d</div>}</td>
+                                <td class="text-end text-nowrap">@if (canManage && d.Status != HospitalBiomedStatus.Retired)
+                                    {
+                                        if (d.Status == HospitalBiomedStatus.Down) {<button type="button" class="btn btn-sm btn-light-primary" data-bm-ev="@d.ID" data-kind="Up">@T["Back in service"]</button>}
+                                        else {<button type="button" class="btn btn-sm btn-icon btn-light-danger" title="@T["Out of service"]" data-bs-toggle="tooltip" data-bm-ev="@d.ID" data-kind="Down"><i class="ki-outline ki-information-5 fs-3"></i></button>}
+                                        <button type="button" class="btn btn-sm btn-icon btn-light ms-1" title="@T["Safety test"]" data-bs-toggle="tooltip" data-bm-test="@d.ID"><i class="ki-outline ki-flash-circle fs-3"></i></button>
+                                        if (r.NextPmScheduleId != null) {<button type="button" class="btn btn-sm btn-icon btn-light ms-1" title="@T["PM done today"]" data-bs-toggle="tooltip" data-bm-pm="@d.ID" data-sch="@r.NextPmScheduleId"><i class="ki-outline ki-wrench fs-3"></i></button>}
+                                    }
+                                    @if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light ms-1" data-bm-dev="@d.ID" data-d="@(Json.Serialize(new { d.AssetId, d.RoomId, d.Category, d.RiskClass, d.SerialNo, d.Manufacturer, d.ModelName, retired = d.Status == HospitalBiomedStatus.Retired, name = DisplayName.Of(r.AssetName, r.AssetNameEn) }).ToString())"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    @if (pages > 1)
+                    {
+                        <ul class="pagination mt-6">
+                            <li class="page-item previous @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Link(page - 1)"><i class="previous"></i></a></li>
+                            @for (int n = Math.Max(1, page - 3); n <= Math.Min(pages, page + 3); n++) {<li class="page-item @(n == page ? "active" : "")"><a class="page-link" href="@Link(n)">@n</a></li>}
+                            <li class="page-item next @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Link(page + 1)"><i class="next"></i></a></li>
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canManage && Model.Ready)
+{
+<div class="modal fade" id="bmDev" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Medical device"]</h1><div class="text-muted fw-semibold fs-6">@T["A device is one of the company's fixed assets; its maintenance schedules stay on the asset."]</div></div>
+        <div class="row g-5">
+            <div class="col-12" data-bm-assetrow><label class="required fs-6 fw-semibold mb-2">@T["Fixed asset"]</label>
+                <select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#bmDev" data-placeholder="@T["Choose the asset"]" data-bm="assetId"><option></option>@foreach (var a in Model.FreeAssets) {<option value="@a.Id">@a.Name</option>}</select></div>
+            <div class="col-12 d-none fw-bold text-gray-800" data-bm-assetname></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Category"]</label><select class="form-select form-select-solid" data-bm="category">@foreach (var c in HospitalBiomedCategory.All) {<option value="@c">@T["bmc:" + c]</option>}</select></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Risk"]</label><select class="form-select form-select-solid" data-bm="riskClass">@foreach (var c in HospitalBiomedRisk.All) {<option value="@c">@T["bmr:" + c]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Room"]</label><select class="form-select form-select-solid" data-bm="roomId"><option value="">—</option>@foreach (var r in Model.Rooms) {<option value="@r.Id">@r.Name</option>}</select></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Serial number"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-bm="serialNo" /></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Manufacturer"]</label><input class="form-control form-control-solid" dir="auto" maxlength="100" data-bm="manufacturer" /></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Model"]</label><input class="form-control form-control-solid" dir="auto" maxlength="100" data-bm="modelName" /></div>
+            <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-bm="retired" /><span class="form-check-label fw-semibold text-gray-700">@T["Retired"]</span></label></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bm-dev-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+<div class="modal fade" id="bmTest" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Electrical-safety test"]</h1><div class="text-muted fw-semibold fs-6">@T["A failed test takes the device out of service."]</div></div>
+        <div class="d-flex gap-6 mb-5">
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="bm-pass" value="1" checked /><span class="form-check-label fw-semibold">@T["Pass"]</span></label>
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="bm-pass" value="0" /><span class="form-check-label fw-semibold">@T["Fail"]</span></label>
+        </div>
+        <label class="fs-6 fw-semibold mb-2">@T["Readings or what failed"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="300" dir="auto" data-bm-test-detail></textarea>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bm-test-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+}
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Biomed/Devices"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), down: @Json.Serialize(T["What is wrong with the device?"].Value), up: @Json.Serialize(T["Put the device back in service?"].Value), pm: @Json.Serialize(T["Record this preventive maintenance as done today?"].Value) };
+            var dm = document.getElementById('bmDev'), tm = document.getElementById('bmTest'), devAsset = 0, testId = 0;
+            function post(u, b) { return fetch(root + u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function after(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }
+            function f(k) { return dm.querySelector('[data-bm=' + k + ']'); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-bm-dev],[data-bm-dev-save],[data-bm-ev],[data-bm-test],[data-bm-test-save],[data-bm-pm]'); if (!t) return;
+                if (t.hasAttribute('data-bm-dev')) {
+                    var d = t.getAttribute('data-d') ? JSON.parse(t.getAttribute('data-d')) : null;
+                    devAsset = d ? d.assetId : 0;
+                    dm.querySelector('[data-bm-assetrow]').classList.toggle('d-none', !!d); var nm = dm.querySelector('[data-bm-assetname]'); nm.classList.toggle('d-none', !d); nm.textContent = d ? d.name : '';
+                    ['serialNo', 'manufacturer', 'modelName'].forEach(function (k) { f(k).value = d && d[k] || ''; });
+                    if (d) { f('category').value = d.category; f('riskClass').value = d.riskClass; f('roomId').value = d.roomId || ''; f('retired').checked = d.retired; } else f('retired').checked = false;
+                    bootstrap.Modal.getOrCreateInstance(dm).show(); return;
+                }
+                if (t.hasAttribute('data-bm-dev-save')) {
+                    var asset = devAsset || +f('assetId').value;
+                    post('', { assetId: asset, roomId: f('roomId').value ? +f('roomId').value : null, category: f('category').value, riskClass: f('riskClass').value,
+                        serialNo: f('serialNo').value || null, manufacturer: f('manufacturer').value || null, modelName: f('modelName').value || null, retired: f('retired').checked }).then(after); return;
+                }
+                if (t.hasAttribute('data-bm-ev')) {
+                    var id = t.getAttribute('data-bm-ev');
+                    if (t.getAttribute('data-kind') === 'Down') cbPrompt(W.down, { kind: 'danger', textarea: true }).then(function (v) { if (v) post('/' + id + '/Event', { kind: 'Down', detail: v }).then(after); });
+                    else cbConfirm(W.up).then(function (ok) { if (ok) post('/' + id + '/Event', { kind: 'Up' }).then(after); });
+                    return;
+                }
+                if (t.hasAttribute('data-bm-test')) { testId = t.getAttribute('data-bm-test'); tm.querySelector('[data-bm-test-detail]').value = ''; bootstrap.Modal.getOrCreateInstance(tm).show(); return; }
+                if (t.hasAttribute('data-bm-test-save')) {
+                    var pass = tm.querySelector('input[name=bm-pass]:checked').value === '1';
+                    post('/' + testId + '/Event', { kind: 'SafetyTest', passed: pass, detail: tm.querySelector('[data-bm-test-detail]').value || null }).then(after); return;
+                }
+                cbConfirm(W.pm).then(function (ok) { if (ok) post('/' + t.getAttribute('data-bm-pm') + '/Pm', { scheduleId: +t.getAttribute('data-sch') }).then(after); });
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,265 @@
+{
+ "unit": "H245 - Biomedical engineering",
+ "strings": {
+  "A device is one of the company's fixed assets; its maintenance schedules stay on the asset.": {
+   "ar": "الجهاز أحد الأصول الثابتة للشركة، وتبقى جداول صيانته على الأصل.",
+   "en": "A device is one of the company's fixed assets; its maintenance schedules stay on the asset.",
+   "fr": "Un dispositif est une immobilisation de la société ; ses plans de maintenance restent sur l'actif."
+  },
+  "A failed test takes the device out of service.": {
+   "ar": "الفحص الراسب يُخرج الجهاز من الخدمة.",
+   "en": "A failed test takes the device out of service.",
+   "fr": "Un test échoué met le dispositif hors service."
+  },
+  "A value is too long": {
+   "ar": "إحدى القيم أطول من المسموح",
+   "en": "A value is too long",
+   "fr": "Une valeur est trop longue"
+  },
+  "Back in service": {
+   "ar": "عاد إلى الخدمة",
+   "en": "Back in service",
+   "fr": "Remis en service"
+  },
+  "Biomedical engineering is not installed yet (hospital_h245_biomed.sql).": {
+   "ar": "الهندسة الطبية الحيوية غير مثبتة بعد (hospital_h245_biomed.sql).",
+   "en": "Biomedical engineering is not installed yet (hospital_h245_biomed.sql).",
+   "fr": "Le génie biomédical n'est pas encore installé (hospital_h245_biomed.sql)."
+  },
+  "Choose pass or fail": {
+   "ar": "اختر ناجح أو راسب",
+   "en": "Choose pass or fail",
+   "fr": "Choisissez réussi ou échoué"
+  },
+  "Choose the asset": {
+   "ar": "اختر الأصل",
+   "en": "Choose the asset",
+   "fr": "Choisissez l'actif"
+  },
+  "Choose the risk class": {
+   "ar": "اختر درجة الخطورة",
+   "en": "Choose the risk class",
+   "fr": "Choisissez la classe de risque"
+  },
+  "Devices in the register": {
+   "ar": "الأجهزة في السجل",
+   "en": "Devices in the register",
+   "fr": "Dispositifs au registre"
+  },
+  "Electrical-safety test": {
+   "ar": "فحص السلامة الكهربائية",
+   "en": "Electrical-safety test",
+   "fr": "Test de sécurité électrique"
+  },
+  "Fixed asset": {
+   "ar": "الأصل الثابت",
+   "en": "Fixed asset",
+   "fr": "Immobilisation"
+  },
+  "In the register": {
+   "ar": "في السجل",
+   "en": "In the register",
+   "fr": "Au registre"
+  },
+  "Manufacturer": {
+   "ar": "الشركة المصنّعة",
+   "en": "Manufacturer",
+   "fr": "Fabricant"
+  },
+  "Medical device": {
+   "ar": "جهاز طبي",
+   "en": "Medical device",
+   "fr": "Dispositif médical"
+  },
+  "Medical devices": {
+   "ar": "الأجهزة الطبية",
+   "en": "Medical devices",
+   "fr": "Dispositifs médicaux"
+  },
+  "Model": {
+   "ar": "الطراز",
+   "en": "Model",
+   "fr": "Modèle"
+  },
+  "Never tested": {
+   "ar": "لم يُفحص قط",
+   "en": "Never tested",
+   "fr": "Jamais testé"
+  },
+  "Next PM": {
+   "ar": "الصيانة الوقائية التالية",
+   "en": "Next PM",
+   "fr": "Prochaine maintenance"
+  },
+  "No device here.": {
+   "ar": "لا توجد أجهزة هنا.",
+   "en": "No device here.",
+   "fr": "Aucun dispositif ici."
+  },
+  "No schedule": {
+   "ar": "لا يوجد جدول",
+   "en": "No schedule",
+   "fr": "Aucun plan"
+  },
+  "Out of service": {
+   "ar": "خارج الخدمة",
+   "en": "Out of service",
+   "fr": "Hors service"
+  },
+  "Out of service first, then overdue, high risk before others": {
+   "ar": "خارج الخدمة أولًا ثم المتأخر، والعالي الخطورة قبل غيره",
+   "en": "Out of service first, then overdue, high risk before others",
+   "fr": "Hors service d'abord, puis en retard, risque élevé en premier"
+  },
+  "Out of service now": {
+   "ar": "خارج الخدمة الآن",
+   "en": "Out of service now",
+   "fr": "Hors service maintenant"
+  },
+  "PM compliance · availability (30 days)": {
+   "ar": "الالتزام بالصيانة · الجاهزية (30 يومًا)",
+   "en": "PM compliance · availability (30 days)",
+   "fr": "Conformité maintenance · disponibilité (30 jours)"
+  },
+  "PM done today": {
+   "ar": "أُنجزت الصيانة الوقائية اليوم",
+   "en": "PM done today",
+   "fr": "Maintenance faite aujourd'hui"
+  },
+  "Put the device back in service?": {
+   "ar": "هل تعيد الجهاز إلى الخدمة؟",
+   "en": "Put the device back in service?",
+   "fr": "Remettre le dispositif en service ?"
+  },
+  "Readings or what failed": {
+   "ar": "القراءات أو سبب الرسوب",
+   "en": "Readings or what failed",
+   "fr": "Mesures ou ce qui a échoué"
+  },
+  "Record this preventive maintenance as done today?": {
+   "ar": "هل تسجّل هذه الصيانة الوقائية منجزة اليوم؟",
+   "en": "Record this preventive maintenance as done today?",
+   "fr": "Enregistrer cette maintenance préventive comme faite aujourd'hui ?"
+  },
+  "Register a device": {
+   "ar": "تسجيل جهاز",
+   "en": "Register a device",
+   "fr": "Enregistrer un dispositif"
+  },
+  "Risk": {
+   "ar": "الخطورة",
+   "en": "Risk",
+   "fr": "Risque"
+  },
+  "Safety test": {
+   "ar": "فحص السلامة",
+   "en": "Safety test",
+   "fr": "Test de sécurité"
+  },
+  "Safety test overdue": {
+   "ar": "فحص السلامة متأخر",
+   "en": "Safety test overdue",
+   "fr": "Test de sécurité en retard"
+  },
+  "Search a device, serial or room": {
+   "ar": "ابحث عن جهاز أو رقم تسلسلي أو غرفة",
+   "en": "Search a device, serial or room",
+   "fr": "Rechercher un dispositif, un numéro de série ou une salle"
+  },
+  "The device is already out of service": {
+   "ar": "الجهاز خارج الخدمة بالفعل",
+   "en": "The device is already out of service",
+   "fr": "Le dispositif est déjà hors service"
+  },
+  "The device is in service": {
+   "ar": "الجهاز في الخدمة",
+   "en": "The device is in service",
+   "fr": "Le dispositif est en service"
+  },
+  "This device is retired": {
+   "ar": "هذا الجهاز مستبعد",
+   "en": "This device is retired",
+   "fr": "Ce dispositif est retiré"
+  },
+  "What is wrong with the device?": {
+   "ar": "ما العطل في الجهاز؟",
+   "en": "What is wrong with the device?",
+   "fr": "Qu'est-ce qui ne va pas avec le dispositif ?"
+  },
+  "Write the recall reference": {
+   "ar": "اكتب مرجع الاستدعاء",
+   "en": "Write the recall reference",
+   "fr": "Indiquez la référence du rappel"
+  },
+  "Write what failed": {
+   "ar": "اكتب ما رسب فيه",
+   "en": "Write what failed",
+   "fr": "Indiquez ce qui a échoué"
+  },
+  "Write what is wrong": {
+   "ar": "اكتب العطل",
+   "en": "Write what is wrong",
+   "fr": "Indiquez le problème"
+  },
+  "bmc:LifeSupport": {
+   "ar": "دعم الحياة",
+   "en": "Life support",
+   "fr": "Support vital"
+  },
+  "bmc:Monitoring": {
+   "ar": "المراقبة",
+   "en": "Monitoring",
+   "fr": "Surveillance"
+  },
+  "bmc:Diagnostic": {
+   "ar": "تشخيصي",
+   "en": "Diagnostic",
+   "fr": "Diagnostic"
+  },
+  "bmc:Therapeutic": {
+   "ar": "علاجي",
+   "en": "Therapeutic",
+   "fr": "Thérapeutique"
+  },
+  "bmc:Laboratory": {
+   "ar": "مختبري",
+   "en": "Laboratory",
+   "fr": "Laboratoire"
+  },
+  "bmc:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "bmr:High": {
+   "ar": "عالية",
+   "en": "High",
+   "fr": "Élevé"
+  },
+  "bmr:Medium": {
+   "ar": "متوسطة",
+   "en": "Medium",
+   "fr": "Moyen"
+  },
+  "bmr:Low": {
+   "ar": "منخفضة",
+   "en": "Low",
+   "fr": "Faible"
+  },
+  "bms:InService": {
+   "ar": "في الخدمة",
+   "en": "In service",
+   "fr": "En service"
+  },
+  "bms:Down": {
+   "ar": "خارج الخدمة",
+   "en": "Out of service",
+   "fr": "Hors service"
+  },
+  "bms:Retired": {
+   "ar": "مستبعد",
+   "en": "Retired",
+   "fr": "Retiré"
+  }
+ }
+}

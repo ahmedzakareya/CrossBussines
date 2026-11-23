@@ -220,6 +220,7 @@
                         }
                     </div>
                 </div>
+                @if (ViewBag.RadQuality is HospitalRadQualityPanel rq) { ViewData["RadOrder"] = o; ViewData["CanRad"] = canRad; ViewData["CanReport"] = canReport; <partial name="_RadQuality" model="rq" /> }
                 @if (canRad && !signed)
                 {
                     <div class="card card-flush mb-5">

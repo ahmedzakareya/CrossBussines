@@ -53,6 +53,7 @@ namespace CrossBuy.Controllers
 			// H31: the exam's pictures, and who may attach them
 			ViewBag.Images = (await RadImageSvc.OfOrdersAsync(ctx, new[] { id }, ct)).GetValueOrDefault(id) ?? Array.Empty<HospitalRadImageRow>();
 			ViewBag.PacsLink = HospitalPacsRules.ViewerLink((await PacsSvc.GetAsync(ctx, ct)).ViewerUrl, v.Order.AccessionNo, v.Patient.Mrn);   // H199
+			ViewBag.RadQuality = await RadQSvc.PanelAsync(ctx, id, v.Patient.ID, DateTime.UtcNow, ct);   // H243
 			return View(v);
 		}
 

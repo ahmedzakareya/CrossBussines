@@ -109,6 +109,7 @@ namespace CrossBuy.Models.Context.Hospital
 		public static void Configure(ModelBuilder b)
 		{
 			HospitalAnaesthesiaModel.Configure(b);   // H202: the anaesthesia record of each operation
+			HospitalTheatreBlockModel.Configure(b);   // H244: preference cards and block time
 			b.Entity<HospitalSurgery>(e =>
 			{
 				e.ToTable("HospitalSurgeries");   // no DbSet: each names its table

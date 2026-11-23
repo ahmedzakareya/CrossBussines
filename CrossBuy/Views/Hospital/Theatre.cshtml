@@ -64,6 +64,7 @@
             <a href="@Url.Action("Theatre", new { day = day.AddDays(-1).ToString("yyyy-MM-dd", inv) })" class="btn btn-sm btn-icon btn-light" title="@T["Previous day"]"><i class="ki-outline @(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "ki-arrow-right" : "ki-arrow-left") fs-4"></i></a>
             <input type="date" class="form-control form-control-sm form-control-solid w-150px hp-num" dir="ltr" value="@day.ToString("yyyy-MM-dd", inv)" data-theatre-day />
             <a href="@Url.Action("Theatre", new { day = day.AddDays(1).ToString("yyyy-MM-dd", inv) })" class="btn btn-sm btn-icon btn-light" title="@T["Next day"]"><i class="ki-outline @(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "ki-arrow-left" : "ki-arrow-right") fs-4"></i></a>
+            <a href="@Url.Action("TheatreBlocks")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-time fs-4"></i>@T["Blocks and preference cards"]</a>
             @if (canBook && ready && rooms.Count > 0) { <button type="button" class="btn btn-sm btn-primary" data-case-open><i class="ki-outline ki-plus fs-4"></i>@T["Book a case"]</button> }
         </div>
     </div></div>

@@ -1,0 +1,195 @@
+{
+ "unit": "H243 - Radiology quality",
+ "strings": {
+  "A CT dose needs its DLP": {
+   "ar": "جرعة الأشعة المقطعية تحتاج قيمة DLP",
+   "en": "A CT dose needs its DLP",
+   "fr": "Une dose scanner nécessite son PDL"
+  },
+  "Above the diagnostic reference level": {
+   "ar": "أعلى من المستوى المرجعي التشخيصي",
+   "en": "Above the diagnostic reference level",
+   "fr": "Au-dessus du niveau de référence diagnostique"
+  },
+  "Answered": {
+   "ar": "تمت الإجابة",
+   "en": "Answered",
+   "fr": "Répondu"
+  },
+  "BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS": {
+   "ar": "BI-RADS وLI-RADS وLung-RADS وTI-RADS وPI-RADS",
+   "en": "BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS",
+   "fr": "BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS"
+  },
+  "Category and follow-up": {
+   "ar": "التصنيف والمتابعة",
+   "en": "Category and follow-up",
+   "fr": "Catégorie et suivi"
+  },
+  "Close with a reason": {
+   "ar": "إغلاق مع ذكر السبب",
+   "en": "Close with a reason",
+   "fr": "Clôturer avec un motif"
+  },
+  "Empty: from the category's interval.": {
+   "ar": "فارغ: حسب الفترة المحددة للتصنيف.",
+   "en": "Empty: from the category's interval.",
+   "fr": "Vide : selon l'intervalle de la catégorie."
+  },
+  "Enter the accession number of the patient's later study": {
+   "ar": "أدخل رقم الدراسة اللاحقة للمريض",
+   "en": "Enter the accession number of the patient's later study",
+   "fr": "Saisissez le numéro d'accession de l'examen ultérieur du patient"
+  },
+  "Follow-up due": {
+   "ar": "موعد المتابعة",
+   "en": "Follow-up due",
+   "fr": "Suivi prévu"
+  },
+  "From the scanner's dose report.": {
+   "ar": "من تقرير الجرعة الصادر عن الجهاز.",
+   "en": "From the scanner's dose report.",
+   "fr": "D'après le rapport de dose de l'appareil."
+  },
+  "Imaging follow-ups": {
+   "ar": "متابعات التصوير",
+   "en": "Imaging follow-ups",
+   "fr": "Suivis d'imagerie"
+  },
+  "Nearest due first; each stays open until the later study answers it": {
+   "ar": "الأقرب موعدًا أولًا؛ وتبقى كل متابعة مفتوحة حتى تجيب عنها الدراسة اللاحقة",
+   "en": "Nearest due first; each stays open until the later study answers it",
+   "fr": "Échéance la plus proche d'abord ; chacun reste ouvert jusqu'à l'examen qui y répond"
+  },
+  "No category given.": {
+   "ar": "لم يُحدَّد تصنيف.",
+   "en": "No category given.",
+   "fr": "Aucune catégorie attribuée."
+  },
+  "No dose recorded.": {
+   "ar": "لم تُسجَّل جرعة.",
+   "en": "No dose recorded.",
+   "fr": "Aucune dose enregistrée."
+  },
+  "No follow-up here.": {
+   "ar": "لا توجد متابعات هنا.",
+   "en": "No follow-up here.",
+   "fr": "Aucun suivi ici."
+  },
+  "Open follow-ups": {
+   "ar": "المتابعات المفتوحة",
+   "en": "Open follow-ups",
+   "fr": "Suivis ouverts"
+  },
+  "Radiation dose": {
+   "ar": "جرعة الإشعاع",
+   "en": "Radiation dose",
+   "fr": "Dose de rayonnement"
+  },
+  "Radiology follow-up and dose are not installed yet (hospital_h243_rad_quality.sql).": {
+   "ar": "متابعة الأشعة والجرعات غير مثبتة بعد (hospital_h243_rad_quality.sql).",
+   "en": "Radiology follow-up and dose are not installed yet (hospital_h243_rad_quality.sql).",
+   "fr": "Le suivi et la dose en radiologie ne sont pas encore installés (hospital_h243_rad_quality.sql)."
+  },
+  "Recommended follow-ups": {
+   "ar": "المتابعات الموصى بها",
+   "en": "Recommended follow-ups",
+   "fr": "Suivis recommandés"
+  },
+  "Search a patient, accession or system": {
+   "ar": "ابحث عن مريض أو رقم دراسة أو نظام",
+   "en": "Search a patient, accession or system",
+   "fr": "Rechercher un patient, une accession ou un système"
+  },
+  "The accession number of the later study that answers it": {
+   "ar": "رقم الدراسة اللاحقة التي تجيب عنها",
+   "en": "The accession number of the later study that answers it",
+   "fr": "Le numéro d'accession de l'examen qui y répond"
+  },
+  "The category is given once the scan is done": {
+   "ar": "يُحدَّد التصنيف بعد انتهاء التصوير",
+   "en": "The category is given once the scan is done",
+   "fr": "La catégorie est donnée une fois l'examen fait"
+  },
+  "The dose is recorded once the scan has started": {
+   "ar": "تُسجَّل الجرعة بعد بدء التصوير",
+   "en": "The dose is recorded once the scan has started",
+   "fr": "La dose est enregistrée une fois l'examen commencé"
+  },
+  "The follow-up is due within the next three years": {
+   "ar": "يكون موعد المتابعة خلال السنوات الثلاث القادمة",
+   "en": "The follow-up is due within the next three years",
+   "fr": "Le suivi est prévu dans les trois prochaines années"
+  },
+  "This exam uses no ionising radiation": {
+   "ar": "هذا الفحص لا يستخدم إشعاعًا مؤيِّنًا",
+   "en": "This exam uses no ionising radiation",
+   "fr": "Cet examen n'utilise pas de rayonnement ionisant"
+  },
+  "This patient, last 12 months:": {
+   "ar": "هذا المريض، آخر 12 شهرًا:",
+   "en": "This patient, last 12 months:",
+   "fr": "Ce patient, 12 derniers mois :"
+  },
+  "Why is the follow-up closed?": {
+   "ar": "لماذا أُغلقت المتابعة؟",
+   "en": "Why is the follow-up closed?",
+   "fr": "Pourquoi le suivi est-il clôturé ?"
+  },
+  "Write why the follow-up is closed": {
+   "ar": "اكتب سبب إغلاق المتابعة",
+   "en": "Write why the follow-up is closed",
+   "fr": "Indiquez pourquoi le suivi est clôturé"
+  },
+  "rfu:Open": {
+   "ar": "مفتوحة",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "rfu:Done": {
+   "ar": "تمت",
+   "en": "Done",
+   "fr": "Fait"
+  },
+  "rfu:Closed": {
+   "ar": "مغلقة",
+   "en": "Closed",
+   "fr": "Clôturé"
+  },
+  "dr:Head": {
+   "ar": "الرأس",
+   "en": "Head",
+   "fr": "Tête"
+  },
+  "dr:Neck": {
+   "ar": "الرقبة",
+   "en": "Neck",
+   "fr": "Cou"
+  },
+  "dr:Chest": {
+   "ar": "الصدر",
+   "en": "Chest",
+   "fr": "Thorax"
+  },
+  "dr:AbdPelvis": {
+   "ar": "البطن والحوض",
+   "en": "Abdomen and pelvis",
+   "fr": "Abdomen et pelvis"
+  },
+  "dr:ChestAbdPelvis": {
+   "ar": "الصدر والبطن والحوض",
+   "en": "Chest, abdomen and pelvis",
+   "fr": "Thorax, abdomen et pelvis"
+  },
+  "dr:Spine": {
+   "ar": "العمود الفقري",
+   "en": "Spine",
+   "fr": "Rachis"
+  },
+  "dr:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  }
+ }
+}

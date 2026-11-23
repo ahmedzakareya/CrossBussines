@@ -10229,4 +10229,120 @@
   <data name="A guest from outside the company is in this call: it is not recorded" xml:space="preserve">
     <value>في هذه المكالمة ضيف من خارج الشركة، فلا تُسجَّل</value>
   </data>
+  <data name="A CT dose needs its DLP" xml:space="preserve"><value>جرعة الأشعة المقطعية تحتاج قيمة DLP</value></data>
+  <data name="Above the diagnostic reference level" xml:space="preserve"><value>أعلى من المستوى المرجعي التشخيصي</value></data>
+  <data name="Answered" xml:space="preserve"><value>تمت الإجابة</value></data>
+  <data name="BI-RADS, LI-RADS, Lung-RADS, TI-RADS, PI-RADS" xml:space="preserve"><value>BI-RADS وLI-RADS وLung-RADS وTI-RADS وPI-RADS</value></data>
+  <data name="Category and follow-up" xml:space="preserve"><value>التصنيف والمتابعة</value></data>
+  <data name="Close with a reason" xml:space="preserve"><value>إغلاق مع ذكر السبب</value></data>
+  <data name="Empty: from the category's interval." xml:space="preserve"><value>فارغ: حسب الفترة المحددة للتصنيف.</value></data>
+  <data name="Enter the accession number of the patient's later study" xml:space="preserve"><value>أدخل رقم الدراسة اللاحقة للمريض</value></data>
+  <data name="Follow-up due" xml:space="preserve"><value>موعد المتابعة</value></data>
+  <data name="From the scanner's dose report." xml:space="preserve"><value>من تقرير الجرعة الصادر عن الجهاز.</value></data>
+  <data name="Imaging follow-ups" xml:space="preserve"><value>متابعات التصوير</value></data>
+  <data name="Nearest due first; each stays open until the later study answers it" xml:space="preserve"><value>الأقرب موعدًا أولًا؛ وتبقى كل متابعة مفتوحة حتى تجيب عنها الدراسة اللاحقة</value></data>
+  <data name="No category given." xml:space="preserve"><value>لم يُحدَّد تصنيف.</value></data>
+  <data name="No dose recorded." xml:space="preserve"><value>لم تُسجَّل جرعة.</value></data>
+  <data name="No follow-up here." xml:space="preserve"><value>لا توجد متابعات هنا.</value></data>
+  <data name="Open follow-ups" xml:space="preserve"><value>المتابعات المفتوحة</value></data>
+  <data name="Radiation dose" xml:space="preserve"><value>جرعة الإشعاع</value></data>
+  <data name="Radiology follow-up and dose are not installed yet (hospital_h243_rad_quality.sql)." xml:space="preserve"><value>متابعة الأشعة والجرعات غير مثبتة بعد (hospital_h243_rad_quality.sql).</value></data>
+  <data name="Recommended follow-ups" xml:space="preserve"><value>المتابعات الموصى بها</value></data>
+  <data name="Search a patient, accession or system" xml:space="preserve"><value>ابحث عن مريض أو رقم دراسة أو نظام</value></data>
+  <data name="The accession number of the later study that answers it" xml:space="preserve"><value>رقم الدراسة اللاحقة التي تجيب عنها</value></data>
+  <data name="The category is given once the scan is done" xml:space="preserve"><value>يُحدَّد التصنيف بعد انتهاء التصوير</value></data>
+  <data name="The dose is recorded once the scan has started" xml:space="preserve"><value>تُسجَّل الجرعة بعد بدء التصوير</value></data>
+  <data name="The follow-up is due within the next three years" xml:space="preserve"><value>يكون موعد المتابعة خلال السنوات الثلاث القادمة</value></data>
+  <data name="This exam uses no ionising radiation" xml:space="preserve"><value>هذا الفحص لا يستخدم إشعاعًا مؤيِّنًا</value></data>
+  <data name="This patient, last 12 months:" xml:space="preserve"><value>هذا المريض، آخر 12 شهرًا:</value></data>
+  <data name="Why is the follow-up closed?" xml:space="preserve"><value>لماذا أُغلقت المتابعة؟</value></data>
+  <data name="Write why the follow-up is closed" xml:space="preserve"><value>اكتب سبب إغلاق المتابعة</value></data>
+  <data name="dr:AbdPelvis" xml:space="preserve"><value>البطن والحوض</value></data>
+  <data name="dr:Chest" xml:space="preserve"><value>الصدر</value></data>
+  <data name="dr:ChestAbdPelvis" xml:space="preserve"><value>الصدر والبطن والحوض</value></data>
+  <data name="dr:Head" xml:space="preserve"><value>الرأس</value></data>
+  <data name="dr:Neck" xml:space="preserve"><value>الرقبة</value></data>
+  <data name="dr:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="dr:Spine" xml:space="preserve"><value>العمود الفقري</value></data>
+  <data name="rfu:Closed" xml:space="preserve"><value>مغلقة</value></data>
+  <data name="rfu:Done" xml:space="preserve"><value>تمت</value></data>
+  <data name="rfu:Open" xml:space="preserve"><value>مفتوحة</value></data>
+  <data name="A block is at least an hour within the day" xml:space="preserve"><value>الحصة ساعة على الأقل ضمن اليوم</value></data>
+  <data name="Another block holds this theatre at that time" xml:space="preserve"><value>حصة أخرى تشغل هذه الغرفة في ذلك الوقت</value></data>
+  <data name="Block utilisation" xml:space="preserve"><value>استغلال الحصص</value></data>
+  <data name="Blocks and preference cards" xml:space="preserve"><value>حصص العمليات وبطاقات التفضيل</value></data>
+  <data name="Choose the surgeon or name the service line" xml:space="preserve"><value>اختر الجراح أو اذكر التخصص</value></data>
+  <data name="Each surgeon's way of doing a procedure, shown on the case" xml:space="preserve"><value>طريقة كل جراح في إجراء العملية، وتظهر على الحالة</value></data>
+  <data name="Equipment" xml:space="preserve"><value>الأجهزة</value></data>
+  <data name="Fill at least one part of the card" xml:space="preserve"><value>املأ جزءًا واحدًا على الأقل من البطاقة</value></data>
+  <data name="Gloves" xml:space="preserve"><value>القفازات</value></data>
+  <data name="Instruments" xml:space="preserve"><value>الأدوات</value></data>
+  <data name="New block" xml:space="preserve"><value>حصة جديدة</value></data>
+  <data name="New card" xml:space="preserve"><value>بطاقة جديدة</value></data>
+  <data name="No block is set." xml:space="preserve"><value>لم تُحدَّد أي حصة.</value></data>
+  <data name="No preference card here." xml:space="preserve"><value>لا توجد بطاقات تفضيل هنا.</value></data>
+  <data name="Others in the block" xml:space="preserve"><value>آخرون داخل الحصة</value></data>
+  <data name="Position" xml:space="preserve"><value>الوضعية</value></data>
+  <data name="Preference card" xml:space="preserve"><value>بطاقة التفضيل</value></data>
+  <data name="Preference cards" xml:space="preserve"><value>بطاقات التفضيل</value></data>
+  <data name="Search a surgeon or procedure" xml:space="preserve"><value>ابحث عن جراح أو عملية</value></data>
+  <data name="Service line" xml:space="preserve"><value>التخصص</value></data>
+  <data name="Skin preparation" xml:space="preserve"><value>تحضير الجلد</value></data>
+  <data name="Sutures" xml:space="preserve"><value>الخيوط الجراحية</value></data>
+  <data name="The name is 100 characters at most" xml:space="preserve"><value>الاسم 100 حرف كحد أقصى</value></data>
+  <data name="The owner's case minutes inside the block; target 75 %, under 50 % suggests release" xml:space="preserve"><value>دقائق عمليات صاحب الحصة داخلها؛ الهدف 75٪، وأقل من 50٪ يقترح التنازل عنها</value></data>
+  <data name="Theatre block" xml:space="preserve"><value>حصة غرفة العمليات</value></data>
+  <data name="Utilisation" xml:space="preserve"><value>الاستغلال</value></data>
+  <data name="A device is one of the company's fixed assets; its maintenance schedules stay on the asset." xml:space="preserve"><value>الجهاز أحد الأصول الثابتة للشركة، وتبقى جداول صيانته على الأصل.</value></data>
+  <data name="A failed test takes the device out of service." xml:space="preserve"><value>الفحص الراسب يُخرج الجهاز من الخدمة.</value></data>
+  <data name="A value is too long" xml:space="preserve"><value>إحدى القيم أطول من المسموح</value></data>
+  <data name="Back in service" xml:space="preserve"><value>عاد إلى الخدمة</value></data>
+  <data name="Biomedical engineering is not installed yet (hospital_h245_biomed.sql)." xml:space="preserve"><value>الهندسة الطبية الحيوية غير مثبتة بعد (hospital_h245_biomed.sql).</value></data>
+  <data name="Choose pass or fail" xml:space="preserve"><value>اختر ناجح أو راسب</value></data>
+  <data name="Choose the asset" xml:space="preserve"><value>اختر الأصل</value></data>
+  <data name="Choose the risk class" xml:space="preserve"><value>اختر درجة الخطورة</value></data>
+  <data name="Devices in the register" xml:space="preserve"><value>الأجهزة في السجل</value></data>
+  <data name="Electrical-safety test" xml:space="preserve"><value>فحص السلامة الكهربائية</value></data>
+  <data name="Fixed asset" xml:space="preserve"><value>الأصل الثابت</value></data>
+  <data name="In the register" xml:space="preserve"><value>في السجل</value></data>
+  <data name="Manufacturer" xml:space="preserve"><value>الشركة المصنّعة</value></data>
+  <data name="Medical device" xml:space="preserve"><value>جهاز طبي</value></data>
+  <data name="Medical devices" xml:space="preserve"><value>الأجهزة الطبية</value></data>
+  <data name="Model" xml:space="preserve"><value>الطراز</value></data>
+  <data name="Never tested" xml:space="preserve"><value>لم يُفحص قط</value></data>
+  <data name="Next PM" xml:space="preserve"><value>الصيانة الوقائية التالية</value></data>
+  <data name="No device here." xml:space="preserve"><value>لا توجد أجهزة هنا.</value></data>
+  <data name="No schedule" xml:space="preserve"><value>لا يوجد جدول</value></data>
+  <data name="Out of service" xml:space="preserve"><value>خارج الخدمة</value></data>
+  <data name="Out of service first, then overdue, high risk before others" xml:space="preserve"><value>خارج الخدمة أولًا ثم المتأخر، والعالي الخطورة قبل غيره</value></data>
+  <data name="Out of service now" xml:space="preserve"><value>خارج الخدمة الآن</value></data>
+  <data name="PM compliance · availability (30 days)" xml:space="preserve"><value>الالتزام بالصيانة · الجاهزية (30 يومًا)</value></data>
+  <data name="PM done today" xml:space="preserve"><value>أُنجزت الصيانة الوقائية اليوم</value></data>
+  <data name="Put the device back in service?" xml:space="preserve"><value>هل تعيد الجهاز إلى الخدمة؟</value></data>
+  <data name="Readings or what failed" xml:space="preserve"><value>القراءات أو سبب الرسوب</value></data>
+  <data name="Record this preventive maintenance as done today?" xml:space="preserve"><value>هل تسجّل هذه الصيانة الوقائية منجزة اليوم؟</value></data>
+  <data name="Register a device" xml:space="preserve"><value>تسجيل جهاز</value></data>
+  <data name="Risk" xml:space="preserve"><value>الخطورة</value></data>
+  <data name="Safety test" xml:space="preserve"><value>فحص السلامة</value></data>
+  <data name="Safety test overdue" xml:space="preserve"><value>فحص السلامة متأخر</value></data>
+  <data name="Search a device, serial or room" xml:space="preserve"><value>ابحث عن جهاز أو رقم تسلسلي أو غرفة</value></data>
+  <data name="The device is already out of service" xml:space="preserve"><value>الجهاز خارج الخدمة بالفعل</value></data>
+  <data name="The device is in service" xml:space="preserve"><value>الجهاز في الخدمة</value></data>
+  <data name="This device is retired" xml:space="preserve"><value>هذا الجهاز مستبعد</value></data>
+  <data name="What is wrong with the device?" xml:space="preserve"><value>ما العطل في الجهاز؟</value></data>
+  <data name="Write the recall reference" xml:space="preserve"><value>اكتب مرجع الاستدعاء</value></data>
+  <data name="Write what failed" xml:space="preserve"><value>اكتب ما رسب فيه</value></data>
+  <data name="Write what is wrong" xml:space="preserve"><value>اكتب العطل</value></data>
+  <data name="bmc:Diagnostic" xml:space="preserve"><value>تشخيصي</value></data>
+  <data name="bmc:Laboratory" xml:space="preserve"><value>مختبري</value></data>
+  <data name="bmc:LifeSupport" xml:space="preserve"><value>دعم الحياة</value></data>
+  <data name="bmc:Monitoring" xml:space="preserve"><value>المراقبة</value></data>
+  <data name="bmc:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="bmc:Therapeutic" xml:space="preserve"><value>علاجي</value></data>
+  <data name="bmr:High" xml:space="preserve"><value>عالية</value></data>
+  <data name="bmr:Low" xml:space="preserve"><value>منخفضة</value></data>
+  <data name="bmr:Medium" xml:space="preserve"><value>متوسطة</value></data>
+  <data name="bms:Down" xml:space="preserve"><value>خارج الخدمة</value></data>
+  <data name="bms:InService" xml:space="preserve"><value>في الخدمة</value></data>
+  <data name="bms:Retired" xml:space="preserve"><value>مستبعد</value></data>
 </root>
