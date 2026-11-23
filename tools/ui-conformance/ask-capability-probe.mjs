@@ -145,25 +145,25 @@ const CASES = [
 // Each case states the ROW COUNT it expects, because that is what tells a filtered answer from an
 // unfiltered one — both come back ok:true with figures that look equally plausible.
 const NAMED = [
-  ['في مورد اسمه مورد الطاقة ؟', 1,    'filtered to that vendor, not a ranking of all of them'],
-  ['Nile Co sales',              1,    'the customer whose ARABIC name is destroyed in the data'],
-  ['اعلي الاصناف بيعا',          null, 'carries no "could not find" note: اعلي is not a name'],
-  ['ايه الايراد لكل شهر',        null, 'unchanged by any of this'],
+  ['في مورد اسمه مورد الطاقة ؟', 1,    'filtered to that vendor, not a ranking of all of them', 'Accounting'],
+  ['Nile Co sales',              1,    'the customer whose ARABIC name is destroyed in the data', 'Accounting'],
+  ['اعلي الاصناف بيعا',          null, 'carries no "could not find" note: اعلي is not a name', 'Accounting'],
+  ['ايه الايراد لكل شهر',        null, 'unchanged by any of this', 'Accounting'],
 
   // ROUTING, not composing. These reached NO surface at all until the intent model was taught that
   // a topic word can be followed by a proper noun — every training example had been the bare topic
   // word. The surface could already answer them, so the capability existed with nothing able to
   // reach it, and the refusal looked like a missing feature rather than a missing training row.
-  ['مبيعات مياه معدنية',         1,    'a named item: revenue for that item alone'],
-  ['ايراد برجر دجاج',            1,    'another wording of the same shape'],
-  ['في موظف اسمه احمد زكريا',    1,    'a named colleague, with no question mark'],
+  ['مبيعات مياه معدنية',         1,    'a named item: revenue for that item alone', 'Accounting'],
+  ['ايراد برجر دجاج',            1,    'another wording of the same shape', 'Accounting'],
+  ['في موظف اسمه احمد زكريا',    1,    'a named colleague, with no question mark', 'Hr'],
 
   // A NAMED STRETCH OF TIME. "مبيعات الشهر ده" is checked rather than "مبيعات امبارح" because
   // yesterday's answer depends on the clock: this data ends in August, so most days are empty and
   // the honest reply is a NoData refusal naming the date. That is correct behaviour and a moving
   // target for a suite, so the case that must always answer is the one with a window wide enough
   // to contain something. The empty-day behaviour is covered by the refusal list, not here.
-  ['مبيعات الشهر ده',            null, 'this month: a date filter, not the revenue of all time'],
+  ['مبيعات الشهر ده',            null, 'this month: a date filter, not the revenue of all time', 'Accounting'],
   ['المبيعات مقارنة بالشهر اللي فات', null,
    'the comparison path must not be stolen by the month filter, nor مقارنة read as a name'],
 
@@ -172,14 +172,14 @@ const NAMED = [
   // measure, and nothing on screen to say so, because the ل of the article made a letter-boundary
   // test read the word as the middle of a longer one. These three are the same word under three
   // different particles; if one of them regresses the boundary has stopped understanding Arabic.
-  ['الارباح كام',                null, 'ال — must answer MARGIN, not revenue'],
-  ['والارباح ؟',                 null, 'و + ال'],
-  ['بالمبيعات',                  null, 'ب + ال on a measure'],
+  ['الارباح كام',                null, 'ال — must answer MARGIN, not revenue', 'Accounting'],
+  ['والارباح ؟',                 null, 'و + ال', 'Accounting'],
+  ['بالمبيعات',                  null, 'ب + ال on a measure', 'Accounting'],
 
   // SPENDING. A surface built because the question was being answered WRONGLY — "المصروفات حسب
   // النوع" used to reach stock movements and return movement types.
-  ['اكبر بند مصروف',             null, 'expenses grouped by account'],
-  ['المصروفات حسب مركز التكلفة', null, 'expenses by cost centre'],
+  ['اكبر بند مصروف',             null, 'expenses grouped by account', 'Accounting'],
+  ['المصروفات حسب مركز التكلفة', null, 'expenses by cost centre', 'Accounting'],
 
   // ---- THE HOSPITAL ---------------------------------------------------------------------------
   //
@@ -194,12 +194,12 @@ const NAMED = [
   // A COUNT THAT MOVES WITH THE DATA IS NOT AN ASSERTION. This said 8 and failed the same day,
   // because another session added practitioners. What the case is actually about is that the
   // answer is a LIST and not a single number, so that is what it now says.
-  ['جيب قائمة الاطباء',  (n) => n > 1, 'a LIST of records, not one count'],
-  ['كام طبيب عندنا',             1,    'asked how many: stays a number'],
-  ['الاطباء الزائرين',           1,    'filtered to visiting, not a ranking of all engagements'],
-  ['جيب قائمة العيادات',         null, 'the CLINICS, not the doctors sitting in them'],
-  ['طيب الادوية',                null, 'inpatient medication orders by drug'],
-  ['الادوية المخدرة',            1,    'filtered to the controlled ones'],
+  ['جيب قائمة الاطباء',  (n) => n > 1, 'a LIST of records, not one count', 'Hospital'],
+  ['كام طبيب عندنا',             1,    'asked how many: stays a number', 'Hospital'],
+  ['الاطباء الزائرين',           1,    'filtered to visiting, not a ranking of all engagements', 'Hospital'],
+  ['جيب قائمة العيادات',         null, 'the CLINICS, not the doctors sitting in them', 'Hospital'],
+  ['طيب الادوية',                null, 'inpatient medication orders by drug', 'Hospital'],
+  ['الادوية المخدرة',            1,    'filtered to the controlled ones', 'Hospital'],
 
   // ---- THE HOSPITAL'S MONEY -------------------------------------------------------------------
   //
@@ -212,11 +212,11 @@ const NAMED = [
   // stored English AND the Arabic rendering together, so a value can be named in either language
   // whatever the UI is set to. An English case that passes only because the UI is English would
   // prove nothing; the English block at the end of this file runs the same questions the other way.
-  ['كام فوترنا الشهر ده',       null, 'billing surface, not the claims one'],
-  ['فواتير حسب القسم',         null, 'billed, grouped by department'],
-  ['فواتير الاشعة',             1,    'filtered to radiology, not a ranking of every category'],
-  ['حالة المطالبات',           null, 'claims surface, by status'],
-  ['المطالبات حسب جهة الدفع',  null, 'claims grouped by payer, which comes from the batch'],
+  ['كام فوترنا الشهر ده',       null, 'billing surface, not the claims one', 'Hospital'],
+  ['فواتير حسب القسم',         null, 'billed, grouped by department', 'Hospital'],
+  ['فواتير الاشعة',             1,    'filtered to radiology, not a ranking of every category', 'Hospital'],
+  ['حالة المطالبات',           null, 'claims surface, by status', 'Hospital'],
+  ['المطالبات حسب جهة الدفع',  null, 'claims grouped by payer, which comes from the batch', 'Hospital'],
   // A ROW COUNT THAT CANNOT TELL A FILTER FROM NO FILTER IS NOT AN ASSERTION.
   // «المطالبات المعتمدة» grouped by the total gives ONE row whether or not it filtered,
   // so it passed while answering about all 19 lines. Grouped by payer it gives 1 when the
@@ -231,7 +231,7 @@ const NAMED = [
   // payer breaks it, and the breakage reads as an assistant regression. What is actually worth
   // asserting is that the filter was applied at all, which `SAYS` below now does by requiring the
   // answer to state the Accepted filter. Here it only has to come back with something.
-  ['المطالبات المعتمدة حسب جهة الدفع', n => n >= 1, 'accepted claims, grouped by payer: the count follows the data, so only the grouping is pinned'],
+  ['المطالبات المعتمدة حسب جهة الدفع', n => n >= 1, 'accepted claims, grouped by payer: the count follows the data, so only the grouping is pinned', 'Hospital'],
 
   // ---- THE CLINIC'S DAY -----------------------------------------------------------------------
   //
@@ -243,9 +243,9 @@ const NAMED = [
   // answered about all 138 with a "could not find" opener while the English twin filtered
   // correctly to 4. Four is the discriminator: unfiltered it is one group over 138 rows.
   ['جيب مواعيد اليوم',          null, "today's appointments, not the whole book"],
-  ['المواعيد الملغاة',        1,    'filtered to cancelled, by the spoken spelling'],
-  ['المواعيد حسب الطبيب',     (n) => n > 1, 'grouped by practitioner'],
-  ['اي ساعة فيها مواعيد اكتر', (n) => n > 1, 'the attached pronoun is scaffolding, not a value to hunt'],
+  ['المواعيد الملغاة',        1,    'filtered to cancelled, by the spoken spelling', 'Hospital'],
+  ['المواعيد حسب الطبيب',     (n) => n > 1, 'grouped by practitioner', 'Hospital'],
+  ['اي ساعة فيها مواعيد اكتر', (n) => n > 1, 'the attached pronoun is scaffolding, not a value to hunt', 'Hospital'],
 
   // ---- WHAT THE HOSPITAL IS TREATING ----------------------------------------------------------
   //
@@ -258,9 +258,9 @@ const NAMED = [
   // because the exact one moves the first time anybody sees a patient — but fifteen and a handful
   // are far enough apart that the bound still tells a filter from no filter, which is the whole
   // point of asserting a row count here at all.
-  ['ايه اكتر الامراض عندنا',   (n) => n > 1, 'the diagnoses ranked, not the appointment book'],
-  ['حالات الربو',               1,            'filtered to asthma: one code, not a ranking of fifteen'],
-  ['التشخيصات حسب القسم',      (n) => n > 1, 'grouped by department, which comes from the practitioner'],
+  ['ايه اكتر الامراض عندنا',   (n) => n > 1, 'the diagnoses ranked, not the appointment book', 'Hospital'],
+  ['حالات الربو',               1,            'filtered to asthma: one code, not a ranking of fifteen', 'Hospital'],
+  ['التشخيصات حسب القسم',      (n) => n > 1, 'grouped by department, which comes from the practitioner', 'Hospital'],
   ['التشخيصات الثانوية',        (n) => n > 0 && n < 10,
    'filtered to the ADDITIONAL diagnoses: a handful of codes, not the full fifteen'],
 
@@ -276,8 +276,8 @@ const NAMED = [
   // The vacancy case is the discriminator: grouped by status an unfiltered board returns every
   // status it holds, and filtered to the free beds it returns ONE row. Without a filter this
   // question would be answered with a table in which the free beds are merely one line.
-  ['كام سرير فاضي',             1,            'filtered to the vacant beds, not a table of every status'],
-  ['الاسرة حسب الجناح',        (n) => n > 1, 'grouped by ward, which comes from the room'],
+  ['كام سرير فاضي',             1,            'filtered to the vacant beds, not a table of every status', 'Hospital'],
+  ['الاسرة حسب الجناح',        (n) => n > 1, 'grouped by ward, which comes from the room', 'Hospital'],
   ['المرضى المنومين حسب القسم', (n) => n > 1,
    '"القسم" means the WARD on this surface; it used to answer with the amount BILLED by department'],
 
@@ -291,8 +291,8 @@ const NAMED = [
   // IsCritical + CriticalAcknowledgedAt: a result the laboratory called alarming and whether a
   // human took it. Unfiltered and grouped by stage the pipeline returns every status it holds;
   // filtered to the criticals it returns fewer, which is what tells a filter from no filter.
-  ['التحاليل حسب الحالة',    (n) => n > 1, 'the lab pipeline, grouped by stage'],
-  ['التحاليل حسب الاولوية',  (n) => n > 1, 'grouped by priority: routine, urgent, stat'],
+  ['التحاليل حسب الحالة',    (n) => n > 1, 'the lab pipeline, grouped by stage', 'Hospital'],
+  ['التحاليل حسب الاولوية',  (n) => n > 1, 'grouped by priority: routine, urgent, stat', 'Hospital'],
   ['نتايج التحاليل الحرجة',  (n) => n > 0 && n < 4,
    'filtered to the orders the lab flagged critical, not the whole pipeline'],
   // THE QUESTION THE WHOLE SURFACE EXISTS FOR, and the only wording that answers it completely:
@@ -311,9 +311,9 @@ const NAMED = [
 ];
 
 const PEOPLE = [
-  ['في موظف اسمه احمد زكريا ؟',   'found',   'he is on the roster'],
-  ['بسأل عن احمد زكريا موظف',     'found',   "the owner's original wording"],
-  ['في موظف اسمه زغلول الفيشاوي ؟', 'missing', 'nobody by that name: answered, not refused'],
+  ['في موظف اسمه احمد زكريا ؟',   'found',   'he is on the roster', 'Hr'],
+  ['بسأل عن احمد زكريا موظف',     'found',   "the owner's original wording", 'Hr'],
+  ['في موظف اسمه زغلول الفيشاوي ؟', 'missing', 'nobody by that name: answered, not refused', 'Hr'],
 ];
 
 const browser = await chromium.launch({ args: ['--ignore-certificate-errors'] });
@@ -330,6 +330,23 @@ const failures = [];
 // two runs of that file diff into "this question changed hands", which is the regression this suite
 // could not see before.
 const authorityMap = [];
+
+// A PIN MAY NAME THE MODULE ALONE, AND USUALLY SHOULD.
+//
+// provenance.authority is `<module>:<action>`. Pinning the whole string asserts two different
+// things at once: that the right MODULE answered, and that it used a particular action. The first
+// is a judgement anyone can make from the question — a question about ward beds belongs to the
+// hospital, not to accounting — and it is the failure that actually happened here. The second
+// depends on how a surface is wired internally, can change for good reasons, and pinning it from
+// whatever the build does today would freeze today's wiring as the specification.
+//
+// So `'Hospital'` passes for any Hospital:* answer, while `'Hr:read'` still demands exactly that.
+// Module-grained pins are the honest default; use the full string only where the action has been
+// read and judged.
+function authOk(actual, want) {
+  if (!want) return true;
+  return want.includes(':') ? actual === want : actual.split(':')[0] === want;
+}
 
 try {
   await page.goto(`${BASE}/Account/Login`, { waitUntil: 'domcontentloaded' });
@@ -382,17 +399,16 @@ try {
     // expectation copied from whatever the build happened to do would freeze today's bugs as the
     // specification. Cases without one are still measured: every authority is recorded below and
     // printed as a map, which is what makes pinning the rest possible.
-    if (good && want === 'answer' && wantAuth) {
-      if (r.auth !== wantAuth) {
-        good = false;
-        failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r });
-      }
+    const authWrong = want === 'answer' && wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (good && authWrong) {
+      good = false;
+      failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r });
     }
     if (want === 'answer' && r.ok === true) {
-      authorityMap.push([q, r.auth || '(none)', wantAuth ? (r.auth === wantAuth ? 'pinned-ok' : 'PINNED-MISMATCH') : 'unpinned']);
+      authorityMap.push([q, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
     }
     if (good) { pass++; }
-    else if (!(want === 'answer' && wantAuth && r.auth !== wantAuth)) { failures.push({ q, want, why, ...r }); }
+    else if (!authWrong) { failures.push({ q, want, why, ...r }); }
   }
 } catch (e) {
   console.error('NOT VERIFIED —', e?.message ?? e);
@@ -402,7 +418,7 @@ try {
 
 // ---- A NAMED THING, RUN -----------------------------------------------------------------------
 try {
-  for (const [q, wantRows, why] of NAMED) {
+  for (const [q, wantRows, why, wantAuth] of NAMED) {
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:${Date.now()}`,
         { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -420,8 +436,10 @@ try {
     const good = r.status === 200 && r.ok === true && !notFound
       && (wantRows == null
           || (typeof wantRows === 'function' ? wantRows(r.rows) : r.rows === wantRows));
-    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
-    if (good) { pass++; } else { failures.push({ q, want: `named:${wantRows ?? 'clean'}`, why, ...r, say: r.say.slice(0, 120) }); }
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
+    if (authWrong) { failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r, say: r.say.slice(0, 120) }); }
+    else if (good) { pass++; } else { failures.push({ q, want: `named:${wantRows ?? 'clean'}`, why, ...r, say: r.say.slice(0, 120) }); }
     total++;
   }
 } catch (e) {
@@ -432,7 +450,7 @@ try {
 
 // ---- ASKING ABOUT A PERSON BY NAME, RUN -------------------------------------------------------
 try {
-  for (const [q, want, why] of PEOPLE) {
+  for (const [q, want, why, wantAuth] of PEOPLE) {
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:${Date.now()}`,
         { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -450,8 +468,10 @@ try {
     // and it is invisible to a check that only counts rows.
     const good = r.status === 200 && r.ok === true
       && (want === 'found' ? (r.rows > 0 && r.photo) : r.rows === 0);
-    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
-    if (good) { pass++; } else { failures.push({ q, want: `person:${want}`, why, ...r }); }
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
+    if (authWrong) { failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r }); }
+    else if (good) { pass++; } else { failures.push({ q, want: `person:${want}`, why, ...r }); }
     total++;
   }
 } catch (e) {
@@ -472,16 +492,16 @@ try {
 const THREAD = [
   ['انت معايا ؟',  'reply',   'being spoken to: a reply, not "I cannot answer that"'],
   ['كام رصيد',     'asks',    'names no item, so it must ASK which one'],
-  ['مياه معدنية',  'answers', 'read as the ANSWER to that question, not a new one'],
-  ['والتكلفة؟',    'carries', 'must stay on mineral water'],
+  ['مياه معدنية',  'answers', 'read as the ANSWER to that question, not a new one', 'Inventory'],
+  ['والتكلفة؟',    'carries', 'must stay on mineral water', 'Inventory'],
 
   // NARROWING THE LAST ANSWER. The owner asked for the list of doctors, got it, said «الاسنان فقط»
   // and was refused — two words that name no intent on their own and take all the meaning they
   // need from the sentence before them. The last ANSWERING surface is now offered a question that
   // reached nothing, but only when it says it holds that value.
-  ['هات قائمة الاطباء', 'answers', 'the list, which is what the next two narrow'],
-  ['الاسنان فقط',       'answers', 'narrows the previous answer to one department'],
-  ['والاطفال؟',         'answers', 'and again, to another'],
+  ['هات قائمة الاطباء', 'answers', 'the list, which is what the next two narrow', 'Hospital'],
+  ['الاسنان فقط',       'answers', 'narrows the previous answer to one department', 'Hospital'],
+  ['والاطفال؟',         'answers', 'and again, to another', 'Hospital'],
   // THE GUARD, and it caught a real one: an empty search key matched EVERY word, because
   // x.Contains("") is true for every x. A practitioner with no clinic carries an empty clinic key,
   // so «ايه سعر الدولار» came back as the doctors filtered to "(no clinic)". An unrelated question
@@ -503,7 +523,7 @@ try {
   // prefix is only a prefix; the id stays stable, so the subject-memory assertions below are
   // unaffected.
   const conv = `probe:talk${Date.now()}`;
-  for (const [q, want, why] of THREAD) {
+  for (const [q, want, why, wantAuth] of THREAD) {
     const r = await page.evaluate(async ([base, question, c]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=${c}`,
         { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -525,8 +545,10 @@ try {
     : want === 'asks'    ? (r.ok === false && r.say.length > 0)
     : want === 'answers' ? (r.ok === true && r.rows > 0)
     :                      (r.ok === true && r.about.length > 0));
-    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
-    if (good) { pass++; } else { failures.push({ q, want: `conversation:${want}`, why, ...r }); }
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
+    if (authWrong) { failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r }); }
+    else if (good) { pass++; } else { failures.push({ q, want: `conversation:${want}`, why, ...r }); }
     total++;
   }
 } catch (e) {
@@ -549,10 +571,10 @@ try {
 // rules cannot judge the figure they are attached to.
 const ARABIC = /[؀-ۿ]/;
 const ENGLISH = [
-  ['which hour is busiest',        'answer', 'pos, by hour'],
-  ['how many employees',           'answer', 'workforce'],
-  ['what did we buy',              'answer', 'purchases'],
-  ['revenue by month',             'answer', 'sales'],
+  ['which hour is busiest',        'answer', 'pos, by hour', 'Accounting'],
+  ['how many employees',           'answer', 'workforce', 'Hr'],
+  ['what did we buy',              'answer', 'purchases', 'Accounting'],
+  ['revenue by month',             'answer', 'sales', 'Accounting'],
   ['average salary',               'refuse', 'a salary is recorded for 1 employee of 21'],
 
   // A FILTER PROVED IN ONE LANGUAGE IS NOT PROVED IN THE OTHER.
@@ -560,9 +582,9 @@ const ENGLISH = [
   // lines, because the measure was still NAMED "accepted" and a column's name is vocabulary
   // too. Grouped by payer the counts separate: 1 when the status filter held, 2 when it did not.
   // Same stale pin as the Arabic twin above: accepted lines now span two payers, so 2 is correct.
-  ['accepted claims by payer',      n => n >= 1, 'the English twin: grouping pinned, count left to the data'],
-  ['todays appointments',           'answer', "the relative window resolves to today"],
-  ['cancelled appointments',        1,        'the same filter the Arabic twin needs spoken forms for'],
+  ['accepted claims by payer',      n => n >= 1, 'the English twin: grouping pinned, count left to the data', 'Hospital'],
+  ['todays appointments',           'answer', "the relative window resolves to today", 'Hospital'],
+  ['cancelled appointments',        1,        'the same filter the Arabic twin needs spoken forms for', 'Hospital'],
 
 
 
@@ -574,10 +596,10 @@ const ENGLISH = [
   // 'الاشعة' both reach the same filter whichever way the session is set. A surface that folded
   // only the displayed language would pass in one block and fail in the other, and nothing in
   // a single-language run could tell you which.
-  ['hospital revenue by department', 'answer', 'billing surface, grouped by department'],
-  ['radiology billing',              'answer', 'a VALUE named in English reaches the filter'],
-  ['rejected claims',                'answer', 'claims surface, filtered by status'],
-  ['claims by payer',                'answer', 'payer comes from the batch, not the claim'],
+  ['hospital revenue by department', 'answer', 'billing surface, grouped by department', 'Hospital'],
+  ['radiology billing',              'answer', 'a VALUE named in English reaches the filter', 'Hospital'],
+  ['rejected claims',                'answer', 'claims surface, filtered by status', 'Hospital'],
+  ['claims by payer',                'answer', 'payer comes from the batch, not the claim', 'Hospital'],
 
   // ---- THE WORD "PRIMARY" IS INSIDE A DIAGNOSIS NAME ------------------------------------------
   //
@@ -589,14 +611,14 @@ const ENGLISH = [
   // exactly why a single-language run could never have found it.
   ['primary diagnoses',              (n) => n > 1,
    '"primary" must resolve to the rank, not to the hypertension that is spelt with it'],
-  ['secondary diagnoses',            (n) => n > 0 && n < 10, 'the Arabic twin of this filter, in English'],
-  ['asthma cases',                   1,        'a diagnosis NAMED in English reaches the filter'],
+  ['secondary diagnoses',            (n) => n > 0 && n < 10, 'the Arabic twin of this filter, in English', 'Hospital'],
+  ['asthma cases',                   1,        'a diagnosis NAMED in English reaches the filter', 'Hospital'],
   // "criticality".Contains("critical") made the value word part of the column's own vocabulary,
   // so the filter never looked for it and this returned all 16 orders. The column is named
   // `severity` now. Fewer than the four pipeline stages means it filtered.
   ['critical lab results',           (n) => n > 0 && n < 4,
    '"critical" must reach the VALUE filter, not be swallowed by the column name'],
-  ['diagnoses by department',        'answer', 'the clinical surface, grouped'],
+  ['diagnoses by department',        'answer', 'the clinical surface, grouped', 'Hospital'],
 
 ];
 
@@ -606,7 +628,7 @@ try {
   await page.goto(`${BASE}/Account/SetLanguage?culture=en&returnUrl=%2F`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await page.goto(`${BASE}/Inventory/StockBalances`, { waitUntil: 'domcontentloaded' });
 
-  for (const [q, want, why] of ENGLISH) {
+  for (const [q, want, why, wantAuth] of ENGLISH) {
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:en${Date.now()}`,
         { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -631,8 +653,10 @@ try {
       ? (r.ok === true && r.rows === want)
       : want === 'answer' ? (r.ok === true && r.rows > 0) : r.ok === false);
     const arabicLeak = ARABIC.test(r.say) || ARABIC.test(r.understood);
-    if (r.ok === true) authorityMap.push([`[en] ${q}`, r.auth || '(none)', 'unpinned']);
-    if (routed && !arabicLeak) { pass++; }
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([`[en] ${q}`, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
+    if (authWrong) { failures.push({ q: `[en] ${q}`, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r, say: r.say.slice(0, 110) }); }
+    else if (routed && !arabicLeak) { pass++; }
     else { failures.push({ q, want: `english:${want}${arabicLeak ? ' (Arabic leaked)' : ''}`, why, ...r, say: r.say.slice(0, 110) }); }
     total++;
   }
@@ -748,7 +772,7 @@ const SAYS = [
 ];
 
 try {
-  for (const [culture, q, must, why] of SAYS) {
+  for (const [culture, q, must, why, wantAuth] of SAYS) {
     await page.goto(`${BASE}/Account/SetLanguage?culture=${culture}&returnUrl=%2F`, { waitUntil: 'domcontentloaded' }).catch(() => {});
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:say${Date.now()}`,
@@ -762,9 +786,11 @@ try {
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
     const said = `${r.say} ${r.understood}`;
-    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', 'unpinned']);
-    const good = r.status === 200 && r.ok === true && said.includes(must);
+    const authWrong = wantAuth && r.ok === true && !authOk(r.auth, wantAuth);
+    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', wantAuth ? (authWrong ? 'PINNED-MISMATCH' : 'pinned-ok') : 'unpinned']);
+    const good = r.status === 200 && r.ok === true && said.includes(must) && !authWrong;
     if (good) { pass++; }
+    else if (authWrong) { failures.push({ q: `[${culture}] ${q}`, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r, say: said.slice(0, 160) }); }
     else { failures.push({ q: `[${culture}] ${q}`, want: `says "${must}"`, why, ...r, say: said.slice(0, 160) }); }
     total++;
   }

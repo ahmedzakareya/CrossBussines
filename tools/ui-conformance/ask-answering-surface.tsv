@@ -19,71 +19,71 @@ question	authority	pinned
 حركة المخزون مقارنة بالشهر اللي فات	Inventory:read	pinned-ok
 المبيعات	Accounting:report-read	pinned-ok
 عايز اعرف المشتريات	Accounting:report-read	pinned-ok
-في مورد اسمه مورد الطاقة ؟	Accounting:report-read	unpinned
-Nile Co sales	Accounting:report-read	unpinned
-اعلي الاصناف بيعا	Accounting:report-read	unpinned
-ايه الايراد لكل شهر	Accounting:report-read	unpinned
-مبيعات مياه معدنية	Accounting:report-read	unpinned
-ايراد برجر دجاج	Accounting:report-read	unpinned
-في موظف اسمه احمد زكريا	Hr:read	unpinned
-مبيعات الشهر ده	Accounting:report-read	unpinned
+في مورد اسمه مورد الطاقة ؟	Accounting:report-read	pinned-ok
+Nile Co sales	Accounting:report-read	pinned-ok
+اعلي الاصناف بيعا	Accounting:report-read	pinned-ok
+ايه الايراد لكل شهر	Accounting:report-read	pinned-ok
+مبيعات مياه معدنية	Accounting:report-read	pinned-ok
+ايراد برجر دجاج	Accounting:report-read	pinned-ok
+في موظف اسمه احمد زكريا	Hr:read	pinned-ok
+مبيعات الشهر ده	Accounting:report-read	pinned-ok
 المبيعات مقارنة بالشهر اللي فات	Accounting:report-read	unpinned
-الارباح كام	Accounting:report-read	unpinned
-والارباح ؟	Accounting:report-read	unpinned
-بالمبيعات	Accounting:report-read	unpinned
-اكبر بند مصروف	Accounting:report-read	unpinned
-المصروفات حسب مركز التكلفة	Accounting:report-read	unpinned
-جيب قائمة الاطباء	Hospital:read	unpinned
-كام طبيب عندنا	Hospital:read	unpinned
-الاطباء الزائرين	Hospital:read	unpinned
-جيب قائمة العيادات	Hospital:read	unpinned
-طيب الادوية	Hospital:clinical-read	unpinned
-الادوية المخدرة	Hospital:clinical-read	unpinned
-كام فوترنا الشهر ده	Hospital:read	unpinned
-فواتير حسب القسم	Hospital:read	unpinned
-فواتير الاشعة	Hospital:read	unpinned
-حالة المطالبات	Hospital:read	unpinned
-المطالبات حسب جهة الدفع	Hospital:read	unpinned
-المطالبات المعتمدة حسب جهة الدفع	Hospital:read	unpinned
+الارباح كام	Accounting:report-read	pinned-ok
+والارباح ؟	Accounting:report-read	pinned-ok
+بالمبيعات	Accounting:report-read	pinned-ok
+اكبر بند مصروف	Accounting:report-read	pinned-ok
+المصروفات حسب مركز التكلفة	Accounting:report-read	pinned-ok
+جيب قائمة الاطباء	Hospital:read	pinned-ok
+كام طبيب عندنا	Hospital:read	pinned-ok
+الاطباء الزائرين	Hospital:read	pinned-ok
+جيب قائمة العيادات	Hospital:read	pinned-ok
+طيب الادوية	Hospital:clinical-read	pinned-ok
+الادوية المخدرة	Hospital:clinical-read	pinned-ok
+كام فوترنا الشهر ده	Hospital:read	pinned-ok
+فواتير حسب القسم	Hospital:read	pinned-ok
+فواتير الاشعة	Hospital:read	pinned-ok
+حالة المطالبات	Hospital:read	pinned-ok
+المطالبات حسب جهة الدفع	Hospital:read	pinned-ok
+المطالبات المعتمدة حسب جهة الدفع	Hospital:read	pinned-ok
 جيب مواعيد اليوم	Hospital:read	unpinned
-المواعيد الملغاة	Hospital:read	unpinned
-المواعيد حسب الطبيب	Hospital:read	unpinned
-اي ساعة فيها مواعيد اكتر	Hospital:read	unpinned
-ايه اكتر الامراض عندنا	Hospital:consult	unpinned
-حالات الربو	Hospital:consult	unpinned
-التشخيصات حسب القسم	Hospital:consult	unpinned
+المواعيد الملغاة	Hospital:read	pinned-ok
+المواعيد حسب الطبيب	Hospital:read	pinned-ok
+اي ساعة فيها مواعيد اكتر	Hospital:read	pinned-ok
+ايه اكتر الامراض عندنا	Hospital:consult	pinned-ok
+حالات الربو	Hospital:consult	pinned-ok
+التشخيصات حسب القسم	Hospital:consult	pinned-ok
 التشخيصات الثانوية	Hospital:consult	unpinned
-كام سرير فاضي	Hospital:read	unpinned
-الاسرة حسب الجناح	Hospital:read	unpinned
+كام سرير فاضي	Hospital:read	pinned-ok
+الاسرة حسب الجناح	Hospital:read	pinned-ok
 المرضى المنومين حسب القسم	Hospital:read	unpinned
-التحاليل حسب الحالة	Hospital:lab	unpinned
-التحاليل حسب الاولوية	Hospital:lab	unpinned
+التحاليل حسب الحالة	Hospital:lab	pinned-ok
+التحاليل حسب الاولوية	Hospital:lab	pinned-ok
 نتايج التحاليل الحرجة	Hospital:lab	unpinned
 التحاليل الحرجة حسب الاستلام	Hospital:lab	unpinned
-في موظف اسمه احمد زكريا ؟	Hr:read	unpinned
-بسأل عن احمد زكريا موظف	Hr:read	unpinned
-في موظف اسمه زغلول الفيشاوي ؟	Hr:read	unpinned
-مياه معدنية	Inventory:read	unpinned
-والتكلفة؟	Inventory:read	unpinned
-هات قائمة الاطباء	Hospital:read	unpinned
-الاسنان فقط	Hospital:read	unpinned
-والاطفال؟	Hospital:read	unpinned
-[en] which hour is busiest	Accounting:report-read	unpinned
-[en] how many employees	Hr:read	unpinned
-[en] what did we buy	Accounting:report-read	unpinned
-[en] revenue by month	Accounting:report-read	unpinned
-[en] accepted claims by payer	Hospital:read	unpinned
-[en] todays appointments	Hospital:read	unpinned
-[en] cancelled appointments	Hospital:read	unpinned
-[en] hospital revenue by department	Hospital:read	unpinned
-[en] radiology billing	Hospital:read	unpinned
-[en] rejected claims	Hospital:read	unpinned
-[en] claims by payer	Hospital:read	unpinned
+في موظف اسمه احمد زكريا ؟	Hr:read	pinned-ok
+بسأل عن احمد زكريا موظف	Hr:read	pinned-ok
+في موظف اسمه زغلول الفيشاوي ؟	Hr:read	pinned-ok
+مياه معدنية	Inventory:read	pinned-ok
+والتكلفة؟	Inventory:read	pinned-ok
+هات قائمة الاطباء	Hospital:read	pinned-ok
+الاسنان فقط	Hospital:read	pinned-ok
+والاطفال؟	Hospital:read	pinned-ok
+[en] which hour is busiest	Accounting:report-read	pinned-ok
+[en] how many employees	Hr:read	pinned-ok
+[en] what did we buy	Accounting:report-read	pinned-ok
+[en] revenue by month	Accounting:report-read	pinned-ok
+[en] accepted claims by payer	Hospital:read	pinned-ok
+[en] todays appointments	Hospital:read	pinned-ok
+[en] cancelled appointments	Hospital:read	pinned-ok
+[en] hospital revenue by department	Hospital:read	pinned-ok
+[en] radiology billing	Hospital:read	pinned-ok
+[en] rejected claims	Hospital:read	pinned-ok
+[en] claims by payer	Hospital:read	pinned-ok
 [en] primary diagnoses	Hospital:consult	unpinned
-[en] secondary diagnoses	Hospital:consult	unpinned
-[en] asthma cases	Hospital:consult	unpinned
+[en] secondary diagnoses	Hospital:consult	pinned-ok
+[en] asthma cases	Hospital:consult	pinned-ok
 [en] critical lab results	Hospital:lab	unpinned
-[en] diagnoses by department	Hospital:consult	unpinned
+[en] diagnoses by department	Hospital:consult	pinned-ok
 [ar] كام حالة صداع نصفي	Hospital:consult	unpinned
 [en] how many migraine cases	Hospital:consult	unpinned
 [ar] المطالبات المرفوضة	Hospital:read	unpinned
