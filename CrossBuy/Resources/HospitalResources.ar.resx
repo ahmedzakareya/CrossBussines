@@ -10345,4 +10345,59 @@
   <data name="bms:Down" xml:space="preserve"><value>خارج الخدمة</value></data>
   <data name="bms:InService" xml:space="preserve"><value>في الخدمة</value></data>
   <data name="bms:Retired" xml:space="preserve"><value>مستبعد</value></data>
+  <data name="A shift is classified on its day or the day after" xml:space="preserve"><value>تُصنَّف المناوبة في يومها أو اليوم التالي</value></data>
+  <data name="Acuity staffing" xml:space="preserve"><value>التوظيف حسب شدة الحالة</value></data>
+  <data name="Acuity staffing is not installed yet (hospital_h246_acuity.sql)." xml:space="preserve"><value>التوظيف حسب شدة الحالة غير مثبت بعد (hospital_h246_acuity.sql).</value></data>
+  <data name="By level" xml:space="preserve"><value>حسب المستوى</value></data>
+  <data name="Care factors" xml:space="preserve"><value>عوامل الرعاية</value></data>
+  <data name="Classify" xml:space="preserve"><value>تصنيف</value></data>
+  <data name="Classify the patient" xml:space="preserve"><value>تصنيف المريض</value></data>
+  <data name="Needed" xml:space="preserve"><value>المطلوب</value></data>
+  <data name="Not classified" xml:space="preserve"><value>غير مصنَّف</value></data>
+  <data name="Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate" xml:space="preserve"><value>الممرضون المطلوبون من ساعات رعاية المرضى (مناوبة 8 ساعات)؛ ويُحسب المريض غير المصنَّف متوسطًا</value></data>
+  <data name="Plan from yesterday to the next two weeks" xml:space="preserve"><value>خطط من الأمس حتى الأسبوعين القادمين</value></data>
+  <data name="Planned" xml:space="preserve"><value>المخطط</value></data>
+  <data name="Search a patient, bed or ward" xml:space="preserve"><value>ابحث عن مريض أو سرير أو جناح</value></data>
+  <data name="The number of nurses is 0 to 100" xml:space="preserve"><value>عدد الممرضين من 0 إلى 100</value></data>
+  <data name="Unclassified first" xml:space="preserve"><value>غير المصنَّفين أولًا</value></data>
+  <data name="Wards this shift" xml:space="preserve"><value>الأجنحة في هذه المناوبة</value></data>
+  <data name="gap:Matched" xml:space="preserve"><value>مطابق</value></data>
+  <data name="gap:Over" xml:space="preserve"><value>زيادة</value></data>
+  <data name="gap:Short" xml:space="preserve"><value>نقص</value></data>
+  <data name="gap:Unplanned" xml:space="preserve"><value>غير مخطط</value></data>
+  <data name="lvl:1" xml:space="preserve"><value>المستوى 1 — رعاية بسيطة</value></data>
+  <data name="lvl:2" xml:space="preserve"><value>المستوى 2 — رعاية متوسطة</value></data>
+  <data name="lvl:3" xml:space="preserve"><value>المستوى 3 — رعاية عالية</value></data>
+  <data name="lvl:4" xml:space="preserve"><value>المستوى 4 — رعاية مكثفة</value></data>
+  <data name="{0} classified" xml:space="preserve"><value>{0} مصنَّف</value></data>
+  <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button." xml:space="preserve"><value>لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها؛ ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل عند فتح هذه الصفحة، ويتم الإرسال بالزر.</value></data>
+  <data name="An enabled feed needs its host and port" xml:space="preserve"><value>القناة المفعّلة تحتاج عنوانها ومنفذها</value></data>
+  <data name="Another feed uses this code" xml:space="preserve"><value>قناة أخرى تستخدم هذا الرمز</value></data>
+  <data name="Carries" xml:space="preserve"><value>المحتوى</value></data>
+  <data name="Choose what the feed carries" xml:space="preserve"><value>اختر محتوى القناة</value></data>
+  <data name="Enabled — send patient data to this receiver" xml:space="preserve"><value>مفعّلة — إرسال بيانات المرضى إلى هذا المستقبِل</value></data>
+  <data name="Enter the feed's code" xml:space="preserve"><value>أدخل رمز القناة</value></data>
+  <data name="Enter the feed's name" xml:space="preserve"><value>أدخل اسم القناة</value></data>
+  <data name="Feed" xml:space="preserve"><value>القناة</value></data>
+  <data name="New feed" xml:space="preserve"><value>قناة جديدة</value></data>
+  <data name="No acknowledgement" xml:space="preserve"><value>لا يوجد إشعار استلام</value></data>
+  <data name="No feed yet." xml:space="preserve"><value>لا توجد قنوات بعد.</value></data>
+  <data name="Outbound feed" xml:space="preserve"><value>قناة صادرة</value></data>
+  <data name="Outbound feeds" xml:space="preserve"><value>القنوات الصادرة</value></data>
+  <data name="Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql)." xml:space="preserve"><value>القنوات الصادرة غير مثبتة بعد (hospital_h247_outbound_feeds.sql).</value></data>
+  <data name="Port" xml:space="preserve"><value>المنفذ</value></data>
+  <data name="Receiving application" xml:space="preserve"><value>التطبيق المستقبِل</value></data>
+  <data name="Receiving facility" xml:space="preserve"><value>المنشأة المستقبِلة</value></data>
+  <data name="Search a patient, type or feed" xml:space="preserve"><value>ابحث عن مريض أو نوع أو قناة</value></data>
+  <data name="Send now" xml:space="preserve"><value>إرسال الآن</value></data>
+  <data name="Settings" xml:space="preserve"><value>الإعدادات</value></data>
+  <data name="The feed is off" xml:space="preserve"><value>القناة متوقفة</value></data>
+  <data name="The host is 200 characters at most" xml:space="preserve"><value>العنوان 200 حرف كحد أقصى</value></data>
+  <data name="The receiver did not answer: {0}" xml:space="preserve"><value>لم يرد المستقبِل: {0}</value></data>
+  <data name="fk:ADT" xml:space="preserve"><value>الدخول والنقل والخروج (ADT)</value></data>
+  <data name="fk:ORU" xml:space="preserve"><value>نتائج المختبر المعتمدة (ORU)</value></data>
+  <data name="fs:Queued" xml:space="preserve"><value>في الانتظار</value></data>
+  <data name="fs:Sent" xml:space="preserve"><value>أُرسلت</value></data>
+  <data name="fs:Error" xml:space="preserve"><value>أخطاء</value></data>
+  <data name="ifk:ClinicalRead" xml:space="preserve"><value>قراءة السجل السريري (FHIR)</value></data>
 </root>

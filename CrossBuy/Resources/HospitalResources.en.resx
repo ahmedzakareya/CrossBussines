@@ -10245,4 +10245,59 @@
   <data name="bms:Down" xml:space="preserve"><value>Out of service</value></data>
   <data name="bms:InService" xml:space="preserve"><value>In service</value></data>
   <data name="bms:Retired" xml:space="preserve"><value>Retired</value></data>
+  <data name="A shift is classified on its day or the day after" xml:space="preserve"><value>A shift is classified on its day or the day after</value></data>
+  <data name="Acuity staffing" xml:space="preserve"><value>Acuity staffing</value></data>
+  <data name="Acuity staffing is not installed yet (hospital_h246_acuity.sql)." xml:space="preserve"><value>Acuity staffing is not installed yet (hospital_h246_acuity.sql).</value></data>
+  <data name="By level" xml:space="preserve"><value>By level</value></data>
+  <data name="Care factors" xml:space="preserve"><value>Care factors</value></data>
+  <data name="Classify" xml:space="preserve"><value>Classify</value></data>
+  <data name="Classify the patient" xml:space="preserve"><value>Classify the patient</value></data>
+  <data name="Needed" xml:space="preserve"><value>Needed</value></data>
+  <data name="Not classified" xml:space="preserve"><value>Not classified</value></data>
+  <data name="Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate" xml:space="preserve"><value>Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate</value></data>
+  <data name="Plan from yesterday to the next two weeks" xml:space="preserve"><value>Plan from yesterday to the next two weeks</value></data>
+  <data name="Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Search a patient, bed or ward" xml:space="preserve"><value>Search a patient, bed or ward</value></data>
+  <data name="The number of nurses is 0 to 100" xml:space="preserve"><value>The number of nurses is 0 to 100</value></data>
+  <data name="Unclassified first" xml:space="preserve"><value>Unclassified first</value></data>
+  <data name="Wards this shift" xml:space="preserve"><value>Wards this shift</value></data>
+  <data name="gap:Matched" xml:space="preserve"><value>Matched</value></data>
+  <data name="gap:Over" xml:space="preserve"><value>Over</value></data>
+  <data name="gap:Short" xml:space="preserve"><value>Short</value></data>
+  <data name="gap:Unplanned" xml:space="preserve"><value>Not planned</value></data>
+  <data name="lvl:1" xml:space="preserve"><value>Level 1 — minimal</value></data>
+  <data name="lvl:2" xml:space="preserve"><value>Level 2 — moderate</value></data>
+  <data name="lvl:3" xml:space="preserve"><value>Level 3 — high</value></data>
+  <data name="lvl:4" xml:space="preserve"><value>Level 4 — intensive</value></data>
+  <data name="{0} classified" xml:space="preserve"><value>{0} classified</value></data>
+  <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button." xml:space="preserve"><value>A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button.</value></data>
+  <data name="An enabled feed needs its host and port" xml:space="preserve"><value>An enabled feed needs its host and port</value></data>
+  <data name="Another feed uses this code" xml:space="preserve"><value>Another feed uses this code</value></data>
+  <data name="Carries" xml:space="preserve"><value>Carries</value></data>
+  <data name="Choose what the feed carries" xml:space="preserve"><value>Choose what the feed carries</value></data>
+  <data name="Enabled — send patient data to this receiver" xml:space="preserve"><value>Enabled — send patient data to this receiver</value></data>
+  <data name="Enter the feed's code" xml:space="preserve"><value>Enter the feed's code</value></data>
+  <data name="Enter the feed's name" xml:space="preserve"><value>Enter the feed's name</value></data>
+  <data name="Feed" xml:space="preserve"><value>Feed</value></data>
+  <data name="New feed" xml:space="preserve"><value>New feed</value></data>
+  <data name="No acknowledgement" xml:space="preserve"><value>No acknowledgement</value></data>
+  <data name="No feed yet." xml:space="preserve"><value>No feed yet.</value></data>
+  <data name="Outbound feed" xml:space="preserve"><value>Outbound feed</value></data>
+  <data name="Outbound feeds" xml:space="preserve"><value>Outbound feeds</value></data>
+  <data name="Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql)." xml:space="preserve"><value>Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql).</value></data>
+  <data name="Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Receiving application" xml:space="preserve"><value>Receiving application</value></data>
+  <data name="Receiving facility" xml:space="preserve"><value>Receiving facility</value></data>
+  <data name="Search a patient, type or feed" xml:space="preserve"><value>Search a patient, type or feed</value></data>
+  <data name="Send now" xml:space="preserve"><value>Send now</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="The feed is off" xml:space="preserve"><value>The feed is off</value></data>
+  <data name="The host is 200 characters at most" xml:space="preserve"><value>The host is 200 characters at most</value></data>
+  <data name="The receiver did not answer: {0}" xml:space="preserve"><value>The receiver did not answer: {0}</value></data>
+  <data name="fk:ADT" xml:space="preserve"><value>Admissions, transfers, discharges (ADT)</value></data>
+  <data name="fk:ORU" xml:space="preserve"><value>Verified lab results (ORU)</value></data>
+  <data name="fs:Queued" xml:space="preserve"><value>Queued</value></data>
+  <data name="fs:Sent" xml:space="preserve"><value>Sent</value></data>
+  <data name="fs:Error" xml:space="preserve"><value>Errors</value></data>
+  <data name="ifk:ClinicalRead" xml:space="preserve"><value>Clinical record read (FHIR)</value></data>
 </root>

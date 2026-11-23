@@ -10,7 +10,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string ImagingWorklist = "ImagingWorklist";
 		/// H221: an ECG machine (or its management system) sends each study's measurements and reading (HL7 v2 ORU^R01).
 		public const string CardioResults = "CardioResults";
-		public static readonly IReadOnlyList<string> All = new[] { LabResults, ImagingWorklist, CardioResults };
+		/// H248: another system reads the clinical record through the FHIR R4 API (Patient, Encounter, Observation, DiagnosticReport, AllergyIntolerance, MedicationRequest).
+		public const string ClinicalRead = "ClinicalRead";
+		public static readonly IReadOnlyList<string> All = new[] { LabResults, ImagingWorklist, CardioResults, ClinicalRead };
 	}
 
 	// HOSPITAL H215 — a machine allowed to talk to the hospital without a person at a screen: its key (kept only as a
@@ -37,6 +39,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalOutboundModel.Configure(b);   // H247: outbound HL7 feeds and their messages
 			b.Entity<HospitalInterface>(e =>
 			{
 				e.ToTable("HospitalInterfaces");

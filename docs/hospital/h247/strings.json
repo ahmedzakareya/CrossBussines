@@ -1,0 +1,150 @@
+{
+ "unit": "H247 - Outbound feeds",
+ "strings": {
+  "A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button.": {
+   "ar": "لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها؛ ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل عند فتح هذه الصفحة، ويتم الإرسال بالزر.",
+   "en": "A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button.",
+   "fr": "Un flux n'envoie rien tant qu'il n'est pas activé avec son hôte et son port ; l'activation part de cet instant (l'historique n'est pas rejoué). Les messages sont collectés à l'ouverture de cette page ; l'envoi se fait par le bouton."
+  },
+  "An enabled feed needs its host and port": {
+   "ar": "القناة المفعّلة تحتاج عنوانها ومنفذها",
+   "en": "An enabled feed needs its host and port",
+   "fr": "Un flux actif nécessite son hôte et son port"
+  },
+  "Another feed uses this code": {
+   "ar": "قناة أخرى تستخدم هذا الرمز",
+   "en": "Another feed uses this code",
+   "fr": "Un autre flux utilise ce code"
+  },
+  "Carries": {
+   "ar": "المحتوى",
+   "en": "Carries",
+   "fr": "Contenu"
+  },
+  "Choose what the feed carries": {
+   "ar": "اختر محتوى القناة",
+   "en": "Choose what the feed carries",
+   "fr": "Choisissez le contenu du flux"
+  },
+  "Enabled — send patient data to this receiver": {
+   "ar": "مفعّلة — إرسال بيانات المرضى إلى هذا المستقبِل",
+   "en": "Enabled — send patient data to this receiver",
+   "fr": "Activé — envoyer les données patients à ce destinataire"
+  },
+  "Enter the feed's code": {
+   "ar": "أدخل رمز القناة",
+   "en": "Enter the feed's code",
+   "fr": "Saisissez le code du flux"
+  },
+  "Enter the feed's name": {
+   "ar": "أدخل اسم القناة",
+   "en": "Enter the feed's name",
+   "fr": "Saisissez le nom du flux"
+  },
+  "Feed": {
+   "ar": "القناة",
+   "en": "Feed",
+   "fr": "Flux"
+  },
+  "New feed": {
+   "ar": "قناة جديدة",
+   "en": "New feed",
+   "fr": "Nouveau flux"
+  },
+  "No acknowledgement": {
+   "ar": "لا يوجد إشعار استلام",
+   "en": "No acknowledgement",
+   "fr": "Aucun accusé de réception"
+  },
+  "No feed yet.": {
+   "ar": "لا توجد قنوات بعد.",
+   "en": "No feed yet.",
+   "fr": "Aucun flux pour l'instant."
+  },
+  "Outbound feed": {
+   "ar": "قناة صادرة",
+   "en": "Outbound feed",
+   "fr": "Flux sortant"
+  },
+  "Outbound feeds": {
+   "ar": "القنوات الصادرة",
+   "en": "Outbound feeds",
+   "fr": "Flux sortants"
+  },
+  "Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql).": {
+   "ar": "القنوات الصادرة غير مثبتة بعد (hospital_h247_outbound_feeds.sql).",
+   "en": "Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql).",
+   "fr": "Les flux sortants ne sont pas encore installés (hospital_h247_outbound_feeds.sql)."
+  },
+  "Port": {
+   "ar": "المنفذ",
+   "en": "Port",
+   "fr": "Port"
+  },
+  "Receiving application": {
+   "ar": "التطبيق المستقبِل",
+   "en": "Receiving application",
+   "fr": "Application destinataire"
+  },
+  "Receiving facility": {
+   "ar": "المنشأة المستقبِلة",
+   "en": "Receiving facility",
+   "fr": "Établissement destinataire"
+  },
+  "Search a patient, type or feed": {
+   "ar": "ابحث عن مريض أو نوع أو قناة",
+   "en": "Search a patient, type or feed",
+   "fr": "Rechercher un patient, un type ou un flux"
+  },
+  "Send now": {
+   "ar": "إرسال الآن",
+   "en": "Send now",
+   "fr": "Envoyer maintenant"
+  },
+  "Settings": {
+   "ar": "الإعدادات",
+   "en": "Settings",
+   "fr": "Paramètres"
+  },
+  "The feed is off": {
+   "ar": "القناة متوقفة",
+   "en": "The feed is off",
+   "fr": "Le flux est désactivé"
+  },
+  "The host is 200 characters at most": {
+   "ar": "العنوان 200 حرف كحد أقصى",
+   "en": "The host is 200 characters at most",
+   "fr": "L'hôte fait 200 caractères au plus"
+  },
+  "The receiver did not answer: {0}": {
+   "ar": "لم يرد المستقبِل: {0}",
+   "en": "The receiver did not answer: {0}",
+   "fr": "Le destinataire n'a pas répondu : {0}"
+  },
+  "fk:ADT": {
+   "ar": "الدخول والنقل والخروج (ADT)",
+   "en": "Admissions, transfers, discharges (ADT)",
+   "fr": "Admissions, transferts, sorties (ADT)"
+  },
+  "fk:ORU": {
+   "ar": "نتائج المختبر المعتمدة (ORU)",
+   "en": "Verified lab results (ORU)",
+   "fr": "Résultats de laboratoire validés (ORU)"
+  },
+  "fs:Queued": {
+   "ar": "في الانتظار",
+   "en": "Queued",
+   "fr": "En file"
+  },
+  "fs:Sent": {
+   "ar": "أُرسلت",
+   "en": "Sent",
+   "fr": "Envoyés"
+  },
+  "fs:Error": {
+   "ar": "أخطاء",
+   "en": "Errors",
+   "fr": "Erreurs"
+  }
+ }
+}

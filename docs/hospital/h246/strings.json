@@ -1,0 +1,130 @@
+{
+ "unit": "H246 - Acuity staffing",
+ "strings": {
+  "A shift is classified on its day or the day after": {
+   "ar": "تُصنَّف المناوبة في يومها أو اليوم التالي",
+   "en": "A shift is classified on its day or the day after",
+   "fr": "Un poste est classé le jour même ou le lendemain"
+  },
+  "Acuity staffing": {
+   "ar": "التوظيف حسب شدة الحالة",
+   "en": "Acuity staffing",
+   "fr": "Effectifs selon la charge en soins"
+  },
+  "Acuity staffing is not installed yet (hospital_h246_acuity.sql).": {
+   "ar": "التوظيف حسب شدة الحالة غير مثبت بعد (hospital_h246_acuity.sql).",
+   "en": "Acuity staffing is not installed yet (hospital_h246_acuity.sql).",
+   "fr": "Les effectifs selon la charge ne sont pas encore installés (hospital_h246_acuity.sql)."
+  },
+  "By level": {
+   "ar": "حسب المستوى",
+   "en": "By level",
+   "fr": "Par niveau"
+  },
+  "Care factors": {
+   "ar": "عوامل الرعاية",
+   "en": "Care factors",
+   "fr": "Facteurs de soins"
+  },
+  "Classify": {
+   "ar": "تصنيف",
+   "en": "Classify",
+   "fr": "Classer"
+  },
+  "Classify the patient": {
+   "ar": "تصنيف المريض",
+   "en": "Classify the patient",
+   "fr": "Classer le patient"
+  },
+  "Needed": {
+   "ar": "المطلوب",
+   "en": "Needed",
+   "fr": "Nécessaires"
+  },
+  "Not classified": {
+   "ar": "غير مصنَّف",
+   "en": "Not classified",
+   "fr": "Non classé"
+  },
+  "Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate": {
+   "ar": "الممرضون المطلوبون من ساعات رعاية المرضى (مناوبة 8 ساعات)؛ ويُحسب المريض غير المصنَّف متوسطًا",
+   "en": "Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate",
+   "fr": "Infirmiers nécessaires d'après les heures de soins (poste de 8 h) ; un patient non classé compte comme modéré"
+  },
+  "Plan from yesterday to the next two weeks": {
+   "ar": "خطط من الأمس حتى الأسبوعين القادمين",
+   "en": "Plan from yesterday to the next two weeks",
+   "fr": "Planifiez d'hier aux deux prochaines semaines"
+  },
+  "Planned": {
+   "ar": "المخطط",
+   "en": "Planned",
+   "fr": "Prévus"
+  },
+  "Search a patient, bed or ward": {
+   "ar": "ابحث عن مريض أو سرير أو جناح",
+   "en": "Search a patient, bed or ward",
+   "fr": "Rechercher un patient, un lit ou une unité"
+  },
+  "The number of nurses is 0 to 100": {
+   "ar": "عدد الممرضين من 0 إلى 100",
+   "en": "The number of nurses is 0 to 100",
+   "fr": "Le nombre d'infirmiers va de 0 à 100"
+  },
+  "Unclassified first": {
+   "ar": "غير المصنَّفين أولًا",
+   "en": "Unclassified first",
+   "fr": "Non classés d'abord"
+  },
+  "Wards this shift": {
+   "ar": "الأجنحة في هذه المناوبة",
+   "en": "Wards this shift",
+   "fr": "Unités ce poste"
+  },
+  "{0} classified": {
+   "ar": "{0} مصنَّف",
+   "en": "{0} classified",
+   "fr": "{0} classés"
+  },
+  "gap:Short": {
+   "ar": "نقص",
+   "en": "Short",
+   "fr": "Manque"
+  },
+  "gap:Matched": {
+   "ar": "مطابق",
+   "en": "Matched",
+   "fr": "Adapté"
+  },
+  "gap:Over": {
+   "ar": "زيادة",
+   "en": "Over",
+   "fr": "Excédent"
+  },
+  "gap:Unplanned": {
+   "ar": "غير مخطط",
+   "en": "Not planned",
+   "fr": "Non planifié"
+  },
+  "lvl:1": {
+   "ar": "المستوى 1 — رعاية بسيطة",
+   "en": "Level 1 — minimal",
+   "fr": "Niveau 1 — minimal"
+  },
+  "lvl:2": {
+   "ar": "المستوى 2 — رعاية متوسطة",
+   "en": "Level 2 — moderate",
+   "fr": "Niveau 2 — modéré"
+  },
+  "lvl:3": {
+   "ar": "المستوى 3 — رعاية عالية",
+   "en": "Level 3 — high",
+   "fr": "Niveau 3 — élevé"
+  },
+  "lvl:4": {
+   "ar": "المستوى 4 — رعاية مكثفة",
+   "en": "Level 4 — intensive",
+   "fr": "Niveau 4 — intensif"
+  }
+ }
+}

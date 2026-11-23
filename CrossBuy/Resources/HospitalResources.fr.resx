@@ -10245,4 +10245,59 @@
   <data name="bms:Down" xml:space="preserve"><value>Hors service</value></data>
   <data name="bms:InService" xml:space="preserve"><value>En service</value></data>
   <data name="bms:Retired" xml:space="preserve"><value>Retiré</value></data>
+  <data name="A shift is classified on its day or the day after" xml:space="preserve"><value>Un poste est classé le jour même ou le lendemain</value></data>
+  <data name="Acuity staffing" xml:space="preserve"><value>Effectifs selon la charge en soins</value></data>
+  <data name="Acuity staffing is not installed yet (hospital_h246_acuity.sql)." xml:space="preserve"><value>Les effectifs selon la charge ne sont pas encore installés (hospital_h246_acuity.sql).</value></data>
+  <data name="By level" xml:space="preserve"><value>Par niveau</value></data>
+  <data name="Care factors" xml:space="preserve"><value>Facteurs de soins</value></data>
+  <data name="Classify" xml:space="preserve"><value>Classer</value></data>
+  <data name="Classify the patient" xml:space="preserve"><value>Classer le patient</value></data>
+  <data name="Needed" xml:space="preserve"><value>Nécessaires</value></data>
+  <data name="Not classified" xml:space="preserve"><value>Non classé</value></data>
+  <data name="Nurses needed from the patients' care hours (8-hour shift); an unclassified patient counts as moderate" xml:space="preserve"><value>Infirmiers nécessaires d'après les heures de soins (poste de 8 h) ; un patient non classé compte comme modéré</value></data>
+  <data name="Plan from yesterday to the next two weeks" xml:space="preserve"><value>Planifiez d'hier aux deux prochaines semaines</value></data>
+  <data name="Planned" xml:space="preserve"><value>Prévus</value></data>
+  <data name="Search a patient, bed or ward" xml:space="preserve"><value>Rechercher un patient, un lit ou une unité</value></data>
+  <data name="The number of nurses is 0 to 100" xml:space="preserve"><value>Le nombre d'infirmiers va de 0 à 100</value></data>
+  <data name="Unclassified first" xml:space="preserve"><value>Non classés d'abord</value></data>
+  <data name="Wards this shift" xml:space="preserve"><value>Unités ce poste</value></data>
+  <data name="gap:Matched" xml:space="preserve"><value>Adapté</value></data>
+  <data name="gap:Over" xml:space="preserve"><value>Excédent</value></data>
+  <data name="gap:Short" xml:space="preserve"><value>Manque</value></data>
+  <data name="gap:Unplanned" xml:space="preserve"><value>Non planifié</value></data>
+  <data name="lvl:1" xml:space="preserve"><value>Niveau 1 — minimal</value></data>
+  <data name="lvl:2" xml:space="preserve"><value>Niveau 2 — modéré</value></data>
+  <data name="lvl:3" xml:space="preserve"><value>Niveau 3 — élevé</value></data>
+  <data name="lvl:4" xml:space="preserve"><value>Niveau 4 — intensif</value></data>
+  <data name="{0} classified" xml:space="preserve"><value>{0} classés</value></data>
+  <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button." xml:space="preserve"><value>Un flux n'envoie rien tant qu'il n'est pas activé avec son hôte et son port ; l'activation part de cet instant (l'historique n'est pas rejoué). Les messages sont collectés à l'ouverture de cette page ; l'envoi se fait par le bouton.</value></data>
+  <data name="An enabled feed needs its host and port" xml:space="preserve"><value>Un flux actif nécessite son hôte et son port</value></data>
+  <data name="Another feed uses this code" xml:space="preserve"><value>Un autre flux utilise ce code</value></data>
+  <data name="Carries" xml:space="preserve"><value>Contenu</value></data>
+  <data name="Choose what the feed carries" xml:space="preserve"><value>Choisissez le contenu du flux</value></data>
+  <data name="Enabled — send patient data to this receiver" xml:space="preserve"><value>Activé — envoyer les données patients à ce destinataire</value></data>
+  <data name="Enter the feed's code" xml:space="preserve"><value>Saisissez le code du flux</value></data>
+  <data name="Enter the feed's name" xml:space="preserve"><value>Saisissez le nom du flux</value></data>
+  <data name="Feed" xml:space="preserve"><value>Flux</value></data>
+  <data name="New feed" xml:space="preserve"><value>Nouveau flux</value></data>
+  <data name="No acknowledgement" xml:space="preserve"><value>Aucun accusé de réception</value></data>
+  <data name="No feed yet." xml:space="preserve"><value>Aucun flux pour l'instant.</value></data>
+  <data name="Outbound feed" xml:space="preserve"><value>Flux sortant</value></data>
+  <data name="Outbound feeds" xml:space="preserve"><value>Flux sortants</value></data>
+  <data name="Outbound feeds are not installed yet (hospital_h247_outbound_feeds.sql)." xml:space="preserve"><value>Les flux sortants ne sont pas encore installés (hospital_h247_outbound_feeds.sql).</value></data>
+  <data name="Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Receiving application" xml:space="preserve"><value>Application destinataire</value></data>
+  <data name="Receiving facility" xml:space="preserve"><value>Établissement destinataire</value></data>
+  <data name="Search a patient, type or feed" xml:space="preserve"><value>Rechercher un patient, un type ou un flux</value></data>
+  <data name="Send now" xml:space="preserve"><value>Envoyer maintenant</value></data>
+  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="The feed is off" xml:space="preserve"><value>Le flux est désactivé</value></data>
+  <data name="The host is 200 characters at most" xml:space="preserve"><value>L'hôte fait 200 caractères au plus</value></data>
+  <data name="The receiver did not answer: {0}" xml:space="preserve"><value>Le destinataire n'a pas répondu : {0}</value></data>
+  <data name="fk:ADT" xml:space="preserve"><value>Admissions, transferts, sorties (ADT)</value></data>
+  <data name="fk:ORU" xml:space="preserve"><value>Résultats de laboratoire validés (ORU)</value></data>
+  <data name="fs:Queued" xml:space="preserve"><value>En file</value></data>
+  <data name="fs:Sent" xml:space="preserve"><value>Envoyés</value></data>
+  <data name="fs:Error" xml:space="preserve"><value>Erreurs</value></data>
+  <data name="ifk:ClinicalRead" xml:space="preserve"><value>Lecture du dossier clinique (FHIR)</value></data>
 </root>

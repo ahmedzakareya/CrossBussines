@@ -117,6 +117,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalAcuityModel.Configure(b);   // H246: acuity classification and ward staffing
 			HospitalBedsideScanModel.Configure(b);   // H205: every bedside scan, the ones that stopped a step included
 			HospitalRestraintModel.Configure(b);   // H213: restraint and seclusion, with their checks
 			b.Entity<HospitalMedOrder>(e =>
