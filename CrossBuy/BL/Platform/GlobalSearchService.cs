@@ -15,8 +15,21 @@ namespace CrossBuy.BL.Platform
     }
 
     public sealed record GlobalSearchHit(int Id, string Label, string? Url);
-    public sealed record GlobalSearchGroup(string Code, string LabelAr, string LabelEn, string Icon, string Color, IReadOnlyList<GlobalSearchHit> Hits);
-    public sealed record GlobalSearchResponse(string Term, int Total, IReadOnlyList<GlobalSearchGroup> Groups);
+    /// <param name="Truncated">
+    /// More rows matched this type than are being shown. The page says so instead of letting the
+    /// count read as the whole answer: each type is capped twice — EntityRegistry.SearchTake caps
+    /// the query at 20, and perType caps what is returned — so a figure here could never be a true
+    /// match count, and printing one would be a confident number that happens to be wrong. Saying
+    /// "the first twelve" is the most that is known, and it is true.
+    /// </param>
+    public sealed record GlobalSearchGroup(string Code, string LabelAr, string LabelEn, string Icon, string Color, IReadOnlyList<GlobalSearchHit> Hits, bool Truncated = false);
+    /// <param name="TypesSearched">
+    /// How many record types were actually looked in — those this caller may read, and that answered.
+    /// A result page that says only "1 result" leaves a real doubt unanswered: was there one match,
+    /// or did it only look in one place? Only types with hits appear in <c>Groups</c>, so without
+    /// this the breadth of the search is invisible exactly when it matters most, on a thin answer.
+    /// </param>
+    public sealed record GlobalSearchResponse(string Term, int Total, IReadOnlyList<GlobalSearchGroup> Groups, int TypesSearched = 0);
 
     public sealed class GlobalSearchService : IGlobalSearchService
     {
@@ -44,6 +57,9 @@ namespace CrossBuy.BL.Platform
             // Resolve each scope's visibility ONCE (many entity types share a scope).
             var allowed = new Dictionary<string, bool>(StringComparer.Ordinal);
             int total = 0;
+            // Counted where the search actually RAN, so a type refused by permission or without a
+            // query is never claimed as somewhere we looked.
+            int searched = 0;
 
             foreach (var def in _registry.GetDefinitions())
             {
@@ -62,16 +78,18 @@ namespace CrossBuy.BL.Platform
                 List<EntitySearchResult> rows;
                 try { rows = await _registry.SearchAsync(def.Code, t, ctx, cancellationToken); }
                 catch { continue; }   // one type's broken query must never take down the whole search
+                searched++;
                 if (rows.Count == 0) continue;
 
                 var hits = rows.Take(perType)
                     .Select(r => new GlobalSearchHit(r.EntityId, r.Label, r.Url ?? _registry.BuildUrl(def.Code, r.EntityId)))
                     .ToList();
                 total += hits.Count;
-                groups.Add(new GlobalSearchGroup(def.Code, def.DisplayNameAr, def.DisplayNameEn, def.Icon, def.Color, hits));
+                groups.Add(new GlobalSearchGroup(def.Code, def.DisplayNameAr, def.DisplayNameEn, def.Icon, def.Color,
+                    hits, Truncated: rows.Count > hits.Count));
             }
 
-            return new GlobalSearchResponse(t, total, groups);
+            return new GlobalSearchResponse(t, total, groups, searched);
         }
     }
 }
