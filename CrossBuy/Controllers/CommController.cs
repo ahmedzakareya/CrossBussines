@@ -155,6 +155,9 @@ namespace CrossBuy.Controllers
             var m = await _comm.GetAsync(me.Value.companyId, me.Value.empId, id, await MayManageOutboxAsync(), markRead: true);
             if (m == null) return NotFound();
             await FillCountsAsync(me.Value.companyId, me.Value.empId);
+            // THE CONVERSATION (phase 3): the other messages of this thread the reader holds, oldest first.
+            ViewBag.Thread = (await _comm.ThreadAsync(me.Value.companyId, me.Value.empId, m.ThreadId ?? m.Id, await MayManageOutboxAsync()))
+                .Where(t => t.Id != m.Id).ToList();
 
             // WHETHER TO OFFER THE THREE BUTTONS AT ALL. Asking the responder is the same question
             // it will ask again when the answer is posted - "is there an attendee row for you on this
@@ -266,6 +269,14 @@ namespace CrossBuy.Controllers
             var url = string.IsNullOrWhiteSpace(link.Url) ? null
                 : $"{Request.Scheme}://{Request.Host}{link.Url}";
             return Json(new { ok = true, subject = (type + " " + link.Label).Trim(), label = link.Label, url });
+        }
+
+        /// The reader's badges, for the inbox to stay current without a reload (phase 3: live mailbox).
+        [HttpGet]
+        public async Task<IActionResult> Counts()
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            return Json(await CountsAsync(me.Value.companyId, me.Value.empId));
         }
 
         // people-picker: company employees (name + email + photo) matching a query, for the To/Cc autocomplete

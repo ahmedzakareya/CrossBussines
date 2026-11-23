@@ -92,6 +92,49 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        @* ---- THE CONVERSATION (phase 3) ----
+                           The earlier messages of this thread that the reader holds, oldest first, folded to one
+                           line each; a click opens one in place (the same sandbox as the message itself - no
+                           scripts) without leaving the one being read. *@
+                        @{ var thread = ViewBag.Thread as List<MailThreadItem> ?? new List<MailThreadItem>(); }
+                        @if (thread.Count > 0)
+                        {
+                            <div class="mb-8">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="ki-outline ki-messages fs-3 text-primary me-2"></i>
+                                    <span class="fw-bold fs-7 text-gray-700">@Localizer["Earlier in this conversation"]</span>
+                                    <span class="badge badge-light-primary ms-2">@thread.Count</span>
+                                </div>
+                                @foreach (var t in thread)
+                                {
+                                    var tInitial = string.IsNullOrEmpty(t.FromName) ? "?" : t.FromName.Substring(0, 1).ToUpper();
+                                    var tDoc = "<!doctype html><html dir=\"auto\"><head><meta charset=\"utf-8\"><style>body{font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;color:#181c32;margin:0;padding:4px;word-wrap:break-word}img{max-width:100%}table{max-width:100%}</style></head><body>" + (t.Body ?? "") + "</body></html>";
+                                    <div class="border border-gray-300 rounded mb-2">
+                                        <a href="#" class="d-flex align-items-center p-3 text-gray-800 cb-thread-toggle" data-target="cbt-@t.Id" aria-expanded="false">
+                                            <div class="symbol symbol-30px flex-shrink-0">
+                                                @if (!string.IsNullOrWhiteSpace(t.FromPhoto))
+                                                {
+                                                    <img src="@Url.Content("~" + t.FromPhoto.Replace("\\", "/"))" alt="@t.FromName" class="symbol-label" style="object-fit:cover;" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="symbol-label bg-light-primary text-primary fw-bold fs-7">@tInitial</div>
+                                                }
+                                            </div>
+                                            <div class="flex-grow-1 ms-3" style="min-width:0">
+                                                <div class="fw-bold fs-7"><bdi style="unicode-bidi:plaintext">@t.FromName</bdi>@if (t.External) { <span class="badge badge-light-info fs-9 ms-2">@Localizer["External"]</span> }@if (t.Attachments > 0) { <i class="ki-outline ki-paper-clip fs-7 text-muted ms-2"></i> }</div>
+                                                <div class="text-muted fs-8 text-truncate">@t.Preview</div>
+                                            </div>
+                                            <div class="text-muted fs-8 text-nowrap ms-3">@(t.At?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                                        </a>
+                                        <div id="cbt-@t.Id" class="d-none px-4 pb-3">
+                                            <iframe class="w-100 border-0 cb-thread-frame" style="min-height:80px" sandbox="allow-same-origin" srcdoc="@tDoc"></iframe>
+                                            <a href="@Url.Action("View", "Comm", new { id = t.Id })" class="fs-8 fw-semibold">@Localizer["Open this message"]</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                         <div class="d-flex align-items-center mb-6">
                             @* THE PERSON, when we have a picture of them. Rendered exactly as the list
                                renders it so the row and the message it opens show the same face; the
@@ -443,6 +486,17 @@
     });
 </script>
 <script>
+    // THE CONVERSATION: a folded message opens in place; its frame is sized to what it holds.
+    document.querySelectorAll('.cb-thread-toggle').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var box = document.getElementById(a.getAttribute('data-target'));
+            var open = box.classList.toggle('d-none') === false;
+            a.setAttribute('aria-expanded', open ? 'true' : 'false');
+            var fr = box.querySelector('iframe');
+            if (open && fr) { try { var h = fr.contentWindow.document.body.scrollHeight; if (h) fr.style.height = (h + 16) + 'px'; } catch (x) { } }
+        });
+    });
     // resize-only: the body is already in the iframe's srcdoc (server-side). No body embedded here → nothing can break out.
     (function () {
         var f = document.getElementById('cbMailBody'); if (!f) return;

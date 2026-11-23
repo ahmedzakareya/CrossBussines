@@ -95,6 +95,22 @@ namespace CrossBuy.BL
     public class MailAttachmentDto { public string FilePath { get; set; } = ""; public string FileName { get; set; } = ""; public long Size { get; set; } }
     public record MailFile(string Path, string Name, long Size);
 
+    /// One message of a conversation, as the message screen draws it above the one being read (phase 3).
+    public class MailThreadItem
+    {
+        public int Id { get; set; }
+        public string? FromName { get; set; }
+        public string? FromAddress { get; set; }
+        public string? FromPhoto { get; set; }
+        public string ToAddress { get; set; } = "";
+        public string? Preview { get; set; }
+        public string? Body { get; set; }
+        public DateTime? At { get; set; }
+        public bool External { get; set; }
+        public bool Mine { get; set; }
+        public int Attachments { get; set; }
+    }
+
     public interface ICommService
     {
         Task<(int id, string status, string? error)> SendAsync(int companyId, int createdBy, string to, string? cc,
@@ -139,6 +155,9 @@ namespace CrossBuy.BL
         Task<bool> ToggleStarAsync(int companyId, int employeeId, int id);
         /// May this person send this message again? Only the one who wrote it (or the outbox's manager).
         Task<bool> IsSenderAsync(int companyId, int employeeId, int id);
+        /// THE CONVERSATION (phase 3): every message of a thread the reader holds a copy of (or all of them, for the
+        /// outbox's manager), oldest first.
+        Task<List<MailThreadItem>> ThreadAsync(int companyId, int employeeId, int threadId, bool manager = false);
         bool SmtpConfigured { get; }
         /// The employee's own address for mail from outside the company (phase 2), or null when mail is not set up.
         string? ExternalAddressFor(int employeeId);
@@ -596,6 +615,33 @@ namespace CrossBuy.BL
 
             full.Invite = await ReadInviteAsync(full.Attachments);
             return full;
+        }
+
+        public async Task<List<MailThreadItem>> ThreadAsync(int companyId, int employeeId, int threadId, bool manager = false)
+        {
+            if (companyId <= 0 || threadId <= 0) return new();
+            var q = _db.CommMessages.AsNoTracking().Where(m => m.CompanyID == companyId && (m.ThreadId == threadId || m.Id == threadId));
+            // ONLY WHAT THE READER HOLDS: a colleague's side of a conversation they were not copied on stays theirs.
+            if (!manager)
+                q = q.Where(m => Items.Any(i => i.MessageId == m.Id && i.EmployeeId == employeeId && i.CompanyID == companyId && i.DeletedAt == null));
+            var rows = await q.OrderBy(m => m.SentAt ?? m.CreatedAt).ThenBy(m => m.Id).Take(60)
+                .Select(m => new { m.Id, m.CreatedBy, m.Direction, m.FromName, m.FromAddress, m.ToAddress, m.Body, m.SentAt, m.CreatedAt }).ToListAsync();
+            var ids = rows.Select(r => r.Id).ToList();
+            var files = await _db.CommAttachments.AsNoTracking().Where(a => ids.Contains(a.CommMessageId))
+                .GroupBy(a => a.CommMessageId).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.N);
+            var people = await PeopleAsync(companyId, rows.Select(r => r.CreatedBy));
+            return rows.Select(r =>
+            {
+                people.TryGetValue(r.CreatedBy ?? 0, out var from);
+                return new MailThreadItem
+                {
+                    Id = r.Id, ToAddress = r.ToAddress, Body = r.Body, Preview = Plain(r.Body), At = r.SentAt ?? r.CreatedAt,
+                    FromName = from?.Name ?? (r.Direction == "In" ? (r.FromName ?? r.FromAddress) : _smtp.FromName),
+                    FromAddress = from?.Email ?? (r.Direction == "In" ? r.FromAddress : _smtp.From), FromPhoto = from?.Photo,
+                    External = r.Direction == "In", Mine = r.CreatedBy == employeeId,
+                    Attachments = files.TryGetValue(r.Id, out var n) ? n : 0,
+                };
+            }).ToList();
         }
 
         public Task<bool> IsSenderAsync(int companyId, int employeeId, int id) =>

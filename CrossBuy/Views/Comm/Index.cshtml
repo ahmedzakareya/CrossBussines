@@ -110,6 +110,10 @@
             <!--begin::Content-->
             <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
                 <div class="card">
+                    <div id="cb-new-mail" class="d-none alert alert-primary d-flex align-items-center justify-content-between py-2 px-5 m-4 mb-0">
+                        <span class="fs-7 fw-semibold"><i class="ki-outline ki-sms fs-4 text-primary me-2"></i>@Localizer["New mail has arrived"]</span>
+                        <a href="@url(folder)" class="btn btn-sm btn-primary">@Localizer["Refresh"]</a>
+                    </div>
                     <div class="card-header align-items-center py-5 gap-2 gap-md-5">
                         <div class="d-flex align-items-center">
                             <span class="fw-bold fs-4 text-gray-900 me-2">@(folder switch { "Inbox" => Localizer["Inbox"].Value, "All" => Localizer["All"].Value, "Outbox" => Localizer["Outbox"].Value, "Trash" => Localizer["Trash"].Value, "Starred" => Localizer["Starred"].Value, "Company" => Localizer["Company outbox"].Value, _ => sLabel(folder) })</span>
@@ -512,6 +516,39 @@
         });
 
         sync();
+
+        // ---- A LIVE MAILBOX (phase 3) ------------------------------------------------------------------
+        // New mail is announced by the notifications hub the bell already uses (and, if that is not there, by
+        // a light look at the counts every minute). The list then refreshes itself - unless the reader is in the
+        // middle of something (a ticked row, the search box), when a line offers the refresh instead.
+        var lastUnread = @counts.Unread;
+        function arrived() {
+            var busy = picks().length > 0 || (document.activeElement && document.activeElement.name === 'q');
+            if (!busy && (folder === 'Inbox' || folder === 'All' || folder === 'Starred')) { location.reload(); return; }
+            var bar = document.getElementById('cb-new-mail');
+            if (bar) bar.classList.remove('d-none');
+        }
+        function look() {
+            fetch('@Url.Action("Counts","Comm")', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (c) {
+                    if (!c) return;
+                    if (c.inbox > lastUnread) arrived();
+                    lastUnread = c.inbox;
+                    paint(c);
+                }).catch(function () { });
+        }
+        setInterval(look, 60000);
+        function hub() {
+            try {
+                var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
+                conn.on('notification', function (n) {
+                    if (n && ((n.type || n.Type) === 'mail_received' || String(n.url || n.Url || '').indexOf('/Comm/View/') >= 0)) look();
+                });
+                conn.start().catch(function () { });
+            } catch (e) { }
+        }
+        if (window.signalR) hub(); else window.addEventListener('load', function () { if (window.signalR) hub(); });
 
         var copy = document.getElementById('cb-copy-address');
         if (copy) copy.addEventListener('click', function () {
