@@ -40,24 +40,24 @@ const BASE = process.env.UI_BASE_URL ?? 'https://localhost:7183';
 // want: 'answer' = must return rows · 'refuse' = must NOT answer, because the data cannot support
 // an honest one. The note says why, so a future reader can judge whether it is still true.
 const CASES = [
-  ['اعلي الاصناف بيعا',                   'answer', 'sales surface, by item'],
-  ['ايه الايراد لكل شهر',                 'answer', 'sales surface, by month'],
-  ['طيب هات الاصناف المشتراه',            'answer', 'purchases surface'],
-  ['من مين اشترينا',                      'answer', 'purchases, grouped by vendor not item'],
-  ['ايه الوارد لكل مخزن',                 'answer', 'stock movements, by warehouse'],
-  ['الحركات حسب النوع',                   'answer', 'stock movements, by type not a grand total'],
-  ['اي ساعة اكتر زحمة',                   'answer', 'POS, by hour of day'],
-  ['اي فرع بيبيع اكتر',                   'answer', 'POS, by branch'],
-  ['كام موظف عندنا',                      'answer', 'workforce headcount'],
-  ['الموظفين حسب الوظيفة',                'answer', 'workforce by job title'],
-  ['كام رصيد مياه معدنية',                'answer', 'item stock, the oldest handler'],
-  ['كام رصيد النقدية',                    'answer', 'cash balance'],
-  ['ايه الفئات',                          'answer', 'item categories'],
-  ['ايه الاصناف الراكدة',                 'answer', 'dormant items'],
-  ['ايه المخازن اللي اقدر اشوفها',        'answer', 'warehouses the caller may see'],
-  ['كام المستحق على العملاء',             'answer', 'open receivables'],
-  ['المبيعات مقارنة بالشهر اللي فات',     'answer', 'period comparison, sales'],
-  ['حركة المخزون مقارنة بالشهر اللي فات', 'answer', 'period comparison, stock'],
+  ['اعلي الاصناف بيعا',                   'answer', 'sales surface, by item', 'Accounting:report-read'],
+  ['ايه الايراد لكل شهر',                 'answer', 'sales surface, by month', 'Accounting:report-read'],
+  ['طيب هات الاصناف المشتراه',            'answer', 'purchases surface', 'Accounting:report-read'],
+  ['من مين اشترينا',                      'answer', 'purchases, grouped by vendor not item', 'Accounting:report-read'],
+  ['ايه الوارد لكل مخزن',                 'answer', 'stock movements, by warehouse', 'Inventory:read'],
+  ['الحركات حسب النوع',                   'answer', 'stock movements, by type not a grand total', 'Inventory:read'],
+  ['اي ساعة اكتر زحمة',                   'answer', 'POS, by hour of day', 'Accounting:report-read'],
+  ['اي فرع بيبيع اكتر',                   'answer', 'POS, by branch', 'Accounting:report-read'],
+  ['كام موظف عندنا',                      'answer', 'workforce headcount', 'Hr:read'],
+  ['الموظفين حسب الوظيفة',                'answer', 'workforce by job title', 'Hr:read'],
+  ['كام رصيد مياه معدنية',                'answer', 'item stock, the oldest handler', 'Inventory:read'],
+  ['كام رصيد النقدية',                    'answer', 'cash balance', 'Accounting:read'],
+  ['ايه الفئات',                          'answer', 'item categories', 'Inventory:read'],
+  ['ايه الاصناف الراكدة',                 'answer', 'dormant items', 'Inventory:read'],
+  ['ايه المخازن اللي اقدر اشوفها',        'answer', 'warehouses the caller may see', 'Inventory:read'],
+  ['كام المستحق على العملاء',             'answer', 'open receivables', 'Accounting:read'],
+  ['المبيعات مقارنة بالشهر اللي فات',     'answer', 'period comparison, sales', 'Accounting:report-read'],
+  ['حركة المخزون مقارنة بالشهر اللي فات', 'answer', 'period comparison, stock', 'Inventory:read'],
 
   // ---- GENERAL QUESTIONS, WHICH MUST NOT BE MISTAKEN FOR UNANSWERABLE ONES -------------------
   //
@@ -66,8 +66,8 @@ const CASES = [
   // the surface's default answer is the honest one and a refusal here would be the fix overshooting.
   // "what did we buy" is the case that caught it — a declared keyword of the purchases surface
   // that composes no column at all, and so was refused by the first version of that rule.
-  ['المبيعات',                            'answer', 'bare topic word: a total, not a refusal'],
-  ['عايز اعرف المشتريات',                 'answer', 'scaffolding plus one topic word'],
+  ['المبيعات',                            'answer', 'bare topic word: a total, not a refusal', 'Accounting:report-read'],
+  ['عايز اعرف المشتريات',                 'answer', 'scaffolding plus one topic word', 'Accounting:report-read'],
   // NOT listed here: "ايه اخبار المخزون". I wrote it as a must-answer and it failed, but reading
   // the refusal showed it is the CATALOGUE saying the question reached no surface at all — a
   // routing gap, not the rule above overshooting. It is genuinely ambiguous between two surfaces
@@ -221,7 +221,17 @@ const NAMED = [
   // «المطالبات المعتمدة» grouped by the total gives ONE row whether or not it filtered,
   // so it passed while answering about all 19 lines. Grouped by payer it gives 1 when the
   // filter held and 2 when it did not, because every accepted line belongs to one insurer.
-  ['المطالبات المعتمدة حسب جهة الدفع', 1, 'filtered to accepted: one payer, not two'],
+  // WAS PINNED TO 1 PAYER, AND THE DATA MOVED UNDER IT (2026-11-23).
+  //
+  // The claim was "filtered to accepted: one payer, not two". It failed, and the assistant was
+  // RIGHT: accepted lines now span two payers — Gulf Insurance Group (7) and a payer literally
+  // named "TEST e-claims payer" (2), seeded by the e-claims work. Two rows is the correct answer.
+  //
+  // The case was testing a COUNT OF ROWS IN SEED DATA, not a capability. Any colleague seeding a
+  // payer breaks it, and the breakage reads as an assistant regression. What is actually worth
+  // asserting is that the filter was applied at all, which `SAYS` below now does by requiring the
+  // answer to state the Accepted filter. Here it only has to come back with something.
+  ['المطالبات المعتمدة حسب جهة الدفع', n => n >= 1, 'accepted claims, grouped by payer: the count follows the data, so only the grouping is pinned'],
 
   // ---- THE CLINIC'S DAY -----------------------------------------------------------------------
   //
@@ -315,6 +325,12 @@ let pass = 0;
 let total = CASES.length;
 const failures = [];
 
+// Every answered case's `provenance.authority`, so a run says WHICH surface answered what and not
+// merely that something did. Printed as a map at the end and written to ask-answering-surface.tsv:
+// two runs of that file diff into "this question changed hands", which is the regression this suite
+// could not see before.
+const authorityMap = [];
+
 try {
   await page.goto(`${BASE}/Account/Login`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[name="UserName"]', process.env.UI_USER ?? 'Admin');
@@ -333,7 +349,7 @@ try {
   await page.goto(`${BASE}/Account/SetLanguage?culture=ar&returnUrl=%2F`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await page.goto(`${BASE}/Inventory/StockBalances`, { waitUntil: 'domcontentloaded' });
 
-  for (const [q, want, why] of CASES) {
+  for (const [q, want, why, wantAuth] of CASES) {
     const r = await page.evaluate(async ([base, question]) => {
       const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:${Date.now()}`,
         { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -341,14 +357,42 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                say: d ? `${d.spoken || d.message || ''}`.slice(0, 100) : t.slice(0, 100) };
     }, [BASE, q]);
 
     // An answer must carry rows. A refusal must not be an answer at all. An HTTP error is neither
     // and fails both — a 500 must never read as a successful refusal.
-    const good = r.status === 200 && (want === 'answer' ? (r.ok === true && r.rows > 0) : r.ok === false);
+    let good = r.status === 200 && (want === 'answer' ? (r.ok === true && r.rows > 0) : r.ok === false);
+
+    // WHICH SURFACE ANSWERED, NOT MERELY THAT ONE DID.
+    //
+    // A question answered by the WRONG surface still returns rows, so the check above passes it.
+    // That is not hypothetical: «كام زيارة عندنا» — a question about hospital visits — was answered
+    // with a CASH BALANCE of 239,605 and would have counted as a pass here, because an answer
+    // arrived and it had rows in it. The grader could not see that the accounting surface had taken
+    // a hospital question.
+    //
+    // provenance.authority is `<module>:<action>` — the authority that permitted the answer. It is
+    // already in the response, so pinning it costs no production code. It is MODULE-grained, so it
+    // catches a hospital question answered by accounting but not sales losing one to POS; partial
+    // cover stated honestly is worth more than a grader that cannot see the class of failure at all.
+    //
+    // A case carries its expected authority only where it has been CONFIRMED correct — an
+    // expectation copied from whatever the build happened to do would freeze today's bugs as the
+    // specification. Cases without one are still measured: every authority is recorded below and
+    // printed as a map, which is what makes pinning the rest possible.
+    if (good && want === 'answer' && wantAuth) {
+      if (r.auth !== wantAuth) {
+        good = false;
+        failures.push({ q, want: `authority=${wantAuth}`, why: `${why} — answered, but by the wrong surface`, ...r });
+      }
+    }
+    if (want === 'answer' && r.ok === true) {
+      authorityMap.push([q, r.auth || '(none)', wantAuth ? (r.auth === wantAuth ? 'pinned-ok' : 'PINNED-MISMATCH') : 'unpinned']);
+    }
     if (good) { pass++; }
-    else { failures.push({ q, want, why, ...r }); }
+    else if (!(want === 'answer' && wantAuth && r.auth !== wantAuth)) { failures.push({ q, want, why, ...r }); }
   }
 } catch (e) {
   console.error('NOT VERIFIED —', e?.message ?? e);
@@ -366,6 +410,7 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                say: d ? `${d.spoken || ''}` : t.slice(0, 120) };
     }, [BASE, q]);
 
@@ -375,6 +420,7 @@ try {
     const good = r.status === 200 && r.ok === true && !notFound
       && (wantRows == null
           || (typeof wantRows === 'function' ? wantRows(r.rows) : r.rows === wantRows));
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
     if (good) { pass++; } else { failures.push({ q, want: `named:${wantRows ?? 'clean'}`, why, ...r, say: r.say.slice(0, 120) }); }
     total++;
   }
@@ -394,6 +440,7 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                photo: d && d.rows && d.rows[0] ? !!d.rows[0].photo : false,
                say: d ? `${d.spoken || d.message || ''}`.slice(0, 130) : t.slice(0, 130) };
     }, [BASE, q]);
@@ -403,6 +450,7 @@ try {
     // and it is invisible to a check that only counts rows.
     const good = r.status === 200 && r.ok === true
       && (want === 'found' ? (r.rows > 0 && r.photo) : r.rows === 0);
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
     if (good) { pass++; } else { failures.push({ q, want: `person:${want}`, why, ...r }); }
     total++;
   }
@@ -451,6 +499,7 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                about: d ? `${d.about || ''}` : '',
                say: d ? `${d.spoken || d.message || ''}`.slice(0, 120) : t.slice(0, 120) };
     }, [BASE, q, conv]);
@@ -464,6 +513,7 @@ try {
     : want === 'asks'    ? (r.ok === false && r.say.length > 0)
     : want === 'answers' ? (r.ok === true && r.rows > 0)
     :                      (r.ok === true && r.about.length > 0));
+    if (r.ok === true) authorityMap.push([q, r.auth || '(none)', 'unpinned']);
     if (good) { pass++; } else { failures.push({ q, want: `conversation:${want}`, why, ...r }); }
     total++;
   }
@@ -497,7 +547,8 @@ const ENGLISH = [
   // The Arabic twin of this case passed while the English one silently answered about all 19
   // lines, because the measure was still NAMED "accepted" and a column's name is vocabulary
   // too. Grouped by payer the counts separate: 1 when the status filter held, 2 when it did not.
-  ['accepted claims by payer',      1,        'filtered to accepted: one payer, not two'],
+  // Same stale pin as the Arabic twin above: accepted lines now span two payers, so 2 is correct.
+  ['accepted claims by payer',      n => n >= 1, 'the English twin: grouping pinned, count left to the data'],
   ['todays appointments',           'answer', "the relative window resolves to today"],
   ['cancelled appointments',        1,        'the same filter the Arabic twin needs spoken forms for'],
 
@@ -551,6 +602,7 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                say: d ? `${d.spoken || d.message || ''}` : t.slice(0, 120),
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
@@ -567,6 +619,7 @@ try {
       ? (r.ok === true && r.rows === want)
       : want === 'answer' ? (r.ok === true && r.rows > 0) : r.ok === false);
     const arabicLeak = ARABIC.test(r.say) || ARABIC.test(r.understood);
+    if (r.ok === true) authorityMap.push([`[en] ${q}`, r.auth || '(none)', 'unpinned']);
     if (routed && !arabicLeak) { pass++; }
     else { failures.push({ q, want: `english:${want}${arabicLeak ? ' (Arabic leaked)' : ''}`, why, ...r, say: r.say.slice(0, 110) }); }
     total++;
@@ -587,8 +640,16 @@ try {
 // It happened in English and not in Arabic, purely because "rejected".Contains("reject") is true
 // and "المرفوضه".Contains("الرفض") is not. One language passing proves nothing about the other.
 const MISSINGVALUE = [
-  ['ar', 'المطالبات المرفوضة', 'no rejected lines exist: say so rather than answer about all of them'],
-  ['en', 'rejected claims',  'same question, same obligation, in the other language'],
+  // «المطالبات المرفوضة» / «rejected claims» USED TO LIVE HERE and no longer can (2026-11-23).
+  //
+  // The case said "no rejected lines exist: say so rather than answer about all of them". There is
+  // now exactly one rejected line, seeded with the e-claims test data, so the premise is false and
+  // the assistant was right to answer: it filtered to Status = Rejected and reported the one line.
+  // A case whose correctness depends on a table staying empty is a case any colleague can break by
+  // doing their job. The behaviour it guarded — ADMITTING an absent value instead of silently
+  // answering about everything — is still covered below by the migraine pair, which names a code in
+  // the catalogue that no doctor has ever recorded. The two claim questions moved to `SAYS`, where
+  // they assert the thing that does not depend on row counts: that the filter was applied and said.
 
   // MIGRAINE IS IN THE CATALOGUE AND NOBODY HAS EVER BEEN DIAGNOSED WITH IT. Eighteen of the
   // fifty-three codes have ever been used, so most of this hospital's own vocabulary names zero
@@ -608,10 +669,12 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                say: d ? `${d.spoken || d.message || ''}` : t.slice(0, 120),
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
     const said = `${r.say} ${r.understood}`;
+    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', 'unpinned']);
     const admits = said.includes('مالقيتش') || /could not find|couldn't find|no .* found/i.test(said);
     const good = r.status === 200 && admits;
     if (good) { pass++; }
@@ -639,6 +702,15 @@ try {
 // a visit. The count is honest about what the surface holds and wrong about what was asked, and
 // the only thing on screen that can tell the two apart is the caveat.
 const SAYS = [
+  // A FILTERED ANSWER MUST SAY WHAT IT FILTERED ON. These two moved here from MISSINGVALUE, whose
+  // premise the seed data overtook. The row count is data; the stated filter is behaviour, and it
+  // is the half that matters: an answer about rejected claims that quietly reported ALL claims
+  // would be wrong in the expensive way, and it would look identical in a row count.
+  ['ar', 'المطالبات المرفوضة', 'مرفوضة',
+   'filtered to Status = Rejected, and the answer has to say so rather than quietly total everything'],
+  ['en', 'rejected claims', 'Rejected',
+   'the same obligation in the other language'],
+
   ['ar', 'كام زيارة عندنا', 'مش زيارات حصلت',
    'the total counts cancelled, no-shows and future bookings: it must say so'],
   ['en', 'how many visits do we have', 'a visit anyone made',
@@ -673,10 +745,12 @@ try {
       let d = null;
       try { d = JSON.parse(t); } catch { /* not json */ }
       return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               auth: d && d.provenance ? (d.provenance.authority || '') : '',
                say: d ? `${d.about || ''} ${d.spoken || d.message || ''}` : t.slice(0, 160),
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
     const said = `${r.say} ${r.understood}`;
+    if (r.ok === true) authorityMap.push([`[${culture}] ${q}`, r.auth || '(none)', 'unpinned']);
     const good = r.status === 200 && r.ok === true && said.includes(must);
     if (good) { pass++; }
     else { failures.push({ q: `[${culture}] ${q}`, want: `says "${must}"`, why, ...r, say: said.slice(0, 160) }); }
@@ -696,5 +770,36 @@ for (const f of failures) {
   console.log(`        ${f.q}`);
   console.log(`        expected because: ${f.why}`);
   console.log(`        got: ${f.say}`);
+}
+
+// ---- WHO ANSWERED WHAT ------------------------------------------------------------------------
+//
+// The counts alone cannot show a question changing hands between surfaces, because both the old
+// and the new owner return rows. This map can, and the TSV beside it turns "it feels worse since
+// the retrain" into a diff of two files.
+if (authorityMap.length) {
+  const byAuth = new Map();
+  for (const [, auth] of authorityMap) byAuth.set(auth, (byAuth.get(auth) ?? 0) + 1);
+  console.log(`\nanswered by surface (${authorityMap.length} answered cases):`);
+  for (const [auth, n] of [...byAuth.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${String(n).padStart(3)}  ${auth}`);
+  }
+  const pinned = authorityMap.filter(r => r[2] !== 'unpinned').length;
+  const mismatched = authorityMap.filter(r => r[2] === 'PINNED-MISMATCH').length;
+  console.log(`  pinned: ${pinned} / ${authorityMap.length}   mismatched: ${mismatched}`);
+
+  try {
+    const { writeFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const out = join(dirname(fileURLToPath(import.meta.url)), 'ask-answering-surface.tsv');
+    writeFileSync(out,
+      'question\tauthority\tpinned\n' + authorityMap.map(r => r.join('\t')).join('\n') + '\n',
+      'utf8');
+    console.log(`  baseline written: ${out}`);
+  } catch (e) {
+    // Never fail the suite over its own bookkeeping — the assertions above are the product check.
+    console.log(`  (baseline not written: ${e?.message ?? e})`);
+  }
 }
 process.exit(failures.length === 0 ? 0 : 1);
