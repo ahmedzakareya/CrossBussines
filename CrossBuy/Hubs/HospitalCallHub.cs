@@ -295,6 +295,30 @@ namespace CrossBuy.Hubs
 			if (!string.IsNullOrEmpty(to)) await Clients.Client(to).SendAsync("signal", new { callId, payload });
 		}
 
+		// ---- live captions for someone who cannot record their own voice in a call (the app) ---------------------------
+		// Each person normally sends their own voice for captions. The app cannot record its microphone while a call holds
+		// it, so it ASKS: a browser in the call then captions what it hears from that person, under that person's name.
+		// The server lets a relayed caption through only for someone who asked (their consent, kept here while they are in
+		// the call), and from ONE relayer per speaker at a time (the first; another takes over after 20 s of silence), so a
+		// group of browsers does not caption the same person several times.
+		private static readonly ConcurrentDictionary<(int Call, int Emp), DateTime> _captionRelay = new();
+		private static readonly ConcurrentDictionary<(int Call, int Speaker), (int Relayer, DateTime At)> _captionRelayer = new();
+		public async Task CaptionRelay(int callId, bool on)
+		{
+			if (await MeAsync() is not var (me, _) || ParticipantsOf(callId, me) == null) return;
+			foreach (var k in _captionRelay.Keys) if (ParticipantsOf(k.Call, k.Emp) == null) { _captionRelay.TryRemove(k, out _); _captionRelayer.TryRemove((k.Call, k.Emp), out _); }
+			if (on) _captionRelay[(callId, me)] = DateTime.UtcNow;
+			else { _captionRelay.TryRemove((callId, me), out _); _captionRelayer.TryRemove((callId, me), out _); }
+		}
+		/// May this relayer post captions of that speaker now? (the speaker asked, and no other relayer holds them)
+		public static bool CaptionRelayClaim(int callId, int speaker, int relayer)
+		{
+			if (speaker == relayer || !_captionRelay.ContainsKey((callId, speaker))) return false;
+			var now = DateTime.UtcNow;
+			var held = _captionRelayer.AddOrUpdate((callId, speaker), (relayer, now), (_, old) => old.Relayer == relayer || old.At < now.AddSeconds(-20) ? (relayer, now) : old);
+			return held.Relayer == relayer;
+		}
+
 		// ---- recording, with the other side's consent -------------------------------------------------------------
 
 		private async Task<(Live Live, HospitalCallRecording Row)?> LiveRecAsync(int recId, int co)

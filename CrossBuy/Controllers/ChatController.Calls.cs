@@ -142,7 +142,7 @@ namespace CrossBuy.Controllers
 		/// data, internal only), and a busy model drops a chunk rather than delaying the next ones.
 		[HttpPost, ValidateAntiForgeryToken]
 		[RequestSizeLimit(300 * 1024)]
-		public async Task<IActionResult> CallCaption(int id, string? lang)
+		public async Task<IActionResult> CallCaption(int id, string? lang, int? speaker)
 		{
 			var me = await MeAsync(); if (me == null) return NotFound(new { ok = false });
 			var ct = HttpContext.RequestAborted;
@@ -151,6 +151,15 @@ namespace CrossBuy.Controllers
 			if (ctx == null || !await sp.GetRequiredService<ICommunicationAccessService>().CanAsync(ctx, CommunicationActions.Send, null, ct)) return NotFound(new { ok = false });
 			var people = HospitalCallHub.ParticipantsOf(id, me.Value.empId);
 			if (people == null) return NotFound(new { ok = false });   // not in this call (or it is not live)
+			// a relayed piece: what this browser hears from someone in the call who asked for it (the app cannot record
+			// its own voice in a call) — only for a person who asked, from one relayer at a time (HospitalCallHub)
+			var voice = me.Value.empId;
+			if (speaker is int sp2 && sp2 != me.Value.empId)
+			{
+				if (!people.Contains(sp2)) return NotFound(new { ok = false });
+				if (!HospitalCallHub.CaptionRelayClaim(id, sp2, me.Value.empId)) return Json(new { ok = false, taken = true });
+				voice = sp2;
+			}
 			using var ms = new MemoryStream();
 			await Request.Body.CopyToAsync(ms, ct);
 			if (ms.Length < 512 || ms.Length > 280 * 1024) return BadRequest(new { ok = false });
@@ -161,10 +170,10 @@ namespace CrossBuy.Controllers
 			if (res == null || res.Status != 200) return Json(new { ok = false });
 			var text = System.Text.Json.JsonDocument.Parse(res.Json).RootElement.GetProperty("text").GetString();
 			if (string.IsNullOrWhiteSpace(text)) return Json(new { ok = true, text = "" });
-			var who = await _db.Employee.AsNoTracking().Where(e => e.ID == me.Value.empId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
+			var who = await _db.Employee.AsNoTracking().Where(e => e.ID == voice).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
 			var hub = sp.GetRequiredService<IHubContext<HospitalCallHub>>();
 			foreach (var p in people)
-				await hub.Clients.Group(HospitalCallHub.EmployeeGroup(p)).SendAsync("caption", new { callId = id, from = me.Value.empId, nameAr = who?.FullName, nameEn = who?.FullNameEn ?? who?.FullName, text }, ct);
+				await hub.Clients.Group(HospitalCallHub.EmployeeGroup(p)).SendAsync("caption", new { callId = id, from = voice, relayed = voice != me.Value.empId, nameAr = who?.FullName, nameEn = who?.FullNameEn ?? who?.FullName, text }, ct);
 			return Json(new { ok = true, text });
 		}
 

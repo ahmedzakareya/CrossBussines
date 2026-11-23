@@ -55,6 +55,7 @@ namespace CrossBuy.Hubs
 		{
 			if (await MeAsync() is not var (me, _) || !_groups.TryGetValue(callId, out var g) || !g.Joined.ContainsKey(me)) return;
 			await PruneAwayAsync(g);
+			await PruneGuestsHereAsync(g);   // a guest unheard of for 30 s has left (HospitalCallHub.Guests)
 		}
 
 		/// A tab that was in a group call reconnects (a drop, or the server restarted): the call is rebuilt from its record
@@ -255,6 +256,7 @@ namespace CrossBuy.Hubs
 			if (g.Recording && g.RecId is int rid) await GroupSvc.ConsentAsync(co, rid, me, "joined", now);   // joining a recorded call is consent
 			var meCard = (await Svc.PeopleAsync(co, now, new[] { me })).FirstOrDefault();
 			foreach (var (emp, conn) in g.Joined) if (emp != me && conn.Length > 0) await Clients.Client(conn).SendAsync("groupjoined", new { callId, card = meCard == null ? null : Card(meCard) });
+			GuestsMemberJoined(callId, meCard == null ? null : Card(meCard));   // a guest in the call offers the newcomer a connection
 			await Clients.GroupExcept(Emp(me), Context.ConnectionId).SendAsync("taken", new { callId });
 			await PresenceOfAsync(co, me);
 			var host = (await Svc.PeopleAsync(co, now, new[] { g.HostId })).First();
@@ -307,6 +309,7 @@ namespace CrossBuy.Hubs
 			await GroupSvc.MoveAsync(g.CompanyId, g.CallId, emp, action, by, DateTime.UtcNow);
 			if (action == "remove" && conn.Length > 0) await Clients.Client(conn).SendAsync("ended", new { callId = g.CallId, status = "Removed" });
 			foreach (var c in Conns(g)) await Clients.Client(c).SendAsync("groupleft", new { callId = g.CallId, employeeId = emp, removed = action == "remove" });
+			GuestsMemberLeft(g.CallId, emp);
 			await PresenceOfAsync(g.CompanyId, emp);
 			// a group recording made in the leaver's browser stops with them (the file is kept)
 			if (g.Recording && (g.RecBy == emp || g.RecorderId == emp)) await StopGroupRecordingAsync(g, emp);
@@ -324,6 +327,7 @@ namespace CrossBuy.Hubs
 		private async Task EndGroupAsync(GroupLive g)
 		{
 			if (!_groups.TryRemove(g.CallId, out _)) return;
+			GuestsCallEnded(g.CallId);
 			await GroupSvc.EndAsync(g.CompanyId, g.CallId, DateTime.UtcNow);
 			foreach (var (emp, conn) in g.Joined)
 			{
@@ -356,6 +360,7 @@ namespace CrossBuy.Hubs
 		public async Task GroupRemove(int callId, int employeeId)
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || g.HostId != me || employeeId == me) return;
+			if (employeeId < 0) { await GuestRemoveAsync(callId, -employeeId); return; }   // a guest (HospitalCallHub.Guests)
 			await LeaveAsync(g, employeeId, "remove", me);
 			var s = await Svc.SettingsAsync(co);
 			if (SfuReady(s)) await HospitalCallSfu.RemoveAsync(s.SfuUrl!, s.SfuApiKey!, s.SfuApiSecret!, HospitalCallSfu.Room(co, callId), employeeId.ToString());
@@ -375,7 +380,9 @@ namespace CrossBuy.Hubs
 			if (payload == null || payload.Length > 64_000) return;
 			if (!_groups.TryGetValue(callId, out var g)) return;
 			var from = g.Joined.FirstOrDefault(kv => kv.Value == Context.ConnectionId);
-			if (from.Value == null || !g.Joined.TryGetValue(toEmployeeId, out var to) || to.Length == 0) return;
+			if (from.Value == null) return;
+			if (toEmployeeId < 0) { SignalToGuest(callId, from.Key, toEmployeeId, payload); return; }   // a guest (HospitalCallHub.Guests)
+			if (!g.Joined.TryGetValue(toEmployeeId, out var to) || to.Length == 0) return;
 			await Clients.Client(to).SendAsync("gsignal", new { callId, fromId = from.Key, payload });
 		}
 
@@ -385,6 +392,7 @@ namespace CrossBuy.Hubs
 		{
 			if (await MeAsync() is not var (me, co) || !_groups.TryGetValue(callId, out var g) || !g.Joined.ContainsKey(me)) return new { ok = false, error = "failed" };
 			if (g.RecId != null) return new { ok = false, error = "This call is already being recorded or asked to be" };
+			if (HasGuests(callId)) return new { ok = false, error = "A guest from outside the company is in this call: it is not recorded" };
 			// from the app: a browser in the call records (a phone cannot mix everyone into one file)
 			int? recorder = null;
 			if (IsApp(g.Joined.TryGetValue(me, out var myConn) ? myConn : null))

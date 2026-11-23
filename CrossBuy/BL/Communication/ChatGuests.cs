@@ -123,6 +123,16 @@ namespace CrossBuy.BL.Communication
 			return await _db.Set<ChatGuest>().AsNoTracking().Where(x => x.ID == id).Select(x => x.CompanyId).FirstOrDefaultAsync();
 		}
 
+		/// The guest behind a key, read in a worker scope bound to their company (null as for any wrong key) — for the
+		/// guest's part in a call of their conversation (HospitalCallHub.Guests).
+		public async Task<ChatGuest?> ResolveAsync(IServiceScopeFactory scopes, string? key)
+		{
+			var probe = await CompanyOfAsync(key);
+			if (probe == 0) return null;
+			using var scope = WorkerScope.ForCompany(scopes, probe);
+			return await GuestAsync(scope.ServiceProvider, key);
+		}
+
 		/// What a guest sees: the conversation's name and the messages since they were invited (after `since`).
 		public async Task<object?> ReadAsync(IServiceScopeFactory scopes, string? key, int since)
 		{
@@ -143,7 +153,9 @@ namespace CrossBuy.BL.Communication
 			row.LastSeenAt = DateTime.UtcNow; await db.SaveChangesAsync();
 			return new
 			{
-				conversation = title, guest = g.Name, expiresAt = DateTime.SpecifyKind(g.ExpiresAt, DateTimeKind.Utc),
+				conversation = title, guest = g.Name, expiresAt = DateTime.SpecifyKind(g.ExpiresAt, DateTimeKind.Utc),
+				// a group call going on in the conversation now: the guest may join it (HospitalCallHub.Guests)
+				call = CrossBuy.Hubs.HospitalCallHub.GuestCallOf(g) is { } live ? new { id = live.CallId, video = live.Video, people = live.People } : null,
 				messages = rows.Select(r =>
 				{
 					var n = names.FirstOrDefault(x => x.ID == r.SenderEmployeeId);

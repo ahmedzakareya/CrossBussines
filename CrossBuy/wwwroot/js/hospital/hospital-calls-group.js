@@ -145,6 +145,7 @@
 
 	function member(card, state) {
 		var x = g.members[card.id];
+		if (card.guest && !card.title) card.title = t('cmGuest');   // a guest from outside the company (HospitalCallHub.Guests)
 		if (!x) { x = g.members[card.id] = { card: card, state: state, cands: [], remote: { cam: g.video, mic: true, share: false }, level: 0 }; g.order.push(card.id); }
 		else { x.card = card; x.state = state; }
 		return x;
@@ -246,8 +247,14 @@
 	function onSignal(m) {
 		if (!g || g.id !== m.callId) return;
 		var d; try { d = JSON.parse(m.payload); } catch (e) { return; }
-		var x = g.members[m.fromId]; if (!x) return;
+		var x = g.members[m.fromId];
+		// a guest from outside the company (a negative id) who was in the call before me offers with their card
+		if (!x && m.fromId < 0 && d.t === 'offer' && d.card) { x = member({ id: m.fromId, name: String(d.card.name || ''), nameEn: String(d.card.name || ''), initials: String(d.card.initials || '?'), photo: null, title: '', guest: true }, 'joined'); paint(); }
+		if (!x) return;
 		if (d.t === 'captions') { captions(!!d.on, true); return; }
+		// an app in the call cannot record its own voice: it asks the browsers to caption what they hear from it (the
+		// server lets one of them through)
+		if (d.t === 'captions-relay') { x.relayAsk = !!d.on; if (window.cbCaptions) window.cbCaptions.relay(g.id, m.fromId, !!d.on); return; }
 		if (d.t === 'hand') { x.hand = !!d.on; paintTiles(); if (d.on) toast('✋ ' + x.card.name, 'info'); return; }
 		if (d.t === 'react') { floatOn(String(m.fromId), String(d.e || '').slice(0, 4)); return; }
 		if (d.t === 'state' && g.room) { x.remote = { mic: d.mic, cam: d.cam, share: d.share }; paint(); return; }
@@ -494,7 +501,11 @@
 	// live captions (2026-11-22): on for everyone in the call; each person sends their own voice (comm-captions.js)
 	function captions(on, say) {
 		if (!window.cbCaptions || !g) return;
-		if (on) window.cbCaptions.start({ callId: g.id, mic: function () { return g && g.local && g.local.getAudioTracks()[0]; }, box: g.el && g.el.querySelector('.cbc-main') });
+		if (on) window.cbCaptions.start({
+			callId: g.id, mic: function () { return g && g.local && g.local.getAudioTracks()[0]; }, box: g.el && g.el.querySelector('.cbc-main'),
+			relay: function (id) { var x = g && g.members[id]; return x && x.stream && x.stream.getAudioTracks()[0]; },
+			relayIds: function () { return g ? Object.keys(g.members).filter(function (k) { return g.members[k].relayAsk; }).map(Number) : []; }
+		});
 		else window.cbCaptions.stop();
 		if (say) toast(on ? t('cmCaptionsOn') : t('cmCaptionsOff'), 'info');
 	}

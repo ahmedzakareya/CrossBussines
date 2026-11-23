@@ -162,6 +162,33 @@ class _Chip extends StatelessWidget {
 }
 
 /// .netnote — one quiet line over the bar.
+/// Live captions at the bottom of the call: the last few lines, each under the name of who spoke (they fade by
+/// themselves in the provider). Read out by screen readers as they arrive.
+class _Captions extends StatelessWidget {
+  final List<CaptionLine> lines;
+  const _Captions(this.lines);
+  @override
+  Widget build(BuildContext context) => Semantics(
+        liveRegion: true,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(color: const Color(0xD90C1837), borderRadius: BorderRadius.circular(14)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            for (final l in lines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(text: l.name.isEmpty ? '' : '${l.name}: ', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB9CBF0))),
+                  TextSpan(text: l.text),
+                ]), style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+              ),
+          ]),
+        ),
+      );
+}
+
 class _NetNote extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -358,12 +385,14 @@ class _OneStage extends StatelessWidget {
                 ),
               ]),
             ),
+          if (p.captions.isNotEmpty) _Captions(p.captions),
           Center(child: _NetNote(reconnecting ? Lu.wifiOff : Lu.wifi, '$line · $route', onTap: p.toggleSpeaker)),
           _bar([
             _Ctl(c.mic ? Lu.mic : Lu.micOff, L(context, 'الميكروفون', 'Microphone'), white: !c.mic, onTap: p.toggleMic),
             _Ctl(c.cam ? Lu.video : Lu.videoOff, L(context, 'الكاميرا', 'Camera'), white: !c.cam, onTap: p.toggleCam),
             _Ctl(Lu.switchCamera, L(context, 'قلب الكاميرا', 'Flip camera'), onTap: p.flipCamera),
             if (p.blurSupported && c.cam) _Ctl(Lu.aperture, L(context, 'تمويه الخلفية', 'Blur'), white: p.blurOn, onTap: p.toggleBlur),
+            _Ctl(Lu.captions, L(context, 'ترجمة نصية', 'Captions'), white: p.captionsOn, onTap: p.toggleCaptions),
             if (recCtl != null) recCtl,
             _Ctl(Lu.phoneOff, L(context, 'إنهاء', 'End'), red: true, onTap: p.hangup),
           ]),
@@ -524,12 +553,14 @@ class _GroupStage extends StatelessWidget {
           shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: tiles.length > 4 ? 3 : 2, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: .9, children: tiles),
         const Spacer(),
+        if (p.captions.isNotEmpty) _Captions(p.captions),
         if (addLine.isNotEmpty) _NetNote(Lu.userPlus, addLine, onTap: iAmHost ? () => _add(context, p, g) : null),
         _bar([
           _Ctl(g.mic ? Lu.mic : Lu.micOff, L(context, 'الميكروفون', 'Microphone'), white: !g.mic, onTap: p.toggleMic),
           _Ctl(g.cam ? Lu.video : Lu.videoOff, L(context, 'الكاميرا', 'Camera'), white: !g.cam, onTap: p.toggleCam),
           _Ctl(Lu.usersRound, L(context, 'المشاركون', 'People'), onTap: () => _people(context, p, g)),
           if (p.blurSupported && g.cam) _Ctl(Lu.aperture, L(context, 'تمويه الخلفية', 'Blur'), white: p.blurOn, onTap: p.toggleBlur),
+          _Ctl(Lu.captions, L(context, 'ترجمة نصية', 'Captions'), white: p.captionsOn, onTap: p.toggleCaptions),
           if (recCtl != null) recCtl,
           _Ctl(Lu.phoneOff, L(context, 'مغادرة', 'Leave'), red: true, onTap: p.leaveGroup),
         ]),

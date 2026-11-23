@@ -111,8 +111,19 @@ class GroupCall {
   GroupCall({required this.id, required this.video, required this.hostId, this.patient, this.reason, this.cap = 4}) : cam = video;
 }
 
+/// One line of live captions: who spoke and what they said (it fades after a few seconds).
+class CaptionLine {
+  final String name; final String text; final DateTime at;
+  CaptionLine(this.name, this.text) : at = DateTime.now();
+}
+
 class CallsProvider extends ChangeNotifier {
   HubConnection? _hub;
+  // Live captions (2026-11-22). On for everyone in the call. The app cannot record its own microphone while the call
+  // holds it, so it asks the browsers in the call to caption what they hear from it (CaptionRelay: the server lets
+  // that through only for someone who asked); the words of everyone come back on the hub's 'caption' event.
+  bool captionsOn = false;
+  final List<CaptionLine> captions = [];
   bool connected = false;
   CallsMe? me;
   int get myId => me?.me?.id ?? 0;
@@ -153,6 +164,7 @@ class CallsProvider extends ChangeNotifier {
     hub.on('ended', (a) => _onEnded(_m(a)));
     hub.on('signal', (a) => _onSignal(_m(a)));
     hub.on('taken', (a) { final m = _m(a); if (ring != null && ring!.callId == m['callId']) _closeRing(); });
+    hub.on('caption', (a) => _onCaption(_m(a)));
     hub.on('missed', (a) => _say(L('مكالمة فائتة — تجدها في السجل', 'A missed call — it is in your log')));
     hub.on('presence', (a) { final m = _m(a); final id = (m['employeeId'] as num?)?.toInt(); if (id != null) { presence[id] = '${m['state']}'; notifyListeners(); } });
     hub.on('peeraway', (a) { final c = current; if (c != null && c.id == _m(a)['callId']) { c.peerAway = true; notifyListeners(); } });
@@ -465,6 +477,8 @@ class CallsProvider extends ChangeNotifier {
         case 'state':
           c.remote..mic = d['mic'] != false..cam = d['cam'] == true..share = d['share'] == true;
           notifyListeners();
+        case 'captions':
+          _setCaptions(d['on'] == true, tell: false);
       }
     } catch (_) {}
   }
@@ -506,9 +520,44 @@ class CallsProvider extends ChangeNotifier {
     if (connected) { _invoke('Hangup', [c.id, false]).catchError((_) { _teardown(c); return null; }); } else { _teardown(c); }
   }
 
+  // ---------------- live captions ----------------
+  int? get _liveCallId => current?.id ?? group?.id;
+  /// The caption button: on or off for everyone in the call.
+  void toggleCaptions() => _setCaptions(!captionsOn, tell: true);
+  void _setCaptions(bool on, {required bool tell}) {
+    final id = _liveCallId; if (id == null) return;
+    final was = captionsOn; captionsOn = on;
+    if (!on) captions.clear();
+    final c = current, g = group;
+    void all(Map<String, dynamic> o) {
+      if (c != null) _send(c, o);
+      if (g != null) { for (final k in g.members.keys) { _gsend(g, k, o); } }
+    }
+    if (tell) all({'t': 'captions', 'on': on});            // the others turn theirs on or off
+    if (was != on || tell) {
+      _invoke('CaptionRelay', [id, on]).catchError((_) => null);   // my consent to be captioned by a browser
+      all({'t': 'captions-relay', 'on': on});               // ...and the request to the browsers in the call
+    }
+    if (tell || was != on) _say(on ? L('الترجمة النصية الحية مفعّلة لكل من في المكالمة', 'Live captions are on for everyone in the call') : L('أُوقفت الترجمة النصية الحية', 'Live captions are off'));
+    notifyListeners();
+  }
+  void _onCaption(Map<String, dynamic> m) {
+    if (m['callId'] != _liveCallId || '${m['text'] ?? ''}'.trim().isEmpty) return;
+    if (!captionsOn) { captionsOn = true; }   // someone turned them on and their words arrived first
+    final ar = _ar;
+    final name = '${(ar ? m['nameAr'] : m['nameEn']) ?? m['nameAr'] ?? m['nameEn'] ?? ''}';
+    final line = CaptionLine(name, '${m['text']}'.trim());
+    captions.add(line);
+    while (captions.length > 3) { captions.removeAt(0); }
+    notifyListeners();
+    Timer(const Duration(seconds: 7), () { if (captions.remove(line)) notifyListeners(); });
+  }
+  void _captionsOff() { captionsOn = false; captions.clear(); }
+
   void _teardown(OneCall c) {
     if (current != c) return;
     current = null;
+    _captionsOff();
     c.clock?.cancel(); c.ringTimer?.cancel(); c.quality?.cancel();
     _stopTone();
     _clearBlur();
@@ -815,9 +864,15 @@ class CallsProvider extends ChangeNotifier {
   Future<void> _onGroupSignal(Map<String, dynamic> m) async {
     final g = group; if (g == null || g.id != m['callId']) return;
     final from = (m['fromId'] as num).toInt();
-    final x = g.members[from]; if (x == null) return;
     Map<String, dynamic> d;
     try { d = (jsonDecode('${m['payload']}') as Map).cast<String, dynamic>(); } catch (_) { return; }
+    // a guest who was in the call before me offers with their card
+    if (g.members[from] == null && from < 0 && d['t'] == 'offer' && d['card'] is Map) {
+      final c = _r(d['card']);
+      _member(g, CallPerson.fromJson(_guestTitled({'id': from, 'name': '${c['name'] ?? ''}', 'nameEn': '${c['name'] ?? ''}', 'guest': true})), 'joined');
+      notifyListeners();
+    }
+    final x = g.members[from]; if (x == null) return;
     try {
       if (d['t'] == 'offer') {
         await _peer(g, from, offer: false);
@@ -839,6 +894,7 @@ class CallsProvider extends ChangeNotifier {
       await (x.ready ?? Future.value());
       final pc = x.pc;
       if (d['t'] == 'state') { x.remote..mic = d['mic'] != false..cam = d['cam'] == true..share = d['share'] == true; notifyListeners(); return; }
+      if (d['t'] == 'captions') { _setCaptions(d['on'] == true, tell: false); return; }
       if (pc == null) return;
       if (d['t'] == 'answer') { await pc.setRemoteDescription(_sdpOf(d['sdp'])); _flush(pc, x.cands); _groupState(); }
       if (d['t'] == 'cand') { final cand = _candOf(d['c']); if (await pc.getRemoteDescription() != null) { await pc.addCandidate(cand); } else { x.cands.add(cand); } }
@@ -847,9 +903,13 @@ class CallsProvider extends ChangeNotifier {
 
   void _onGroupJoined(Map<String, dynamic> m) {
     final g = group; if (g == null || g.id != m['callId'] || m['card'] is! Map) return;
-    _member(g, CallPerson.fromJson(_r(m['card'])), 'joined');   // they will offer
+    _member(g, CallPerson.fromJson(_guestTitled(_r(m['card']))), 'joined');   // they will offer
     notifyListeners();
   }
+
+  /// A guest from outside the company (a negative id, HospitalCallHub.Guests) has no title: they are named as a guest.
+  Map<String, dynamic> _guestTitled(Map<String, dynamic> c) =>
+      c['guest'] == true ? {...c, 'title': L('ضيف من خارج الشركة', 'Guest from outside the company'), 'titleEn': 'Guest from outside the company'} : c;
 
   void _onGroupLeft(Map<String, dynamic> m) {
     final x = _gm(m); if (x == null) return;
@@ -897,6 +957,7 @@ class CallsProvider extends ChangeNotifier {
   void _closeGroup() {
     final g = group; if (g == null) return;
     group = null;
+    _captionsOff();
     _clearBlur();
     g.clock?.cancel(); g.ping?.cancel();
     for (final x in g.members.values) {

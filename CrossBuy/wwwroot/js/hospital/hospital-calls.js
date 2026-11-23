@@ -284,6 +284,8 @@
 			if (d.t === 'cand') { if (pc.remoteDescription) return pc.addIceCandidate(d.c).catch(function () { }); c.cands.push(d.c); return; }
 			if (d.t === 'state') { c.remote = { mic: d.mic, cam: d.cam, share: d.share }; paintRemote(c); return; }
 			if (d.t === 'captions') { captions(c, !!d.on, true); return; }
+			// the app cannot record its own voice in a call: it asks this page to caption what it hears from it
+			if (d.t === 'captions-relay') { c.relayAsk = !!d.on; if (window.cbCaptions) window.cbCaptions.relay(c.id, c.peer.id, !!d.on); return; }
 			if (d.t === 'hand') { c.peerHand = !!d.on; paintFlags(c); if (d.on) toast('✋ ' + c.peer.name, 'info'); return; }
 			if (d.t === 'react') { floatReact(c, String(d.e || '').slice(0, 4), false); return; }
 			if (d.t === 'hold') { hold(c, !!d.on, false); return; }
@@ -651,7 +653,10 @@
 	// live captions (2026-11-22): on for everyone in the call; each side sends its own voice (comm-captions.js)
 	function captions(c, on, say) {
 		if (!window.cbCaptions) return;
-		if (on) window.cbCaptions.start({ callId: c.id, mic: function () { return c.local && c.local.getAudioTracks()[0]; }, box: c.el && c.el.querySelector('.main') });
+		if (on) window.cbCaptions.start({
+			callId: c.id, mic: function () { return c.local && c.local.getAudioTracks()[0]; }, box: c.el && c.el.querySelector('.main'),
+			relay: function () { return c.remoteStream && c.remoteStream.getAudioTracks()[0]; }, relayIds: function () { return c.relayAsk ? [c.peer.id] : []; }
+		});
 		else window.cbCaptions.stop();
 		if (say) toast(on ? t('cmCaptionsOn') : t('cmCaptionsOff'), 'info');
 	}
