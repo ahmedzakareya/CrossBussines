@@ -128,6 +128,12 @@
         url: '@Url.Action("ResultsData", "Search")',
         isAr: @(isAr ? "true" : "false"),
 
+        // KEEP THE SEARCH IN THE ADDRESS. Without this, opening a result and pressing Back returns
+        // to this page with nothing on it: the term was only ever in the box, never in the URL, so
+        // the reload has nothing to restore and the search a person had just made has vanished.
+        // It also makes the search bookmarkable and shareable, which it was not.
+        syncUrl: true,
+
         // HOW WIDE THE SEARCH WAS, SAID OUT LOUD.
         //
         // "12 results" leaves a real doubt unanswered: twelve matches, or only one place looked?

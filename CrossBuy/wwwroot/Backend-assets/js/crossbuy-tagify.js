@@ -133,6 +133,30 @@
                     if (empty) { empty.innerHTML = emptyHtml; empty.classList.toggle('d-none', total !== 0); }
                     if (resultCount) resultCount.textContent = isAr ? ('النتائج: ' + total.toLocaleString()) : (total.toLocaleString() + ' results');
                     renderPager();
+
+                    // =============================================================================
+                    // THE ADDRESS BAR FOLLOWS THE SEARCH, when a screen asks it to.
+                    //
+                    // Rows arrive by fetch, so searching never changed the URL. Open a result, press
+                    // BACK, and the browser returns to the address as it was — with no term on it —
+                    // so the page reloads empty and the search is simply gone. The rows were still
+                    // being fetched correctly; what was lost was any record of what had been asked.
+                    //
+                    // replaceState, not pushState: every keystroke's search would otherwise become a
+                    // history entry, and Back would walk backwards through a person's typing instead
+                    // of leaving the page.
+                    //
+                    // OPT-IN. The other list screens are left exactly as they were; this is the same
+                    // caution the ?q= seeding above was added with.
+                    // =============================================================================
+                    if (opts.syncUrl) {
+                        try {
+                            var u = new URL(window.location.href);
+                            var terms = search.terms();
+                            if (terms) u.searchParams.set('q', terms); else u.searchParams.delete('q');
+                            history.replaceState(history.state, '', u.toString());
+                        } catch (e) { /* a URL the browser will not let us rewrite is not worth failing over */ }
+                    }
                     // A list may need to say something its rows cannot: how wide a search was, or
                     // that the answer hit a ceiling, or WHICH empty table this is. Called here, after
                     // the empty block has been restored from its original markup a few lines above —
