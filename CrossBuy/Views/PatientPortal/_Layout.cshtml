@@ -19,7 +19,7 @@
     string initials = acc == null ? "" : HospitalUi.Initials(acc.NameEn ?? acc.Name);
     var pages = new (string Key, string Action, string Label)[] {
         ("home", "Index", T["Home"].Value), ("book", "Book", T["Book an appointment"].Value), ("appointments", "Appointments", T["My appointments"].Value),
-        ("results", "Results", T["Results"].Value), ("bills", "Bills", T["Bills"].Value), ("meds", "Medicines", T["My medicines"].Value) };
+        ("results", "Results", T["Results"].Value), ("bills", "Bills", T["Bills"].Value), ("meds", "Medicines", T["My medicines"].Value), ("messages", "Messages", T["Messages"].Value), ("questionnaires", "Questionnaires", T["Questionnaires"].Value) };
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
 }
 <!DOCTYPE html>

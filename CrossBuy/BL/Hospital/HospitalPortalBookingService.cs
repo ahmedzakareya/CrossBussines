@@ -50,7 +50,7 @@ namespace CrossBuy.BL.Hospital
 		public int StartMinute { get; set; }
 	}
 
-	public sealed record HospitalPortalPerson(int PatientId, string Name, string NameEn, string Mrn, string? Photo, string Relation);
+	public sealed record HospitalPortalPerson(int PatientId, string Name, string NameEn, string Mrn, string? Photo, string Relation, string Scope = HospitalPortalProxyScope.Full);
 
 	public sealed record HospitalPortalSlot(int PractitionerId, DateTime Date, int StartMinute, string State = HospitalPortalPolicy.SlotFree);
 
@@ -81,18 +81,25 @@ namespace CrossBuy.BL.Hospital
 		// ====================================================================================
 
 		/// The files this account books for: its own (when verified), then its family when family booking is on.
+		/// H251: the people whose record this account may see (itself, and proxies of full scope).
+		public async Task<IReadOnlyList<HospitalPortalPerson>> ClinicalPeopleAsync(BusinessContext ctx, int accountId, CancellationToken ct = default) =>
+			(await PeopleAsync(ctx, accountId, ct)).Where(p => p.Scope == HospitalPortalProxyScope.Full).ToList();
+
 		public async Task<IReadOnlyList<HospitalPortalPerson>> PeopleAsync(BusinessContext ctx, int accountId, CancellationToken ct = default)
 		{
 			var acc = await Accounts(ctx).AsNoTracking().FirstOrDefaultAsync(a => a.ID == accountId, ct);
 			if (acc == null || acc.Status != HospitalPortalAccountStatus.Verified) return Array.Empty<HospitalPortalPerson>();
 			var s = await _rules.SettingsAsync(ctx, ct);
-			var links = s.FamilyBooking ? await _db.Set<HospitalPortalFamilyLink>().AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.AccountId == accountId).ToListAsync(ct) : new();
+			var now = DateTime.UtcNow;   // H251: an ended proxy gives nothing
+			var links = s.FamilyBooking ? (await _db.Set<HospitalPortalFamilyLink>().AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.AccountId == accountId).ToListAsync(ct))
+				.Where(l => HospitalPortalProxyRules.Active(l, now)).ToList() : new();
 			var ids = links.Select(l => l.PatientId).Prepend(acc.PatientId!.Value).ToList();
 			var pats = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.IsActive && ids.Contains(p.ID)).ToDictionaryAsync(p => p.ID, ct);
 			return ids.Where(pats.ContainsKey).Select(id =>
 			{
 				var p = pats[id];
-				return new HospitalPortalPerson(id, p.Name, p.NameEn, p.Mrn, p.PhotoPath, id == acc.PatientId ? Self : links.First(l => l.PatientId == id).Relation);
+				return new HospitalPortalPerson(id, p.Name, p.NameEn, p.Mrn, p.PhotoPath, id == acc.PatientId ? Self : links.First(l => l.PatientId == id).Relation,
+					id == acc.PatientId ? HospitalPortalProxyScope.Full : links.First(l => l.PatientId == id).Scope);
 			}).ToList();
 		}
 

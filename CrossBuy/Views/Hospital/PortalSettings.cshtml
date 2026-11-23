@@ -85,6 +85,10 @@
                         <select class="form-select form-select-solid" name="payment" id="payment" data-hide-search="true" data-portal-s2>
                             @foreach (var p in HospitalPortalPayment.All) { <option value="@p" selected="@(s.Payment == p)">@T["pp:" + p]</option> }
                         </select></div></div>
+                    @* H251: the payment provider's checkout address — entered when the facility has one; empty = pay at the cashier *@
+                    <div class="col-12"><div class="border border-gray-300 border-dashed rounded p-4"><label class="fs-6 fw-semibold mb-2">@T["Online bill payment link"]</label>
+                        <input class="form-control form-control-solid" dir="ltr" maxlength="300" name="payLinkTemplate" value="@s.PayLinkTemplate" placeholder="https://pay.example.com/checkout?ref={ref}&amount={amount}&currency={currency}" />
+                        <div class="text-muted fs-8 mt-2">@T["The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier."]</div></div></div>
                 </div>
             </div>
         </div>
@@ -189,6 +193,7 @@
                 g.querySelectorAll('input[type=number]').forEach(function (i) { body[i.name] = parseInt(i.value || '0', 10); });
                 g.querySelectorAll('input[type=checkbox]').forEach(function (i) { body[i.name] = i.checked; });
                 body.payment = g.querySelector('[name=payment]').value;
+                body.payLinkTemplate = (g.querySelector('[name=payLinkTemplate]') || {}).value || null;
                 b.disabled = true; post(urls.general, body).then(function (r) { b.disabled = false; told(r); });
             });
 

@@ -133,7 +133,7 @@ namespace CrossBuy.BL.Hospital
 		/// The account's verified lab orders and signed imaging reports, newest first. Unreleased ones carry no values.
 		public async Task<IReadOnlyList<HospitalPortalResult>> ResultsAsync(BusinessContext ctx, int accountId, CancellationToken ct = default)
 		{
-			var people = (await _booking.PeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);
+			var people = (await _booking.ClinicalPeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);   // H251: full-scope people only
 			if (people.Count == 0) return Array.Empty<HospitalPortalResult>();
 			var ids = people.Keys.ToList();
 			var labs = await _db.HospitalLabOrders.AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && ids.Contains(o.PatientId) && o.Status == HospitalLabStatus.Verified)
@@ -170,7 +170,7 @@ namespace CrossBuy.BL.Hospital
 		public async Task<IReadOnlyList<HospitalPortalBill>> BillsAsync(BusinessContext ctx, int accountId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (_billing == null) return Array.Empty<HospitalPortalBill>();
-			var people = (await _booking.PeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);
+			var people = (await _booking.ClinicalPeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);   // H251: full-scope people only
 			if (people.Count == 0) return Array.Empty<HospitalPortalBill>();
 			var ids = people.Keys.ToList();
 			var billIds = await _db.HospitalBills.AsNoTracking().Where(b => b.CompanyId == ctx.CompanyId && ids.Contains(b.PatientId)).OrderByDescending(b => b.ID).Select(b => b.ID).Take(60).ToListAsync(ct);
@@ -190,7 +190,7 @@ namespace CrossBuy.BL.Hospital
 		/// The medicines prescribed to the account's people in signed visits, newest first, each with its latest refill.
 		public async Task<IReadOnlyList<HospitalPortalMedicine>> MedicinesAsync(BusinessContext ctx, int accountId, DateTime now, CancellationToken ct = default)
 		{
-			var people = (await _booking.PeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);
+			var people = (await _booking.ClinicalPeopleAsync(ctx, accountId, ct)).ToDictionary(p => p.PatientId);   // H251: full-scope people only
 			if (people.Count == 0) return Array.Empty<HospitalPortalMedicine>();
 			var ids = people.Keys.ToList();
 			var since = now.Date.AddDays(-2 * HospitalPortalRecordsRules.RefillWithinDays);

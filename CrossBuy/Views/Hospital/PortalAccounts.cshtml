@@ -118,7 +118,7 @@
                                             <div class="symbol-group symbol-hover">
                                                 @foreach (var f in r.Family)
                                                 {
-                                                    <div class="symbol symbol-30px symbol-circle" title="@DisplayName.Of(f.Name, f.NameEn) · @T["rel:" + f.Relation]">@if (f.Photo != null) {<img src="@f.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(f.NameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(f.NameEn)</span>}</div>
+                                                    <div class="symbol symbol-30px symbol-circle cursor-pointer @(f.Scope != HospitalPortalProxyScope.Full || f.ExpiresAt != null ? "border border-2 border-info" : "")" title="@DisplayName.Of(f.Name, f.NameEn) · @T["rel:" + f.Relation] · @T["proxy:" + f.Scope]@(f.ExpiresAt is DateTime fe ? " · " + fe.ToLocalTime().ToString("yyyy-MM-dd") : "")" data-proxy="@a.ID" data-patient="@f.PatientId" data-scope="@f.Scope" data-until="@f.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd")" data-name="@DisplayName.Of(f.Name, f.NameEn)">@if (f.Photo != null) {<img src="@f.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(f.NameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(f.NameEn)</span>}</div>
                                                 }
                                             </div>
                                         }
@@ -214,6 +214,35 @@
     </div></div></div>
 }
 
+@* H251: a family proxy's scope and end date *@
+<div class="modal fade" id="proxyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["Proxy access"]</h1><div class="text-muted fw-semibold fs-6" data-proxy-name></div></div>
+        <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@T["The account may see"]</label><select class="form-select form-select-solid" data-proxy-scope>@foreach (var sc in HospitalPortalProxyScope.All) {<option value="@sc">@T["proxy:" + sc]</option>}</select></div>
+        <div><label class="fs-6 fw-semibold mb-2">@T["Access ends on"]</label><input type="date" class="form-control form-control-solid" data-proxy-until /><div class="text-muted fs-8 mt-1">@T["Empty: no end date."]</div></div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-proxy-save>@T["Save"]</button></div>
+    </div>
+</div></div></div>
+<script>
+    (function () {
+        var m = document.getElementById('proxyModal'), cur = null, root = @Json.Serialize(Url.Content("~/Hospital/PortalAccounts/")), W = { failed: @Json.Serialize(T["The change could not be saved"].Value) };
+        document.addEventListener('click', function (e) {
+            var t = e.target.closest('[data-proxy],[data-proxy-save]'); if (!t) return;
+            if (t.hasAttribute('data-proxy')) {
+                cur = { acc: t.getAttribute('data-proxy'), pat: t.getAttribute('data-patient') };
+                m.querySelector('[data-proxy-name]').textContent = t.getAttribute('data-name');
+                m.querySelector('[data-proxy-scope]').value = t.getAttribute('data-scope'); m.querySelector('[data-proxy-until]').value = t.getAttribute('data-until') || '';
+                bootstrap.Modal.getOrCreateInstance(m).show(); return;
+            }
+            var until = m.querySelector('[data-proxy-until]').value;
+            fetch(root + cur.acc + '/Family/' + cur.pat + '/Proxy', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                body: JSON.stringify({ scope: m.querySelector('[data-proxy-scope]').value, expiresAt: until ? until + 'T23:59:00' : null }) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                .then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); });
+        });
+    })();
+</script>
 @section Scripts {
     <partial name="_HospitalPrompt" />
     <script>

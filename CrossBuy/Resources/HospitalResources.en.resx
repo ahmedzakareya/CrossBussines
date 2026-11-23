@@ -10300,4 +10300,77 @@
   <data name="fs:Sent" xml:space="preserve"><value>Sent</value></data>
   <data name="fs:Error" xml:space="preserve"><value>Errors</value></data>
   <data name="ifk:ClinicalRead" xml:space="preserve"><value>Clinical record read (FHIR)</value></data>
+  <data name="All open" xml:space="preserve"><value>All open</value></data>
+  <data name="Awaiting reply" xml:space="preserve"><value>Awaiting reply</value></data>
+  <data name="Choose a conversation, or write a new message." xml:space="preserve"><value>Choose a conversation, or write a new message.</value></data>
+  <data name="Choose a conversation." xml:space="preserve"><value>Choose a conversation.</value></data>
+  <data name="Choose the topic" xml:space="preserve"><value>Choose the topic</value></data>
+  <data name="Close the conversation" xml:space="preserve"><value>Close the conversation</value></data>
+  <data name="Close this conversation without a reply?" xml:space="preserve"><value>Close this conversation without a reply?</value></data>
+  <data name="Conversations" xml:space="preserve"><value>Conversations</value></data>
+  <data name="For an emergency, call or come to the emergency department." xml:space="preserve"><value>For an emergency, call or come to the emergency department.</value></data>
+  <data name="Messaging is not available yet." xml:space="preserve"><value>Messaging is not available yet.</value></data>
+  <data name="New message" xml:space="preserve"><value>New message</value></data>
+  <data name="New replies" xml:space="preserve"><value>New replies</value></data>
+  <data name="No conversation here." xml:space="preserve"><value>No conversation here.</value></data>
+  <data name="Open conversations" xml:space="preserve"><value>Open conversations</value></data>
+  <data name="Portal messages" xml:space="preserve"><value>Portal messages</value></data>
+  <data name="Portal messaging is not installed yet (hospital_h249_portal_messages.sql)." xml:space="preserve"><value>Portal messaging is not installed yet (hospital_h249_portal_messages.sql).</value></data>
+  <data name="Reply and close" xml:space="preserve"><value>Reply and close</value></data>
+  <data name="Search a patient or subject" xml:space="preserve"><value>Search a patient or subject</value></data>
+  <data name="Subject" xml:space="preserve"><value>Subject</value></data>
+  <data name="The clinic" xml:space="preserve"><value>The clinic</value></data>
+  <data name="This conversation is closed: start a new message" xml:space="preserve"><value>This conversation is closed: start a new message</value></data>
+  <data name="Topic" xml:space="preserve"><value>Topic</value></data>
+  <data name="Write the message (2000 characters at most)" xml:space="preserve"><value>Write the message (2000 characters at most)</value></data>
+  <data name="Write the subject (150 characters at most)" xml:space="preserve"><value>Write the subject (150 characters at most)</value></data>
+  <data name="Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department." xml:space="preserve"><value>Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department.</value></data>
+  <data name="Write your reply" xml:space="preserve"><value>Write your reply</value></data>
+  <data name="You can write to the clinic once the front desk has verified your account." xml:space="preserve"><value>You can write to the clinic once the front desk has verified your account.</value></data>
+  <data name="{0} conversations are past the two-day reply time" xml:space="preserve"><value>{0} conversations are past the two-day reply time</value></data>
+  <data name="pt:Clinical" xml:space="preserve"><value>Clinical question</value></data>
+  <data name="pt:Appointment" xml:space="preserve"><value>Appointments</value></data>
+  <data name="pt:Billing" xml:space="preserve"><value>Billing</value></data>
+  <data name="pt:Other" xml:space="preserve"><value>Other</value></data>
+  <data name="Choose the questionnaire" xml:space="preserve"><value>Choose the questionnaire</value></data>
+  <data name="Mark as reviewed" xml:space="preserve"><value>Mark as reviewed</value></data>
+  <data name="No questionnaire here." xml:space="preserve"><value>No questionnaire here.</value></data>
+  <data name="Only a waiting questionnaire is withdrawn" xml:space="preserve"><value>Only a waiting questionnaire is withdrawn</value></data>
+  <data name="Only an answered questionnaire is reviewed" xml:space="preserve"><value>Only an answered questionnaire is reviewed</value></data>
+  <data name="Questionnaire" xml:space="preserve"><value>Questionnaire</value></data>
+  <data name="Questionnaires" xml:space="preserve"><value>Questionnaires</value></data>
+  <data name="Questionnaires are not installed yet (hospital_h250_questionnaires.sql)." xml:space="preserve"><value>Questionnaires are not installed yet (hospital_h250_questionnaires.sql).</value></data>
+  <data name="Search a patient or questionnaire" xml:space="preserve"><value>Search a patient or questionnaire</value></data>
+  <data name="Send a questionnaire" xml:space="preserve"><value>Send a questionnaire</value></data>
+  <data name="Short questionnaires your clinic asked you to fill before your visit" xml:space="preserve"><value>Short questionnaires your clinic asked you to fill before your visit</value></data>
+  <data name="Thank you: your clinic will see your answers" xml:space="preserve"><value>Thank you: your clinic will see your answers</value></data>
+  <data name="The patient answers it on the portal." xml:space="preserve"><value>The patient answers it on the portal.</value></data>
+  <data name="This questionnaire is already answered" xml:space="preserve"><value>This questionnaire is already answered</value></data>
+  <data name="This questionnaire is already waiting for the patient" xml:space="preserve"><value>This questionnaire is already waiting for the patient</value></data>
+  <data name="Withdraw this questionnaire?" xml:space="preserve"><value>Withdraw this questionnaire?</value></data>
+  <data name="{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)" xml:space="preserve"><value>{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)</value></data>
+  <data name="qs:Pending" xml:space="preserve"><value>Waiting</value></data>
+  <data name="qs:Completed" xml:space="preserve"><value>Answered</value></data>
+  <data name="qs:Cancelled" xml:space="preserve"><value>Withdrawn</value></data>
+  <data name="sev:Minimal" xml:space="preserve"><value>Minimal</value></data>
+  <data name="sev:Mild" xml:space="preserve"><value>Mild</value></data>
+  <data name="sev:ModeratelySevere" xml:space="preserve"><value>Moderately severe</value></data>
+  <data name="sev:Severe" xml:space="preserve"><value>Severe</value></data>
+  <data name="sev:Negative" xml:space="preserve"><value>Negative</value></data>
+  <data name="sev:Positive" xml:space="preserve"><value>Positive</value></data>
+  <data name="Online bill payment link" xml:space="preserve"><value>Online bill payment link</value></data>
+  <data name="The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier." xml:space="preserve"><value>The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier.</value></data>
+  <data name="Pay online" xml:space="preserve"><value>Pay online</value></data>
+  <data name="The cashier confirms the payment from the provider's statement." xml:space="preserve"><value>The cashier confirms the payment from the provider's statement.</value></data>
+  <data name="Proxy access" xml:space="preserve"><value>Proxy access</value></data>
+  <data name="The account may see" xml:space="preserve"><value>The account may see</value></data>
+  <data name="Access ends on" xml:space="preserve"><value>Access ends on</value></data>
+  <data name="Empty: no end date." xml:space="preserve"><value>Empty: no end date.</value></data>
+  <data name="The payment link is 300 characters at most" xml:space="preserve"><value>The payment link is 300 characters at most</value></data>
+  <data name="The payment link is the provider's https address" xml:space="preserve"><value>The payment link is the provider's https address</value></data>
+  <data name="The payment link needs {ref} and {amount}" xml:space="preserve"><value>The payment link needs {ref} and {amount}</value></data>
+  <data name="Choose what the proxy may see" xml:space="preserve"><value>Choose what the proxy may see</value></data>
+  <data name="The end date is in the future" xml:space="preserve"><value>The end date is in the future</value></data>
+  <data name="proxy:Full" xml:space="preserve"><value>The whole record</value></data>
+  <data name="proxy:Booking" xml:space="preserve"><value>Bookings only</value></data>
 </root>

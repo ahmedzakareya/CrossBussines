@@ -10300,4 +10300,77 @@
   <data name="fs:Sent" xml:space="preserve"><value>Envoyés</value></data>
   <data name="fs:Error" xml:space="preserve"><value>Erreurs</value></data>
   <data name="ifk:ClinicalRead" xml:space="preserve"><value>Lecture du dossier clinique (FHIR)</value></data>
+  <data name="All open" xml:space="preserve"><value>Tous ouverts</value></data>
+  <data name="Awaiting reply" xml:space="preserve"><value>En attente de réponse</value></data>
+  <data name="Choose a conversation, or write a new message." xml:space="preserve"><value>Choisissez une conversation, ou écrivez un nouveau message.</value></data>
+  <data name="Choose a conversation." xml:space="preserve"><value>Choisissez une conversation.</value></data>
+  <data name="Choose the topic" xml:space="preserve"><value>Choisissez le sujet</value></data>
+  <data name="Close the conversation" xml:space="preserve"><value>Clore la conversation</value></data>
+  <data name="Close this conversation without a reply?" xml:space="preserve"><value>Clore cette conversation sans réponse ?</value></data>
+  <data name="Conversations" xml:space="preserve"><value>Conversations</value></data>
+  <data name="For an emergency, call or come to the emergency department." xml:space="preserve"><value>En cas d'urgence, appelez ou venez aux urgences.</value></data>
+  <data name="Messaging is not available yet." xml:space="preserve"><value>La messagerie n'est pas encore disponible.</value></data>
+  <data name="New message" xml:space="preserve"><value>Nouveau message</value></data>
+  <data name="New replies" xml:space="preserve"><value>Nouvelles réponses</value></data>
+  <data name="No conversation here." xml:space="preserve"><value>Aucune conversation ici.</value></data>
+  <data name="Open conversations" xml:space="preserve"><value>Conversations ouvertes</value></data>
+  <data name="Portal messages" xml:space="preserve"><value>Messages du portail</value></data>
+  <data name="Portal messaging is not installed yet (hospital_h249_portal_messages.sql)." xml:space="preserve"><value>La messagerie du portail n'est pas encore installée (hospital_h249_portal_messages.sql).</value></data>
+  <data name="Reply and close" xml:space="preserve"><value>Répondre et clore</value></data>
+  <data name="Search a patient or subject" xml:space="preserve"><value>Rechercher un patient ou un sujet</value></data>
+  <data name="Subject" xml:space="preserve"><value>Objet</value></data>
+  <data name="The clinic" xml:space="preserve"><value>La clinique</value></data>
+  <data name="This conversation is closed: start a new message" xml:space="preserve"><value>Cette conversation est close : écrivez un nouveau message</value></data>
+  <data name="Topic" xml:space="preserve"><value>Thème</value></data>
+  <data name="Write the message (2000 characters at most)" xml:space="preserve"><value>Écrivez le message (2000 caractères au plus)</value></data>
+  <data name="Write the subject (150 characters at most)" xml:space="preserve"><value>Écrivez l'objet (150 caractères au plus)</value></data>
+  <data name="Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department." xml:space="preserve"><value>Écrivez à la clinique ; elle répond sous deux jours. En cas d'urgence, appelez ou venez aux urgences.</value></data>
+  <data name="Write your reply" xml:space="preserve"><value>Écrivez votre réponse</value></data>
+  <data name="You can write to the clinic once the front desk has verified your account." xml:space="preserve"><value>Vous pourrez écrire à la clinique une fois votre compte vérifié par l'accueil.</value></data>
+  <data name="{0} conversations are past the two-day reply time" xml:space="preserve"><value>{0} conversations ont dépassé le délai de réponse de deux jours</value></data>
+  <data name="pt:Clinical" xml:space="preserve"><value>Question médicale</value></data>
+  <data name="pt:Appointment" xml:space="preserve"><value>Rendez-vous</value></data>
+  <data name="pt:Billing" xml:space="preserve"><value>Facturation</value></data>
+  <data name="pt:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="Choose the questionnaire" xml:space="preserve"><value>Choisissez le questionnaire</value></data>
+  <data name="Mark as reviewed" xml:space="preserve"><value>Marquer comme revu</value></data>
+  <data name="No questionnaire here." xml:space="preserve"><value>Aucun questionnaire ici.</value></data>
+  <data name="Only a waiting questionnaire is withdrawn" xml:space="preserve"><value>Seul un questionnaire en attente peut être retiré</value></data>
+  <data name="Only an answered questionnaire is reviewed" xml:space="preserve"><value>Seul un questionnaire répondu peut être revu</value></data>
+  <data name="Questionnaire" xml:space="preserve"><value>Questionnaire</value></data>
+  <data name="Questionnaires" xml:space="preserve"><value>Questionnaires</value></data>
+  <data name="Questionnaires are not installed yet (hospital_h250_questionnaires.sql)." xml:space="preserve"><value>Les questionnaires ne sont pas encore installés (hospital_h250_questionnaires.sql).</value></data>
+  <data name="Search a patient or questionnaire" xml:space="preserve"><value>Rechercher un patient ou un questionnaire</value></data>
+  <data name="Send a questionnaire" xml:space="preserve"><value>Envoyer un questionnaire</value></data>
+  <data name="Short questionnaires your clinic asked you to fill before your visit" xml:space="preserve"><value>Questionnaires courts que votre clinique vous demande de remplir avant la visite</value></data>
+  <data name="Thank you: your clinic will see your answers" xml:space="preserve"><value>Merci : votre clinique verra vos réponses</value></data>
+  <data name="The patient answers it on the portal." xml:space="preserve"><value>Le patient y répond sur le portail.</value></data>
+  <data name="This questionnaire is already answered" xml:space="preserve"><value>Ce questionnaire a déjà été répondu</value></data>
+  <data name="This questionnaire is already waiting for the patient" xml:space="preserve"><value>Ce questionnaire attend déjà le patient</value></data>
+  <data name="Withdraw this questionnaire?" xml:space="preserve"><value>Retirer ce questionnaire ?</value></data>
+  <data name="{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)" xml:space="preserve"><value>{0} questionnaires répondus requièrent un clinicien maintenant (idées d'automutilation ou score sévère)</value></data>
+  <data name="qs:Pending" xml:space="preserve"><value>En attente</value></data>
+  <data name="qs:Completed" xml:space="preserve"><value>Répondu</value></data>
+  <data name="qs:Cancelled" xml:space="preserve"><value>Retiré</value></data>
+  <data name="sev:Minimal" xml:space="preserve"><value>Minime</value></data>
+  <data name="sev:Mild" xml:space="preserve"><value>Léger</value></data>
+  <data name="sev:ModeratelySevere" xml:space="preserve"><value>Modérément sévère</value></data>
+  <data name="sev:Severe" xml:space="preserve"><value>Sévère</value></data>
+  <data name="sev:Negative" xml:space="preserve"><value>Négatif</value></data>
+  <data name="sev:Positive" xml:space="preserve"><value>Positif</value></data>
+  <data name="Online bill payment link" xml:space="preserve"><value>Lien de paiement en ligne des factures</value></data>
+  <data name="The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier." xml:space="preserve"><value>L'adresse https de paiement du prestataire avec {ref} et {amount} ({currency} facultatif). Vide : les factures se paient à la caisse.</value></data>
+  <data name="Pay online" xml:space="preserve"><value>Payer en ligne</value></data>
+  <data name="The cashier confirms the payment from the provider's statement." xml:space="preserve"><value>La caisse confirme le paiement d'après le relevé du prestataire.</value></data>
+  <data name="Proxy access" xml:space="preserve"><value>Accès mandataire</value></data>
+  <data name="The account may see" xml:space="preserve"><value>Le compte peut voir</value></data>
+  <data name="Access ends on" xml:space="preserve"><value>L'accès prend fin le</value></data>
+  <data name="Empty: no end date." xml:space="preserve"><value>Vide : sans date de fin.</value></data>
+  <data name="The payment link is 300 characters at most" xml:space="preserve"><value>Le lien de paiement fait 300 caractères au plus</value></data>
+  <data name="The payment link is the provider's https address" xml:space="preserve"><value>Le lien de paiement est l'adresse https du prestataire</value></data>
+  <data name="The payment link needs {ref} and {amount}" xml:space="preserve"><value>Le lien de paiement nécessite {ref} et {amount}</value></data>
+  <data name="Choose what the proxy may see" xml:space="preserve"><value>Choisissez ce que le mandataire peut voir</value></data>
+  <data name="The end date is in the future" xml:space="preserve"><value>La date de fin est dans le futur</value></data>
+  <data name="proxy:Full" xml:space="preserve"><value>Le dossier complet</value></data>
+  <data name="proxy:Booking" xml:space="preserve"><value>Les rendez-vous seulement</value></data>
 </root>

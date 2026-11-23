@@ -16,7 +16,7 @@ namespace CrossBuy.BL.Hospital
 	//   · The state shown is HospitalPortalAccountRules.State's, from the account, its sign-in and its last link.
 	//   · Every action is the front desk's (`register`).
 	// ==========================================================================================
-	public sealed record HospitalPortalFamilyFace(int PatientId, string Name, string NameEn, string? Photo, string Relation);
+	public sealed record HospitalPortalFamilyFace(int PatientId, string Name, string NameEn, string? Photo, string Relation, string Scope = HospitalPortalProxyScope.Full, DateTime? ExpiresAt = null);
 
 	public sealed record HospitalPortalAccountRow(HospitalPortalAccount Account, string? UserName, string State, DateTime? LockedUntil, DateTime? InviteSentAt,
 		string? Mrn, string? Photo, IReadOnlyList<HospitalPortalFamilyFace> Family);
@@ -81,7 +81,7 @@ namespace CrossBuy.BL.Hospital
 				{
 					var u = a.UserId != null ? users.GetValueOrDefault(a.UserId) : null; var inv = invites.GetValueOrDefault(a.ID);
 					var p = a.PatientId is int pid ? pats.GetValueOrDefault(pid) : null;
-					var fam = links.Where(l => l.AccountId == a.ID && pats.ContainsKey(l.PatientId)).Select(l => { var f = pats[l.PatientId]; return new HospitalPortalFamilyFace(f.ID, f.Name, f.NameEn, f.PhotoPath, l.Relation); }).ToList();
+					var fam = links.Where(l => l.AccountId == a.ID && pats.ContainsKey(l.PatientId)).Select(l => { var f = pats[l.PatientId]; return new HospitalPortalFamilyFace(f.ID, f.Name, f.NameEn, f.PhotoPath, l.Relation, l.Scope, l.ExpiresAt); }).ToList();
 					var state = HospitalPortalAccountRules.State(a.Status, u != null, u?.Has == true, u?.LockoutEnd?.UtcDateTime, inv?.Expires, nowUtc);
 					return new HospitalPortalAccountRow(a, u?.UserName, state, u?.LockoutEnd?.UtcDateTime > nowUtc ? u.LockoutEnd!.Value.UtcDateTime : null,
 						u != null && !u.Has ? inv?.Created : null, p?.Mrn, p?.PhotoPath, fam);

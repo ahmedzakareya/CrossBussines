@@ -1,0 +1,135 @@
+{
+ "unit": "H250 - Questionnaires",
+ "strings": {
+  "Choose the questionnaire": {
+   "ar": "اختر الاستبيان",
+   "en": "Choose the questionnaire",
+   "fr": "Choisissez le questionnaire"
+  },
+  "Mark as reviewed": {
+   "ar": "تمت المراجعة",
+   "en": "Mark as reviewed",
+   "fr": "Marquer comme revu"
+  },
+  "No questionnaire here.": {
+   "ar": "لا توجد استبيانات هنا.",
+   "en": "No questionnaire here.",
+   "fr": "Aucun questionnaire ici."
+  },
+  "Only a waiting questionnaire is withdrawn": {
+   "ar": "لا يُسحب إلا استبيان منتظر",
+   "en": "Only a waiting questionnaire is withdrawn",
+   "fr": "Seul un questionnaire en attente peut être retiré"
+  },
+  "Only an answered questionnaire is reviewed": {
+   "ar": "لا يُراجع إلا استبيان مُجاب",
+   "en": "Only an answered questionnaire is reviewed",
+   "fr": "Seul un questionnaire répondu peut être revu"
+  },
+  "Questionnaire": {
+   "ar": "الاستبيان",
+   "en": "Questionnaire",
+   "fr": "Questionnaire"
+  },
+  "Questionnaires": {
+   "ar": "الاستبيانات",
+   "en": "Questionnaires",
+   "fr": "Questionnaires"
+  },
+  "Questionnaires are not installed yet (hospital_h250_questionnaires.sql).": {
+   "ar": "الاستبيانات غير مثبتة بعد (hospital_h250_questionnaires.sql).",
+   "en": "Questionnaires are not installed yet (hospital_h250_questionnaires.sql).",
+   "fr": "Les questionnaires ne sont pas encore installés (hospital_h250_questionnaires.sql)."
+  },
+  "Search a patient or questionnaire": {
+   "ar": "ابحث عن مريض أو استبيان",
+   "en": "Search a patient or questionnaire",
+   "fr": "Rechercher un patient ou un questionnaire"
+  },
+  "Send a questionnaire": {
+   "ar": "إرسال استبيان",
+   "en": "Send a questionnaire",
+   "fr": "Envoyer un questionnaire"
+  },
+  "Short questionnaires your clinic asked you to fill before your visit": {
+   "ar": "استبيانات قصيرة طلبت عيادتك تعبئتها قبل زيارتك",
+   "en": "Short questionnaires your clinic asked you to fill before your visit",
+   "fr": "Questionnaires courts que votre clinique vous demande de remplir avant la visite"
+  },
+  "Thank you: your clinic will see your answers": {
+   "ar": "شكرًا لك: ستطّلع عيادتك على إجاباتك",
+   "en": "Thank you: your clinic will see your answers",
+   "fr": "Merci : votre clinique verra vos réponses"
+  },
+  "The patient answers it on the portal.": {
+   "ar": "يُجيب عنه المريض عبر البوابة.",
+   "en": "The patient answers it on the portal.",
+   "fr": "Le patient y répond sur le portail."
+  },
+  "This questionnaire is already answered": {
+   "ar": "تمت الإجابة عن هذا الاستبيان",
+   "en": "This questionnaire is already answered",
+   "fr": "Ce questionnaire a déjà été répondu"
+  },
+  "This questionnaire is already waiting for the patient": {
+   "ar": "هذا الاستبيان بانتظار المريض بالفعل",
+   "en": "This questionnaire is already waiting for the patient",
+   "fr": "Ce questionnaire attend déjà le patient"
+  },
+  "Withdraw this questionnaire?": {
+   "ar": "هل تسحب هذا الاستبيان؟",
+   "en": "Withdraw this questionnaire?",
+   "fr": "Retirer ce questionnaire ?"
+  },
+  "{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)": {
+   "ar": "{0} استبيان مُجاب يحتاج إلى طبيب الآن (أفكار إيذاء النفس أو درجة شديدة)",
+   "en": "{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)",
+   "fr": "{0} questionnaires répondus requièrent un clinicien maintenant (idées d'automutilation ou score sévère)"
+  },
+  "qs:Pending": {
+   "ar": "بانتظار الإجابة",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "qs:Completed": {
+   "ar": "مُجاب",
+   "en": "Answered",
+   "fr": "Répondu"
+  },
+  "qs:Cancelled": {
+   "ar": "مسحوب",
+   "en": "Withdrawn",
+   "fr": "Retiré"
+  },
+  "sev:Minimal": {
+   "ar": "ضئيل",
+   "en": "Minimal",
+   "fr": "Minime"
+  },
+  "sev:Mild": {
+   "ar": "خفيف",
+   "en": "Mild",
+   "fr": "Léger"
+  },
+  "sev:ModeratelySevere": {
+   "ar": "متوسط الشدة",
+   "en": "Moderately severe",
+   "fr": "Modérément sévère"
+  },
+  "sev:Severe": {
+   "ar": "شديد",
+   "en": "Severe",
+   "fr": "Sévère"
+  },
+  "sev:Negative": {
+   "ar": "سلبي",
+   "en": "Negative",
+   "fr": "Négatif"
+  },
+  "sev:Positive": {
+   "ar": "إيجابي",
+   "en": "Positive",
+   "fr": "Positif"
+  }
+ }
+}

@@ -10400,4 +10400,77 @@
   <data name="fs:Sent" xml:space="preserve"><value>أُرسلت</value></data>
   <data name="fs:Error" xml:space="preserve"><value>أخطاء</value></data>
   <data name="ifk:ClinicalRead" xml:space="preserve"><value>قراءة السجل السريري (FHIR)</value></data>
+  <data name="All open" xml:space="preserve"><value>كل المفتوحة</value></data>
+  <data name="Awaiting reply" xml:space="preserve"><value>بانتظار الرد</value></data>
+  <data name="Choose a conversation, or write a new message." xml:space="preserve"><value>اختر محادثة، أو اكتب رسالة جديدة.</value></data>
+  <data name="Choose a conversation." xml:space="preserve"><value>اختر محادثة.</value></data>
+  <data name="Choose the topic" xml:space="preserve"><value>اختر الموضوع</value></data>
+  <data name="Close the conversation" xml:space="preserve"><value>إغلاق المحادثة</value></data>
+  <data name="Close this conversation without a reply?" xml:space="preserve"><value>هل تغلق هذه المحادثة دون رد؟</value></data>
+  <data name="Conversations" xml:space="preserve"><value>المحادثات</value></data>
+  <data name="For an emergency, call or come to the emergency department." xml:space="preserve"><value>في الحالات الطارئة اتصل أو توجه إلى قسم الطوارئ.</value></data>
+  <data name="Messaging is not available yet." xml:space="preserve"><value>المراسلة غير متاحة بعد.</value></data>
+  <data name="New message" xml:space="preserve"><value>رسالة جديدة</value></data>
+  <data name="New replies" xml:space="preserve"><value>ردود جديدة</value></data>
+  <data name="No conversation here." xml:space="preserve"><value>لا توجد محادثات هنا.</value></data>
+  <data name="Open conversations" xml:space="preserve"><value>المحادثات المفتوحة</value></data>
+  <data name="Portal messages" xml:space="preserve"><value>رسائل البوابة</value></data>
+  <data name="Portal messaging is not installed yet (hospital_h249_portal_messages.sql)." xml:space="preserve"><value>مراسلة البوابة غير مثبتة بعد (hospital_h249_portal_messages.sql).</value></data>
+  <data name="Reply and close" xml:space="preserve"><value>الرد والإغلاق</value></data>
+  <data name="Search a patient or subject" xml:space="preserve"><value>ابحث عن مريض أو موضوع</value></data>
+  <data name="Subject" xml:space="preserve"><value>الموضوع</value></data>
+  <data name="The clinic" xml:space="preserve"><value>العيادة</value></data>
+  <data name="This conversation is closed: start a new message" xml:space="preserve"><value>هذه المحادثة مغلقة: ابدأ رسالة جديدة</value></data>
+  <data name="Topic" xml:space="preserve"><value>نوع الرسالة</value></data>
+  <data name="Write the message (2000 characters at most)" xml:space="preserve"><value>اكتب الرسالة (2000 حرف كحد أقصى)</value></data>
+  <data name="Write the subject (150 characters at most)" xml:space="preserve"><value>اكتب الموضوع (150 حرفًا كحد أقصى)</value></data>
+  <data name="Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department." xml:space="preserve"><value>راسل العيادة وسترد خلال يومين. في الحالات الطارئة اتصل أو توجه إلى قسم الطوارئ.</value></data>
+  <data name="Write your reply" xml:space="preserve"><value>اكتب ردك</value></data>
+  <data name="You can write to the clinic once the front desk has verified your account." xml:space="preserve"><value>يمكنك مراسلة العيادة بعد أن يتحقق الاستقبال من حسابك.</value></data>
+  <data name="{0} conversations are past the two-day reply time" xml:space="preserve"><value>{0} محادثة تجاوزت مهلة الرد البالغة يومين</value></data>
+  <data name="pt:Clinical" xml:space="preserve"><value>سؤال طبي</value></data>
+  <data name="pt:Appointment" xml:space="preserve"><value>المواعيد</value></data>
+  <data name="pt:Billing" xml:space="preserve"><value>الفواتير</value></data>
+  <data name="pt:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="Choose the questionnaire" xml:space="preserve"><value>اختر الاستبيان</value></data>
+  <data name="Mark as reviewed" xml:space="preserve"><value>تمت المراجعة</value></data>
+  <data name="No questionnaire here." xml:space="preserve"><value>لا توجد استبيانات هنا.</value></data>
+  <data name="Only a waiting questionnaire is withdrawn" xml:space="preserve"><value>لا يُسحب إلا استبيان منتظر</value></data>
+  <data name="Only an answered questionnaire is reviewed" xml:space="preserve"><value>لا يُراجع إلا استبيان مُجاب</value></data>
+  <data name="Questionnaire" xml:space="preserve"><value>الاستبيان</value></data>
+  <data name="Questionnaires" xml:space="preserve"><value>الاستبيانات</value></data>
+  <data name="Questionnaires are not installed yet (hospital_h250_questionnaires.sql)." xml:space="preserve"><value>الاستبيانات غير مثبتة بعد (hospital_h250_questionnaires.sql).</value></data>
+  <data name="Search a patient or questionnaire" xml:space="preserve"><value>ابحث عن مريض أو استبيان</value></data>
+  <data name="Send a questionnaire" xml:space="preserve"><value>إرسال استبيان</value></data>
+  <data name="Short questionnaires your clinic asked you to fill before your visit" xml:space="preserve"><value>استبيانات قصيرة طلبت عيادتك تعبئتها قبل زيارتك</value></data>
+  <data name="Thank you: your clinic will see your answers" xml:space="preserve"><value>شكرًا لك: ستطّلع عيادتك على إجاباتك</value></data>
+  <data name="The patient answers it on the portal." xml:space="preserve"><value>يُجيب عنه المريض عبر البوابة.</value></data>
+  <data name="This questionnaire is already answered" xml:space="preserve"><value>تمت الإجابة عن هذا الاستبيان</value></data>
+  <data name="This questionnaire is already waiting for the patient" xml:space="preserve"><value>هذا الاستبيان بانتظار المريض بالفعل</value></data>
+  <data name="Withdraw this questionnaire?" xml:space="preserve"><value>هل تسحب هذا الاستبيان؟</value></data>
+  <data name="{0} answered questionnaires need a clinician now (self-harm thoughts or a severe score)" xml:space="preserve"><value>{0} استبيان مُجاب يحتاج إلى طبيب الآن (أفكار إيذاء النفس أو درجة شديدة)</value></data>
+  <data name="qs:Pending" xml:space="preserve"><value>بانتظار الإجابة</value></data>
+  <data name="qs:Completed" xml:space="preserve"><value>مُجاب</value></data>
+  <data name="qs:Cancelled" xml:space="preserve"><value>مسحوب</value></data>
+  <data name="sev:Minimal" xml:space="preserve"><value>ضئيل</value></data>
+  <data name="sev:Mild" xml:space="preserve"><value>خفيف</value></data>
+  <data name="sev:ModeratelySevere" xml:space="preserve"><value>متوسط الشدة</value></data>
+  <data name="sev:Severe" xml:space="preserve"><value>شديد</value></data>
+  <data name="sev:Negative" xml:space="preserve"><value>سلبي</value></data>
+  <data name="sev:Positive" xml:space="preserve"><value>إيجابي</value></data>
+  <data name="Online bill payment link" xml:space="preserve"><value>رابط الدفع الإلكتروني للفواتير</value></data>
+  <data name="The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier." xml:space="preserve"><value>عنوان صفحة الدفع الآمن لدى مزود الخدمة متضمنًا {ref} و{amount} (و{currency} اختياريًا). إذا تُرك فارغًا تُدفع الفواتير لدى الصندوق.</value></data>
+  <data name="Pay online" xml:space="preserve"><value>ادفع إلكترونيًا</value></data>
+  <data name="The cashier confirms the payment from the provider's statement." xml:space="preserve"><value>يؤكد الصندوق الدفع من كشف مزود الخدمة.</value></data>
+  <data name="Proxy access" xml:space="preserve"><value>صلاحية الوكالة</value></data>
+  <data name="The account may see" xml:space="preserve"><value>ما يمكن للحساب الاطلاع عليه</value></data>
+  <data name="Access ends on" xml:space="preserve"><value>ينتهي الوصول في</value></data>
+  <data name="Empty: no end date." xml:space="preserve"><value>فارغ: بلا تاريخ انتهاء.</value></data>
+  <data name="The payment link is 300 characters at most" xml:space="preserve"><value>رابط الدفع 300 حرف كحد أقصى</value></data>
+  <data name="The payment link is the provider's https address" xml:space="preserve"><value>رابط الدفع هو عنوان https لدى مزود الخدمة</value></data>
+  <data name="The payment link needs {ref} and {amount}" xml:space="preserve"><value>رابط الدفع يحتاج {ref} و{amount}</value></data>
+  <data name="Choose what the proxy may see" xml:space="preserve"><value>اختر ما يمكن للوكيل الاطلاع عليه</value></data>
+  <data name="The end date is in the future" xml:space="preserve"><value>تاريخ الانتهاء يجب أن يكون في المستقبل</value></data>
+  <data name="proxy:Full" xml:space="preserve"><value>الملف كاملًا</value></data>
+  <data name="proxy:Booking" xml:space="preserve"><value>المواعيد فقط</value></data>
 </root>

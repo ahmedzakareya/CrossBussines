@@ -1,0 +1,80 @@
+{
+ "unit": "H251 - Portal proxy and payment",
+ "strings": {
+  "Online bill payment link": {
+   "ar": "رابط الدفع الإلكتروني للفواتير",
+   "en": "Online bill payment link",
+   "fr": "Lien de paiement en ligne des factures"
+  },
+  "The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier.": {
+   "ar": "عنوان صفحة الدفع الآمن لدى مزود الخدمة متضمنًا {ref} و{amount} (و{currency} اختياريًا). إذا تُرك فارغًا تُدفع الفواتير لدى الصندوق.",
+   "en": "The provider's https checkout address with {ref} and {amount} ({currency} optional). Empty: bills are paid at the cashier.",
+   "fr": "L'adresse https de paiement du prestataire avec {ref} et {amount} ({currency} facultatif). Vide : les factures se paient à la caisse."
+  },
+  "Pay online": {
+   "ar": "ادفع إلكترونيًا",
+   "en": "Pay online",
+   "fr": "Payer en ligne"
+  },
+  "The cashier confirms the payment from the provider's statement.": {
+   "ar": "يؤكد الصندوق الدفع من كشف مزود الخدمة.",
+   "en": "The cashier confirms the payment from the provider's statement.",
+   "fr": "La caisse confirme le paiement d'après le relevé du prestataire."
+  },
+  "Proxy access": {
+   "ar": "صلاحية الوكالة",
+   "en": "Proxy access",
+   "fr": "Accès mandataire"
+  },
+  "The account may see": {
+   "ar": "ما يمكن للحساب الاطلاع عليه",
+   "en": "The account may see",
+   "fr": "Le compte peut voir"
+  },
+  "Access ends on": {
+   "ar": "ينتهي الوصول في",
+   "en": "Access ends on",
+   "fr": "L'accès prend fin le"
+  },
+  "Empty: no end date.": {
+   "ar": "فارغ: بلا تاريخ انتهاء.",
+   "en": "Empty: no end date.",
+   "fr": "Vide : sans date de fin."
+  },
+  "The payment link is 300 characters at most": {
+   "ar": "رابط الدفع 300 حرف كحد أقصى",
+   "en": "The payment link is 300 characters at most",
+   "fr": "Le lien de paiement fait 300 caractères au plus"
+  },
+  "The payment link is the provider's https address": {
+   "ar": "رابط الدفع هو عنوان https لدى مزود الخدمة",
+   "en": "The payment link is the provider's https address",
+   "fr": "Le lien de paiement est l'adresse https du prestataire"
+  },
+  "The payment link needs {ref} and {amount}": {
+   "ar": "رابط الدفع يحتاج {ref} و{amount}",
+   "en": "The payment link needs {ref} and {amount}",
+   "fr": "Le lien de paiement nécessite {ref} et {amount}"
+  },
+  "Choose what the proxy may see": {
+   "ar": "اختر ما يمكن للوكيل الاطلاع عليه",
+   "en": "Choose what the proxy may see",
+   "fr": "Choisissez ce que le mandataire peut voir"
+  },
+  "The end date is in the future": {
+   "ar": "تاريخ الانتهاء يجب أن يكون في المستقبل",
+   "en": "The end date is in the future",
+   "fr": "La date de fin est dans le futur"
+  },
+  "proxy:Full": {
+   "ar": "الملف كاملًا",
+   "en": "The whole record",
+   "fr": "Le dossier complet"
+  },
+  "proxy:Booking": {
+   "ar": "المواعيد فقط",
+   "en": "Bookings only",
+   "fr": "Les rendez-vous seulement"
+  }
+ }
+}

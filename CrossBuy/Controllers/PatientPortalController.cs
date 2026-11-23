@@ -26,7 +26,7 @@ namespace CrossBuy.Controllers
 	// ==========================================================================================
 	[PortalAuthorize]
 	[Route("PatientPortal")]
-	public class PatientPortalController : Controller
+	public partial class PatientPortalController : Controller
 	{
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
@@ -366,7 +366,7 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> Image(int id, CancellationToken ct = default)
 		{
 			if (await MeAsync(ct) is not { } me) return Unauthorized();
-			var people = (await Booking.PeopleAsync(me.Ctx, me.Account.ID, ct)).Select(p => p.PatientId).ToList();
+			var people = (await Booking.ClinicalPeopleAsync(me.Ctx, me.Account.ID, ct)).Select(p => p.PatientId).ToList();   // H251
 			var img = await RadImages.OpenForPatientAsync(me.Ctx, id, people, ct);
 			if (img is not { } x) return NotFound();
 			Response.Headers["Cache-Control"] = "private, max-age=600";

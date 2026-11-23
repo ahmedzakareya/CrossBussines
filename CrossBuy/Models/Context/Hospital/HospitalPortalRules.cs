@@ -55,6 +55,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public bool ShowFees { get; set; } = true;
 		public bool InsuranceCheck { get; set; } = true;
 		public string Payment { get; set; } = HospitalPortalPayment.None;
+		/// H251: the payment provider's checkout address, entered by the administrator when the facility has one:
+		/// {ref}, {amount} and {currency} are filled per bill. Empty = bills are paid at the cashier.
+		public string? PayLinkTemplate { get; set; }
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
 	}
@@ -89,6 +92,7 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.ToTable("HospitalPortalSettings");   // no DbSet: each names its table
 				e.Property(x => x.Payment).HasMaxLength(10);
+				e.Property(x => x.PayLinkTemplate).HasMaxLength(300);
 				e.HasIndex(x => x.CompanyId).IsUnique();
 			});
 			b.Entity<HospitalPortalClinicRule>(e =>

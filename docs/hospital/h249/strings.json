@@ -1,0 +1,165 @@
+{
+ "unit": "H249 - Portal messaging",
+ "strings": {
+  "All open": {
+   "ar": "كل المفتوحة",
+   "en": "All open",
+   "fr": "Tous ouverts"
+  },
+  "Awaiting reply": {
+   "ar": "بانتظار الرد",
+   "en": "Awaiting reply",
+   "fr": "En attente de réponse"
+  },
+  "Choose a conversation, or write a new message.": {
+   "ar": "اختر محادثة، أو اكتب رسالة جديدة.",
+   "en": "Choose a conversation, or write a new message.",
+   "fr": "Choisissez une conversation, ou écrivez un nouveau message."
+  },
+  "Choose a conversation.": {
+   "ar": "اختر محادثة.",
+   "en": "Choose a conversation.",
+   "fr": "Choisissez une conversation."
+  },
+  "Choose the topic": {
+   "ar": "اختر الموضوع",
+   "en": "Choose the topic",
+   "fr": "Choisissez le sujet"
+  },
+  "Close the conversation": {
+   "ar": "إغلاق المحادثة",
+   "en": "Close the conversation",
+   "fr": "Clore la conversation"
+  },
+  "Close this conversation without a reply?": {
+   "ar": "هل تغلق هذه المحادثة دون رد؟",
+   "en": "Close this conversation without a reply?",
+   "fr": "Clore cette conversation sans réponse ?"
+  },
+  "Conversations": {
+   "ar": "المحادثات",
+   "en": "Conversations",
+   "fr": "Conversations"
+  },
+  "For an emergency, call or come to the emergency department.": {
+   "ar": "في الحالات الطارئة اتصل أو توجه إلى قسم الطوارئ.",
+   "en": "For an emergency, call or come to the emergency department.",
+   "fr": "En cas d'urgence, appelez ou venez aux urgences."
+  },
+  "Messaging is not available yet.": {
+   "ar": "المراسلة غير متاحة بعد.",
+   "en": "Messaging is not available yet.",
+   "fr": "La messagerie n'est pas encore disponible."
+  },
+  "New message": {
+   "ar": "رسالة جديدة",
+   "en": "New message",
+   "fr": "Nouveau message"
+  },
+  "New replies": {
+   "ar": "ردود جديدة",
+   "en": "New replies",
+   "fr": "Nouvelles réponses"
+  },
+  "No conversation here.": {
+   "ar": "لا توجد محادثات هنا.",
+   "en": "No conversation here.",
+   "fr": "Aucune conversation ici."
+  },
+  "Open conversations": {
+   "ar": "المحادثات المفتوحة",
+   "en": "Open conversations",
+   "fr": "Conversations ouvertes"
+  },
+  "Portal messages": {
+   "ar": "رسائل البوابة",
+   "en": "Portal messages",
+   "fr": "Messages du portail"
+  },
+  "Portal messaging is not installed yet (hospital_h249_portal_messages.sql).": {
+   "ar": "مراسلة البوابة غير مثبتة بعد (hospital_h249_portal_messages.sql).",
+   "en": "Portal messaging is not installed yet (hospital_h249_portal_messages.sql).",
+   "fr": "La messagerie du portail n'est pas encore installée (hospital_h249_portal_messages.sql)."
+  },
+  "Reply and close": {
+   "ar": "الرد والإغلاق",
+   "en": "Reply and close",
+   "fr": "Répondre et clore"
+  },
+  "Search a patient or subject": {
+   "ar": "ابحث عن مريض أو موضوع",
+   "en": "Search a patient or subject",
+   "fr": "Rechercher un patient ou un sujet"
+  },
+  "Subject": {
+   "ar": "الموضوع",
+   "en": "Subject",
+   "fr": "Objet"
+  },
+  "The clinic": {
+   "ar": "العيادة",
+   "en": "The clinic",
+   "fr": "La clinique"
+  },
+  "This conversation is closed: start a new message": {
+   "ar": "هذه المحادثة مغلقة: ابدأ رسالة جديدة",
+   "en": "This conversation is closed: start a new message",
+   "fr": "Cette conversation est close : écrivez un nouveau message"
+  },
+  "Topic": {
+   "ar": "نوع الرسالة",
+   "en": "Topic",
+   "fr": "Thème"
+  },
+  "Write the message (2000 characters at most)": {
+   "ar": "اكتب الرسالة (2000 حرف كحد أقصى)",
+   "en": "Write the message (2000 characters at most)",
+   "fr": "Écrivez le message (2000 caractères au plus)"
+  },
+  "Write the subject (150 characters at most)": {
+   "ar": "اكتب الموضوع (150 حرفًا كحد أقصى)",
+   "en": "Write the subject (150 characters at most)",
+   "fr": "Écrivez l'objet (150 caractères au plus)"
+  },
+  "Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department.": {
+   "ar": "راسل العيادة وسترد خلال يومين. في الحالات الطارئة اتصل أو توجه إلى قسم الطوارئ.",
+   "en": "Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department.",
+   "fr": "Écrivez à la clinique ; elle répond sous deux jours. En cas d'urgence, appelez ou venez aux urgences."
+  },
+  "Write your reply": {
+   "ar": "اكتب ردك",
+   "en": "Write your reply",
+   "fr": "Écrivez votre réponse"
+  },
+  "You can write to the clinic once the front desk has verified your account.": {
+   "ar": "يمكنك مراسلة العيادة بعد أن يتحقق الاستقبال من حسابك.",
+   "en": "You can write to the clinic once the front desk has verified your account.",
+   "fr": "Vous pourrez écrire à la clinique une fois votre compte vérifié par l'accueil."
+  },
+  "{0} conversations are past the two-day reply time": {
+   "ar": "{0} محادثة تجاوزت مهلة الرد البالغة يومين",
+   "en": "{0} conversations are past the two-day reply time",
+   "fr": "{0} conversations ont dépassé le délai de réponse de deux jours"
+  },
+  "pt:Clinical": {
+   "ar": "سؤال طبي",
+   "en": "Clinical question",
+   "fr": "Question médicale"
+  },
+  "pt:Appointment": {
+   "ar": "المواعيد",
+   "en": "Appointments",
+   "fr": "Rendez-vous"
+  },
+  "pt:Billing": {
+   "ar": "الفواتير",
+   "en": "Billing",
+   "fr": "Facturation"
+  },
+  "pt:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  }
+ }
+}

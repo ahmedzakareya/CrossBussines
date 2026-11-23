@@ -134,7 +134,7 @@ namespace CrossBuy.Tests
 		// H46 adds the account's Email and PasswordChangedAt (ALTER) and the reset links' table; H48 the booking's
 		// Waitlist (ALTER) and the offers' table
 		private static string Slice() => HospitalSliceParity.Slice("hospital_h24_portal_accounts.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h46_portal_password.sql")
-			+ Environment.NewLine + HospitalSliceParity.Slice("hospital_h48_portal_waitlist.sql");
+			+ Environment.NewLine + HospitalSliceParity.Slice("hospital_h48_portal_waitlist.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h251_portal_proxy_payment.sql");   // H251 proxy scope and end date
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalPortalAccountsModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

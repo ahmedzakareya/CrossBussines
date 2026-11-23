@@ -1,0 +1,129 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPortalThread>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H249 — the patient's conversations with the clinic: the list, the open conversation, and a new message about any of
+    the account's people. The clinic answers within two days.
+*@
+@{
+    Layout = "_Layout";
+    var acc = (HospitalPortalAccount)ViewBag.Account;
+    var people = (IReadOnlyList<HospitalPortalPerson>)ViewBag.People;
+    var unread = ViewBag.Unread as Dictionary<int, int> ?? new();
+    var open = ViewBag.Open as HospitalPortalThreadView;
+    bool ready = ViewBag.Ready == true;
+    ViewData["Title"] = T["Messages"].Value;
+    ViewData["BandTitle"] = T["Messages"].Value;
+    ViewData["BandDesc"] = T["Write to the clinic; it answers within two days. For an emergency, call or come to the emergency department."].Value;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string When(DateTime utc) => utc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", inv);
+}
+@section Figures {
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@Model.Count(t => t.Status == HospitalPortalThreadStatus.Open)</span><div class="text-white opacity-50 fw-bold">@T["Open conversations"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@unread.Values.Sum()</span><div class="text-white opacity-50 fw-bold">@T["New replies"]</div></div>
+}
+
+@if (!ready)
+{
+    <div class="card card-flush"><div class="card-body text-center text-muted py-10">@T["Messaging is not available yet."]</div></div>
+}
+else if (acc.Status != HospitalPortalAccountStatus.Verified)
+{
+    <div class="card card-flush"><div class="card-body text-center text-muted py-10">@T["You can write to the clinic once the front desk has verified your account."]</div></div>
+}
+else
+{
+<div class="row g-5">
+    <div class="col-lg-4">
+        <div class="card card-flush h-100">
+            <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["Conversations"]</span></h3>
+                <div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-pm-new><i class="ki-outline ki-message-add fs-4"></i>@T["New message"]</button></div></div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) {<div class="text-center text-muted py-10">@T["None."]</div>}
+                @foreach (var t in Model)
+                {
+                    var p = people.FirstOrDefault(x => x.PatientId == t.PatientId);
+                    <a href="@Url.Action("Messages", new { id = t.ID })" class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed text-hover-primary @(open?.Thread.ID == t.ID ? "bg-light-primary rounded px-2" : "")">
+                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (p?.Photo != null) {<img src="@Url.Action("PatientPhoto", new { id = p.PatientId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-8">@HospitalUi.Initials(p?.NameEn ?? "")</span>}</div>
+                        <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-900 text-truncate">@t.Subject</div>
+                            <div class="text-muted fs-8">@T["pt:" + t.Topic] · <span class="pp-num">@When(t.LastMessageAt)</span></div></div>
+                        @if (unread.GetValueOrDefault(t.ID) > 0) {<span class="badge badge-circle badge-primary pp-num">@unread[t.ID]</span>}
+                        else if (t.Status == HospitalPortalThreadStatus.Closed) {<span class="badge badge-light fs-9">@T["Closed"]</span>}
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card card-flush h-100">
+            @if (open == null)
+            {
+                <div class="card-body d-flex flex-column flex-center text-center py-20"><i class="ki-outline ki-messages fs-5x text-gray-300 mb-5"></i><div class="text-muted fs-6">@T["Choose a conversation, or write a new message."]</div></div>
+            }
+            else
+            {
+                <div class="card-header pt-7"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-900">@open.Thread.Subject</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["pt:" + open.Thread.Topic] · @DisplayName.Of(open.PatientName, open.PatientNameEn)</span></h3></div>
+                <div class="card-body pt-2">
+                    @foreach (var (m, staff) in open.Messages)
+                    {
+                        <div class="d-flex mb-6 @(m.FromPatient ? "justify-content-end" : "justify-content-start")">
+                            <div class="d-flex flex-column @(m.FromPatient ? "align-items-end" : "align-items-start") mw-75">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    @if (!m.FromPatient) {@HospitalUi.Avatar(staff?.Photo, DisplayName.Of(staff?.Name ?? T["The clinic"].Value, staff?.NameEn), 30)<span class="fw-bold fs-7 text-gray-800">@(staff == null ? T["The clinic"] : DisplayName.Of(staff.Name ?? "", staff.NameEn))</span>}
+                                    <span class="text-muted fs-8 pp-num">@When(m.At)</span>
+                                </div>
+                                <div class="p-4 rounded @(m.FromPatient ? "bg-light-primary" : "bg-light") text-gray-900 fw-semibold fs-6" dir="auto" style="white-space:pre-line">@m.Body</div>
+                            </div>
+                        </div>
+                    }
+                    @if (open.Thread.Status == HospitalPortalThreadStatus.Open)
+                    {
+                        <div class="mt-6"><textarea class="form-control form-control-solid" rows="3" maxlength="2000" dir="auto" placeholder="@T["Write your reply"]" data-pm-reply-body></textarea>
+                            <div class="text-end mt-3"><button type="button" class="btn btn-primary" data-pm-reply="@open.Thread.ID">@T["Send"]</button></div></div>
+                    }
+                    else {<div class="text-center text-muted fs-7 mt-6">@T["This conversation is closed: start a new message"]</div>}
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="pmNew" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body px-10 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3">@T["New message"]</h1><div class="text-muted fw-semibold fs-6">@T["For an emergency, call or come to the emergency department."]</div></div>
+        <div class="row g-5">
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["About"]</label><select class="form-select form-select-solid" data-pm="patientId">@foreach (var p in people.Where(x => x.Scope == HospitalPortalProxyScope.Full)) {<option value="@p.PatientId">@DisplayName.Of(p.Name, p.NameEn)</option>}</select></div>
+            <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@T["Topic"]</label><select class="form-select form-select-solid" data-pm="topic">@foreach (var k in HospitalPortalTopic.All) {<option value="@k">@T["pt:" + k]</option>}</select></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Subject"]</label><input class="form-control form-control-solid" maxlength="150" dir="auto" data-pm="subject" /></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Message"]</label><textarea class="form-control form-control-solid" rows="5" maxlength="2000" dir="auto" data-pm="body"></textarea></div>
+        </div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pm-send>@T["Send"]</button></div>
+    </div>
+</div></div></div>
+}
+@section Scripts {
+    <script>
+        (function () {
+            var root = @Json.Serialize(Url.Content("~/PatientPortal/Messages")), m = document.getElementById('pmNew');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function f(k) { return m.querySelector('[data-pm=' + k + ']'); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-pm-new],[data-pm-send],[data-pm-reply]'); if (!t) return;
+                if (t.hasAttribute('data-pm-new')) { bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                t.disabled = true;
+                if (t.hasAttribute('data-pm-send')) {
+                    pp.post(root, { patientId: +f('patientId').value, topic: f('topic').value, subject: f('subject').value, body: f('body').value }).then(function (r) {
+                        t.disabled = false; if (!r.ok) { pp.toast('error', r.error || W.failed); return; } location.href = root + '?id=' + r.id; });
+                    return;
+                }
+                var id = t.getAttribute('data-pm-reply');
+                pp.post(root + '/' + id, { body: document.querySelector('[data-pm-reply-body]').value }).then(function (r) {
+                    t.disabled = false; if (!r.ok) { pp.toast('error', r.error || W.failed); return; } location.href = root + '?id=' + id; });
+            });
+        })();
+    </script>
+}

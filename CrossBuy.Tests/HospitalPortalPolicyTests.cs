@@ -174,7 +174,7 @@ namespace CrossBuy.Tests
 
 		private static string Slice23() => HospitalSliceParity.Slice("hospital_h23_portal_rules.sql");
 		// H48 adds the settings' OfferMinutes (ALTER)
-		private static string Slice() => Slice23() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h48_portal_waitlist.sql");
+		private static string Slice() => Slice23() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h48_portal_waitlist.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h251_portal_proxy_payment.sql");   // H251 pay link
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalPortalRulesModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]

@@ -52,7 +52,14 @@
                             <td class="text-end text-nowrap fw-bold text-gray-900"><bdi class="pp-num">@b.Currency.Format(b.YourShare)</bdi></td>
                             <td class="text-end text-nowrap">
                                 @if (b.Status == HospitalBillStatus.Open) { <span class="badge badge-light-primary">@T["Visit still open"]</span> }
-                                else if (b.Due > 0) { <span class="badge badge-light-danger">@T["Due"] <bdi class="pp-num ms-1">@Money(b.Due, b.Currency)</bdi></span><div class="text-muted fs-8 mt-1">@T["Pay at the hospital cashier"]</div> }
+                                else if (b.Due > 0)
+                                {
+                                    <span class="badge badge-light-danger">@T["Due"] <bdi class="pp-num ms-1">@Money(b.Due, b.Currency)</bdi></span>
+                                    @* H251: online payment through the provider the administrator entered; otherwise the cashier *@
+                                    if (HospitalPortalPayLink.Build((ViewBag.Settings as HospitalPortalSettings)?.PayLinkTemplate, b.BillNo, b.Due, b.Currency.Code, b.Currency.Decimals) is string pay)
+                                    {<div class="mt-2"><a href="@pay" target="_blank" rel="noopener" class="btn btn-sm btn-primary py-1">@T["Pay online"]</a></div><div class="text-muted fs-9 mt-1">@T["The cashier confirms the payment from the provider's statement."]</div>}
+                                    else {<div class="text-muted fs-8 mt-1">@T["Pay at the hospital cashier"]</div>}
+                                }
                                 else { <span class="badge badge-light-success">@T["Paid in full"]</span> }
                             </td>
                         </tr>

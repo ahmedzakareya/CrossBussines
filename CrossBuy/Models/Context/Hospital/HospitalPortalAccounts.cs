@@ -93,6 +93,13 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? UsedAt { get; set; }
 	}
 
+	/// H251: how far a family proxy reaches.
+	public static class HospitalPortalProxyScope
+	{
+		public const string Full = "Full", Booking = "Booking";
+		public static readonly IReadOnlyList<string> All = new[] { Full, Booking };
+	}
+
 	public class HospitalPortalFamilyLink
 	{
 		public int ID { get; set; }
@@ -100,6 +107,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int AccountId { get; set; }
 		public int PatientId { get; set; }
 		public string Relation { get; set; } = HospitalPortalRelations.Child;
+		/// H251: what the proxy sees — the whole record (Full) or bookings only (Booking); and until when (null = no end).
+		public string Scope { get; set; } = HospitalPortalProxyScope.Full;
+		public DateTime? ExpiresAt { get; set; }
 		public DateTime AddedAt { get; set; }
 		public int? AddedByEmployeeId { get; set; }
 	}
@@ -177,6 +187,8 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalPortalMessagesModel.Configure(b);   // H249: secure messaging
+			HospitalQuestionnaireModel.Configure(b);   // H250: questionnaires
 			b.Entity<HospitalPortalOffer>(e =>
 			{
 				e.ToTable("HospitalPortalOffers");   // H48 (hospital_h48_portal_waitlist.sql); the one-open-per-time and
@@ -214,6 +226,7 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.ToTable("HospitalPortalFamilyLinks");
 				e.Property(x => x.Relation).HasMaxLength(10);
+				e.Property(x => x.Scope).HasMaxLength(8);
 				e.HasIndex(x => new { x.AccountId, x.PatientId }).IsUnique();
 			});
 			b.Entity<HospitalPortalBooking>(e =>

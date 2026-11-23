@@ -86,6 +86,7 @@ namespace CrossBuy.BL.Hospital
 		{
 			if (!await CanManage(ctx, ct)) return HospitalResult.Fail("forbidden");
 			if (HospitalPortalPolicy.SettingsRefusal(input) is string why) return HospitalResult.Fail(why);
+			if (HospitalPortalPayLink.Refusal(input.PayLinkTemplate) is string payWhy) return HospitalResult.Fail(payWhy);   // H251
 			try
 			{
 				var row = await _db.Set<HospitalPortalSettings>().FirstOrDefaultAsync(s => s.CompanyId == ctx.CompanyId, ct);
@@ -93,6 +94,7 @@ namespace CrossBuy.BL.Hospital
 				row.WindowDays = input.WindowDays; row.LeadHours = input.LeadHours; row.CancelHours = input.CancelHours; row.MaxActive = input.MaxActive; row.OfferMinutes = input.OfferMinutes;
 				row.FamilyBooking = input.FamilyBooking; row.Waitlist = input.Waitlist; row.SelfRegistration = input.SelfRegistration; row.ShowFees = input.ShowFees;
 				row.InsuranceCheck = input.InsuranceCheck; row.Payment = input.Payment; row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
+				row.PayLinkTemplate = string.IsNullOrWhiteSpace(input.PayLinkTemplate) ? null : input.PayLinkTemplate.Trim();   // H251
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(row.ID);
 			}
