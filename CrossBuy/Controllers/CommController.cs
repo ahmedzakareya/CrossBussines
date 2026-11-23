@@ -87,6 +87,7 @@ namespace CrossBuy.Controllers
             ViewBag.CountAll = c.All; ViewBag.CountSent = c.Sent; ViewBag.CountOutbox = c.Outbox;
             ViewBag.CountFailed = c.Failed; ViewBag.CountTrash = c.Trash; ViewBag.CountStarred = c.Starred;
             ViewBag.Configured = _comm.SmtpConfigured;
+            ViewBag.MyAddress = _comm.ExternalAddressFor(empId);      // phase 2: where people outside write to me
         }
 
         [HttpGet]

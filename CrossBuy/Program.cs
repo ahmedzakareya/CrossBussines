@@ -115,6 +115,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Company document library (Metronic file-manager)
 builder.Services.AddScoped<ICommService, CommService>();          // Comm Hub — email (Metronic inbox)
+builder.Services.AddScoped<CrossBuy.BL.Comm.ICommInboundService, CrossBuy.BL.Comm.CommInboundService>();   // Email phase 2 (owner 2026-11-23): mail from outside, read from the company account
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); // Comm Hub P5 — announcements
 builder.Services.AddScoped<IDocCommentService, DocCommentService>();     // Comm Hub P5 — document comments/timeline
 // ---- Reporting Platform (ADR-037) ----
@@ -879,6 +880,7 @@ builder.Services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHosted
 // certification runtime and parks on a lost lease, like the task escalation worker above.
 builder.Services.AddHostedService<CrossBuy.BL.Hr.HrApprovalEscalationHostedService>();
 builder.Services.AddHostedService<CrossBuy.BL.Communication.CommWorkerHostedService>();   // Communication v2: scheduled messages, reminders, message retention
+builder.Services.AddHostedService<CrossBuy.BL.Comm.CommInboundHostedService>();   // Email phase 2 (owner 2026-11-23 "carry on with the plan"): reads the company mail account every minute; off with Smtp:Inbound:Enabled=false
 builder.Services.AddSignalR();
 
 

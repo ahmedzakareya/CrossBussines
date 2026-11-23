@@ -111,7 +111,7 @@
                             <div class="flex-grow-1">
                                 @* FROM, THEN TO - the order of every mail client. The writer is a colleague's name (or the
                                    system's, for automated mail); the address follows in its own direction. *@
-                                <div class="fw-bold text-gray-900 fs-5"><span class="text-muted fw-semibold fs-7">@Localizer["From"]:</span> <bdi style="unicode-bidi:plaintext">@Model.FromName</bdi> <bdi dir="ltr" class="text-muted fw-semibold fs-7">&lt;@Model.FromAddress&gt;</bdi></div>
+                                <div class="fw-bold text-gray-900 fs-5"><span class="text-muted fw-semibold fs-7">@Localizer["From"]:</span> <bdi style="unicode-bidi:plaintext">@Model.FromName</bdi> <bdi dir="ltr" class="text-muted fw-semibold fs-7">&lt;@Model.FromAddress&gt;</bdi>@if (Model.External) { <span class="badge badge-light-info fs-8 ms-2">@Localizer["From outside the company"]</span> }</div>
                                 <div class="fs-7 text-gray-700"><span class="text-muted fw-semibold">@SR["To"]:</span> <bdi dir="ltr">@Model.ToAddress</bdi></div>
                                 @if (!string.IsNullOrWhiteSpace(Model.Cc)) { <div class="fs-8 text-muted">@SR["Cc"]: @Model.Cc</div> }
                                 <div class="fs-8 text-muted">@(Model.SentAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm") ?? Model.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>

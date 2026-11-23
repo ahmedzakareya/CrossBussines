@@ -84,6 +84,18 @@
                                 <div class="menu-item"><a href="@Url.Action("Index","FileManager")" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-folder fs-2 me-3 text-primary"></i></span><span class="menu-title fw-semibold text-muted">@Localizer["Open library"]</span></a></div>
                             }
                         </div>
+                        @* MY ADDRESS FOR THE OUTSIDE WORLD (phase 2). Mail sent to it lands in this Inbox; it is the
+                           company's own account with my tag, so nothing outside the company had to be set up. *@
+                        @if (ViewBag.MyAddress is string myAddress)
+                        {
+                            <div class="rounded border border-dashed border-primary bg-light-primary p-4 mb-6">
+                                <div class="fs-8 fw-bold text-gray-700 mb-2">@Localizer["Your address for mail from outside"]</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="flex-grow-1" style="min-width:0"><bdi dir="ltr" class="fs-8 text-gray-900 d-block" style="overflow-wrap:anywhere" id="cb-my-address">@myAddress</bdi></div>
+                                    <button type="button" class="btn btn-icon btn-sm btn-light-primary flex-shrink-0" id="cb-copy-address" title="@Localizer["Copy"]" aria-label="@Localizer["Copy"]"><i class="ki-outline ki-copy fs-4"></i></button>
+                                </div>
+                            </div>
+                        }
                         @if (!configured)
                         {
                             <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4">
@@ -231,6 +243,7 @@
                                             {
                                                 @* A colleague's NAME, in its own direction (Arabic or Latin). *@
                                                 <bdi class="@(m.Unread ? "fw-bolder" : "fw-semibold") text-truncate" style="unicode-bidi:plaintext">@who</bdi>
+                                                @if (m.External) { <span class="badge badge-light-info fs-9 ms-2 flex-shrink-0">@Localizer["External"]</span> }
                                             }
                                             else
                                             {
@@ -499,6 +512,17 @@
         });
 
         sync();
+
+        var copy = document.getElementById('cb-copy-address');
+        if (copy) copy.addEventListener('click', function () {
+            var t = document.getElementById('cb-my-address').textContent.trim();
+            (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () {
+                if (window.toastr) toastr.success(@Html.Raw(Json.Serialize(Localizer["Copied"].Value)));
+            }).catch(function () {
+                var r = document.createRange(); r.selectNodeContents(document.getElementById('cb-my-address'));
+                var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+            });
+        });
     })();
 </script>
 }

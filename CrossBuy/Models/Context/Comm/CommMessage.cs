@@ -21,6 +21,14 @@ namespace CrossBuy.Models.Context.Comm
         /// The first message of the conversation this one belongs to (a reply carries its parent's). deploy/sql/comm_mailboxes.sql
         public int? ThreadId { get; set; }
 
+        // ---- MAIL FROM OUTSIDE (phase 2, deploy/sql/comm_mail_inbound.sql) ----
+        /// 'In' for mail received from outside the company; null for mail written here.
+        public string? Direction { get; set; }
+        public string? FromAddress { get; set; }
+        public string? FromName { get; set; }
+        /// The Message-ID it arrived with (stored once; a reply to it carries In-Reply-To).
+        public string? ExternalMessageId { get; set; }
+
         // ---- Stage 0 (Slice-003) outbox dispatch state, additive + nullable ----
         // CommMessage was already outbox-SHAPED (Status/Attempts/Error/SentAt) but nothing drained it: sending
         // happened synchronously in the request and a Failed row stayed failed forever. These two columns are what
@@ -53,6 +61,17 @@ namespace CrossBuy.Models.Context.Comm
         public bool Starred { get; set; }
         public DateTime? DeletedAt { get; set; }
         public DateTime CreatedAt { get; set; }
+    }
+
+    /// Where the reader of the company's mail account stopped: one row per account (phase 2).
+    public class CommMailInbound
+    {
+        public string Account { get; set; } = "";
+        public long UidValidity { get; set; }
+        public long LastUid { get; set; }
+        public DateTime? CheckedAt { get; set; }
+        public int Received { get; set; }
+        public string? LastError { get; set; }
     }
 
     public class CommAttachment

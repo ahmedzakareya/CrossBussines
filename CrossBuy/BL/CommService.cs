@@ -34,6 +34,8 @@ namespace CrossBuy.BL
         public string? FromName { get; set; }
         public string? FromAddress { get; set; }
         public string? FromPhoto { get; set; }
+        /// Written outside the company and received here (phase 2).
+        public bool External { get; set; }
     }
 
     /// The folder badges of one person's mailbox. Company is the outbox of the whole company, shown only to whoever
@@ -84,6 +86,8 @@ namespace CrossBuy.BL
         public string? FromAddress { get; set; }
         public string? FromPhoto { get; set; }
         public int? FromEmployeeId { get; set; }
+        /// Written outside the company and received here (phase 2).
+        public bool External { get; set; }
         public int? ThreadId { get; set; }
 
         public List<MailAttachmentDto> Attachments { get; set; } = new();
@@ -136,6 +140,8 @@ namespace CrossBuy.BL
         /// May this person send this message again? Only the one who wrote it (or the outbox's manager).
         Task<bool> IsSenderAsync(int companyId, int employeeId, int id);
         bool SmtpConfigured { get; }
+        /// The employee's own address for mail from outside the company (phase 2), or null when mail is not set up.
+        string? ExternalAddressFor(int employeeId);
     }
 
     public class CommService : ICommService
@@ -167,6 +173,10 @@ namespace CrossBuy.BL
             public bool IsConfigured => Enabled && !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(From);
         }
         public bool SmtpConfigured => _smtp.IsConfigured;
+
+        /// This employee's address for mail from outside (phase 2): the company account with their tag. Null without SMTP.
+        public string? ExternalAddressFor(int employeeId) =>
+            _smtp.IsConfigured && employeeId > 0 ? CrossBuy.BL.Comm.MailTags.ForEmployee(_smtp, employeeId) : null;
 
         private static bool ValidEmail(string? s) { if (string.IsNullOrWhiteSpace(s)) return false; try { _ = new MailAddress(s.Trim()); return true; } catch { return false; } }
 
@@ -306,14 +316,31 @@ namespace CrossBuy.BL
             try
             {
                 // FROM THE PERSON, THROUGH THE COMPANY'S SERVER. The server only relays its own account, so the address
-                // stays the configured one; the NAME is the colleague who wrote it, and a reply goes to their own address.
+                // stays the configured one; the NAME is the colleague who wrote it.
                 var sender = m.CreatedBy is int by && by > 0
                     ? await _db.Employee.AsNoTracking().Where(e => e.ID == by && e.EmpCompanyID == m.CompanyID)
                         .Select(e => new { e.FullName, e.FullNameEn, e.Email }).FirstOrDefaultAsync(cancellationToken)
                     : null;
                 var fromName = string.IsNullOrWhiteSpace(sender?.FullName) ? _smtp.FromName : sender!.FullName;
                 using var msg = new MailMessage { From = new MailAddress(_smtp.From, fromName, System.Text.Encoding.UTF8), Subject = m.Subject, SubjectEncoding = System.Text.Encoding.UTF8 };
-                if (sender != null && ValidEmail(sender.Email)) msg.ReplyToList.Add(new MailAddress(sender.Email.Trim(), fromName, System.Text.Encoding.UTF8));
+
+                // THE ANSWER COMES BACK HERE (phase 2). Reply-To is the company account with this message's tag, so a
+                // reply lands in the writer's Inbox, in this conversation (CommInboundService). Message-ID names this
+                // message; a reply to mail from outside carries In-Reply-To/References so the other side threads it.
+                var replyTo = sender != null ? CrossBuy.BL.Comm.MailTags.ForMessage(_smtp, m.Id) : null;
+                if (replyTo != null) msg.ReplyToList.Add(new MailAddress(replyTo, fromName, System.Text.Encoding.UTF8));
+                msg.Headers.Add("Message-ID", CrossBuy.BL.Comm.MailTags.MessageId(_smtp, m.Id));
+                if (m.ParentId is int parentId)
+                {
+                    var p = await _db.CommMessages.AsNoTracking().Where(x => x.Id == parentId && x.CompanyID == m.CompanyID)
+                        .Select(x => new { x.Id, x.ExternalMessageId }).FirstOrDefaultAsync(cancellationToken);
+                    if (p != null)
+                    {
+                        var re = p.ExternalMessageId ?? CrossBuy.BL.Comm.MailTags.MessageId(_smtp, p.Id);
+                        msg.Headers.Add("In-Reply-To", re);
+                        msg.Headers.Add("References", re);
+                    }
+                }
                 foreach (var t in to) msg.To.Add(t);
                 foreach (var c in cc) msg.CC.Add(c);
 
@@ -476,6 +503,7 @@ namespace CrossBuy.BL
                     var who = _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId
                         && (e.FullName.Contains(t) || (e.FullNameEn != null && e.FullNameEn.Contains(t)))).Select(e => (int?)e.ID);
                     rows = rows.Where(r => r.m.ToAddress.Contains(t) || r.m.Subject.Contains(t) || (r.m.Body != null && r.m.Body.Contains(t))
+                                        || (r.m.FromAddress != null && r.m.FromAddress.Contains(t)) || (r.m.FromName != null && r.m.FromName.Contains(t))
                                         || who.Contains(r.m.CreatedBy));
                 }
                 var got = await rows.OrderByDescending(r => r.m.Id).ThenBy(r => r.i.Box).Take(400).ToListAsync();
@@ -502,7 +530,10 @@ namespace CrossBuy.BL
                     RecipientPhoto = p.m.ToAddress != null && photos.TryGetValue(p.m.ToAddress.Trim(), out var ph) ? ph : null,
                     Box = p.i?.Box,
                     Unread = p.i != null && p.i.Box == "Inbox" && p.i.ReadAt == null,
-                    FromName = from?.Name ?? _smtp.FromName, FromAddress = from?.Email ?? _smtp.From, FromPhoto = from?.Photo,
+                    // A colleague, or — for mail from outside — the name and address it arrived with.
+                    FromName = from?.Name ?? (p.m.Direction == "In" ? (p.m.FromName ?? p.m.FromAddress) : _smtp.FromName),
+                    FromAddress = from?.Email ?? (p.m.Direction == "In" ? p.m.FromAddress : _smtp.From), FromPhoto = from?.Photo,
+                    External = p.m.Direction == "In",
                 };
             }).ToList();
         }
@@ -549,7 +580,9 @@ namespace CrossBuy.BL
                 Error = x.Error, Starred = copy?.Starred ?? x.Starred, SentAt = x.SentAt, CreatedAt = x.CreatedAt,
                 DeletedAt = copy != null ? copy.DeletedAt : x.DeletedAt,
                 Box = copy?.Box, ThreadId = x.ThreadId ?? x.Id,
-                FromName = from?.Name ?? _smtp.FromName, FromAddress = from?.Email ?? _smtp.From, FromPhoto = from?.Photo,
+                FromName = from?.Name ?? (x.Direction == "In" ? (x.FromName ?? x.FromAddress) : _smtp.FromName),
+                FromAddress = from?.Email ?? (x.Direction == "In" ? x.FromAddress : _smtp.From), FromPhoto = from?.Photo,
+                External = x.Direction == "In",
                 FromEmployeeId = from?.Id,
                 Attachments = await _db.CommAttachments.AsNoTracking().Where(a => a.CommMessageId == x.Id)
                     .Select(a => new MailAttachmentDto { FilePath = a.FilePath, FileName = a.FileName, Size = a.Size }).ToListAsync(),

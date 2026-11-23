@@ -36,6 +36,12 @@ namespace CrossBuy.Tests
         public const int CompanyA = 1;
         public const int CompanyB = 77;
 
+        // A MAILBOX PER EMPLOYEE (2026-11-23). A message is seen only through a copy: the writer's in Sent, each
+        // recipient's in Inbox. By default the fixture's mail is written by Owner and delivered to employees 5 and 99
+        // (the invitation tests' "Me" and "Someone"), so a test chooses whose mailbox it acts in.
+        public const int Owner = 1;
+        public static readonly int[] DefaultInbox = { 5, 99 };
+
         private readonly SqliteConnection _conn;
         private readonly CompanyScopeHolder _holder = new();
         private readonly string _root;
@@ -79,23 +85,29 @@ namespace CrossBuy.Tests
 
         /// An employee the mailbox can recognise by their address. Only the three fields the photo
         /// lookup reads carry meaning; the rest are filled because the columns are not nullable.
-        public void Employee(int companyId, string email, string? photo)
+        public int Employee(int companyId, string email, string? photo)
         {
-            Db.Employee.Add(new CrossBuy.Models.Context.Admin.Employee
+            var e = new CrossBuy.Models.Context.Admin.Employee
             {
                 EmpCompanyID = companyId,
                 Email = email,
                 ProfileImage = photo ?? "",
                 FirstName = "A", LastName = "B", FullName = "A B",
-                Address = "", PhoneNumber = "", Gender = "", MaritalStatus = "", UserId = "",
+                Address = "", PhoneNumber = "", Gender = "", MaritalStatus = "", UserId = Guid.NewGuid().ToString(),
                 DateOfBirth = new DateTime(1990, 1, 1), DateOfJoining = new DateTime(2020, 1, 1),
                 IsActive = true,
-            });
+            };
+            Db.Employee.Add(e);
             Db.SaveChanges();
+            return e.ID;
         }
 
-        /// A message with an optional attachment whose bytes really exist on disk.
-        public int Mail(int companyId, string subject, string? icsBody = null, string? fileName = null)
+        public CommMailboxItem Copy(int messageId, int employeeId, string box = "Sent") =>
+            Db.Set<CommMailboxItem>().AsNoTracking().Single(i => i.MessageId == messageId && i.EmployeeId == employeeId && i.Box == box);
+
+        /// A message with an optional attachment whose bytes really exist on disk, held by Owner (Sent) and by
+        /// `inbox` (default: 5 and 99) in their Inboxes.
+        public int Mail(int companyId, string subject, string? icsBody = null, string? fileName = null, params int[] inbox)
         {
             var m = new CommMessage
             {
@@ -103,6 +115,10 @@ namespace CrossBuy.Tests
                 Body = "<p>body</p>", Status = "Sent", Kind = "New", CreatedAt = DateTime.UtcNow,
             };
             Db.CommMessages.Add(m);
+            Db.SaveChanges();
+            Db.Set<CommMailboxItem>().Add(new CommMailboxItem { CompanyID = companyId, MessageId = m.Id, EmployeeId = Owner, Box = "Sent", ReadAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow });
+            foreach (var e in inbox.Length > 0 ? inbox : DefaultInbox)
+                Db.Set<CommMailboxItem>().Add(new CommMailboxItem { CompanyID = companyId, MessageId = m.Id, EmployeeId = e, Box = "Inbox", CreatedAt = DateTime.UtcNow });
             Db.SaveChanges();
 
             if (icsBody != null)
@@ -161,12 +177,13 @@ namespace CrossBuy.Tests
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "keep me");
 
-            Assert.Equal(1, await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id }));
+            Assert.Equal(1, await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
 
-            var row = f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id);
-            Assert.NotNull(row.DeletedAt);                       // reversible: the row is still here
-            Assert.Single(await f.Comm.ListAsync(MailFixture.CompanyA, "Trash", null));
-            Assert.Empty(await f.Comm.ListAsync(MailFixture.CompanyA, "All", null));
+            Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));   // reversible: the row is still here
+            Assert.NotNull(f.Copy(id, MailFixture.Owner).DeletedAt);                       // only MY copy is in the trash
+            Assert.Null(f.Copy(id, 5, "Inbox").DeletedAt);                                  // the recipient's is not
+            Assert.Single(await f.Comm.ListAsync(MailFixture.CompanyA, MailFixture.Owner, "Trash", null));
+            Assert.Empty(await f.Comm.ListAsync(MailFixture.CompanyA, MailFixture.Owner, "All", null));
         }
 
         // RE-TRASHING MUST NOT MOVE THE DATE. A retention sweep one day reads DeletedAt, and a date
@@ -176,13 +193,13 @@ namespace CrossBuy.Tests
         {
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "once");
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id });
-            var first = f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id).DeletedAt;
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+            var first = f.Copy(id, MailFixture.Owner).DeletedAt;
 
             await Task.Delay(15);
-            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id }));
+            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
 
-            Assert.Equal(first, f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id).DeletedAt);
+            Assert.Equal(first, f.Copy(id, MailFixture.Owner).DeletedAt);
         }
 
         [Fact]
@@ -192,11 +209,11 @@ namespace CrossBuy.Tests
             int id = f.Mail(MailFixture.CompanyA, "back");
 
             // A live message cannot be "restored" - there is nothing to undo.
-            Assert.Equal(0, await f.Comm.RestoreAsync(MailFixture.CompanyA, new[] { id }));
+            Assert.Equal(0, await f.Comm.RestoreAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
 
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id });
-            Assert.Equal(1, await f.Comm.RestoreAsync(MailFixture.CompanyA, new[] { id }));
-            Assert.Null(f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id).DeletedAt);
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+            Assert.Equal(1, await f.Comm.RestoreAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
+            Assert.Null(f.Copy(id, MailFixture.Owner).DeletedAt);
         }
 
         // ---- PERMANENT DELETE --------------------------------------------------------------
@@ -205,12 +222,12 @@ namespace CrossBuy.Tests
         public async Task Delete_forever_removes_the_row_the_attachment_and_the_file()
         {
             using var f = new MailFixture();
-            int id = f.Mail(MailFixture.CompanyA, "gone", "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n");
+            int id = f.Mail(MailFixture.CompanyA, "gone", "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", null, MailFixture.Owner);
             var path = f.PhysicalPathOf(id);
             Assert.True(File.Exists(path));                       // control
 
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id });
-            Assert.Equal(1, await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, new[] { id }));
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+            Assert.Equal(1, await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
 
             Assert.Empty(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
             Assert.Empty(f.Db.CommAttachments.AsNoTracking().Where(a => a.CommMessageId == id));
@@ -225,7 +242,7 @@ namespace CrossBuy.Tests
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "alive");
 
-            Assert.Equal(0, await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, new[] { id }));
+            Assert.Equal(0, await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id }));
             Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
         }
 
@@ -233,11 +250,11 @@ namespace CrossBuy.Tests
         public async Task Emptying_the_trash_takes_everything_in_it_and_nothing_else()
         {
             using var f = new MailFixture();
-            int trashed = f.Mail(MailFixture.CompanyA, "trashed");
-            int live = f.Mail(MailFixture.CompanyA, "live");
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { trashed });
+            int trashed = f.Mail(MailFixture.CompanyA, "trashed", null, null, MailFixture.Owner);
+            int live = f.Mail(MailFixture.CompanyA, "live", null, null, MailFixture.Owner);
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { trashed });
 
-            Assert.Equal(1, await f.Comm.EmptyTrashAsync(MailFixture.CompanyA));
+            Assert.Equal(1, await f.Comm.EmptyTrashAsync(MailFixture.CompanyA, MailFixture.Owner));
 
             Assert.Empty(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == trashed));
             Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == live));
@@ -254,13 +271,13 @@ namespace CrossBuy.Tests
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "mine");
 
-            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyB, new[] { id }));
-            Assert.Null(f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id).DeletedAt);
+            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyB, MailFixture.Owner, new[] { id }));
+            Assert.Null(f.Copy(id, MailFixture.Owner).DeletedAt);
 
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id });
-            Assert.Equal(0, await f.Comm.RestoreAsync(MailFixture.CompanyB, new[] { id }));
-            Assert.Equal(0, await f.Comm.DeleteForeverAsync(MailFixture.CompanyB, new[] { id }));
-            Assert.Equal(0, await f.Comm.EmptyTrashAsync(MailFixture.CompanyB));
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+            Assert.Equal(0, await f.Comm.RestoreAsync(MailFixture.CompanyB, MailFixture.Owner, new[] { id }));
+            Assert.Equal(0, await f.Comm.DeleteForeverAsync(MailFixture.CompanyB, MailFixture.Owner, new[] { id }));
+            Assert.Equal(0, await f.Comm.EmptyTrashAsync(MailFixture.CompanyB, MailFixture.Owner));
 
             Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
         }
@@ -270,14 +287,14 @@ namespace CrossBuy.Tests
         {
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "safe");
-            await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { id });
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
 
             foreach (var none in new[] { 0, -1 })
             {
-                Assert.Equal(0, await f.Comm.TrashAsync(none, new[] { id }));
-                Assert.Equal(0, await f.Comm.RestoreAsync(none, new[] { id }));
-                Assert.Equal(0, await f.Comm.DeleteForeverAsync(none, new[] { id }));
-                Assert.Equal(0, await f.Comm.EmptyTrashAsync(none));
+                Assert.Equal(0, await f.Comm.TrashAsync(none, MailFixture.Owner, new[] { id }));
+                Assert.Equal(0, await f.Comm.RestoreAsync(none, MailFixture.Owner, new[] { id }));
+                Assert.Equal(0, await f.Comm.DeleteForeverAsync(none, MailFixture.Owner, new[] { id }));
+                Assert.Equal(0, await f.Comm.EmptyTrashAsync(none, MailFixture.Owner));
             }
             Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
         }
@@ -289,9 +306,99 @@ namespace CrossBuy.Tests
             f.Mail(MailFixture.CompanyA, "a");
             f.Mail(MailFixture.CompanyA, "b");
 
-            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, Array.Empty<int>()));
-            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, new[] { 0, -5 }));
-            Assert.Equal(2, f.Db.CommMessages.Count(m => m.DeletedAt == null));
+            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, Array.Empty<int>()));
+            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { 0, -5 }));
+            Assert.Equal(0, f.Db.Set<CommMailboxItem>().Count(i => i.DeletedAt != null));
+        }
+
+        // ---- A MAILBOX PER EMPLOYEE (owner, 2026-11-23) -----------------------------------
+        //
+        // Until this change the mailbox was the company's: everybody saw, starred and deleted everybody's mail.
+
+        [Fact]
+        public async Task A_colleague_neither_sees_nor_touches_mail_that_is_not_theirs()
+        {
+            using var f = new MailFixture();
+            int id = f.Mail(MailFixture.CompanyA, "between Owner and 5", null, null, 5);
+            const int colleague = 42;
+
+            Assert.Null(await f.Comm.GetAsync(MailFixture.CompanyA, colleague, id));
+            Assert.Empty(await f.Comm.ListAsync(MailFixture.CompanyA, colleague, "All", null));
+            Assert.Equal(0, await f.Comm.TrashAsync(MailFixture.CompanyA, colleague, new[] { id }));
+            Assert.False(await f.Comm.ToggleStarAsync(MailFixture.CompanyA, colleague, id));
+            // ...while the company outbox's manager still finds it, and only there.
+            Assert.NotNull(await f.Comm.GetAsync(MailFixture.CompanyA, colleague, id, manager: true));
+            Assert.Single(await f.Comm.ListAsync(MailFixture.CompanyA, colleague, "Company", null, manager: true));
+            Assert.Empty(await f.Comm.ListAsync(MailFixture.CompanyA, colleague, "Company", null, manager: false));
+        }
+
+        [Fact]
+        public async Task A_recipient_deleting_forever_leaves_the_senders_copy_and_the_message()
+        {
+            using var f = new MailFixture();
+            int id = f.Mail(MailFixture.CompanyA, "shared", "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", null, 5);
+            var path = f.PhysicalPathOf(id);
+
+            await f.Comm.TrashAsync(MailFixture.CompanyA, 5, new[] { id });
+            Assert.Equal(1, await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, 5, new[] { id }));
+
+            Assert.Single(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
+            Assert.Null(f.Copy(id, MailFixture.Owner).DeletedAt);
+            Assert.True(File.Exists(path));                       // the file stays while anyone holds the message
+            Assert.Empty(f.Db.Set<CommMailboxItem>().AsNoTracking().Where(i => i.MessageId == id && i.EmployeeId == 5));
+        }
+
+        // A FILE PICKED FROM THE LIBRARY IS THE LIBRARY'S. Purging the last copy of a message must not delete it.
+        [Fact]
+        public async Task Purging_a_message_never_deletes_a_library_file()
+        {
+            using var f = new MailFixture();
+            int id = f.Mail(MailFixture.CompanyA, "with a library file", null, null, MailFixture.Owner);
+            var lib = Path.Combine(f.WebRoot, "uploads", "library", "1");
+            Directory.CreateDirectory(lib);
+            File.WriteAllText(Path.Combine(lib, "plan.pdf"), "pdf");
+            f.Db.CommAttachments.Add(new CommAttachment { CommMessageId = id, FilePath = "/uploads/library/1/plan.pdf", FileName = "plan.pdf", Size = 3, CreatedAt = DateTime.UtcNow });
+            f.Db.SaveChanges();
+
+            await f.Comm.TrashAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+            await f.Comm.DeleteForeverAsync(MailFixture.CompanyA, MailFixture.Owner, new[] { id });
+
+            Assert.Empty(f.Db.CommMessages.AsNoTracking().Where(m => m.Id == id));
+            Assert.True(File.Exists(Path.Combine(lib, "plan.pdf")));
+        }
+
+        // A COLLEAGUE'S ADDRESS IS A MAILBOX HERE: delivered at once, never handed to SMTP, unread until opened.
+        [Fact]
+        public async Task Mail_to_a_colleague_is_delivered_inside_and_read_when_opened()
+        {
+            using var f = new MailFixture();
+            int sender = f.Employee(MailFixture.CompanyA, "sara@company.test", null);
+            int colleague = f.Employee(MailFixture.CompanyA, "Khaled@Company.test", null);
+
+            var (id, status, error) = await f.Comm.QueueAsync(MailFixture.CompanyA, sender, "khaled@company.test", null, "hello", "<p>hi</p>", null, null, "New");
+
+            Assert.Equal("Sent", status); Assert.Null(error);
+            Assert.Equal(0, f.Db.CommMessages.AsNoTracking().Single(m => m.Id == id).Attempts);   // no transmission
+            var inbox = await f.Comm.ListAsync(MailFixture.CompanyA, colleague, "Inbox", null);
+            Assert.True(Assert.Single(inbox).Unread);
+            Assert.Single(await f.Comm.ListAsync(MailFixture.CompanyA, sender, "Sent", null));
+            Assert.Equal(1, (await f.Comm.CountsAsync(MailFixture.CompanyA, colleague)).Unread);
+
+            await f.Comm.GetAsync(MailFixture.CompanyA, colleague, id, markRead: true);
+            Assert.Equal(0, (await f.Comm.CountsAsync(MailFixture.CompanyA, colleague)).Unread);
+        }
+
+        // A REPLY JOINS ITS PARENT'S CONVERSATION.
+        [Fact]
+        public async Task A_reply_carries_its_parents_thread()
+        {
+            using var f = new MailFixture();
+            int sender = f.Employee(MailFixture.CompanyA, "sara@company.test", null);
+            var first = await f.Comm.QueueAsync(MailFixture.CompanyA, sender, "out@example.com", null, "q", "b", null, null, "New");
+            var reply = await f.Comm.QueueAsync(MailFixture.CompanyA, sender, "out@example.com", null, "Re: q", "b", null, first.id, "Reply");
+
+            Assert.Equal(first.id, f.Db.CommMessages.AsNoTracking().Single(m => m.Id == first.id).ThreadId);
+            Assert.Equal(first.id, f.Db.CommMessages.AsNoTracking().Single(m => m.Id == reply.id).ThreadId);
         }
 
         // ---- THE FACE ON THE OPENED MESSAGE ------------------------------------------------
@@ -307,8 +414,8 @@ namespace CrossBuy.Tests
             f.Employee(MailFixture.CompanyA, "someone@example.com", "/uploads/employees/pic.jpg");
             int id = f.Mail(MailFixture.CompanyA, "hello");
 
-            var row = (await f.Comm.ListAsync(MailFixture.CompanyA, "All", null)).Single(r => r.Id == id);
-            var full = await f.Comm.GetAsync(MailFixture.CompanyA, id);
+            var row = (await f.Comm.ListAsync(MailFixture.CompanyA, MailFixture.Owner, "All", null)).Single(r => r.Id == id);
+            var full = await f.Comm.GetAsync(MailFixture.CompanyA, MailFixture.Owner, id);
 
             Assert.Equal("/uploads/employees/pic.jpg", full!.RecipientPhoto);
             Assert.Equal(row.RecipientPhoto, full.RecipientPhoto);
@@ -322,7 +429,7 @@ namespace CrossBuy.Tests
             using var f = new MailFixture();
             int id = f.Mail(MailFixture.CompanyA, "hello");
 
-            Assert.Null((await f.Comm.GetAsync(MailFixture.CompanyA, id))!.RecipientPhoto);
+            Assert.Null((await f.Comm.GetAsync(MailFixture.CompanyA, MailFixture.Owner, id))!.RecipientPhoto);
         }
 
         // AN EMPLOYEE IN ANOTHER COMPANY IS NOT THIS RECIPIENT. The same address can exist in two
@@ -334,7 +441,7 @@ namespace CrossBuy.Tests
             f.Employee(MailFixture.CompanyB, "someone@example.com", "/uploads/employees/other.jpg");
             int id = f.Mail(MailFixture.CompanyA, "hello");
 
-            Assert.Null((await f.Comm.GetAsync(MailFixture.CompanyA, id))!.RecipientPhoto);
+            Assert.Null((await f.Comm.GetAsync(MailFixture.CompanyA, MailFixture.Owner, id))!.RecipientPhoto);
         }
     }
 }
