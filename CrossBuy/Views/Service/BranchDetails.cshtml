@@ -955,7 +955,7 @@
 </div>
 
 <!--end::Content wrapper-->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 
 <script>
 	$(document).ready(function () {
@@ -1179,7 +1179,9 @@
 
 
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+@* Dropzone is NOT loaded here: plugins.bundle.js above already carries Dropzone 5.9.3, the
+   same version this page used to fetch again from cdnjs. Loading it twice parsed the library
+   twice and let the second copy silently replace the first. *@
 
 <script>
 	// set the dropzone container id

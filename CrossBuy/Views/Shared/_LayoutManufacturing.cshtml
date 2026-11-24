@@ -39,7 +39,7 @@ License: For each use you must have a valid license purchased only from above li
 		<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 		<!--begin::Fonts(mandatory for all pages)-->
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
 		<!--end::Fonts-->
 	<!-- ✅ FullCalendar -->
 	<link href="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
@@ -52,7 +52,8 @@ License: For each use you must have a valid license purchased only from above li
 
 
 	<!-- ✅ Dropzone (only Arabic needs this, but can be loaded globally if used in both) -->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
+	@* Dropzone's stylesheet is NOT linked here: plugins.bundle.css (and plugins.bundle.rtl.css)
+	   already carry dz-preview, dz-message, dz-drag-hover and dz-progress. *@
 
 	<!-- ✅ Culture check -->
 	@if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
@@ -63,10 +64,10 @@ License: For each use you must have a valid license purchased only from above li
 	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
 		<!-- Cairo Font -->
-		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+		<link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet">
 
 		<!-- jQuery (usually best to place in Scripts section, but here is acceptable if needed early) -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="~/lib/jquery/dist/jquery.min.js"></script>
 
 		<!-- Custom Arabic RTL Styling -->
 		<style>
@@ -4582,7 +4583,9 @@ License: For each use you must have a valid license purchased only from above li
 <script src="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.js" asp-append-version="true"></script>
 <script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js" asp-append-version="true"></script>
 <script src="~/Backend-assets/plugins/custom/jstree/jstree.bundle.js" asp-append-version="true"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+@* Dropzone is NOT loaded here: plugins.bundle.js above already carries Dropzone 5.9.3, the
+   same version this page used to fetch again from cdnjs. Loading it twice parsed the library
+   twice and let the second copy silently replace the first. *@
 
 
 @* AmCharts was loaded here and used by NOTHING. Eleven script tags, on every page this layout

@@ -14,8 +14,8 @@
     <meta name="theme-color" content="#0E4A9E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <!-- same fonts as the admin app -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" />
+    <link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
     <!-- same Metronic bundles + brand as the admin (RTL-aware) -->
     @if (isAr)
     {
@@ -37,7 +37,7 @@
 </head>
 <body class="bg-light">
     @RenderBody()
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
     <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
     <script src="~/Backend-assets/plugins/signalr.min.js" asp-append-version="true"></script>

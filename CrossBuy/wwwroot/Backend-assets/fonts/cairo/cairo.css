@@ -17,34 +17,32 @@
    THE TYPOGRAPHY IS UNCHANGED. Same family, same four shipped weights, and the same deliberate
    500 -> Regular mapping, so no page loses a face it was rendering before.
 
-   Inter is deliberately NOT bundled here: no local copy of it exists in this repository, and
-   dropping its stylesheet would change the Latin typography of the retained pages rather than
-   merely change where a file comes from. That one is reported, not silently altered.
+   Inter WAS the gap this file reported and left open. It is now bundled too, beside this one at
+   ../inter/inter.css, on the owner's instruction of 2026-11-24 that every design source be local.
+   The truetype fallbacks that used to sit beside each woff2 are gone: woff2 is universal and a
+   third of the bytes, and these same four faces are ALSO declared in crossbusiness-tokens.css, so
+   the browser was being handed two routes to the same glyphs and fetching the larger one.
 
    Cairo is licensed under the SIL Open Font License; OFL.txt ships beside these files.
    ================================================================================================ */
 @font-face {
   font-family: "Cairo";
-  src: url("Cairo-Regular.woff2") format("woff2"),
-       url("Cairo-Regular.ttf") format("truetype");
+  src: url("Cairo-Regular.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Cairo";
-  src: url("Cairo-SemiBold.woff2") format("woff2"),
-       url("Cairo-SemiBold.ttf") format("truetype");
+  src: url("Cairo-SemiBold.woff2") format("woff2");
   font-weight: 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Cairo";
-  src: url("Cairo-Bold.woff2") format("woff2"),
-       url("Cairo-Bold.ttf") format("truetype");
+  src: url("Cairo-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Cairo";
-  src: url("Cairo-ExtraBold.woff2") format("woff2"),
-       url("Cairo-ExtraBold.ttf") format("truetype");
+  src: url("Cairo-ExtraBold.woff2") format("woff2");
   font-weight: 800; font-style: normal; font-display: swap;
 }
 

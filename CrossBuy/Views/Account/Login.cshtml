@@ -23,7 +23,7 @@
 	<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 	<!--begin::Fonts(mandatory for all pages)-->
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+	<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
 	<!--end::Fonts-->
 	<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
 	@if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
@@ -33,24 +33,30 @@
 	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		<style>
 			/* Served from this application, not fetched from Google: the sign-in screen is the one
-			   page that must render correctly with no route to the internet. */
+			   page that must render correctly with no route to the internet.
+
+			   woff2, NOT ttf. These four faces were declared here in TrueType only - 372 KB on the
+			   first page anybody loads, where the woff2 beside each one is a third of that and every
+			   browser that can run this product reads it. The same four faces are also declared in
+			   cairo.css and crossbusiness-tokens.css; this block stays because the sign-in screen must
+			   not depend on the token sheet, but it now points at the same files in the same format. */
 			@@font-face {
 				font-family: 'Cairo';
-				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Regular.ttf")') format('truetype');
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Regular.woff2")') format('woff2');
 				font-weight: 400;
 				font-display: swap;
 			}
 
 			@@font-face {
 				font-family: 'Cairo';
-				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-SemiBold.ttf")') format('truetype');
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-SemiBold.woff2")') format('woff2');
 				font-weight: 600;
 				font-display: swap;
 			}
 
 			@@font-face {
 				font-family: 'Cairo';
-				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Bold.ttf")') format('truetype');
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Bold.woff2")') format('woff2');
 				font-weight: 700;
 				font-display: swap;
 			}
@@ -60,7 +66,7 @@
 			   script reads as blurred rather than as a heavier cut. */
 			@@font-face {
 				font-family: 'Cairo';
-				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-ExtraBold.ttf")') format('truetype');
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-ExtraBold.woff2")') format('woff2');
 				font-weight: 800;
 				font-display: swap;
 			}
