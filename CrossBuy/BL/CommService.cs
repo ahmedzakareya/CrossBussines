@@ -36,6 +36,8 @@ namespace CrossBuy.BL
         public string? FromPhoto { get; set; }
         /// Written outside the company and received here (phase 2).
         public bool External { get; set; }
+        /// It carries a meeting invitation (.ics).
+        public bool Invite { get; set; }
     }
 
     /// The folder badges of one person's mailbox. Company is the outbox of the whole company, shown only to whoever
@@ -532,7 +534,9 @@ namespace CrossBuy.BL
             }
 
             var ids = page.Select(p => p.m.Id).ToList();
-            var withAtt = (await _db.CommAttachments.AsNoTracking().Where(a => ids.Contains(a.CommMessageId)).Select(a => a.CommMessageId).Distinct().ToListAsync()).ToHashSet();
+            var atts = await _db.CommAttachments.AsNoTracking().Where(a => ids.Contains(a.CommMessageId)).Select(a => new { a.CommMessageId, a.FileName }).ToListAsync();
+            var withAtt = atts.Select(a => a.CommMessageId).ToHashSet();
+            var withInvite = atts.Where(a => a.FileName.EndsWith(".ics", StringComparison.OrdinalIgnoreCase)).Select(a => a.CommMessageId).ToHashSet();
             var photos = await RecipientPhotosAsync(companyId, page.Select(p => p.m.ToAddress).ToList());
             var people = await PeopleAsync(companyId, page.Select(p => p.m.CreatedBy));
 
@@ -552,7 +556,7 @@ namespace CrossBuy.BL
                     // A colleague, or — for mail from outside — the name and address it arrived with.
                     FromName = from?.Name ?? (p.m.Direction == "In" ? (p.m.FromName ?? p.m.FromAddress) : _smtp.FromName),
                     FromAddress = from?.Email ?? (p.m.Direction == "In" ? p.m.FromAddress : _smtp.From), FromPhoto = from?.Photo,
-                    External = p.m.Direction == "In",
+                    External = p.m.Direction == "In", Invite = withInvite.Contains(p.m.Id),
                 };
             }).ToList();
         }

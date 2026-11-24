@@ -57,6 +57,8 @@ class ApiService {
   }
 
   static final ApiService instance = ApiService._();
+  /// The same client (token, language, 401 handling) for a module that keeps its calls in its own file (mail_api.dart).
+  Dio get http => _dio;
 
   late final Dio _dio;
   String? _token;
