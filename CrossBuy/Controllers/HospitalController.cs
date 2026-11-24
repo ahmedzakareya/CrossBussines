@@ -324,7 +324,7 @@ namespace CrossBuy.Controllers
 			});
 		}
 
-		private async Task<IActionResult> ConversationAddAsync(BusinessContext ctx, string entityCode, int id, string? body, long? parentCommentId, IFormFile? file, CancellationToken ct)
+		private async Task<IActionResult> ConversationAddAsync(BusinessContext ctx, string entityCode, int id, string? body, long? parentCommentId, IFormFile? file, CancellationToken ct, int[]? mentionIds = null)
 		{
 			if (string.IsNullOrWhiteSpace(body) && (file is null || file.Length == 0))
 				return Json(new { ok = false, error = _sr["Write a comment"].Value });
@@ -353,6 +353,9 @@ namespace CrossBuy.Controllers
 				Body = body ?? "",
 				ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
 				Attachments = attachment is null ? null : new[] { attachment },
+				// the @-picker's ids (2026-11-24): a request to mention, never a grant - the platform drops whoever may not read the record
+				Mentions = (mentionIds ?? Array.Empty<int>()).Where(m => m > 0).Distinct()
+					.Select(m => new CrossBuy.Models.Communication.CommMentionRequest { TargetKind = CrossBuy.Models.Communication.CommMentionTargetKind.Employee, TargetId = m }).ToList(),
 			}, ct);
 			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
 		}

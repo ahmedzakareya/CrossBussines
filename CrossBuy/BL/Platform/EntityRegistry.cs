@@ -58,6 +58,15 @@ namespace CrossBuy.BL.Platform
         public const string HospitalRadOrder = "HospitalRadOrder";
         public const string HospitalConsent = "HospitalConsent";   // H60: a signed consent, files only (its signature)
         public const string HospitalCall = "HospitalCall";         // H176: an internal call, files only (its recordings)
+        // Hospital record conversations (owner 2026-11-24): every record the care team works on carries one
+        public const string HospitalEncounter = "HospitalEncounter";
+        public const string HospitalLabOrder = "HospitalLabOrder";
+        public const string HospitalBill = "HospitalBill";
+        public const string HospitalEstimate = "HospitalEstimate";
+        public const string HospitalLabour = "HospitalLabour";
+        public const string HospitalPregnancy = "HospitalPregnancy";
+        public const string HospitalRehabEpisode = "HospitalRehabEpisode";
+        public const string HospitalMorgueCase = "HospitalMorgueCase";
         public const string JobApplication = "JobApplication";   // HR recruitment: an applicant, files only (2026-11-08)
 
         // Stage 2A Batch A. The grant store becomes an event PRODUCER: IPlatformGrantWriter records
@@ -622,14 +631,119 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 // Hospital H35. An imaging order, FILES ONLY: its pictures live on the document platform, owned through
-                // HospitalRadOrderDocumentOwnerResolver (read to view, rad to attach). No search, comments or picker:
-                // an order is reached from the patient's file and the radiology worklist.
+                // HospitalRadOrderDocumentOwnerResolver (read to view, rad to attach). No search or picker: an order is
+                // reached from the patient's file and the radiology worklist. COMMENTS since 2026-11-24 (owner: a
+                // conversation on every hospital record), gated like its page: clinical-read (HospitalActions.ClinicalRecords).
                 Code = HospitalRadOrder,
                 DisplayNameAr = "طلب أشعة", DisplayNameEn = "Imaging order",
                 Module = "Hospital", Icon = "ki-outline ki-scan-barcode", Color = "primary",
                 RouteTemplate = "/Hospital/Radiology/{id}",
-                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
                 SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalEncounter,
+                DisplayNameAr = "زيارة", DisplayNameEn = "Visit",
+                Module = "Hospital", Icon = "ki-outline ki-stethoscope", Color = "primary",
+                RouteTemplate = "/Hospital/Consult/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalLabOrder,
+                DisplayNameAr = "طلب تحليل", DisplayNameEn = "Lab order",
+                Module = "Hospital", Icon = "ki-outline ki-flask", Color = "primary",
+                RouteTemplate = "/Hospital/Lab/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalBill,
+                DisplayNameAr = "فاتورة مريض", DisplayNameEn = "Patient bill",
+                Module = "Hospital", Icon = "ki-outline ki-bill", Color = "primary",
+                RouteTemplate = "/Hospital/Bill/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalEstimate,
+                DisplayNameAr = "تقدير تكلفة", DisplayNameEn = "Cost estimate",
+                Module = "Hospital", Icon = "ki-outline ki-calculator", Color = "primary",
+                RouteTemplate = "/Hospital/Estimates/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalLabour,
+                DisplayNameAr = "ولادة", DisplayNameEn = "Labour",
+                Module = "Hospital", Icon = "ki-outline ki-heart", Color = "primary",
+                RouteTemplate = "/Hospital/Labour/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalPregnancy,
+                DisplayNameAr = "متابعة حمل", DisplayNameEn = "Pregnancy",
+                Module = "Hospital", Icon = "ki-outline ki-heart-circle", Color = "primary",
+                RouteTemplate = "/Hospital/Pregnancies/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalRehabEpisode,
+                DisplayNameAr = "علاج طبيعي", DisplayNameEn = "Physiotherapy episode",
+                Module = "Hospital", Icon = "ki-outline ki-medal-star", Color = "primary",
+                RouteTemplate = "/Hospital/Rehab/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital record conversations (owner 2026-11-24). COMMENTS ONLY: the care team talks about the record
+                // on its own page. No search or picker (the record names a patient), no timeline (no producer yet).
+                Code = HospitalMorgueCase,
+                DisplayNameAr = "حالة مشرحة", DisplayNameEn = "Mortuary case",
+                Module = "Hospital", Icon = "ki-outline ki-archive", Color = "primary",
+                RouteTemplate = "/Hospital/Morgue/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
                 PermissionScope = ScopeHospital,
                 ListedInRecordPicker = false,
             },
@@ -1158,6 +1272,49 @@ namespace CrossBuy.BL.Platform
                     label = await _db.HospitalRadOrders.AsNoTracking()
                         .Where(o => o.ID == entityId && o.CompanyId == companyId)
                         .Select(o => o.AccessionNo + " — " + o.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                // Hospital record conversations (owner 2026-11-24): the record's own number with the patient's file number
+                case HospitalEncounter:
+                    label = await (from e in _db.Set<CrossBuy.Models.Context.Hospital.HospitalEncounter>().AsNoTracking()
+                                   join p in _db.HospitalPatients.AsNoTracking() on e.PatientId equals p.ID
+                                   where e.ID == entityId && e.CompanyId == companyId
+                                   select "#" + e.ID.ToString() + " — " + p.Mrn).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalLabOrder:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalLabOrder>().AsNoTracking()
+                        .Where(o => o.ID == entityId && o.CompanyId == companyId)
+                        .Select(o => o.AccessionNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalBill:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalBill>().AsNoTracking()
+                        .Where(b => b.ID == entityId && b.CompanyId == companyId)
+                        .Select(b => b.BillNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalEstimate:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalEstimate>().AsNoTracking()
+                        .Where(x => x.ID == entityId && x.CompanyId == companyId)
+                        .Select(x => x.EstimateNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalLabour:
+                    label = await (from l in _db.Set<CrossBuy.Models.Context.Hospital.HospitalLabour>().AsNoTracking()
+                                   join p in _db.HospitalPatients.AsNoTracking() on l.PatientId equals p.ID
+                                   where l.ID == entityId && l.CompanyId == companyId
+                                   select "#" + l.ID.ToString() + " — " + p.Mrn).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalPregnancy:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalPregnancy>().AsNoTracking()
+                        .Where(x => x.ID == entityId && x.CompanyId == companyId)
+                        .Select(x => x.PregnancyNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalRehabEpisode:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalRehabEpisode>().AsNoTracking()
+                        .Where(x => x.ID == entityId && x.CompanyId == companyId)
+                        .Select(x => x.EpisodeNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalMorgueCase:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalMorgueCase>().AsNoTracking()
+                        .Where(x => x.ID == entityId && x.CompanyId == companyId)
+                        .Select(x => x.CaseNo).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case HospitalConsent:
                     label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalConsent>().AsNoTracking()

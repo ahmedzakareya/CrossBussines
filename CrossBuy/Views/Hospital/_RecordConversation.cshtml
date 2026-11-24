@@ -1,0 +1,33 @@
+@model CrossBuy.Controllers.HospitalConversationRef
+@*
+    A HOSPITAL RECORD'S CONVERSATION (owner 2026-11-24) - the shared entity panel (Views/Shared/_EntityConversation), wired
+    to the hospital's record endpoints (HospitalController.Conversations) and to Tasks, exactly as Inventory's documents
+    are. A page names its record in one line:
+        <partial name="_RecordConversation" model="@(new HospitalConversationRef(EntityRegistry.HospitalBill, Model.Bill.ID))" />
+    Card: true draws a full-width row under the page; false when the page already gives the panel its own column.
+*@
+@{
+    ViewBag.ConversationEntityCode = Model.Code;
+    ViewBag.ConversationEntityId = Model.Id;
+    ViewBag.ConversationListUrl = Url.Action("RecordConversation", "Hospital");
+    ViewBag.ConversationAddUrl = Url.Action("RecordConversationAdd", "Hospital");
+    ViewBag.ConversationReactUrl = Url.Action("RecordConversationReact", "Hospital");
+    ViewBag.ConversationMentionUrl = Url.Action("RecordConversationMentions", "Hospital");
+    // Tasks: the conversation is the record's, the work is Tasks' (its own gate). None of these codes is an anchor for a
+    // new task, so a task made from a message is saved unanchored and the panel says so - as on Inventory's documents.
+    ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+    ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+    ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+    ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+    ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
+}
+@if (Model.Card)
+{
+    <div class="row g-5 g-xl-10 mt-0"><div class="col-12">
+        @await Html.PartialAsync("_EntityConversation")
+    </div></div>
+}
+else
+{
+    @await Html.PartialAsync("_EntityConversation")
+}

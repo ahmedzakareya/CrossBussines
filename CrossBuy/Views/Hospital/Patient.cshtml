@@ -10,12 +10,6 @@
     bool mohConnected = await HospitalMohGatewayService.ConnectedAsync(MohDb, Model.CompanyId);   // H229
     ViewData["Title"] = name;
 
-    // The patient is a Communication Platform subject: the shared entity panel, answered by this module.
-    ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.HospitalPatient;
-    ViewBag.ConversationEntityId = Model.ID;
-    ViewBag.ConversationListUrl = Url.Action("PatientConversation", new { id = Model.ID });
-    ViewBag.ConversationAddUrl = Url.Action("PatientConversationAdd", new { id = Model.ID });
-    ViewBag.ConversationReactUrl = Url.Action("PatientConversationReact", new { id = Model.ID });
     bool canRegister = ViewBag.CanRegister == true;
     var age = HospitalPatientService.AgeOn(Model.BirthDate, DateTime.UtcNow);
     var log = (ViewBag.AccessLog as IReadOnlyList<HospitalPatientAccessView>) ?? Array.Empty<HospitalPatientAccessView>();
@@ -489,7 +483,7 @@
                 <div class="text-muted fs-8 mt-4"><i class="ki-outline ki-eye fs-7 me-1"></i>@T["Opening this file is recorded in the access log with your name and time."]</div>
             </div>
             <div class="col-xl-4">
-                @await Html.PartialAsync("_EntityConversation")
+                <partial name="_RecordConversation" model="@(new CrossBuy.Controllers.HospitalConversationRef(CrossBuy.BL.Platform.EntityRegistry.HospitalPatient, Model.ID, Card: false))" />
             </div>
         </div>
     </div></div>

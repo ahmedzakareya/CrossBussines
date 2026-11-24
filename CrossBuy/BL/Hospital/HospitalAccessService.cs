@@ -67,6 +67,16 @@ namespace CrossBuy.BL
 		/// recording of other people's conversation must not be. Only an explicitly assigned administrator holds it.
 		public const string CallRecordings = "call-recordings";
 
+		/// THE RECORDS WHOSE CONVERSATION IS CLINICAL CONTENT (owner 2026-11-24, a conversation on every hospital record). A
+		/// record-level `read` on one of these needs the clinical tier too: what the care team writes about a visit or a
+		/// result is the result's content, and the reception desk and the cashier never read that (H155). The patient's file,
+		/// the room, the bill and the estimate stay administrative - the desk works on them.
+		public static readonly IReadOnlySet<string> ClinicalRecords = new HashSet<string>(StringComparer.Ordinal)
+		{
+			EntityRegistry.HospitalEncounter, EntityRegistry.HospitalLabOrder, EntityRegistry.HospitalRadOrder, EntityRegistry.HospitalLabour,
+			EntityRegistry.HospitalPregnancy, EntityRegistry.HospitalRehabEpisode, EntityRegistry.HospitalMorgueCase,
+		};
+
 		public static readonly IReadOnlyCollection<string> All = new[] { Read, ClinicalRead, ConfidentialView, Manage, Register, Admit, Book, Consult, Bill, Lab, LabVerify, Rad, RadReport, Pharmacy, CallRecordings };
 	}
 
@@ -132,7 +142,7 @@ namespace CrossBuy.BL
 			// company of a named record is enforced by the base gate and by the service's own WHERE.
 			return Task.FromResult(action switch
 			{
-				HospitalActions.Read => clinical || reception || cashier,
+				HospitalActions.Read => clinical || ((reception || cashier) && !(target?.EntityType is string code && HospitalActions.ClinicalRecords.Contains(code))),
 				HospitalActions.ClinicalRead => clinical,   // H155: a reception-only person reads the administrative file
 				HospitalActions.ConfidentialView => admin,
 				HospitalActions.Manage => admin,

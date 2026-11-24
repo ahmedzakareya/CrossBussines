@@ -111,6 +111,8 @@
                 </div>
             </div></div>
         </div>
+        @* the record's conversation (owner 2026-11-24): comments, replies, @-mentions, files and tasks, as on Inventory's documents *@
+        <partial name="_RecordConversation" model="@(new CrossBuy.Controllers.HospitalConversationRef(CrossBuy.BL.Platform.EntityRegistry.HospitalEstimate, Model.Row.Estimate.ID))" />
     </div></div>
 </div>
 

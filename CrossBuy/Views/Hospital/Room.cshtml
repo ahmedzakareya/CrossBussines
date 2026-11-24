@@ -12,13 +12,6 @@
     var type = Model.Type;
     ViewData["Title"] = T["Room"].Value + " " + Model.Number;
 
-    // The room is a Communication Platform subject: the shared entity panel, answered by this module.
-    ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.HospitalRoom;
-    ViewBag.ConversationEntityId = Model.Id;
-    ViewBag.ConversationListUrl = Url.Action("RoomConversation", new { id = Model.Id });
-    ViewBag.ConversationAddUrl = Url.Action("RoomConversationAdd", new { id = Model.Id });
-    ViewBag.ConversationReactUrl = Url.Action("RoomConversationReact", new { id = Model.Id });
-
     bool canAdmit = ViewBag.CanAdmit == true;
     var occupants = (ViewBag.Occupants as Dictionary<int, HospitalOccupantView>) ?? new();
     var currency = ViewBag.Currency as HospitalCurrency;
@@ -148,7 +141,7 @@
                 </div>
             </div>
             <div class="col-xl-5">
-                @await Html.PartialAsync("_EntityConversation")
+                <partial name="_RecordConversation" model="@(new CrossBuy.Controllers.HospitalConversationRef(CrossBuy.BL.Platform.EntityRegistry.HospitalRoom, Model.Id, Card: false))" />
             </div>
         </div>
     </div></div>

@@ -73,7 +73,8 @@ namespace CrossBuy.Tests
 		{
 			var d = new EntityRegistry(null!).GetDefinition(EntityRegistry.HospitalRadOrder);
 			Assert.True(d.SupportsFiles);
-			Assert.False(d.SupportsComments || d.SupportsSearch || d.ListedInRecordPicker);
+			Assert.False(d.SupportsSearch || d.ListedInRecordPicker);
+			Assert.True(d.SupportsComments);   // 2026-11-24: a conversation on every hospital record, clinical-read (HospitalActions.ClinicalRecords)
 			Assert.Equal(EntityRegistry.ScopeHospital, d.PermissionScope);
 			Assert.DoesNotContain(new HospitalRadOrderDocumentOwnerResolver(null!).ModuleActionFor(DocumentAction.Submit), HospitalActions.All);
 			Assert.True(System.Text.Json.JsonDocument.Parse(HospitalRadImageService.Metadata).RootElement.ValueKind == System.Text.Json.JsonValueKind.Object);
