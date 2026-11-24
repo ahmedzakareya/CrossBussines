@@ -53,12 +53,17 @@ namespace CrossBuy.BL.Platform.Ai
 		public string Action => "read";
 		public IReadOnlyCollection<string> Parameters { get; } = Array.Empty<string>();
 
+		// TWO ARGUMENTS, NOT THREE. AskText.Of(ar, en, fr) and AskText.Fr exist only in a colleague's
+		// uncommitted edit to AskContracts.cs; in HEAD the type is bilingual. Passing a third argument
+		// compiled here and broke the build the moment the committed tree was built on its own.
+		// French, for the day that overload lands:
+		//   Description : "Le nombre d'articles enregistrés dans l'entreprise, et combien sont actifs"
+		//   Example     : "Combien d'articles avons-nous ?"
 		public AskText Description => AskText.Of(
 			"عدد الأصناف المسجَّلة في الشركة، والنشط منها وغير النشط",
-			"How many items are registered in the company, and how many are active",
-			"Le nombre d'articles enregistrés dans l'entreprise, et combien sont actifs");
+			"How many items are registered in the company, and how many are active");
 
-		public AskText Example => AskText.Of("كم عدد الأصناف عندنا؟", "How many items do we have?", "Combien d'articles avons-nous ?");
+		public AskText Example => AskText.Of("كم عدد الأصناف عندنا؟", "How many items do we have?");
 
 		// THE COUNTING WORDS, NOT THE GROUPING WORDS. Every phrase here is about HOW MANY of a thing
 		// there are. "فئات الأصناف" and "تصنيفات" are deliberately absent - they belong to the
