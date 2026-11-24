@@ -515,7 +515,15 @@
                 }
                 // The secondary fact sits under the label rather than beside it, so the value
                 // column stays a clean single line of figures.
-                if (r.name && r.code) k.appendChild(el('span', 'cb-ai-note', r.code));
+                //
+                // NOT WHEN IT WOULD REPEAT THE LABEL. Items with no real name carry their code as
+                // the name, so this line printed "BIS4-SUGAR" directly under "BIS4-SUGAR" - a
+                // subtitle that adds nothing and reads as a bug. Compared case-insensitively and
+                // trimmed, because "MOZ" and "moz " are the same fact written twice.
+                var sub = (r.code || '').trim();
+                var lab = (label || '').trim();
+                if (r.name && sub && sub.toLowerCase() !== lab.toLowerCase())
+                    k.appendChild(el('span', 'cb-ai-note', r.code));
                 // ONE RECORD, LAID OUT. A list wants the compact "a · b · c" line under each name;
                 // a single record wants its fields with their labels, because the same five facts
                 // without them are five words the reader has to decode. The server decides which

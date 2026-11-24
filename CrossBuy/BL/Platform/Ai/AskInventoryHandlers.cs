@@ -212,28 +212,43 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{
+			// IT HAD NO COUNTING WORDS AT ALL. This handler knew only "المخازن" - plural and
+			// definite - so «كم مخزن عندنا؟» (singular, indefinite) was never really its question,
+			// and a neighbouring intent took it without a fight. Now it owns the way people
+			// actually ask how many there are.
 			"المخازن", "مخازني", "صلاحيتي", "صلاحياتي", "اقدر اشوف", "أقدر أشوف",
+			"كم مخزن", "كام مخزن", "عدد المخازن", "كم عدد المخازن", "اجمالي المخازن", "المخازن كام",
 			"my warehouses", "warehouses", "which warehouses", "my permissions", "my access",
+			"how many warehouses", "number of warehouses", "warehouse count", "total warehouses",
 		};
 
 		public async Task<AskAnswer> AnswerAsync(AskRequest request, AskScope scope, CancellationToken ct = default)
 		{
+			var arabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
 			var all = await _db.Warehouses.AsNoTracking()
 				.Where(w => w.CompanyID == scope.CompanyId)
 				.OrderBy(w => w.ID)
-				.Select(w => new { w.ID, w.Name })
+				.Select(w => new { w.ID, w.Name, w.NameEn, w.Code, w.IsActive })
 				.ToListAsync(ct);
 
 			var rows = new List<IReadOnlyDictionary<string, object?>>();
 			var withheld = 0;
+			var inactive = 0;
 			foreach (var w in all)
 			{
 				if (!await _inventory.CanUseWarehouseAsync(w.ID)) { withheld++; continue; }
+				if (!w.IsActive) inactive++;
 				rows.Add(new Dictionary<string, object?>
 				{
-					["name"] = w.Name,
-					["code"] = "",
-					["onHand"] = w.ID,
+					// THE WAREHOUSE'S OWN CODE, NOT ITS PRIMARY KEY. This row used to carry w.ID in
+					// the quantity column, so the panel printed "المخزن الرئيسي 1 ... 3017 3018" -
+					// database identifiers, shown to a person who asked how many warehouses exist.
+					// An id is not a fact about a warehouse; the code is the one it is known by.
+					["name"] = AskItems.Readable(arabic ? w.Name : w.NameEn, arabic ? w.NameEn : w.Name)
+							   ?? ("#" + w.ID.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+					["code"] = w.Code,
+					["onHand"] = null,
 				});
 			}
 
@@ -242,10 +257,19 @@ namespace CrossBuy.BL.Platform.Ai
 					"لا تملك صلاحية على أي مخزن في هذه الشركة.",
 					"You have no permission for any warehouse in this company."));
 
+			// SAY THE NUMBER. This handler answered with rows and no sentence at all - Spoken was
+			// never set - so «كم مخزن عندنا؟» came back as a bare list and the asker had to count it
+			// themselves. The count is the answer; the list is the evidence under it.
+			var spokenAr = $"عندك {rows.Count} مخزن ضمن صلاحيتك."
+				+ (inactive > 0 ? $" منها {inactive} غير نشط." : "");
+			var spokenEn = $"You have {rows.Count} warehouse(s) within your permission."
+				+ (inactive > 0 ? $" {inactive} of them {(inactive == 1 ? "is" : "are")} inactive." : "");
+
 			return new AskAnswer
 			{
 				Answered = true,
 				Rows = rows,
+				Spoken = AskText.Of(spokenAr, spokenEn),
 				Provenance = new AskProvenance
 				{
 					CompanyId = scope.CompanyId,

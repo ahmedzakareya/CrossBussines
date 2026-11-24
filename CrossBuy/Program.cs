@@ -736,6 +736,9 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Plat
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskMyWarehousesHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskAnomaliesHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemValueHandler>();
+// HOW MANY ITEMS. Registered beside the other inventory readers; without it the nearest
+// neighbour in the n-gram vocabulary (item CATEGORIES) answered the question instead.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemCountHandler>();
 // "What sells?" - asked by the owner and refused, because no handler existed rather than
 // because the question was unclear. A catalogue of seven meets a person who has dozens.
 // Four more, each chosen because this database was measured and found able to support it.
