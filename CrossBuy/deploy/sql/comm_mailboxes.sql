@@ -65,11 +65,11 @@ WHERE NOT EXISTS (SELECT 1 FROM dbo.CommMailboxItems i WHERE i.MessageId = h.Mes
 ;WITH t AS (
     SELECT Id, Id AS Root FROM dbo.CommMessages WHERE ParentId IS NULL
     UNION ALL
-    SELECT c.Id, t.Root FROM dbo.CommMessages c JOIN t ON c.ParentId = t.Id
+    SELECT c.Id, t.Root FROM dbo.CommMessages c JOIN t ON c.ParentId = t.Id AND c.Id > t.Id   -- a reply is newer than its parent: no cycle can recurse
 )
 UPDATE m SET ThreadId = t.Root
 FROM dbo.CommMessages m JOIN t ON t.Id = m.Id
 WHERE m.ThreadId IS NULL
-OPTION (MAXRECURSION 200);
+OPTION (MAXRECURSION 0);   -- any depth (TARGET review 2026-11-24: 200 would abort a long chain with msg 530)
 UPDATE dbo.CommMessages SET ThreadId = Id WHERE ThreadId IS NULL;
 GO
