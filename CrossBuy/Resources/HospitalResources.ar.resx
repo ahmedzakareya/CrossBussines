@@ -10782,4 +10782,13 @@
   <data name="spc:surg:2" xml:space="preserve"><value>الألم والحرارة وناتج المصرف</value></data>
   <data name="spc:surg:3" xml:space="preserve"><value>تصنيف كلافيان-ديندو للمضاعفات</value></data>
   <data name="spc:surg:alert" xml:space="preserve"><value>حرارة 38 أو أكثر بعد العملية</value></data>
+  <data name="This group call passes through the company's media server, but each device encrypts its sound and picture with a key only the participants hold: the server relays them without being able to see or hear them." xml:space="preserve">
+    <value>تمر هذه المكالمة الجماعية عبر خادم الوسائط في الشركة، لكن كل جهاز يشفّر صوته وصورته بمفتاح لا يملكه إلا المشاركون: ينقلها الخادم دون أن يستطيع رؤيتها أو سماعها.</value>
+  </data>
+  <data name="Could not get this call's encryption key. Try joining again." xml:space="preserve">
+    <value>تعذّر الحصول على مفتاح تشفير هذه المكالمة. حاول الانضمام مرة أخرى.</value>
+  </data>
+  <data name="This browser cannot encrypt a group call end to end. Use a current Chrome, Edge or Safari." xml:space="preserve">
+    <value>لا يستطيع هذا المتصفح تشفير المكالمة الجماعية بين الأجهزة. استخدم إصداراً حديثاً من Chrome أو Edge أو Safari.</value>
+  </data>
 </root>

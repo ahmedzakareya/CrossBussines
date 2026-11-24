@@ -117,7 +117,7 @@
 				'<div class="cbc-top"><span class="cbc-step" style="width:40px;height:40px;background:rgba(255,255,255,.15);color:#fff">' + ico('users-round', 20) + '</span>' +
 					'<div class="min-w-0"><div class="fw-bold fs-5 text-white">' + esc(t('grpCall')) + ' · <bdi class="cbc-num" dir="ltr" data-count>1</bdi></div><div class="fs-8 text-white opacity-75 text-truncate">' +
 						(g.patient ? esc(g.patient.name) + ' · ' + num(esc(g.patient.mrn)) : esc(t('grpHostIs', r.host.name))) + '</div></div>' +
-					'<span class="cbc-chip ms-3 d-none d-md-inline-flex" title="' + esc(r.sfu ? t('cmSfuHelp') : t('cmE2eHelp')) + '"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(r.sfu ? t('cmSfuSecure') : t('cmE2e')) + '</span>' +
+					'<span class="cbc-chip ms-3 d-none d-md-inline-flex" title="' + esc(r.sfu ? t('cmSfuE2eHelp') : t('cmE2eHelp')) + '"><i class="ki-outline ki-shield-tick fs-6 text-white"></i>' + esc(t('cmE2e')) + '</span>' +
 					'<span class="cbc-chip d-none" data-recchip></span>' +
 					'<span class="ms-auto fs-4 fw-bold cbc-num text-white" dir="ltr" data-clock>00:00</span>' +
 				'</div>' +
@@ -164,10 +164,70 @@
 		if (window.LivekitClient) return Promise.resolve();
 		return new Promise(function (ok, no) { var sc = document.createElement('script'); sc.src = U.livekit; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
 	}
+	/* ---------------- END-TO-END ON THE MEDIA SERVER (owner 2026-11-22 «E2EE for calls», server installed 2026-11-24) ----
+	   The media server passes every stream on, so on its own it could see and hear them. Each device therefore encrypts
+	   its sound and picture before they leave (LiveKit's insertable-streams worker) with ONE key for the call, which
+	   only the participants hold:
+	     - whoever opens the call first makes the key (32 random bytes, in the browser);
+	     - a device joining sends its ECDH public key to the others ('e2e-hello'); any device holding the call key answers
+	       with the key sealed for that device alone (ECDH P-256 -> AES-GCM; 'e2e-key').
+	   Our hub only relays these messages and cannot open them; the media server never sees the key. A device that cannot
+	   get the key (or cannot encrypt at all) does not join unencrypted - it says so and leaves. */
+	function b64(buf) { var s = '', a = new Uint8Array(buf); for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s); }
+	function unb64(s) { var b = atob(s), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a.buffer; }
+	function e2ePair() {
+		if (g.e2ePair) return Promise.resolve(g.e2ePair);
+		return crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey']).then(function (kp) {
+			return crypto.subtle.exportKey('jwk', kp.publicKey).then(function (jwk) { g.e2ePair = { kp: kp, pub: jwk }; return g.e2ePair; });
+		});
+	}
+	function sealKey(theirPub) {
+		var C = crypto.subtle;
+		return e2ePair().then(function (p) {
+			return C.importKey('jwk', theirPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []).then(function (them) {
+				return C.deriveKey({ name: 'ECDH', public: them }, p.kp.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+			});
+		});
+	}
+	function onE2e(fromId, d) {
+		if (!g) return;
+		if (d.t === 'e2e-hello' && g.e2eKey && d.pub) {
+			var iv = crypto.getRandomValues(new Uint8Array(12));
+			sealKey(d.pub).then(function (k) { return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, k, g.e2eKey); })
+				.then(function (ct) { return e2ePair().then(function (p) { send(fromId, { t: 'e2e-key', pub: p.pub, iv: b64(iv), ct: b64(ct) }); }); })
+				.catch(function () { });
+		}
+		if (d.t === 'e2e-key' && !g.e2eKey && g.e2eWait && d.pub && d.iv && d.ct) {
+			sealKey(d.pub).then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(unb64(d.iv)) }, k, unb64(d.ct)); })
+				.then(function (raw) { if (g && !g.e2eKey && raw.byteLength === 32) { g.e2eKey = raw; g.e2eWait(raw); } })
+				.catch(function () { });
+		}
+	}
+	// WHO MAKES THE KEY is decided by the media server's own room, not by the hub's list: a device that dropped without
+	// leaving can still be "joined" there for a while, and waiting on it for a key would hang the call.
+	function e2eKey(present) {
+		if (g.e2eKey) return Promise.resolve(g.e2eKey);
+		if (!present.length) { g.e2eKey = crypto.getRandomValues(new Uint8Array(32)).buffer; return Promise.resolve(g.e2eKey); }
+		var mine = g;
+		return e2ePair().then(function (p) {
+			return new Promise(function (ok, no) {
+				g.e2eWait = ok;
+				var tries = 0;
+				(function hello() {
+					if (g !== mine || g.e2eKey) return;
+					if (++tries > 10) { no(new Error('no key')); return; }
+					present.forEach(function (id) { send(id, { t: 'e2e-hello', pub: p.pub }); });
+					setTimeout(hello, 3000);
+				})();
+			});
+		});
+	}
 	function sfuJoin(sfu) {
 		return loadLk().then(function () {
 			var LK = window.LivekitClient, E = LK.RoomEvent;
-			var room = g.room = new LK.Room({ adaptiveStream: true, dynacast: true });
+			if (!window.crypto || !crypto.subtle || !LK.isE2EESupported || !LK.isE2EESupported()) { toast(t('cmE2eUnsupported'), 'error'); leave(); return Promise.reject(new Error('e2ee')); }
+			var keys = new LK.ExternalE2EEKeyProvider();
+			var room = g.room = new LK.Room({ adaptiveStream: true, dynacast: true, e2ee: { keyProvider: keys, worker: new Worker(U.livekitE2ee) } });
 			room.on(E.TrackSubscribed, function (track, pub, part) {
 				if (!g) return;
 				// their picture may arrive before the hub says they joined: they are added now, and named properly after
@@ -192,7 +252,14 @@
 			});
 			room.on(E.Reconnecting, function () { Object.keys(g.members).forEach(function (id) { g.members[id].net = 'connecting'; }); paint(); });
 			room.on(E.Reconnected, function () { Object.keys(g.members).forEach(function (id) { g.members[id].net = 'connected'; }); paint(); });
-			return room.connect(sfu.url, sfu.token).then(function () {
+			// connect first (nothing is sent yet), then the key - made here when the room is empty, asked of those in it
+			// otherwise - and only then does this device encrypt and publish
+			return room.connect(sfu.url, sfu.token)
+				.then(function () { return e2eKey(Array.from(room.remoteParticipants.values()).map(function (p) { return +p.identity; })); })
+				.then(function (raw) { return keys.setKey(raw); })
+				.then(function () { return room.setE2EEEnabled(true); })
+				.catch(function (e) { if (e && e.message === 'no key') { toast(t('cmE2eNoKey'), 'error'); leave(); } throw e; })
+				.then(function () {
 				var a = g.local.getAudioTracks()[0], v = g.local.getVideoTracks()[0], S = LK.Track.Source;
 				var jobs = [];
 				if (a) jobs.push(room.localParticipant.publishTrack(a, { source: S.Microphone }).then(function (p) { g.pubA = p; }));
@@ -251,6 +318,7 @@
 		// a guest from outside the company (a negative id) who was in the call before me offers with their card
 		if (!x && m.fromId < 0 && d.t === 'offer' && d.card) { x = member({ id: m.fromId, name: String(d.card.name || ''), nameEn: String(d.card.name || ''), initials: String(d.card.initials || '?'), photo: null, title: '', guest: true }, 'joined'); paint(); }
 		if (!x) return;
+		if (d.t === 'e2e-hello' || d.t === 'e2e-key') { onE2e(m.fromId, d); return; }
 		if (d.t === 'captions') { captions(!!d.on, true); return; }
 		// an app in the call cannot record its own voice: it asks the browsers to caption what they hear from it (the
 		// server lets one of them through)
