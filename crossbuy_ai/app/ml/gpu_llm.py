@@ -103,6 +103,39 @@ def server(model_path: str) -> "ServerLlm | None":
         return None
 
 
+def ready() -> bool:
+    """The card's server is up and answering — asked WITHOUT starting it (a request path must never wait on a load)."""
+    return _proc is not None and _proc.poll() is None and _get("/health", timeout=1) == 200
+
+
+def start_async(model_path: str) -> None:
+    """Start the card's server in the background (the Ask layer's warm-up): the caller never waits for the weights."""
+    if _exe() and not ready():
+        threading.Thread(target=server, args=(model_path,), name="gpu-llm-start", daemon=True).start()
+
+
+def complete_raw(prompt: str, grammar: str | None, n_predict: int, timeout: float, stop: list[str] | None = None) -> str | None:
+    """THE ASK LAYER ON THE CARD (owner 2026-11-24, «معاك كل الصلاحيات»): one grammar-constrained completion through
+    llama-server's own /completion, with its prompt cache. The grammar here admits only a few ASCII ids, so the
+    schema-grammar slowdown measured for Arabic (see ServerLlm) does not apply. None on any failure or when the card
+    is busy past `timeout` (one completion at a time: a summary may hold it) — the caller then uses the CPU."""
+    if not ready():
+        return None
+    body = {"prompt": prompt, "n_predict": n_predict, "temperature": 0.0, "cache_prompt": True}
+    if grammar:
+        body["grammar"] = grammar
+    if stop:
+        body["stop"] = stop
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/completion", data=json.dumps(body).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return (json.loads(r.read().decode("utf-8")).get("content") or "").strip()
+    except Exception as e:
+        log.info("gpu_llm: the Ask completion went to the CPU (%s)", type(e).__name__)
+        return None
+
+
 def mark_failed() -> None:
     global _failed_at
     with _lock:

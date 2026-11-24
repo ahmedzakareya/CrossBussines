@@ -196,6 +196,12 @@ class LlmIntentEngine:
         190-second request this exists to prevent.
         """
         try:
+            # the graphics card's server, started in the background (owner 2026-11-24): the Ask layer prefers it
+            from app.ml import gpu_llm
+            gpu_llm.start_async(self.model_path)
+        except Exception:
+            pass
+        try:
             llm = self._ensure()
             from llama_cpp import LlamaGrammar
             grammar = LlamaGrammar.from_string('root ::= "ok"\n', verbose=False)
@@ -214,6 +220,16 @@ class LlmIntentEngine:
         private loader and drive the context themselves, which is exactly how two of them ended up
         inside it at once.
         """
+        # ON THE GRAPHICS CARD FIRST (owner 2026-11-24): the same model on the card's server answers in a fraction of
+        # the CPU's time. Busy (a summary holds it) or away, and this falls through to the CPU path below unchanged.
+        try:
+            from app.ml import gpu_llm
+            out = gpu_llm.complete_raw(prompt, grammar_text, max_tokens, timeout=WAIT_SECONDS + 2)
+            if out is not None:
+                return out
+        except Exception:
+            pass
+
         # STILL LOADING IS A "NO", NOT A WAIT. The weights take the better part of a minute on CPU,
         # and a caller that blocks on them turns an optional improvement into a 190-second request.
         # The warmup thread sets `_ready` when the model can actually answer.
@@ -250,6 +266,9 @@ class LlmIntentEngine:
             return LlmChoice(None, self.name, ran=False)
 
         rendered = "\n".join(f"- {i}: {d}" for i, d in catalogue)
+        # THE GRAMMAR STAYS, on the card too (measured 2026-11-24 on tools/eval_intent_llm.py, 79 questions): without it
+        # the card answered in a median 0.61 s but answered 5 of 13 questions nobody handles; with it, 3 of 13 at a
+        # median 1.46 s. Fewer confident wrong answers wins - and neither is leak-free, so INTENT_LLM_ENABLED stays off.
         raw = self.complete(
             _PROMPT.format(catalogue=rendered, question=question.strip()),
             _grammar_for(ids))
