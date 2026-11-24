@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../providers/notification_provider.dart';
 import '../../services/mail_api.dart';
 import '../../theme/brand.dart';
 import '../../widgets/ui.dart';
@@ -80,14 +82,27 @@ class _MailScreenState extends State<MailScreen> with WidgetsBindingObserver {
   int _unread = 0;
   String? _address;
   Timer? _poll, _debounce;
+  NotificationProvider? _notes;
+  int _lastNote = 0;
+
+  /// New mail is pushed by the notifications hub the app already holds (SignalR): the list reloads at once.
+  void _onNote() {
+    final items = _notes?.items ?? const [];
+    if (items.isEmpty || items.first.id == _lastNote) return;
+    _lastNote = items.first.id;
+    if (items.first.type == 'mail_received') _load(quiet: true);
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _notes = context.read<NotificationProvider>();
+    _lastNote = _notes!.items.isEmpty ? 0 : _notes!.items.first.id;
+    _notes!.addListener(_onNote);
     _load();
     // live enough: new mail shows within half a minute while the list is open, and at once on returning to it
-    _poll = Timer.periodic(const Duration(seconds: 30), (_) => _load(quiet: true));
+    _poll = Timer.periodic(const Duration(seconds: 60), (_) => _load(quiet: true));
   }
 
   @override
@@ -96,6 +111,7 @@ class _MailScreenState extends State<MailScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _notes?.removeListener(_onNote);
     _poll?.cancel(); _debounce?.cancel();
     super.dispose();
   }
@@ -287,6 +303,42 @@ class _MailReadScreenState extends State<MailReadScreen> {
     );
   }
 
+  Widget _iconBtn(IconData icon, {bool on = false, required VoidCallback onTap, required String tip}) => Tooltip(
+        message: tip,
+        child: Material(
+          color: on ? Brand.soft : Brand.paper,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Brand.lineC)),
+          child: InkWell(borderRadius: BorderRadius.circular(10), onTap: onTap,
+              child: SizedBox(width: 34, height: 34, child: Icon(icon, size: 16, color: Brand.blue))),
+        ),
+      );
+
+  Future<void> _star() async {
+    if (await MailApi.instance.star(widget.id) && mounted) setState(() => _m!['starred'] = !(_m!['starred'] == true));
+  }
+
+  Future<void> _restore() async {
+    if (await MailApi.instance.restore(widget.id) && mounted) Navigator.of(context).pop(true);
+  }
+
+  /// From any folder it goes to the trash (undoable there); from the trash it is final — so only that one asks.
+  Future<void> _delete() async {
+    final forever = _m?['deleted'] == true;
+    if (forever) {
+      final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+            content: Text(L(c, 'حذف نهائي؟ لا يمكن التراجع عنه.', 'Delete forever? This cannot be undone.')),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(c).pop(false), child: Text(L(c, 'إلغاء', 'Cancel'))),
+              TextButton(onPressed: () => Navigator.of(c).pop(true), child: Text(L(c, 'حذف', 'Delete'), style: const TextStyle(color: Brand.badC))),
+            ]));
+      if (ok != true) return;
+    }
+    if (await MailApi.instance.delete([widget.id], permanent: forever) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(forever ? L(context, 'حُذفت نهائياً', 'Deleted forever') : L(context, 'نُقلت إلى المهملات', 'Moved to the trash'))));
+      Navigator.of(context).pop(true);
+    }
+  }
+
   Future<void> _reply(String kind) async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MailComposeScreen(parentId: widget.id, kind: kind)));
   }
@@ -303,7 +355,22 @@ class _MailReadScreenState extends State<MailReadScreen> {
         else if (m == null)
           const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator()))
         else ...[
-          Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(m['subject'] as String? ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Brand.inkC, height: 1.5))),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Text(m['subject'] as String? ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Brand.inkC, height: 1.5))),
+              if (m['box'] != null) ...[
+                const SizedBox(width: 6),
+                _iconBtn(Lu.star, on: m['starred'] == true, onTap: _star, tip: L(context, 'تمييز', 'Star')),
+                const SizedBox(width: 6),
+                if (m['deleted'] == true) ...[
+                  _iconBtn(Lu.undo2, onTap: _restore, tip: L(context, 'استعادة', 'Restore')),
+                  const SizedBox(width: 6),
+                ],
+                _iconBtn(Lu.trash2, onTap: _delete, tip: m['deleted'] == true ? L(context, 'حذف نهائي', 'Delete forever') : L(context, 'حذف', 'Delete')),
+              ],
+            ]),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(children: [
