@@ -110,7 +110,15 @@
                                         <td class="text-end pe-4 text-nowrap">
                                             @if (r.EncounterId is int eid)
                                             {
-                                                if (r.EncounterStatus == HospitalEncounterStatus.Draft) { <a href="@Url.Action("Consult", new { id = eid })" class="btn btn-sm btn-primary"><i class="ki-outline ki-notepad-edit fs-5"></i>@T["Resume"]</a> }
+                                                if (r.EncounterStatus == HospitalEncounterStatus.Draft)
+                                                {
+                                                    <a href="@Url.Action("Consult", new { id = eid })" class="btn btn-sm btn-primary"><i class="ki-outline ki-notepad-edit fs-5"></i>@T["Resume"]</a>
+                                                    @* the video visit stays one click away while the visit is open (owner: it sat beside "Resume") *@
+                                                    if (canConsult && a.Status is HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-icon btn-light-primary" title="@T["Video visit"]" data-bs-toggle="tooltip" data-video="@a.Id"><i class="ki-outline ki-screen fs-3"></i></button>
+                                                    }
+                                                }
                                                 else { <a href="@Url.Action("Consult", new { id = eid })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["View visit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a> }
                                             }
                                             else if (canConsult && a.Status is HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom)
