@@ -36,7 +36,7 @@
                         <label class="fw-semibold fs-7 text-gray-700 mb-2" for="whFilter">@SR["Warehouse"]</label>
                         <select id="whFilter" class="form-select form-select-solid" data-control="select2">
                             <option value="">@Localizer["All WH"]</option>
-                            @foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code</option> }
+                            @foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @DisplayName.Of(w.Name, w.NameEn)</option> }
                         </select>
                     </div>
                     <div class="col-md-5">

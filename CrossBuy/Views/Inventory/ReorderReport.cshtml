@@ -24,7 +24,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="fw-semibold fs-7 text-muted mb-2">@SR["Warehouse"]</label>
-                    <select id="whFilter" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code</option> }</select>
+                    <select id="whFilter" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @DisplayName.Of(w.Name, w.NameEn)</option> }</select>
                 </div>
             </div>
         </div></div>
