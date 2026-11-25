@@ -90,10 +90,10 @@
                                 <th class="ps-4 w-50px rounded-start">#</th><th class="w-80px">@T["Time"]</th><th class="min-w-200px">@T["Patient"]</th><th>@T["Visit type"]</th><th class="text-center w-90px">@T["Vitals"]</th><th class="w-90px">@T["Wait"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
                             </tr></thead>
                             <tbody class="fw-semibold text-gray-700">
-                                @{ int i = 0; }
+                                @{ int i = Model.Count + 1; }   @* listed newest first: count down so 01 stays the day's first appointment *@
                                 @foreach (var r in Model)
                                 {
-                                    var a = r.Appointment; i++;
+                                    var a = r.Appointment; i--;
                                     int? wait = a.Status == HospitalAppointmentStatus.Arrived && a.ArrivedAt is DateTime arr ? (int)Math.Max(0, (nowUtc - arr).TotalMinutes) : null;
                                     <tr>
                                         <td class="ps-4"><span class="fs-3 fw-bold text-gray-400 hp-num" dir="ltr">@i.ToString("00")</span></td>

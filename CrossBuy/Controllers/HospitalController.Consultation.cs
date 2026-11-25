@@ -34,7 +34,9 @@ namespace CrossBuy.Controllers
 			ViewBag.Doctor = chosen;
 			ViewBag.Today = today;
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
-			var rows = chosen == null ? new List<HospitalWorklistRow>() : (await _consult.WorklistAsync(ctx, _outpatient, chosen.Row.ID, today, ct)).ToList();
+			// newest appointment first (owner: «اعرض فيها القائمة تنازلي»); the view keeps each row's queue number
+			var rows = chosen == null ? new List<HospitalWorklistRow>() : (await _consult.WorklistAsync(ctx, _outpatient, chosen.Row.ID, today, ct))
+				.OrderByDescending(r => r.Appointment.StartMinute).ThenByDescending(r => r.Appointment.Id).ToList();
 			return View(rows);
 		}
 
