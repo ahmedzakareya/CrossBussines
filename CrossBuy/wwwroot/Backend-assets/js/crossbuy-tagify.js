@@ -274,6 +274,13 @@
                 opt.setAttribute('data-name', d.name || '');
                 opt.setAttribute('data-nameen', d.nameEn || '');
             }
+            // a line grid with a barcode column (_QuickAdd): show the picked item's barcode in its row
+            var bc = sel.closest && sel.closest('tr') && sel.closest('tr').querySelector('.cb-bc');
+            if (bc) bc.value = d.barcode || '';
+        });
+        $sel.on('select2:clear', function () {
+            var bc = sel.closest && sel.closest('tr') && sel.closest('tr').querySelector('.cb-bc');
+            if (bc) bc.value = '';
         });
         return $sel;
     }

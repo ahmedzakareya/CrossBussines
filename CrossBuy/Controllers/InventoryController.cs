@@ -927,9 +927,9 @@ namespace CrossBuy.Controllers
 			var query = _context.Items.AsNoTracking().Where(i => i.CompanyID == co && i.IsActive);
 			if (t.Length > 0) query = query.Where(i => i.ItemCode.Contains(t) || i.Name.Contains(t) || (i.NameEn != null && i.NameEn.Contains(t)) || (i.Barcode != null && i.Barcode.Contains(t)));
 			var rows = await query.OrderBy(i => i.ItemCode)
-				.Select(i => new { id = i.ID, code = i.ItemCode, name = i.Name, nameEn = i.NameEn, price = i.SalesPrice ?? 0m, cost = i.OpeningCost, baseUom = i.BaseUoMId })
+				.Select(i => new { id = i.ID, code = i.ItemCode, name = i.Name, nameEn = i.NameEn, price = i.SalesPrice ?? 0m, cost = i.OpeningCost, baseUom = i.BaseUoMId, barcode = i.Barcode })
 				.Take(20).ToListAsync();
-			return Json(new { results = rows.Select(r => new { id = r.id, text = r.code + " — " + r.name, code = r.code, name = r.name, nameEn = r.nameEn, price = r.price, cost = r.cost, baseUom = r.baseUom }) });
+			return Json(new { results = rows.Select(r => new { id = r.id, text = r.code + " — " + r.name, code = r.code, name = r.name, nameEn = r.nameEn, price = r.price, cost = r.cost, baseUom = r.baseUom, barcode = r.barcode }) });
 		}
 
 		// 3-way match report for a PO (P3-6)
