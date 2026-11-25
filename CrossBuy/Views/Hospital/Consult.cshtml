@@ -21,7 +21,7 @@
     ViewData["Title"] = T["Consultation"].Value + " — " + name;
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    var allergies = Lines(p.Allergies);
+    var allergies = Lines(p.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray();
     var chronic = Lines(p.ChronicConditions);
     string ro = canEdit ? "" : "disabled";
     var vitals = new (string Key, string Label, string? Value, string Step)[] {

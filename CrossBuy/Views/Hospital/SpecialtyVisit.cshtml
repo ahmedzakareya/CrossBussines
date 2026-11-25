@@ -103,7 +103,7 @@
                 <div class="fw-semibold fs-7 text-gray-500">@T["Doctor"]</div>
             </div>
             <div class="ms-auto d-flex flex-wrap gap-2 justify-content-end">
-                @foreach (var a in Lines(p.Allergies)) {<span class="badge badge-light-danger fw-bold fs-7">@T["Allergy: {0}", a]</span>}
+                @foreach (var a in Lines(p.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray()) {<span class="badge badge-light-danger fw-bold fs-7">@T["Allergy: {0}", a]</span>}
                 @* H107: the adrenaline auto-injector (the prototype's allergy visit head) *@
                 @if (W?.Adrenaline is { } adr)
                 {

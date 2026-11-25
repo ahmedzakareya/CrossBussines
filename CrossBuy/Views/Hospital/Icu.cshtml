@@ -16,7 +16,7 @@
     var p = b.Selected;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    var allergies = Lines(p?.Allergies);
+    var allergies = Lines(p?.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray();
     var age = p == null ? null : HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
     HospitalIcuObservation? At(DateTime hourWard) => b.Flow.FirstOrDefault(o => HospitalNursingService.UtcToWard(o.HourAt) == hourWard);
     var rows = new (string Label, Func<HospitalIcuObservation, string?> Value, string Unit)[]

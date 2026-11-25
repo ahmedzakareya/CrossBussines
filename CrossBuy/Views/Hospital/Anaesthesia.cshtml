@@ -51,7 +51,7 @@
                 <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(c.Name, c.NameEn)</span><span class="text-gray-500 fs-7"><bdi class="hp-num" dir="ltr">@c.CaseDate.ToString("yyyy-MM-dd", inv) @HospitalUi.Clock(c.StartMinute)</bdi> · @T["or:" + c.Status]</span></div>
                 @if (a != null) {<span class="badge badge-light-primary fs-6 fw-bold">ASA @a.Asa@(a.Emergency ? "E" : "")</span>}
                 @if (a?.DifficultAirway == true) {<span class="badge badge-danger fs-7 fw-bold"><i class="ki-outline ki-information-5 fs-6 text-white me-1"></i>@T["Difficult airway predicted"]</span>}
-                @if (!string.IsNullOrWhiteSpace(Model.Allergies)) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Allergies"]: <bdi class="ms-1">@Model.Allergies</bdi></span>}
+                @if (!string.IsNullOrWhiteSpace(Model.Allergies)) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Allergies"]: <bdi class="ms-1">@HospitalAllergyText.Display(Model.Allergies)</bdi></span>}
             </div></div>
 
             <div class="row g-5">

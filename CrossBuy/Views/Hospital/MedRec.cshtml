@@ -87,7 +87,7 @@
                             <span class="d-flex align-items-center"><i class="ki-outline ki-capsule fs-4 me-1"></i><span class="hp-num">@home.Count</span>&nbsp;@T["Home medicines"]</span>
                         </div>
                     </div>
-                    @if (!string.IsNullOrWhiteSpace(m.Allergies)) { <div class="align-self-start"><span class="badge badge-light-danger fs-7 fw-bold py-3 px-4" dir="auto"><i class="ki-outline ki-shield-cross text-danger fs-4 me-2"></i>@T["Allergy"]: @m.Allergies</span></div> }
+                    @if (!string.IsNullOrWhiteSpace(m.Allergies)) { <div class="align-self-start"><span class="badge badge-light-danger fs-7 fw-bold py-3 px-4" dir="auto"><i class="ki-outline ki-shield-cross text-danger fs-4 me-2"></i>@T["Allergy"]: @HospitalAllergyText.Display(m.Allergies)</span></div> }
                 </div>
                 <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
                     <li class="nav-item"><a class="nav-link text-active-primary py-5 me-6 @(stage == HospitalMedReconStage.Admission ? "active" : "")" href="@Url.Action("MedRec", new { id = m.AdmissionId, stage = HospitalMedReconStage.Admission })">@T["On admission"]

@@ -111,7 +111,7 @@
                         </div>
                         @* the medical alerts a dentist must see before any procedure, from the patient's own record *@
                         <div class="d-flex flex-wrap gap-2">
-                            @foreach (var a in Lines(p.Allergies)) { <span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-shield-cross fs-7 text-danger me-1"></i>@T["Allergy:"] <bdi>@a</bdi></span> }
+                            @foreach (var a in Lines(p.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray()) { <span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-shield-cross fs-7 text-danger me-1"></i>@T["Allergy:"] <bdi>@a</bdi></span> }
                             @foreach (var c in Lines(p.ChronicConditions)) { <span class="badge badge-light-primary fw-bold fs-7"><i class="ki-outline ki-pulse fs-7 text-primary me-1"></i><bdi>@c</bdi></span> }
                             @if (age is < 18) { <span class="badge badge-light-info fw-bold fs-7"><i class="ki-outline ki-people fs-7 text-info me-1"></i>@T["Child — guardian attends"]</span> }
                         </div>

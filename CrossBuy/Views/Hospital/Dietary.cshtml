@@ -16,7 +16,7 @@
     var b = Model;
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     int unsent = b?.Rows.Count(r => r.Meal == null) ?? 0, toServe = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Sent) ?? 0;
-    int served = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Served) ?? 0, allergic = b?.Rows.Count(r => Lines(r.Allergies).Length > 0) ?? 0;
+    int served = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Served) ?? 0, allergic = b?.Rows.Count(r => Lines(r.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray().Length > 0) ?? 0;
     // H128: the theme's stat tile (demo39 dashboards/logistics) — the number over its label, a toned symbol on the side
     void Tile(int value, string label, string icon, string tone, string numTone = "gray-900")
     {
@@ -110,7 +110,7 @@
                             <tbody>
                                 @foreach (var r in b.Rows)
                                 {
-                                    var al = Lines(r.Allergies);
+                                    var al = Lines(r.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray();
                                     <tr>
                                         <td class="ps-4"><div class="d-flex align-items-center">
                                             <div class="symbol symbol-45px symbol-circle me-4 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
