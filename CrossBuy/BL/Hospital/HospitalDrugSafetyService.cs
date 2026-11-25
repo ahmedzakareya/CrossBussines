@@ -230,6 +230,15 @@ namespace CrossBuy.BL.Hospital
 				.Select(o => o.Drug).ToListAsync(ct);
 			if (alsoRunning != null) running.AddRange(alsoRunning);
 			var alerts = new List<HospitalDrugAlert>();
+			// H270: the patient's recorded allergies, by drug family (penicillin meets amoxicillin). The kind existed and
+			// nothing raised it: an inpatient order for a drug the patient is allergic to went through without a word.
+			// It stops the order until the doctor gives a reason, like any other major alert.
+			var allergies = await (from a in _db.Set<HospitalAdmission>().AsNoTracking()
+								   join p in _db.HospitalPatients.AsNoTracking() on a.PatientId equals p.ID
+								   where a.ID == admissionId && a.CompanyId == ctx.CompanyId && p.CompanyId == ctx.CompanyId
+								   select p.Allergies).FirstOrDefaultAsync(ct);
+			foreach (var allergy in HospitalAllergyMatch.Hits(drug, allergies))
+				alerts.Add(new(HospitalAlertKind.Allergy, HospitalInteractionSeverity.Major, true, "{0}: the patient is recorded as allergic to {1}", new[] { drug, allergy }, null, null, "allergy " + allergy));
 			foreach (var (other, hit) in HospitalDrugSafetyRules.Interactions(drug, running, pairs))
 				alerts.Add(new(HospitalAlertKind.Interaction, hit.Severity, HospitalInteractionSeverity.Blocks(hit.Severity), "{0} with {1}", new[] { drug, other }, hit.EffectAr, hit.EffectEn,
 					$"{hit.DrugA} + {hit.DrugB} — {hit.Severity}"));

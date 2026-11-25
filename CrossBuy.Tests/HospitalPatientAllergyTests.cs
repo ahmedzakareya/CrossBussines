@@ -137,6 +137,26 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public async Task An_inpatient_order_for_a_drug_of_an_allergy_family_is_stopped_until_a_reason_is_given()
+		{
+			// the owner's walk-through reached the ward: the alert kind existed and nothing raised it
+			using var host = new PlatformTestHost();
+			var access = new HospitalAccessService(new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance);
+			var now = DateTime.UtcNow;
+			var pid = (await new HospitalPatientService(host.Db, access).SaveAsync(Ctx(), new HospitalPatientInput { Name = "م منوم", NameEn = "Ward Patient", Sex = "M",
+				AllergyItemsJson = "[{\"code\":\"DRUG-PEN\",\"reaction\":\"Anaphylaxis\",\"severity\":\"Severe\"}]" }, 7, now)).Id!.Value;
+			host.Seed.HospitalAdmissions.Add(new HospitalAdmission { CompanyId = 1, PatientId = pid, AdmittedAt = now.AddDays(-1), CreatedAt = now.AddDays(-1) });
+			await host.Seed.SaveChangesAsync();
+			var adm = (await host.Db.HospitalAdmissions.AsNoTracking().SingleAsync()).ID;
+			var svc = new HospitalDrugSafetyService(host.Db, access);
+
+			var hit = Assert.Single(await svc.CheckOrderAsync(Ctx(), adm, "Augmentin 1 g", "1 g", "PO", "08,20", false), a => a.Kind == HospitalAlertKind.Allergy);
+			Assert.True(hit.Blocks);
+			Assert.Equal(new[] { "Augmentin 1 g", "بنسلين" }, hit.Args);
+			Assert.DoesNotContain(await svc.CheckOrderAsync(Ctx(), adm, "Amlodipine 5 mg", "5 mg", "PO", "08", false), a => a.Kind == HospitalAlertKind.Allergy);
+		}
+
+		[Fact]
 		public void The_rows_follow_the_patient_and_match_their_slice()
 		{
 			Assert.Contains(HospitalPatientMergeRules.PatientTables, t => t.Entity == typeof(HospitalPatientAllergy));
