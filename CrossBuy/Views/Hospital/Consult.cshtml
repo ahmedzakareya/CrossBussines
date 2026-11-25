@@ -342,8 +342,11 @@
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
                     return '<tr><td class="ps-4 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
                         // H33: the directions in both languages (the patient reads them in theirs on the portal)
-                        '<td><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" dir="auto" />' +
-                        '<input class="form-control form-control-sm form-control-solid mt-1" data-rx="instructionsEn" data-i="' + i + '" value="' + esc(r.instructionsEn || '') + '" placeholder="' + esc(W.doseEn) + '" maxlength="400" dir="auto" /></td>' +
+                        // one box per line; the English twin opens from the small EN button (owner: two stacked boxes per drug
+                        // read as a mistake) and stays open when it already holds text
+                        '<td><div class="d-flex gap-2 align-items-center"><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" dir="auto" />' +
+                        '<button type="button" class="btn btn-sm btn-light-primary fw-bold px-3 flex-shrink-0' + (r.instructionsEn ? ' active' : '') + '" data-rx-en="' + i + '" title="' + esc(W.doseEn) + '" data-bs-toggle="tooltip">EN</button></div>' +
+                        '<input class="form-control form-control-sm form-control-solid mt-2' + (r.instructionsEn ? '' : ' d-none') + '" data-rx="instructionsEn" data-i="' + i + '" value="' + esc(r.instructionsEn || '') + '" placeholder="' + esc(W.doseEn) + '" maxlength="400" dir="ltr" /></td>' +
                         '<td><input type="number" min="1" class="form-control form-control-sm form-control-solid hp-num" data-rx="quantity" data-i="' + i + '" value="' + r.quantity + '" /></td>' +
                         '<td class="pe-4 text-end">' + trash('data-rx-remove', i) + '</td></tr>';
                 }).join('');
@@ -362,6 +365,9 @@
                       });
                 });
             }
+            rxBody.addEventListener('click', function (ev) { var b = ev.target.closest('[data-rx-en]'); if (!b) return;
+                var en = rxBody.querySelector('[data-rx="instructionsEn"][data-i="' + b.getAttribute('data-rx-en') + '"]'); if (!en) return;
+                var open = en.classList.toggle('d-none') === false; b.classList.toggle('active', open); if (open) en.focus(); });
             rxBody.addEventListener('input', function (ev) { var el = ev.target.closest('[data-rx]'); if (!el) return; var r = rx[+el.getAttribute('data-i')], k = el.getAttribute('data-rx'); r[k] = k === 'quantity' ? (+el.value || 1) : el.value; });
             rxBody.addEventListener('click', function (ev) { var b = ev.target.closest('[data-rx-remove]'); if (b) { rx.splice(+b.getAttribute('data-rx-remove'), 1); drawRx(); } });
             var add = document.querySelector('[data-rx-add]');
