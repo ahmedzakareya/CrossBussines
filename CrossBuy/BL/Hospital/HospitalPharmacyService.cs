@@ -97,14 +97,9 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 		// THE RULES (pure)
 		// ====================================================================================
 
-		/// The recorded allergies (one per line, or separated by commas) that a drug's name mentions.
-		public static IReadOnlyList<string> AllergiesIn(string drug, string? allergies)
-		{
-			if (string.IsNullOrWhiteSpace(allergies) || string.IsNullOrWhiteSpace(drug)) return Array.Empty<string>();
-			return allergies.Split(new[] { '\n', ',', '،', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-				.Select(a => a.Split('(')[0].Trim())
-				.Where(a => a.Length >= 3 && drug.Contains(a, StringComparison.OrdinalIgnoreCase)).Distinct().ToList();
-		}
+		/// The recorded allergies (one per line, or separated by commas) that a drug falls under: named in its words, or
+		/// (H269) of the same family — a penicillin allergy meets amoxicillin.
+		public static IReadOnlyList<string> AllergiesIn(string drug, string? allergies) => HospitalAllergyMatch.Hits(drug, allergies);
 
 		// ====================================================================================
 		// SETTINGS

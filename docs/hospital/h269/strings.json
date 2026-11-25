@@ -1,0 +1,15 @@
+{
+ "unit": "H269 - Allergy check while prescribing",
+ "strings": {
+  "Allergy: the patient is recorded as allergic to {0}": {
+   "ar": "تنبيه حساسية: المريض مسجَّلة لديه حساسية من {0}",
+   "en": "Allergy: the patient is recorded as allergic to {0}",
+   "fr": "Allergie : le patient est allergique à {0} selon son dossier"
+  },
+  "This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?": {
+   "ar": "تتضمن الوصفة دواءً سُجِّلت للمريض حساسية منه ({0}). هل تريد التوقيع رغم ذلك؟",
+   "en": "This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?",
+   "fr": "Cette ordonnance contient un médicament auquel le patient est allergique selon son dossier ({0}). Signer quand même ?"
+  }
+ }
+}

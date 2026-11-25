@@ -10682,4 +10682,6 @@
   <data name="spc:surg:2" xml:space="preserve"><value>Douleur, température et drainage</value></data>
   <data name="spc:surg:3" xml:space="preserve"><value>Grade de Clavien-Dindo</value></data>
   <data name="spc:surg:alert" xml:space="preserve"><value>Température ≥ 38 après l'intervention</value></data>
+  <data name="Allergy: the patient is recorded as allergic to {0}" xml:space="preserve"><value>Allergie : le patient est allergique à {0} selon son dossier</value></data>
+  <data name="This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?" xml:space="preserve"><value>Cette ordonnance contient un médicament auquel le patient est allergique selon son dossier ({0}). Signer quand même ?</value></data>
 </root>

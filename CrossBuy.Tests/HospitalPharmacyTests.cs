@@ -287,7 +287,7 @@ namespace CrossBuy.Tests
 				new HospitalPrescriptionInput { Drug = "MED-PARA", ItemId = para, Quantity = 1 });
 			await w.Pharmacy.SyncAsync(Ctx());
 			var id = (await host.Db.HospitalDispenses.SingleAsync()).ID;
-			Assert.DoesNotContain(HospitalPharmacyService.WarnAllergy, (await w.Pharmacy.RxAsync(Ctx(), id, Now))!.Lines[0].Warnings);   // no record: the brand hides it
+			Assert.Contains(HospitalPharmacyService.WarnAllergy, (await w.Pharmacy.RxAsync(Ctx(), id, Now))!.Lines[0].Warnings);   // H269: even with no record, the family knows Augmentin is a penicillin
 
 			var i = Amoxicillin(amox); i.HighAlert = true; i.LasaWith = "amoxapine";
 			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);

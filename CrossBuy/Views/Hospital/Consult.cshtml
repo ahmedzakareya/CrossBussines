@@ -300,9 +300,10 @@
                 none: @Json.Serialize(T["No diagnosis yet."].Value), noRx: @Json.Serialize(T["No drug prescribed."].Value),
                 saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), confirm: @Json.Serialize(T["Sign and close this visit? It cannot be changed afterwards."].Value),
                 drug: @Json.Serialize(T["Drug name and strength"].Value), stocked: @Json.Serialize(T["In the pharmacy"].Value), dose: @Json.Serialize(T["e.g. 1 tab twice daily · 30 days"].Value), doseEn: @Json.Serialize(T["In English: e.g. 1 tab twice daily · 30 days"].Value), doseAr: @Json.Serialize(DoseInArabic()),
+                allergyHit: @Json.Serialize(T["Allergy: the patient is recorded as allergic to {0}"].Value), allergySign: @Json.Serialize(T["This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?"].Value),
                 noOrder: @Json.Serialize(T["Nothing ordered."].Value), cash: @Json.Serialize(T["Cash"].Value), remove: @Json.Serialize(T["Remove"].Value)
             };
-            var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
+            var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), allergy: @Json.Serialize(Url.Action("ConsultAllergyCheck", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             // H126: the theme's empty state and icon action
             function empty(icon, text, cols) { var h = '<div class="text-center py-6"><i class="ki-outline ki-' + icon + ' fs-3x text-gray-300 mb-3 d-block"></i><div class="fs-7 fw-semibold text-gray-500">' + esc(text) + '</div></div>'; return cols ? '<tr><td colspan="' + cols + '">' + h + '</td></tr>' : h; }
@@ -338,13 +339,24 @@
 
             // ---- prescription ---------------------------------------------------------------
             var rxBody = document.querySelector('[data-rx-body]');
+            // H269: each drug is checked against the patient's recorded allergies (by family: penicillin meets amoxicillin)
+            function hitNote(r) { return r.hits && r.hits.length ? '<div class="d-flex align-items-center gap-1 text-danger fs-8 fw-bold mt-2" data-rx-allergy><i class="ki-outline ki-shield-cross fs-6 text-danger"></i><span dir="auto">' + esc(W.allergyHit.replace('{0}', r.hits.join(', '))) + '</span></div>' : ''; }
+            function checkRx(r, loud) {
+                if (!(r.drug || '').trim() && !r.itemId) { r.hits = []; drawRx(); return Promise.resolve(); }
+                var q = '?drug=' + encodeURIComponent(r.drug || '') + (r.itemId ? '&itemId=' + r.itemId : '');
+                return fetch(urls.allergy + q, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (x) { return x.json(); }).then(function (res) {
+                    var had = (r.hits || []).length; r.hits = res && res.ok ? res.hits : [];
+                    if (loud && r.hits.length) toast('error', W.allergyHit.replace('{0}', r.hits.join(', ')));
+                    if (had || r.hits.length) drawRx();
+                }).catch(function () { });
+            }
             function drawRx() {
                 if (!rx.length) { rxBody.innerHTML = empty('capsule', W.noRx, 4); return; }
                 rxBody.innerHTML = rx.map(function (r, i) {
-                    if (!canEdit) return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-' + (r.itemId ? 'primary' : 'secondary') + '"><i class="ki-outline ki-capsule fs-3 text-' + (r.itemId ? 'primary' : 'gray-600') + '"></i></span></div><div><span class="text-gray-800 fw-bold fs-6 d-block" dir="auto">' + esc(r.drug) + '</span>' + (r.itemId ? '<span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.stocked) + '</span>' : '') + '</div></div></td><td class="fs-7 text-gray-700" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-gray-500 fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td><span class="text-gray-800 fw-bold hp-num">' + r.quantity + '</span></td><td class="pe-4"></td></tr>';
+                    if (!canEdit) return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-' + (r.itemId ? 'primary' : 'secondary') + '"><i class="ki-outline ki-capsule fs-3 text-' + (r.itemId ? 'primary' : 'gray-600') + '"></i></span></div><div><span class="text-gray-800 fw-bold fs-6 d-block" dir="auto">' + esc(r.drug) + '</span>' + (r.itemId ? '<span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.stocked) + '</span>' : '') + hitNote(r) + '</div></div></td><td class="fs-7 text-gray-700" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-gray-500 fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td><span class="text-gray-800 fw-bold hp-num">' + r.quantity + '</span></td><td class="pe-4"></td></tr>';
                     var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.code) + '</option>'; }).join('') +
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
-                    return '<tr><td class="ps-4 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
+                    return '<tr><td class="ps-4 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select>' + hitNote(r) + '</td>' +
                         // H33: the directions in both languages (the patient reads them in theirs on the portal)
                         // one box per line (owner: two stacked boxes per drug read as a mistake), the other language behind a
                         // small button and open when it already holds text...
@@ -369,6 +381,7 @@
                         var r = rx[+$s.attr('data-i')], v = $s.val() || '';
                         if (/^i:/.test(v)) { var f = formulary.filter(function (x) { return 'i:' + x.id === v; })[0]; r.itemId = f ? f.id : null; r.drug = f ? f.name : ''; }
                         else { r.itemId = null; r.drug = v.replace(/^t:/, ''); }
+                        checkRx(r, true);
                       });
                 });
             }
@@ -420,7 +433,7 @@
                     bpSystolic: num('bpSystolic'), bpDiastolic: num('bpDiastolic'), heartRate: num('heartRate'), temperatureC: num('temperatureC'), spO2: num('spO2'), weightKg: num('weightKg'), heightCm: num('heightCm'),
                     followUpDays: num('followUpDays'), referToDepartmentId: num('referToDepartmentId'),
                     diagnoses: dx.map(function (d) { return { code: d.code, primary: d.primary }; }),
-                    prescription: rx.filter(function (r) { return (r.drug || '').trim(); }),
+                    prescription: rx.filter(function (r) { return (r.drug || '').trim(); }).map(function (r) { return { drug: r.drug, itemId: r.itemId, instructions: r.instructions, instructionsEn: r.instructionsEn, quantity: r.quantity }; }),
                     orderServiceIds: orders.map(function (o) { return o.id; })
                 };
             }
@@ -432,7 +445,8 @@
             var s = document.querySelector('[data-save]'); if (s) s.addEventListener('click', function () { s.disabled = true; send(urls.save).then(function () { s.disabled = false; }); });
             var g = document.querySelector('[data-sign]');
             if (g) g.addEventListener('click', function () {
-                cbConfirm(W.confirm).then(function (yes) {
+                var hit = [].concat.apply([], rx.map(function (r) { return r.hits || []; })).filter(function (h, i, a) { return a.indexOf(h) === i; });
+                (hit.length ? cbConfirm(W.allergySign.replace('{0}', hit.join(', '))) : Promise.resolve(true)).then(function (go) { return go ? cbConfirm(W.confirm) : false; }).then(function (yes) {
                     if (!yes) return;
                     g.disabled = true;
                     send(urls.sign, function () { location.href = urls.worklist; }).then(function (ok) { if (!ok) g.disabled = false; });
@@ -448,6 +462,7 @@
             });
             document.querySelectorAll('[data-utc]').forEach(function (el) { var d = new Date(el.getAttribute('data-utc').replace(/Z?$/, 'Z')); if (!isNaN(d)) el.textContent = d.toISOString().slice(0, 10) + ' ' + d.toTimeString().slice(0, 5); });
             drawDx(); drawRx(); drawOrders();
+            rx.forEach(function (r) { if ((r.drug || '').trim()) checkRx(r, false); });
         })();
     </script>
 }
