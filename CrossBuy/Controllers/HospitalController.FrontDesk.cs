@@ -133,6 +133,10 @@ namespace CrossBuy.Controllers
 			// H154: "where is the patient?" — each candidate with where they are now (a confidential file's place stays unsaid)
 			var (where, restricted) = await WhereSvc.ForDeskAsync(ctx, list.Select(h => h.PatientId).ToList(), DateTime.Now, ct);
 			ViewBag.Where = where; ViewBag.Restricted = restricted;
+			// H270: the allergy on the search row itself — the desk sees it before it opens the card (owner's walk-through)
+			var ids = list.Select(h => h.PatientId).ToList();
+			ViewBag.Allergies = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && ids.Contains(p.ID) && p.Allergies != null && p.Allergies != "")
+				.ToDictionaryAsync(p => p.ID, p => p.Allergies!, ct);
 			return PartialView("_DeskSearch", list);
 		}
 
