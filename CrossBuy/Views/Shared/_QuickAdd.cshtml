@@ -85,6 +85,7 @@ window.CBQuickAdd=(function(){
         warehouseUrl:'@Url.Action("WarehouseQuickAdd","Inventory")',
         newItem:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["New item"].Value)),
         itemUrl:'@Url.Action("CreateItem","Inventory")?embed=true',
+        pickUrl:'@Url.Action("ItemPickData","Inventory")',
         shortcuts:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Shortcuts"].Value)),
         scTitle:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Keyboard shortcuts"].Value)),
         bcPh:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Scan / type barcode then Enter"].Value)),
@@ -339,7 +340,16 @@ window.CBQuickAdd=(function(){
         var inp=document.createElement('input');
         inp.className='form-control form-control-solid form-control-sm cb-bc'; inp.setAttribute('placeholder', L.bcPh); inp.setAttribute('autocomplete','off');
         var pv=row.getAttribute('data-cb-bcval'); if(pv) inp.value=pv;   // recall the item barcode (edit mode prefill)
-        td.appendChild(inp); row.insertBefore(td, row.firstChild); return inp;
+        td.appendChild(inp); row.insertBefore(td, row.firstChild);
+        // a line that arrives with its item already set (opened from an order, copied from an invoice, edit mode)
+        // was never picked, so nothing wrote its barcode: fetch it by item id. Re-checked on change, because
+        // most screens append the item's <option> after the row is in the table.
+        var it=row.querySelector('.it');
+        function fillFromItem(){ var v=it && it.value; if(!v || inp.value || inp.getAttribute('data-cb-bcfor')===v) return; inp.setAttribute('data-cb-bcfor', v);
+            fetch(L.pickUrl+'?id='+encodeURIComponent(v),{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json();}).then(function(d){
+                var hit=d && d.results && d.results[0]; if(hit && hit.barcode && !inp.value && it.value===v) inp.value=hit.barcode; }).catch(function(){}); }
+        if(it){ if(window.jQuery) jQuery(it).on('change', fillFromItem); else it.addEventListener('change', fillFromItem); setTimeout(fillFromItem, 250); }
+        return inp;
     }
     function addBarcodeColumn(){
         var body=document.getElementById('rows'); var table=body&&body.closest('table'); if(!table) return;

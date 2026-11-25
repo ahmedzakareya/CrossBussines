@@ -254,6 +254,7 @@
         opts = opts || {};
         var rtl = document.documentElement.getAttribute('dir') === 'rtl';
         var $sel = jQuery(sel);
+        sel._cbPickUrl = url;   // cbItemSelectSet asks it for a name it was not given
         $sel.select2({
             placeholder: opts.placeholder || (rtl ? 'Search for an item…' : 'Search item…'),
             allowClear: true,
@@ -295,6 +296,22 @@
         opt.setAttribute('data-name', item.name || '');
         opt.setAttribute('data-nameen', item.nameEn || '');
         jQuery(sel).append(opt).trigger('change');
+        // a pre-filled line (from an order whose line has no description) may carry only the id: show '#8186' for
+        // a moment, then the item's own code and name from the same search endpoint
+        if (!item.name && !item.code && item.id && sel._cbPickUrl && window.fetch) {
+            fetch(sel._cbPickUrl + (sel._cbPickUrl.indexOf('?') < 0 ? '?' : '&') + 'id=' + encodeURIComponent(item.id), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); }).then(function (d) {
+                    var hit = d && d.results && d.results[0]; if (!hit || String(sel.value) !== String(item.id)) return;
+                    var rtl = document.documentElement.getAttribute('dir') === 'rtl';
+                    // select2 caches an option's data under its data-select2-id, so swap in a fresh option carrying
+                    // the same stamps EXCEPT that id - copying it would point the fresh option back at the stale cache
+                    var fresh = new Option((hit.code ? hit.code + ' — ' : '') + ((!rtl && hit.nameEn) ? hit.nameEn : (hit.name || '')), item.id, true, true);
+                    for (var k = 0; k < opt.attributes.length; k++) { var at = opt.attributes[k]; if (at.name.indexOf('data-') === 0 && at.name !== 'data-select2-id') fresh.setAttribute(at.name, at.value); }
+                    fresh.setAttribute('data-name', hit.name || ''); fresh.setAttribute('data-nameen', hit.nameEn || '');
+                    sel.replaceChild(fresh, opt); opt = fresh;
+                    jQuery(sel).trigger('change.select2');   // repaint the box only - no change event, the line's values stay
+                }).catch(function () { });
+        }
     }
     w.cbItemSelect = cbItemSelect;
     w.cbItemSelectSet = cbItemSelectSet;

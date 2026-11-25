@@ -921,10 +921,11 @@ namespace CrossBuy.Controllers
 		}
 
 		// item picker for select2-ajax (returns id + display text) — used by the price-list line editor
-		[HttpGet] public async Task<IActionResult> ItemPickData(string? term)
+		[HttpGet] public async Task<IActionResult> ItemPickData(string? term, int? id = null)
 		{
 			var t = (term ?? "").Trim();
-			var query = _context.Items.AsNoTracking().Where(i => i.CompanyID == co && i.IsActive);
+			// id: one known item (a pre-filled line asking for its barcode) - found even if it was deactivated since
+			var query = _context.Items.AsNoTracking().Where(i => i.CompanyID == co && (id != null ? i.ID == id : i.IsActive));
 			if (t.Length > 0) query = query.Where(i => i.ItemCode.Contains(t) || i.Name.Contains(t) || (i.NameEn != null && i.NameEn.Contains(t)) || (i.Barcode != null && i.Barcode.Contains(t)));
 			var rows = await query.OrderBy(i => i.ItemCode)
 				.Select(i => new { id = i.ID, code = i.ItemCode, name = i.Name, nameEn = i.NameEn, price = i.SalesPrice ?? 0m, cost = i.OpeningCost, baseUom = i.BaseUoMId, barcode = i.Barcode })
