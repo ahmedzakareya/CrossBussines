@@ -40,21 +40,22 @@
                         <div class="card-body pt-2"><div class="row g-6">
                             <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input name="name" value="@p.Name" class="form-control form-control-solid" dir="rtl" maxlength="200" data-similar placeholder="@T["Full name"]" /></div>
                             <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input name="nameEn" value="@p.NameEn" class="form-control form-control-solid" dir="ltr" maxlength="200" data-similar placeholder="Full name" /></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["ID number"]</label><input name="nationalId" value="@p.NationalId" class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" maxlength="20" data-similar /><div class="text-muted fs-8 mt-1">@T["One file per ID number"]</div></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Date of birth"]</label><input name="birthDate" type="date" value="@p.BirthDate?.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Sex"]</label>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["ID number"]</label><input name="nationalId" value="@p.NationalId" class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" maxlength="20" data-similar /><div class="text-muted fs-8 mt-1">@T["One file per ID number"]</div></div>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Date of birth"]</label><input name="birthDate" type="date" value="@p.BirthDate?.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 required">@T["Sex"]</label>
                                 <select name="sex" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
                                     <option value="M" selected="@(p.Sex == HospitalPatientSex.Male)">@T["Male"]</option>
                                     <option value="F" selected="@(p.Sex == HospitalPatientSex.Female)">@T["Female"]</option>
                                 </select></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Nationality"]</label>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Mobile"]</label><input name="phone" value="@p.Phone" class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-similar placeholder="+20 1xx xxx xxxx" /></div>
+                            @* nationality and blood group share their own full row (owner) *@
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Nationality"]</label>
                                 <select name="nationalityId" class="form-select form-select-solid" data-control="select2">
                                     <option value="">—</option>
                                     @foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == p.NationalityId)">@c.Label</option> }
                                 </select>
                                 <div class="text-muted fs-8 mt-1">@T["From the system country table"]</div></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Mobile"]</label><input name="phone" value="@p.Phone" class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-similar placeholder="+20 1xx xxx xxxx" /></div>
-                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Blood group"]</label>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Blood group"]</label>
                                 <select name="bloodGroup" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
                                     <option value="">—</option>
                                     @foreach (var g in HospitalBloodGroups.All) { <option value="@g" selected="@(g == p.BloodGroup)">@g</option> }
