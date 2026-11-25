@@ -28,6 +28,26 @@
     #rows input.q,#rows input.tax{min-width:90px!important}
     #rows input.p,#rows input.disc{min-width:120px!important}
     #rows input.text-end{padding-inline:.55rem}
+    /* .cb-2row: the line grid as a wrapping card per line - every field keeps its label above it and a line folds
+       onto a second row instead of scrolling sideways (owner: the sales-return grid is the right one). ONE copy,
+       here, for every document grid; a screen opts in with class="cb-2row" on its table. Labels come from each
+       td's data-l, or - when a screen does not write one - from its column header (labelCells below). */
+    .cb-2row thead{display:none}
+    .cb-2row #rows tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem .75rem;padding:.9rem .5rem;border-bottom:1px solid var(--bs-gray-200)}
+    .cb-2row #rows tr:last-child{border-bottom:0}
+    .cb-2row #rows td{display:flex;flex-direction:column;justify-content:flex-end;border:0!important;padding:0!important;min-width:0!important}
+    .cb-2row #rows td::before{content:attr(data-l);font-size:.72rem;line-height:1;color:var(--bs-gray-500);font-weight:600;margin-bottom:.35rem;min-height:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cb-2row #rows td .form-control,.cb-2row #rows td .form-select,.cb-2row #rows td .select2-container{min-width:0!important;width:100%!important}
+    .cb-2row #rows td .form-control{height:42px}
+    .cb-2row #rows td .select2-container .select2-selection{height:42px!important;display:flex;align-items:center}
+    .cb-2row #rows td .cb-bc{min-width:0}
+    .cb-2row #rows td.cb-del-cell,.cb-2row #rows td:has(> .del){align-items:stretch}
+    .cb-2row #rows td.cb-del-cell .del,.cb-2row #rows td > .del{height:42px;width:100%}
+    /* a line total written straight into its cell (td.lt, the order screens) gets the same box as span.lt; its label
+       sits above the box like every other field's */
+    .cb-2row #rows td.lt{position:relative;align-self:end;height:42px;flex-direction:row;align-items:center;justify-content:center;background:var(--bs-gray-100);border-radius:.475rem;font-weight:700}
+    .cb-2row #rows td.lt::before{position:absolute;bottom:calc(100% + .35rem);inset-inline-start:0;margin:0}
+    .cb-2row #rows td.lt-cell .lt{display:flex;align-items:center;justify-content:center;height:42px;background:var(--bs-gray-100);border-radius:.475rem;font-weight:700}
     /* totals summary card (matches the reference: soft colored rows + icon tiles) */
     .cb-totals{max-width:400px;margin-inline-start:auto;border:0;box-shadow:0 3px 18px rgba(20,30,60,.05)}
     .cb-totals .symbol-label{padding:0}
@@ -344,12 +364,20 @@ window.CBQuickAdd=(function(){
         // a line that arrives with its item already set (opened from an order, copied from an invoice, edit mode)
         // was never picked, so nothing wrote its barcode: fetch it by item id. Re-checked on change, because
         // most screens append the item's <option> after the row is in the table.
+        labelCells(row);
         var it=row.querySelector('.it');
         function fillFromItem(){ var v=it && it.value; if(!v || inp.value || inp.getAttribute('data-cb-bcfor')===v) return; inp.setAttribute('data-cb-bcfor', v);
             fetch(L.pickUrl+'?id='+encodeURIComponent(v),{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json();}).then(function(d){
                 var hit=d && d.results && d.results[0]; if(hit && hit.barcode && !inp.value && it.value===v) inp.value=hit.barcode; }).catch(function(){}); }
         if(it){ if(window.jQuery) jQuery(it).on('change', fillFromItem); else it.addEventListener('change', fillFromItem); setTimeout(fillFromItem, 250); }
         return inp;
+    }
+    // .cb-2row hides the header, so each field needs its own label: take it from the column header unless the
+    // screen already wrote one (data-l). Runs after the barcode column is in, so header and cells line up.
+    function labelCells(row){
+        var table=row.closest('table'); if(!table || !table.classList.contains('cb-2row')) return;
+        var ths=table.querySelectorAll('thead tr:first-child th'), tds=row.children;
+        for(var i=0;i<tds.length && i<ths.length;i++){ if(!tds[i].hasAttribute('data-l')) tds[i].setAttribute('data-l', (ths[i].textContent||'').trim()); }
     }
     function addBarcodeColumn(){
         var body=document.getElementById('rows'); var table=body&&body.closest('table'); if(!table) return;
