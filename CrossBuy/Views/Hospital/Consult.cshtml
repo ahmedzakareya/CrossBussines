@@ -300,7 +300,7 @@
                 none: @Json.Serialize(T["No diagnosis yet."].Value), noRx: @Json.Serialize(T["No drug prescribed."].Value),
                 saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), confirm: @Json.Serialize(T["Sign and close this visit? It cannot be changed afterwards."].Value),
                 drug: @Json.Serialize(T["Drug name and strength"].Value), stocked: @Json.Serialize(T["In the pharmacy"].Value), dose: @Json.Serialize(T["e.g. 1 tab twice daily · 30 days"].Value), doseEn: @Json.Serialize(T["In English: e.g. 1 tab twice daily · 30 days"].Value), doseAr: @Json.Serialize(DoseInArabic()),
-                allergyHit: @Json.Serialize(T["Allergy: the patient is recorded as allergic to {0}"].Value), allergySign: @Json.Serialize(T["This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?"].Value),
+                allergyHit: @Json.Serialize(T["Allergy: the patient is recorded as allergic to {0}"].Value), rxNoDrug: @Json.Serialize(T["A prescription line has directions but no drug: choose the drug or remove the line"].Value), allergySign: @Json.Serialize(T["This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?"].Value),
                 noOrder: @Json.Serialize(T["Nothing ordered."].Value), cash: @Json.Serialize(T["Cash"].Value), remove: @Json.Serialize(T["Remove"].Value)
             };
             var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), allergy: @Json.Serialize(Url.Action("ConsultAllergyCheck", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
@@ -382,6 +382,16 @@
                         if (/^i:/.test(v)) { var f = formulary.filter(function (x) { return 'i:' + x.id === v; })[0]; r.itemId = f ? f.id : null; r.drug = f ? f.name : ''; }
                         else { r.itemId = null; r.drug = v.replace(/^t:/, ''); }
                         checkRx(r, true);
+                      })
+                      // H270: a drug typed and left without Enter (a click on the dose) is kept — the stocked item when the
+                      // words are exactly its name, otherwise the typed name (owner's walk-through: Amlodipine vanished)
+                      .on('select2:closing', function () {
+                        var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
+                        if (term.length < 2 || $s.val()) return;
+                        var same = formulary.filter(function (x) { return (x.name || '').toLowerCase() === term.toLowerCase() || (x.code || '').toLowerCase() === term.toLowerCase(); })[0];
+                        var v = same ? 'i:' + same.id : 't:' + term;
+                        if (!same && !$s.find('option').filter(function () { return this.value === v; }).length) $s.append(new Option(term, v, false, false));
+                        setTimeout(function () { $s.val(v).trigger('change'); }, 0);
                       });
                 });
             }
@@ -437,7 +447,10 @@
                     orderServiceIds: orders.map(function (o) { return o.id; })
                 };
             }
+            // H270: directions with no drug are a drug that was lost on the way — say so, never send the line away silently
+            function rxIncomplete() { return rx.some(function (r) { return !(r.drug || '').trim() && ((r.instructions || '').trim() || (r.instructionsEn || '').trim()); }); }
             function send(url, after) {
+                if (rxIncomplete()) { toast('error', W.rxNoDrug); return Promise.resolve(false); }
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(payload()) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                     .then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); return false; } toast('success', W.saved); if (after) after(); return true; });
