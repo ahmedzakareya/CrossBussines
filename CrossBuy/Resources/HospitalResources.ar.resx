@@ -10793,4 +10793,21 @@
   </data>
   <data name="Allergy: the patient is recorded as allergic to {0}" xml:space="preserve"><value>تنبيه حساسية: المريض مسجَّلة لديه حساسية من {0}</value></data>
   <data name="This prescription has a drug the patient is recorded as allergic to ({0}). Sign anyway?" xml:space="preserve"><value>تتضمن الوصفة دواءً سُجِّلت للمريض حساسية منه ({0}). هل تريد التوقيع رغم ذلك؟</value></data>
+  <data name="Add an allergy" xml:space="preserve"><value>إضافة حساسية</value></data>
+  <data name="No known allergy" xml:space="preserve"><value>لا توجد حساسية معروفة</value></data>
+  <data name="Choose or type an allergy" xml:space="preserve"><value>اختر الحساسية أو اكتبها</value></data>
+  <data name="Not in the list" xml:space="preserve"><value>غير مدرجة في القائمة</value></data>
+  <data name="No allergy recorded yet" xml:space="preserve"><value>لم تُسجَّل أي حساسية بعد</value></data>
+  <data name="The patient was asked and has no known allergy" xml:space="preserve"><value>سُئل المريض ولا توجد لديه حساسية معروفة</value></data>
+  <data name="Food" xml:space="preserve"><value>الأطعمة</value></data>
+  <data name="Environment and other" xml:space="preserve"><value>البيئة وغيرها</value></data>
+  <data name="Mild" xml:space="preserve"><value>خفيفة</value></data>
+  <data name="Moderate" xml:space="preserve"><value>متوسطة</value></data>
+  <data name="Severe" xml:space="preserve"><value>شديدة</value></data>
+  <data name="No known allergy cannot sit beside an allergy" xml:space="preserve"><value>لا يمكن الجمع بين «لا توجد حساسية معروفة» وحساسية مسجَّلة</value></data>
+  <data name="Unknown allergen" xml:space="preserve"><value>مسبِّب حساسية غير معروف</value></data>
+  <data name="An allergy not in the list is 2 to 100 letters" xml:space="preserve"><value>الحساسية غير المدرجة في القائمة من حرفين إلى 100 حرف</value></data>
+  <data name="Unknown reaction" xml:space="preserve"><value>رد فعل غير معروف</value></data>
+  <data name="Unknown severity" xml:space="preserve"><value>شدة غير معروفة</value></data>
+  <data name="The same allergy is listed twice" xml:space="preserve"><value>الحساسية نفسها مسجَّلة مرتين</value></data>
 </root>

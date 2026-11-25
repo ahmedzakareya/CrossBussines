@@ -82,6 +82,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Countries = await CountriesAsync(ct);
 			ViewBag.PriceLists = await ApprovedPriceListsAsync(ctx, ct);
 			ViewBag.CanClinical = await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct);   // H156
+			ViewBag.AllergyItems = await _patients.AllergyItemsAsync(ctx, p, ct);   // H270: the coded allergy list
 			return View("PatientEdit", p);
 		}
 

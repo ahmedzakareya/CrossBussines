@@ -1,0 +1,90 @@
+{
+ "unit": "H270 - Coded allergy list",
+ "strings": {
+  "Add an allergy": {
+   "ar": "إضافة حساسية",
+   "en": "Add an allergy",
+   "fr": "Ajouter une allergie"
+  },
+  "No known allergy": {
+   "ar": "لا توجد حساسية معروفة",
+   "en": "No known allergy",
+   "fr": "Aucune allergie connue"
+  },
+  "Choose or type an allergy": {
+   "ar": "اختر الحساسية أو اكتبها",
+   "en": "Choose or type an allergy",
+   "fr": "Choisir ou saisir une allergie"
+  },
+  "Not in the list": {
+   "ar": "غير مدرجة في القائمة",
+   "en": "Not in the list",
+   "fr": "Hors liste"
+  },
+  "No allergy recorded yet": {
+   "ar": "لم تُسجَّل أي حساسية بعد",
+   "en": "No allergy recorded yet",
+   "fr": "Aucune allergie enregistrée"
+  },
+  "The patient was asked and has no known allergy": {
+   "ar": "سُئل المريض ولا توجد لديه حساسية معروفة",
+   "en": "The patient was asked and has no known allergy",
+   "fr": "Le patient a été interrogé : aucune allergie connue"
+  },
+  "Food": {
+   "ar": "الأطعمة",
+   "en": "Food",
+   "fr": "Aliments"
+  },
+  "Environment and other": {
+   "ar": "البيئة وغيرها",
+   "en": "Environment and other",
+   "fr": "Environnement et autres"
+  },
+  "Mild": {
+   "ar": "خفيفة",
+   "en": "Mild",
+   "fr": "Légère"
+  },
+  "Moderate": {
+   "ar": "متوسطة",
+   "en": "Moderate",
+   "fr": "Modérée"
+  },
+  "Severe": {
+   "ar": "شديدة",
+   "en": "Severe",
+   "fr": "Sévère"
+  },
+  "No known allergy cannot sit beside an allergy": {
+   "ar": "لا يمكن الجمع بين «لا توجد حساسية معروفة» وحساسية مسجَّلة",
+   "en": "No known allergy cannot sit beside an allergy",
+   "fr": "« Aucune allergie connue » ne peut pas accompagner une allergie"
+  },
+  "Unknown allergen": {
+   "ar": "مسبِّب حساسية غير معروف",
+   "en": "Unknown allergen",
+   "fr": "Allergène inconnu"
+  },
+  "An allergy not in the list is 2 to 100 letters": {
+   "ar": "الحساسية غير المدرجة في القائمة من حرفين إلى 100 حرف",
+   "en": "An allergy not in the list is 2 to 100 letters",
+   "fr": "Une allergie hors liste compte de 2 à 100 caractères"
+  },
+  "Unknown reaction": {
+   "ar": "رد فعل غير معروف",
+   "en": "Unknown reaction",
+   "fr": "Réaction inconnue"
+  },
+  "Unknown severity": {
+   "ar": "شدة غير معروفة",
+   "en": "Unknown severity",
+   "fr": "Gravité inconnue"
+  },
+  "The same allergy is listed twice": {
+   "ar": "الحساسية نفسها مسجَّلة مرتين",
+   "en": "The same allergy is listed twice",
+   "fr": "La même allergie figure deux fois"
+  }
+ }
+}

@@ -38,7 +38,7 @@ namespace CrossBuy.BL.Hospital
 				new[] { "sulfa", "sulpha", "sulfonamide", "sulfamethoxazole", "co-trimoxazole", "cotrimoxazole", "septrin", "bactrim",
 					"sulfasalazine", "sulfadiazine", "سلفا", "سلفاميثوكسازول", "سبترين", "باكتريم", "سلفاسالازين" }),
 			("nsaids",
-				new[] { "nsaid", "مضادات التهاب", "مسكنات غير ستيرويديه" },
+				new[] { "nsaid", "مضادات التهاب", "مضادات الالتهاب", "مسكنات غير ستيرويديه" },
 				new[] { "nsaid", "aspirin", "acetylsalicylic", "ibuprofen", "brufen", "diclofenac", "voltaren", "cataflam", "naproxen", "ketoprofen",
 					"ketorolac", "mefenamic", "indomethacin", "piroxicam", "meloxicam", "celecoxib", "etoricoxib", "اسبرين", "ايبوبروفين",
 					"بروفين", "ديكلوفيناك", "فولتارين", "كتافلام", "نابروكسين", "كيتوبروفين", "كيتورولاك", "ميفيناميك", "اندوميثاسين",

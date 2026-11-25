@@ -1,0 +1,39 @@
+@using CrossBuy.BL.Hospital
+@model (List<HospitalAllergyItem> Items, bool InDesk)
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    HOSPITAL H270 — the coded allergy list (registration window and the patient's file). The allergen is picked from
+    the catalogue (or typed when the list does not hold it — shown "not in the list"), with its reaction and severity;
+    "No known allergy" records that the patient was asked. js/hospital/hospital-allergy-picker.js draws and keeps the
+    JSON in the hidden field the form sends (allergyItemsJson).
+*@
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var json = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+    var catalog = HospitalAllergenCatalog.All.Select(a => new { code = a.Code, kind = a.Kind, label = HospitalAllergenCatalog.Label(a, lang) });
+    var words = new
+    {
+        add = T["Add an allergy"].Value, nka = T["No known allergy"].Value, choose = T["Choose or type an allergy"].Value,
+        reaction = T["Reaction"].Value, severity = T["Severity"].Value, notCoded = T["Not in the list"].Value, none = T["No allergy recorded yet"].Value,
+        remove = T["Remove"].Value, nkaOn = T["The patient was asked and has no known allergy"].Value,
+        groups = new Dictionary<string, string> { [HospitalAllergenCatalog.Drug] = T["Medicines"].Value, [HospitalAllergenCatalog.Food] = T["Food"].Value, [HospitalAllergenCatalog.Environment] = T["Environment and other"].Value },
+        reactions = HospitalAllergenCatalog.Reactions.Select(r => new { code = r.Code, label = lang == "ar" ? r.Ar : lang == "fr" ? r.Fr : r.En }),
+        severities = new[] { new { code = HospitalAllergenCatalog.Mild, label = T["Mild"].Value }, new { code = HospitalAllergenCatalog.Moderate, label = T["Moderate"].Value }, new { code = HospitalAllergenCatalog.Severe, label = T["Severe"].Value } },
+    };
+}
+<div data-allergy-picker data-catalog="@System.Text.Json.JsonSerializer.Serialize(catalog)" data-words="@System.Text.Json.JsonSerializer.Serialize(words)">
+    @if (Model.InDesk)
+    {
+        <input type="hidden" data-reg-f="allergyItemsJson" data-ap-value value="@System.Text.Json.JsonSerializer.Serialize(Model.Items, json)" />
+    }
+    else
+    {
+        <input type="hidden" name="allergyItemsJson" data-ap-value value="@System.Text.Json.JsonSerializer.Serialize(Model.Items, json)" />
+    }
+    <div class="d-flex flex-stack flex-wrap gap-3 mb-3">
+        <label class="fw-semibold fs-7 text-gray-700 mb-0"><i class="ki-outline ki-shield-cross fs-6 text-danger me-1"></i>@T["Allergies"]</label>
+        <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" data-ap-nka /><span class="form-check-label fs-7 text-gray-700">@T["No known allergy"]</span></label>
+    </div>
+    <div data-ap-rows></div>
+    <button type="button" class="btn btn-sm btn-light-danger mt-1" data-ap-add><i class="ki-outline ki-plus fs-4"></i>@T["Add an allergy"]</button>
+</div>

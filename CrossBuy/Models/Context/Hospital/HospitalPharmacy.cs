@@ -109,6 +109,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalCartFillModel.Configure(b);   // H138: the unit-dose cart fill
 			HospitalDeskConfirmationModel.Configure(b);   // H141: the desk confirms tomorrow's appointments
 			HospitalPatientDepositModel.Configure(b);   // H143: the patient's deposits taken at the counter
+			HospitalPatientAllergyModel.Configure(b);   // H270: the patient's allergies as a coded list
 			HospitalDispenseFillModel.Configure(b);   // H145: each time a dispense line leaves the store (partial dispensing)
 			HospitalDispenseReturnModel.Configure(b);   // H146: medicine the patient brings back
 			HospitalCreditNoteModel.Configure(b);       // H148: credit notes on a closed bill

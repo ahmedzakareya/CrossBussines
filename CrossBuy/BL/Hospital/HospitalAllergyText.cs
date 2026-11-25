@@ -79,8 +79,10 @@ namespace CrossBuy.BL.Hospital
 				main = entry[..open];
 				reaction = close > open ? entry[(open + 1)..close] : entry[(open + 1)..];
 			}
-			if (!Substances.TryGetValue(Fold(main), out var s)) return null;
-			string name = fr ? s.Fr : s.En;
+			string name;
+			if (Substances.TryGetValue(Fold(main), out var s)) name = fr ? s.Fr : s.En;
+			else if (HospitalAllergenCatalog.ByArabic(Fold(main)) is { } a) name = fr ? a.Fr : a.En;   // H270: the coded list's names
+			else return null;
 			if (string.IsNullOrWhiteSpace(reaction)) return name;
 			var r = TranslateReaction(reaction, fr);
 			return r == null ? null : name + " (" + r + ")";

@@ -32,6 +32,9 @@ namespace CrossBuy.BL.Hospital
 		public string? Phone { get; set; }
 		public string? BloodGroup { get; set; }
 		public string? Allergies { get; set; }
+		/// H270: the coded allergy list (a JSON array of HospitalAllergyItem). When sent, it is the truth and Allergies is
+		/// written from it; when not sent (the kiosk, the quick form, older callers), Allergies is taken as typed.
+		public string? AllergyItemsJson { get; set; }
 		public string? ChronicConditions { get; set; }
 		public string? EmergencyName { get; set; }
 		public string? EmergencyRelation { get; set; }
@@ -181,6 +184,15 @@ namespace CrossBuy.BL.Hospital
 				if (owner != null) return HospitalResult.Fail("This ID number already has a file: {0}", owner);
 			}
 
+			// H270: the coded allergy list, checked before anything is written
+			List<HospitalAllergyItem>? allergyItems = null;
+			if (input.AllergyItemsJson != null)
+			{
+				allergyItems = HospitalAllergenCatalog.Parse(input.AllergyItemsJson);
+				if (allergyItems == null) return HospitalResult.Fail("Unknown allergen");
+				if (HospitalAllergenCatalog.Refusal(allergyItems) is string allergyWhy) return HospitalResult.Fail(allergyWhy);
+			}
+
 			if (input.PriceListId is int plid && !await _db.HospitalPriceLists.AnyAsync(l => l.ID == plid && l.CompanyId == ctx.CompanyId && l.Status == HospitalPriceListStatus.Active, ct))
 				return HospitalResult.Fail("Choose an approved price list");
 
@@ -202,7 +214,8 @@ namespace CrossBuy.BL.Hospital
 
 			row.Name = name; row.NameEn = nameEn; row.Sex = input.Sex; row.BirthDate = input.BirthDate?.Date;
 			row.NationalId = nid; row.NationalityId = input.NationalityId; row.Phone = phone; row.BloodGroup = blood;
-			row.Allergies = Clean(input.Allergies, 1000);   // the desk records allergies: a safety fact it prints on the wristband
+			row.Allergies = allergyItems != null ? HospitalAllergenCatalog.Describe(allergyItems)   // H270: the text is the coded list's print
+				: Clean(input.Allergies, 1000);   // the desk records allergies: a safety fact it prints on the wristband
 			// H156: chronic conditions are clinical — a reception-only person neither sets nor, by saving a form without the
 			// field, wipes them
 			if (await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) row.ChronicConditions = Clean(input.ChronicConditions, 1000);
@@ -226,10 +239,45 @@ namespace CrossBuy.BL.Hospital
 			}
 			else await _db.SaveChangesAsync(ct);
 
+			if (allergyItems != null) await KeepAllergiesAsync(ctx, row.ID, allergyItems, employeeId, ct);
 			_db.HospitalPatientAccessLogs.Add(new HospitalPatientAccessLog
 			{ CompanyId = ctx.CompanyId, PatientId = row.ID, EmployeeId = employeeId, Action = action, At = DateTime.UtcNow });
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(row.ID);
+		}
+
+		/// H270: the active rows become the list sent — an allergy still there keeps its row (its reaction and severity
+		/// updated), a new one is added, one no longer listed is marked removed, never deleted. Saved by the caller.
+		private async Task KeepAllergiesAsync(BusinessContext ctx, int patientId, List<HospitalAllergyItem> items, int? employeeId, CancellationToken ct)
+		{
+			var now = DateTime.UtcNow;
+			var active = await _db.Set<HospitalPatientAllergy>().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId && a.RemovedAt == null).ToListAsync(ct);
+			string KeyOf(HospitalPatientAllergy a) => HospitalAllergenCatalog.Key(new HospitalAllergyItem { Code = a.AllergenCode, Text = a.Text });
+			var kept = new HashSet<int>();
+			foreach (var i in items)
+			{
+				var have = active.FirstOrDefault(a => !kept.Contains(a.ID) && KeyOf(a) == HospitalAllergenCatalog.Key(i));
+				if (have != null) { have.Reaction = i.Reaction; have.Severity = i.Severity; kept.Add(have.ID); continue; }
+				_db.Set<HospitalPatientAllergy>().Add(new HospitalPatientAllergy { CompanyId = ctx.CompanyId, PatientId = patientId, AllergenCode = i.Code, Text = i.Text,
+					Reaction = i.Reaction, Severity = i.Severity, RecordedAt = now, RecordedByEmployeeId = employeeId });
+			}
+			foreach (var a in active.Where(a => !kept.Contains(a.ID))) { a.RemovedAt = now; a.RemovedByEmployeeId = employeeId; }
+		}
+
+		/// H270: the list the form opens with — the active rows, plus any line of the text the rows do not hold (written
+		/// before H270, by the kiosk or by a merge), read into the list as far as the catalogue knows it.
+		public async Task<List<HospitalAllergyItem>> AllergyItemsAsync(BusinessContext ctx, HospitalPatient? p, CancellationToken ct = default)
+		{
+			if (p == null) return new();
+			var rows = await _db.Set<HospitalPatientAllergy>().AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == p.ID && a.RemovedAt == null)
+				.OrderBy(a => a.ID).ToListAsync(ct);
+			var items = rows.Select(a => new HospitalAllergyItem { Code = a.AllergenCode, Text = a.Text, Reaction = a.Reaction, Severity = a.Severity })
+				.GroupBy(HospitalAllergenCatalog.Key).Select(g => g.First()).ToList();
+			var printed = items.Select(HospitalAllergenCatalog.Line).ToHashSet();
+			foreach (var extra in HospitalAllergenCatalog.FromText(p.Allergies))
+				if (!printed.Contains(HospitalAllergenCatalog.Line(extra)) && !items.Any(i => HospitalAllergenCatalog.Key(i) == HospitalAllergenCatalog.Key(extra))) items.Add(extra);
+			if (items.Count > 1) items.RemoveAll(i => i.Code == HospitalAllergenCatalog.NoKnownAllergy);   // an allergy written since outranks "none"
+			return items;
 		}
 
 		/// H3: attaches a stored photo to the file. The caller stores the bytes first (HospitalPatientPhotoService, on the

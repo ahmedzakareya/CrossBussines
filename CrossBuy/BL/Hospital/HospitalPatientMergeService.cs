@@ -55,6 +55,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalDeath), "HospitalDeaths"),   // H59
 			(typeof(HospitalPharmacyIntervention), "HospitalPharmacyInterventions"),   // H136: the pharmacist's interventions follow the patient
 			(typeof(HospitalPatientDeposit), "HospitalPatientDeposits"),   // H143: what the hospital holds for the patient follows the patient
+			(typeof(HospitalPatientAllergy), "HospitalPatientAllergies"),   // H270: the coded allergy list follows the patient
 			(typeof(HospitalCreditNote), "HospitalCreditNotes"),   // H148: a credit note follows its patient (its bill moves too)
 			(typeof(HospitalFormularyRequest), "HospitalFormularyRequests"),   // H152: the committee's decision follows its patient
 			(typeof(HospitalCompounding), "HospitalCompoundings"),   // H153: a preparation's batch record follows its patient

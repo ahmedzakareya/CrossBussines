@@ -65,7 +65,7 @@
                     <div class="card card-flush mb-5">
                         <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Medical alerts"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["An allergy shows as a red alert on the file"]</span></h3></div>
                         <div class="card-body pt-2"><div class="row g-6">
-                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Allergies"]</label><textarea name="allergies" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.Allergies</textarea></div>
+                            <div class="col-12">@await Html.PartialAsync("_AllergyPicker", ((ViewBag.AllergyItems as List<CrossBuy.BL.Hospital.HospitalAllergyItem>) ?? new(), false))</div>@* H270: the coded allergy list *@
                             @if (ViewBag.CanClinical != false)
                             {
                                 <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Chronic conditions"]</label><textarea name="chronicConditions" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.ChronicConditions</textarea></div>
@@ -140,6 +140,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/hospital/hospital-allergy-picker.js" asp-append-version="true"></script>
     <script>
         (function () {
             var form = document.getElementById('patientForm');
@@ -197,7 +198,7 @@
                     id: val('id') ? +val('id') : null, name: val('name'), nameEn: val('nameEn'), sex: val('sex'),
                     birthDate: val('birthDate') || null, nationalId: val('nationalId') || null,
                     nationalityId: val('nationalityId') ? +val('nationalityId') : null, phone: val('phone') || null,
-                    bloodGroup: val('bloodGroup') || null, allergies: val('allergies') || null, chronicConditions: val('chronicConditions') || null,
+                    bloodGroup: val('bloodGroup') || null, allergyItemsJson: val('allergyItemsJson') || '[]', chronicConditions: val('chronicConditions') || null,
                     emergencyName: val('emergencyName') || null, emergencyRelation: val('emergencyRelation') || null, emergencyPhone: val('emergencyPhone') || null,
                     consentSigned: form.elements.consentSigned.checked,
                     priceListId: val('priceListId') ? +val('priceListId') : null

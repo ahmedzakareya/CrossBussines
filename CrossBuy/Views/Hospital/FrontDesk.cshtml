@@ -358,6 +358,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/hospital/hospital-allergy-picker.js" asp-append-version="true"></script>
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -628,6 +629,7 @@
                     box.querySelectorAll('[data-reg-dup]').forEach(function (el) { el.addEventListener('input', dupCheck); });
                     box.querySelector('[data-reg-file]').addEventListener('change', function (ev) { var f = ev.target.files[0]; if (!f) return; if (f.size > 5 * 1024 * 1024) { toastr.error(W3.big); return; } stopCam(); showShot(f); });
                     dupCheck();
+                    if (window.hospAllergyPicker) hospAllergyPicker.init(box);   // H270: the coded allergy list
                     var first = box.querySelector('[data-reg-f="name"]'); if (first && !first.value) first.focus();
                 }, 100);
             }
