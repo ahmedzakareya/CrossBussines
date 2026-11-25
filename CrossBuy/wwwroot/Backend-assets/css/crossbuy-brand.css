@@ -853,6 +853,20 @@
     border-bottom: 2px solid var(--cb-brand-ink) !important;   /* beats .table-row-dashed */
 }
 
+/* The hospital screens (131 of them) wrote their list head as a grey band with rounded ends
+   (tr.fw-bold.text-muted.bg-light, th.rounded-start/-end): tall, heavy, and a narrow column wrapped its
+   title onto two lines (owner on the doctor worklist: «الهيدر … وحش جدا»). One rule gives that head the
+   house look - small muted titles on one line over the brand rule - without touching 131 views. */
+.table thead tr.fw-bold.text-muted.bg-light { background: transparent !important; }
+.table thead tr.fw-bold.text-muted.bg-light > th {
+    background: transparent !important;
+    border-radius: 0 !important;
+    border-bottom: 2px solid var(--cb-brand-ink) !important;
+    font-size: .85rem;
+    white-space: nowrap;
+    padding-top: .65rem; padding-bottom: .65rem;
+}
+
 /* Figures that sit in a column must not change width as their digits change. */
 .cb-tabular { font-variant-numeric: tabular-nums; }
 
