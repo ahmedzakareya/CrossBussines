@@ -381,6 +381,19 @@ window.CBQuickAdd=(function(){
         var table=row.closest('table'); if(!table || !table.classList.contains('cb-2row')) return;
         var ths=table.querySelectorAll('thead tr:first-child th'), tds=row.children;
         for(var i=0;i<tds.length && i<ths.length;i++){ if(!tds[i].hasAttribute('data-l')) tds[i].setAttribute('data-l', (ths[i].textContent||'').trim()); }
+        fitTwoRows(row); setTimeout(function(){ fitTwoRows(row); }, 400);   // some screens reveal a field (unit) just after the row is built
+    }
+    // a line fills exactly TWO full rows (the sales-return look), never a row and a half: the column count follows
+    // the line's own fields - a 10-field order gets 5 columns, a 12-slot return 6, a 14-slot invoice 7.
+    // Cells that span 2 (description, location) count twice.
+    function fitTwoRows(row){
+        var mine=row.querySelector('td[data-cb-span2]'); if(mine){ mine.style.gridColumn=''; mine.removeAttribute('data-cb-span2'); }   // recount from scratch
+        var slots=0; [].forEach.call(row.children, function(td){ if(td.offsetParent===null && getComputedStyle(td).display==='none') return;
+            var cs=getComputedStyle(td), m=/span\s+(\d+)/.exec((cs.gridColumnStart||'')+' '+(cs.gridColumnEnd||'')); slots+= m ? parseInt(m[1],10) : 1; });
+        // an odd count would leave a hole at the end of the second row: the item cell (the longest text) takes two
+        if(slots%2===1){ var itd=row.querySelector('td .it'); itd=itd && itd.closest('td');
+            if(itd && !/span/.test((getComputedStyle(itd).gridColumnStart||'')+(getComputedStyle(itd).gridColumnEnd||''))){ itd.style.gridColumn='span 2'; itd.setAttribute('data-cb-span2','1'); slots++; } }
+        if(slots>0) row.style.gridTemplateColumns='repeat('+(slots/2|0 || 1)+',minmax(0,1fr))';
     }
     function addBarcodeColumn(){
         var body=document.getElementById('rows'); var table=body&&body.closest('table'); if(!table) return;
