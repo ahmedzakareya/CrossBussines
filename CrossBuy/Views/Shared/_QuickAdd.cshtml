@@ -38,6 +38,9 @@
     .cb-2row #rows td{display:flex;flex-direction:column;justify-content:flex-end;border:0!important;padding:0!important;min-width:0!important}
     .cb-2row #rows td::before{content:attr(data-l);font-size:.72rem;line-height:1;color:var(--bs-gray-500);font-weight:600;margin-bottom:.35rem;min-height:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cb-2row #rows td .form-control,.cb-2row #rows td .form-select,.cb-2row #rows td .select2-container{min-width:0!important;width:100%!important}
+    /* ...but never the <select> a select2 hides behind its box: forced to 100% it grew past the screen and gave
+       every grid page a sideways scroll (2071px on a 1600px window). It must stay select2's 1px. */
+    .cb-2row #rows td select.select2-hidden-accessible{width:1px!important;min-width:0!important}
     .cb-2row #rows td .form-control{height:42px}
     .cb-2row #rows td .select2-container .select2-selection{height:42px!important;display:flex;align-items:center}
     .cb-2row #rows td .cb-bc{min-width:0}
