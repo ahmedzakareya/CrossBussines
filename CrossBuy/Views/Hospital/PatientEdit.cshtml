@@ -68,7 +68,7 @@
                             <div class="col-12">@await Html.PartialAsync("_AllergyPicker", ((ViewBag.AllergyItems as List<CrossBuy.BL.Hospital.HospitalAllergyItem>) ?? new(), false))</div>@* H270: the coded allergy list *@
                             @if (ViewBag.CanClinical != false)
                             {
-                                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Chronic conditions"]</label><textarea name="chronicConditions" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.ChronicConditions</textarea></div>
+                                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Chronic conditions"]</label><textarea name="chronicConditions" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.ChronicConditions</textarea></div>
                             }
                         </div></div>
                     </div>
