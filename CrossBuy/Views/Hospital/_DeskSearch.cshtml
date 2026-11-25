@@ -24,7 +24,7 @@ else
         {
             var c = Model[i];
             <div class="d-flex flex-wrap align-items-center gap-4 px-5 py-4 @(i > 0 ? "border-top border-dashed border-gray-300" : "") bg-hover-light">
-                <a href="#" class="d-flex align-items-center flex-grow-1 min-w-250px text-hover-primary" data-open-patient="@c.PatientId">
+                <a href="#" class="d-flex align-items-center flex-root min-w-250px text-hover-primary" data-open-patient="@c.PatientId">@* flex-root: the name block takes the room left, never pushes the acts off the line *@
                     <div class="symbol symbol-50px symbol-circle me-4 flex-shrink-0">@if (c.Photo != null) {<img src="@c.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-6 hp-initials">@HospitalUi.Initials(c.NameEn ?? c.Name)</span>}</div>
                     <div class="d-flex flex-column min-w-0">
                         <span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(c.Name, c.NameEn)</bdi></span>
@@ -38,7 +38,7 @@ else
                 </a>
                 <div class="min-w-150px"><div class="text-muted fs-8">@T["match:id"]</div><div class="fw-bold hp-num fs-7">@(c.NationalId ?? "—")</div></div>
                 <div class="min-w-125px"><div class="text-muted fs-8">@T["Matched by"]</div><span class="badge badge-light-@(c.Score >= 90 ? "primary" : "primary") fs-8 fw-bold">@T["match:" + c.Reason] · <span class="hp-num">@c.Score%</span></span></div>
-                <div class="min-w-150px">@if (c.TodayStatus != null) {<div class="text-muted fs-8">@T["Today"]</div><span class="badge badge-light-info fs-8 fw-bold">@T["desk:" + HospitalFrontDeskRules.Stage(c.TodayStatus)]@if (c.QueueNumber is int q) {<text> · </text><span class="hp-num">#@q</span>}</span>}</div>
+                @if (c.TodayStatus != null) {<div class="min-w-150px"><div class="text-muted fs-8">@T["Today"]</div><span class="badge badge-light-info fs-8 fw-bold">@T["desk:" + HospitalFrontDeskRules.Stage(c.TodayStatus)]@if (c.QueueNumber is int q) {<text> · </text><span class="hp-num">#@q</span>}</span></div>}
                 <div class="d-flex gap-1 ms-auto">
                     @if (canBook && c.TodayAppointmentId is int ap && c.TodayStatus == CrossBuy.Models.Context.Hospital.HospitalAppointmentStatus.Booked)
                     {
