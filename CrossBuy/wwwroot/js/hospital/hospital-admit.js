@@ -9,6 +9,9 @@
 	var admitEl = document.getElementById('admitModal'), bedEl = document.getElementById('bedModal');
 	var body = admitEl.querySelector('[data-admit-body]'), confirmBtn = admitEl.querySelector('[data-admit-confirm]');
 	var picker = admitEl.querySelector('[data-admit-patient]');
+	// H270: the id goes where the route keeps its 0 ("Admissions/0/Transfer" has it in the middle). The old /0$/ replace
+	// left transfer and discharge posting for admission 0 - refused, behind a red toast read as "saved".
+	function withId(url, id) { return url.replace(/\/0(?=\/|\?|$)/, '/' + id); }
 	var state = { building: null, patient: null, beds: [], roomId: null, bedId: null, transfer: null, currency: null };
 	var onChange = function () { };
 
@@ -30,7 +33,7 @@
 	function person(p, size) {
 		return '<div class="d-flex align-items-center min-w-0"><div class="symbol symbol-' + size + 'px symbol-circle flex-shrink-0">' +
 			(p.photo ? '<img src="' + esc(p.photo) + '" alt="" style="object-fit:cover" />' : '<span class="symbol-label fw-bold hp-initials">' + esc(p.initials || (p.nameEn || '?').split(' ').map(function (x) { return x.charAt(0); }).slice(0, 2).join('').toUpperCase()) + '</span>') +
-			'</div><div class="d-flex flex-column ms-3 min-w-0"><a href="' + cfg.urls.patient.replace(/0$/, p.id) + '" class="text-gray-900 text-hover-primary fs-6 fw-bold text-truncate">' + esc(p.name) + '</a>' +
+			'</div><div class="d-flex flex-column ms-3 min-w-0"><a href="' + withId(cfg.urls.patient, p.id) + '" class="text-gray-900 text-hover-primary fs-6 fw-bold text-truncate">' + esc(p.name) + '</a>' +
 			'<span class="text-muted fw-semibold fs-7"><span class="hp-num">' + esc(p.mrn) + '</span>' + (p.age != null ? ' · <span class="hp-num">' + p.age + '</span> ' + esc(w('y')) : '') + ' · ' + esc(p.sex === 'M' ? w('Male') : w('Female')) + '</span></div></div>';
 	}
 
@@ -112,7 +115,7 @@
 		confirmBtn.disabled = true;
 		var dx = body.querySelector('[data-admit-dx]');
 		var call = state.transfer
-			? post(cfg.urls.transfer.replace(/0$/, state.transfer), { bedId: state.bedId })
+			? post(withId(cfg.urls.transfer, state.transfer), { bedId: state.bedId })
 			: post(cfg.urls.admit, { patientId: state.patient.id, bedId: state.bedId, diagnosis: dx ? dx.value : null });
 		call.then(function (res) {
 			if (!res.ok) { confirmBtn.disabled = false; toast('error', res.error || w('The change could not be saved')); return; }
@@ -152,7 +155,7 @@
 					'<div class="col-md-4"><div class="text-muted fs-8 fw-semibold">' + esc(w('Since')) + '</div><div class="fw-bold text-gray-900 fs-7 hp-num">' + since.toISOString().slice(0, 10) + '</div></div>' +
 					'<div class="col-md-4"><div class="text-muted fs-8 fw-semibold">' + esc(w('Diagnosis')) + '</div><div class="fw-bold text-gray-900 fs-7">' + esc(p.diagnosis || '—') + '</div></div>' +
 					'<div class="col-md-4"><div class="text-muted fs-8 fw-semibold">' + esc(w('Allergy')) + '</div><div class="fw-bold fs-7 ' + (p.allergy ? 'text-danger' : 'text-gray-900') + '">' + (p.allergy ? '!' : '—') + '</div></div></div>';
-				foot += '<a class="btn btn-light-primary" href="' + cfg.urls.patient.replace(/0$/, p.id) + '">' + esc(w('Open file')) + '</a>';
+				foot += '<a class="btn btn-light-primary" href="' + withId(cfg.urls.patient, p.id) + '">' + esc(w('Open file')) + '</a>';
 				if (canAdmit) foot += '<button type="button" class="btn btn-light-primary" data-bed-transfer><i class="ki-outline ki-arrows-loop fs-4"></i>' + esc(w('Transfer')) + '</button>' +
 					'<button type="button" class="btn btn-primary" data-bed-discharge><i class="ki-outline ki-exit-right fs-4"></i>' + esc(w('Discharge')) + '</button>';
 			} else if (b.status === 'Vacant' && canAdmit) {
@@ -171,7 +174,7 @@
 				window.cbConfirm(w('Discharge this patient? The bed goes to cleaning.'), { kind: 'danger' }).then(function (ok) {
 					if (!ok) return;
 					d.disabled = true;
-					post(cfg.urls.discharge.replace(/0$/, p.admissionId)).then(function (res) {
+					post(withId(cfg.urls.discharge, p.admissionId)).then(function (res) {
 						if (!res.ok) { d.disabled = false; toast('error', res.error || w('The change could not be saved')); return; }
 						modal.hide(); toast('success', w('Saved')); building().then(function () { onChange(); });
 					});
@@ -184,7 +187,7 @@
 	function discharge(admissionId) {
 		return window.cbConfirm(w('Discharge this patient? The bed goes to cleaning.'), { kind: 'danger' }).then(function (ok) {
 			if (!ok) return false;
-			return post(cfg.urls.discharge.replace(/0$/, admissionId)).then(function (res) {
+			return post(withId(cfg.urls.discharge, admissionId)).then(function (res) {
 				if (!res.ok) { toast('error', res.error || w('The change could not be saved')); return false; }
 				toast('success', w('Saved')); return building().then(function () { onChange(); return true; });
 			});
