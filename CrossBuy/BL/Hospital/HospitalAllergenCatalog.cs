@@ -92,6 +92,8 @@ namespace CrossBuy.BL.Hospital
 				i.Severity = string.IsNullOrWhiteSpace(i.Severity) ? null : i.Severity.Trim();
 				if (i.Code != null) i.Text = null;
 			}
+			if (items.Any(i => i.Code == null && i.Text == null && (i.Reaction != null || i.Severity != null)))
+				return "Choose the allergy in every row, or remove the row";   // H270: a half-filled row is never dropped silently
 			items.RemoveAll(i => i.Code == null && i.Text == null);
 			if (items.Any(i => i.Code == NoKnownAllergy))
 			{

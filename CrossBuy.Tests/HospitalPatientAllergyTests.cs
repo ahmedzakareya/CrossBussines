@@ -68,6 +68,10 @@ namespace CrossBuy.Tests
 			Assert.NotNull(HospitalAllergenCatalog.Refusal(L(new HospitalAllergyItem { Code = "DRUG-PEN" }, new HospitalAllergyItem { Code = "DRUG-PEN", Reaction = "Rash" })));
 			Assert.NotNull(HospitalAllergenCatalog.Refusal(L(new HospitalAllergyItem { Text = "الكيوي" }, new HospitalAllergyItem { Text = "كيوي" })));   // the same word, folded
 			Assert.NotNull(HospitalAllergenCatalog.Refusal(L(new HospitalAllergyItem { Text = "x" })));
+			// the owner's walk-through: "كيوي" typed, the list closed without Enter, a reaction chosen — refused, not dropped
+			Assert.Equal("Choose the allergy in every row, or remove the row", HospitalAllergenCatalog.Refusal(L(new HospitalAllergyItem { Code = "DRUG-PEN" }, new HospitalAllergyItem { Reaction = "Itching", Severity = "Mild" })));
+			var blank = L(new HospitalAllergyItem { Code = "DRUG-PEN" }, new HospitalAllergyItem());
+			Assert.Null(HospitalAllergenCatalog.Refusal(blank)); Assert.Single(blank);   // an untouched empty row is simply not a row
 		}
 
 		[Fact]

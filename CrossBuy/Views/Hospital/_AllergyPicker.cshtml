@@ -10,7 +10,8 @@
 @{
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var json = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
-    var catalog = HospitalAllergenCatalog.All.Select(a => new { code = a.Code, kind = a.Kind, label = HospitalAllergenCatalog.Label(a, lang) });
+    // every name in the three languages rides along: an Arabic name typed on an English screen still finds its entry
+    var catalog = HospitalAllergenCatalog.All.Select(a => new { code = a.Code, kind = a.Kind, label = HospitalAllergenCatalog.Label(a, lang), names = new[] { a.Ar, a.En, a.Fr } });
     var words = new
     {
         add = T["Add an allergy"].Value, nka = T["No known allergy"].Value, choose = T["Choose or type an allergy"].Value,

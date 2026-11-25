@@ -4,6 +4,11 @@
 // select2's change only reaches jQuery, so the allergen select is listened to with jQuery's .on.
 (function () {
     'use strict';
+    // the way a desk types a name: case, Arabic letter forms and the article do not matter
+    function fold(s) {
+        return String(s || '').toLowerCase().replace(/[ً-ٟـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+            .split(/\s+/).filter(Boolean).map(function (w) { return w.length > 3 && w.indexOf('ال') === 0 ? w.slice(2) : w; }).join(' ');
+    }
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
     function init(root) {
@@ -12,11 +17,21 @@
             var catalog = JSON.parse(box.getAttribute('data-catalog') || '[]'), W = JSON.parse(box.getAttribute('data-words') || '{}');
             var hidden = box.querySelector('[data-ap-value]'), rowsEl = box.querySelector('[data-ap-rows]'), nka = box.querySelector('[data-ap-nka]'), add = box.querySelector('[data-ap-add]');
             var items = []; try { items = JSON.parse(hidden.value || '[]') || []; } catch (e) { items = []; }
-            var byCode = {}; catalog.forEach(function (c) { byCode[c.code] = c; });
+            var byCode = {}; catalog.forEach(function (c) { byCode[c.code] = c; c.keys = (c.names || [c.label]).concat([c.label]).map(fold); });
+            function entryFor(term) { var f = fold(term); return catalog.filter(function (c) { return c.keys.indexOf(f) >= 0; })[0]; }
+            // select2's search, by any of an entry's names (optgroups searched through their children)
+            function matcher(params, data) {
+                var t = fold(params.term); if (!t) return data;
+                if (data.children) { var kids = data.children.filter(function (k) { return matcher(params, k) !== null; }); if (!kids.length) return null; var g = jQuery.extend({}, data, true); g.children = kids; return g; }
+                var c = /^c:/.test(data.id || '') ? byCode[data.id.slice(2)] : null;
+                var keys = c ? c.keys : [fold(data.text)];
+                return keys.some(function (k) { return k.indexOf(t) >= 0; }) ? data : null;
+            }
             if (items.length === 1 && items[0].code === 'NKA') { nka.checked = true; items = []; }
 
             function sync() {
-                var out = nka.checked ? [{ code: 'NKA' }] : items.filter(function (i) { return i.code || (i.text || '').trim(); })
+                // a row with a reaction or a severity but no allergen is SENT, so the server refuses it instead of it vanishing
+                var out = nka.checked ? [{ code: 'NKA' }] : items.filter(function (i) { return i.code || (i.text || '').trim() || i.reaction || i.severity; })
                     .map(function (i) { return { code: i.code || null, text: i.code ? null : (i.text || '').trim(), reaction: i.reaction || null, severity: i.severity || null }; });
                 hidden.value = JSON.stringify(out);
             }
@@ -47,9 +62,20 @@
                 if (window.jQuery && jQuery.fn.select2) jQuery(rowsEl).find('[data-ap-what]').each(function () {
                     var $s = jQuery(this), modal = box.closest('.modal');
                     $s.select2({ tags: true, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dir: document.documentElement.dir || 'ltr', dropdownParent: modal ? jQuery(modal) : jQuery(document.body),
-                        createTag: function (p) { var t = (p.term || '').trim(); return t.length < 2 ? null : { id: 't:' + t, text: t, newTag: true }; },
+                        matcher: matcher,
+                        createTag: function (p) { var t = (p.term || '').trim(); if (t.length < 2 || entryFor(t)) return null; return { id: 't:' + t, text: t, newTag: true }; },
                         // the typed text goes LAST: Enter picks the list's own entry ("بنس" → بنسلين), a new word only when nothing matches
                         insertTag: function (data, tag) { data.push(tag); } })
+                      // typed and left without Enter (a click elsewhere): the words are kept — the list's own entry when it is
+                      // exactly that name, otherwise as an allergy not in the list
+                      .on('select2:closing', function () {
+                        var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
+                        if (term.length < 2 || $s.val()) return;
+                        var same = entryFor(term);
+                        var v = same ? 'c:' + same.code : 't:' + term;
+                        if (!same && !$s.find('option').filter(function () { return this.value === v; }).length) $s.append(new Option(term, v, false, false));
+                        setTimeout(function () { $s.val(v).trigger('change'); }, 0);
+                      })
                       .on('change', function () {
                         var i = items[+$s.closest('[data-ap-row]').attr('data-ap-row')], v = $s.val() || '';
                         if (/^c:/.test(v)) { i.code = v.slice(2); i.text = null; } else { i.code = null; i.text = v.replace(/^t:/, ''); }
