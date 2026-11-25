@@ -18,7 +18,7 @@
     string? nationality = ViewBag.Nationality as string;
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     var allergies = Lines(Model.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray();
-    var chronic = Lines(Model.ChronicConditions);
+    var chronic = Lines(Model.ChronicConditions).Select(x => HospitalConditionText.Display(x)).ToArray();
     var parts = Model.NameEn.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
     var initials = ((parts.Length > 0 ? parts[0][..1] : "") + (parts.Length > 1 ? parts[1][..1] : "")).ToUpperInvariant();
     bool canAdmit = ViewBag.CanAdmit == true;

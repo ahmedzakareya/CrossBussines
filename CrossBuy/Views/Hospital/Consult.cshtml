@@ -22,7 +22,7 @@
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     var allergies = Lines(p.Allergies).Select(x => HospitalAllergyText.Display(x)).ToArray();
-    var chronic = Lines(p.ChronicConditions);
+    var chronic = Lines(p.ChronicConditions).Select(x => HospitalConditionText.Display(x)).ToArray();
     string ro = canEdit ? "" : "disabled";
     var vitals = new (string Key, string Label, string? Value, string Step)[] {
         ("bpSystolic", T["BP systolic"].Value, e.BpSystolic?.ToString(), "1"), ("bpDiastolic", T["BP diastolic"].Value, e.BpDiastolic?.ToString(), "1"),
