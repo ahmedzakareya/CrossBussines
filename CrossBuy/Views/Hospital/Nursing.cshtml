@@ -281,8 +281,8 @@
         @* H205: the bedside scan — the wristband, then the pack; a scanner types the code and presses Enter *@
         <div class="mb-4" data-d-scan-wrap>
             <div class="row g-3">
-                <div class="col-6"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i>@T["Wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /></div>
-                <div class="col-6"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i>@T["Medicine pack"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /></div>
+                <div class="col-6"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i>@T["Wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /><div class="fs-7 fw-semibold mt-2 d-none" data-d-wrist-note></div></div>
+                <div class="col-6"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i>@T["Medicine pack"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /><div class="fs-7 fw-semibold mt-2 d-none" data-d-pack-note></div></div>
             </div>
             <button type="button" class="btn btn-sm btn-light-danger mt-3" data-d-noscan><i class="ki-outline ki-scan-barcode fs-4"></i>@T["The scan cannot be made"]</button>@* H270: a button, not a line of text the owner read past *@
             <div class="mt-2 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
@@ -513,7 +513,18 @@
             var dEl = document.getElementById('doseModal'), dose = null;
             function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value; dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given'); dEl.querySelector('[data-d-scan-wrap]').classList.toggle('d-none', s !== 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
             // H205: Enter from the scanner moves from the wristband to the pack; "cannot be scanned" opens the reason
-            dEl.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; if (e.target.hasAttribute('data-d-wrist')) { e.preventDefault(); dEl.querySelector('[data-d-pack]').focus(); } else if (e.target.hasAttribute('data-d-pack')) { e.preventDefault(); } });
+            dEl.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; if (e.target.hasAttribute('data-d-wrist')) { e.preventDefault(); look(); dEl.querySelector('[data-d-pack]').focus(); } else if (e.target.hasAttribute('data-d-pack')) { e.preventDefault(); look(); } });
+            // H270: what was read, said under each box (the owner: Enter gave no sign); spaces around a scan are dropped
+            function note(k, r) { var n = dEl.querySelector('[data-d-' + k + '-note]'); if (!r) { n.classList.add('d-none'); n.innerHTML = ''; return; }
+                n.className = 'fs-7 fw-semibold mt-2 d-flex align-items-start gap-1 ' + (r.ok ? 'text-primary' : 'text-danger');
+                n.innerHTML = '<i class="ki-outline ki-' + (r.ok ? 'check-circle' : 'information-5') + ' fs-5 ' + (r.ok ? 'text-primary' : 'text-danger') + '"></i><span dir="auto"></span>'; n.querySelector('span').textContent = r.text; }
+            function look() {
+                var w = dEl.querySelector('[data-d-wrist]'), p = dEl.querySelector('[data-d-pack]'); w.value = w.value.trim(); p.value = p.value.trim();
+                if (!dose || (!w.value && !p.value)) { note('wrist', null); note('pack', null); return; }
+                fetch(root + '/ScanLook?orderId=' + dose.orderId + '&wristband=' + encodeURIComponent(w.value) + '&pack=' + encodeURIComponent(p.value), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (x) { return x.json(); }).then(function (res) { if (!res || !res.ok) return; note('wrist', res.wristband); note('pack', res.pack); }).catch(function () { });
+            }
+            dEl.addEventListener('change', function (e) { if (e.target.hasAttribute('data-d-wrist') || e.target.hasAttribute('data-d-pack')) look(); });
             dEl.addEventListener('click', function (e) { if (!e.target.closest('[data-d-noscan]')) return; e.preventDefault(); dEl.querySelector('[data-d-override-wrap]').classList.remove('d-none'); dEl.querySelector('[data-d-override]').focus(); });
             dEl.addEventListener('shown.bs.modal', function () { var w = dEl.querySelector('[data-d-wrist]'); if (!dEl.querySelector('[data-d-scan-wrap]').classList.contains('d-none')) w.focus(); });
             dEl.addEventListener('change', function (e) { if (e.target.name === 'd-status') reasonShown(); });
@@ -527,13 +538,27 @@
                 var sel = oEl.querySelector('[data-o-drug]'), drug = oEl.querySelector('[data-k=drug]'), item = oEl.querySelector('[data-k=itemId]');
                 if (!sel || !window.jQuery || !jQuery.fn.select2) return;
                 var $s = jQuery(sel);
+                function norm(t) { return String(t || '').toLowerCase().replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\s+/g, ' ').trim(); }
+                function medicineFor(t) {
+                    var n = norm(t); if (n.length < 2) return null;
+                    var hits = [].filter.call(sel.options, function (o) {
+                        if (!/^i:/.test(o.value)) return false;
+                        var full = norm(o.text), name = full.replace(/\s·\s[^·]*$/, ''), code = (full.match(/·\s([^·]*)$/) || [])[1] || '';
+                        return n === full || n === name || (code !== '' && (n === code || n.slice(-(code.length + 2)) === '· ' + code));
+                    });
+                    return hits.length === 1 ? hits[0] : null;
+                }
                 $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dropdownParent: jQuery(oEl), dir: document.documentElement.dir || 'ltr' })
                   .on('change', function () { var v = $s.val() || '', o = sel.options[sel.selectedIndex];
+                      // typed words that name a medicine of the list (its whole line, its name or its code, dashes and spaces
+                      // as anyone types them) are that medicine, not a free-text drug - the owner's walk-through pasted a
+                      // name with "-" for "—" and got an order no pack scan could ever match
+                      if (/^t:/.test(v)) { var hit = medicineFor(v.slice(2)); if (hit) { $s.val(hit.value).trigger('change'); return; } }
                       if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = v.replace(/^t:/, ''); } })
                   .on('select2:closing', function () {
                       var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
                       if (term.length < 2 || $s.val()) return;
-                      var same = [].filter.call(sel.options, function (o) { return /^i:/.test(o.value) && o.text.replace(/\s·\s[^·]*$/, '').toLowerCase() === term.toLowerCase(); })[0];
+                      var same = medicineFor(term);
                       var v = same ? same.value : 't:' + term;
                       if (!same && ![].some.call(sel.options, function (o) { return o.value === v; })) sel.appendChild(new Option(term, v, false, false));
                       setTimeout(function () { $s.val(v).trigger('change'); }, 0);
@@ -545,7 +570,7 @@
                     dose = { orderId: Number(t.getAttribute('data-dose')), dueAt: t.getAttribute('data-due') || null, controlled: t.getAttribute('data-controlled') === '1', what: t.getAttribute('data-what') };
                     dEl.querySelector('[data-d-what]').textContent = dose.what;
                     dEl.querySelector('[name=d-status][value=Given]').checked = true; dEl.querySelector('[data-d-reason]').value = ''; $(dEl.querySelector('[data-d-witness]')).val(null).trigger('change');
-                    ['[data-d-wrist]', '[data-d-pack]', '[data-d-override]'].forEach(function (k) { dEl.querySelector(k).value = ''; }); dEl.querySelector('[data-d-override-wrap]').classList.add('d-none');
+                    ['[data-d-wrist]', '[data-d-pack]', '[data-d-override]'].forEach(function (k) { dEl.querySelector(k).value = ''; }); dEl.querySelector('[data-d-override-wrap]').classList.add('d-none'); note('wrist', null); note('pack', null);
                     reasonShown(); bootstrap.Modal.getOrCreateInstance(dEl).show(); return;
                 }
                 if (t.hasAttribute('data-stop-order')) {

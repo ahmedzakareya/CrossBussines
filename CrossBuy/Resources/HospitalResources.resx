@@ -10702,4 +10702,10 @@
   <data name="Choose the allergy in every row, or remove the row" xml:space="preserve"><value>Choose the allergy in every row, or remove the row</value></data>
   <data name="A prescription line has directions but no drug: choose the drug or remove the line" xml:space="preserve"><value>A prescription line has directions but no drug: choose the drug or remove the line</value></data>
   <data name="{0}: the patient is recorded as allergic to {1}" xml:space="preserve"><value>{0}: the patient is recorded as allergic to {1}</value></data>
+  <data name="No patient file has this wristband code" xml:space="preserve"><value>No patient file has this wristband code</value></data>
+  <data name="{0} · {1} — this order's patient" xml:space="preserve"><value>{0} · {1} — this order's patient</value></data>
+  <data name="{0} · {1} — NOT this order's patient" xml:space="preserve"><value>{0} · {1} — NOT this order's patient</value></data>
+  <data name="No medicine of the drug list has this code" xml:space="preserve"><value>No medicine of the drug list has this code</value></data>
+  <data name="{0} — the ordered medicine" xml:space="preserve"><value>{0} — the ordered medicine</value></data>
+  <data name="{0} — NOT the ordered medicine" xml:space="preserve"><value>{0} — NOT the ordered medicine</value></data>
 </root>

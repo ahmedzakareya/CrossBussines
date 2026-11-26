@@ -4,6 +4,7 @@ using CrossBuy.Models;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers
 {
@@ -45,6 +46,35 @@ namespace CrossBuy.Controllers
 			// H79: active care plans, reviews due and suggestions
 			if (board != null) ViewBag.Cp = await HospitalCarePlanService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => p.AdmissionId).ToList(), DateTime.UtcNow, ct);
 			return View(board);
+		}
+
+		/// H270: what the scanned wristband and pack name, for the line under each box (read only; the dose itself is
+		/// checked again when it is recorded). Spaces around a scan are ignored.
+		[HttpGet("Nursing/ScanLook")]
+		[HospitalPerm(HospitalActions.Admit)]
+		public async Task<IActionResult> NursingScanLook(int orderId, string? wristband, string? pack, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var order = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalMedOrder>().AsNoTracking().FirstOrDefaultAsync(o => o.ID == orderId && o.CompanyId == ctx.CompanyId, ct);
+			if (order == null) return NotFound(new { ok = false, code = "not_found" });
+			object? wrist = null, packOut = null;
+			var w = (wristband ?? "").Trim();
+			if (w.Length > 0)
+			{
+				var p = await _db.HospitalPatients.AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && x.Mrn == w.ToUpper()).Select(x => new { x.ID, x.Mrn, x.Name, x.NameEn }).FirstOrDefaultAsync(ct);
+				wrist = p == null ? new { ok = false, text = _t["No patient file has this wristband code"].Value }
+					: new { ok = p.ID == order.PatientId, text = string.Format(_t[p.ID == order.PatientId ? "{0} · {1} — this order's patient" : "{0} · {1} — NOT this order's patient"].Value, DisplayName.Of(p.Name, p.NameEn), p.Mrn) };
+			}
+			var k = (pack ?? "").Trim();
+			if (k.Length > 0)
+			{
+				var itemId = await HospitalBedsideScanLookup.ItemOfAsync(_db, ctx, k, ct);
+				var item = itemId == null ? null : await _db.Items.AsNoTracking().Where(i => i.ID == itemId).Select(i => new { i.Name, i.NameEn }).FirstOrDefaultAsync(ct);
+				packOut = item == null ? new { ok = false, text = _t["No medicine of the drug list has this code"].Value }
+					: new { ok = itemId == order.ItemId, text = string.Format(_t[itemId == order.ItemId ? "{0} — the ordered medicine" : "{0} — NOT the ordered medicine"].Value, DisplayName.Of(item.Name, item.NameEn)) };
+			}
+			return Json(new { ok = true, wristband = wrist, pack = packOut });
 		}
 
 		[HttpPost("Nursing/Order"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

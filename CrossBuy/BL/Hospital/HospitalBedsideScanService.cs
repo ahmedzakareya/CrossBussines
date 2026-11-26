@@ -76,7 +76,17 @@ namespace CrossBuy.BL.Hospital
 		{
 			if (!HospitalBedsideScanRules.WristbandMatches(wristband, mrn)) return (HospitalBedsideScanRules.WrongPatient, Array.Empty<object>(), null);
 			var code = HospitalGs1.Parse(pack);
-			if (code == null) return (HospitalBedsideScanRules.Unreadable, Array.Empty<object>(), null);
+			if (code == null)
+			{
+				// H270: not a GS1 code - the item's own barcode or code as the store keeps it (the owner's walk-through: a
+				// 10-digit store barcode was refused as "could not be read")
+				var raw = (pack ?? "").Trim();
+				if (raw.Length == 0) return (HospitalBedsideScanRules.Unreadable, Array.Empty<object>(), null);
+				if (order.ItemId is not int rawItem) return (HospitalBedsideScanRules.NoItem, Array.Empty<object>(), null);
+				return await HospitalBedsideScanLookup.ItemOfAsync(db, ctx, raw, ct) == rawItem
+					? (null, Array.Empty<object>(), null)
+					: (HospitalBedsideScanRules.WrongMedicine, Array.Empty<object>(), null);
+			}
 			if (order.ItemId is not int itemId) return (HospitalBedsideScanRules.NoItem, Array.Empty<object>(), code);
 			var forms = HospitalGs1.Forms(code.Gtin);
 			bool match = await db.Items.AsNoTracking().AnyAsync(i => i.ID == itemId && i.CompanyID == ctx.CompanyId && i.Barcode != null && forms.Contains(i.Barcode), ct)
@@ -217,6 +227,28 @@ namespace CrossBuy.BL.Hospital
 				return (rows.Select(x => new HospitalBedsideScanRow(x.s, x.p.Name, x.p.NameEn, x.p.Mrn, x.e == null ? null : EmployeeNames.Of(x.e))).ToList(), total);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException) { return (Array.Empty<HospitalBedsideScanRow>(), 0); }
+		}
+	}
+
+	/// <summary>
+	/// H270: what a scan names, said under the box as the nurse scans (the owner's walk-through: Enter gave no sign of
+	/// what was read). The wristband → the file it belongs to; the pack → the medicine of the drug list it is.
+	/// </summary>
+	public static class HospitalBedsideScanLookup
+	{
+		/// The item a scanned code names: a GS1 code through its GTIN forms, else the store's barcode or item code as typed
+		/// (spaces around it ignored). Null when no item of the company carries it.
+		public static async Task<int?> ItemOfAsync(CrossDbContext db, BusinessContext ctx, string? scanned, CancellationToken ct)
+		{
+			var raw = (scanned ?? "").Trim();
+			if (raw.Length == 0) return null;
+			var code = HospitalGs1.Parse(raw);
+			var forms = code != null ? HospitalGs1.Forms(code.Gtin).ToList() : new List<string> { raw };
+			var id = await db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && ((i.Barcode != null && forms.Contains(i.Barcode)) || i.ItemCode == raw))
+				.Select(i => (int?)i.ID).FirstOrDefaultAsync(ct);
+			if (id != null) return id;
+			return await (from b in db.ItemBarcodes.AsNoTracking() join i in db.Items.AsNoTracking() on b.ItemId equals i.ID
+						  where i.CompanyID == ctx.CompanyId && forms.Contains(b.Barcode) select (int?)i.ID).FirstOrDefaultAsync(ct);
 		}
 	}
 }

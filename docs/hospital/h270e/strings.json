@@ -1,0 +1,35 @@
+{
+ "unit": "H270E - Bedside scan says what it read",
+ "strings": {
+  "No patient file has this wristband code": {
+   "ar": "لا يوجد ملف مريض بهذا الرمز",
+   "en": "No patient file has this wristband code",
+   "fr": "Aucun dossier patient ne porte ce code"
+  },
+  "{0} · {1} — this order's patient": {
+   "ar": "{0} · {1} — مريض هذا الأمر",
+   "en": "{0} · {1} — this order's patient",
+   "fr": "{0} · {1} — le patient de cette prescription"
+  },
+  "{0} · {1} — NOT this order's patient": {
+   "ar": "{0} · {1} — ليس مريض هذا الأمر",
+   "en": "{0} · {1} — NOT this order's patient",
+   "fr": "{0} · {1} — PAS le patient de cette prescription"
+  },
+  "No medicine of the drug list has this code": {
+   "ar": "لا يوجد دواء في قائمة الأدوية بهذا الرمز",
+   "en": "No medicine of the drug list has this code",
+   "fr": "Aucun médicament de la liste ne porte ce code"
+  },
+  "{0} — the ordered medicine": {
+   "ar": "{0} — الدواء المطلوب",
+   "en": "{0} — the ordered medicine",
+   "fr": "{0} — le médicament prescrit"
+  },
+  "{0} — NOT the ordered medicine": {
+   "ar": "{0} — ليس الدواء المطلوب",
+   "en": "{0} — NOT the ordered medicine",
+   "fr": "{0} — PAS le médicament prescrit"
+  }
+ }
+}

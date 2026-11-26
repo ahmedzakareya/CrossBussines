@@ -59,7 +59,19 @@ namespace CrossBuy.Tests
 			Assert.Equal(HospitalBedsideScanRules.WrongPatient, await Check(para, "MRN-100023", Para));
 			Assert.Equal(HospitalBedsideScanRules.WrongMedicine, await Check(para, "MRN-100008", Amox));
 			Assert.Equal(HospitalBedsideScanRules.WrongMedicine, await Check(para, "MRN-100008", Other));
-			Assert.Equal(HospitalBedsideScanRules.Unreadable, await Check(para, "MRN-100008", "6287010001"));   // ten digits: no GTIN
+			// H270: a code that is no GTIN is still the store's own barcode or item code (the owner's walk-through scanned a
+			// 10-digit store barcode and was told it could not be read) - matched as kept, spaces around it ignored
+			Assert.Equal(HospitalBedsideScanRules.WrongMedicine, await Check(para, "MRN-100008", "6287010001"));   // ten digits, not this item's
+			host.Db.Items.Add(new Item { ID = 73, CompanyID = 1, ItemCode = "MED-OMEP", Barcode = "6287010003", Name = "MED-OMEP", NameEn = "MED-OMEP", ItemCategoryId = 61, BaseUoMId = 1, IsActive = true, CreatedAt = Now });
+			await host.Db.SaveChangesAsync();
+			var omep = new HospitalMedOrder { ID = 4, PatientId = 8, ItemId = 73, Drug = "Omeprazole" };
+			Assert.Null(await Check(omep, " MRN-100008 ", " 6287010003 "));
+			Assert.Null(await Check(omep, "MRN-100008", "MED-OMEP"));                                   // the item code
+			Assert.Equal(HospitalBedsideScanRules.WrongMedicine, await Check(omep, "MRN-100008", "MED-PARA"));
+			Assert.Equal(HospitalBedsideScanRules.Unreadable, await Check(omep, "MRN-100008", "   "));
+			Assert.Equal(73, await HospitalBedsideScanLookup.ItemOfAsync(host.Db, Ctx(), " 6287010003", default));
+			Assert.Equal(72, await HospitalBedsideScanLookup.ItemOfAsync(host.Db, Ctx(), Amox, default));   // a second barcode
+			Assert.Null(await HospitalBedsideScanLookup.ItemOfAsync(host.Db, Ctx(), "NOTHING", default));
 			Assert.Equal(HospitalBedsideScanRules.Expired, await Check(para, "MRN-100008", "(01)" + Para + "(17)251031"));
 			Assert.Equal(HospitalBedsideScanRules.NoItem, await Check(free, "MRN-100008", Para));
 			host.Db.Add(new HospitalLotRecall { CompanyId = 1, RecallNo = "RC-1", ItemId = 71, BatchNo = "P1", RecallClass = HospitalLotRecallClass.I, Reason = "contamination", QuarantineWarehouseId = 5, OpenedAt = Now });

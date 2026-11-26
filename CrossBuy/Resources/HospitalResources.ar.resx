@@ -10813,4 +10813,10 @@
   <data name="Choose the allergy in every row, or remove the row" xml:space="preserve"><value>اختر الحساسية في كل سطر، أو احذف السطر</value></data>
   <data name="A prescription line has directions but no drug: choose the drug or remove the line" xml:space="preserve"><value>في الوصفة سطر فيه جرعة بلا دواء: اختر الدواء أو احذف السطر</value></data>
   <data name="{0}: the patient is recorded as allergic to {1}" xml:space="preserve"><value>{0}: المريض مسجَّلة لديه حساسية من {1}</value></data>
+  <data name="No patient file has this wristband code" xml:space="preserve"><value>لا يوجد ملف مريض بهذا الرمز</value></data>
+  <data name="{0} · {1} — this order's patient" xml:space="preserve"><value>{0} · {1} — مريض هذا الأمر</value></data>
+  <data name="{0} · {1} — NOT this order's patient" xml:space="preserve"><value>{0} · {1} — ليس مريض هذا الأمر</value></data>
+  <data name="No medicine of the drug list has this code" xml:space="preserve"><value>لا يوجد دواء في قائمة الأدوية بهذا الرمز</value></data>
+  <data name="{0} — the ordered medicine" xml:space="preserve"><value>{0} — الدواء المطلوب</value></data>
+  <data name="{0} — NOT the ordered medicine" xml:space="preserve"><value>{0} — ليس الدواء المطلوب</value></data>
 </root>
