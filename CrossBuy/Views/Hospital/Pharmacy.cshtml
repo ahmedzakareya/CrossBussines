@@ -460,7 +460,7 @@
                                 }
                                 <div class="d-flex gap-3">
                                     <button type="button" class="btn btn-light-danger" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
-                                    <button type="button" class="btn btn-primary btn-lg" data-step="Dispense" data-id="@d.ID" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))">@Duo("basket", "fs-2")@(d.Status == HospitalDispenseStatus.Partial ? T["Dispense what is owed"] : T["Dispense and charge"])</button>
+                                    <button type="button" class="btn btn-primary btn-lg" data-step="Dispense" data-id="@d.ID" data-patient="@d.PatientId" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))">@Duo("basket", "fs-2")@(d.Status == HospitalDispenseStatus.Partial ? T["Dispense what is owed"] : T["Dispense and charge"])</button>
                                 </div>
                             }
                             else if (done)
@@ -576,6 +576,7 @@
 @await Html.PartialAsync("_ReportPreviewModal", (object)T["Dispensing labels"].Value)
 
 @section Scripts {
+    <script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
     <script>
         // H271: the "late" tile shows only the late prescriptions; pressed again, the whole queue
         (function () {
@@ -720,6 +721,8 @@
                 post(base + '/' + t.getAttribute('data-id') + '/' + step, step === 'Verify' ? { note: note ? note.value : null } : step === 'Dispense' ? { quantities: give } : null).then(function (r) {
                     t.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; }
                     toast('success', step === 'Dispense' ? W.dispensed : W.saved); swap();
+                    // H272: the next step of this patient's way (go there, or stay on the queue)
+                    if (step === 'Dispense' && t.getAttribute('data-patient')) HospitalJourney.after(t.getAttribute('data-patient'), 'dispense', { root: @Json.Serialize(Url.Content("~/Hospital")) });
                 });
             });
             document.addEventListener('input', function (e) {

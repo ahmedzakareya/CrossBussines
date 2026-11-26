@@ -367,6 +367,7 @@
 
 @section Scripts {
     <script src="~/js/hospital/hospital-allergy-picker.js" asp-append-version="true"></script>
+    <script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -484,9 +485,12 @@
             function openCard(id, scroll) {
                 var mySeq = ++cardSeq;
                 current = Number(id); cardEl.innerHTML = '<div class="text-center text-muted py-15"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
-                get(U.card + id).then(function (h) { if (mySeq !== cardSeq) return; cardEl.innerHTML = h; tips(cardEl); menus(); if (scroll) cardEl.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+                get(U.card + id).then(function (h) { if (mySeq !== cardSeq) return; cardEl.innerHTML = h; tips(cardEl); menus(); if (scroll) { var cc = cardEl.closest('.card'); cc.style.scrollMarginTop = '90px'; cc.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });   // H272: clear of the fixed top bar
             }
             function refresh() { list.reload(); if (view === 'grid') loadGrid(); if (current) openCard(current); }
+            // H272: the journey sends a patient here (?patient=) - the card opens on him
+            (function () { var qp = Number(new URLSearchParams(location.search).get('patient')); if (qp > 0) openCard(qp, true); })();
+            function journey(patient, done) { if (patient) HospitalJourney.after(patient, done, { root: @Json.Serialize(Url.Content("~/Hospital")) }); }
 
             // the window
             var modalEl = document.getElementById('desk_modal'), mTitle = modalEl.querySelector('[data-desk-modal-title]'), mBody = modalEl.querySelector('[data-desk-modal-body]');
@@ -505,7 +509,7 @@
             function book(patient, doctor, minute, btn) {
                 if (btn) btn.disabled = true;
                 post(U.walkin, { patientId: Number(patient), practitionerId: Number(doctor), startMinute: minute == null ? null : Number(minute), visitType: (mBody.querySelector('[data-walkin-type]') || {}).value })
-                    .then(function (r) { if (btn) btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.done); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
+                    .then(function (r) { if (btn) btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.done); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); journey(patient, 'check-in'); });
             }
 
             // the desk's work: a tab loads when it is opened (the first at once); H164: each queue remembers its mine / unassigned / all
@@ -783,7 +787,7 @@
                     cbConfirm(ask, { kind: 'primary' }).then(function (ok) {
                         if (!ok) return; t.disabled = true;
                         post(U.deskCollect + row.getAttribute('data-bill') + '/Collect', { amount: amount, method: method, identityChecked: idChecked() })
-                            .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.collected); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
+                            .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.collected); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); journey(payPatient, 'collect'); });
                     });
                     return;
                 }

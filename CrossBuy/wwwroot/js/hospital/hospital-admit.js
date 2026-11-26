@@ -177,6 +177,7 @@
 					post(withId(cfg.urls.discharge, p.admissionId)).then(function (res) {
 						if (!res.ok) { d.disabled = false; toast('error', res.error || w('The change could not be saved')); return; }
 						modal.hide(); toast('success', w('Saved')); building().then(function () { onChange(); });
+						if (window.HospitalJourney) window.HospitalJourney.after(p.id, 'discharge', { root: cfg.root });   // H272: what the patient still has (the bill)
 					});
 				});
 			});

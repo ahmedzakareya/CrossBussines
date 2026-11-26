@@ -10753,4 +10753,27 @@
   <data name="The stock leaves the pharmacy store (nearest expiry first) and a line goes on the bill" xml:space="preserve"><value>Le stock sort de la pharmacie (péremption la plus proche d'abord) et une ligne s'ajoute à la facture</value></data>
   <data name="Step {0}" xml:space="preserve"><value>Étape {0}</value></data>
   <data name="Ready to scan" xml:space="preserve"><value>Prêt à scanner</value></data>
+  <data name="Journey step: check-in" xml:space="preserve"><value>Enregistrer l'arrivée à l'accueil</value></data>
+  <data name="Journey step: consult" xml:space="preserve"><value>Consultation chez le médecin</value></data>
+  <data name="Journey step: lab-sample" xml:space="preserve"><value>Prélever l'échantillon de laboratoire</value></data>
+  <data name="Journey step: imaging" xml:space="preserve"><value>Réaliser l'imagerie</value></data>
+  <data name="Journey step: dispense" xml:space="preserve"><value>Délivrer l'ordonnance</value></data>
+  <data name="Journey step: ward" xml:space="preserve"><value>Soins dans le service</value></data>
+  <data name="Journey step: collect" xml:space="preserve"><value>Encaisser le paiement au guichet</value></data>
+  <data name="Journey step: close-bill" xml:space="preserve"><value>Clôturer la visite et comptabiliser la facture</value></data>
+  <data name="Journey step: discharge" xml:space="preserve"><value>Sortie du service</value></data>
+  <data name="Journey place: desk" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Journey place: clinic" xml:space="preserve"><value>Consultation</value></data>
+  <data name="Journey place: lab" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="Journey place: radiology" xml:space="preserve"><value>Radiologie</value></data>
+  <data name="Journey place: pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
+  <data name="Journey place: ward" xml:space="preserve"><value>Soins infirmiers du service</value></data>
+  <data name="Journey place: cashier" xml:space="preserve"><value>Facturation</value></data>
+  <data name="The patient's way" xml:space="preserve"><value>Le parcours du patient</value></data>
+  <data name="Go now" xml:space="preserve"><value>Y aller maintenant</value></data>
+  <data name="Stay here" xml:space="preserve"><value>Rester ici</value></data>
+  <data name="Step done" xml:space="preserve"><value>Étape terminée</value></data>
+  <data name="After that" xml:space="preserve"><value>Ensuite</value></data>
+  <data name="The patient's journey is complete: nothing is waiting." xml:space="preserve"><value>Le parcours du patient est terminé : rien n'est en attente.</value></data>
+  <data name="This step is done at: {0}. It is not in your permissions." xml:space="preserve"><value>Cette étape se fait à : {0}. Elle ne fait pas partie de vos droits.</value></data>
 </root>

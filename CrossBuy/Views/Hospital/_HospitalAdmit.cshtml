@@ -42,6 +42,7 @@
 <script>
     window.HospitalAdmitConfig = {
         isAr: @Json.Serialize(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"),
+        root: @Json.Serialize(Url.Content("~/Hospital")),
         words: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(words)),
         urls: {
             building: @Json.Serialize(Url.Action("Building", "Hospital")),
@@ -54,4 +55,5 @@
         }
     };
 </script>
+<script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
 <script src="~/js/hospital/hospital-admit.js" asp-append-version="true"></script>

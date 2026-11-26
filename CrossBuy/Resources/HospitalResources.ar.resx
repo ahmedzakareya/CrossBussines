@@ -10862,4 +10862,27 @@
   <data name="The stock leaves the pharmacy store (nearest expiry first) and a line goes on the bill" xml:space="preserve"><value>يُخصم المخزون من مستودع الصيدلية (الأقرب انتهاءً أولًا) ويُضاف سطر على الفاتورة</value></data>
   <data name="Step {0}" xml:space="preserve"><value>الخطوة {0}</value></data>
   <data name="Ready to scan" xml:space="preserve"><value>جاهز للمسح</value></data>
+  <data name="Journey step: check-in" xml:space="preserve"><value>تسجيل الحضور عند الاستقبال</value></data>
+  <data name="Journey step: consult" xml:space="preserve"><value>الكشف عند الطبيب</value></data>
+  <data name="Journey step: lab-sample" xml:space="preserve"><value>سحب عينة المختبر</value></data>
+  <data name="Journey step: imaging" xml:space="preserve"><value>إجراء الأشعة</value></data>
+  <data name="Journey step: dispense" xml:space="preserve"><value>صرف الوصفة من الصيدلية</value></data>
+  <data name="Journey step: ward" xml:space="preserve"><value>الرعاية في القسم الداخلي</value></data>
+  <data name="Journey step: collect" xml:space="preserve"><value>تحصيل المبلغ عند الشباك</value></data>
+  <data name="Journey step: close-bill" xml:space="preserve"><value>إغلاق الزيارة وترحيل الفاتورة</value></data>
+  <data name="Journey step: discharge" xml:space="preserve"><value>خروج المريض من القسم</value></data>
+  <data name="Journey place: desk" xml:space="preserve"><value>الاستقبال</value></data>
+  <data name="Journey place: clinic" xml:space="preserve"><value>العيادة</value></data>
+  <data name="Journey place: lab" xml:space="preserve"><value>المختبر</value></data>
+  <data name="Journey place: radiology" xml:space="preserve"><value>الأشعة</value></data>
+  <data name="Journey place: pharmacy" xml:space="preserve"><value>الصيدلية</value></data>
+  <data name="Journey place: ward" xml:space="preserve"><value>التمريض في القسم</value></data>
+  <data name="Journey place: cashier" xml:space="preserve"><value>الحسابات</value></data>
+  <data name="The patient's way" xml:space="preserve"><value>مسار المريض</value></data>
+  <data name="Go now" xml:space="preserve"><value>انتقل الآن</value></data>
+  <data name="Stay here" xml:space="preserve"><value>ابقَ هنا</value></data>
+  <data name="Step done" xml:space="preserve"><value>تمت الخطوة</value></data>
+  <data name="After that" xml:space="preserve"><value>بعد ذلك</value></data>
+  <data name="The patient's journey is complete: nothing is waiting." xml:space="preserve"><value>اكتمل مسار المريض: لا توجد خطوات متبقية.</value></data>
+  <data name="This step is done at: {0}. It is not in your permissions." xml:space="preserve"><value>تُنفَّذ هذه الخطوة في: {0}، وهي ليست ضمن صلاحياتك.</value></data>
 </root>

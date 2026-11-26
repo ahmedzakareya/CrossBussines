@@ -265,6 +265,7 @@
 @await Html.PartialAsync("_ReportPreviewModal", (object)(T["Prescription"].Value + " " + name))
 
 @section Scripts {
+    <script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
     <script>
         (function () {
             var btn = document.querySelector('[data-scribe]'); if (!btn || !navigator.mediaDevices || !window.MediaRecorder) { if (btn) btn.classList.add('d-none'); return; }
@@ -526,7 +527,7 @@
                 (hit.length ? cbConfirm(W.allergySign.replace('{0}', hit.join(', '))) : Promise.resolve(true)).then(function (go) { return go ? cbConfirm(W.confirm) : false; }).then(function (yes) {
                     if (!yes) return;
                     g.disabled = true;
-                    send(urls.sign, function () { location.href = urls.worklist; }).then(function (ok) { if (!ok) g.disabled = false; });
+                    send(urls.sign, function () { HospitalJourney.after(@e.PatientId, 'consult', { root: @Json.Serialize(Url.Content("~/Hospital")), onStay: function () { location.href = urls.worklist; } }); }).then(function (ok) { if (!ok) g.disabled = false; });
                 });
             }); });
             var seed = document.querySelector('[data-seed-codes]');

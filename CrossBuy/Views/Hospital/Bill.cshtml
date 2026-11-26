@@ -475,6 +475,7 @@
 @await Html.PartialAsync("_ReportPreviewModal", (object)(T["Bill"].Value + " " + b.BillNo))
 
 @section Scripts {
+    <script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
     <script>
         (function () {
             var $ = window.jQuery, isAr = @Json.Serialize(isAr);
@@ -521,7 +522,7 @@
                     cbConfirm(W.confirmClose).then(function (ok) {
                         if (!ok) return;
                         closeBtn.disabled = true;
-                        post(urls.close).then(function (res) { closeBtn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); });
+                        post(urls.close).then(function (res) { closeBtn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); HospitalJourney.after(@b.PatientId, 'close-bill', { root: @Json.Serialize(Url.Content("~/Hospital")) }); });
                     });
                 }
             });

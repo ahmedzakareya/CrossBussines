@@ -10753,4 +10753,27 @@
   <data name="The stock leaves the pharmacy store (nearest expiry first) and a line goes on the bill" xml:space="preserve"><value>The stock leaves the pharmacy store (nearest expiry first) and a line goes on the bill</value></data>
   <data name="Step {0}" xml:space="preserve"><value>Step {0}</value></data>
   <data name="Ready to scan" xml:space="preserve"><value>Ready to scan</value></data>
+  <data name="Journey step: check-in" xml:space="preserve"><value>Check in at the reception desk</value></data>
+  <data name="Journey step: consult" xml:space="preserve"><value>See the doctor</value></data>
+  <data name="Journey step: lab-sample" xml:space="preserve"><value>Take the lab sample</value></data>
+  <data name="Journey step: imaging" xml:space="preserve"><value>Do the imaging</value></data>
+  <data name="Journey step: dispense" xml:space="preserve"><value>Dispense the prescription</value></data>
+  <data name="Journey step: ward" xml:space="preserve"><value>Care on the ward</value></data>
+  <data name="Journey step: collect" xml:space="preserve"><value>Collect the payment at the counter</value></data>
+  <data name="Journey step: close-bill" xml:space="preserve"><value>Close the visit and post the bill</value></data>
+  <data name="Journey step: discharge" xml:space="preserve"><value>Discharge from the ward</value></data>
+  <data name="Journey place: desk" xml:space="preserve"><value>Reception desk</value></data>
+  <data name="Journey place: clinic" xml:space="preserve"><value>Clinic</value></data>
+  <data name="Journey place: lab" xml:space="preserve"><value>Laboratory</value></data>
+  <data name="Journey place: radiology" xml:space="preserve"><value>Radiology</value></data>
+  <data name="Journey place: pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
+  <data name="Journey place: ward" xml:space="preserve"><value>Ward nursing</value></data>
+  <data name="Journey place: cashier" xml:space="preserve"><value>Billing</value></data>
+  <data name="The patient's way" xml:space="preserve"><value>The patient's way</value></data>
+  <data name="Go now" xml:space="preserve"><value>Go now</value></data>
+  <data name="Stay here" xml:space="preserve"><value>Stay here</value></data>
+  <data name="Step done" xml:space="preserve"><value>Step done</value></data>
+  <data name="After that" xml:space="preserve"><value>After that</value></data>
+  <data name="The patient's journey is complete: nothing is waiting." xml:space="preserve"><value>The patient's journey is complete: nothing is waiting.</value></data>
+  <data name="This step is done at: {0}. It is not in your permissions." xml:space="preserve"><value>This step is done at: {0}. It is not in your permissions.</value></data>
 </root>

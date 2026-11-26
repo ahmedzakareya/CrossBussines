@@ -1,0 +1,120 @@
+{
+ "unit": "H272 - the patient's journey",
+ "strings": {
+  "Journey step: check-in": {
+   "ar": "تسجيل الحضور عند الاستقبال",
+   "en": "Check in at the reception desk",
+   "fr": "Enregistrer l'arrivée à l'accueil"
+  },
+  "Journey step: consult": {
+   "ar": "الكشف عند الطبيب",
+   "en": "See the doctor",
+   "fr": "Consultation chez le médecin"
+  },
+  "Journey step: lab-sample": {
+   "ar": "سحب عينة المختبر",
+   "en": "Take the lab sample",
+   "fr": "Prélever l'échantillon de laboratoire"
+  },
+  "Journey step: imaging": {
+   "ar": "إجراء الأشعة",
+   "en": "Do the imaging",
+   "fr": "Réaliser l'imagerie"
+  },
+  "Journey step: dispense": {
+   "ar": "صرف الوصفة من الصيدلية",
+   "en": "Dispense the prescription",
+   "fr": "Délivrer l'ordonnance"
+  },
+  "Journey step: ward": {
+   "ar": "الرعاية في القسم الداخلي",
+   "en": "Care on the ward",
+   "fr": "Soins dans le service"
+  },
+  "Journey step: collect": {
+   "ar": "تحصيل المبلغ عند الشباك",
+   "en": "Collect the payment at the counter",
+   "fr": "Encaisser le paiement au guichet"
+  },
+  "Journey step: close-bill": {
+   "ar": "إغلاق الزيارة وترحيل الفاتورة",
+   "en": "Close the visit and post the bill",
+   "fr": "Clôturer la visite et comptabiliser la facture"
+  },
+  "Journey step: discharge": {
+   "ar": "خروج المريض من القسم",
+   "en": "Discharge from the ward",
+   "fr": "Sortie du service"
+  },
+  "Journey place: desk": {
+   "ar": "الاستقبال",
+   "en": "Reception desk",
+   "fr": "Accueil"
+  },
+  "Journey place: clinic": {
+   "ar": "العيادة",
+   "en": "Clinic",
+   "fr": "Consultation"
+  },
+  "Journey place: lab": {
+   "ar": "المختبر",
+   "en": "Laboratory",
+   "fr": "Laboratoire"
+  },
+  "Journey place: radiology": {
+   "ar": "الأشعة",
+   "en": "Radiology",
+   "fr": "Radiologie"
+  },
+  "Journey place: pharmacy": {
+   "ar": "الصيدلية",
+   "en": "Pharmacy",
+   "fr": "Pharmacie"
+  },
+  "Journey place: ward": {
+   "ar": "التمريض في القسم",
+   "en": "Ward nursing",
+   "fr": "Soins infirmiers du service"
+  },
+  "Journey place: cashier": {
+   "ar": "الحسابات",
+   "en": "Billing",
+   "fr": "Facturation"
+  },
+  "The patient's way": {
+   "ar": "مسار المريض",
+   "en": "The patient's way",
+   "fr": "Le parcours du patient"
+  },
+  "Go now": {
+   "ar": "انتقل الآن",
+   "en": "Go now",
+   "fr": "Y aller maintenant"
+  },
+  "Stay here": {
+   "ar": "ابقَ هنا",
+   "en": "Stay here",
+   "fr": "Rester ici"
+  },
+  "Step done": {
+   "ar": "تمت الخطوة",
+   "en": "Step done",
+   "fr": "Étape terminée"
+  },
+  "After that": {
+   "ar": "بعد ذلك",
+   "en": "After that",
+   "fr": "Ensuite"
+  },
+  "The patient's journey is complete: nothing is waiting.": {
+   "ar": "اكتمل مسار المريض: لا توجد خطوات متبقية.",
+   "en": "The patient's journey is complete: nothing is waiting.",
+   "fr": "Le parcours du patient est terminé : rien n'est en attente."
+  },
+  "This step is done at: {0}. It is not in your permissions.": {
+   "ar": "تُنفَّذ هذه الخطوة في: {0}، وهي ليست ضمن صلاحياتك.",
+   "en": "This step is done at: {0}. It is not in your permissions.",
+   "fr": "Cette étape se fait à : {0}. Elle ne fait pas partie de vos droits."
+  }
+ }
+}
