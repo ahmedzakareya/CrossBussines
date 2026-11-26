@@ -511,6 +511,10 @@
             dEl.addEventListener('shown.bs.modal', function () { var w = dEl.querySelector('[data-d-wrist]'); if (!dEl.querySelector('[data-d-scan-wrap]').classList.contains('d-none')) w.focus(); });
             dEl.addEventListener('change', function (e) { if (e.target.name === 'd-status') reasonShown(); });
             var oEl = document.getElementById('orderModal'), orderFor = null;
+            // H270: an as-needed order has no fixed hours (the owner's walk-through hit the refusal after typing them) -
+            // the hours box empties and locks while "as needed" is on, so the form cannot ask for what the rule refuses
+            function prnHours() { var prn = oEl.querySelector('[data-k=asNeeded]').checked, h = oEl.querySelector('[data-k=hours]'); if (prn) h.value = ''; h.disabled = prn; }
+            oEl.querySelector('[data-k=asNeeded]').addEventListener('change', prnHours);
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-dose],[data-stop-order],[data-new-order],[data-task-add],[data-handover-save]'); if (!t) return;
                 if (t.hasAttribute('data-dose')) {
@@ -528,6 +532,7 @@
                     orderFor = { admissionId: Number(t.getAttribute('data-new-order')), who: t.getAttribute('data-who') };
                     oEl.querySelector('[data-o-who]').textContent = orderFor.who;
                     oEl.querySelectorAll('[data-k]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else if (i.tagName !== 'SELECT') i.value = ''; });
+                    prnHours();
                     bootstrap.Modal.getOrCreateInstance(oEl).show(); return;
                 }
                 if (t.hasAttribute('data-task-add')) {
