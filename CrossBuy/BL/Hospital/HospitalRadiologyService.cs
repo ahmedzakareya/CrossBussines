@@ -103,12 +103,14 @@ namespace CrossBuy.BL.Hospital
 		public static bool ContrastAlert(bool contrast, string? allergies)
 			=> contrast && !string.IsNullOrWhiteSpace(allergies) && ContrastWords.Any(w => allergies.Contains(w, StringComparison.OrdinalIgnoreCase));
 
-		/// The modality a radiology service is taken for when nobody set it up: by the starter codes.
+		/// The modality a radiology service is taken for when nobody set it up: by the starter codes. H272: read by the
+		/// code's words, not by any letters inside it - "EYE-OCT" holds "CT" and was sent to the CT room.
 		public static string GuessModality(string code)
 		{
-			var c = code.ToUpperInvariant();
-			return c.Contains("CT") ? HospitalRadModality.CT : c.Contains("MRI") || c.Contains("-MR") ? HospitalRadModality.MRI
-				: c.Contains("US") || c.Contains("ECHO") ? HospitalRadModality.Ultrasound : HospitalRadModality.XRay;
+			var words = code.ToUpperInvariant().Split(new[] { '-', '_', ' ', '.', '/' }, StringSplitOptions.RemoveEmptyEntries);
+			return words.Any(w => w.StartsWith("CT")) ? HospitalRadModality.CT
+				: words.Any(w => w.StartsWith("MR")) ? HospitalRadModality.MRI
+				: words.Any(w => w.StartsWith("US") || w.Contains("ECHO")) ? HospitalRadModality.Ultrasound : HospitalRadModality.XRay;
 		}
 
 		/// A room's state on the board: maintenance first, then a scan in progress, then a patient waiting.
