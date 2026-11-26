@@ -1,91 +1,118 @@
 @using CrossBuy.BL
 @using CrossBuy.BL.Hospital
 @using CrossBuy.Models.Context.Hospital
+@using Microsoft.AspNetCore.Html
 @model HospitalDeskRegisterPrefill
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @* H142: registering a patient inside the desk, as the approved prototype shows it:
      · quick (names, sex, birth date, mobile, ID) or full (nationality, blood group, alerts, emergency contact, consent);
      · the ID-card reader types into the ID field; the duplicate check runs as the ID, mobile or names are typed;
      · the photo from the camera (asked only when the desk presses "start the camera") or from a file.
-   The window gathers only; the patient service saves (Patients/Save), the photo goes to the document platform. *@
+   The window gathers only; the patient service saves (Patients/Save), the photo goes to the document platform.
+   H272: redesigned (the owner: the fields were small) - sections with their heads, the photo beside the names instead of
+   a full-height column, every field at half or full width. *@
 @{
     var countries = (List<(int Id, string Label)>)ViewBag.Countries; int? nat = ViewBag.DefaultNationality as int?;
     var today = (DateTime)ViewBag.Today;
+    IHtmlContent Duo(string icon, string css)
+    {
+        var n = icon switch { "call" => 8, "scan-barcode" => 8, "profile-circle" => 3, "information-5" => 3, _ => 2 };
+        var sb = new System.Text.StringBuilder("<i class=\"ki-duotone ki-" + icon + " " + css + "\">");
+        for (int k = 1; k <= n; k++) sb.Append("<span class=\"path" + k + "\"></span>");
+        return new HtmlString(sb.Append("</i>").ToString());
+    }
+    IHtmlContent Head(string icon, string title, string? hint) => new HtmlString(
+        "<div class=\"d-flex align-items-center gap-3 mb-6\"><span class=\"symbol symbol-40px flex-shrink-0\"><span class=\"symbol-label bg-light-primary\">"
+        + Duo(icon, "fs-2 text-primary") + "</span></span><div class=\"d-flex flex-column\"><span class=\"fw-bold fs-5 text-gray-900\">" + System.Net.WebUtility.HtmlEncode(title)
+        + "</span>" + (hint == null ? "" : "<span class=\"fs-7 text-gray-500\">" + System.Net.WebUtility.HtmlEncode(hint) + "</span>") + "</div></div>");
+    const string Lbl = "fw-semibold fs-6 text-gray-800 mb-2";
 }
 <div data-reg>
-    <div class="d-flex flex-wrap flex-stack gap-3 mb-6">
-        <ul class="nav nav-pills nav-pills-custom gap-2 m-0">
-            <li class="nav-item"><a href="#" class="nav-link btn btn-sm btn-color-gray-600 btn-active btn-active-light-primary px-4 py-2 active" data-reg-mode="quick"><i class="ki-outline ki-flash-circle fs-5 me-1"></i>@T["Quick registration"]</a></li>
-            <li class="nav-item"><a href="#" class="nav-link btn btn-sm btn-color-gray-600 btn-active btn-active-light-primary px-4 py-2" data-reg-mode="full"><i class="ki-outline ki-notepad-edit fs-5 me-1"></i>@T["Full registration"]</a></li>
-        </ul>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-muted fs-8">@T["Medical record number"] <span class="badge badge-light-primary fs-7 fw-bold hp-num ms-1">@ViewBag.NextMrn</span></span>
-            <button type="button" class="btn btn-sm btn-light-primary" data-reg-reader><i class="ki-outline ki-scan-barcode fs-4"></i>@T["Read the ID card"]</button>
+    @* H272: the head of the window - the photo (the theme's profile-photo pattern: a circle with its two actions on its
+       rim), the file number it will take, the mode and the card reader *@
+    <div class="d-flex flex-wrap align-items-center gap-6 p-5 rounded bg-light mb-6">
+        <div class="position-relative flex-shrink-0">
+            <div class="position-relative w-100px h-100px rounded-circle overflow-hidden bg-light-primary border border-4 border-white shadow-sm d-flex align-items-center justify-content-center">
+                <span data-reg-empty>@Duo("profile-circle", "fs-4tx text-primary")</span>
+                <video class="d-none position-absolute w-100 h-100" style="object-fit:cover" autoplay playsinline muted data-reg-video></video>
+                <img class="d-none position-absolute w-100 h-100" style="object-fit:cover" alt="" data-reg-shot />
+            </div>
+            <button type="button" class="btn btn-icon btn-circle btn-color-gray-700 btn-active-color-primary bg-body shadow w-35px h-35px position-absolute" style="bottom:-2px; inset-inline-end:-4px" data-reg-cam title="@T["Start the camera"]" data-bs-toggle="tooltip"><i class="ki-outline ki-faceid fs-3"></i></button>
+            <label class="btn btn-icon btn-circle btn-color-gray-700 btn-active-color-primary bg-body shadow w-35px h-35px position-absolute mb-0" style="top:-2px; inset-inline-end:-4px" title="@T["From a file"]" data-bs-toggle="tooltip"><i class="ki-outline ki-folder-up fs-3"></i><input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-reg-file /></label>
+        </div>
+        <div class="d-flex flex-column flex-grow-1 min-w-200px">
+            <span class="fs-7 fw-semibold text-gray-600">@T["Medical record number"]</span>
+            <span class="fs-2 fw-bold text-gray-900 hp-num">@ViewBag.NextMrn</span>
+            <span class="fs-8 text-gray-500 mt-1">@T["Patient photo"] · @T["JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in."]</span>
+            <div><button type="button" class="btn btn-sm btn-primary mt-3 d-none" data-reg-snap><i class="ki-outline ki-faceid fs-4"></i>@T["Capture"]</button></div>
+        </div>
+        <div class="d-flex flex-column align-items-stretch gap-3">
+            <ul class="nav nav-pills nav-pills-custom bg-body rounded p-1 gap-1 m-0 flex-nowrap">
+                <li class="nav-item"><a href="#" class="nav-link btn btn-color-gray-600 btn-active btn-active-light-primary px-5 py-3 active" data-reg-mode="quick"><i class="ki-outline ki-flash-circle fs-4 me-1"></i>@T["Quick registration"]</a></li>
+                <li class="nav-item"><a href="#" class="nav-link btn btn-color-gray-600 btn-active btn-active-light-primary px-5 py-3" data-reg-mode="full"><i class="ki-outline ki-notepad-edit fs-4 me-1"></i>@T["Full registration"]</a></li>
+            </ul>
+            <button type="button" class="btn btn-light-primary d-inline-flex align-items-center justify-content-center gap-2" data-reg-reader>@Duo("scan-barcode", "fs-2")@T["Read the ID card"]</button>
         </div>
     </div>
 
     @* the duplicate warning: filled as the desk types *@
     <div class="d-none mb-6" data-reg-dups></div>
 
-    <div class="row g-6">
-        <div class="col-lg-9">
-            <div class="row g-5">
-                <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" data-reg-f="name" data-reg-dup value="@Model.Name" dir="rtl" maxlength="200" /></div>
-                <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" data-reg-f="nameEn" data-reg-dup value="@Model.NameEn" dir="ltr" maxlength="200" /></div>
-                <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["ID number"]</label><input class="form-control form-control-solid hp-num" data-reg-f="nationalId" data-reg-dup value="@Model.NationalId" dir="ltr" inputmode="numeric" maxlength="20" /></div>
-                <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Mobile"]</label><input class="form-control form-control-solid hp-num" data-reg-f="phone" data-reg-dup value="@Model.Phone" dir="ltr" inputmode="tel" maxlength="20" /></div>
-                <div class="col-md-3"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Sex"]</label>
-                    <select class="form-select form-select-solid" data-reg-f="sex"><option value="M">@T["sex:M"]</option><option value="F">@T["sex:F"]</option></select></div>
-                <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Date of birth"]</label><input class="form-control form-control-solid hp-num" data-reg-f="birthDate" data-reg-date data-max="@today.ToString("yyyy-MM-dd")" readonly /></div>
-            </div>
-
-            <div class="d-none" data-reg-full>
-                <div class="separator separator-dashed my-6"></div>
-                <div class="row g-5">
-                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Nationality"]</label>
-                        <select class="form-select form-select-solid" data-reg-f="nationalityId">@foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == nat)">@c.Label</option> }</select></div>
-                    <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Blood group"]</label>
-                        <select class="form-select form-select-solid" data-reg-f="bloodGroup"><option value="">—</option>@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
-                    <div class="col-12">@await Html.PartialAsync("_AllergyPicker", (new List<CrossBuy.BL.Hospital.HospitalAllergyItem>(), true))</div>@* H270: the coded allergy list *@
-                    @if (ViewBag.CanClinical != false)
-                    {
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2"><i class="ki-outline ki-heart fs-6 text-primary me-1"></i>@T["Chronic conditions"]</label><textarea class="form-control form-control-solid" rows="2" data-reg-f="chronicConditions" placeholder="@T["One per line"]"></textarea></div>
-                    }
+    @* 1 - who the patient is: the photo beside the names *@
+    <div class="border border-gray-300 rounded p-6 mb-6">
+        @Head("profile-circle", T["Patient details"].Value, null)
+        <div>
+                <div class="row g-6">
+                    <div class="col-md-6"><label class="required @Lbl">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" data-reg-f="name" data-reg-dup value="@Model.Name" dir="rtl" maxlength="200" /></div>
+                    <div class="col-md-6"><label class="required @Lbl">@T["Name (English)"]</label><input class="form-control form-control-solid" data-reg-f="nameEn" data-reg-dup value="@Model.NameEn" dir="ltr" maxlength="200" /></div>
+                    <div class="col-md-6"><label class="@Lbl">@T["ID number"]</label><input class="form-control form-control-solid hp-num" data-reg-f="nationalId" data-reg-dup value="@Model.NationalId" dir="ltr" inputmode="numeric" maxlength="20" /></div>
+                    <div class="col-md-6"><label class="@Lbl">@T["Mobile"]</label><input class="form-control form-control-solid hp-num" data-reg-f="phone" data-reg-dup value="@Model.Phone" dir="ltr" inputmode="tel" maxlength="20" /></div>
+                    <div class="col-md-6"><label class="required @Lbl">@T["Sex"]</label>
+                        <select class="form-select form-select-solid" data-reg-f="sex"><option value="M">@T["sex:M"]</option><option value="F">@T["sex:F"]</option></select></div>
+                    <div class="col-md-6"><label class="@Lbl">@T["Date of birth"]</label><input class="form-control form-control-solid hp-num" data-reg-f="birthDate" data-reg-date data-max="@today.ToString("yyyy-MM-dd")" readonly /></div>
                 </div>
-                <div class="fw-bold fs-6 text-gray-800 mt-6 mb-4">@T["Emergency contact"]</div>
-                <div class="row g-5">
-                    <div class="col-md-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input class="form-control form-control-solid" data-reg-f="emergencyName" maxlength="200" /></div>
-                    <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Relationship"]</label><input class="form-control form-control-solid" data-reg-f="emergencyRelation" maxlength="50" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Mobile"]</label><input class="form-control form-control-solid hp-num" data-reg-f="emergencyPhone" dir="ltr" maxlength="20" /></div>
-                </div>
-                <label class="form-check form-check-custom form-check-solid mt-6"><input class="form-check-input" type="checkbox" data-reg-f="consentSigned" /><span class="form-check-label fs-7 text-gray-700">@T["The patient signed the general consent to treatment and the privacy notice"]</span></label>
-                <div class="text-muted fs-8 mt-4"><i class="ki-outline ki-information-5 fs-7"></i> @T["Insurance and the price list are set from the patient's file after saving."] <a href="@Url.Action("RegisterPatient", "Hospital")">@T["Open the full form"]</a></div>
-            </div>
-        </div>
-
-        @* the photo *@
-        <div class="col-lg-3">
-            <div class="border border-dashed border-primary rounded p-4 text-center h-100 d-flex flex-column align-items-center justify-content-center">
-                <div class="position-relative w-150px h-150px rounded-circle overflow-hidden bg-light-primary d-flex align-items-center justify-content-center mb-3">
-                    <i class="ki-outline ki-picture fs-3tx text-primary" data-reg-empty></i>
-                    <video class="d-none position-absolute w-100 h-100" style="object-fit:cover" autoplay playsinline muted data-reg-video></video>
-                    <img class="d-none position-absolute w-100 h-100" style="object-fit:cover" alt="" data-reg-shot />
-                </div>
-                <div class="fs-8 text-muted mb-3">@T["Patient photo"]</div>
-                <div class="d-flex flex-wrap justify-content-center gap-2">
-                    <button type="button" class="btn btn-sm btn-light-primary" data-reg-cam><i class="ki-outline ki-camera fs-5"></i>@T["Start the camera"]</button>
-                    <button type="button" class="btn btn-sm btn-primary d-none" data-reg-snap><i class="ki-outline ki-camera fs-5"></i>@T["Capture"]</button>
-                    <label class="btn btn-sm btn-light btn-active-light-primary mb-0"><i class="ki-outline ki-folder-up fs-5"></i>@T["From a file"]<input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-reg-file /></label>
-                </div>
-                <div class="fs-9 text-muted mt-3">@T["JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in."]</div>
-            </div>
         </div>
     </div>
 
+    <div class="d-none" data-reg-full>
+        @* 2 - the medical record's first lines *@
+        <div class="border border-gray-300 rounded p-6 mb-6">
+            @Head("pulse", T["Medical details"].Value, null)
+            <div class="row g-6">
+                <div class="col-md-8"><label class="@Lbl">@T["Nationality"]</label>
+                    <select class="form-select form-select-solid" data-reg-f="nationalityId">@foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == nat)">@c.Label</option> }</select></div>
+                <div class="col-md-4"><label class="@Lbl">@T["Blood group"]</label>
+                    <select class="form-select form-select-solid" data-reg-f="bloodGroup"><option value="">—</option>@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
+                <div class="col-12">@await Html.PartialAsync("_AllergyPicker", (new List<CrossBuy.BL.Hospital.HospitalAllergyItem>(), true))</div>@* H270: the coded allergy list *@
+                @if (ViewBag.CanClinical != false)
+                {
+                    <div class="col-12"><label class="@Lbl">@T["Chronic conditions"]</label><textarea class="form-control form-control-solid" rows="3" data-reg-f="chronicConditions" placeholder="@T["One per line"]"></textarea></div>
+                }
+            </div>
+        </div>
+
+        @* 3 - who to call *@
+        <div class="border border-gray-300 rounded p-6 mb-6">
+            @Head("call", T["Emergency contact"].Value, null)
+            <div class="row g-6">
+                <div class="col-md-5"><label class="@Lbl">@T["Name"]</label><input class="form-control form-control-solid" data-reg-f="emergencyName" maxlength="200" /></div>
+                <div class="col-md-3"><label class="@Lbl">@T["Relationship"]</label><input class="form-control form-control-solid" data-reg-f="emergencyRelation" maxlength="50" /></div>
+                <div class="col-md-4"><label class="@Lbl">@T["Mobile"]</label><input class="form-control form-control-solid hp-num" data-reg-f="emergencyPhone" dir="ltr" maxlength="20" /></div>
+            </div>
+        </div>
+
+        @* 4 - the consent, as a step of its own *@
+        <label class="d-flex align-items-center gap-4 p-5 rounded border border-dashed border-primary bg-light-primary cursor-pointer mb-4">
+            @Duo("shield-tick", "fs-2x text-primary flex-shrink-0")
+            <span class="form-check form-check-custom flex-grow-1 m-0"><input class="form-check-input h-25px w-25px flex-shrink-0 bg-white border border-2 border-primary" type="checkbox" data-reg-f="consentSigned" /><span class="form-check-label fs-6 fw-semibold text-gray-800">@T["The patient signed the general consent to treatment and the privacy notice"]</span></span>
+        </label>
+        <div class="d-flex align-items-center gap-2 text-gray-600 fs-7">@Duo("information-5", "fs-4 text-gray-500")<span>@T["Insurance and the price list are set from the patient's file after saving."] <a href="@Url.Action("RegisterPatient", "Hospital")" class="fw-semibold">@T["Open the full form"]</a></span></div>
+    </div>
+
     <div class="separator separator-dashed mt-8 mb-6"></div>
-    <div class="d-flex flex-wrap justify-content-end gap-2">
+    <div class="d-flex flex-wrap justify-content-end gap-3">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
-        <button type="button" class="btn btn-light-primary" data-reg-save="walkin"><i class="ki-outline ki-entrance-right fs-4"></i>@T["Save and book a walk-in"]</button>
-        <button type="button" class="btn btn-primary" data-reg-save="counter"><i class="ki-outline ki-profile-circle fs-4"></i>@T["Save and open at the counter"]</button>
+        <button type="button" class="btn btn-light-primary" data-reg-save="walkin"><i class="ki-outline ki-entrance-right fs-3"></i>@T["Save and book a walk-in"]</button>
+        <button type="button" class="btn btn-primary" data-reg-save="counter"><i class="ki-outline ki-profile-circle fs-3"></i>@T["Save and open at the counter"]</button>
     </div>
 </div>
