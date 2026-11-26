@@ -365,7 +365,7 @@
                             {
                                 <label class="fs-6 fw-semibold mb-2">@T["Pharmacist's note (optional)"]</label>
                                 <textarea class="form-control form-control-solid mb-5" rows="3" maxlength="400" data-note placeholder="@T["Pharmacist's note (optional)"]"></textarea>
-                                <button type="button" class="btn btn-light-primary w-100 mb-3" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Reviewed by the pharmacist"]</button>
+                                <button type="button" class="btn btn-primary w-100 mb-3" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Approve the prescription"]</button>@* H271: named as the act it is (it read like a status), and the step's main action *@
                                 <button type="button" class="btn btn-light-danger w-100" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
                             }
                             else if (HospitalDispenseStatus.Dispensable(d.Status) && canPharmacy)
