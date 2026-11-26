@@ -19,11 +19,14 @@
 }
 else
 {
-    <div class="border border-gray-300 border-dashed rounded">
+    @* H271: what the desk does with a result is said, and each result is a card of its own with a named action (the
+       owner: nothing told the user to open the patient at the counter) *@
+    <div class="d-flex align-items-center gap-2 text-gray-600 fs-7 fw-semibold mb-3"><i class="ki-outline ki-information-5 fs-5 text-primary"></i>@T["Open the patient at the counter to check in, take payment or print"]</div>
+    <div class="d-flex flex-column gap-3">
         @for (int i = 0; i < Model.Count; i++)
         {
             var c = Model[i];
-            <div class="d-flex flex-wrap align-items-center gap-4 px-5 py-4 @(i > 0 ? "border-top border-dashed border-gray-300" : "") bg-hover-light">
+            <div class="d-flex flex-wrap align-items-center gap-5 px-5 py-4 rounded border border-gray-300 border-hover-primary hover-elevate-up bg-body">
                 <a href="#" class="d-flex align-items-center flex-root min-w-250px text-hover-primary" data-open-patient="@c.PatientId">@* flex-root: the name block takes the room left, never pushes the acts off the line *@
                     <div class="symbol symbol-50px symbol-circle me-4 flex-shrink-0">@if (c.Photo != null) {<img src="@c.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-6 hp-initials">@HospitalUi.Initials(c.NameEn ?? c.Name)</span>}</div>
                     <div class="d-flex flex-column min-w-0">
@@ -39,16 +42,17 @@ else
                 <div class="min-w-150px"><div class="text-muted fs-8">@T["match:id"]</div><div class="fw-bold hp-num fs-7">@(c.NationalId ?? "—")</div></div>
                 <div class="min-w-125px"><div class="text-muted fs-8">@T["Matched by"]</div><span class="badge badge-light-@(c.Score >= 90 ? "primary" : "primary") fs-8 fw-bold">@T["match:" + c.Reason] · <span class="hp-num">@c.Score%</span></span></div>
                 @if (c.TodayStatus != null) {<div class="min-w-150px"><div class="text-muted fs-8">@T["Today"]</div><span class="badge badge-light-info fs-8 fw-bold">@T["desk:" + HospitalFrontDeskRules.Stage(c.TodayStatus)]@if (c.QueueNumber is int q) {<text> · </text><span class="hp-num">#@q</span>}</span></div>}
-                <div class="d-flex gap-1 ms-auto">
-                    @if (canBook && c.TodayAppointmentId is int ap && c.TodayStatus == CrossBuy.Models.Context.Hospital.HospitalAppointmentStatus.Booked)
+                <div class="d-flex flex-wrap gap-2 ms-auto">
+                    @{ bool booked = canBook && c.TodayAppointmentId is int && c.TodayStatus == CrossBuy.Models.Context.Hospital.HospitalAppointmentStatus.Booked; }
+                    @if (booked)
                     {
-                        <button type="button" class="btn btn-sm btn-primary text-nowrap" data-move="Arrived" data-appt="@ap"><i class="ki-outline ki-check fs-5"></i>@T["Check in"]</button>
+                        <button type="button" class="btn btn-sm btn-primary text-nowrap" data-move="Arrived" data-appt="@c.TodayAppointmentId"><i class="ki-outline ki-check fs-5"></i>@T["Check in"]</button>
                     }
                     else if (canBook && c.TodayStatus == null)
                     {
                         <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-desk-walkin="@c.PatientId"><i class="ki-outline ki-entrance-right fs-5"></i>@T["Walk-in"]</button>
                     }
-                    <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary" data-open-patient="@c.PatientId" title="@T["Open at the counter"]" data-bs-toggle="tooltip"><i class="ki-outline ki-profile-circle fs-4"></i></button>
+                    <button type="button" class="btn btn-sm @(booked ? "btn-light-primary" : "btn-primary") text-nowrap" data-open-patient="@c.PatientId"><i class="ki-outline ki-profile-circle fs-5"></i>@T["Open at the counter"]</button>
                 </div>
             </div>
         }

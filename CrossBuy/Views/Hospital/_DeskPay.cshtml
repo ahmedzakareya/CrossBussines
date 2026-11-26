@@ -23,9 +23,16 @@
     <div class="@(held > 0 ? "" : "ms-auto ")text-end"><div class="text-muted fs-8">@T["Total due"]</div><div class="fw-bold fs-2 text-primary"><span class="hp-num">@Money(Model.Sum(b => b.Total - b.Paid))</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>
 </div>
 @* H157: two identifiers confirmed with the patient before money moves — the window's patient, not the last one clicked *@
-<label class="d-flex align-items-center gap-3 rounded border border-dashed border-primary bg-light-primary px-4 py-3 mb-6 cursor-pointer" data-id-check-row>
-    <input type="checkbox" class="form-check-input m-0" data-id-check data-patient="@p.ID" />
-    <span class="fs-7 fw-semibold text-gray-800">@T["I confirmed the name and the date of birth (or the file number) with the patient"]</span>
+@* H271: the check is a step of its own, not a line to read past (the owner); pressed without it, the step itself turns
+   red and says so - the window's script swaps the tone *@
+<label class="d-flex align-items-center gap-4 rounded border border-2 border-dashed border-primary bg-light-primary px-5 py-4 mb-6 cursor-pointer" data-id-check-row>
+    <span class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-white"><i class="ki-outline ki-security-user fs-2x text-primary" data-id-icon></i></span></span>
+    <span class="flex-grow-1">
+        <span class="d-block fw-bold fs-6 text-gray-900">@T["Confirm the patient's identity"]</span>
+        <span class="d-block fs-7 fw-semibold text-gray-700">@T["I confirmed the name and the date of birth (or the file number) with the patient"]</span>
+        <span class="d-none fs-7 fw-bold text-danger mt-1" data-id-warn><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@T["Confirm the identity before taking money"]</span>
+    </span>
+    <span class="form-check form-check-custom form-check-solid form-check-lg flex-shrink-0"><input type="checkbox" class="form-check-input h-30px w-30px" data-id-check data-patient="@p.ID" /></span>
 </label>
 @if (shift == null)
 {

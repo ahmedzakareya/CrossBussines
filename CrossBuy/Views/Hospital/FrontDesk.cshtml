@@ -484,7 +484,11 @@
             var modalEl = document.getElementById('desk_modal'), mTitle = modalEl.querySelector('[data-desk-modal-title]'), mBody = modalEl.querySelector('[data-desk-modal-body]');
             // H157: the two-identifier check of the money window (it belongs to the window's own patient)
             function idChecked() { var c = mBody.querySelector('[data-id-check]'); return !!(c && c.checked); }
-            function idRow() { var r = mBody.querySelector('[data-id-check-row]'); if (r) { r.classList.add('border-danger'); r.scrollIntoView({ block: 'center' }); } }
+            // H271: unconfirmed, the identity step itself turns red and says why (not a toast elsewhere); confirmed, it is blue
+            function idTone(row, bad) { row.classList.toggle('border-primary', !bad); row.classList.toggle('bg-light-primary', !bad); row.classList.toggle('border-danger', bad); row.classList.toggle('bg-light-danger', bad);
+                var w = row.querySelector('[data-id-warn]'); if (w) w.classList.toggle('d-none', !bad); var i = row.querySelector('[data-id-icon]'); if (i) { i.classList.toggle('text-primary', !bad); i.classList.toggle('text-danger', bad); } }
+            function idRow() { var r = mBody.querySelector('[data-id-check-row]'); if (r) { idTone(r, true); r.scrollIntoView({ block: 'center', behavior: 'smooth' }); } }
+            document.addEventListener('change', function (e) { if (!e.target.matches('[data-id-check]')) return; var r = e.target.closest('[data-id-check-row]'); if (r && e.target.checked) idTone(r, false); });
             function windowOf(title, url, size) { mTitle.textContent = title; modalEl.querySelector('.modal-dialog').className = 'modal-dialog modal-dialog-centered ' + (size || 'mw-850px'); mBody.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
                 bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); menus();
                     if (window.flatpickr) mBody.querySelectorAll('[data-fp-date]').forEach(function (el) { flatpickr(el, { dateFormat: 'Y-m-d', minDate: el.getAttribute('data-min') || null, disableMobile: true, static: true,
@@ -733,7 +737,7 @@
                 if ((t = e.target.closest('[data-desk-deposit]'))) {
                     e.preventDefault(); var f = t.closest('[data-deposit-form]'), amt = Number(f.querySelector('[data-dep-amount]').value), ms = f.querySelector('[data-dep-method]');
                     if (!(amt > 0)) { toastr.error(W4.amount); return; }
-                    if (!idChecked()) { toastr.error(W.idFirst); idRow(); return; }
+                    if (!idChecked()) { idRow(); return; }
                     cbConfirm(W4.take.replace('{0}', amt + ' ' + f.getAttribute('data-cur')).replace('{1}', ms.options[ms.selectedIndex].text).replace('{2}', (mBody.querySelector('bdi') || {}).textContent || ''), { kind: 'primary' }).then(function (ok) {
                         if (!ok) return; t.disabled = true;
                         post(U4.take + f.getAttribute('data-patient') + '/Deposit', { amount: amt, method: ms.value, purpose: f.querySelector('[data-dep-purpose]').value, note: f.querySelector('[data-dep-note]').value, identityChecked: idChecked() })
@@ -766,7 +770,7 @@
                 if ((t = e.target.closest('[data-desk-collect]'))) {
                     e.preventDefault(); var row = t.closest('[data-bill]'), amount = Number(row.querySelector('[data-amount]').value), sel = row.querySelector('[data-method]'), method = sel.value;
                     if (!(amount > 0)) { toastr.error(W2.amount); return; }
-                    if (!idChecked()) { toastr.error(W.idFirst); idRow(); return; }
+                    if (!idChecked()) { idRow(); return; }
                     var ask = W2.askCollect.replace('{0}', amount + ' ' + row.getAttribute('data-cur')).replace('{1}', sel.options[sel.selectedIndex].text).replace('{2}', row.getAttribute('data-bill-no'));
                     cbConfirm(ask, { kind: 'primary' }).then(function (ok) {
                         if (!ok) return; t.disabled = true;
