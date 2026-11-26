@@ -106,6 +106,35 @@
             </div>
         }
 
+        @* ---------------- the one search ---------------- *@
+        @* H271: the search is where the desk's work starts, so it is the first thing on the page, named, and framed - the
+           owner: it floated in the middle of the page, impossible to find for anyone new to the system *@
+        <div class="card mb-5 border border-2 border-primary shadow-sm"><div class="card-body py-7 px-8">
+            <div class="d-flex align-items-center gap-4 mb-5">
+                <span class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-primary"><i class="ki-outline ki-magnifier fs-1 text-white"></i></span></span>
+                <div><h2 class="fw-bold text-gray-900 fs-2 mb-1">@T["Find the patient"]</h2>
+                    <div class="text-gray-600 fs-6 fw-semibold">@T["Every service starts from the patient's file: search, then open it at the counter"]</div></div>
+            </div>
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="position-relative flex-grow-1 min-w-300px">
+                    <i class="ki-outline ki-magnifier fs-1 text-gray-500 position-absolute top-50 translate-middle-y ms-6"></i>
+                    <input type="text" class="form-control form-control-lg form-control-solid ps-16 fs-4" autocomplete="off" data-desk-search
+                           placeholder="@T["Search by name in Arabic or English, file, ID, mobile or queue number…"]" />
+                </div>
+                <button type="button" class="btn btn-light-primary" data-desk-reader><i class="ki-outline ki-scan-barcode fs-3"></i>@T["Read the ID card"]</button>
+                <button type="button" class="btn btn-primary" data-desk-register><i class="ki-outline ki-user-tick fs-3"></i>@T["Register a patient"]</button>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
+                <span class="text-gray-600 fs-7 fw-semibold me-1">@T["Search in"]:</span>
+                @foreach (var k in new[] { ("", T["All"].Value), ("name", T["match:name"].Value), ("mrn", T["match:mrn"].Value), ("id", T["match:id"].Value), ("phone", T["match:phone"].Value), ("queue", T["match:queue"].Value) })
+                {
+                    <a href="#" class="btn btn-sm @(k.Item1 == "" ? "btn-light-primary" : "btn-light") py-1 px-4 fs-7" data-desk-kind="@k.Item1">@k.Item2</a>
+                }
+                <span class="ms-auto text-muted fs-8 align-self-center"><i class="ki-outline ki-information-5 fs-7"></i> أحمد = احمد · Mohamed = Muhammad · @T["An exact ID or file number comes first"]</span>
+            </div>
+            <div class="mt-5 d-none" data-desk-results></div>
+        </div></div>
+
         @* ---------------- the desk strip ---------------- *@
         <div class="card mb-5 bg-light-primary border-0"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-6">
             <div class="d-flex align-items-center">
@@ -120,27 +149,6 @@
             <div><div class="text-muted fs-8">@T["Last called"]</div><div class="fw-bold fs-4 text-primary hp-num">@(me.LastCalled?.ToString() ?? "—")</div></div>
             <a href="@Url.Action("Clinics")" class="btn btn-sm btn-primary"><i class="ki-outline ki-notification-on fs-4"></i>@T["Clinics board"]</a>
             <div class="ms-auto text-end"><div class="fs-2 fw-bold text-gray-900 hp-num" data-desk-clock>@nowLocal.ToString("HH:mm")</div><div class="text-muted fs-8">@nowLocal.ToString("dddd d MMMM yyyy")</div></div>
-        </div></div>
-
-        @* ---------------- the one search ---------------- *@
-        <div class="card mb-5"><div class="card-body py-6">
-            <div class="d-flex flex-wrap gap-3 align-items-center">
-                <div class="position-relative flex-grow-1 min-w-300px">
-                    <i class="ki-outline ki-magnifier fs-1 text-gray-500 position-absolute top-50 translate-middle-y ms-6"></i>
-                    <input type="text" class="form-control form-control-lg form-control-solid ps-16 fs-4" autocomplete="off" data-desk-search
-                           placeholder="@T["Search by name in Arabic or English, file, ID, mobile or queue number…"]" />
-                </div>
-                <button type="button" class="btn btn-light-primary" data-desk-reader><i class="ki-outline ki-scan-barcode fs-3"></i>@T["Read the ID card"]</button>
-                <button type="button" class="btn btn-primary" data-desk-register><i class="ki-outline ki-user-tick fs-3"></i>@T["Register a patient"]</button>
-            </div>
-            <div class="d-flex flex-wrap gap-2 mt-4">
-                @foreach (var k in new[] { ("", T["All"].Value), ("name", T["match:name"].Value), ("mrn", T["match:mrn"].Value), ("id", T["match:id"].Value), ("phone", T["match:phone"].Value), ("queue", T["match:queue"].Value) })
-                {
-                    <a href="#" class="btn btn-sm @(k.Item1 == "" ? "btn-light-primary" : "btn-light") py-1 px-4 fs-7" data-desk-kind="@k.Item1">@k.Item2</a>
-                }
-                <span class="ms-auto text-muted fs-8 align-self-center"><i class="ki-outline ki-information-5 fs-7"></i> أحمد = احمد · Mohamed = Muhammad · @T["An exact ID or file number comes first"]</span>
-            </div>
-            <div class="mt-5 d-none" data-desk-results></div>
         </div></div>
 
         @* ---------------- eight figures ---------------- *@
