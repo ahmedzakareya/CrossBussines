@@ -24,6 +24,7 @@
     string Tone(string s) => s switch { HospitalAppointmentStatus.Arrived => "info", HospitalAppointmentStatus.InRoom => "primary", HospitalAppointmentStatus.Done => "primary", _ => "gray-500" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@await Html.PartialAsync("_PersonSelect")
 @Html.AntiForgeryToken()
 
 <div class="d-flex flex-column flex-column-fluid">
@@ -36,9 +37,10 @@
                 <li class="breadcrumb-item text-muted">@T["Worklist"]</li>
             </ul>
         </div>
-        <form method="get" action="@Url.Action("Worklist")" id="docForm" class="w-250px">
-            <select name="doctor" class="form-select form-select-sm form-select-solid" data-control="select2" data-placeholder="@T["Doctor"]">
-                @foreach (var x in doctors) { <option value="@x.Row.ID" selected="@(d != null && x.Row.ID == d.Row.ID)">@DisplayName.Of(x.Row.Name, x.Row.NameEn)</option> }
+        @* the doctor picker shows each doctor by face (owner: «ضيف صورته وحسن شكلها») - the shared _PersonSelect *@
+        <form method="get" action="@Url.Action("Worklist")" id="docForm" class="w-325px mw-100">
+            <select name="doctor" class="form-select form-select-solid" data-person-select data-placeholder="@T["Doctor"]">
+                @foreach (var x in doctors) { <option value="@x.Row.ID" selected="@(d != null && x.Row.ID == d.Row.ID)" data-photo="@x.PhotoPath" data-initials="@HospitalUi.Initials(x.Row.NameEn)">@DisplayName.Of(x.Row.Name, x.Row.NameEn)</option> }
             </select>
         </form>
     </div></div>
