@@ -58,8 +58,8 @@
                     return '<div class="row g-4 align-items-start mb-4" data-ap-row="' + n + '">' +
                         '<div class="col-md-6">' + label(W.allergen || '') + '<select class="form-select form-select-solid" data-ap-what data-placeholder="' + esc(W.choose) + '">' + allergenOptions(i) + '</select>' +
                         (!i.code && i.text ? '<span class="badge badge-light-info fs-8 fw-bold mt-2">' + esc(W.notCoded) + '</span>' : '') + '</div>' +
-                        '<div class="col-md-3">' + label(W.reaction) + '<select class="form-select form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction).replace('<option value=""></option>', '<option value="">' + esc(W.reaction) + '</option>') + '</select></div>' +
-                        '<div class="col">' + label(W.severity) + '<select class="form-select form-select-solid" data-ap-severity title="' + esc(W.severity) + '">' + options(W.severities || [], i.severity).replace('<option value=""></option>', '<option value="">' + esc(W.severity) + '</option>') + '</select></div>' +
+                        '<div class="col-md-3">' + label(W.reaction) + '<select class="form-select form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction) + '</select></div>' +
+                        '<div class="col">' + label(W.severity) + '<select class="form-select form-select-solid" data-ap-severity title="' + esc(W.severity) + '" data-placeholder="' + esc(W.severity) + '">' + options(W.severities || [], i.severity) + '</select></div>' +
                         '<div class="col-auto"><button type="button" class="btn btn-icon btn-light btn-active-light-danger w-40px h-40px" data-ap-remove="' + n + '" title="' + esc(W.remove) + '"><i class="ki-outline ki-trash fs-3"></i></button></div></div>';
                 }).join('');
                 if (window.jQuery && jQuery.fn.select2) jQuery(rowsEl).find('[data-ap-what]').each(function () {
@@ -83,6 +83,17 @@
                         var i = items[+$s.closest('[data-ap-row]').attr('data-ap-row')], v = $s.val() || '';
                         if (/^c:/.test(v)) { i.code = v.slice(2); i.text = null; } else { i.code = null; i.text = v.replace(/^t:/, ''); }
                         draw();
+                      });
+                });
+                // H272: the reaction and the severity are the theme's select2 too (the owner: the browser's own list is off the
+                // theme). select2 reports a pick through jQuery only, so the row is updated from that event.
+                if (window.jQuery && jQuery.fn.select2) jQuery(rowsEl).find('[data-ap-reaction],[data-ap-severity]').each(function () {
+                    var $s = jQuery(this), modal = box.closest('.modal');
+                    $s.select2({ width: '100%', minimumResultsForSearch: Infinity, placeholder: $s.data('placeholder'), dir: document.documentElement.dir || 'ltr', dropdownParent: modal ? jQuery(modal) : jQuery(document.body) })
+                      .on('change', function () {
+                        var i = items[+$s.closest('[data-ap-row]').attr('data-ap-row')];
+                        if ($s.is('[data-ap-reaction]')) i.reaction = $s.val() || null; else i.severity = $s.val() || null;
+                        sync();
                       });
                 });
                 sync();
