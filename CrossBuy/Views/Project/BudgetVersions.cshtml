@@ -1,0 +1,194 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Construction
+@using System.Globalization
+@model CrossBuy.ViewModel.ConstructionBudgetPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject CrossBuy.BL.IInventoryAccessService InventoryAccess
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var document = Model.Document;
+    var header = document?.Header;
+    var writable = Model.CanManage && header?.Status == "Draft";
+    var nodes = Model.Structure.Nodes.ToDictionary(x => x.ID);
+    var codes = Model.Structure.CostCodes.ToDictionary(x => x.ID);
+    string Version(byte[]? value) => Convert.ToBase64String(value ?? Array.Empty<byte>());
+    string Exact(decimal? value) => value?.ToString("0.############################", CultureInfo.CurrentCulture) ?? "—";
+    string NodeName(int id) => nodes.TryGetValue(id, out var node) ? node.Code + " — " + DisplayName.Of(node.Name, node.NameEn) : Localizer["Unrecognized dimension"].Value;
+    string CodeName(int id) => codes.TryGetValue(id, out var code) ? code.Code + " — " + DisplayName.Of(code.Name, code.NameEn) : Localizer["Unrecognized dimension"].Value;
+    var editable = document?.Lines.Select(x => new {
+        wbsNodeId = x.WbsNodeId.ToString(CultureInfo.InvariantCulture), costCodeId = x.CostCodeId.ToString(CultureInfo.InvariantCulture),
+        amount = x.Amount.ToString("0.########", CultureInfo.InvariantCulture),
+        quantity = x.Quantity?.ToString("0.########", CultureInfo.InvariantCulture),
+        rate = x.Rate?.ToString("0.########", CultureInfo.InvariantCulture), changeReason = x.ChangeReason
+    }).ToArray();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@Localizer["Project budget versions"]</h1><div class="text-muted">@Model.Project.Code — @DisplayName.Of(Model.Project.Name, Model.Project.NameEn)</div></div>
+        <div class="d-flex gap-2">
+            @if (Model.CanManage) { <a asp-controller="ConstructionActualCost" asp-action="Index" asp-route-projectId="@Model.Project.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.ActualUi.Title"]</a> }
+            @if (Model.CanManage) { <a asp-controller="ConstructionRebase" asp-action="Index" asp-route-projectId="@Model.Project.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Rebase.Title"]</a> }
+            @if (Model.CanManage) { <a asp-action="BudgetExceptions" asp-route-id="@Model.Project.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Exception.Title"]</a> }
+            @if (Model.CanManage && await InventoryAccess.CanAsync("purchase")) { <a asp-controller="Inventory" asp-action="NewConstructionPurchase" asp-route-projectId="@Model.Project.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Editor.DraftTitle"]</a> }
+            <a asp-action="Projects" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@Localizer["Projects"]</a>
+            <a asp-action="Structure" asp-route-id="@Model.Project.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@Localizer["Project structure"]</a>
+        </div>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid d-grid gap-6">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success" role="status">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger" role="alert">@TempData["PrjErr"]</div> }
+        <div class="alert alert-info">@Localizer["Exposure.ReviewNotice"]</div>
+        <section class="card" id="construction-budget-exposure" aria-labelledby="budget-exposure-title">
+            <div class="card-header"><h2 class="card-title" id="budget-exposure-title">@Localizer["Exposure.Heading"]</h2></div>
+            <div class="card-body">
+                @if (Model.Exposure is { Ok: true, Rows: not null } exposure)
+                {
+                    var baseline = Model.Versions.SingleOrDefault(x => x.ID == exposure.BudgetVersionId);
+                    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+                        <span>@(baseline == null ? Localizer["Exposure.Baseline"] : Localizer["Exposure.BaselineVersion", baseline.VersionNo])</span>
+                        <span>@Localizer["Exposure.Currency"]: <strong>@exposure.CurrencyCode</strong></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle" aria-label="@Localizer["Exposure.Heading"]">
+                            <thead><tr>
+                                <th>@Localizer["Exposure.WorkItem"]</th><th>@Localizer["Exposure.CostCode"]</th>
+                                <th class="text-end">@Localizer["Exposure.Budget"]</th><th class="text-end">@Localizer["Exposure.Actual"]</th>
+                                <th class="text-end">@Localizer["Exposure.Commitment"]</th><th class="text-end">@Localizer["Exposure.Remaining"]</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var row in exposure.Rows)
+                                {
+                                    <tr>
+                                        <td>@NodeName(row.WbsNodeId)</td><td>@CodeName(row.CostCodeId)</td>
+                                        <td class="text-end">@Exact(row.Budget)</td><td class="text-end">@Exact(row.Actual)</td>
+                                        <td class="text-end">@Exact(row.Commitment)</td>
+                                        <td class="text-end @(row.Remaining < 0 ? "text-danger" : "")">@Exact(row.Remaining)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    var message = Localizer["Exposure." + (Model.Exposure?.Code ?? "Unavailable")];
+                    <div class="alert alert-warning mb-0" role="status">@(message.IsResourceNotFound ? Localizer["Exposure.Unavailable"].Value : message.Value)</div>
+                }
+            </div>
+        </section>
+        <section class="card"><div class="card-header"><h2 class="card-title">@Localizer["Company budget policy"]</h2></div><div class="card-body">
+            <p>@Localizer["The policy applies to the company. No policy is selected automatically."]</p>
+            <div class="mb-4">@Localizer["Current policy"]: <strong>@(Model.Policy == null ? Localizer["Not configured"].Value : Localizer["Policy." + Model.Policy.Mode].Value)</strong></div>
+            @if (Model.CanManage)
+            {
+                <form asp-action="ConfigureConstructionBudgetPolicy" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="row g-4" data-cb-confirm data-cb-action="edit">
+                    @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="versionId" value="@header?.ID" />
+                    <input type="hidden" name="expectedToken" value="@Version(Model.Policy?.ConcurrencyToken)" />
+                    <div class="col-md-4"><label class="form-label" for="budget-policy">@Localizer["Policy"]</label><select id="budget-policy" name="mode" class="form-select" required>
+                        <option value="">@Localizer["Choose explicitly"]</option>
+                        @foreach (var mode in new[] { "Warning", "ApprovalRequired", "HardBlock" }) { <option value="@mode" selected="@(Model.Policy?.Mode == mode)">@Localizer["Policy." + mode]</option> }
+                    </select></div>
+                    <div class="col-md-6"><label class="form-label" for="policy-reason">@Localizer["Reason"]</label><input id="policy-reason" name="reason" class="form-control" required maxlength="1000" /></div>
+                    <div class="col-md-2 align-self-end"><button class="btn btn-primary" type="submit">@Localizer["Save policy"]</button></div>
+                </form>
+            }
+        </div></section>
+        <section class="card"><div class="card-header"><h2 class="card-title">@Localizer["Versions"]</h2></div><div class="card-body">
+            <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr><th>@Localizer["Version"]</th><th>@Localizer["Kind"]</th><th>@Localizer["Status"]</th><th>@Localizer["Baseline"]</th><th>@Localizer["Reason"]</th><th>@Localizer["Open"]</th></tr></thead><tbody>
+            @foreach (var version in Model.Versions)
+            {
+                <tr><td>@version.VersionNo</td><td>@Localizer["Kind." + version.Kind]</td><td>@Localizer["Status." + version.Status]</td><td>@(version.IsBaseline ? Localizer["Yes"].Value : Localizer["No"].Value)</td><td>@version.Reason</td><td><a class="btn btn-sm btn-light-primary" asp-action="BudgetVersions" asp-route-id="@Model.Project.ID" asp-route-v="@version.ID" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">@Localizer["Open"]</a></td></tr>
+            }
+            </tbody></table></div>
+            @if (Model.CanManage)
+            {
+                <details class="mt-4"><summary class="btn btn-light-primary">@Localizer["Create a version"]</summary>
+                <form asp-action="CreateConstructionBudgetVersion" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="row g-4 mt-2" id="create-budget-version" data-cb-confirm data-cb-action="save">
+                    @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="previousVersion" id="previous-budget-token" />
+                    <div class="col-md-3"><label for="budget-kind" class="form-label">@Localizer["Kind"]</label><select name="kind" id="budget-kind" class="form-select" required><option value="">@Localizer["Choose explicitly"]</option>@foreach (var kind in new[] { "Original", "Revised", "Scenario" }) { <option value="@kind">@Localizer["Kind." + kind]</option> }</select></div>
+                    <div class="col-md-4"><label for="previous-budget" class="form-label">@Localizer["Copy from approved history"]</label><select name="previousVersionId" id="previous-budget" class="form-select"><option value="">@Localizer["No previous version"]</option>@foreach (var previous in Model.Versions.Where(x => x.Status is "Approved" or "Superseded")) { <option value="@previous.ID" data-version="@Version(previous.RowVersion)">@previous.VersionNo — @Localizer["Status." + previous.Status]</option> }</select></div>
+                    <div class="col-md-5"><label for="create-budget-reason" class="form-label">@Localizer["Reason"]</label><input id="create-budget-reason" name="reason" class="form-control" required maxlength="1000" /></div>
+                    <div><button type="submit" class="btn btn-primary">@Localizer["Create draft"]</button></div>
+                </form></details>
+            }
+        </div></section>
+        @if (Model.RejectedLines != null)
+        {
+            <section class="card border-warning"><div class="card-header"><h2 class="card-title">@Localizer["Your submitted values"]</h2></div><div class="card-body">
+                <p>@Localizer["These values were not saved. Current stored values appear below; review them before submitting another edit."]</p>
+                <div class="table-responsive"><table class="table"><thead><tr><th>@Localizer["WBS"]</th><th>@Localizer["Cost code"]</th><th>@Localizer["Amount"]</th><th>@Localizer["Quantity"]</th><th>@Localizer["Rate"]</th><th>@Localizer["Reason"]</th></tr></thead><tbody>
+                @foreach (var row in Model.RejectedLines) { <tr><td>@NodeName(row.WbsNodeId)</td><td>@CodeName(row.CostCodeId)</td><td>@Exact(row.Amount)</td><td>@Exact(row.Quantity)</td><td>@Exact(row.Rate)</td><td>@row.ChangeReason</td></tr> }
+                </tbody></table></div>
+            </div></section>
+        }
+        @if (document != null && header != null)
+        {
+            <section class="card"><div class="card-header"><h2 class="card-title">@Localizer["Version"] @header.VersionNo — @Localizer["Status." + header.Status]</h2><div class="card-toolbar"><span class="badge badge-light-primary">@(Model.CurrencyCode ?? Localizer["Not configured"].Value)</span></div></div><div class="card-body">
+                <p>@Localizer["Approved history is read-only. Changes require a new version."]</p>
+                @if (writable)
+                {
+                    <p id="budget-unsaved" class="alert alert-warning" role="status" hidden>@Localizer["Save your changes before submitting this version."]</p>
+                    <form asp-action="SaveConstructionBudgetDraft" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" id="budget-draft-form" data-cb-confirm data-cb-action="edit">
+                        @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="versionId" value="@header.ID" /><input type="hidden" name="expectedVersion" value="@Version(header.RowVersion)" /><input type="hidden" name="rowsJson" id="budget-rows-json" />
+                        <div class="table-responsive"><table class="table align-middle"><thead><tr><th>@Localizer["WBS"]</th><th>@Localizer["Cost code"]</th><th>@Localizer["Amount"]</th><th>@Localizer["Quantity"]</th><th>@Localizer["Rate"]</th><th>@Localizer["Reason"]</th><th>@Localizer["Remove"]</th></tr></thead><tbody id="budget-draft-rows"></tbody></table></div>
+                        <button type="button" id="add-budget-line" class="btn btn-light-primary mb-4">@Localizer["Add line"]</button>
+                        <div class="mb-4"><label for="budget-save-reason" class="form-label">@Localizer["Reason for this save"]</label><input id="budget-save-reason" name="reason" required maxlength="1000" class="form-control" /></div><button type="submit" class="btn btn-primary">@Localizer["Save draft"]</button>
+                    </form>
+                    <template id="budget-line-template"><tr>
+                        <td><select class="form-select budget-wbs" required><option value="">@Localizer["Choose explicitly"]</option>@foreach(var node in Model.Structure.Nodes) { <option value="@node.ID" disabled="@(!node.OwnsBudget || node.Status is "Archived" or "Completed")">@NodeName(node.ID)</option> }</select></td>
+                        <td><select class="form-select budget-code" required><option value="">@Localizer["Choose explicitly"]</option>@foreach(var code in Model.Structure.CostCodes) { <option value="@code.ID" data-category="@code.Category" disabled="@(!code.IsActive || !code.AllowDirectPosting)">@CodeName(code.ID)</option> }</select></td>
+                        <td><input class="form-control budget-amount" type="number" step="any" min="0" required aria-label="@Localizer["Amount"]" /></td>
+                        <td><input class="form-control budget-quantity" type="number" step="any" min="0" aria-label="@Localizer["Quantity"]" /></td>
+                        <td><input class="form-control budget-rate" type="number" step="any" min="0" aria-label="@Localizer["Rate"]" /></td>
+                        <td><input class="form-control budget-line-reason" required maxlength="1000" aria-label="@Localizer["Reason"]" /></td>
+                        <td><button type="button" class="btn btn-sm btn-light-danger budget-remove">@Localizer["Remove"]</button></td>
+                    </tr></template>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed"><thead><tr><th>@Localizer["WBS"]</th><th>@Localizer["Cost code"]</th><th>@Localizer["Amount"]</th><th>@Localizer["Previous amount"]</th><th>@Localizer["Quantity"]</th><th>@Localizer["Rate"]</th><th>@Localizer["Reason"]</th></tr></thead><tbody>
+                    @foreach (var row in document.Lines) { <tr><td>@NodeName(row.WbsNodeId)</td><td>@CodeName(row.CostCodeId)</td><td>@Exact(row.Amount)</td><td>@Exact(row.PreviousAmount)</td><td>@Exact(row.Quantity)</td><td>@Exact(row.Rate)</td><td>@row.ChangeReason</td></tr> }
+                    </tbody></table></div>
+                }
+                @if (Model.CanManage && header.Status is "Draft" or "Submitted")
+                {
+                    var canApprove = header.Status == "Submitted" && header.CreatedBy != Model.ActorEmployeeId && header.SubmittedBy != Model.ActorEmployeeId;
+                    @if (header.Status == "Submitted" && !canApprove) { <p class="alert alert-warning mt-4">@Localizer["The creator and submitter cannot approve this version."]</p> }
+                    else
+                    {
+                        <form asp-action="@(header.Status == "Draft" ? "SubmitConstructionBudgetVersion" : "ApproveConstructionBudgetVersion")" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="budget-transition-form row g-4 border-top mt-5 pt-3" data-cb-confirm data-cb-action="@(canApprove ? "approve" : "save")">
+                            @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="versionId" value="@header.ID" /><input type="hidden" name="expectedVersion" value="@Version(header.RowVersion)" />
+                            <div class="col-md-9"><label for="budget-transition-reason" class="form-label">@Localizer["Reason"]</label><input id="budget-transition-reason" name="reason" class="form-control" required maxlength="1000" /></div><div class="col-md-3 align-self-end"><button class="btn btn-primary" type="submit">@(canApprove ? Localizer["Approve version"].Value : Localizer["Submit saved draft"].Value)</button></div>
+                        </form>
+                    }
+                }
+            </div></section>
+        }
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+    const previous=document.getElementById('previous-budget'), previousToken=document.getElementById('previous-budget-token');
+    function syncPrevious(){if(previousToken)previousToken.value=previous?.selectedOptions[0]?.dataset.version||'';}
+    if(previous){previous.addEventListener('change',syncPrevious);syncPrevious();}
+    const form=document.getElementById('budget-draft-form'),body=document.getElementById('budget-draft-rows'),template=document.getElementById('budget-line-template');
+    if(!form||!body||!template)return;
+    function markDirty(){document.getElementById('budget-unsaved').hidden=false;document.querySelectorAll('.budget-transition-form button[type="submit"]').forEach(button=>button.disabled=true);}
+    function add(row){
+        const fragment=template.content.cloneNode(true),tr=fragment.querySelector('tr');
+        if(row){tr.querySelector('.budget-wbs').value=row.wbsNodeId;tr.querySelector('.budget-code').value=row.costCodeId;tr.querySelector('.budget-amount').value=row.amount;tr.querySelector('.budget-quantity').value=row.quantity??'';tr.querySelector('.budget-rate').value=row.rate??'';tr.querySelector('.budget-line-reason').value=row.changeReason??'';}
+        tr.querySelector('.budget-remove').addEventListener('click',()=>{tr.remove();markDirty();});body.append(fragment);
+    }
+    document.getElementById('add-budget-line').addEventListener('click',()=>{add(null);markDirty();});
+    form.addEventListener('input',markDirty);form.addEventListener('change',markDirty);
+    const existing=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(editable));
+    if(existing)existing.forEach(add);
+    form.addEventListener('submit',function(){
+        const rows=Array.from(body.querySelectorAll('tr')).map(tr=>({wbsNodeId:tr.querySelector('.budget-wbs').value,costCodeId:tr.querySelector('.budget-code').value,amount:tr.querySelector('.budget-amount').value,quantity:tr.querySelector('.budget-quantity').value||null,rate:tr.querySelector('.budget-rate').value||null,isContingency:tr.querySelector('.budget-code').selectedOptions[0]?.dataset.category==='Contingency',changeReason:tr.querySelector('.budget-line-reason').value}));
+        document.getElementById('budget-rows-json').value=JSON.stringify(rows);
+    });
+})();
+</script>
+}

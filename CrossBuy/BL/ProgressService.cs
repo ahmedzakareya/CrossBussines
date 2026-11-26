@@ -255,8 +255,34 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> ConfirmAsync(int companyId, int id)
 		{
-			var hdr = await _db.ProjectProgresses.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
+			var hdr = await _db.ProjectProgresses.Include(p => p.Lines)
+				.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
 			if (hdr == null) return (false, "Measurement not found");
+			if (hdr.Status != "Draft") return (false, "Only a draft measurement can be confirmed");
+
+			// Keep an over-executed measurement as draft evidence until an approved commercial change
+			// updates the authoritative BOQ quantity. Billing used to cap this value silently.
+			var measuredLines = hdr.Lines.Where(line => line.BoqItemId.HasValue && !line.ManualPercent.HasValue).ToList();
+			if (measuredLines.Count > 0)
+			{
+				var ids = measuredLines.Select(line => line.BoqItemId!.Value).Distinct().ToArray();
+				var quantities = await _db.BoqItems.AsNoTracking()
+					.Where(item => item.CompanyID == companyId && item.ProjectId == hdr.ProjectId && ids.Contains(item.ID))
+					.ToDictionaryAsync(item => item.ID, item => item.Quantity);
+				foreach (var line in measuredLines)
+				{
+					if (!quantities.TryGetValue(line.BoqItemId!.Value, out var approvedQuantity))
+						return (false, "A measured BOQ line is no longer part of this project");
+					if (line.CumulativeQty > approvedQuantity)
+					{
+						var message = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+							? $"كمية التنفيذ في بند جدول الكميات رقم {line.BoqItemId} تتجاوز الكمية المعتمدة. اعتمد التغيير التجاري أولًا قبل تأكيد القياس."
+							: $"BOQ item #{line.BoqItemId} exceeds its current approved quantity; approve a variation before confirming.";
+						return (false, message);
+					}
+				}
+			}
+
 			hdr.Status = "Confirmed";
 			await _db.SaveChangesAsync();
 			return (true, null);

@@ -1,5 +1,6 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using CrossBuy.Models;
+using CrossBuy.BL.Construction;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
 using CrossBuy.Models.Menu;
@@ -19,6 +20,10 @@ namespace CrossBuy.Controllers
 	{
 		private readonly IProjectService _projects;
 		private readonly IBoqService _boq;
+		private readonly IConstructionStructureService _structure;
+        private readonly IConstructionBudgetVersionService _budgetVersions;
+        private readonly IConstructionBudgetPolicyService _budgetPolicy;
+        private readonly IConstructionBudgetExposureService _budgetExposure;
 		private readonly IContractService _contract;
 		private readonly IProgressService _progress;
 		private readonly IProgressBillingService _billing;
@@ -47,8 +52,9 @@ namespace CrossBuy.Controllers
 			// Stage 1 Batch C — projects access service + session-free context, for the BOQ proof endpoint.
 			IProjectsAccessService projectsAccess, IProjectMembershipService members, IProjectMilestoneService milestones, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
 			CrossBuy.BL.Platform.IRequestCompanyResolver company, AccountingAccessService accounting,
-			IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _projectsAccess = projectsAccess; _members = members; _milestones = milestones; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
+			IStringLocalizer<CrossBuy.SharedResources> localizer, IConstructionStructureService structure, IConstructionBudgetVersionService budgetVersions, IConstructionBudgetPolicyService budgetPolicy,
+            IConstructionBudgetExposureService budgetExposure)
+		{ _projectsAccess = projectsAccess; _members = members; _milestones = milestones; _businessContexts = businessContexts; _projects = projects; _boq = boq; _structure = structure; _budgetVersions = budgetVersions; _budgetPolicy = budgetPolicy; _budgetExposure = budgetExposure; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
 
 		// Projects & Contracting is its OWN system → show its sidebar (not Accounting/Admin).
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -207,12 +213,26 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpGet]
-		public async Task<IActionResult> Projects(string? q, string? status)
+		public async Task<IActionResult> Projects(string? q, string? status, string? construction = null)
 		{
 			var gate = await CompanyGateAsync(ProjectsActions.Read);
 			if (!gate.Ok) return gate.Denied!;
+			var constructionDestination = construction is "structure" or "budget" or "exceptions" or "purchase" or "actual-cost" or "rebase" or "consumption" or "transfer-preview" or "cost-forecast" or "daily-report" ? construction : null;
+			if (constructionDestination != null)
+			{
+				var navigationAction = constructionDestination == "daily-report" ? ProjectsActions.SiteReportRead :
+					constructionDestination is "structure" or "budget" or "cost-forecast" ? ProjectsActions.BudgetView : ProjectsActions.BudgetManage;
+				var navigationGate = await CompanyGateAsync(navigationAction);
+				if (!navigationGate.Ok) return navigationGate.Denied!;
+			}
+			ViewBag.ConstructionDestination = constructionDestination;
 			bool? active = status == "active" ? true : status == "inactive" ? false : (bool?)null;
 			ViewBag.Q = q; ViewBag.Status = status;
+			var navigationContext = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			ViewBag.CanViewStructure = navigationContext != null && navigationContext.CompanyId == gate.CompanyId
+				&& await _projectsAccess.CanAsync(navigationContext, ProjectsActions.BudgetView, cancellationToken: HttpContext.RequestAborted);
+			ViewBag.CanViewDailySiteReports = navigationContext != null && navigationContext.CompanyId == gate.CompanyId
+				&& await _projectsAccess.CanAsync(navigationContext, ProjectsActions.SiteReportRead, cancellationToken: HttpContext.RequestAborted);
 			await PopulateFormListsAsync(gate.CompanyId);
 			return View(await _projects.GetProjectsAsync(gate.CompanyId, q, active));
 		}
@@ -267,6 +287,291 @@ namespace CrossBuy.Controllers
 			return View(await _projects.ProfitabilityAsync(gate.CompanyId, f, t));
 		}
 
+		// R7 structural dimensions. The services independently check scope, financial authority,
+		// native versions and warehouse authority. No action here posts stock or money.
+		[HttpGet]
+		public async Task<IActionResult> Structure(int id)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetView, id); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			var project = await _projects.GetAsync(gate.CompanyId, id); if (project == null) return NotFound();
+			var workspace = await _structure.GetAsync(context, id, HttpContext.RequestAborted); if (workspace == null) return Forbid();
+			var manage = await _projectsAccess.CanAsync(context, ProjectsActions.BudgetManage, PermissionTarget.ForProject(id, gate.CompanyId), HttpContext.RequestAborted);
+			return View(new CrossBuy.ViewModel.ConstructionStructurePage(project, workspace, manage));
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> ConfigureProjectStructure(int projectId, int maxDepth, byte[]? expectedVersion, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			if (!ModelState.IsValid) return StructureFeedback(projectId, new(false, "InvalidForm"));
+			return StructureFeedback(projectId, await _structure.ConfigureAsync(context, maxDepth, reason, expectedVersion, HttpContext.RequestAborted), maxDepth.ToString());
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateWbsNode(int projectId, int? parentId, string code, string name, string? nameEn,
+			string progressMethod, bool ownsBudget, bool ownsCost, int sequence, string? startDate, string? endDate,
+			int? responsibleEmployeeId, byte[]? parentVersion, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			var attempt = code + " — " + name + (string.IsNullOrWhiteSpace(nameEn) ? "" : " / " + nameEn);
+			if (!ModelState.IsValid || !StructureDate(startDate, out var from) || !StructureDate(endDate, out var to)) return StructureFeedback(projectId, new(false, "InvalidForm"), attempt);
+			var draft = new WbsDraft(parentId, code, name, nameEn, progressMethod, ownsBudget, ownsCost, sequence, from, to, responsibleEmployeeId, parentVersion);
+			return StructureFeedback(projectId, await _structure.CreateNodeAsync(context, projectId, draft, reason, HttpContext.RequestAborted), attempt);
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> RenameWbsNode(int projectId, int nodeId, string name, string? nameEn, byte[] expectedVersion, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			var attempt = name + (string.IsNullOrWhiteSpace(nameEn) ? "" : " / " + nameEn);
+			if (!ModelState.IsValid) return StructureFeedback(projectId, new(false, "InvalidForm"), attempt, nodeId);
+			return StructureFeedback(projectId, await _structure.RenameNodeAsync(context, projectId, nodeId, name, nameEn, expectedVersion, reason, HttpContext.RequestAborted), attempt, nodeId);
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> TransitionWbsNode(int projectId, int nodeId, string status, byte[] expectedVersion, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			if (!ModelState.IsValid) return StructureFeedback(projectId, new(false, "InvalidForm"), null, nodeId);
+			return StructureFeedback(projectId, await _structure.TransitionNodeAsync(context, projectId, nodeId, status, expectedVersion, reason, HttpContext.RequestAborted), null, nodeId);
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateConstructionCostCode(int projectId, int? parentId, string code, string name, string? nameEn, string category, bool allowDirectPosting, byte[]? parentVersion, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			var attempt = code + " — " + name + (string.IsNullOrWhiteSpace(nameEn) ? "" : " / " + nameEn);
+			if (!ModelState.IsValid) return StructureFeedback(projectId, new(false, "InvalidForm"), attempt);
+			// This surface assigns cost categories, not GL posting mappings.
+			var draft = new CostCodeDraft(parentId, code, name, nameEn, category, allowDirectPosting, null, parentVersion);
+			return StructureFeedback(projectId, await _structure.CreateCostCodeAsync(context, draft, reason, HttpContext.RequestAborted), attempt);
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateConstructionSite(int projectId, string code, string name, string? nameEn, string? address, int? warehouseId, string reason)
+		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+			var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+			var attempt = code + " — " + name + (string.IsNullOrWhiteSpace(nameEn) ? "" : " / " + nameEn);
+			if (!ModelState.IsValid) return StructureFeedback(projectId, new(false, "InvalidForm"), attempt);
+			return StructureFeedback(projectId, await _structure.CreateSiteAsync(context, projectId, new(code, name, nameEn, address, warehouseId), reason, HttpContext.RequestAborted), attempt);
+		}
+
+		private IActionResult StructureFeedback(int projectId, StructureResult result, string? attempt = null, int? nodeId = null)
+		{
+			var message = L[result.Ok ? "Construction.Structure.Saved" : "Construction.Structure.Error." + result.Code];
+			TempData[result.Ok ? "PrjMsg" : "PrjErr"] = message.ResourceNotFound ? L["Construction.Structure.SaveFailed"].Value : message.Value;
+			if (!result.Ok && !string.IsNullOrWhiteSpace(attempt)) TempData["StructureAttempt"] = attempt;
+			if (!result.Ok && nodeId.HasValue) TempData["StructureAffectedNode"] = nodeId.Value;
+			return RedirectToAction(nameof(Structure), ProjectCultureRoute(projectId));
+		}
+
+		private static Microsoft.AspNetCore.Routing.RouteValueDictionary ProjectCultureRoute(int projectId) => new()
+        {
+            ["id"] = projectId,
+            ["culture"] = System.Globalization.CultureInfo.CurrentCulture.Name,
+            ["ui-culture"] = System.Globalization.CultureInfo.CurrentUICulture.Name
+        };
+
+		private static bool StructureDate(string? text, out DateTime? value)
+		{
+			value = null; if (string.IsNullOrWhiteSpace(text)) return true;
+			if (!DateOnly.TryParseExact(text, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date)) return false;
+			value = date.ToDateTime(TimeOnly.MinValue); return true;
+		}
+
+        [HttpGet]
+        public async Task<IActionResult> BudgetExceptions(int id, int? orderId,
+            [FromServices] IConstructionBudgetExceptionService exceptions)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, id); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            var page = await exceptions.ReadPageAsync(context, id, orderId, HttpContext.RequestAborted);
+            return page == null ? NotFound() : View(page);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestBudgetException(int projectId, int? orderId,
+            CrossBuy.ViewModel.ConstructionExceptionForm input, [FromServices] IConstructionBudgetExceptionService exceptions)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            var matchesOrder = orderId.HasValue && await _db.Set<CrossBuy.Models.Context.Construction.ConstructionOrderAllocation>().AsNoTracking()
+                .AnyAsync(x => x.ID == input.AllocationId && x.ProjectId == projectId && x.CompanyID == context.CompanyId &&
+                    x.PurchaseOrderId == orderId && x.IsSealed, HttpContext.RequestAborted);
+            var result = ModelState.IsValid && matchesOrder ? await exceptions.RequestCurrentAsync(context, projectId, input.AllocationId,
+                input.SourceVersion ?? "", input.AdmissionVersion ?? "", input.RequestId, input.Reason, HttpContext.RequestAborted)
+                : new ConstructionBudgetExceptionResult(false, "InvalidExceptionRequest");
+            return await ExceptionFeedback(context, projectId, orderId, input, nameof(RequestBudgetException), result, exceptions);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveBudgetException(int projectId, int? orderId,
+            CrossBuy.ViewModel.ConstructionExceptionForm input, [FromServices] IConstructionBudgetExceptionService exceptions)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            var result = ModelState.IsValid ? await exceptions.ApproveAsync(context, projectId, input.ExceptionId,
+                input.AdmissionVersion ?? "", input.RequestId, input.Reason, HttpContext.RequestAborted)
+                : new ConstructionBudgetExceptionResult(false, "InvalidExceptionDecision");
+            return await ExceptionFeedback(context, projectId, orderId, input, nameof(ApproveBudgetException), result, exceptions);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectBudgetException(int projectId, int? orderId,
+            CrossBuy.ViewModel.ConstructionExceptionForm input, [FromServices] IConstructionBudgetExceptionService exceptions)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            var result = ModelState.IsValid ? await exceptions.RejectAsync(context, projectId, input.ExceptionId,
+                input.AdmissionVersion ?? "", input.RequestId, input.Reason, HttpContext.RequestAborted)
+                : new ConstructionBudgetExceptionResult(false, "InvalidExceptionDecision");
+            return await ExceptionFeedback(context, projectId, orderId, input, nameof(RejectBudgetException), result, exceptions);
+        }
+
+        private async Task<IActionResult> ExceptionFeedback(BusinessContext context, int projectId, int? orderId,
+            CrossBuy.ViewModel.ConstructionExceptionForm input, string action, ConstructionBudgetExceptionResult result,
+            IConstructionBudgetExceptionService exceptions)
+        {
+            if (result.Code == "AccessDenied") return Forbid();
+            if (result.Ok)
+            {
+                TempData["PrjMsg"] = L["Construction.Exception.Saved"].Value;
+                var route = ProjectCultureRoute(projectId); route["orderId"] = orderId;
+                return RedirectToAction(nameof(BudgetExceptions), route);
+            }
+            var page = await exceptions.ReadPageAsync(context, projectId, orderId, HttpContext.RequestAborted);
+            if (page == null) return NotFound();
+            Response.StatusCode = result.Code is "InvalidExceptionRequest" or "InvalidExceptionDecision" ? 400 : 409;
+            return View(nameof(BudgetExceptions), page with { Refusal = result.Code, RejectedForm = input, RejectedAction = action });
+        }
+
+        // R7/C2 budget estimates. Existing module authority remains the permission source.
+        [HttpGet]
+        public async Task<IActionResult> BudgetVersions(int id, int? v)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetView, id); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            var page = await LoadBudgetPageAsync(context, gate.CompanyId, id, v);
+            return page == null ? NotFound() : View(page);
+        }
+
+        private async Task<CrossBuy.ViewModel.ConstructionBudgetPage?> LoadBudgetPageAsync(BusinessContext context, int companyId, int projectId, int? versionId,
+            List<ConstructionBudgetDraftLine>? rejected = null, string? refusal = null)
+        {
+            var ct = HttpContext.RequestAborted;
+            var project = await _projects.GetAsync(companyId, projectId); if (project == null) return null;
+            var structure = await _structure.GetAsync(context, projectId, ct); if (structure == null) return null;
+            var versions = await _db.Set<CrossBuy.Models.Context.Construction.ConstructionBudgetVersion>().AsNoTracking()
+                .Where(x => x.CompanyID == companyId && x.ProjectId == projectId).OrderByDescending(x => x.VersionNo).ToListAsync(ct);
+            var selected = versionId.HasValue ? versions.SingleOrDefault(x => x.ID == versionId) : versions.FirstOrDefault();
+            if (versionId.HasValue && selected == null) return null;
+            var document = selected == null ? null : await _budgetVersions.GetAsync(context, projectId, selected.ID, ct);
+            if (selected != null && document == null) return null;
+            var policy = await _db.Set<CrossBuy.Models.Context.Construction.ConstructionBudgetPolicy>().AsNoTracking().SingleOrDefaultAsync(x => x.CompanyID == companyId, ct);
+            var currencyId = document?.Header.CurrencyId ?? await _db.Companies.AsNoTracking().Where(x => x.CompanyID == companyId).Select(x => x.DefaultCurrencyId).SingleOrDefaultAsync(ct);
+            var currencyCode = currencyId.HasValue ? await _db.Currencies.AsNoTracking().Where(x => x.ID == currencyId).Select(x => x.Code).SingleOrDefaultAsync(ct) : null;
+            var manage = await _projectsAccess.CanAsync(context, ProjectsActions.BudgetManage, PermissionTarget.ForProject(projectId, companyId), ct);
+            var exposure = await _budgetExposure.PreviewAsync(context, projectId, ct);
+            return new(project, versions, document, structure, policy, manage, context.EmployeeId ?? 0, currencyCode, rejected, refusal, exposure);
+        }
+
+        private string BudgetMessage(StructureResult result)
+        {
+            var message = L[result.Ok ? "Construction.Budget.Saved" : "Construction.Budget.Error." + result.Code];
+            return message.ResourceNotFound ? L["Construction.Budget.SaveFailed"].Value : message.Value;
+        }
+        private IActionResult BudgetFeedback(int projectId, int? versionId, StructureResult result)
+        {
+            TempData[result.Ok ? "PrjMsg" : "PrjErr"] = BudgetMessage(result);
+            var route = ProjectCultureRoute(projectId); if (versionId.HasValue) route["v"] = versionId.Value;
+            return RedirectToAction(nameof(BudgetVersions), route);
+        }
+        private async Task<IActionResult> BudgetRefusalAsync(BusinessContext context, int companyId, int projectId, int versionId,
+            StructureResult result, List<ConstructionBudgetDraftLine>? rejected = null)
+        {
+            var page = await LoadBudgetPageAsync(context, companyId, projectId, versionId, rejected, result.Code);
+            if (page == null) return NotFound();
+            TempData["PrjErr"] = BudgetMessage(result);
+            Response.StatusCode = result.Code is "ConcurrencyConflict" or "BaselineChanged" ? StatusCodes.Status409Conflict : StatusCodes.Status400BadRequest;
+            return View(nameof(BudgetVersions), page);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfigureConstructionBudgetPolicy(int projectId, int? versionId, string mode, byte[]? expectedToken, string reason)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            if (!ModelState.IsValid) return BudgetFeedback(projectId, versionId, new(false, "InvalidForm"));
+            var saved = await _budgetPolicy.ConfigureAsync(context, mode, reason, expectedToken, HttpContext.RequestAborted);
+            var code = saved.error switch
+            {
+                null => "Saved",
+                ConstructionConcurrency.ConflictMessage => "ConcurrencyConflict",
+                "Access denied" => "AccessDenied",
+                "An explicit budget policy is required" => "PolicyNotConfigured",
+                "A policy change reason is required (maximum 1000 characters)" => "ReasonRequired",
+                _ => "SaveFailed"
+            };
+            return BudgetFeedback(projectId, versionId, new(saved.ok, code));
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateConstructionBudgetVersion(int projectId, string kind, int? previousVersionId, byte[]? previousVersion, string reason)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            if (!ModelState.IsValid) return BudgetFeedback(projectId, null, new(false, "InvalidForm"));
+            var result = await _budgetVersions.CreateAsync(context, projectId, kind, previousVersionId, previousVersion, reason, HttpContext.RequestAborted);
+            return BudgetFeedback(projectId, result.Ok ? result.Id : null, result);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken][RequestSizeLimit(2 * 1024 * 1024)]
+        public async Task<IActionResult> SaveConstructionBudgetDraft(int projectId, int versionId, byte[] expectedVersion, string rowsJson, string reason)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            if (!ModelState.IsValid) return await BudgetRefusalAsync(context, gate.CompanyId, projectId, versionId, new(false, "InvalidForm"));
+            List<ConstructionBudgetDraftLine> rows;
+            try
+            {
+                rows = System.Text.Json.JsonSerializer.Deserialize<List<ConstructionBudgetDraftLine>>(rowsJson,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString })
+                    ?? throw new System.Text.Json.JsonException();
+                if (rows.Any(x => x == null)) throw new System.Text.Json.JsonException();
+            }
+            catch (Exception ex) when (ex is System.Text.Json.JsonException or ArgumentNullException)
+            { return await BudgetRefusalAsync(context, gate.CompanyId, projectId, versionId, new(false, "InvalidForm")); }
+            var result = await _budgetVersions.SaveDraftAsync(context, projectId, versionId, expectedVersion, rows, reason, HttpContext.RequestAborted);
+            return result.Ok ? BudgetFeedback(projectId, versionId, result) : await BudgetRefusalAsync(context, gate.CompanyId, projectId, versionId, result, rows);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitConstructionBudgetVersion(int projectId, int versionId, byte[] expectedVersion, string reason)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            if (!ModelState.IsValid) return BudgetFeedback(projectId, versionId, new(false, "InvalidForm"));
+            var result = await _budgetVersions.SubmitAsync(context, projectId, versionId, expectedVersion, reason, HttpContext.RequestAborted);
+            return BudgetFeedback(projectId, versionId, result);
+        }
+
+        [HttpPost][ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveConstructionBudgetVersion(int projectId, int versionId, byte[] expectedVersion, string reason)
+        {
+            var gate = await GateAsync(ProjectsActions.BudgetManage, projectId); if (!gate.Ok) return gate.Denied!;
+            var context = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted); if (context == null) return Forbid();
+            if (!ModelState.IsValid) return BudgetFeedback(projectId, versionId, new(false, "InvalidForm"));
+            var result = await _budgetVersions.ApproveAsync(context, projectId, versionId, expectedVersion, reason, HttpContext.RequestAborted);
+            return BudgetFeedback(projectId, versionId, result);
+        }
+
 		// ---- BOQ (P1): inline editor per project ----
 		[HttpGet]
 		public async Task<IActionResult> Boq(int id)
@@ -291,21 +596,50 @@ namespace CrossBuy.Controllers
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
 			ViewBag.Summary = await _boq.GetSummaryAsync(gate.CompanyId, id);
-			return View(await _boq.GetForProjectAsync(gate.CompanyId, id));
+			var editor = await _boq.GetEditorAsync(gate.CompanyId, id, HttpContext.RequestAborted);
+			ViewBag.EditorSnapshot = editor.Snapshot;
+			return View(editor.Lines);
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> SaveBoq(int projectId, string rowsJson)
+		public async Task<IActionResult> SaveBoq(int projectId, string rowsJson, string? editorSnapshot)
 		{
 			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
 			List<BoqRowInput> rows;
-			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<BoqRowInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
-			catch { rows = new(); }
-			var (ok, err, count) = await _boq.ReplaceAllAsync(gate.CompanyId, projectId, rows);
-			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? string.Format(L["BOQ saved ({0} items)"].Value, count) : err;
-			return RedirectToAction(nameof(Boq), new { id = projectId });
+			try
+			{
+				rows = System.Text.Json.JsonSerializer.Deserialize<List<BoqRowInput>>(rowsJson,
+					new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+					?? throw new System.Text.Json.JsonException();
+			}
+			catch (Exception ex) when (ex is System.Text.Json.JsonException or ArgumentNullException)
+			{
+				TempData["PrjErr"] = L["Invalid data"].Value;
+				return RedirectToAction(nameof(Boq), ProjectCultureRoute(projectId));
+			}
+			var result = await _boq.SaveEditorAsync(gate.CompanyId, projectId, rows, editorSnapshot,
+				gate.ActorEmployeeId, HttpContext.RequestAborted);
+			if (!result.ok && result.error == ConstructionConcurrency.ConflictMessage)
+			{
+				// Return the original submission and a fresh database projection in this response.
+				// No cookies/session copies, automatic retry, or hidden merge of financial values.
+				var project = await _projects.GetAsync(gate.CompanyId, projectId);
+				if (project == null) return NotFound();
+				var current = await _boq.GetEditorAsync(gate.CompanyId, projectId, HttpContext.RequestAborted);
+				ViewBag.Project = project;
+				ViewBag.Summary = await _boq.GetSummaryAsync(gate.CompanyId, projectId);
+				ViewBag.EditorSnapshot = current.Snapshot;
+				ViewBag.RejectedRows = rows;
+				TempData["PrjErr"] = L["Construction.Structure.Error.ConcurrencyConflict"].Value;
+				Response.StatusCode = StatusCodes.Status409Conflict;
+				return View(nameof(Boq), current.Lines);
+			}
+			TempData[result.ok ? "PrjMsg" : "PrjErr"] = result.ok
+				? string.Format(L["BOQ saved ({0} items)"].Value, result.unchanged + result.updated + result.added)
+				: result.error == BoqService.UnitChangeRefusal ? L["Construction.Boq.UnitChangeNeedsRevision"].Value : result.error;
+			return RedirectToAction(nameof(Boq), ProjectCultureRoute(projectId));
 		}
 
 		// ---- P2: advance receipt (Dr cash · Cr 2104 via ContractService) ----
@@ -735,7 +1069,7 @@ namespace CrossBuy.Controllers
 			List<VoLineInput> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<VoLineInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { rows = new(); }
-			var (ok, err, sid) = await _variation.SaveDraftAsync(gate.CompanyId, projectId, voId, description, descriptionEn, reason, rows, null);
+			var (ok, err, sid) = await _variation.SaveDraftAsync(gate.CompanyId, projectId, voId, description, descriptionEn, reason, rows, gate.ActorEmployeeId);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Variation order saved"].Value : err;
 			return RedirectToAction(nameof(VariationOrders), new { id = projectId, vo = ok ? sid : voId });
 		}
@@ -746,7 +1080,7 @@ namespace CrossBuy.Controllers
 			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
-			var (ok, err) = await _variation.ApproveAsync(gate.CompanyId, id, null);
+			var (ok, err) = await _variation.ApproveAsync(gate.CompanyId, id, gate.ActorEmployeeId);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Variation order approved"].Value : err;
 			return RedirectToAction(nameof(VariationOrders), new { id = projectId, vo = id });
 		}

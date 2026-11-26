@@ -18,7 +18,11 @@ namespace CrossBuy.Controllers
 	[CrossBuy.Models.PosLaneActivityGuard("PosCtx", "restaurant", "/pos/login")]
 	public class PosAppController : Controller
 	{
-		private const int PosCompanyId = 1;
+		// THE COMPANY THIS TILL SELLS FOR, FROM CONFIGURATION. It was `const int PosCompanyId = 1;` - a
+		// deployment fact compiled into five separate files, where it could not be changed without a
+		// rebuild and the five copies could drift apart in silence. Same treatment the storefront
+		// company already had: PosCompanyOptions, bound to the "Pos" section, read here and nowhere else.
+		private readonly int PosCompanyId;
 		private readonly SignInManager<Users> _signIn;
 		private readonly UserManager<Users> _users;
 		private readonly IPosAccessService _access;
@@ -31,8 +35,8 @@ namespace CrossBuy.Controllers
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		public PosAppController(SignInManager<Users> signIn, UserManager<Users> users, IPosAccessService access,
 			IPosSetupService pos, IPosOrderService orders, IBrandService brand, IReceivableService receivables, CrossDbContext db,
-			Microsoft.AspNetCore.SignalR.IHubContext<CrossBuy.Hubs.PosHub> hub, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _orders = orders; _brand = brand; _receivables = receivables; _db = db; _hub = hub; L = localizer; }
+			Microsoft.AspNetCore.SignalR.IHubContext<CrossBuy.Hubs.PosHub> hub, IStringLocalizer<CrossBuy.SharedResources> localizer, Microsoft.Extensions.Options.IOptions<CrossBuy.Models.Platform.PosCompanyOptions> posCompany)
+		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _orders = orders; _brand = brand; _receivables = receivables; _db = db; _hub = hub; L = localizer; PosCompanyId = posCompany.Value.CatalogCompanyId; }
 
 		// RC-3c: broadcast a POS event to the branch group. Fire-and-safe — SignalR is a notification layer only,
 		// called AFTER a completed service op; a broadcast failure never affects the operation/GL.

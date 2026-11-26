@@ -17,8 +17,6 @@
         <button type="button" class="btn btn-sm btn-primary" onclick="slaNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New policy"]</button>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <!--begin::SLA policy modal-->
         <div class="modal fade" id="slaModal" tabindex="-1" aria-hidden="true">
@@ -34,7 +32,7 @@
                                 <select name="priority" id="f_priority" class="form-select form-select-solid">@foreach (var p in priorities) { <option value="@p.Item1">@p.Item2</option> }</select></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["First response (min)"]</label><input type="number" min="1" name="firstResponseMins" id="f_fr" class="form-control form-control-solid" value="240" required /></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Resolution (min)"]</label><input type="number" min="1" name="resolutionMins" id="f_res" class="form-control form-control-solid" value="1440" required /></div>
-                            <div class="col-12"><div class="form-check form-switch"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" id="f_active" checked><label class="form-check-label fw-semibold ms-1 fs-7" for="f_active">@SR["Active"]</label></div></div>
+                            <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="f_active" checked><input type="hidden" name="isActive" value="false" /><label class="form-check-label fw-semibold ms-1 fs-7" for="f_active">@SR["Active"]</label></div></div>
                             <div class="col-12 d-flex justify-content-end gap-2"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button></div>
                         </form>
                     </div>

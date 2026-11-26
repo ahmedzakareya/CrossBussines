@@ -27,7 +27,7 @@
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fromPo?.WarehouseId==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Vendor"]</label><select name="vendorId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var v in vendors) { <option value="@v.ID" selected="@(fromPo?.VendorId==v.ID)">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="receiptDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="receiptDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
             <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label>
                 <select name="currencyId" id="curSel" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == funcCur)">@c.Code</option> }</select></div>
             <div class="col-md-2" id="rateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label>
@@ -40,6 +40,7 @@
         </tr></thead><tbody id="rows"></tbody></table></div></div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
@@ -67,7 +68,7 @@ function addRow(d){d=d||{};var tr=document.createElement('tr');tr.innerHTML=
  '<td><input type="number" step="0.0001" class="form-control form-control-solid c text-end" value="'+(d.cost||0)+'"></td>'+
  '<td><div class="d-flex gap-2"><select class="form-select form-select-solid form-select-sm sec">'+secOpts(0)+'</select><select class="form-select form-select-solid form-select-sm rack"><option value="">—</option></select></div></td>'+
  '<td><input class="form-control form-control-solid b" placeholder="—"></td>'+
- '<td><input type="text" class="form-control form-control-solid e" data-control="flatpickr"></td>'+
+ '<td><input type="date" class="form-control form-control-solid e" data-control="flatpickr"></td>'+
  '<td><input class="form-control form-control-solid sn" placeholder="—"></td>'+
  '<td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';
  document.getElementById('rows').appendChild(tr);
@@ -78,7 +79,27 @@ function addRow(d){d=d||{};var tr=document.createElement('tr');tr.innerHTML=
 document.getElementById('add').addEventListener('click',function(){addRow();});
 document.getElementById('rows').addEventListener('change',function(e){if(e.target.classList.contains('it')){var tr=e.target.closest('tr'),o=e.target.options[e.target.selectedIndex];if(e.target.value){var c=parseFloat(o.getAttribute('data-cost'))||0;if((parseFloat(tr.querySelector('.c').value)||0)===0&&c>0)tr.querySelector('.c').value=c;var b=o.getAttribute('data-base');if(b)tr.querySelector('.u').value=b;applyItemDefault(tr,e.target.value);}}else if(e.target.classList.contains('sec')){fillRacks(e.target.closest('tr'));}});
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();}});
-document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0,c=parseFloat(tr.querySelector('.c').value)||0;var rk=tr.querySelector('.rack').value,sc=tr.querySelector('.sec').value,bin=rk||sc;if(it&&q>0)lines.push({itemId:parseInt(it),qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,unitCost:c,batchNo:tr.querySelector('.b').value||null,expiry:tr.querySelector('.e').value||null,serialNo:tr.querySelector('.sn').value||null,purchaseOrderLineId:tr.querySelector('.pol').value?parseInt(tr.querySelector('.pol').value):null,binLocationId:bin?parseInt(bin):null});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add an item"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+document.getElementById('save').addEventListener('click',function(){
+var lines = CBLines.gather({
+  // Touched: anything chosen or typed, or a quantity moved off the 1 the row is born with.
+  touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.num(tr,'.q')!==1
+      || CBLines.num(tr,'.c')!==0 || CBLines.str(tr,'.b') || CBLines.str(tr,'.sn') || CBLines.str(tr,'.e')); },
+  problem:function(tr){
+    if(!CBLines.str(tr,'.it')) return CBLines.T.item;
+    if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+    return null; },
+  build:function(tr){
+    var rk=CBLines.str(tr,'.rack'), sc=CBLines.str(tr,'.sec'), bin=rk||sc, u=CBLines.str(tr,'.u'),
+        pol=CBLines.str(tr,'.pol');
+    return {itemId:parseInt(CBLines.str(tr,'.it')),qty:CBLines.num(tr,'.q'),
+            uoMId:u?parseInt(u):null,unitCost:CBLines.num(tr,'.c'),
+            batchNo:CBLines.str(tr,'.b')||null,expiry:CBLines.str(tr,'.e')||null,
+            serialNo:CBLines.str(tr,'.sn')||null,
+            purchaseOrderLineId:pol?parseInt(pol):null,
+            binLocationId:bin?parseInt(bin):null}; }
+});
+if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
 if(PREFILL.length){PREFILL.forEach(function(d){addRow(d);});}else{addRow();}
 window.onItemScanned=function(p){ addRow({itemId:p.id, text:(p.code?p.code+' — ':'')+(p.name||''), qty:p.qty, uomId:p.uomId, cost:p.cost||0}); };
 </script>

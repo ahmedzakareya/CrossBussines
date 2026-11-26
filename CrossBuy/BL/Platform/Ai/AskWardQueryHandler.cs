@@ -23,10 +23,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن الأسرّة: العدد والمتاح والمشغول دلوقتي، حسب الجناح أو الغرفة أو نوع الغرفة",
-			"Any question about beds: how many, and which are free or occupied right now, by ward, room or room type");
+			"Any question about beds: how many, and which are free or occupied right now, by ward, room or room type",
+			"Questions sur les lits : nombre, lits libres ou occupés, par unité, chambre ou type de chambre");
 
 		public override AskText Example => AskText.Of(
-			"كام سرير فاضي", "How many beds are free");
+			"كام سرير فاضي", "How many beds are free", "Combien de lits sont libres ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

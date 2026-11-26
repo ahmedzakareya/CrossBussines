@@ -7,8 +7,8 @@
     var cats = ViewBag.Categories as List<ItemCategory> ?? new();
     var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
     var itemTypes = new (string v, string ar, string en)[] {
-        ("Stockable","Stock item","Stockable"),("NonStockable","Consumable","Non-stockable"),
-        ("Service","Service","Service"),("Asset","Asset","Asset") };
+        ("Stockable","صنف مخزني","Stockable"),("NonStockable","صنف غير مخزني","Non-stockable"),
+        ("Service","خدمة","Service"),("Asset","أصل","Asset") };
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">

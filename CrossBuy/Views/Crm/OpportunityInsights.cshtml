@@ -8,6 +8,16 @@
     ViewData["Title"] = Localizer["Opportunity Insights"].Value;
     string Money(decimal v) => v.ToString("N2");
 
+    // Initials when there is no photo on file - the same two-letter rule the mentions and
+    // notification screens use, so one person reads the same wherever they appear.
+    string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) { return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "؟" : "?"; }
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) { return parts[0].Substring(0, 1); }
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
     // Findings are rendered from a STRUCTURED fact plus a localised sentence. The rules layer emits no
     // prose in any language, so neither culture is a translation of the other.
     string FindingLabel(CrmOpportunityRiskRules.Finding f) => f switch
@@ -110,41 +120,24 @@
                     <div class="fs-7 text-gray-700">
                         @Localizer["These items are selected by fixed business rules over your own CRM records — activity dates, expected close dates, age and open follow-ups. There is no predictive model: nothing here estimates a win chance, a close date or a revenue figure."]
                     </div>
+                    @* PROVENANCE, in ONE partial. These four screens each carried their own copy of this
+                    strip, which is how all four came to print the raw company id as "Company 1". *@
+                    @await Html.PartialAsync("_InsightsProvenance", new CrossBuy.Models.InsightsProvenance
+                    {
+                    CompanyName = ViewBag.CompanyName as string,
+                    Inline = true,
+                    CompanyId = Model.CompanyId,
+                    Method = Localizer["Business rules"].Value,
+                    Facts = new List<(string, string, bool)>
+                    {
+                    (Localizer["Open opportunities analysed"].Value, Model.Analysed.ToString(), true),
+                    (Localizer["Needing attention"].Value, Model.OpportunitiesWithFindings.ToString(), true),
+                    },
+                    GeneratedAtUtc = Model.Panel.GeneratedAtUtc,
+                    })
                 </div>
             </div>
 
-            @* PROVENANCE. Facts the system already holds. *@
-            <div class="card card-flush mb-5">
-                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Method"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Business rules"]</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Open opportunities analysed"]</div>
-                        <div class="fw-bold text-gray-800">@Model.Analysed</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Needing attention"]</div>
-                        <div class="fw-bold text-gray-800">@Model.OpportunitiesWithFindings</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
-                        <div class="fw-bold text-gray-800">
-                            @(Model.Panel.GeneratedAtUtc.HasValue
-                                ? Model.Panel.GeneratedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
-                                : Localizer["Not generated"].Value)
-                        </div>
-                    </div>
-                    <div class="ms-auto text-gray-500 fs-8">
-                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
-                    </div>
-                </div>
-            </div>
 
             @if (!Model.Panel.HasResult)
             {
@@ -285,7 +278,36 @@
                                             }
                                         </td>
                                         <td class="text-gray-700">@(o.AccountName ?? "—")</td>
-                                        <td class="text-gray-700">@(o.OwnerName ?? "—")</td>
+                                        @* THE OWNER IS A PERSON, so the column shows that person.
+                                           This list exists to be acted on - somebody reads it and goes
+                                           to find the owner of the worst row - and a name in grey text
+                                           is the slowest possible way to answer "who". An unassigned
+                                           opportunity keeps the dash: there is nobody to show. *@
+                                        <td>
+                                            @if (o.OwnerName == null)
+                                            {
+                                                <span class="text-gray-500">—</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="d-flex align-items-center">
+                                                    <div class="symbol symbol-30px me-2 flex-shrink-0">
+                                                        @if (!string.IsNullOrWhiteSpace(o.OwnerAvatarUrl))
+                                                        {
+                                                            <img src="@Url.Content("~" + o.OwnerAvatarUrl!.Replace("\\", "/"))"
+                                                                 alt="@o.OwnerName" class="rounded-circle" />
+                                                        }
+                                                        else
+                                                        {
+                                                            @* No photo on file is normal; initials on the brand
+                                                               tint, never a broken-image frame. *@
+                                                            <span class="symbol-label bg-light-primary text-primary fw-bold fs-8">@Initials(o.OwnerName)</span>
+                                                        }
+                                                    </div>
+                                                    <span class="text-gray-700 text-nowrap">@o.OwnerName</span>
+                                                </div>
+                                            }
+                                        </td>
                                         <td><span class="badge badge-light">@o.Stage</span></td>
                                         <td class="text-end fw-semibold">@Money(o.Amount)</td>
                                         <td><span class="badge badge-light-@FindingBadge(i.Finding)">@Localizer[FindingLabel(i.Finding)]</span></td>

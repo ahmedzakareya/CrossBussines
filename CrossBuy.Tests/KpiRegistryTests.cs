@@ -15,7 +15,7 @@ public class KpiRegistryTests
             => Task.FromResult(!denied.Contains(key));
     }
     private static ReportDatasetRegistry Datasets(IReportPermissionEvaluator? p = null)
-        => new(AccountingDatasets.All().Concat(ProjectsDatasets.All()).Concat(HospitalManagementDatasets.Datasets()), p ?? new Permissions());   // H50: the hospital KPIs
+        => new(AccountingDatasets.All().Concat(ProjectsDatasets.All()).Concat(HospitalManagementDatasets.Datasets()).Concat(WorkReportingDatasets.All()), p ?? new Permissions());   // H50 hospital; SCR-49 work
     private static readonly FixedReportClock Clock = new(new DateTime(2026, 10, 11));
     private static BusinessContext Actor(int company = 7) => new()
         { CompanyId = company, EmployeeId = 8, Source = BusinessContextSource.Test };
@@ -140,5 +140,44 @@ public class KpiRegistryTests
         access.Scope = AccessScope.None();
         result = await Evaluate(r,d,source,new Permissions()).EvaluateAsync("projects.active",new Dictionary<string,string?>());
         Assert.Equal(0m,result.Value);
+    }
+
+    // ---- SCR-49 conditional admission: the two halves, both of which must hold ----------------
+
+    // REGRESSION GUARD (2026-11-10). Conditional admission for the opt-in Work pack was keyed off the
+    // DatasetCode ALONE, so an ACCOUNTING KPI carrying a work dataset code was silently DROPPED rather
+    // than rejected - a wiring bug quietly turned into a missing dashboard tile. The drop must depend on
+    // the KPI's own identity, so this has to throw even where the Work pack is genuinely absent, which
+    // is every deployment as it stands ("Reporting:Work:Enabled" is in no appsettings file).
+    [Fact]
+    public void A_non_work_kpi_naming_a_work_dataset_still_fails_with_the_pack_absent()
+    {
+        var withoutWork = new ReportDatasetRegistry(
+            AccountingDatasets.All().Concat(ProjectsDatasets.All()), new Permissions());
+        var accounting = KpiCatalog.All().First(k => !k.Key.StartsWith("work.", StringComparison.Ordinal));
+
+        Assert.False(withoutWork.TryResolve("work.tasks", out _));   // the pack really is absent
+
+        // THE TYPE DEPENDS ON HOW FAR IT GETS, and both are loud, which is the whole point. With the
+        // pack ABSENT the dataset cannot be resolved at all, so Resolve throws first. With the pack
+        // PRESENT the same mutation reaches field validation and throws ArgumentException instead -
+        // the case Invalid_definitions_fail_at_registry_construction already covers. What must never
+        // happen is the third outcome: no exception, the definition quietly dropped.
+        Assert.Throws<ReportDatasetNotRegisteredException>(() =>
+            new KpiRegistry(withoutWork, new[] { accounting with { DatasetCode = "work.tasks" } }));
+    }
+
+    // ...and the INTENDED behaviour has to survive the fix. Without this, the guard above could be
+    // satisfied by deleting conditional admission outright - which would turn a disabled optional pack
+    // into an application that cannot start, the very outcome it exists to prevent.
+    [Fact]
+    public void A_real_work_kpi_is_dropped_rather_than_thrown_on_when_the_pack_is_absent()
+    {
+        var withoutWork = new ReportDatasetRegistry(
+            AccountingDatasets.All().Concat(ProjectsDatasets.All()), new Permissions());
+        var work = KpiCatalog.All().Where(k => k.Key.StartsWith("work.", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(work);   // positive control: there really are work KPIs to drop
+
+        Assert.Empty(new KpiRegistry(withoutWork, work).Definitions);
     }
 }

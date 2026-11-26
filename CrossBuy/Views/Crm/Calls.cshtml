@@ -1,0 +1,821 @@
+@using CrossBuy.Models.Context.Crm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var calls = ViewBag.Calls as List<CrmCall> ?? new();
+    var breached = ViewBag.Breached as List<CrmTicket> ?? new();
+    var employees = ViewBag.Employees as List<CrossBuy.Models.Context.Admin.Employee> ?? new();
+    var orgTree = ViewBag.OrgTree as List<CrossBuy.BL.CrmOrgNode> ?? new();
+    var recordTypes = ViewBag.RecordTypes as List<CrossBuy.BL.TaskLinkTypeDto> ?? new();
+    int forTicket = (int)(ViewBag.ForTicketId ?? 0);
+    var forTicketSubject = ViewBag.ForTicketSubject as string;
+    var forTicketPhone = ViewBag.ForTicketPhone as string;
+    var forTicketDept = ViewBag.ForTicketDept as string;
+    var forTicketSource = ViewBag.ForTicketSource as CrossBuy.BL.TaskLinkDto;
+    var deptNames = ViewBag.DeptNames as Dictionary<int, CrossBuy.BL.CrmOrgNode> ?? new();
+
+    @* THE CHART, DRAWN INSIDE A <select>. The nodes arrive depth-first carrying their depth,
+       so the indent is the structure: a branch, then what hangs under it. The spaces are
+       NON-BREAKING on purpose - ordinary leading spaces collapse in HTML and the whole chart
+       would flatten back into the list it replaced. The type is spelled out after the name
+       because "الادارة المالية" and "محاسب" look alike in a list and are not alike at all. *@
+    string orgLabel(CrossBuy.BL.CrmOrgNode n)
+    {
+        var pad = string.Concat(Enumerable.Repeat("\u00A0\u00A0\u00A0\u00A0", n.Depth));
+        var name = CrossBuy.BL.DisplayName.Of(n.NameAr, n.NameEn);
+        var ty = CrossBuy.BL.DisplayName.Of(n.TypeAr, n.TypeEn);
+        return pad + (n.Depth > 0 ? "\u2022\u00A0" : "") + name + (string.IsNullOrWhiteSpace(ty) ? "" : "\u00A0\u00A0\u00B7\u00A0" + ty);
+    }
+    @* The agent is a person, and a screen that names a person shows their face. *@
+    var empById = employees.ToDictionary(e => e.ID);
+    var stats = ((int open, int breachedFr, int breachedRes))(ViewBag.Stats ?? (0, 0, 0));
+
+    string dirName(string d) => d == "Outbound" ? (isAr ? "صادرة" : "Outbound") : (isAr ? "واردة" : "Inbound");
+    string outName(string o) => o switch
+    {
+        "NoAnswer"  => isAr ? "بدون رد"   : "No answer",
+        "Busy"      => isAr ? "مشغول"     : "Busy",
+        "Voicemail" => isAr ? "بريد صوتي" : "Voicemail",
+        "Dropped"   => isAr ? "انقطعت"    : "Dropped",
+        _           => isAr ? "تم الرد"   : "Answered",
+    };
+    @* STAMPS ARE STORED IN UTC and read in the reader’s clock. Without ToLocalTime a call
+       taken at 10:30 in Cairo reads 07:30 in its own log, which makes the whole column
+       useless for the one question it exists for - when did this happen. EF hands back
+       Kind=Unspecified, which ToLocalTime treats as UTC: exactly the house convention. *@
+    string whenLocal(DateTime utc) => utc.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+
+    @* Seconds are how the duration is stored; m:ss is how a human reads a call length. *@
+    string dur(int? s) => s is not > 0 ? "—" : (s.Value / 60) + ":" + (s.Value % 60).ToString("00");
+
+    int answered = calls.Count(c => c.Outcome == "Answered");
+    int missed = calls.Count(c => c.Outcome is "NoAnswer" or "Busy" or "Dropped");
+    int totalSecs = calls.Where(c => c.DurationSeconds is > 0).Sum(c => c.DurationSeconds!.Value);
+    int avgSecs = answered > 0 && totalSecs > 0 ? totalSecs / Math.Max(1, calls.Count(c => c.DurationSeconds is > 0)) : 0;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Call centre"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">CRM</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Calls"]</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Tickets","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-message-question fs-3"></i>@Localizer["Tickets"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        @* The statistic card this product uses, repeated — the same one /Inventory/ItemLedger uses. *@
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var k in new (string label, string value, string sub, string icon)[]
+            {
+                (isAr ? "مكالمات" : "Calls", calls.Count.ToString(), isAr ? "آخر 100" : "last 100", "ki-phone"),
+                (isAr ? "تم الرد" : "Answered", answered.ToString(), calls.Count > 0 ? (100 * answered / calls.Count) + "%" : "—", "ki-check-circle"),
+                (isAr ? "بدون رد" : "Missed", missed.ToString(), isAr ? "تحتاج معاودة" : "need a call back", "ki-phone"),
+                (isAr ? "متوسط المدة" : "Avg duration", dur(avgSecs), isAr ? "دقيقة:ثانية" : "m:ss", "ki-timer"),
+                (isAr ? "تذاكر مفتوحة" : "Open tickets", stats.open.ToString(), "", "ki-message-question"),
+                (isAr ? "تجاوزت المدة" : "Breached", breached.Count.ToString(), isAr ? "تحتاج تصعيد" : "need escalation", "ki-shield-cross"),
+            })
+            {
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card h-100"><div class="card-body p-5">
+                        <div class="mb-3"><span class="symbol symbol-40px"><span class="symbol-label bg-light-primary">
+                            <i class="ki-outline @k.icon fs-2x text-primary"></i></span></span></div>
+                        <div class="fs-2hx fw-bold text-gray-900 lh-1" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@k.value</div>
+                        <div class="fs-7 fw-semibold text-gray-500 mt-2">@k.label</div>
+                        @if (!string.IsNullOrEmpty(k.sub)) { <div class="fs-8 text-gray-500 mt-1">@k.sub</div> }
+                    </div></div>
+                </div>
+            }
+        </div>
+
+        @* THE BANNER, in the shape /Accounting/VendorStatement uses: icon block, title, one
+           sentence, and a badge carrying the figure. Two branches, like settled/outstanding. *@
+        @if (breached.Count > 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Tickets past their SLA"]</h4>
+                        <div class="fs-6 text-gray-700">@Localizer["These are open and past a deadline. Escalating notifies each ticket's owner; one notice per ticket per day."]</div>
+                    </div>
+                    <form asp-action="EscalateBreaches" method="post" class="flex-shrink-0" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Notify the owners of every breached ticket?"]">@Html.AntiForgeryToken()
+                        <button class="badge fs-7 fw-bold px-4 py-2 border-0" style="background:#0E4A9E;color:#fff;">
+                            <i class="ki-outline ki-notification-status fs-6 text-white me-1"></i>@Localizer["Escalate"] (@breached.Count)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="row g-5">
+            <!-- log a call -->
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-header"><div class="card-title fw-bold">@Localizer["Log a call"]</div></div>
+                    <div class="card-body">
+                        <form asp-action="LogCall" method="post" class="row g-4">
+                        @* NO align-items-end ON THIS ROW. It bottom-aligns every column, which is
+                           invisible while they are all one-line inputs and falls apart the moment
+                           one of them is taller: the short fields sink to the bottom of the tall
+                           one and the form reads as scattered. Default stretch is correct here. *@
+                        @Html.AntiForgeryToken()
+                            @* THE ORDER IS THE CALL’S OWN ORDER: the number first, because typing it
+                               is what fires the “has this person called before” lookup, and the agent
+                               needs that answer before they say anything. It takes the full width for
+                               the same reason - the lookup answers UNDER it. Direction and outcome are
+                               two short selects and pair off on the next line rather than each leaving
+                               half a row empty. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Phone number"]</label>
+                                @* The lookup fires off this field: who has called from this number before. *@
+                                <input name="phoneNumber" id="callPhone" class="form-control form-control-solid" dir="ltr" autocomplete="off" value="@forTicketPhone" />
+                                @* The answer sits UNDER the field it is about. As its own full-width row it
+                                   was a sentence floating between two unrelated controls, and an empty one
+                                   left a gap the size of a field for no reason. *@
+                                <div id="callerHit" class="fs-8 fw-semibold text-gray-600 mt-1"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Direction"]</label>
+                                <select name="direction" class="form-select form-select-solid">
+                                    <option value="Inbound">@(isAr ? "واردة" : "Inbound")</option>
+                                    <option value="Outbound">@(isAr ? "صادرة" : "Outbound")</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Outcome"]</label>
+                                <select name="outcome" class="form-select form-select-solid">
+                                    @foreach (var o in new[] { "Answered", "NoAnswer", "Busy", "Voicemail", "Dropped" })
+                                    { <option value="@o">@outName(o)</option> }
+                                </select>
+                            </div>
+                            @* THE DURATION IS MEASURED, NOT TYPED.
+                               Asking an agent for a number in seconds asks them to do arithmetic
+                               while someone is on the line, so it was left empty - measured on this
+                               database, every logged call had no duration at all, which is why the
+                               "avg duration" tile reads as a dash.
+
+                               The manual box stays. A call logged after the fact carries a duration
+                               the agent states, and CrmCall.DurationSeconds is stored rather than
+                               derived precisely so that case keeps working. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Duration"]</label>
+                                @* ONE CONTROL, ONE STATE, ONE BUTTON.
+                                   Three things were wrong with the first attempt and all three were
+                                   the same mistake - borrowing a look that means something else:
+
+                                     • a DASHED border is this product’s notice frame. On a control it
+                                       reads as a placeholder or an empty state, not as something you
+                                       press.
+                                     • TWO buttons for a binary state meant one of them was always
+                                       disabled, and a permanently greyed-out half looks broken rather
+                                       than unavailable. A call is either running or it is not, so the
+                                       control is one button that changes.
+                                     • a sentence of INSTRUCTIONS under the clock ("start it when you
+                                       answer...") is a tutorial. What belongs there is the state -
+                                       not started / running / ended - which is what the agent glances
+                                       down to check.
+
+                                   The manual entry keeps its own zone under a separator: it is the
+                                   same measurement by another route, so it belongs in the same frame
+                                   but not on the same line. *@
+                                <div class="rounded p-4" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="symbol symbol-40px flex-shrink-0"><span class="symbol-label bg-light-primary">
+                                            <i class="ki-outline ki-timer fs-2x text-primary"></i></span></span>
+                                        <div class="flex-grow-1" style="min-width:0">
+                                            <div id="callTimer" class="fs-2x fw-bold text-gray-900 lh-1" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">0:00</div>
+                                            <div id="callTimerHint" class="fs-8 fw-semibold text-gray-500 mt-1">@Localizer["Not started"]</div>
+                                        </div>
+                                        <button type="button" id="timerToggle" class="btn btn-sm btn-light-primary flex-shrink-0">
+                                            <i class="ki-outline ki-play fs-4"></i><span id="timerToggleText">@Localizer["Start"]</span></button>
+                                    </div>
+
+                                    <div class="separator separator-dashed my-3"></div>
+
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <span class="fs-8 text-gray-500 text-nowrap">@Localizer["or enter it manually"]</span>
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                            @* NOT form-control-solid here: solid IS this panel’s own grey, so the
+                                               box vanished into the background and the line read as two labels
+                                               with a hole between them. *@
+                                            <input name="durationSeconds" id="callDuration" type="number" min="0"
+                                                   class="form-control form-control-sm w-70px bg-white" dir="ltr" />
+                                            <span class="fs-8 text-gray-500 text-nowrap">@Localizer["seconds"]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                @* Written by the timer, in UTC and WITHOUT a zone suffix - the rest of this
+                                   table is UtcNow, and a stamp that arrives as local time would sit three
+                                   hours away from every row logged before it. *@
+                                <input type="hidden" name="startedAt" id="callStartedAt" />
+                            </div>
+                            @* WHAT IS IT ABOUT - the record in THIS system the caller means.
+
+                               A support call is never about nothing: it is about this delivery order,
+                               this invoice, this item that came out of the hyper with a fault. Without
+                               it the subject line carries a number nobody can join on, the unit that
+                               receives the ticket asks the customer to read it out again, and no one
+                               can count how many tickets a branch or a product is generating.
+
+                               The types and the search are the registry’s, through the same resolver
+                               the Tasks picker uses - one vocabulary for the whole product. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["About"]</label>
+                                @* READ-ONLY WHEN THE CALL CAME FROM A TICKET, for the same reason the
+                                   routing below is: the record a problem is about belongs to the TICKET
+                                   and is chosen on its screen. Two places to set it is two answers to
+                                   "what is this about", and the call would quietly win the last word.
+
+                                   Still SHOWN, and still a link: the first thing an agent does on the
+                                   phone is open the order the customer is reading a number from. *@
+                                @if (forTicket > 0)
+                                {
+                                    <div class="d-flex align-items-center rounded p-3" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                        @if (forTicketSource != null)
+                                        {
+                                            <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-primary">
+                                                <i class="ki-outline @(string.IsNullOrWhiteSpace(forTicketSource.Icon) ? "ki-element-11" : forTicketSource.Icon) fs-5 text-primary"></i></span></span>
+                                            <div class="flex-grow-1" style="min-width:0">
+                                                <div class="fs-8 text-gray-500">@CrossBuy.BL.DisplayName.Of(forTicketSource.TypeLabelAr, forTicketSource.TypeLabelEn)</div>
+                                                @if (!string.IsNullOrWhiteSpace(forTicketSource.Url))
+                                                { <a href="@forTicketSource.Url" class="fw-bold text-truncate d-block">@forTicketSource.Label</a> }
+                                                else
+                                                { <span class="fw-bold">@forTicketSource.Label</span> }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light">
+                                                <i class="ki-outline ki-element-11 fs-5 text-gray-600"></i></span></span>
+                                            <div class="flex-grow-1 text-gray-500">@Localizer["Not linked to any record"]</div>
+                                        }
+                                        <a href="@Url.Action("TicketEditor","Crm", new { id = forTicket })" class="btn btn-sm btn-light flex-shrink-0">@Localizer["Change on the ticket"]</a>
+                                    </div>
+                                }
+                                else
+                                {
+                                <div class="rounded p-4" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                    @* STACKED, not side by side. In this column a 5/7 split gives the type
+                                       box ~110px, which cut "فاتورة مبيعات" down to "—...". The ticket screen
+                                       keeps them on one line because its form is half the page wide. *@
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <select id="srcType" name="sourceType" class="form-select form-select-solid form-select-sm">
+                                                <option value="">@Localizer["— nothing —"]</option>
+                                                @foreach (var t in recordTypes)
+                                                { <option value="@t.Key">@CrossBuy.BL.DisplayName.Of(t.LabelAr, t.LabelEn)</option> }
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            @* Empty until a type is chosen: searching "all records" is not a
+                                               question this system can answer, and an enabled box that returns
+                                               nothing reads as broken. *@
+                                            <select id="srcRecord" name="sourceId" data-no-select2 disabled
+                                                    class="form-select form-select-solid form-select-sm">
+                                                <option value="">@Localizer["Choose a type first"]</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+
+                            @* A CALL IS WHERE A PROBLEM IS FIRST HEARD. Until now this field could only
+                               point at a ticket that already existed, so opening one meant leaving the
+                               phone screen, finding the ticket form and retyping the caller and the
+                               channel - and in practice nobody did, which is why the call record was
+                               the only trace of most problems.
+
+                               One switch, two mutually exclusive inputs: a number links an existing
+                               ticket, a subject opens a new one. They are exclusive because a call
+                               that both links and creates is a question the data cannot answer. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Ticket"]</label>
+                                @* Same frame as the duration panel above. A dashed border is this
+                                   product’s NOTICE frame; two controls side by side wearing different
+                                   borders read as two unrelated things. *@
+                                <div class="rounded p-4" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                @* ALREADY ATTACHED. Arriving from a ticket, there is nothing to ask: the
+                                   panel states which ticket this call belongs to and the number rides in a
+                                   hidden field. Offering the switch here would invite opening a SECOND
+                                   ticket for a call that already has one. *@
+                                @if (forTicket > 0)
+                                {
+                                    <div class="d-flex align-items-center">
+                                        <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-primary">
+                                            <i class="ki-outline ki-message-question fs-5 text-primary"></i></span></span>
+                                        <div class="flex-grow-1" style="min-width:0">
+                                            <div class="fs-8 text-gray-500">@Localizer["This call is on ticket"]</div>
+                                            <div class="fw-bold text-truncate">#@forTicket — @forTicketSubject</div>
+                                        </div>
+                                        <a href="@Url.Action("Calls","Crm")" class="btn btn-sm btn-light flex-shrink-0">@Localizer["Detach"]</a>
+                                    </div>
+                                    <input type="hidden" name="ticketId" value="@forTicket" />
+                                }
+                                else
+                                {
+                                    <div class="form-check form-switch form-check-custom form-check-solid">
+                                        <input class="form-check-input" type="checkbox" id="mkTicket" />
+                                        <label class="form-check-label fs-7 fw-semibold text-gray-700 ms-3" for="mkTicket">@Localizer["Open a ticket from this call"]</label>
+                                    </div>
+                                    <div id="ticketExistingWrap" class="mt-3">
+                                        <input name="ticketId" type="number" min="0" class="form-control form-control-solid"
+                                               dir="ltr" placeholder="@Localizer["Existing ticket number"]" />
+                                    </div>
+                                    <div id="ticketNewWrap" class="mt-3 d-none">
+                                        <input name="ticketSubject" class="form-control form-control-solid"
+                                               placeholder="@Localizer["Ticket subject"]" />
+                                        <div class="fs-8 text-gray-500 mt-1">@Localizer["Your notes become its description; the number and the channel are recorded for you"]</div>
+                                    </div>
+                                }
+                                </div>
+                            </div>
+                            @* A NAME WITH A FACE NEEDS THE WHOLE ROW. At col-md-6 this control is ~160px,
+                               and the avatar plus the name left "Ahm..." in the closed box - the one field
+                               on this form whose whole point is being recognisable. The same goes for the
+                               department under it: these names are phrases, not words. The short fields
+                               pair off above; the two that carry names get a line each. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Agent"]</label>
+                                @* `data-no-select2` IS THE LAYOUT'S OWN OPT-OUT, and the only reliable way to own this
+                                   control. _LayoutAccounting enhances EVERY `select.form-select` inside
+                                   #kt_app_content - not just the ones carrying data-control="select2" -
+                                   so dropping that attribute was not enough: the layout still initialised
+                                   it, plainly, and the avatar templates never reached the rendered rows.
+                                   The flag is read at the top of that enhancer; this is the sanctioned exit. *@
+                                <select name="agentEmployeeId" id="agentPick" data-no-select2
+                                        class="form-select form-select-solid">
+                                    @* THE PHOTO TRAVELS ON THE OPTION, as data-kt-select2-avatar.
+                                       That is Metronic’s own avatar-select contract - the theme’s
+                                       ecommerce order form does exactly this with data-kt-select2-country
+                                       and an optionFormat that reads it. Copied rather than invented.
+
+                                       Initials ride along too. Measured on this company: 13 of the 20
+                                       employees have a ProfileImage and 7 do not, so the fallback is not a
+                                       rare edge - it is a third of the list. It renders as the brand-tinted
+                                       initials tile used elsewhere, never a broken frame, never a glyph. *@
+                                    <option value="">@Localizer["— me —"]</option>
+                                    @foreach (var e in employees)
+                                    {
+                                        var nm = isAr ? e.FullName : (string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullName : e.FullNameEn);
+                                        var photo = string.IsNullOrWhiteSpace(e.ProfileImage)
+                                            ? null
+                                            : Url.Content("~" + e.ProfileImage!.Replace("\\", "/"));
+                                        var parts = (nm ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                        var initials = parts.Length == 0 ? "?"
+                                            : (parts.Length == 1 ? parts[0].Substring(0, 1)
+                                                                 : parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpperInvariant();
+                                        <option value="@e.ID" data-kt-select2-avatar="@photo" data-kt-select2-initials="@initials">@nm</option>
+                                    }
+
+                                </select>
+                            </div>
+                            @* ROUTE THE PROBLEM, which is the thing an agent could not do at all.
+                               THE WHOLE CHART IS OFFERED, not just the administrative bodies: a call
+                               can belong to a branch, to a department, to a post or to one person,
+                               and the only list that can express all four is the structure itself.
+                               Whatever is picked, the notification reaches that node AND everything
+                               under it - otherwise choosing a branch would quietly reach nobody.
+
+                               The empty state is NOT hidden. A company with no org chart cannot route
+                               anything, and a dropdown with one dead option would read as a broken
+                               screen rather than as missing data. *@
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Route to"]</label>
+                                @* READ-ONLY WHEN THE CALL CAME FROM A TICKET.
+                                   Routing is a property of the TICKET - it is set and changed on the
+                                   ticket screen, where the escalation lives beside it. A picker here
+                                   would let one phone call re-route the problem as a side effect, and
+                                   since setting a unit is what sends the notification, the unit would
+                                   be pinged again for every call logged against the same ticket.
+
+                                   It still SHOWS the state: an agent on the phone needs to know where
+                                   the problem stands, and a hidden field would have told them nothing. *@
+                                @if (forTicket > 0)
+                                {
+                                    <div class="d-flex align-items-center rounded p-3" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                        <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light">
+                                            <i class="ki-outline ki-abstract-26 fs-5 text-gray-600"></i></span></span>
+                                        <div class="flex-grow-1" style="min-width:0">
+                                            @if (string.IsNullOrWhiteSpace(forTicketDept))
+                                            { <span class="text-gray-500">@Localizer["Not routed to any unit"]</span> }
+                                            else
+                                            { <span class="fw-bold">@forTicketDept</span> }
+                                        </div>
+                                        <a href="@Url.Action("TicketEditor","Crm", new { id = forTicket })" class="btn btn-sm btn-light flex-shrink-0">@Localizer["Change on the ticket"]</a>
+                                    </div>
+                                }
+                                else if (orgTree.Count == 0)
+
+                                {
+                                    <div class="rounded border border-dashed p-3 fs-8 text-gray-600" style="border-color:#dbe3ef !important;">
+                                        @Localizer["This company has no org structure yet."]
+                                        <a href="@Url.Action("AdministrativeStructure","Admin")" class="fw-bold">@Localizer["Add them in the org structure"]</a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @* Each option carries its kind and its depth. Depth rides along because
+                                       select2 REPLACES the option’s own text, so the non-breaking spaces
+                                       baked into the label would never reach the rendered row and the chart
+                                       would flatten. *@
+                                    <select name="departmentId" id="routePick" data-no-select2
+                                            class="form-select form-select-solid">
+                                        <option value="">@Localizer["— no routing —"]</option>
+                                        @foreach (var n in orgTree)
+                                        {
+                                            var nm = CrossBuy.BL.DisplayName.Of(n.NameAr, n.NameEn);
+                                            var tyName = CrossBuy.BL.DisplayName.Of(n.TypeAr, n.TypeEn);
+                                            @* The glyph says what KIND of thing this is, which is the one
+                                               question a flat name cannot answer. *@
+                                            @* People are not listed any more, so the map covers only the
+                                               three kinds a problem can be handed to. *@
+                                            var icon = n.TypeId switch
+                                            {
+                                                2 => "ki-bank",            // فرع
+                                                3 => "ki-abstract-26",     // جهة ادارية
+                                                4 => "ki-briefcase",       // منصب
+                                                _ => "ki-element-11",
+                                            };
+                                            @* NO FACE AND NO NAME ON A ROUTING ROW.
+                                               Showing the post’s holder beside it was meant to help recognise
+                                               the post, and it did the opposite: a list of photographed names
+                                               reads as a list of PEOPLE, which is exactly the thing this
+                                               control must never offer. The owner read it that way twice.
+                                               A unit is identified by its own name and the glyph for its kind. *@
+                                            <option value="@n.Id" data-cb-depth="@n.Depth"
+                                                    data-cb-icon="@icon"
+                                                    data-cb-kind="@tyName">@orgLabel(n)</option>
+                                        }
+                                    </select>
+                                    <div class="fs-8 text-gray-500 mt-1">@Localizer["Everyone under the chosen unit is notified, and a linked ticket moves with it"]</div>
+                                }
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-semibold text-muted mb-1">@SR["Notes"]</label>
+                                <textarea name="notes" rows="2" class="form-control form-control-solid"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-primary w-100"><i class="ki-outline ki-check fs-3"></i>@Localizer["Log the call"]</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- the log -->
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header"><div class="card-title fw-bold">@Localizer["Recent calls"] (@calls.Count)</div></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            @* The rows live in _CallRows so this table and the one on the ticket
+                               cannot drift apart again. *@
+                            @await Html.PartialAsync("_CallRows", calls)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+var CB_S2_NONE = @Html.Raw(Json.Serialize(Localizer["No results"].Value));
+var CB_S2_SEARCHING = @Html.Raw(Json.Serialize(Localizer["Searching…"].Value));
+var CB_S2_ERROR = @Html.Raw(Json.Serialize(Localizer["The results could not be loaded"].Value));
+
+// THE AGENT PICKER SHOWS THE PERSON, not just their name.
+//
+// optionFormat is Metronic’s own avatar-select template (js/custom/apps/ecommerce/sales/
+// save-order.js): read an attribute off the <option>, build a node, return it as a jQuery
+// object, and hand the SAME function to templateResult and templateSelection so the list and
+// the closed control agree.
+//
+// The only addition is the fallback. Most employees here have no ProfileImage, and an <img>
+// with an empty src renders a broken frame - so a missing photo becomes the initials tile the
+// rest of the product already uses for exactly this.
+// WAIT FOR select2, DO NOT ASSUME IT.
+//
+// The first version guarded with `if (!jQuery.fn.select2) return;` and silently did nothing:
+// the plugin is not loaded yet when this page's ready handler fires, so the guard that was
+// meant to be defensive became the bug - no error, no console line, just a plain <select>.
+// A bounded poll is the honest version: it waits, and it gives up rather than looping forever.
+(function () {
+    var tries = 0;
+    (function ready() {
+        if (!window.jQuery || !jQuery.fn || !jQuery.fn.select2) {
+            if (++tries > 60) { return; }          // ~6s, then stop
+            return setTimeout(ready, 100);
+        }
+        var $pick = jQuery("#agentPick");
+        if (!$pick.length || $pick.hasClass("select2-hidden-accessible")) { return; }
+
+    // ONE LINE, AVATAR THEN NAME. The first version let the two sit as plain inline spans,
+    // and in this narrow column the name wrapped UNDERNEATH the photo - so a row read as a
+    // picture with a caption under it instead of a person. A flex row keeps the name beside
+    // the face at any width; the photo never shrinks, the name takes the rest.
+    var buildRow = function (item, truncate) {
+        if (!item.id) { return item.text; }
+        var el = item.element;
+        var avatar = el ? el.getAttribute("data-kt-select2-avatar") : null;
+        var initials = (el ? el.getAttribute("data-kt-select2-initials") : "") || "?";
+        var tpl = '<span class="d-flex align-items-center">';
+        tpl += '<span class="symbol symbol-25px me-2 flex-shrink-0">';
+        tpl += avatar
+            ? '<img src="' + avatar + '" class="rounded-circle" style="object-fit:cover" alt="" />'
+            : '<span class="symbol-label bg-light-primary text-primary fw-bold fs-8">' + initials + '</span>';
+        tpl += '</span>';
+        // The closed control is a single fixed-height line, so an over-long name has to be cut
+        // there or it pushes the arrow out. In the open list there is room to wrap, and a name
+        // the agent cannot read in full is useless for choosing.
+        tpl += '<span class="' + (truncate ? "text-truncate" : "") + '" style="min-width:0">' + item.text + '</span>';
+        tpl += '</span>';
+        var span = document.createElement("span");
+        span.innerHTML = tpl;
+        return jQuery(span);
+    };
+
+    // Nothing else initialises this control now (data-no-select2), so there is no instance to
+    // tear down first - and the width/dir the layout would have supplied are set here instead.
+    $pick.select2({
+        width: "100%",
+        dir: (document.documentElement.getAttribute("dir") || "").toLowerCase() === "rtl" ? "rtl" : "ltr",
+        dropdownParent: jQuery(document.body),
+        templateResult: function (item) { return buildRow(item, false); },
+        templateSelection: function (item) { return buildRow(item, true); },
+        minimumResultsForSearch: 8,
+        // Same reason as the other pickers: select2 has no global for its strings.
+        language: {
+            noResults: function () { return CB_S2_NONE; },
+            searching: function () { return CB_S2_SEARCHING; }
+        },
+    });
+    })();
+})();
+
+// THE CALL TIMER.
+//
+// Start when the call is answered, end when it is over, and the duration is written for you.
+// Four things that are not decoration:
+//
+//   1. ONE button, two states. The control reflects the call: it is running or it is not.
+//   2. Elapsed time is computed from the START INSTANT, never accumulated per tick. A
+//      background tab throttles timers to once a minute, so counting ticks drifts low by
+//      exactly as long as the agent looked away.
+//   3. It survives a reload. A call centre screen gets refreshed and reopened mid call; a
+//      timer that lives only in a variable loses the one number it exists to produce.
+//   4. Submitting while it still runs ends it first, otherwise the agent presses Save with a
+//      running timer and the call is stored with no duration at all - the very thing this
+//      replaces.
+(function () {
+    var KEY = "cb-call-timer";
+    var disp = document.getElementById("callTimer");
+    var hint = document.getElementById("callTimerHint");
+    var btn = document.getElementById("timerToggle");
+    var btnText = document.getElementById("timerToggleText");
+    var fStart = document.getElementById("callStartedAt");
+    var fSecs = document.getElementById("callDuration");
+    if (!disp || !btn) { return; }
+
+    var T = {
+        start: @Html.Raw(Json.Serialize(Localizer["Start"].Value)),
+        end: @Html.Raw(Json.Serialize(Localizer["End"].Value)),
+        running: @Html.Raw(Json.Serialize(Localizer["In progress"].Value)),
+        ended: @Html.Raw(Json.Serialize(Localizer["Ended — duration recorded"].Value)),
+        idle: @Html.Raw(Json.Serialize(Localizer["Not started"].Value))
+    };
+
+    var t0 = null, iv = null;
+
+    function fmt(sec) {
+        var m = Math.floor(sec / 60), s = sec % 60;
+        return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+    function elapsed() { return Math.max(0, Math.round((Date.now() - t0) / 1000)); }
+    function paint() { disp.textContent = fmt(elapsed()); }
+
+    // The button carries the state rather than a second, permanently disabled twin.
+    function dress(running) {
+        btn.classList.toggle("btn-light-primary", !running);
+        btn.classList.toggle("btn-light-danger", running);
+        btnText.textContent = running ? T.end : T.start;
+        var ic = btn.querySelector("i");
+        if (ic) { ic.className = running ? "ki-outline ki-cross-square fs-4" : "ki-outline ki-play fs-4"; }
+    }
+
+    // UTC, and deliberately WITHOUT the trailing Z: the model binder turns an offset-bearing
+    // stamp into local time, which would store this call three hours from every other row.
+    function stamp(ms) { return new Date(ms).toISOString().slice(0, 19); }
+
+    function begin(at) {
+        t0 = at;
+        try { localStorage.setItem(KEY, String(t0)); } catch (e) { }
+        if (fStart) { fStart.value = stamp(t0); }
+        if (hint) { hint.textContent = T.running; }
+        dress(true);
+        paint();
+        iv = setInterval(paint, 1000);
+    }
+    function end() {
+        if (t0 === null) { return; }
+        var sec = elapsed();
+        clearInterval(iv); iv = null;
+        if (fSecs) { fSecs.value = sec; }
+        disp.textContent = fmt(sec);
+        if (hint) { hint.textContent = T.ended; }
+        dress(false);
+        t0 = null;
+        try { localStorage.removeItem(KEY); } catch (e) { }
+    }
+
+    btn.addEventListener("click", function () { if (t0 === null) { begin(Date.now()); } else { end(); } });
+
+    // A call that was already running when the page loaded.
+    try {
+        var saved = parseInt(localStorage.getItem(KEY) || "", 10);
+        if (saved && saved > 0 && Date.now() - saved < 86400000) { begin(saved); }
+        else if (saved) { localStorage.removeItem(KEY); }
+    } catch (e) { }
+
+    var form = btn.closest("form");
+    if (form) { form.addEventListener("submit", function () { if (t0 !== null) { end(); } }); }
+})();
+
+// THE ROUTING LIST SHOWS FACES AND SHAPES.
+//
+// Same Metronic avatar-select contract as the agent picker, with two additions the chart needs:
+// a node that is NOT a person gets the glyph for its kind (branch, department, post), and the
+// indent is rebuilt here from data-cb-depth - select2 replaces the option’s own text, so the
+// non-breaking spaces baked into it never survive to the rendered row.
+(function () {
+    var tries = 0;
+    (function ready() {
+        if (!window.jQuery || !jQuery.fn || !jQuery.fn.select2) {
+            if (++tries > 60) { return; }
+            return setTimeout(ready, 100);
+        }
+        var $pick = jQuery("#routePick");
+        if (!$pick.length || $pick.hasClass("select2-hidden-accessible")) { return; }
+
+        var row = function (item, truncate) {
+            if (!item.id) { return item.text; }
+            var el = item.element;
+            var depth = parseInt((el && el.getAttribute("data-cb-depth")) || "0", 10);
+            var icon = el ? el.getAttribute("data-cb-icon") : null;
+            var kind = el ? el.getAttribute("data-cb-kind") : null;
+            // The option text still carries the padding and the kind suffix for the no-JS case;
+            // here the row is rebuilt from the parts, so strip them back off.
+            var name = (item.text || "").replace(/[\u00A0\u2022]/g, "").split("\u00B7")[0].trim();
+
+            // One shape for every row: the glyph for what KIND of unit this is. There is no
+            // person branch any more, because there is no person to route to.
+            var sym = '<span class="symbol-label bg-light"><i class="ki-outline ' + (icon || "ki-element-11") + ' fs-6 text-gray-600"></i></span>';
+
+            var tpl = '<span class="d-flex align-items-center" style="padding-inline-start:' + (depth * 14) + 'px">';
+            tpl += '<span class="symbol symbol-25px me-2 flex-shrink-0">' + sym + '</span>';
+            tpl += '<span class="' + (truncate ? "text-truncate" : "") + '" style="min-width:0">' + name;
+            if (kind && !truncate) { tpl += ' <span class="fs-8 text-gray-500">· ' + kind + '</span>'; }
+            tpl += '</span></span>';
+
+            var span = document.createElement("span");
+            span.innerHTML = tpl;
+            return jQuery(span);
+        };
+
+        $pick.select2({
+            width: "100%",
+            dir: (document.documentElement.getAttribute("dir") || "").toLowerCase() === "rtl" ? "rtl" : "ltr",
+            dropdownParent: jQuery(document.body),
+            templateResult: function (i) { return row(i, false); },
+            templateSelection: function (i) { return row(i, true); },
+            minimumResultsForSearch: 8,
+            // select2 ships ENGLISH strings and the theme never localises them, so an Arabic
+            // page answered an Arabic search with "No results found". The language object is
+            // per INSTANCE - select2 has no global to set once - so every picker carries it.
+            language: {
+                noResults: function () { return CB_S2_NONE; },
+                searching: function () { return CB_S2_SEARCHING; },
+                errorLoading: function () { return CB_S2_ERROR; }
+            },
+        });
+    })();
+})();
+
+// THE RECORD PICKER. Type first, then search inside it.
+//
+// select2 is re-created on every type change rather than re-pointed: its ajax options are read
+// once at init, so a re-pointed instance keeps searching the previous type and silently returns
+// rows from the wrong table.
+(function () {
+    var tries = 0;
+    (function ready() {
+        if (!window.jQuery || !jQuery.fn || !jQuery.fn.select2) {
+            if (++tries > 60) { return; }
+            return setTimeout(ready, 100);
+        }
+        var $type = jQuery("#srcType"), $rec = jQuery("#srcRecord");
+        if (!$type.length || !$rec.length) { return; }
+        var URL = @Html.Raw(Json.Serialize(Url.Action("RecordSearch", "Crm")));
+        var PLACEHOLDER = @Html.Raw(Json.Serialize(Localizer["Search for the record"].Value));
+        var HINT = @Html.Raw(Json.Serialize(Localizer["Choose a type first"].Value));
+
+        function build() {
+            if ($rec.hasClass("select2-hidden-accessible")) { $rec.select2("destroy"); }
+            var t = $type.val();
+            // An empty DISABLED box is a chevron over nothing. Without a type there is no table
+            // to search, and saying so is the whole content this control has at that moment.
+            $rec.empty().append(new Option(t ? "" : HINT, "", true, true));
+            $rec.prop("disabled", !t);
+            if (!t) { return; }
+            $rec.select2({
+                width: "100%",
+                dir: (document.documentElement.getAttribute("dir") || "").toLowerCase() === "rtl" ? "rtl" : "ltr",
+                dropdownParent: jQuery(document.body),
+                placeholder: PLACEHOLDER,
+                allowClear: true,
+                minimumInputLength: 0,
+                ajax: {
+                    url: URL, dataType: "json", delay: 300,
+                    data: function (p) { return { entityType: $type.val(), term: p.term || "" }; },
+                    processResults: function (d) { return { results: (d && d.results) || [] }; },
+                    cache: true
+                },
+                // select2 ships ENGLISH strings and the theme never localises them, so an
+                // Arabic page answered an Arabic search with "No results found". The language
+                // object is per INSTANCE - select2 has no global - and it sits BESIDE ajax,
+                // never inside it: nested there it is simply ignored, and the picker renders,
+                // runs and stays English.
+                language: {
+                    noResults: function () { return CB_S2_NONE; },
+                    searching: function () { return CB_S2_SEARCHING; },
+                    errorLoading: function () { return CB_S2_ERROR; }
+                }
+            });
+        }
+        $type.on("change", build);
+        build();
+    })();
+})();
+
+// LINK A TICKET, OR OPEN ONE - never both.
+//
+// The unused input is not just hidden, it is CLEARED. A number left behind a hidden field is
+// still posted, and the server would then link the call to that old ticket while the agent was
+// looking at a subject box, believing they had opened a new one.
+(function () {
+    var sw = document.getElementById("mkTicket");
+    var oldWrap = document.getElementById("ticketExistingWrap");
+    var newWrap = document.getElementById("ticketNewWrap");
+    if (!sw || !oldWrap || !newWrap) { return; }
+    sw.addEventListener("change", function () {
+        var mk = sw.checked;
+        oldWrap.classList.toggle("d-none", mk);
+        newWrap.classList.toggle("d-none", !mk);
+        var hidden = mk ? oldWrap : newWrap;
+        var inp = hidden.querySelector("input");
+        if (inp) { inp.value = ""; }
+        if (mk) { var t = newWrap.querySelector("input"); if (t) { t.focus(); } }
+    });
+})();
+
+// The detail toggle moved INTO _CallRows with the rows it belongs to. Leaving a copy here
+// bound the delegated handler TWICE on this page, so every click opened the row and closed
+// it again - a control that looks dead while both halves work.
+
+// WHO IS CALLING. Fires as the number is typed, so the agent knows before answering whether this
+// number has called before and what it was about. Debounced: a lookup per keystroke would be a
+// request per keystroke, and the answer only matters once typing pauses.
+(function () {
+    var box = document.getElementById('callPhone'), hit = document.getElementById('callerHit'), t = null;
+    if (!box || !hit) { return; }
+    box.addEventListener('input', function () {
+        clearTimeout(t);
+        var v = box.value.trim();
+        if (v.length < 3) { hit.textContent = ''; return; }
+        t = setTimeout(function () {
+            fetch('@Url.Action("CallerLookup","Crm")?phone=' + encodeURIComponent(v), { headers: { 'X-Requested-With': 'fetch' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d) { hit.textContent = ''; return; }
+                    if (!d.count) { hit.textContent = '@(isAr ? "رقم جديد — لا مكالمات سابقة" : "New number — no earlier calls")'; return; }
+                    var tk = (d.tickets || []).map(function (x) { return '#' + x.id; }).join(' ');
+                    hit.textContent = '@(isAr ? "اتصل من قبل" : "Called before")' + ': ' + d.count + (tk ? ' · ' + tk : '');
+                })
+                .catch(function () { hit.textContent = ''; });
+        }, 350);
+    });
+})();
+</script>
+}

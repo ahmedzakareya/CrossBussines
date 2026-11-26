@@ -24,7 +24,9 @@ namespace CrossBuy.BL
 		// EXPLICITLY from PosCompanyPolicy.CatalogCompanyId, so the constant has one named home with the
 		// reason attached instead of appearing as `= 1` on a DTO. Classified as a deliberate single-company
 		// compatibility setting, not a defect.
-		public int CompanyId { get; set; } = PosCompanyPolicy.CatalogCompanyId;
+		// NO DEFAULT. It used to initialise to the catalogue company, so a context built without
+		// going through ResolveByUserIdAsync silently carried one. Zero is visibly unset.
+		public int CompanyId { get; set; }
 
 		// The company the BRANCH belongs to. Added in Stage 1 because it is the honest tenancy answer for a
 		// POS session, and it is what the session blob and the BusinessContext need — as distinct from the
@@ -34,14 +36,23 @@ namespace CrossBuy.BL
 		public List<string> Roles { get; set; } = new();
 	}
 
-	// The one place the POS catalog-company constant is stated, with its justification.
+	// THE REASON, WITHOUT THE NUMBER.
+	//
+	// This class used to BE the constant: `public const int CatalogCompanyId = 1;` with its
+	// justification attached. The justification is still correct - POS catalogue items and cash/GL
+	// accounts are maintained under one company while operating branches belong to companies 65-79,
+	// and changing that changes POS accounting - but a deployment fact does not belong in a compiled
+	// literal. The VALUE now comes from PosCompanyOptions ("Pos" configuration section) and is read
+	// by the services and controllers that need it; this class keeps the explanation so the next
+	// reader still finds out WHY the till is pinned, which is the part that was worth preserving.
+	//
+	// Removing the pin altogether is still a business change, not a refactor: it requires the POS
+	// catalogue to be made per-company, with GL consequences.
 	public static class PosCompanyPolicy
 	{
-		// HM-1 / PosSetupService: POS catalog items and cash/GL accounts are maintained under company 1,
-		// while operating branches belong to companies 65–79. Changing this changes POS accounting.
-		// Stage 1 contains it; it does not remove it. Removal requires the POS catalog to be made
-		// per-company, which is a business change with GL consequences.
-		public const int CatalogCompanyId = 1;
+		public const string Reason =
+			"POS catalogue and cash/GL accounts live under the configured Pos:CatalogCompanyId; " +
+			"operating branches belong to their own companies and post against it.";
 	}
 
 	public interface IPosAccessService
@@ -60,14 +71,26 @@ namespace CrossBuy.BL
 	public class PosAccessService : IPosAccessService, IModuleAccessService
 	{
 		private readonly CrossDbContext _db;
-		public PosAccessService(CrossDbContext db) { _db = db; }
+		// The configured POS catalogue company. The reason it exists at all is on PosCompanyPolicy;
+		// the value comes from the "Pos" section and is injected, never compiled in.
+		private readonly int CatalogCompanyId;
+		public PosAccessService(CrossDbContext db, Microsoft.Extensions.Options.IOptions<CrossBuy.Models.Platform.PosCompanyOptions> posCompany) { _db = db; CatalogCompanyId = posCompany.Value.CatalogCompanyId; }
 
 		public string Scope => EntityRegistry.ScopePos;
 
 		// The POS vocabulary is PREDICATES over assigned roles, not an action table like the other three
 		// modules. It is exposed here in the canonical form so the same names are usable from a workflow step
 		// or an AI retrieval, without pretending POS has read/post/pay/manage semantics it does not have.
-		public IReadOnlyCollection<string> Actions { get; } = new[] { "view", "sell", "order", "kitchen", "manage" };
+		public IReadOnlyCollection<string> Actions { get; } = new[] { "view", "sell", "order", "kitchen", "manage" };
+
+		// The estate tier's role names. Deliberately a SHORT, NAMED list rather than "any admin-ish
+		// role": a tier that can configure every store in a company is one somebody should have to be
+		// given on purpose, and a wildcard would hand it to roles created later for other reasons.
+		private static readonly string[] EstateAdminRoles = { "SuperAdmin", "Administrator", "PlatformOps" };
+
+		private static bool IsEstateAdmin(IReadOnlyCollection<string>? roles) =>
+			roles != null && roles.Any(r => EstateAdminRoles.Contains(r, StringComparer.OrdinalIgnoreCase));
+
 
 		// ---------------------------------------------------------------------------------------------
 		// Canonical, session-free. POS was ALREADY session-free — it takes a userId — so this method is a
@@ -78,7 +101,39 @@ namespace CrossBuy.BL
 		{
 			ArgumentNullException.ThrowIfNull(context);
 			if (string.IsNullOrWhiteSpace(action) || !Actions.Contains(action)) return false;
-			if (string.IsNullOrEmpty(context.UserId)) return false;   // POS identity is the AspNetUser id
+			if (string.IsNullOrEmpty(context.UserId)) return false;   // POS identity is the AspNetUser id
+
+			// ===================== ESTATE ADMINISTRATION TIER =====================
+			//
+			// Checked BEFORE the POS identity is resolved, because an estate administrator is not a
+			// cashier: they are based at no till and hold no BranchUserRole, so ResolveByUserIdAsync
+			// would refuse them before the branch question was even asked.
+			//
+			// WHY THIS EXISTS. Without it the only account that can configure a branch is one BASED at
+			// that branch, so a head office cannot open a new store. Every multi-site POS resolves this
+			// the same way: an admin tier across all stores, a manager tier scoped to one. The
+			// alternative - a bypass in the branch check - buys the same convenience by giving up branch
+			// isolation everywhere and permanently. This costs one deliberate role grant instead.
+			//
+			// IT IS NOT A SKELETON KEY, and the two limits below are the whole point:
+			//   1. COMPANY-BOUNDED. The branch must belong to the caller's own company. Tenancy is not
+			//      what this tier is for, and an estate administrator of one company is a stranger to
+			//      every other.
+			//   2. CONFIGURE, NOT TRANSACT. "view" and "manage" only. It cannot sell, take an order or
+			//      work a kitchen screen, because head office configures and the store transacts - and a
+			//      central role that can ring up a sale at any till is a far worse thing to hold than one
+			//      that can rename a dining area.
+			if (IsEstateAdmin(context.Roles))
+			{
+				if (action != "view" && action != "manage") return false;
+				if (target?.BranchId is > 0)
+				{
+					var ok = await _db.Branches.AsNoTracking()
+						.AnyAsync(b => b.ID == target.BranchId!.Value && b.CompanyID == context.CompanyId, cancellationToken);
+					if (!ok) return false;
+				}
+				return true;
+			}
 
 			var pos = await ResolveByUserIdAsync(context.UserId);
 			if (pos == null) return false;                            // no POS role assigned ⇒ no access
@@ -126,8 +181,8 @@ namespace CrossBuy.BL
 				EmployeePhoto = string.IsNullOrWhiteSpace(emp.ProfileImage) ? null : emp.ProfileImage,
 				BranchId = branchId,
 				BranchName = branch?.Name ?? branchId.ToString(),
-				// Explicit, with the policy named — see PosCompanyPolicy.
-				CompanyId = PosCompanyPolicy.CatalogCompanyId,
+				// From configuration, with the reason still named — see PosCompanyPolicy.Reason.
+				CompanyId = CatalogCompanyId,
 				// The branch's real company, so a POS session can state its tenancy honestly.
 				BranchCompanyId = branch?.CompanyID,
 				Roles = roles,

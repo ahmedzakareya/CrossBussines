@@ -533,6 +533,10 @@
     </div>
 
     <!-- Add modal -->
+    @* SEC-01 — this page's own antiforgery token for the AddHierarchicalItem call. _LayoutBackend already
+       renders one through _AnnouncementsBanner, but a security token taken from a sibling partial breaks
+       silently the day that partial moves, so this page carries its own. *@
+    @Html.AntiForgeryToken()
     <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered mw-600px">
             <div class="modal-content rounded-4">
@@ -1351,7 +1355,11 @@ $(document).ready(function(){
         var parentId=$('#addItemModal').data('parentId');
         var nameAr=$('#itemNameAr').val(), nameEn=$('#itemNameEn').val(), notes=$('#notes').val();
         if(!nameAr||!nameEn){ alert('@Localizer["Please fill in all required fields."]'); return; }
-        $.ajax({ url:'/Admin/AddHierarchicalItem', method:'POST', data:{parentId:parentId,nameAr:nameAr,nameEn:nameEn,notes:notes},
+        // SEC-01 — the endpoint now carries [ValidateAntiForgeryToken]. This caller builds its payload as an
+        // object literal rather than serialising a form, so the token has to be named explicitly. It is read
+        // from the hidden input rendered below rather than hardcoded, so it stays valid per request.
+        var cbTok = document.querySelector('input[name="__RequestVerificationToken"]');
+        $.ajax({ url:'/Admin/AddHierarchicalItem', method:'POST', data:{parentId:parentId,nameAr:nameAr,nameEn:nameEn,notes:notes,__RequestVerificationToken:(cbTok?cbTok.value:'')},
             success:function(r){ if(r.success){ $('#addItemModal').modal('hide'); Swal.fire({icon:'success',title:'@Localizer["Saved"]',showConfirmButton:false,timer:1500}).then(function(){ location.reload(); }); } else Swal.fire({icon:'error',title:'@Localizer["Add failed"]',text:r.message}); },
             error:function(){ Swal.fire({icon:'error',title:'@Localizer["An error occurred"]',text:'@Localizer["Could not save the item."]'}); }
         });

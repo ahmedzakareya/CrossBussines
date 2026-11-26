@@ -1,0 +1,98 @@
+@using System.Globalization
+@using CrossBuy.BL.Construction
+@model ConstructionRebasedWarehouseConsentPanel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var quote = ViewBag.RebasedWarehouseConsentQuote as ConstructionRebasedWarehouseConsentQuote;
+    string State(string value) => SR["Construction.RebasedWarehouseConsent.State." + value].Value;
+}
+<section class="card mb-5" id="rebased-warehouse-consent" aria-labelledby="rebased-warehouse-consent-title">
+    <div class="card-header"><h2 class="card-title fs-5" id="rebased-warehouse-consent-title">@SR["Construction.RebasedWarehouseConsent.Title"]</h2></div>
+    <div class="card-body">
+        <p class="text-muted">@SR["Construction.RebasedWarehouseConsent.Explanation"]</p>
+        <div class="alert alert-info" role="note">@SR["Construction.RebasedWarehouseConsent.NoOperationalGrant"]</div>
+        <form asp-action="ConstructionPurchaseApproval" method="get" class="mb-5">
+            <input type="hidden" name="projectId" value="@Model.ProjectId" />
+            <input type="hidden" name="orderId" value="@Model.OrderId" />
+            <input type="hidden" name="culture" value="@CultureInfo.CurrentCulture.Name" />
+            <input type="hidden" name="ui-culture" value="@CultureInfo.CurrentUICulture.Name" />
+            <label for="rebased-consent-site" class="form-label">@SR["Construction.RebasedWarehouseConsent.Destination"]</label>
+            <div class="d-flex gap-2">
+                <select id="rebased-consent-site" name="warehouseSiteId" class="form-select" required>
+                    <option value="">@SR["Construction.Warehouse.ChooseSite"]</option>
+                    @foreach (var site in Model.Sites)
+                    {
+                        <option value="@site.Id" selected="@(Model.SelectedSiteId == site.Id)">@site.Code — @DisplayName.Of(site.Name, site.NameEn)</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-light-primary text-nowrap">@SR["Construction.RebasedWarehouseConsent.Review"]</button>
+            </div>
+        </form>
+        @if (Model.SelectedSiteId.HasValue)
+        {
+            @if (quote is { Ok: true } && Model.CanRequest)
+            {
+                <form asp-action="RequestConstructionRebasedWarehouseConsent" method="post" class="mb-5">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                    <input type="hidden" name="orderId" value="@Model.OrderId" />
+                    <input type="hidden" name="destinationSiteId" value="@Model.SelectedSiteId" />
+                    <input type="hidden" name="witness" value="@quote.Version" />
+                    <input type="hidden" name="requestId" value="@Model.RequestId" />
+                    <label for="rebased-consent-reason" class="form-label">@SR["Construction.RebasedWarehouseConsent.Reason"]</label>
+                    <textarea id="rebased-consent-reason" name="reason" class="form-control mb-3" maxlength="1000" rows="2" required>@Model.Reason</textarea>
+                    <button type="submit" class="btn btn-primary">@SR["Construction.RebasedWarehouseConsent.Submit"]</button>
+                </form>
+            }
+            else if (quote is { Ok: false })
+            {
+                <div class="alert alert-warning" role="status">@SR["Construction.RebasedWarehouseConsent.Unavailable"]</div>
+            }
+        }
+        <h3 class="fs-6">@SR["Construction.RebasedWarehouseConsent.History"]</h3>
+        @if (Model.History.Count == 0)
+        {
+            <p class="text-muted">@SR["Construction.RebasedWarehouseConsent.NoHistory"]</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-row-dashed align-middle">
+                    <thead><tr><th>@SR["Construction.RebasedWarehouseConsent.Destination"]</th><th>@SR["Construction.RebasedWarehouseConsent.Reason"]</th><th>@SR["Construction.RebasedWarehouseConsent.Date"]</th><th>@SR["Construction.RebasedWarehouseConsent.Status"]</th><th>@SR["Construction.RebasedWarehouseConsent.Decision"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.History)
+                    {
+                        <tr>
+                            <td>@DisplayName.Of(row.SiteName, row.SiteNameEn)</td>
+                            <td>@row.Reason</td>
+                            <td dir="ltr">@row.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</td>
+                            <td>@State(row.Status)</td>
+                            <td>
+                                @if (row.CanDecide)
+                                {
+                                    <form asp-action="DecideConstructionRebasedWarehouseConsent" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                                        <input type="hidden" name="orderId" value="@Model.OrderId" />
+                                        <input type="hidden" name="requestRowId" value="@row.Id" />
+                                        <input type="hidden" name="decisionId" value="@Guid.NewGuid()" />
+                                        <label for="rebased-consent-decision-@row.Id" class="visually-hidden">@SR["Construction.RebasedWarehouseConsent.DecisionReason"]</label>
+                                        <textarea id="rebased-consent-decision-@row.Id" name="reason" class="form-control mb-2" maxlength="1000" rows="2" required></textarea>
+                                        <button name="outcome" value="Approved" type="submit" class="btn btn-sm btn-primary">@SR["Construction.RebasedWarehouseConsent.Approve"]</button>
+                                        <button name="outcome" value="Rejected" type="submit" class="btn btn-sm btn-light-danger">@SR["Construction.RebasedWarehouseConsent.Reject"]</button>
+                                    </form>
+                                }
+                                else if (row.DecisionReason != null)
+                                {
+                                    <span>@row.DecisionReason</span>
+                                    @if (row.DecidedAt.HasValue) { <small class="d-block text-muted" dir="ltr">@row.DecidedAt.Value.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</small> }
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

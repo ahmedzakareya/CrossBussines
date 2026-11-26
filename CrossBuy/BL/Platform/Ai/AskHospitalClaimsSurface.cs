@@ -49,7 +49,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"مطالبات التأمين: المبلغ المطالَب به والمعتمد وعدد البنود حسب الحالة أو جهة الدفع أو التصنيف",
-			"Insurance claims: the claimed and accepted amounts and the line count by status, payer or category");
+			"Insurance claims: the claimed and accepted amounts and the line count by status, payer or category",
+			"Demandes de remboursement : montants réclamés et approuvés, et nombre de lignes par statut, payeur ou catégorie");
 
 		public override AskText Rules => AskText.Of(
 			"ده قرار التأمين، مش فوترة المستشفى — رقمين مختلفين على صفوف مختلفة · "
@@ -71,13 +72,13 @@ namespace CrossBuy.BL.Platform.Ai
 			// column — it would rank every status instead of filtering to the rejected ones, and
 			// hand back a confident total under a question about refusals. The value words reach
 			// the filter through the row's own search text.
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة البند", "Line status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة البند", "Line status", "Statut de la ligne"),
 				Synonyms = new[] { "حالة", "الحالة", "حالة البند", "قرار", "القرار",
 					"status", "decision", "line status" } },
-			new AskColumn { Name = "payer", Kind = AskColumnKind.Dimension, Label = AskText.Of("جهة الدفع", "Payer"),
+			new AskColumn { Name = "payer", Kind = AskColumnKind.Dimension, Label = AskText.Of("جهة الدفع", "Payer", "Payeur"),
 				Synonyms = new[] { "جهة الدفع", "جهات الدفع", "شركة التامين", "شركات التامين", "التامين",
 					"payer", "payers", "insurer", "insurers", "insurance company" } },
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف", "Category", "Catégorie"),
 				Synonyms = new[] { "تصنيف", "التصنيف", "نوع الخدمة", "نوع البند",
 					"category", "categories", "service type", "line type" } },
 			// "Reject reason" WAS THIS COLUMN'S LABEL, AND IT SWALLOWED THE STATUS VALUE.
@@ -88,17 +89,17 @@ namespace CrossBuy.BL.Platform.Ai
 			// filter was built, and the answer was all 19 lines with no notice that nothing matched.
 			// The Arabic escaped only by accident of spelling - "المرفوضه" does not contain "الرفض".
 			// The column is named for the REASON it holds, with no token the value shares.
-			new AskColumn { Name = "refusalreason", Kind = AskColumnKind.Dimension, Label = AskText.Of("سبب الرفض", "Refusal reason"),
+			new AskColumn { Name = "refusalreason", Kind = AskColumnKind.Dimension, Label = AskText.Of("سبب الرفض", "Refusal reason", "Motif de refus"),
 				Synonyms = new[] { "سبب", "السبب", "سبب الرفض", "اسباب الرفض", "كود الرفض",
 					"reason", "refusal reason", "reason for refusal", "denial reason", "reason code" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
 			new AskColumn { Name = "claimed", Kind = AskColumnKind.Measure, IsMoney = true,
 				Action = HospitalActions.Bill,
-				Label = AskText.Of("المبلغ المطالَب به", "Claimed"),
+				Label = AskText.Of("المبلغ المطالَب به", "Claimed", "Montant réclamé"),
 				Synonyms = new[] { "مطالب", "المطالب به", "قيمة المطالبة", "مبلغ المطالبة", "مبلغ", "المبلغ",
 					"claimed", "claim amount", "amount claimed", "gross" } },
 			// THE COLUMN'S NAME IS VOCABULARY TOO. Renaming the label and the synonyms was not enough:
@@ -112,15 +113,15 @@ namespace CrossBuy.BL.Platform.Ai
 				// spelt the same way - so «المطالبات المعتمدة» was read as naming this COLUMN and
 				// answered with all 19 lines instead of the 7 that were actually accepted. The
 				// measure keeps its meaning under a name the value does not share.
-				Label = AskText.Of("المبلغ الموافَق عليه", "Approved amount"),
+				Label = AskText.Of("المبلغ الموافَق عليه", "Approved amount", "Montant approuvé"),
 				Synonyms = new[] { "الموافق عليه", "اللي اتوافق عليه", "اللي وافقوا عليه",
 					"approved", "approved amount", "agreed amount", "amount agreed" } },
 			new AskColumn { Name = "recouped", Kind = AskColumnKind.Measure, IsMoney = true, Nullable = true,
 				Action = HospitalActions.Bill,
-				Label = AskText.Of("المبلغ المسترد", "Recouped"),
+				Label = AskText.Of("المبلغ المسترد", "Recouped", "Montant récupéré"),
 				Synonyms = new[] { "مسترد", "المسترد", "استرداد", "اللي اترجع",
 					"recouped", "recoupment", "clawback", "taken back" } },
-			new AskColumn { Name = "lines", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد البنود", "Lines"),
+			new AskColumn { Name = "lines", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد البنود", "Lines", "Lignes"),
 				// "كام" is absent for the same reason as on the billing surface: on a money
 				// surface it means "how MUCH" more often than "how MANY".
 				Synonyms = new[] { "عدد", "العدد", "بنود", "عدد البنود", "مطالبات", "عدد المطالبات",

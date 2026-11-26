@@ -102,6 +102,12 @@ namespace CrossBuy.BL
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
+		// One wording for both services, so the person reading it is told the same thing wherever
+		// they hit it: which account is missing, and that the chart is what needs fixing.
+		internal static string ControlAccountMissing(int companyId, string code, string what) =>
+			$"The {what} control account ({code}) does not exist in this company's chart of accounts, " +
+			$"so this record cannot be given one. Add account {code} first - without it no document can be posted.";
+
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
 			await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 
@@ -147,7 +153,11 @@ namespace CrossBuy.BL
 		// there is one and owns a new one otherwise, so a caller with no transaction behaves exactly as before.
 		public async Task<Customer> CreateCustomerAsync(int companyId, string name, string? nameEn, string? taxNo, decimal? creditLimit)
 		{
-			var control = await AccIdAsync(companyId, "1102") ?? 0;   // AR control
+			// NO SILENT ZERO. Without a receivables account the customer could be created, listed and
+			// edited, and would fail only at its first invoice. This method has no error channel, so it
+			// throws - which surfaces the real cause at the moment of the mistake rather than months later.
+			var control = await AccIdAsync(companyId, "1102")
+				?? throw new InvalidOperationException(ControlAccountMissing(companyId, "1102", "receivables"));
 			var c = new Customer { CompanyID = companyId, Name = name, NameEn = nameEn, TaxRegNo = taxNo, ControlAccountId = control, CreditLimit = creditLimit, IsActive = true, CreatedAt = DateTime.UtcNow };
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -193,10 +203,16 @@ namespace CrossBuy.BL
 			int? beforeTerms = c?.PaymentTermsDays;
 			bool? beforeActive = c?.IsActive;
 
+			// Checked BEFORE the transaction opens: there is nothing to roll back, and a refusal that
+			// costs a transaction is a refusal that will be skipped the next time someone is in a hurry.
+			int? arControl = c == null ? await AccIdAsync(companyId, "1102") : null;
+			if (c == null && arControl == null)
+				return (false, ControlAccountMissing(companyId, "1102", "receivables"));
+
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			if (c == null)
 			{
-				c = new Customer { CompanyID = companyId, ControlAccountId = await AccIdAsync(companyId, "1102") ?? 0, IsActive = true, CreatedAt = DateTime.UtcNow };
+				c = new Customer { CompanyID = companyId, ControlAccountId = arControl!.Value, IsActive = true, CreatedAt = DateTime.UtcNow };
 				_context.Customers.Add(c);
 			}
 			c.Name = dto.Name; c.NameEn = dto.NameEn; c.TaxRegNo = dto.TaxRegNo; c.CreditLimit = dto.CreditLimit;

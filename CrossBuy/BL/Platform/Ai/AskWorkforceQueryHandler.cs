@@ -26,10 +26,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"عدد الموظفين وتوزيعهم: حسب المسمى الوظيفي أو الفرع أو الحالة أو سنة الالتحاق — بلا أي بيانات رواتب",
-			"Headcount and how the roster is distributed: by job title, branch, status or year joined — no pay data");
+			"Headcount and how the roster is distributed: by job title, branch, status or year joined — no pay data",
+			"Effectifs et répartition par intitulé de poste, succursale, statut ou année d'embauche — aucune donnée de rémunération");
 
 		public override AskText Example => AskText.Of(
-			"كام موظف عندنا في كل وظيفة؟", "How many employees in each job title?");
+			"كام موظف عندنا في كل وظيفة؟", "How many employees in each job title?", "Combien d'employés avons-nous par intitulé de poste ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Call centre" xml:space="preserve">
+    <value>مركز الاتصال</value>
+  </data>
+  <data name="Calls" xml:space="preserve">
+    <value>المكالمات</value>
+  </data>
+  <data name="Tickets" xml:space="preserve">
+    <value>التذاكر</value>
+  </data>
+  <data name="Log a call" xml:space="preserve">
+    <value>تسجيل مكالمة</value>
+  </data>
+  <data name="Log the call" xml:space="preserve">
+    <value>سجّل المكالمة</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>الاتجاه</value>
+  </data>
+  <data name="Phone number" xml:space="preserve">
+    <value>رقم الهاتف</value>
+  </data>
+  <data name="Outcome" xml:space="preserve">
+    <value>النتيجة</value>
+  </data>
+  <data name="Duration (seconds)" xml:space="preserve">
+    <value>المدة (ثانية)</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>المدة</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>الموظف</value>
+  </data>
+  <data name="— me —" xml:space="preserve">
+    <value>— أنا —</value>
+  </data>
+  <data name="Ticket #" xml:space="preserve">
+    <value>رقم التذكرة</value>
+  </data>
+  <data name="Ticket" xml:space="preserve">
+    <value>التذكرة</value>
+  </data>
+  <data name="Recent calls" xml:space="preserve">
+    <value>آخر المكالمات</value>
+  </data>
+  <data name="When" xml:space="preserve">
+    <value>التوقيت</value>
+  </data>
+  <data name="Number" xml:space="preserve">
+    <value>الرقم</value>
+  </data>
+  <data name="No calls logged yet" xml:space="preserve">
+    <value>لا توجد مكالمات مسجّلة بعد</value>
+  </data>
+  <data name="Tickets past their SLA" xml:space="preserve">
+    <value>تذاكر تجاوزت المدة المحددة</value>
+  </data>
+  <data name="These are open and past a deadline. Escalating notifies each ticket's owner; one notice per ticket per day." xml:space="preserve">
+    <value>دي تذاكر مفتوحة وفاتت موعدها. التصعيد بيُشعر مالك كل تذكرة، بإشعار واحد لكل تذكرة في اليوم.</value>
+  </data>
+  <data name="Escalate" xml:space="preserve">
+    <value>تصعيد</value>
+  </data>
+  <data name="Notify the owners of every breached ticket?" xml:space="preserve">
+    <value>إشعار مالكي كل التذاكر المتجاوزة؟</value>
+  </data>
+  <data name="Start it when you answer; end it when you hang up" xml:space="preserve">
+    <value>ابدأ عند الرد، وأنهِ عند إغلاق المكالمة</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>ابدأ</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>إنهاء</value>
+  </data>
+  <data name="or type it (seconds)" xml:space="preserve">
+    <value>أو اكتبها يدويًا (ثانية)</value>
+  </data>
+  <data name="Route to a department" xml:space="preserve">
+    <value>توجيه إلى قسم</value>
+  </data>
+  <data name="No departments are defined for this company yet." xml:space="preserve">
+    <value>لا توجد إدارات مسجّلة لهذه الشركة بعد.</value>
+  </data>
+  <data name="Add them in the org structure" xml:space="preserve">
+    <value>أضفها من الهيكل الإداري</value>
+  </data>
+  <data name="— no routing —" xml:space="preserve">
+    <value>— بدون توجيه —</value>
+  </data>
+  <data name="Its members are notified, and a linked ticket moves with it" xml:space="preserve">
+    <value>يُشعَر موظفو القسم، وتنتقل التذكرة المرتبطة إليه</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>التفاصيل</value>
+  </data>
+  <data name="Routed to" xml:space="preserve">
+    <value>وُجِّهت إلى</value>
+  </data>
+  <data name="Logged by" xml:space="preserve">
+    <value>سجّلها</value>
+  </data>
+  <data name="Nothing was written down" xml:space="preserve">
+    <value>لم تُكتب أي ملاحظات</value>
+  </data>
+  <data name="Route to" xml:space="preserve">
+    <value>توجيه إلى</value>
+  </data>
+  <data name="This company has no org structure yet." xml:space="preserve">
+    <value>لا يوجد هيكل إداري مسجّل لهذه الشركة بعد.</value>
+  </data>
+  <data name="Everyone under the chosen unit is notified, and a linked ticket moves with it" xml:space="preserve">
+    <value>يُشعَر كل من تحت الوحدة المختارة، وتنتقل التذكرة المرتبطة إليها</value>
+  </data>
+  <data name="Open a ticket from this call" xml:space="preserve">
+    <value>أنشئ تذكرة من هذه المكالمة</value>
+  </data>
+  <data name="Existing ticket number" xml:space="preserve">
+    <value>رقم تذكرة قائمة</value>
+  </data>
+  <data name="Ticket subject" xml:space="preserve">
+    <value>موضوع التذكرة</value>
+  </data>
+  <data name="Your notes become its description; the number and the channel are recorded for you" xml:space="preserve">
+    <value>ملاحظاتك تصبح وصف التذكرة، ويُسجَّل الرقم والقناة تلقائيًا</value>
+  </data>
+  <data name="or type it" xml:space="preserve">
+    <value>أو اكتبها</value>
+  </data>
+  <data name="seconds" xml:space="preserve">
+    <value>ثانية</value>
+  </data>
+  <data name="Not started" xml:space="preserve">
+    <value>لم تبدأ</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>جارية</value>
+  </data>
+  <data name="Ended — duration recorded" xml:space="preserve">
+    <value>انتهت — المدة مسجّلة</value>
+  </data>
+  <data name="or enter it manually" xml:space="preserve">
+    <value>أو أدخلها يدويًا</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>بخصوص</value>
+  </data>
+  <data name="— nothing —" xml:space="preserve">
+    <value>— لا شيء —</value>
+  </data>
+  <data name="Search for the record" xml:space="preserve">
+    <value>ابحث عن السجل</value>
+  </data>
+  <data name="Choose a type first" xml:space="preserve">
+    <value>اختر النوع أولًا</value>
+  </data>
+  <data name="No results" xml:space="preserve">
+    <value>لا توجد نتائج</value>
+  </data>
+  <data name="Searching…" xml:space="preserve">
+    <value>جارٍ البحث…</value>
+  </data>
+  <data name="The results could not be loaded" xml:space="preserve">
+    <value>تعذّر تحميل النتائج</value>
+  </data>
+  <data name="This call is on ticket" xml:space="preserve">
+    <value>هذه المكالمة على التذكرة</value>
+  </data>
+  <data name="Detach" xml:space="preserve">
+    <value>فصل</value>
+  </data>
+  <data name="Not routed to any unit" xml:space="preserve">
+    <value>غير موجّهة إلى أي وحدة</value>
+  </data>
+  <data name="Change on the ticket" xml:space="preserve">
+    <value>غيّرها من التذكرة</value>
+  </data>
+  <data name="Not linked to any record" xml:space="preserve">
+    <value>غير مرتبطة بأي سجل</value>
+  </data>
+</root>

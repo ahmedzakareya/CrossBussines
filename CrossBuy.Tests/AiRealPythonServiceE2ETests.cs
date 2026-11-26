@@ -336,10 +336,25 @@ namespace CrossBuy.Tests
 
             foreach (var file in Directory.GetFiles(ml, "*.py"))
             {
-                var code = File.ReadAllText(file);
+                // IMPORT LINES ONLY. This used to scan the WHOLE FILE for the bare word, so intent_llm.py failed
+                // on a comment reading "two requests arriving together" — the English word, not the library. A
+                // security guard that cries wolf on prose is one somebody eventually deletes, and this one is the
+                // guarantee that "local" stays local, so it has to stay believable.
+                //
+                // Trimmed, so a DEFERRED import inside a function still counts — which is exactly where a
+                // network client would be hidden if anyone tried.
+                var imports = File.ReadAllLines(file)
+                    .Select(l => l.Trim())
+                    .Where(l => l.StartsWith("import ", StringComparison.Ordinal)
+                             || l.StartsWith("from ", StringComparison.Ordinal))
+                    .ToList();
+
                 foreach (var forbidden in new[] { "anthropic", "openai", "httpx", "requests", "urllib", "http.client" })
-                    Assert.False(code.Contains(forbidden, StringComparison.OrdinalIgnoreCase),
-                        $"{Path.GetFileName(file)} imports {forbidden} — local ML must make no network call.");
+                {
+                    var hit = imports.FirstOrDefault(l => l.Contains(forbidden, StringComparison.OrdinalIgnoreCase));
+                    Assert.True(hit == null,
+                        $"{Path.GetFileName(file)} imports {forbidden} — local ML must make no network call. Line: {hit}");
+                }
             }
         }
     }

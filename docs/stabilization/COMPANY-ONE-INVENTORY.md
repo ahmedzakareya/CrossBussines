@@ -1,5 +1,21 @@
 # Company-1 Inventory
 
+## 2026-11-10 measurement — the count is now ZERO
+
+The controller-declaration guard finds **0** files. The last five — AdminController
+(`HrCompanyId`), Api/InventoryApiController (`CompanyId`) and the three tills HyperController,
+HyperPosController and PosAppController (`PosCompanyId`) — all resolve their company now, and each
+left the old declaration behind as an explanatory comment rather than deleting it silently.
+
+`Correction005StructuralTests` reported the removal instead of absorbing it, which is what the
+second assertion exists for; `KnownHardcodedCompanyControllers` and `KnownCount` were lowered in
+the same change. Note for whoever measures this next: a grep for `const int ...CompanyId =` still
+returns five hits, because it matches those explanatory comments. The guard strips comments before
+matching; a grep does not. Read the lines before concluding the constants are back.
+
+An empty baseline makes the first assertion strict rather than vacuous: a controller that hardcodes
+a company from now on fails both the count and the unexpected-name check.
+
 ## 2026-10-11 target reconciliation measurement
 
 The historical measurement below is retained as a baseline. On `wt-pb-cycle-01`, the

@@ -114,7 +114,9 @@ namespace CrossBuy.BL.Platform.Ai
 		{
 			var k = Key(conversationId);
 			if (k == null) return;
-			if (pending == null || string.IsNullOrWhiteSpace(pending.Parameter))
+			if (pending == null
+				|| (string.IsNullOrWhiteSpace(pending.Parameter)
+					&& (pending.Choices == null || pending.Choices.Count == 0)))
 			{
 				_cache.Remove(k + ":pending");
 				return;

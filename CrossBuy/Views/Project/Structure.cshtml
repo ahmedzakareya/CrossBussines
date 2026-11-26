@@ -1,0 +1,201 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Construction
+@model CrossBuy.ViewModel.ConstructionStructurePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var workspace = Model.Workspace;
+    var settings = workspace.Settings;
+    var children = workspace.Nodes.ToLookup(x => x.ParentId);
+    var visited = new HashSet<int>();
+    IEnumerable<WbsNode> Walk(int? parent)
+    {
+        foreach (var item in children[parent].OrderBy(x => x.Sequence).ThenBy(x => x.ID))
+        {
+            if (!visited.Add(item.ID)) continue;
+            yield return item;
+            foreach (var child in Walk(item.ID)) yield return child;
+        }
+    }
+    var nodes = Walk(null).ToList();
+    string Version(byte[]? value) => Convert.ToBase64String(value ?? Array.Empty<byte>());
+    int.TryParse(TempData["StructureAffectedNode"]?.ToString(), out var affectedNode);
+    var statuses = new[] { "Draft", "Active", "Suspended", "Completed", "Archived" };
+    var categories = new[] { "Material", "Labor", "Equipment", "Subcontractor", "SiteExpense", "Transportation", "Accommodation", "Overhead", "Contingency", "Other" };
+    var methods = new[] { "Quantity", "Milestone", "WeightedActivity", "ManualApproved" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@Localizer["Project structure"]</h1><div class="text-muted">@Model.Project.Code — @DisplayName.Of(Model.Project.Name, Model.Project.NameEn)</div></div>
+        <div class="d-flex gap-2"><a class="btn btn-light-primary" asp-action="BudgetVersions" asp-route-id="@Model.Project.ID" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@Localizer["Budget versions"]</a><a class="btn btn-light" asp-action="Projects" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@Localizer["Projects"]</a><a class="btn btn-light-primary" asp-action="Boq" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" asp-route-id="@Model.Project.ID">@Localizer["Bill of quantities"]</a></div>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="notice d-flex align-items-center bg-light-success rounded border-success border border-dashed p-4 mb-5" role="status"><i class="ki-outline ki-information-5 fs-2 text-success me-3"></i><span class="fw-semibold fs-7 text-gray-800">@TempData["PrjMsg"]</span></div> }
+        @if (TempData["PrjErr"] != null) { <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5" role="alert"><i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i><span class="fw-semibold fs-7 text-gray-800">@TempData["PrjErr"]</span></div> }
+        @if (TempData["StructureAttempt"] != null) { <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fw-semibold fs-7 text-gray-800"><strong>@Localizer["Your unsaved entry"]:</strong> @TempData["StructureAttempt"]<span class="d-block fw-normal">@Localizer["Review the current values below before trying again."]</span></span></div> }
+        @if (!Model.CanManage) { <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fw-semibold fs-7 text-gray-800">@Localizer["Read-only access"]</span></div> }
+
+        <section class="card mb-6" aria-labelledby="structure-settings-title">
+            <div class="card-header"><h2 id="structure-settings-title" class="card-title fw-bold">@Localizer["Company structure settings"]</h2></div>
+            <div class="card-body">
+                <p class="text-muted">@Localizer["This setting applies to all projects in the current company."]</p>
+                @if (settings == null) { <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fw-semibold fs-7 text-gray-800">@Localizer["Choose a maximum depth before adding WBS nodes."]</span></div> }
+                else { <p><strong>@Localizer["Maximum WBS depth"]:</strong> @settings.MaxWbsDepth</p> }
+                @if (Model.CanManage)
+                {
+                    <form asp-action="ConfigureProjectStructure" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="row g-4 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="expectedVersion" value="@Version(settings?.RowVersion)" />
+                        <div class="col-md-3"><label for="structureDepth" class="form-label">@Localizer["Maximum WBS depth"]</label><input id="structureDepth" name="maxDepth" type="number" min="1" max="32" required class="form-control form-control-solid" value="@(settings?.MaxWbsDepth.ToString() ?? "")" /></div>
+                        <div class="col-md-6"><label for="structureReason" class="form-label">@Localizer["Reason for change"]</label><input id="structureReason" name="reason" required maxlength="1000" class="form-control form-control-solid" /></div>
+                        <div class="col-md-3"><button class="btn btn-primary" type="submit">@Localizer["Save company setting"]</button></div>
+                    </form>
+                }
+            </div>
+        </section>
+
+        <section class="card mb-6" aria-labelledby="wbs-title">
+            <div class="card-header"><h2 id="wbs-title" class="card-title fw-bold">@Localizer["Work breakdown structure"]</h2><div class="card-toolbar"><span class="badge badge-light-primary">@workspace.Nodes.Count</span></div></div>
+            <div class="card-body">
+                @if (nodes.Count == 0) { <div class="text-center text-muted py-10">@Localizer["No WBS nodes yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed"><thead><tr><th>@Localizer["Node"]</th><th>@Localizer["Progress method"]</th><th>@Localizer["Responsible team member"]</th><th>@Localizer["Status"]</th><th>@Localizer["Actions"]</th></tr></thead><tbody>
+                    @foreach (var node in nodes)
+                    {
+                        var transitions = statuses.Where(x => ConstructionStructureVocabulary.CanTransition(node.Status, x)).ToList();
+                        var responsible = workspace.Members.FirstOrDefault(x => x.Id == node.ResponsibleEmployeeId);
+                        <tr class="@(affectedNode == node.ID ? "bg-light-primary" : "")">
+                            <td style="padding-inline-start:@((node.Depth - 1) * 12)px"><div class="fw-semibold"><bdi dir="ltr">@node.Code</bdi> — @DisplayName.Of(node.Name, node.NameEn)</div><div class="text-muted fs-8">@Localizer["Level"] @node.Depth @if(node.OwnsBudget){<span class="badge badge-light ms-2">@Localizer["Budget control node"]</span>} @if(node.OwnsCost){<span class="badge badge-light ms-2">@Localizer["Accepts costs"]</span>}</div>
+                                @if(node.StartDate.HasValue||node.EndDate.HasValue){<div class="text-muted fs-8">@Localizer["Planned start"]: @(node.StartDate?.ToString("yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture)??"—") · @Localizer["Planned finish"]: @(node.EndDate?.ToString("yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture)??"—")</div>}
+                            </td>
+                            <td>@Localizer["Progress." + node.ProgressMethod]</td><td>@(node.ResponsibleEmployeeId==null?Localizer["Not assigned"].Value:responsible==null?Localizer["Unavailable team member"].Value:EmployeeNames.Of(responsible.Name,responsible.NameEn,responsible.Id))</td><td><span class="badge badge-light">@Localizer["Status." + node.Status]</span></td>
+                            <td>
+                                @if (Model.CanManage && node.Status != "Archived")
+                                {
+                                    <details class="mb-3"><summary class="text-primary">@Localizer["Edit names"]</summary>
+                                        <form asp-action="RenameWbsNode" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="d-grid gap-3 mt-3">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="nodeId" value="@node.ID" /><input type="hidden" name="expectedVersion" value="@Version(node.RowVersion)" />
+                                            <label class="form-label">@Localizer["Name in Arabic"]<input name="name" value="@node.Name" dir="rtl" required maxlength="200" class="form-control form-control-solid" /></label>
+                                            <label class="form-label">@Localizer["Name in English"]<input name="nameEn" value="@node.NameEn" dir="ltr" maxlength="200" class="form-control form-control-solid" /></label>
+                                            <label class="form-label">@Localizer["Reason for change"]<input name="reason" required maxlength="1000" class="form-control form-control-solid" /></label>
+                                            <button type="submit" class="btn btn-sm btn-primary">@Localizer["Save"]</button>
+                                        </form>
+                                    </details>
+                                }
+                                @if (Model.CanManage && transitions.Count > 0)
+                                {
+                                    <details><summary class="text-primary">@Localizer["Change status"]</summary>
+                                        <form asp-action="TransitionWbsNode" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="d-grid gap-3 mt-3">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="nodeId" value="@node.ID" /><input type="hidden" name="expectedVersion" value="@Version(node.RowVersion)" />
+                                            <label class="form-label">@Localizer["New status"]<select name="status" required class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@Localizer["Choose"]</option>@foreach(var status in transitions){<option value="@status">@Localizer["Status." + status]</option>}</select></label>
+                                            <label class="form-label">@Localizer["Reason for change"]<input name="reason" required maxlength="1000" class="form-control form-control-solid" /></label>
+                                            <button type="submit" class="btn btn-sm btn-primary">@Localizer["Apply status"]</button>
+                                        </form>
+                                    </details>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody></table></div>
+                }
+                @if (Model.CanManage && settings != null)
+                {
+                    <details class="mt-5"><summary class="btn btn-light-primary">@Localizer["Add WBS node"]</summary>
+                        <form asp-action="CreateWbsNode" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="row g-4 mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="parentVersion" />
+                            <div class="col-md-4"><label class="form-label" for="wbsParent">@Localizer["Parent node"]</label><select id="wbsParent" name="parentId" class="form-select form-select-solid structure-parent" data-control="select2"><option value="">@Localizer["Root node"]</option>@foreach(var node in nodes.Where(x=>x.Status!="Archived"&&x.Status!="Completed")){<option value="@node.ID" data-version="@Version(node.RowVersion)">@node.Code — @DisplayName.Of(node.Name,node.NameEn)</option>}</select></div>
+                            <div class="col-md-2"><label class="form-label" for="wbsCode">@Localizer["Code"]</label><input id="wbsCode" name="code" required maxlength="50" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3"><label class="form-label" for="wbsName">@Localizer["Name in Arabic"]</label><input id="wbsName" name="name" dir="rtl" required maxlength="200" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3"><label class="form-label" for="wbsNameEn">@Localizer["Name in English"]</label><input id="wbsNameEn" name="nameEn" dir="ltr" maxlength="200" class="form-control form-control-solid" /></div>
+                            <div class="col-md-4"><label class="form-label" for="wbsProgress">@Localizer["Progress method"]</label><select id="wbsProgress" name="progressMethod" required class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@Localizer["Choose"]</option>@foreach(var method in methods){<option value="@method">@Localizer["Progress." + method]</option>}</select></div>
+                            <div class="col-md-4"><label class="form-label" for="wbsResponsible">@Localizer["Responsible team member"]</label><select id="wbsResponsible" name="responsibleEmployeeId" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Not assigned"]</option>@foreach(var member in workspace.Members){<option value="@member.Id">@EmployeeNames.Of(member.Name,member.NameEn,member.Id)</option>}</select></div>
+                            <div class="col-md-4"><label class="form-label" for="wbsSequence">@Localizer["Display order"]</label><input id="wbsSequence" name="sequence" type="number" min="0" value="0" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3"><label class="form-label" for="wbsStart">@Localizer["Planned start"]</label><input id="wbsStart" name="startDate" type="date" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3"><label class="form-label" for="wbsEnd">@Localizer["Planned finish"]</label><input id="wbsEnd" name="endDate" type="date" class="form-control form-control-solid" /></div>
+                            <div class="col-md-6 d-flex align-items-center gap-5"><label class="form-check"><input name="ownsBudget" value="true" type="checkbox" class="form-check-input" /><span class="form-check-label">@Localizer["Budget control node"]</span></label><label class="form-check"><input name="ownsCost" value="true" type="checkbox" class="form-check-input" /><span class="form-check-label">@Localizer["Accepts costs"]</span></label></div>
+                            <div class="col-md-9"><label class="form-label" for="wbsReason">@Localizer["Reason for change"]</label><input id="wbsReason" name="reason" required maxlength="1000" class="form-control form-control-solid" /></div>
+                            <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary" type="submit">@Localizer["Add node"]</button></div>
+                        </form>
+                    </details>
+                }
+            </div>
+        </section>
+
+        <div class="row g-6">
+            <section class="col-xl-6"><div class="card h-100" aria-labelledby="cost-code-title"><div class="card-header"><h2 id="cost-code-title" class="card-title fw-bold">@Localizer["Company cost codes"]</h2></div><div class="card-body">
+                <p class="text-muted">@Localizer["Cost codes are shared by projects in this company."]</p>
+                @if(workspace.CostCodes.Count==0){<div class="text-center text-muted py-10">@Localizer["No cost codes yet."]</div>}
+                else{<div class="table-responsive"><table class="table table-row-dashed"><thead><tr><th>@Localizer["Code"]</th><th>@Localizer["Name"]</th><th>@Localizer["Category"]</th><th>@Localizer["Use"]</th></tr></thead><tbody>@foreach(var code in workspace.CostCodes){<tr><td>@code.Code</td><td>@DisplayName.Of(code.Name,code.NameEn)</td><td>@Localizer["Category."+code.Category]</td><td>@Localizer[code.AllowDirectPosting?"Cost allocation":"Grouping"]</td></tr>}</tbody></table></div>}
+                @if(Model.CanManage)
+                {
+                    <details class="mt-4"><summary class="btn btn-light-primary">@Localizer["Add cost code"]</summary><form asp-action="CreateConstructionCostCode" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="row g-4 mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@Model.Project.ID" /><input type="hidden" name="parentVersion" />
+                        <div class="col-md-6"><label class="form-label" for="costCategory">@Localizer["Category"]</label><select id="costCategory" name="category" required class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@Localizer["Choose"]</option>@foreach(var category in categories){<option value="@category">@Localizer["Category."+category]</option>}</select></div>
+                        <div class="col-md-6"><label class="form-label" for="costParent">@Localizer["Parent cost code"]</label><select id="costParent" name="parentId" class="form-select form-select-solid structure-parent" data-control="select2"><option value="">@Localizer["No parent"]</option>@foreach(var code in workspace.CostCodes.Where(x=>x.IsActive)){<option value="@code.ID" data-category="@code.Category" data-version="@Version(code.RowVersion)">@code.Code — @DisplayName.Of(code.Name,code.NameEn)</option>}</select></div>
+                        <div class="col-md-4"><label class="form-label" for="costCode">@Localizer["Code"]</label><input id="costCode" name="code" required maxlength="50" class="form-control form-control-solid" /></div>
+                        <div class="col-md-8"><label class="form-label" for="costName">@Localizer["Name in Arabic"]</label><input id="costName" name="name" dir="rtl" required maxlength="200" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><label class="form-label" for="costNameEn">@Localizer["Name in English"]</label><input id="costNameEn" name="nameEn" dir="ltr" maxlength="200" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><label class="form-check"><input type="checkbox" name="allowDirectPosting" value="true" class="form-check-input" /><span class="form-check-label">@Localizer["Accepts cost allocation"]</span></label></div>
+                        <div class="col-12"><label class="form-label" for="costReason">@Localizer["Reason for change"]</label><input id="costReason" name="reason" required maxlength="1000" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><button type="submit" class="btn btn-primary">@Localizer["Add cost code"]</button></div>
+                    </form></details>
+                }
+            </div></div></section>
+
+            <section class="col-xl-6"><div class="card h-100" aria-labelledby="sites-title"><div class="card-header"><h2 id="sites-title" class="card-title fw-bold">@Localizer["Project sites"]</h2></div><div class="card-body">
+                @if(workspace.Sites.Count==0){<div class="text-center text-muted py-10">@Localizer["No project sites yet."]</div>}
+                else{<div class="table-responsive"><table class="table table-row-dashed"><thead><tr><th>@Localizer["Code"]</th><th>@Localizer["Name"]</th><th>@Localizer["Warehouse"]</th></tr></thead><tbody>@foreach(var site in workspace.Sites){var warehouse=workspace.Warehouses.FirstOrDefault(x=>x.Id==site.WarehouseId);<tr><td>@site.Code</td><td>@DisplayName.Of(site.Name,site.NameEn)</td><td>@(site.WarehouseId==null?Localizer["Not linked"].Value:warehouse==null?Localizer["Restricted warehouse"].Value:DisplayName.Of(warehouse.Name,warehouse.NameEn))</td></tr>}</tbody></table></div>}
+                @if(Model.CanManage)
+                {
+                    <details class="mt-4"><summary class="btn btn-light-primary">@Localizer["Add site"]</summary><form asp-action="CreateConstructionSite" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" class="row g-4 mt-2">
+                        @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.Project.ID" />
+                        <div class="col-md-4"><label class="form-label" for="siteCode">@Localizer["Code"]</label><input id="siteCode" name="code" required maxlength="50" class="form-control form-control-solid" /></div>
+                        <div class="col-md-8"><label class="form-label" for="siteName">@Localizer["Name in Arabic"]</label><input id="siteName" name="name" dir="rtl" required maxlength="200" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><label class="form-label" for="siteNameEn">@Localizer["Name in English"]</label><input id="siteNameEn" name="nameEn" dir="ltr" maxlength="200" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><label class="form-label" for="siteAddress">@Localizer["Address"]</label><input id="siteAddress" name="address" maxlength="1000" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><label class="form-label" for="siteWarehouse">@Localizer["Warehouse"]</label><select id="siteWarehouse" name="warehouseId" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Not linked"]</option>@foreach(var warehouse in workspace.Warehouses){<option value="@warehouse.Id">@warehouse.Code — @DisplayName.Of(warehouse.Name,warehouse.NameEn)</option>}</select><div class="form-text">@Localizer["Only warehouses you are allowed to use are listed."]</div></div>
+                        <div class="col-12"><label class="form-label" for="siteReason">@Localizer["Reason for change"]</label><input id="siteReason" name="reason" required maxlength="1000" class="form-control form-control-solid" /></div>
+                        <div class="col-12"><button type="submit" class="btn btn-primary">@Localizer["Add site"]</button></div>
+                    </form></details>
+                }
+            </div></div></section>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+// These pickers are data-control="select2". A user's pick arrives as a jQuery event that NEVER
+// reaches addEventListener('change'), so binding natively would leave the parent-version sync and
+// the category filter silently dead. CB.onSelectChange listens on both channels and de-duplicates.
+function cbOnChange(el, handler){
+    if (window.CB && CB.onSelectChange) { CB.onSelectChange(el, handler); return; }
+    el.addEventListener('change', handler);   // helper not loaded: native is still correct
+}
+// Setting .value on a select2-backed select does not repaint the widget; only a jQuery trigger does.
+function cbNotify(el){
+    if (window.jQuery && jQuery(el).data('select2')) { jQuery(el).trigger('change'); }
+    else { el.dispatchEvent(new Event('change')); }
+}
+document.querySelectorAll('.structure-parent').forEach(function(select){
+    function synchronize(){var option=select.options[select.selectedIndex];select.closest('form').querySelector('input[name="parentVersion"]').value=option?option.dataset.version||'':'';}
+    cbOnChange(select,synchronize);synchronize();
+});
+var category=document.getElementById('costCategory');
+if(category){
+    function filterParents(){
+        var parent=document.getElementById('costParent');
+        if(!parent)return;
+        Array.from(parent.options).forEach(function(option){option.disabled=!!option.value&&option.dataset.category!==category.value;});
+        if(parent.options[parent.selectedIndex]&&parent.options[parent.selectedIndex].disabled){parent.value='';}
+        cbNotify(parent);
+    }
+    cbOnChange(category,filterParents);
+    filterParents();
+}
+</script>
+}

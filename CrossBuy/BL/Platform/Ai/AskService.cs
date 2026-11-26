@@ -67,15 +67,19 @@ namespace CrossBuy.BL.Platform.Ai
 			"لا أعرف كيف أجيب على هذا السؤال. الأسئلة التي يمكنني الإجابة عليها محدودة بقائمة مُعرَّفة،"
 			+ " ولا أخمّن ما لم أفهمه.",
 			"I do not know how to answer that. The questions I can answer are a defined list, and I do"
-			+ " not guess at one I did not understand.");
+			+ " not guess at one I did not understand.",
+			"Je ne sais pas répondre à cette question. Les questions auxquelles je peux répondre sont"
+			+ " définies dans une liste, et je ne devine pas lorsque je n'ai pas compris.");
 
 		private static readonly AskText NotPermitted = AskText.Of(
 			"ليست لديك صلاحية على هذه البيانات.",
-			"You do not have permission for this data.");
+			"You do not have permission for this data.",
+			"Vous n'êtes pas autorisé à consulter ces données.");
 
 		private static readonly AskText NoCompany = AskText.Of(
 			"تعذّر تحديد الشركة لهذا الطلب، ولا تُقرأ أي بيانات بدونها.",
-			"No company could be determined for this request, and nothing is read without one.");
+			"No company could be determined for this request, and nothing is read without one.",
+			"Impossible de déterminer l'entreprise pour cette demande. Aucune donnée ne sera lue sans cette information.");
 
 		public async Task<AskAnswer> AskAsync(AskRequest request, CancellationToken ct = default)
 		{
@@ -162,7 +166,8 @@ namespace CrossBuy.BL.Platform.Ai
 		// =============================================================================================
 		private static readonly AskText Catalogue = AskText.Of(
 			"لم أفهم السؤال. هذه هي الأسئلة التي أستطيع الإجابة عليها:",
-			"I did not understand that. These are the questions I can answer:");
+			"I did not understand that. These are the questions I can answer:",
+			"Je n'ai pas compris la question. Voici les questions auxquelles je peux répondre :");
 
 		/// Arabic arrives written several ways for the same word. Normalising both sides means a
 		/// person who types ‏"المخزون"‏ and one who types ‏"مخزون"‏ reach the same intent, without the
@@ -205,14 +210,16 @@ namespace CrossBuy.BL.Platform.Ai
 					 "صباح الخير", "مساء الخير", "اهلا", "أهلا", "هاي", "hello", "hi there", "good morning",
 					 "good evening", "how are you" },
 				AskText.Of("أهلًا. اسألني عن المخزون أو المبيعات أو الحسابات، في حدود صلاحياتك.",
-						   "Hello. Ask me about stock, sales or the accounts, within your permissions.")),
+						   "Hello. Ask me about stock, sales or the accounts, within your permissions.",
+						   "Bonjour. Posez-moi des questions sur le stock, les ventes ou la comptabilité, selon vos autorisations.")),
 
 			(new[] { "شكرا", "شكراً", "متشكر", "تسلم", "thanks", "thank you", "cheers" },
-				AskText.Of("تحت أمرك.", "Any time.")),
+				AskText.Of("تحت أمرك.", "Any time.", "Je vous en prie.")),
 
 			(new[] { "مين انت", "انت مين", "انت ايه", "who are you", "what are you" },
 				AskText.Of("مساعد داخل النظام. أقرأ ما تملك صلاحية قراءته، وأقول من أين جاء كل رقم.",
-						   "An assistant inside the system. I read what you are permitted to read, and I say where every figure came from.")),
+						   "An assistant inside the system. I read what you are permitted to read, and I say where every figure came from.",
+						   "Un assistant intégré au système. Je consulte uniquement les données que vous êtes autorisé à voir et j'indique l'origine de chaque chiffre.")),
 
 			// "انت معايا؟" is what a person types when the thing has gone quiet on them — which it had,
 			// because the instance was being restarted mid-conversation. Answering it is the least I
@@ -225,10 +232,10 @@ namespace CrossBuy.BL.Platform.Ai
 			(new[] { "انت معايا", "أنت معايا", "انت معاي", "أنت معاي", "معايا", "معاي",
 					 "سامعني", "فين ردك", "رد عليا", "هلو",
 					 "are you there", "you there", "still there" },
-				AskText.Of("أيوه، معاك. اسأل.", "Yes, still here. Go ahead.")),
+				AskText.Of("أيوه، معاك. اسأل.", "Yes, still here. Go ahead.", "Oui, je suis là. Je vous écoute.")),
 
 			(new[] { "باي", "مع السلامة", "سلام", "bye", "goodbye" },
-				AskText.Of("مع السلامة.", "Goodbye.")),
+				AskText.Of("مع السلامة.", "Goodbye.", "Au revoir.")),
 		};
 
 		/// A greeting only when the message is SHORT. "صباح الخير، ايه رصيد مياه معدنية" is a question
@@ -280,6 +287,7 @@ namespace CrossBuy.BL.Platform.Ai
 			CancellationToken ct = default)
 		{
 			var text = Normalise(question);
+			string? clarifiedIntent = null;
 			if (text.Length == 0)
 				return AskAnswer.Refuse(AskRefusal.NotUnderstood, Catalogue);
 
@@ -295,6 +303,18 @@ namespace CrossBuy.BL.Platform.Ai
 			// who ignored the question and asked something else gets a refusal from that attempt and
 			// falls through to normal matching, which is what should happen.
 			var pending = _conversation.GetPending(conversationId);
+			if (pending?.Choices is { Count: > 0 })
+			{
+				var selected = ResolveClarification(question, pending.Choices);
+				_conversation.RememberPending(conversationId, null);
+				if (selected != null && !string.IsNullOrWhiteSpace(pending.OriginalQuestion))
+				{
+					clarifiedIntent = selected.Intent;
+					question = pending.OriginalQuestion;
+					text = Normalise(question);
+				}
+				// If the reply did not identify one option, treat it as a new free-text question below.
+			}
 			if (pending != null && !string.IsNullOrWhiteSpace(pending.Parameter))
 			{
 				var resumed = await AskAsync(new AskRequest
@@ -312,7 +332,8 @@ namespace CrossBuy.BL.Platform.Ai
 					_conversation.RememberPending(conversationId, null);
 					if (resumed.Subject != null) _conversation.Remember(conversationId, resumed.Subject);
 					resumed.About = AskText.Of(
-						"ردًا على: " + pending.Asked, "In answer to: " + pending.Asked);
+						"ردًا على: " + pending.Asked, "In answer to: " + pending.Asked,
+						"En réponse à : " + pending.Asked);
 					return resumed;
 				}
 			}
@@ -334,7 +355,10 @@ namespace CrossBuy.BL.Platform.Ai
 			// the choice carries no authority: `available` is already filtered to intents this asker
 			// may use, and whatever comes back is re-checked by AskAsync below. See
 			// AskIntentResolvers.cs.
-			var choice = await _resolver.ChooseAsync(question, available, ct);
+			var choice = clarifiedIntent == null
+				? await _resolver.ChooseAsync(question, available, ct)
+				: new AskIntentChoice(clarifiedIntent, 1d,
+					new[] { new AskIntentScore(clarifiedIntent, 1d) }, "clarification", true);
 			var best = choice.Intent == null
 				? null
 				: available.FirstOrDefault(h =>
@@ -398,6 +422,9 @@ namespace CrossBuy.BL.Platform.Ai
 
 			if (best == null)
 			{
+				if (clarifiedIntent == null && TryCreateClarification(question, choice, available, conversationId, out var clarification))
+					return clarification;
+
 				// The company is resolved again only on this path. Nothing matched, so no handler
 				// ran and no provenance exists to read it from, and one extra resolve on a refusal
 				// is cheaper than carrying it through a method that does not otherwise need it.
@@ -518,15 +545,18 @@ namespace CrossBuy.BL.Platform.Ai
 			// can apply at once, and both are shown.
 			var notes = new List<AskText>();
 			if (carried != null)
-				notes.Add(AskText.Of("عن: " + carried.Display, "About: " + carried.Display));
+				notes.Add(AskText.Of("عن: " + carried.Display, "About: " + carried.Display,
+					"À propos de : " + carried.Display));
 			if (choice.Engine.StartsWith("llm:", StringComparison.Ordinal))
 				notes.Add(AskText.Of(
 					"فهمت سؤالك على أنه: " + best.Example.Ar,
-					"Read as: " + best.Example.En));
+					"Read as: " + best.Example.En,
+					"J'ai compris votre question ainsi : " + best.Example.Fr));
 			if (notes.Count > 0)
 				answer.About = AskText.Of(
 					string.Join(" · ", notes.Select(n => n.Ar)),
-					string.Join(" · ", notes.Select(n => n.En)));
+					string.Join(" · ", notes.Select(n => n.En)),
+					string.Join(" · ", notes.Select(n => n.Fr)));
 
 			// WHAT THE NEXT QUESTION MAY BUILD ON. Only a handler knows what it actually resolved,
 			// so only a handler sets this. A turn that resolved nothing clears the subject, so a
@@ -557,10 +587,7 @@ namespace CrossBuy.BL.Platform.Ai
 				{
 					Intent = best.Intent,
 					Parameter = answer.NeedsParameter!,
-					Asked = askedText == null
-						? ""
-						: (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
-							? askedText.Ar : askedText.En),
+					Asked = askedText?.ForCulture(System.Globalization.CultureInfo.CurrentUICulture) ?? "",
 				});
 			}
 			else
@@ -605,6 +632,92 @@ namespace CrossBuy.BL.Platform.Ai
 			return false;
 		}
 
+		// An ambiguous question is a conversational turn, not a failed answer. The candidates are already
+		// filtered by AvailableAsync, and the selected intent is checked again by AskAsync before data is read.
+		private bool TryCreateClarification(string question, AskIntentChoice choice,
+			IReadOnlyList<IAskHandler> available, string? conversationId, out AskAnswer answer)
+		{
+			answer = new AskAnswer();
+			var options = choice.Ranked
+				.Where(r => r.Score >= 0.20 && double.IsFinite(r.Score))
+				.Select(r => new { Score = r.Score, Handler = available.FirstOrDefault(h =>
+					string.Equals(h.Intent, r.Intent, StringComparison.OrdinalIgnoreCase)) })
+				.Where(x => x.Handler != null)
+				.GroupBy(x => x.Handler!.Intent, StringComparer.OrdinalIgnoreCase)
+				.Select(g => g.First())
+				.OrderByDescending(x => x.Score)
+				.Take(2)
+				.ToList();
+
+			// Only ask back when the resolver found two plausible, nearly tied meanings. A weak or
+			// out-of-scope question keeps the ordinary refusal and is never dressed up as ambiguity.
+			if (options.Count != 2 || options[0].Score - options[1].Score > 0.12) return false;
+
+			var first = options[0].Handler!;
+			var second = options[1].Handler!;
+			var culture = System.Globalization.CultureInfo.CurrentUICulture;
+			var firstExample = first.Example.ForCulture(culture);
+			var secondExample = second.Example.ForCulture(culture);
+			var prompt = AskText.Of(
+				$"ممكن أوضح قصدك؟ هل تقصد: «{firstExample}» أم «{secondExample}»؟ يمكنك الرد بطريقتك.",
+				$"Could you clarify what you mean? Do you mean “{firstExample}” or “{secondExample}”? You can answer in your own words.",
+				$"Pouvez-vous préciser votre demande ? Voulez-vous dire « {firstExample} » ou « {secondExample} » ? Vous pouvez répondre avec vos propres mots.");
+
+			var choices = options.Select(x => new AskPendingChoice
+			{
+				Intent = x.Handler!.Intent,
+				Example = x.Handler.Example.ForCulture(culture),
+				Keywords = x.Handler.Keywords.ToArray(),
+			}).ToArray();
+			var suggestions = choices.Select(x => new AskSuggestion
+			{
+				Label = x.Example,
+				Question = x.Example,
+			}).ToArray();
+
+			_conversation.RememberPending(conversationId, new AskPending
+			{
+				Asked = prompt.ForCulture(culture),
+				OriginalQuestion = question,
+				Choices = choices,
+			});
+			answer = new AskAnswer
+			{
+				Answered = false,
+				Refusal = AskRefusal.None,
+				Spoken = prompt,
+				Suggestions = suggestions,
+			};
+			return true;
+		}
+
+		private static AskPendingChoice? ResolveClarification(string reply,
+			IReadOnlyList<AskPendingChoice> choices)
+		{
+			if (choices.Count < 2) return null;
+			var normalized = AskSearch.Normalise(reply);
+			if (normalized.Length == 0) return null;
+
+			var ordinal = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+				.FirstOrDefault(w => w is "1" or "١" or "اول" or "الاول" or "الأول" or "first" or "one"
+					or "2" or "٢" or "ثاني" or "الثاني" or "التاني" or "second" or "two");
+			if (ordinal != null)
+			{
+				var index = ordinal is "1" or "١" or "اول" or "الاول" or "الأول" or "first" or "one" ? 0 : 1;
+				if (index < choices.Count) return choices[index];
+			}
+
+			var matches = choices.Where(option =>
+			{
+				var phrases = option.Keywords.Append(option.Example)
+					.Select(AskSearch.Normalise)
+					.Where(phrase => phrase.Length >= 3);
+				return phrases.Any(phrase => normalized.Contains(phrase, StringComparison.Ordinal)
+					|| (normalized.Length >= 4 && phrase.Contains(normalized, StringComparison.Ordinal)));
+			}).Take(2).ToList();
+			return matches.Count == 1 ? matches[0] : null;
+		}
+
 		// A REFUSAL THAT STILL MOVES THE PERSON FORWARD.
 		//
 		// The catalogue is ranked against the words they actually used — matched loosely, across the
@@ -641,20 +754,19 @@ namespace CrossBuy.BL.Platform.Ai
 					{
 						h,
 						score = AskSearch.Score(question, string.Join(' ', h.Keywords))
-							+ AskSearch.Score(question, h.Description.Ar, h.Description.En)
-							+ AskSearch.Score(question, h.Example.Ar, h.Example.En),
+							+ AskSearch.Score(question, h.Description.Ar, h.Description.En, h.Description.Fr)
+							+ AskSearch.Score(question, h.Example.Ar, h.Example.En, h.Example.Fr),
 					})
 					.OrderByDescending(x => x.score)
 					.ToList();
 
-			var isAr = System.Globalization.CultureInfo.CurrentUICulture
-				.TwoLetterISOLanguageName == "ar";
+			var uiCulture = System.Globalization.CultureInfo.CurrentUICulture;
 
 			var rows = ranked
 				.Select(x => (IReadOnlyDictionary<string, object?>)new Dictionary<string, object?>
 				{
-					["name"] = isAr ? x.h.Example.Ar : x.h.Example.En,
-					["code"] = isAr ? x.h.Description.Ar : x.h.Description.En,
+					["name"] = x.h.Example.ForCulture(uiCulture),
+					["code"] = x.h.Description.ForCulture(uiCulture),
 					["onHand"] = null,
 				})
 				.ToList();
@@ -670,7 +782,8 @@ namespace CrossBuy.BL.Platform.Ai
 					// they were unclear, when the truth is that the catalogue is short, sends them
 					// to rephrase a question that was already fine.
 					? AskText.Of("هذا السؤال ليس ضمن ما أستطيع الإجابة عليه بعد. أقرب الأسئلة المتاحة:",
-								 "That is not something I can answer yet. The closest questions I do have:")
+								 "That is not something I can answer yet. The closest questions I do have:",
+								 "Je ne peux pas encore répondre à cette question. Voici les questions disponibles les plus proches :")
 					: Catalogue,
 				Rows = rows,
 			};

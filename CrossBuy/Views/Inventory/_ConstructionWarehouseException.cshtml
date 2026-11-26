@@ -1,0 +1,57 @@
+@using System.Globalization
+@using CrossBuy.BL
+@model CrossBuy.BL.Construction.ConstructionWarehouseExceptionPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+<section class="card mb-5" id="warehouse-exception" aria-labelledby="warehouse-exception-title">
+ <div class="card-header"><h2 class="card-title fs-5" id="warehouse-exception-title">@SR["Construction.Warehouse.Title"]</h2></div>
+ <div class="card-body">
+  <p class="text-muted">@SR["Construction.Warehouse.Explanation"]</p>
+  @if(Model.Refusal){<div class="alert alert-warning" role="alert">@SR["Construction.Warehouse.Refused"]</div>}
+  @if(Model.CompanyMode!="ApprovedException"){<div class="alert alert-info">@SR["Construction.Warehouse.PolicyRequired"]</div>}
+  <form asp-action="ConstructionPurchaseApproval" method="get" class="mb-5">
+   <input type="hidden" name="projectId" value="@Model.ProjectId"/><input type="hidden" name="orderId" value="@Model.OrderId"/>
+   <input type="hidden" name="culture" value="@CultureInfo.CurrentCulture.Name"/><input type="hidden" name="ui-culture" value="@CultureInfo.CurrentUICulture.Name"/>
+   <label for="warehouse-destination-site" class="form-label">@SR["Construction.Warehouse.Destination"]</label>
+   <select name="warehouseSiteId" id="warehouse-destination-site" class="form-select mb-3" required>
+    <option value="">@SR["Construction.Warehouse.ChooseSite"]</option>
+    @foreach(var site in Model.Sites){<option value="@site.Id" selected="@(Model.SelectedSiteId==site.Id)">@site.Code — @DisplayName.Of(site.Name,site.NameEn)</option>}
+   </select><button type="submit" class="btn btn-light-primary">@SR["Construction.Warehouse.ReviewSite"]</button>
+  </form>
+  @if(Model.SelectedSiteId.HasValue){
+   <form asp-action="RequestConstructionWarehouseException" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="mb-5">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="projectId" value="@Model.ProjectId"/><input type="hidden" name="orderId" value="@Model.OrderId"/>
+    <input type="hidden" name="siteId" value="@Model.SelectedSiteId"/><input type="hidden" name="witness" value="@Model.Witness"/><input type="hidden" name="requestId" value="@Model.RequestId"/>
+    <label for="warehouse-request-reason" class="form-label">@SR["Construction.Warehouse.Reason"]</label>
+    <textarea name="reason" id="warehouse-request-reason" class="form-control mb-3" required maxlength="1000" rows="2">@Model.Reason</textarea>
+    @if(Model.CanCreate&&!Model.Refusal){<button type="submit" class="btn btn-primary">@SR["Construction.Warehouse.Request"]</button>}
+    else{<p class="text-muted">@SR["Construction.Warehouse.NotReady"]</p>}
+   </form>
+  }
+  <h3 class="fs-6">@SR["Construction.Warehouse.History"]</h3>
+  @if(Model.History.Count==0){<p class="text-muted">@SR["Construction.Warehouse.NoHistory"]</p>}
+  else{
+   <div class="table-responsive"><table class="table table-row-dashed align-middle">
+    <thead><tr><th>@SR["Construction.Warehouse.Destination"]</th><th>@SR["Construction.Warehouse.Reason"]</th><th>@SR["Construction.Warehouse.Date"]</th><th>@SR["Construction.Warehouse.Status"]</th><th>@SR["Construction.Warehouse.Decision"]</th></tr></thead>
+    <tbody>@foreach(var row in Model.History){
+     var retained=Model.Refusal&&Model.FailedRequestId==row.Id;
+     <tr><td>@DisplayName.Of(row.SiteName,row.SiteNameEn)</td><td>@row.Reason</td><td dir="ltr">@row.CreatedAt.ToString("yyyy-MM-dd HH:mm",CultureInfo.InvariantCulture)</td><td>@SR["Construction.Warehouse.State."+row.Status]</td><td>
+      @if(row.CanApprove||row.CanReject||retained){
+       <form asp-action="DecideConstructionWarehouseException" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="projectId" value="@Model.ProjectId"/><input type="hidden" name="orderId" value="@Model.OrderId"/><input type="hidden" name="exceptionRequestId" value="@row.Id"/>
+        <input type="hidden" name="decisionId" value="@(retained?Model.FailedDecisionId:Guid.NewGuid())"/>
+        <label for="warehouse-decision-reason-@row.Id" class="visually-hidden">@SR["Construction.Warehouse.DecisionReason"]</label>
+        <textarea id="warehouse-decision-reason-@row.Id" name="reason" class="form-control mb-2" maxlength="1000" rows="2" required>@(retained?Model.Reason:"")</textarea>
+        @if(!Model.Refusal){
+         @if(row.CanApprove){<button name="outcome" value="Approved" type="submit" class="btn btn-sm btn-primary">@SR["Construction.Warehouse.Approve"]</button>}
+         @if(row.CanReject){<button name="outcome" value="Rejected" type="submit" class="btn btn-sm btn-light-danger">@SR["Construction.Warehouse.Reject"]</button>}
+        }
+       </form>
+      }
+     </td></tr>
+    }</tbody>
+   </table></div>
+  }
+ </div>
+</section>

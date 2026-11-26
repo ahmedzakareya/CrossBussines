@@ -1,0 +1,203 @@
+@using System.Globalization
+@{
+    Layout = "~/Views/Shared/_LayoutHyperPos.cshtml";
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "مرتجع" : "Return";
+    var head = ViewBag.Head as CrossBuy.Controllers.HyperPosController.PosOrderReturnHead;
+    var lines = ViewBag.Lines as List<CrossBuy.Controllers.HyperPosController.ReturnableLine> ?? new();
+    int dp = ViewBag.Dp ?? 3;
+    var fmt = "0." + new string('0', dp);
+}
+
+@* HM-RET - the till's return screen.
+   It borrows the lane's component language on purpose: the person using it has just been using the
+   lane, often with a customer waiting, and a second visual grammar at that moment is a second thing
+   to learn. Every quantity is a stepper rather than a typed number, because a till is a touch
+   surface first and a mis-typed 11 instead of 1 refunds ten items that never came back. *@
+<link rel="stylesheet" href="~/css/hyper-lane.css" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-container container-fluid">
+
+        @if (TempData["PosErr"] != null)
+        {
+            <div class="lane-gate mb-4" style="border-color:var(--lane-danger)">
+                <div class="lane-gate-head"><i class="ki-outline ki-information-5 fs-2 me-2"></i>@TempData["PosErr"]</div>
+            </div>
+        }
+
+        <div class="card card-flush shadow-sm">
+            <div class="card-header pt-6">
+                <h3 class="card-title fw-bold text-gray-900">
+                    @(isAr ? "إرجاع أصناف من إيصال" : "Return items from a receipt")
+                </h3>
+                <div class="card-toolbar">
+                    <a href="/hyper/pos/receipts" class="lane-sec px-4">
+                        <i class="ki-outline ki-arrow-left fs-3 me-1"></i>@(isAr ? "رجوع" : "Back")
+                        <kbd class="lane-kbd">Esc</kbd>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body pt-2">
+                @if (head == null)
+                {
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4">
+                        <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+                        <div class="fs-7 text-gray-700">@(isAr ? "لا يوجد إيصال لعرضه." : "There is no receipt to show.")</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-8 mb-6">
+                        <div>
+                            <div class="fs-7 text-muted">@(isAr ? "الإيصال" : "Receipt")</div>
+                            <div class="fs-3 fw-bold text-gray-900">@(head.ReceiptNo ?? ("#" + head.OrderId))</div>
+                        </div>
+                        <div>
+                            <div class="fs-7 text-muted">@(isAr ? "إجمالي البيعة" : "Sale total")</div>
+                            <div class="fs-3 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@head.GrandTotal.ToString(fmt)</div>
+                        </div>
+                        <div>
+                            <div class="fs-7 text-muted">@(isAr ? "وقت البيع" : "Settled at")</div>
+                            <div class="fs-5 fw-semibold text-gray-900" style="font-variant-numeric:tabular-nums">@(head.ClosedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</div>
+                        </div>
+                    </div>
+
+                    @* The refund figure is computed in the browser as the cashier moves the steppers, so the
+                       customer can be told the number before anything is posted. It is NOT what gets refunded:
+                       the server re-prices every line from the invoice, because a figure typed into a page is
+                       a claim and the invoice is the fact. *@
+                    <div class="lane-due mb-5">
+                        <div class="lane-due-label">@(isAr ? "قيمة المرتجع التقديرية" : "Estimated refund")</div>
+                        <div class="lane-due-value" id="cbRetTotal" style="font-variant-numeric:tabular-nums">0</div>
+                    </div>
+
+                    <form method="post" action="/hyper/pos/return" id="cbRetForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="orderId" value="@head.OrderId" />
+
+                        <div class="d-flex flex-column gap-2 mb-5">
+                            @foreach (var l in lines)
+                            {
+                                var net = (l.UnitPrice * 1m) - (l.Qty > 0 ? l.Discount / l.Qty : 0m);
+                                var unitWithTax = net * (1m + (l.TaxRate / 100m));
+                                <div class="lane-row lane-ret-row" data-ret-row data-unit="@unitWithTax.ToString(CultureInfo.InvariantCulture)">
+                                    <input type="hidden" name="lineId" value="@l.LineId" />
+                                    <div>
+                                        <div class="lane-row-name">@l.Name</div>
+                                        <div class="lane-row-sub" style="font-variant-numeric:tabular-nums">
+                                            @(isAr ? "بيعت" : "sold") @l.Qty.ToString("0.##")
+                                            @if (l.Returned > 0m)
+                                            {
+                                                <span> · @(isAr ? "أُرجعت" : "returned") @l.Returned.ToString("0.##")</span>
+                                            }
+                                            · @unitWithTax.ToString(fmt) @(isAr ? "للوحدة" : "each")
+                                        </div>
+                                    </div>
+
+                                    @if (l.Returnable <= 0m)
+                                    {
+                                        @* Nothing left to give back. The row stays visible rather than vanishing:
+                                           a cashier looking for an item needs to see that it was already returned,
+                                           not wonder whether they are on the right receipt. *@
+                                        <input type="hidden" name="qty" value="0" />
+                                        <span class="lane-chip">@(isAr ? "أُرجعت بالكامل" : "Fully returned")</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="lane-step">
+                                            <button type="button" data-ret-step="-1">&minus;</button>
+                                            <input type="number" name="qty" class="lane-step-v" value="0"
+                                                   min="0" max="@l.Returnable.ToString(CultureInfo.InvariantCulture)" step="any"
+                                                   data-ret-qty data-max="@l.Returnable.ToString(CultureInfo.InvariantCulture)" />
+                                            <button type="button" data-ret-step="1">+</button>
+                                        </div>
+                                        <button type="button" class="lane-sec px-4" data-ret-all="@l.Returnable.ToString(CultureInfo.InvariantCulture)">
+                                            @(isAr ? "الكل" : "All")
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <button type="submit" class="lane-pay" id="cbRetSubmit" disabled>
+                            <i class="ki-outline ki-arrow-circle-left fs-2 me-1"></i>@(isAr ? "إتمام المرتجع وردّ النقد" : "Post the return and refund the cash")
+                            <kbd class="lane-kbd">Ctrl+Enter</kbd>
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+	'use strict';
+	var isAr = @(isAr ? "true" : "false");
+	var dp = @dp;
+
+	function rows() { return Array.prototype.slice.call(document.querySelectorAll('[data-ret-row]')); }
+
+	/* The running total, and the submit button's own reason to exist. A return of nothing is not a
+	   return, so the button stays off until something is actually being given back - that is cheaper
+	   for everyone than a server round trip that comes back saying "choose a line". */
+	function recalc() {
+		var total = 0, any = false;
+		rows().forEach(function (r) {
+			var q = r.querySelector('[data-ret-qty]');
+			if (!q) return;
+			var v = parseFloat(q.value || '0');
+			if (!(v > 0)) return;
+			any = true;
+			total += v * parseFloat(r.getAttribute('data-unit') || '0');
+		});
+		var out = document.getElementById('cbRetTotal');
+		if (out) out.textContent = total.toFixed(dp);
+		var btn = document.getElementById('cbRetSubmit');
+		if (btn) btn.disabled = !any;
+	}
+
+	function clamp(input, v) {
+		var max = parseFloat(input.getAttribute('data-max') || '0');
+		if (!(v > 0)) return 0;
+		return v > max ? max : v;
+	}
+
+	document.addEventListener('click', function (e) {
+		var step = e.target.closest ? e.target.closest('[data-ret-step]') : null;
+		if (step) {
+			var inp = step.parentNode.querySelector('[data-ret-qty]');
+			if (inp) { inp.value = clamp(inp, (parseFloat(inp.value || '0') + parseFloat(step.getAttribute('data-ret-step')))); recalc(); }
+			return;
+		}
+		var all = e.target.closest ? e.target.closest('[data-ret-all]') : null;
+		if (all) {
+			var row = all.closest('[data-ret-row]');
+			var q = row && row.querySelector('[data-ret-qty]');
+			if (q) { q.value = all.getAttribute('data-ret-all'); recalc(); }
+		}
+	});
+
+	document.addEventListener('input', function (e) {
+		if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-ret-qty')) {
+			e.target.value = clamp(e.target, parseFloat(e.target.value || '0'));
+			recalc();
+		}
+	});
+
+	/* The same two keys the lane uses, so the habit carries over: Ctrl+Enter commits, Esc leaves. */
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape') { window.location.href = '/hyper/pos/receipts'; return; }
+		if (e.ctrlKey && e.key === 'Enter') {
+			var b = document.getElementById('cbRetSubmit');
+			if (b && !b.disabled) { e.preventDefault(); b.click(); }
+		}
+	}, true);
+
+	recalc();
+})();
+</script>
+}

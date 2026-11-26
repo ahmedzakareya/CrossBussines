@@ -158,9 +158,10 @@ if ($writeTarget) {
     # assertion that this version is what the database already carries — which is why the row is
     # stamped 'baseline' and stays distinguishable forever.
     $hash = Get-Sha256 $full
-    if ($hash -ne $entry.sha256) {
+    $manifestHash = if ($entry.rawSha256) { $entry.rawSha256 } else { $entry.sha256 }
+    if ($hash -ne $manifestHash) {
         Write-Host "WARNING: the file has changed since the manifest was generated." -ForegroundColor Yellow
-        Write-Host "  manifest: $($entry.sha256)"
+        Write-Host "  manifest: $manifestHash"
         Write-Host "  on disk : $hash"
         Write-Host "  Re-run scan-sql-manifest.ps1 so the manifest and the recorded hash agree."
     }
@@ -199,6 +200,48 @@ $current = Invoke-Sql "SELECT ScriptName, ScriptHash, AppliedAt, AppliedBy, Succ
 $byName = @{}
 foreach ($row in $current) { $byName[$row.ScriptName] = $row }
 
+# Historical paths can remain in the applied ledger after their release artifacts have moved out of
+# deployment scope. Keep their exact bytes as evidence and reconcile them here without adding them to
+# manifest.json, where a deployment tool could mistake them for runnable slices.
+$historyAliasesPath = Join-Path $repo 'governance\registry\applied-sql-history-aliases.json'
+if (-not (Test-Path -LiteralPath $historyAliasesPath -PathType Leaf)) {
+    throw 'Applied SQL history alias registry is missing.'
+}
+$historyAliases = Get-Content -LiteralPath $historyAliasesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($historyAliases.schema -ne 1) { throw 'Unsupported applied SQL history alias schema.' }
+$historyAliasByName = @{}
+$manifestNames = @($manifest.scripts | ForEach-Object { $_.path })
+foreach ($alias in @($historyAliases.entries)) {
+    $scriptName = [string]$alias.scriptName
+    $evidencePath = [string]$alias.evidencePath
+    if ([string]::IsNullOrWhiteSpace($scriptName) -or $scriptName.Contains('..') -or
+        [IO.Path]::IsPathRooted($scriptName) -or $historyAliasByName.ContainsKey($scriptName) -or
+        $manifestNames -contains $scriptName) { throw 'Invalid, duplicate, or manifest-overlapping historical SQL path.' }
+    if ($evidencePath -notlike 'governance/evidence/sql-history/*.evidence.txt' -or
+        $evidencePath.Contains('..') -or [IO.Path]::IsPathRooted($evidencePath) -or
+        $alias.sha256 -notmatch '^[a-f0-9]{64}$' -or [string]::IsNullOrWhiteSpace([string]$alias.reason)) {
+        throw "Invalid historical SQL evidence registration for '$scriptName'."
+    }
+    $evidenceFullPath = Join-Path $repo $evidencePath.Replace('/', '\')
+    if (-not (Test-Path -LiteralPath $evidenceFullPath -PathType Leaf)) {
+        throw "Historical SQL evidence is missing for '$scriptName'."
+    }
+    $evidenceSha = Get-Sha256 $evidenceFullPath
+    if ($evidenceSha -cne [string]$alias.sha256) { throw "Historical SQL evidence hash mismatch for '$scriptName'." }
+    $historyAliasByName[$scriptName] = $alias
+}
+$historicalApplied = @(); $historicalChanged = @(); $historicalFailed = @()
+foreach ($alias in @($historyAliases.entries)) {
+    $row = $byName[[string]$alias.scriptName]
+    if (-not $row) { continue }
+    if (-not $row.Success) { $historicalFailed += [pscustomobject]@{ alias = $alias; row = $row }; continue }
+    if ($row.ScriptHash -ceq [string]$alias.sha256) {
+        $historicalApplied += [pscustomobject]@{ alias = $alias; row = $row }
+    } else {
+        $historicalChanged += [pscustomobject]@{ alias = $alias; row = $row }
+    }
+}
+
 # Deployable set = everything the manifest does not exclude. 'not-deployable' and excludedFromDeploy
 # scripts are reported separately so they never sit in the pending list as permanent noise.
 $deployable = $manifest.scripts | Where-Object {
@@ -210,14 +253,20 @@ foreach ($s in $deployable) {
     $row = $byName[$s.path]
     if (-not $row) { $pending += $s; continue }
     if (-not $row.Success) { $failedRows += [pscustomobject]@{ script = $s; row = $row }; continue }
-    $expectedHash = if ($s.rawSha256) { $s.rawSha256 } else { $s.sha256 }
-    if ($row.ScriptHash -eq $expectedHash) { $applied += [pscustomobject]@{ script = $s; row = $row } }
+    # Older successful records may contain the LF-normalized manifest hash; the current apply
+    # pipeline records the raw hash. Accept either only when it exactly matches the current file's
+    # raw or LF-normalized identity. This treats line-ending-only differences as the same SQL text
+    # without hiding any content change.
+    $expectedHashes = @($s.rawSha256, $s.sha256) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+    if ($expectedHashes -contains [string]$row.ScriptHash) { $applied += [pscustomobject]@{ script = $s; row = $row } }
     else { $changed += [pscustomobject]@{ script = $s; row = $row } }
 }
 
 $manifestPaths = @{}
 foreach ($s in $manifest.scripts) { $manifestPaths[$s.path] = $true }
-$missing = @($current | Where-Object { -not $manifestPaths.ContainsKey($_.ScriptName) })
+$missing = @($current | Where-Object {
+    -not $manifestPaths.ContainsKey($_.ScriptName) -and -not $historyAliasByName.ContainsKey($_.ScriptName)
+})
 
 if (-not $Quiet) {
     Write-Host "Schema history — [$($csb.InitialCatalog)] on $($csb.DataSource)"
@@ -240,13 +289,28 @@ if (-not $Quiet) {
         foreach ($c in $changed) {
             Write-Host ("  {0}" -f $c.script.path)
             Write-Host ("      applied {0} with {1}" -f $c.row.AppliedAt, $c.row.ScriptHash.Substring(0, 12))
-            Write-Host ("      repo now {0}" -f $c.script.sha256.Substring(0, 12))
+            if ($c.script.rawSha256) {
+                Write-Host ("      repo now raw {0}; LF-normalized {1}" -f $c.script.rawSha256.Substring(0, 12), $c.script.sha256.Substring(0, 12))
+            } else {
+                Write-Host ("      repo now {0}" -f $c.script.sha256.Substring(0, 12))
+            }
         }
         Write-Host ""
     }
     if ($missing.Count) {
         Write-Host "MISSING — recorded as applied, but no such file in the repository (deleted or renamed):" -ForegroundColor Yellow
         foreach ($m in $missing) { Write-Host ("  {0}   (applied {1})" -f $m.ScriptName, $m.AppliedAt) }
+        Write-Host ""
+    }
+    if ($historicalApplied.Count -or $historicalChanged.Count -or $historicalFailed.Count) {
+        Write-Host ("HISTORICAL EVIDENCE — applied {0}; hash mismatch {1}; failed {2}. These paths are evidence-only and never deployable." -f `
+            $historicalApplied.Count, $historicalChanged.Count, $historicalFailed.Count)
+        foreach ($h in $historicalChanged) {
+            Write-Host ("  HASH MISMATCH {0}   ledger {1}" -f $h.alias.scriptName, $h.row.ScriptHash)
+        }
+        foreach ($h in $historicalFailed) {
+            Write-Host ("  FAILED {0}   applied {1}" -f $h.alias.scriptName, $h.row.AppliedAt)
+        }
         Write-Host ""
     }
     if ($pending.Count) {
@@ -256,8 +320,8 @@ if (-not $Quiet) {
         }
         Write-Host ""
     }
-    Write-Host ("APPLIED: {0}   PENDING: {1}   CHANGED: {2}   FAILED: {3}   MISSING: {4}" -f `
-        $applied.Count, $pending.Count, $changed.Count, $failedRows.Count, $missing.Count)
+    Write-Host ("APPLIED: {0}   PENDING: {1}   CHANGED: {2}   FAILED: {3}   MISSING: {4}   HISTORICAL: {5}" -f `
+        $applied.Count, $pending.Count, $changed.Count, $failedRows.Count, $missing.Count, $historicalApplied.Count)
 
     $excludedList = @($manifest.scripts | Where-Object { $_.excludedFromDeploy -or $_.idempotency -eq 'not-deployable' })
     if ($excludedList.Count -and -not $IncludeExcluded) {
@@ -274,6 +338,6 @@ if (-not $Quiet) {
     }
 }
 
-if ($failedRows.Count) { exit 2 }
-if ($pending.Count -or $changed.Count -or $missing.Count) { exit 1 }
+if ($failedRows.Count -or $historicalFailed.Count) { exit 2 }
+if ($pending.Count -or $changed.Count -or $missing.Count -or $historicalChanged.Count) { exit 1 }
 exit 0

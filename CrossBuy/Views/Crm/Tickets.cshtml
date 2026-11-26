@@ -14,8 +14,6 @@
         <a href="@Url.Action("TicketEditor","Crm")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New ticket"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         @{
             string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
@@ -45,19 +43,31 @@
         </div>
 
         <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Search (subject / account)"]</label>
+            @* search 4 + three filters 2 each + reset 2 = 12: one row. At col-md-6 it was 14 and Reset wrapped alone. *@
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Search (subject / account)"]</label>
                 <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
             <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
                 <select id="f_status" class="form-select form-select-solid cb-filter" data-hide-search="true"><option value="">@SR["All"]</option>@foreach (var st in statuses) { <option value="@st.Item1">@st.Item2</option> }</select></div>
             <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Priority"]</label>
                 <select id="f_priority" class="form-select form-select-solid cb-filter" data-hide-search="true"><option value="">@SR["All"]</option>@foreach (var p in priorities) { <option value="@p.Item1">@p.Item2</option> }</select></div>
+            @* THE QUEUE. A ticket routed to a unit I sit under is mine to work on, and until now
+               there was no way to ask for exactly those: the list filtered by status and priority,
+               which are properties of the TICKET, and never by whose queue it is in.
+
+               col-md-2, so the four filters make a 12-column row - at col-md-3 the last one wrapped
+               onto a line of its own. *@
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Queue"]</label>
+                <select id="f_myunit" class="form-select form-select-solid cb-filter" data-hide-search="true">
+                    <option value="">@Localizer["Everything I can see"]</option>
+                    <option value="1">@Localizer["Routed to my unit"]</option>
+                </select></div>
             <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
         </div></div></div>
 
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
             <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">#</th><th>@Localizer["Subject"]</th><th>@SR["Account"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">SLA</th><th>@Localizer["Created"]</th><th class="text-end pe-4">@Localizer["Open"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">#</th><th>@Localizer["Subject"]</th><th>@SR["Account"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">SLA</th><th>@Localizer["Routed to"]</th><th>@Localizer["Created"]</th><th class="text-end pe-4">@Localizer["Open"]</th></tr></thead>
                 <tbody id="rows"></tbody>
             </table></div>
                 <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
@@ -70,6 +80,6 @@
 @section Scripts {
 <script>
 cbServerList({ url:'@Url.Action("TicketsData","Crm")', isAr:@(isAr ? "true" : "false"),
-  addParams:function(p){ var st=document.getElementById('f_status'), pr=document.getElementById('f_priority'); if(st&&st.value)p.set('status',st.value); if(pr&&pr.value)p.set('priority',pr.value); } });
+  addParams:function(p){ var st=document.getElementById('f_status'), pr=document.getElementById('f_priority'), mu=document.getElementById('f_myunit'); if(st&&st.value)p.set('status',st.value); if(pr&&pr.value)p.set('priority',pr.value); if(mu&&mu.value)p.set('myUnit','true'); } });
 </script>
 }

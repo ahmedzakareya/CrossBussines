@@ -41,6 +41,7 @@
             </div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
 <script>
@@ -62,10 +63,20 @@ document.getElementById('rows').addEventListener('input',function(e){est(e.targe
 document.getElementById('rows').addEventListener('change',function(e){var tr=e.target.closest('tr');if(e.target.classList.contains('it')){var o=e.target.options[e.target.selectedIndex];var wh=tr.querySelector('.wh');if(wh&&!wh.value&&WH.length)wh.value=WH[0].iD;}est(tr);});
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();}});
 document.getElementById('save').addEventListener('click',function(){
- var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,wh=tr.querySelector('.wh').value,q=parseFloat(tr.querySelector('.q').value)||0;
-  if(it&&wh&&q>0)lines.push({itemId:parseInt(it),warehouseId:parseInt(wh),qty:q,taxRate:parseFloat(tr.querySelector('.tax').value)||0});});
- if(!lines.length){alert('@Localizer["Add at least one item line"]');return;}
- document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
+ var lines = CBLines.gather({
+   touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.wh')
+       || CBLines.num(tr,'.q')!==1); },
+   problem:function(tr){
+     if(!CBLines.str(tr,'.it')) return CBLines.T.item;
+     if(!CBLines.str(tr,'.wh')) return CBLines.T.store;
+     if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+     return null; },
+   build:function(tr){
+     return {itemId:parseInt(CBLines.str(tr,'.it')),warehouseId:parseInt(CBLines.str(tr,'.wh')),
+             qty:CBLines.num(tr,'.q'),taxRate:CBLines.num(tr,'.tax')}; }
+ });
+ if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
  if(window.CB&&CB.submitForm){CB.submitForm(_f,{type:'@(isEdit ? "edit" : "save")'@Html.Raw(isEdit ? ",text:(window.CB?CB.L('سيتم عكس القيد الأصلي للمرتجع وإعادة ترحيله بالقيم الجديدة — هل تريد المتابعة؟','The original entry will be reversed and the return re-posted with the new values — continue?'):null)" : "")});}else{_f.submit();}});
 // P3 edit prefill
 var EDIT_LINES=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(editLines));

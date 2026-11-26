@@ -170,9 +170,10 @@ namespace CrossBuy.Tests
         public async Task Owner_visibility_never_widens_when_authority_cannot_be_resolved()
         {
             using var host = new PlatformTestHost();
+            await SeedPolicyAsync(host, 1, EntityRegistry.ScopeCrm, "read");
             var crm = Service(host);
 
-            // Unconfigured company: this used to return null, meaning "unrestricted". It must now be the
+            // Unconfigured company with explicit read authority: this used to return null, meaning "unrestricted". It must now be the
             // caller's own records and nothing else.
             var visible = await crm.VisibleOwnerIdsAsync(PlatformTestHost.DefaultContext(companyId: 1, employeeId: 7));
 
@@ -206,6 +207,21 @@ namespace CrossBuy.Tests
                 new PermissionTarget { CompanyId = 1, OwnerEmployeeId = 7 }));
             Assert.False(await crm.CanAsync(context, "read",
                 new PermissionTarget { CompanyId = 1, OwnerEmployeeId = 99 }));
+        }
+
+        [Theory]
+        [InlineData("absent")]
+        [InlineData("inactive")]
+        [InlineData("expired")]
+        [InlineData("foreign")]
+        public async Task Denied_bootstrap_read_returns_no_owner_scope(string scenario)
+        {
+            using var host = new PlatformTestHost();
+            if(scenario != "absent") await SeedPolicyAsync(host, scenario == "foreign" ? 2 : 1,
+                EntityRegistry.ScopeCrm, "read", active: scenario != "inactive",
+                expiresAt: scenario == "expired" ? DateTime.UtcNow.AddMinutes(-1) : null);
+            var visible = await Service(host).VisibleOwnerIdsAsync(PlatformTestHost.DefaultContext(companyId:1,employeeId:7));
+            Assert.NotNull(visible); Assert.Empty(visible!);
         }
 
         // ---- the platform contract ------------------------------------------------------------------

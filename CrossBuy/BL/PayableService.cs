@@ -16,6 +16,7 @@ namespace CrossBuy.BL
 		public int? CostCenterId { get; set; }
 		public int? ItemId { get; set; }          // when set → posts a stock receipt + uses the category inventory account
 		public int? WarehouseId { get; set; }
+		public int? BinLocationId { get; set; }   // section/rack the goods are put away on (optional)
 		// HM-16: when set → this line SETTLES a posted goods receipt (Dr GRNI / Cr AP, NO stock movement). The caller
 		// passes ExpenseAccountId = the category GRNI account and ItemId = null (the stock was already received on the GRN).
 		// CreatePurchaseInvoiceAsync validates the GRN is Posted+un-invoiced (set-once) and stamps it Invoiced in-tx.
@@ -44,6 +45,12 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error, PurchaseReturn? ret)> EditPurchaseReturnAsync(int companyId, int returnId, int vendorId, int? originalInvoiceId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId);
 	}
 
+
+	/// One item/warehouse position a purchase invoice still accounts for in stock.
+	/// Qty is signed: positive means the invoice is still holding stock that an edit must
+	/// take out; negative means an earlier edit removed more than it ever put in.
+	public readonly record struct InvoiceStockOutstanding(
+		int ItemId, int WarehouseId, decimal Qty, decimal Cost);
 	public class PayableService : IPayableService
 	{
 		private readonly CrossDbContext _context;
@@ -56,6 +63,44 @@ namespace CrossBuy.BL
 		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, CrossBuy.BL.Platform.IBusinessEventService events) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; _events = events; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
+
+		/// What a purchase invoice still accounts for in stock, per item and warehouse: every
+		/// movement it has ever made, receipts and the reversals of earlier edits alike, netted.
+		/// Zero rows are dropped - an item that balances needs no correction.
+		///
+		/// BOTH SOURCE TYPES ARE PART OF THE QUESTION. Counting only "PurchaseInvoice" rows reads
+		/// the gross received and ignores everything already taken back out, which is exactly the
+		/// mistake that made each edit reverse the previous edit's receipt a second time.
+		///
+		/// Public on the concrete service - NOT on IPayableService - so the arithmetic AND the
+		/// source-type filter can be tested directly. A test that re-derived the netting itself
+		/// would prove only that it can do arithmetic, and would survive the filter being wrong,
+		/// which is where the defect actually lived.
+		public async Task<List<InvoiceStockOutstanding>> OutstandingStockAsync(int companyId, int invoiceId)
+		{
+			var moved = await _context.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == companyId && m.SourceId == invoiceId
+						 && (m.SourceType == "PurchaseInvoice" || m.SourceType == "PurchaseInvoiceEdit"))
+				.Select(m => new { m.ItemId, m.WarehouseId, m.QtyBase, m.UnitCost, m.Direction })
+				.ToListAsync();
+
+			return moved
+				.GroupBy(m => new { m.ItemId, m.WarehouseId })
+				.Select(g => new InvoiceStockOutstanding(
+					g.Key.ItemId,
+					g.Key.WarehouseId,
+					g.Sum(m => m.QtyBase * m.Direction),
+					// BACK OUT AT WHAT CAME IN. The quantity-weighted average of the receipts, so
+					// the value removed matches the value this invoice added rather than the
+					// warehouse's current moving average - which other documents move.
+					g.Where(m => m.Direction == 1).Sum(m => m.QtyBase) > 0
+						? g.Where(m => m.Direction == 1).Sum(m => m.QtyBase * m.UnitCost)
+						  / g.Where(m => m.Direction == 1).Sum(m => m.QtyBase)
+						: 0m))
+				.Where(x => x.Qty != 0)
+				.OrderBy(x => x.ItemId).ThenBy(x => x.WarehouseId)
+				.ToList();
+		}
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
 			await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 
@@ -97,7 +142,11 @@ namespace CrossBuy.BL
 
 		public async Task<Vendor> CreateVendorAsync(int companyId, string name, string? nameEn, string? taxNo)
 		{
-			var control = await AccIdAsync(companyId, "2101") ?? 0;   // AP control
+			// NO SILENT ZERO - same reason as the customer path. A supplier with no payables account
+			// saves, lists and edits, then fails at its first purchase invoice.
+			var control = await AccIdAsync(companyId, "2101")
+				?? throw new InvalidOperationException(
+					CrossBuy.BL.ReceivableService.ControlAccountMissing(companyId, "2101", "payables"));
 			var v = new Vendor { CompanyID = companyId, Name = name, NameEn = nameEn, TaxRegNo = taxNo, ControlAccountId = control, IsActive = true, CreatedAt = DateTime.UtcNow };
 			_context.Vendors.Add(v);
 			await _context.SaveChangesAsync();
@@ -110,7 +159,10 @@ namespace CrossBuy.BL
 			var v = dto.ID > 0 ? await _context.Vendors.FirstOrDefaultAsync(x => x.ID == dto.ID && x.CompanyID == companyId) : null;
 			if (v == null)
 			{
-				v = new Vendor { CompanyID = companyId, ControlAccountId = await AccIdAsync(companyId, "2101") ?? 0, IsActive = true, CreatedAt = DateTime.UtcNow };
+				var apControl = await AccIdAsync(companyId, "2101");
+				if (apControl == null)
+					return (false, CrossBuy.BL.ReceivableService.ControlAccountMissing(companyId, "2101", "payables"));
+				v = new Vendor { CompanyID = companyId, ControlAccountId = apControl.Value, IsActive = true, CreatedAt = DateTime.UtcNow };
 				_context.Vendors.Add(v);
 			}
 			v.Name = dto.Name; v.NameEn = dto.NameEn; v.TaxRegNo = dto.TaxRegNo; v.Address = dto.Address;
@@ -129,6 +181,31 @@ namespace CrossBuy.BL
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
 			if (ven == null) return (false, "Supplier not found", null);
 			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
+
+			// A STOCKABLE LINE WITHOUT A WAREHOUSE WOULD POST TO THE LEDGER AND NOT TO THE STOCK.
+			// The GL posting below is filtered by neither ItemId nor WarehouseId; the stock loop is
+			// filtered by both. So a line carrying a stockable item but no warehouse debits the category
+			// inventory account and records no movement - the control account and the stock ledger then
+			// disagree, permanently and silently. Measured: invoice 6070 posted Dr 1103 = 75.00 with zero
+			// movements for the item.
+			//
+			// The warehouse is optional on a purchase order, which is how a blank one reaches here.
+			// Refusing is right: the alternative is a book that cannot be reconciled to the shelf.
+			{
+				var __stockIds = lines.Where(l => l.ItemId != null && l.Qty > 0).Select(l => l.ItemId!.Value).Distinct().ToList();
+				if (__stockIds.Count > 0)
+				{
+					var __types = await _context.Items.AsNoTracking()
+						.Where(i => __stockIds.Contains(i.ID) && i.CompanyID == companyId)
+						.Select(i => new { i.ID, i.ItemCode, i.ItemType }).ToListAsync();
+					foreach (var l in lines.Where(x => x.ItemId != null && x.Qty > 0 && x.WarehouseId == null))
+					{
+						var __t = __types.FirstOrDefault(x => x.ID == l.ItemId!.Value);
+						if (__t == null || !CrossBuy.Models.Context.Inventory.ItemTypes.RequiresStock(__t.ItemType)) continue;
+						return (false, $"Item ({__t.ItemCode}) is a stock item, so its line needs a warehouse - without one the invoice would post to the inventory account while the goods never enter stock. Set the receiving warehouse on the purchase order, or on the line.", null);
+					}
+				}
+			}
 
 			// HM-16: some lines may SETTLE posted goods receipts (vendor-invoice matching). Load + validate those GRNs and
 			// enforce SET-ONCE *before* any posting, so a failed match leaves zero effect. Loaded TRACKED so we can stamp
@@ -184,7 +261,27 @@ namespace CrossBuy.BL
 						.FirstOrDefaultAsync();
 					if (invAcc != null) acct = invAcc.Value;
 				}
-				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
+				// NO ACCOUNT RESOLVED => REFUSE HERE, naming what to configure. ExpenseAccountId is 0 by
+				// design on the not-yet-received path and the category's inventory account is meant to
+				// supply it; that column is nullable, so a category left unset sent a literal 0 into the
+				// journal, which failed with "Account 0 does not exist in this company" - an id the user
+				// cannot act on, raised far from the missing setting.
+				//
+				// Refusing beats falling back to a default account: a purchase posted silently to the
+				// wrong account costs more to find than an invoice that would not save.
+				if (acct <= 0)
+				{
+					var __am = l.ItemId == null ? null : await _context.Items.AsNoTracking()
+						.Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
+						.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID,
+							(i, c) => new { i.ItemCode, Category = c.Name })
+						.FirstOrDefaultAsync();
+					var __subj = __am != null
+						? $"item ({__am.ItemCode}) in category ({__am.Category})"
+						: (string.IsNullOrWhiteSpace(l.ItemDescription) ? "a line on this invoice" : $"line ({l.ItemDescription})");
+					return (false, $"No account could be determined for {__subj} - set the inventory account on that item category, or choose an expense account on the line", null);
+				}
+				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, BinLocationId = l.BinLocationId, LineTotal = lineTotal });
 			}
 			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals
 			// base totals: sum of per-line functional bases so the GL balances exactly (Σ Dr = GrandTotalBase = 2101)
@@ -213,6 +310,20 @@ namespace CrossBuy.BL
 			}, userId);
 			if (!ok) return (false, err, null);
 			inv.JournalEntryId = entry!.ID;
+			// Bind the invoice lines to their actual persisted journal identities at the writer boundary.
+			// BuildEntry assigns input ordinals to LineNo; VAT/AP are appended after the net inputs.
+			// This receipt is transient: older invoices never acquire guessed lineage on retry.
+			foreach (var invoiceLine in inv.Lines)
+			{
+				var postedLine = entry.Lines.SingleOrDefault(x => x.LineNo == invoiceLine.LineNo);
+				if (postedLine == null || postedLine.ID <= 0 || postedLine.AccountId != invoiceLine.ExpenseAccountId ||
+					postedLine.ProjectId != projectId || postedLine.CostCenterId != invoiceLine.CostCenterId)
+				{
+					inv.CreatedNetLineage.Clear();
+					break; // A caller requiring provenance must refuse an incomplete writer receipt.
+				}
+				inv.CreatedNetLineage.Add(new(invoiceLine.LineNo - 1, invoiceLine.ID, postedLine.ID));
+			}
 			await _context.SaveChangesAsync();
 
 			// HM-1-أ ب-3/ب-4: receive stock — Stockable only, deterministic order, EVERY result CHECKED.
@@ -225,6 +336,8 @@ namespace CrossBuy.BL
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
+					// What the line said, or nothing - StockService resolves the item’s default when it is null.
+					BinLocationId = l.BinLocationId,
 					Qty = l.Qty, UnitCostInBase = unitCost, SourceType = "PurchaseInvoice", SourceId = inv.ID, SourceLineId = l.ID,
 					PostToGl = false, Notes = $"Receipt for purchase invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
@@ -297,9 +410,19 @@ namespace CrossBuy.BL
 			var lines = new List<PurchaseLineInput>();
 			foreach (var l in gr.Lines)
 			{
-				var grni = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
-					.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => (int?)(c.GrniAccountId ?? c.InventoryAccountId)).FirstOrDefaultAsync();
-				if (grni == null || grni == 0) return (false, "One of the receipt lines has no GRNI/inventory account configured on its category", null);
+				// THE GRNI ACCOUNT, never the inventory account. This used to read
+				//     (c.GrniAccountId ?? c.InventoryAccountId)
+				// so a category with no GRNI account cleared its received goods against INVENTORY instead - and
+				// because the clearing line carries ItemId = null, no stock movement is created with it. The
+				// inventory control account is debited for goods that never enter stock, nothing can ever credit
+				// it back, and the stock-vs-GL reconciliation is broken permanently by one unconfigured category.
+				// Every category carries a GRNI account today, so this refusal costs nothing now and stops the
+				// next one that does not from poisoning the control account silently.
+				var grniCat = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
+					.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => new { c.Code, c.GrniAccountId }).FirstOrDefaultAsync();
+				var grni = grniCat?.GrniAccountId;
+				if (grni == null || grni == 0)
+					return (false, $"Category ({grniCat?.Code}) has no goods-received-not-invoiced account. Receiving against inventory instead would debit stock value for goods that never enter stock, and nothing could ever clear it - configure the category's GRNI account first.", null);
 				var name = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId).Select(i => i.Name).FirstOrDefaultAsync();
 				lines.Add(new PurchaseLineInput { ItemDescription = name ?? $"GRN {gr.ReceiptNo} #{l.LineNo}", Qty = l.Qty, UnitPrice = l.UnitCost, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = grni.Value, ItemId = null, WarehouseId = null, GoodsReceiptId = gr.ID });
 			}
@@ -314,11 +437,39 @@ namespace CrossBuy.BL
 			var inv = await _context.PurchaseInvoices.Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == invoiceId && i.CompanyID == companyId);
 			if (inv == null) return (false, "Invoice not found", null);
 			if (inv.Status != "Posted") return (false, "An invoice that is not posted, or is cancelled, cannot be edited", null);
+			if (await _context.Set<CrossBuy.Models.Context.Inventory.PurchaseOrderInvoiceLineLink>().AsNoTracking()
+				.AnyAsync(x => x.CompanyID == companyId && x.PurchaseInvoiceId == invoiceId))
+				return (false, "A purchase order invoice with historical line provenance requires an amendment workflow", null);
 			if (await _context.PaymentAllocations.AsNoTracking().AnyAsync(a => a.CompanyID == companyId && a.PurchaseInvoiceId == invoiceId))
 				return (false, "The invoice cannot be edited because a payment is allocated to it — unallocate it first", null);
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
 			if (ven == null) return (false, "Supplier not found", null);
 			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
+
+			// A STOCKABLE LINE WITHOUT A WAREHOUSE WOULD POST TO THE LEDGER AND NOT TO THE STOCK.
+			// The GL posting below is filtered by neither ItemId nor WarehouseId; the stock loop is
+			// filtered by both. So a line carrying a stockable item but no warehouse debits the category
+			// inventory account and records no movement - the control account and the stock ledger then
+			// disagree, permanently and silently. Measured: invoice 6070 posted Dr 1103 = 75.00 with zero
+			// movements for the item.
+			//
+			// The warehouse is optional on a purchase order, which is how a blank one reaches here.
+			// Refusing is right: the alternative is a book that cannot be reconciled to the shelf.
+			{
+				var __stockIds = lines.Where(l => l.ItemId != null && l.Qty > 0).Select(l => l.ItemId!.Value).Distinct().ToList();
+				if (__stockIds.Count > 0)
+				{
+					var __types = await _context.Items.AsNoTracking()
+						.Where(i => __stockIds.Contains(i.ID) && i.CompanyID == companyId)
+						.Select(i => new { i.ID, i.ItemCode, i.ItemType }).ToListAsync();
+					foreach (var l in lines.Where(x => x.ItemId != null && x.Qty > 0 && x.WarehouseId == null))
+					{
+						var __t = __types.FirstOrDefault(x => x.ID == l.ItemId!.Value);
+						if (__t == null || !CrossBuy.Models.Context.Inventory.ItemTypes.RequiresStock(__t.ItemType)) continue;
+						return (false, $"Item ({__t.ItemCode}) is a stock item, so its line needs a warehouse - without one the invoice would post to the inventory account while the goods never enter stock. Set the receiving warehouse on the purchase order, or on the line.", null);
+					}
+				}
+			}
 
 			// Platform Kernel slice 2: snapshot the header BEFORE any mutation so the event can carry a change
 			// SUMMARY (field names + total delta) instead of the entity graph.
@@ -349,16 +500,48 @@ namespace CrossBuy.BL
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
-			// (1) reverse the original receipts — OUT at the EXACT received cost (OutCostOverride) so the subledger backs out the same value the GL will
-			var origMoves = await _context.StockMovements.AsNoTracking()
-				.Where(m => m.CompanyID == companyId && m.SourceType == "PurchaseInvoice" && m.SourceId == invoiceId && m.Direction == 1)
-				.OrderBy(m => m.ItemId).ThenBy(m => m.WarehouseId).ToListAsync();
-			foreach (var m in origMoves)
+			// (1) TAKE THIS INVOICE'S STOCK CONTRIBUTION BACK TO ZERO before re-receiving.
+			//
+			// WHAT WAS HERE, AND WHY IT CORRUPTED STOCK. This selected every movement with
+			// SourceType "PurchaseInvoice" for the invoice and reversed each one. The problem is
+			// that step (6) writes the RE-RECEIPT with that same SourceType - correctly, it is a
+			// receipt for this invoice - so each edit left behind one more row for the NEXT edit to
+			// reverse again. The second edit reversed two receipts, the third three, and the
+			// quantity ran away:
+			//
+			//     post +5 | edit −5 +5 | edit −5 −5 +9 | edit −5 −5 −9 +9 | edit −5 −5 −9 −9 +5
+			//
+			// Measured on a real invoice: +33 received, −62 reversed, a net of −29 where the
+			// invoice says +5. Silent, and it moves inventory, not just a report.
+			//
+			// THE INVARIANT, NOT THE HISTORY. What has to be true after this step is that the
+			// invoice accounts for no stock at all; then (6) receives the new lines and the
+			// invoice accounts for exactly them. So the quantity to post is the NET of everything
+			// this invoice has ever moved - receipts and the reversals of earlier edits together -
+			// per item and warehouse. Reversing rows one by one can only be correct while no row
+			// has ever been reversed before; netting is correct on the first edit and every one
+			// after it, and it repairs an invoice a previous edit already skewed.
+			var outstanding = await OutstandingStockAsync(companyId, invoiceId);
+
+			foreach (var o in outstanding)
 			{
+				// Qty > 0 is the ordinary case: this invoice is still holding stock, take it out.
+				// Qty < 0 means an earlier edit removed more than it ever put in - the defect above.
+				// Putting that back is not a new decision; it is the same invariant, and without it
+				// the first edit after the fix would leave the skew in place forever.
+				bool putBack = o.Qty < 0;
+				var amount = Math.Abs(o.Qty);
 				var (rok, rerr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest {
-					Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = -1,
-					Qty = m.QtyBase, UoMId = null, OutCostOverride = m.UnitCost, PostToGl = false,
-					SourceType = "PurchaseInvoiceEdit", SourceId = invoiceId, Notes = $"Reversal of the receipt for the edit of invoice {inv.InvoiceNo}"
+					Date = date, ItemId = o.ItemId, WarehouseId = o.WarehouseId,
+					Direction = (short)(putBack ? 1 : -1),
+					Qty = amount, UoMId = null,
+					UnitCostInBase = putBack ? o.Cost : (decimal?)null,
+					OutCostOverride = putBack ? (decimal?)null : o.Cost,
+					PostToGl = false,
+					SourceType = "PurchaseInvoiceEdit", SourceId = invoiceId,
+					Notes = putBack
+						? $"Correction of the stock skew left by an earlier edit of invoice {inv.InvoiceNo}"
+						: $"Reversal of the receipt for the edit of invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
 				if (!rok) return (false, rerr ?? "Could not reverse the stock receipt", null);
 			}
@@ -387,7 +570,27 @@ namespace CrossBuy.BL
 						.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => c.InventoryAccountId).FirstOrDefaultAsync();
 					if (invAcc != null) acct = invAcc.Value;
 				}
-				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
+				// NO ACCOUNT RESOLVED => REFUSE HERE, naming what to configure. ExpenseAccountId is 0 by
+				// design on the not-yet-received path and the category's inventory account is meant to
+				// supply it; that column is nullable, so a category left unset sent a literal 0 into the
+				// journal, which failed with "Account 0 does not exist in this company" - an id the user
+				// cannot act on, raised far from the missing setting.
+				//
+				// Refusing beats falling back to a default account: a purchase posted silently to the
+				// wrong account costs more to find than an invoice that would not save.
+				if (acct <= 0)
+				{
+					var __am = l.ItemId == null ? null : await _context.Items.AsNoTracking()
+						.Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
+						.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID,
+							(i, c) => new { i.ItemCode, Category = c.Name })
+						.FirstOrDefaultAsync();
+					var __subj = __am != null
+						? $"item ({__am.ItemCode}) in category ({__am.Category})"
+						: (string.IsNullOrWhiteSpace(l.ItemDescription) ? "a line on this invoice" : $"line ({l.ItemDescription})");
+					return (false, $"No account could be determined for {__subj} - set the inventory account on that item category, or choose an expense account on the line", null);
+				}
+				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, BinLocationId = l.BinLocationId, LineTotal = lineTotal });
 			}
 			decimal subBase = inv.Lines.Sum(l => ToBase(l.LineTotal));
 			decimal taxBase = inv.Lines.Sum(l => ToBase(Rd(l.LineTotal * l.TaxRate / 100m)));
@@ -422,6 +625,8 @@ namespace CrossBuy.BL
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
+					// What the line said, or nothing - StockService resolves the item’s default when it is null.
+					BinLocationId = l.BinLocationId,
 					Qty = l.Qty, UnitCostInBase = unitCost, SourceType = "PurchaseInvoice", SourceId = inv.ID, SourceLineId = l.ID,
 					PostToGl = false, Notes = $"Receipt for purchase invoice {inv.InvoiceNo} (edited)"
 				}, userId?.ToString());
@@ -469,7 +674,7 @@ namespace CrossBuy.BL
 		// belongs in an edit's changed-field list. Never stored in the event payload.
 		private static string LineSignature(IEnumerable<PurchaseInvoiceLine> lines) => string.Join("|",
 			lines.OrderBy(l => l.LineNo)
-				 .Select(l => $"{l.ItemId}:{l.ItemDescription}:{l.Qty}:{l.UnitPrice}:{l.DiscountAmount}:{l.TaxRate}:{l.WarehouseId}"));
+				 .Select(l => $"{l.ItemId}:{l.ItemDescription}:{l.Qty}:{l.UnitPrice}:{l.DiscountAmount}:{l.TaxRate}:{l.WarehouseId}:{l.BinLocationId}"));
 
 		// ---------------- P3-3b: Purchase returns / debit notes ----------------
 		public async Task<List<PurchaseReturn>> GetPurchaseReturnsAsync(int companyId) =>

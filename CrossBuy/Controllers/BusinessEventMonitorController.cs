@@ -203,6 +203,27 @@ namespace CrossBuy.Controllers
             return (true, ctx, (int)id);
         }
 
+        // GET /BusinessEventMonitor/NotesMentions?id=123&q=ahm
+        //
+        // The @-picker's list for an event's note thread. Behind the SAME gate as the notes
+        // themselves - a caller who may not see this event may not page through the staff
+        // directory from it - and through the shared rule in CommMentionCandidates, so who may
+        // be mentioned is one decision for every screen that mounts the conversation panel.
+        [HttpGet]
+        public async Task<IActionResult> NotesMentions(long id, string? q,
+            CancellationToken cancellationToken = default)
+        {
+            var gate = await EventGateAsync(id, cancellationToken);
+            if (!gate.Ok || gate.Context == null) return Json(System.Array.Empty<object>());
+
+            var rows = await CrossBuy.BL.Communication.CommMentionCandidates.SearchAsync(
+                _db, gate.Context.CompanyId, gate.Context.EmployeeId, q,
+                arabic: System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar",
+                cancellationToken: cancellationToken);
+
+            return Json(rows.Select(r => new { id = r.Id, name = r.Name, avatar = r.Avatar }));
+        }
+
         // GET /BusinessEventMonitor/Notes?id=123
         [HttpGet]
         public async Task<IActionResult> Notes(long id, CancellationToken cancellationToken = default)

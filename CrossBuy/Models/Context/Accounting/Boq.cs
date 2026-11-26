@@ -26,6 +26,19 @@ namespace CrossBuy.Models.Context.Accounting
 		public int? VariationOrderId { get; set; }       // P6-د: null = original scope; set = added by a variation order
 		public DateTime? CreatedAt { get; set; }
 
+		// R7 / D-24: current commercial state belongs to the stable BOQ identity.
+		// BoqLineStates is retained as pre-consolidation history, not a second live state.
+		public string Status { get; set; } = "Active";
+		public int? ClientContractId { get; set; }
+		public int? CurrentRevisionId { get; set; }
+		public DateTime? RetiredAt { get; set; }
+		public int? RetiredBy { get; set; }
+		public string? RetiredReason { get; set; }
+		public int? CreatedBy { get; set; }
+		public DateTime? UpdatedAt { get; set; }
+		public int? UpdatedBy { get; set; }
+		public byte[] ConcurrencyToken { get; set; } = Guid.NewGuid().ToByteArray();
+
 		[NotMapped] public decimal LineValue => Math.Round(Quantity * UnitPrice, 2);
 		[NotMapped] public decimal EstimatedCost => Math.Round((MaterialCost ?? 0m) + (LaborCost ?? 0m) + (SubcontractCost ?? 0m) + (EquipmentCost ?? 0m), 2);
 		[NotMapped] public decimal Margin => Math.Round(LineValue - EstimatedCost, 2);

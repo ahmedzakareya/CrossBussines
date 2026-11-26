@@ -47,6 +47,7 @@ namespace CrossBuy.Tests
             services.AddSingleton<IWebHostEnvironment>(new StubEnv { EnvironmentName = environmentName });
 
             var http = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() };
+            http.Connection.RemoteIpAddress = IPAddress.Loopback;
             if (query != null)
                 http.Request.Query = new QueryCollection(query.ToDictionary(k => k.Key, v => new Microsoft.Extensions.Primitives.StringValues(v.Value)));
             if (headers != null)

@@ -1,0 +1,119 @@
+@model List<CrossBuy.BL.CrmIdentity.WebFormRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var processed = ViewBag.Processed as CrossBuy.BL.CrmIdentity.ProcessResult;
+    var canManage = ViewBag.CanManage == true;
+    var total30 = Model.Sum(f => f.Last30);
+    var converted = Model.Sum(f => f.Converted);
+    var all = Model.Sum(f => f.Total);
+    var pending = Model.Sum(f => f.Pending);
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Website forms"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Website forms"]</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Assignment","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-map fs-4"></i>@T["Assignment & territories"]</a>
+            @if (canManage) { <a href="@Url.Action("WebFormEditor","Crm")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New form"]</a> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (processed != null && processed.Converted + processed.Linked + processed.Failed > 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-arrows-loop fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Waiting requests were just turned into leads"]</h4>
+                    <div class="fs-6 text-gray-700"><span class="num">@processed.Converted</span> @T["new leads"] · <span class="num">@processed.Linked</span> @T["added to an existing lead"] · <span class="num">@processed.Unassigned</span> @T["with no owner"]@if (processed.Failed > 0) { <span class="text-danger"> · <span class="num">@processed.Failed</span> @T["failed"]</span> }</div></div>
+            </div>
+        }
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Active forms"]</div><i class="ki-outline ki-document fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900 num">@Model.Count(f => f.Form.IsActive)</div>
+                <div class="text-muted fs-8 mt-1">@T["of"] <span class="num">@Model.Count</span> @T["(count) forms"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Requests in 30 days"]</div><i class="ki-outline ki-user-tick fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-primary num">@total30</div>
+                <div class="text-muted fs-8 mt-1">@T["each one arrived without anyone typing it"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Became leads"]</div><i class="ki-outline ki-arrows-loop fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-success"><span class="num">@(all == 0 ? 0 : (int)Math.Round(converted * 100.0 / all))%</span></div>
+                <div class="text-muted fs-8 mt-1"><span class="num">@converted</span> @T["of"] <span class="num">@all</span> @T["(spam excluded)"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Waiting"]</div><i class="ki-outline ki-time fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900 num" id="pendingCount">@pending</div>
+                <div class="text-muted fs-8 mt-1">@T["turned into leads every 5 minutes"]</div></div></div></div>
+        </div>
+
+        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Forms"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["Paste one line on any website — every submission becomes a lead with the duplicate check, consent and assignment"]</span></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Form"]</th><th>@T["Lead source"]</th><th class="text-end">@T["Requests in 30 days"]</th><th class="text-end">@T["Total"]</th><th>@T["Last request"]</th><th>@T["State"]</th><th class="text-end pe-4"></th></tr></thead>
+                <tbody class="fs-6">
+                @foreach (var r in Model)
+                {
+                    <tr><td class="ps-4"><div class="d-flex align-items-center gap-3"><span class="crm-ch" style="--ch:#1B84FF"><i class="ki-outline ki-document fs-4"></i></span>
+                            <div class="d-flex flex-column"><a href="@Url.Action("WebFormEditor","Crm", new { id = r.Form.ID })" class="fw-bold text-gray-900 text-hover-primary">@r.Form.Name</a><span class="text-muted fs-7">@r.Form.Title</span></div></div></td>
+                        <td><span class="badge crm-code">@r.Form.Source</span></td>
+                        <td class="text-end fw-bold num">@r.Last30</td>
+                        <td class="text-end num">@r.Total</td>
+                        <td><span class="num fs-7">@(r.LastAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "—")</span></td>
+                        <td>@if (r.Form.IsActive) { <span class="badge badge-light-success">@T["Live"]</span> } else { <span class="badge badge-light">@T["Off"]</span> }</td>
+                        <td class="text-end pe-4 text-nowrap"><a href="/store/forms/@r.Form.PublicKey" target="_blank" rel="noopener" class="btn btn-sm btn-light"><i class="ki-outline ki-eye fs-5"></i>@T["Open"]</a>
+                            <a href="@Url.Action("WebFormEditor","Crm", new { id = r.Form.ID })" class="btn btn-sm btn-light-primary ms-1">@T["Settings & code"]</a></td></tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-10">@T["No forms yet. Create one and paste its line on your website."]</td></tr> }
+                </tbody></table></div></div></div>
+
+        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Requests received"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7" id="resultCount">—</span></div>
+            <div class="card-toolbar">
+                <button type="button" class="btn btn-sm btn-light-primary" id="btnProcess"><i class="ki-outline ki-arrows-loop fs-4"></i>@T["Turn waiting requests into leads now"]</button>
+            </div></div>
+            <div class="card-body pt-2">
+                @* one filter row, one control height (the house filter shape), never a wrapping toolbar *@
+                <div class="row g-4 align-items-end mb-4">
+                    <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@T["Search…"]</label>
+                        <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" /></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@T["State"]</label>
+                        <select id="f_status" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true">
+                            <option value="">@T["Every state"]</option><option value="Pending">@T["sub:Pending"]</option><option value="Converted">@T["sub:Converted"]</option><option value="Linked">@T["sub:Linked"]</option><option value="Failed">@T["sub:Failed"]</option><option value="Spam">@T["sub:Spam"]</option></select></div>
+                    <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">&nbsp;</label>
+                        <select id="f_size" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <div class="col-md-1"><label class="fw-semibold fs-7 text-muted mb-1">&nbsp;</label>
+                        <button type="button" id="f_reset" class="btn btn-light w-100" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-3 p-0"></i></button></div>
+                </div>
+                <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Received"]</th><th>@T["Visitor"]</th><th>@T["Reach"]</th><th>@T["Request"]</th><th>@T["Consent"]</th><th>@T["Result"]</th><th class="pe-4">@T["Owner"]</th></tr></thead>
+                <tbody id="rows" class="fs-6"></tbody></table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No requests yet."]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div></div>
+        @Html.AntiForgeryToken()
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var cbList = cbServerList({ url:'@Url.Action("WebSubmissionsData","Crm")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });
+(function(){
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["done"] = T["Done: {0} new, {1} added to existing leads, {2} without an owner"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value }));
+  document.getElementById('btnProcess').addEventListener('click', async function(){
+    var b = this; b.disabled = true;
+    var fd = new FormData(); fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("ProcessWebSubmissions","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false }; });
+    b.disabled = false;
+    if (!r.ok) { if (window.CB && CB.toast) CB.toast(txt.failed, 'error'); return; }
+    if (window.CB && CB.toast) CB.toast(txt.done.replace('{0}', r.converted).replace('{1}', r.linked).replace('{2}', r.unassigned), 'success');
+    document.getElementById('pendingCount').textContent = '0';
+    if (cbList && cbList.reload) cbList.reload();   // repaint the list only
+  });
+})();
+</script>
+}

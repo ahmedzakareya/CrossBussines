@@ -36,12 +36,12 @@ License: For each use you must have a valid license purchased only from above li
 <html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
 	<!--begin::Head-->
 	<head>
-		<title>@(isAr ? "مشاريعي" : "My Projects") — CrossBuy</title>
+		<title>@(isAr ? "مشاريعي" : "My Projects") — @CrossBuy.BL.Platform.ProductIdentity.Name</title>
 		<meta charset="utf-8" />
-		<meta name="description" content="CrossBuy client portal." />
+		<meta name="description" content="@(CrossBuy.BL.Platform.ProductIdentity.ShortName) client portal." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.Icon)" asp-append-version="true" />
 		<!--begin::Fonts(mandatory for all pages)-->
 		<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
 		<!--end::Fonts-->
@@ -53,6 +53,12 @@ License: For each use you must have a valid license purchased only from above li
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
 			<style>
 				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
@@ -69,6 +75,12 @@ License: For each use you must have a valid license purchased only from above li
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		}
 		<!--end::Global Stylesheets Bundle-->
 		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
@@ -122,7 +134,7 @@ License: For each use you must have a valid license purchased only from above li
 										@* The theme puts a 60px white disc here (media/svg/misc/layer.svg, a generic bar-chart glyph).
 										   Same disc, same 60px, same spacing — with our own mark inside it instead, so the
 										   band carries the business rather than the template's decoration. *@
-										<img alt="CrossBuy" src="/Backend-assets/media/brand/crossbuy-disc.png" class="h-60px me-5" />
+										<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark)" class="h-40px me-5" />
 										<!--begin::Title-->
 										<h1 class="page-heading d-flex text-white fw-bolder fs-2 flex-column justify-content-center my-0">@(isAr ? "مشاريعي" : "My Projects") 
 										<!--begin::Description-->
@@ -360,7 +372,7 @@ License: For each use you must have a valid license purchased only from above li
 								<!--begin::Copyright-->
 								<div class="text-gray-900 order-2 order-md-1">
 									<span class="text-muted fw-semibold me-1">@DateTime.UtcNow.Year&copy;</span>
-									<span class="text-gray-800">CrossBuy</span>
+									<span class="text-gray-800">@CrossBuy.BL.Platform.ProductIdentity.ShortName</span>
 								</div>
 								<!--end::Copyright-->
 							</div>

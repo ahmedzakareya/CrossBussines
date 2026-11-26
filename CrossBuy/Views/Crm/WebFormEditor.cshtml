@@ -1,0 +1,95 @@
+@model CrossBuy.Models.Context.Crm.CrmWebForm
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEdit = Model.ID > 0;
+    var canManage = ViewBag.CanManage == true;
+    var origin = Context.Request.Scheme + "://" + Context.Request.Host;
+    var publicUrl = origin + "/store/forms/" + Model.PublicKey;
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "ar" : "en";
+    var directUrl = publicUrl + "?culture=" + lang + "&ui-culture=" + lang;   // a shared link opens in the language it was copied in
+    var snippet = "<script src=\"" + publicUrl + "/embed.js\" async></script>";
+    var ro = canManage ? "" : "disabled";
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? Model.Name : T["New form"].Value)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("WebForms","Crm")" class="text-muted text-hover-primary">@T["Website forms"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isEdit ? Model.Name : T["New form"].Value)</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            @if (isEdit) { <a href="@directUrl" target="_blank" rel="noopener" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-eye fs-4"></i>@T["Open the public form"]</a> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-xl-7">
+                <form asp-action="SaveWebForm" method="post" class="card mb-5" data-cb-confirm data-cb-action="save" data-cb-text="@T["Save the form?"]">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.ID" />
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["What the visitor sees"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Name and a mobile or an email are always asked; the rest is your choice"]</span></div></div>
+                    <div class="card-body pt-2"><div class="row g-5">
+                        <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Form name (for you)"]</label><input name="name" class="form-control form-control-solid" value="@Model.Name" maxlength="100" required @ro /></div>
+                        <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Title on the form"]</label><input name="title" class="form-control form-control-solid" value="@Model.Title" maxlength="150" required @ro /></div>
+                        <div class="col-md-4"><label class="form-check form-switch form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" name="askCompany" value="true" @(Model.AskCompany ? "checked" : "") @ro /><input type="hidden" name="askCompany" value="false" /><span class="form-check-label fw-semibold">@T["Ask for the company"]</span></label></div>
+                        <div class="col-md-4"><label class="form-check form-switch form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" name="askEmail" value="true" @(Model.AskEmail ? "checked" : "") @ro /><input type="hidden" name="askEmail" value="false" /><span class="form-check-label fw-semibold">@T["Ask for the email"]</span></label></div>
+                        <div class="col-md-4"><label class="form-check form-switch form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" name="askArea" value="true" @(Model.AskArea ? "checked" : "") @ro /><input type="hidden" name="askArea" value="false" /><span class="form-check-label fw-semibold">@T["Ask for the area"]</span></label></div>
+                        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Areas to choose from (comma separated)"]</label><input name="areaOptions" class="form-control form-control-solid" value="@Model.AreaOptions" maxlength="400" @ro /></div>
+                        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["\"What do you need?\" choices (comma separated)"]</label><input name="needOptions" class="form-control form-control-solid" value="@Model.NeedOptions" maxlength="400" @ro /></div>
+                        <div class="col-12"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Consent sentence (the visitor ticks it)"]</label><textarea name="consentText" class="form-control form-control-solid" rows="2" maxlength="300" required @ro>@Model.ConsentText</textarea>
+                            <div class="text-muted fs-8 mt-1">@T["When ticked, consent is recorded on the lead for WhatsApp, SMS and email, with this exact sentence kept as proof."]</div></div>
+                        <div class="col-12"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Thank-you message"]</label><textarea name="thankYou" class="form-control form-control-solid" rows="2" maxlength="300" required @ro>@Model.ThankYou</textarea></div>
+                    </div></div>
+                    <div class="separator mx-9"></div>
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["What happens to it"]</span></div></div>
+                    <div class="card-body pt-2"><div class="row g-5">
+                        <div class="col-md-4"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Lead source"]</label><input name="source" class="form-control form-control-solid" value="@Model.Source" maxlength="60" @ro /></div>
+                        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Segment (optional)"]</label><input name="segment" class="form-control form-control-solid" value="@Model.Segment" maxlength="60" @ro /></div>
+                        <div class="col-md-4"><label class="form-check form-switch form-check-custom form-check-solid mt-9"><input class="form-check-input" type="checkbox" name="isActive" value="true" @(Model.IsActive ? "checked" : "") @ro /><input type="hidden" name="isActive" value="false" /><span class="form-check-label fw-semibold">@T["Live"]</span></label></div>
+                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Websites allowed to show it (empty = any)"]</label><input name="allowedSites" class="form-control form-control-solid" value="@Model.AllowedSites" maxlength="400" placeholder="https://www.example.com" dir="ltr" @ro /></div>
+                    </div></div>
+                    @if (canManage) { <div class="card-footer d-flex justify-content-end py-6"><button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div> }
+                </form>
+            </div>
+            <div class="col-xl-5">
+                @if (isEdit)
+                {
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Put it on your website"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Paste this one line where the form should appear"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="bg-light rounded p-4 fs-8 num text-gray-800 mb-3" style="direction:ltr;word-break:break-all" id="snippet">@snippet</div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-light-primary" data-copy="#snippet"><i class="ki-outline ki-copy fs-5"></i>@T["Copy the code"]</button>
+                                <button type="button" class="btn btn-sm btn-light" data-copy-text="@directUrl"><i class="ki-outline ki-fasten fs-5"></i>@T["Copy a direct link"]</button>
+                            </div>
+                            <div class="text-muted fs-8 mt-3">@T["The direct link works in WhatsApp messages, social media posts and QR codes."]</div>
+                        </div></div>
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Preview"]</span></div></div>
+                        <div class="card-body pt-2"><iframe src="/store/forms/@Model.PublicKey?embed=true&culture=@lang&ui-culture=@lang" title="preview" style="width:100%;border:0;min-height:560px" id="wfPreview"></iframe></div></div>
+                }
+                <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What happens when a request arrives"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var step in new[] { T["step:1"].Value, T["step:2"].Value, T["step:3"].Value, T["step:4"].Value, T["step:5"].Value })
+                        {
+                            <div class="d-flex align-items-center gap-3 py-3 crm-row-sep"><span class="symbol symbol-30px"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check fs-5 text-success"></i></span></span><span class="fs-7 fw-semibold text-gray-800">@step</span></div>
+                        }
+                    </div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var done = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(T["Copied"].Value));
+  function copy(text){ (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function(){ if (window.CB && CB.toast) CB.toast(done, 'success'); }).catch(function(){}); }
+  document.querySelectorAll('[data-copy]').forEach(function(b){ b.addEventListener('click', function(){ copy(document.querySelector(b.getAttribute('data-copy')).textContent); }); });
+  document.querySelectorAll('[data-copy-text]').forEach(function(b){ b.addEventListener('click', function(){ copy(b.getAttribute('data-copy-text')); }); });
+  var f = document.getElementById('wfPreview');
+  window.addEventListener('message', function(e){ if (f && e.source === f.contentWindow && e.data && e.data.cbFormHeight) f.style.height = e.data.cbFormHeight + 'px'; });
+})();
+</script>
+}

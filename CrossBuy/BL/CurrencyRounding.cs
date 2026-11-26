@@ -15,7 +15,14 @@ namespace CrossBuy.BL
 		Task<decimal> RoundAsync(int companyId, decimal value, int? currencyId, int? branchId = null);
 	}
 
-	public class CurrencyRounding : ICurrencyRounding
+	public sealed record CurrencyRoundingBasis(int CurrencyId, int DecimalPlaces);
+	// Optional evidence contract: existing rounding substitutes need not claim provenance they cannot prove.
+	public interface ICurrencyRoundingEvidence
+	{
+		Task<CurrencyRoundingBasis> FunctionalBasisAsync(int companyId);
+	}
+
+	public class CurrencyRounding : ICurrencyRounding, ICurrencyRoundingEvidence
 	{
 		private readonly CrossDbContext _db;
 		private readonly ICurrencyService _currency;
@@ -40,5 +47,13 @@ namespace CrossBuy.BL
 
 		public async Task<decimal> RoundAsync(int companyId, decimal value, int? currencyId, int? branchId = null)
 			=> Math.Round(value, await DecimalsAsync(companyId, currencyId, branchId), MidpointRounding.AwayFromZero);
+
+		public async Task<CurrencyRoundingBasis> FunctionalBasisAsync(int companyId)
+		{
+			var currency = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			if (currency <= 0) throw new InvalidOperationException(L["Cannot determine the currency for value rounding (no document currency and no company functional currency)."]);
+			// Resolve identity once, then use that same explicit identity for precision and rounding.
+			return new(currency, await DecimalsAsync(companyId, currency));
+		}
 	}
 }

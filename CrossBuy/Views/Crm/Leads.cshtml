@@ -13,8 +13,6 @@
         <button class="btn btn-sm btn-primary" onclick="leadNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New lead"]</button>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
             <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (name / company / phone / source)"]</label>
@@ -79,7 +77,12 @@
     </form>
 </div></div></div>
 
+@* CRM C9: each lead's behavioural score and its reason, beside the rule score *@
+<div id="crmAssistCfg" hidden data-lead-insights="@Url.Action("LeadInsights","Crm")"></div>
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
 @section Scripts {
+<script src="~/js/crm-dupcheck.js" asp-append-version="true"></script>
+<script src="~/js/crm-assist.js" asp-append-version="true"></script>
 <script>
 cbServerList({ url:'@Url.Action("LeadsData","Crm")', exportUrl:'@Url.Action("LeadsExport","Crm")', isAr:@(isAr ? "true" : "false"),
   addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); cbTagFilterParams(p); } });
@@ -100,10 +103,11 @@ function cbSetTags(ids){
 }
 var modal; function v(id,val){document.getElementById(id).value=val||'';}
 // ---- CRM custom fields (3-7b) ----
-function cfClear(){ document.querySelectorAll('#mNew .cf-input').forEach(function(el){ if(el.type==='checkbox') el.checked=false; else el.value=''; }); }
+function cfSync(el){ if(window.jQuery && jQuery(el).data('select2')) jQuery(el).trigger('change.select2'); } // a select2 box only repaints when told
+function cfClear(){ document.querySelectorAll('#mNew .cf-input').forEach(function(el){ if(el.type==='checkbox') el.checked=false; else { el.value=''; cfSync(el); } }); }
 function cfLoad(entityType,id){ cfClear(); if(!id||id==='0')return;
   fetch('@Url.Action("EntityCustomValues","Crm")?entityType='+entityType+'&id='+id).then(function(r){return r.json();}).then(function(d){
-    (d||[]).forEach(function(x){ var el=document.querySelector('#mNew .cf-input[data-cf="'+x.fieldId+'"]'); if(!el)return; if(el.type==='checkbox') el.checked=(x.value==='true'); else el.value=x.value||''; }); }); }
+    (d||[]).forEach(function(x){ var el=document.querySelector('#mNew .cf-input[data-cf="'+x.fieldId+'"]'); if(!el)return; if(el.type==='checkbox') el.checked=(x.value==='true'); else { el.value=x.value||''; cfSync(el); } }); }); }
 (function(){ var f=document.querySelector('#mNew form'); if(f) f.addEventListener('submit',function(){ var arr=[]; document.querySelectorAll('#mNew .cf-input').forEach(function(el){ arr.push({fieldId:parseInt(el.getAttribute('data-cf')), value: el.type==='checkbox'?(el.checked?'true':'false'):el.value}); }); var j=document.querySelector('#mNew .cf-json'); if(j) j.value=JSON.stringify(arr); }); })();
 function leadNew(){ document.getElementById('mTitle').textContent='@Localizer["New lead"]';
   v('f_id','0');v('f_name','');v('f_nameEn','');v('f_company','');v('f_phone','');v('f_email','');v('f_source','');v('f_segment','');v('f_value','0');document.getElementById('f_status_m').value='New';v('f_campaign','');v('f_notes','');cbSetTags('');cfClear();

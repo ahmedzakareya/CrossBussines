@@ -50,9 +50,6 @@ namespace CrossBuy.BL.Platform
         public const string CriticalBannerTitle = "ZZ-UI-CONFORMANCE Critical banner";
         public const string HighBannerTitle = "ZZ-UI-CONFORMANCE High priority banner";
 
-        // The company every governed route is certified against.
-        public const int CertificationCompanyId = 1;
-
         // THE WALL-CLOCK FIX.
         //
         // The fixtures as found expired on 2026-08-20T19:49:47. That is not a certification dataset;

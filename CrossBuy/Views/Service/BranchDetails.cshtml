@@ -1,4 +1,4 @@
-﻿@model CrossBuy.ViewModel.BranchiesDto
+@model CrossBuy.ViewModel.BranchiesDto
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 
@@ -159,6 +159,7 @@
 						<div class="card-body pt-5">
 							<!--begin::Form-->
 							<form id="companyForm" class="form" action="#">
+                            @Html.AntiForgeryToken()
 								<input type="hidden" asp-for="ID" id="BranchID" />
 
 								<!--begin::Input group-->
@@ -1106,6 +1107,7 @@
 			// Function to handle form submission via AJAX
 			function submitForm() {
 				var formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('#companyForm input[name="__RequestVerificationToken"]').value);
 
 				// Add form data fields
 				// إضافة بيانات الحقول من النموذج

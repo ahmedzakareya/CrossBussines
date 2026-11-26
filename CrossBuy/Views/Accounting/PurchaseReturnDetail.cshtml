@@ -74,8 +74,26 @@
             ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn;
             ViewBag.ConversationEntityId = Model.ID;
             ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+            ViewBag.ConversationMentionUrl = Url.Action("InvoiceConversationMentions", "Accounting");
             ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
             ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+
+            @* COMMUNICATION PHASE 3 - TASKS. Every endpoint below lives on the TASKS controller, not this
+               module: the conversation is this screen's, the work is Tasks'. Naming them here is the whole
+               of the opt-in - the shared partial resolves nothing on a caller's behalf, so a screen that
+               omits them keeps exactly its previous behaviour.
+
+               THE PANEL STILL DECIDES WHETHER TO SHOW ANYTHING. It reveals the link controls only when all
+               three link urls are present AND the service reports LinkingAvailable AND a thread exists, so a
+               deployment without the CommTaskLinks table shows nothing rather than a button that refuses.
+
+               PurchaseReturn is NOT EligibleForTaskLink - see the note on SalesReturnDetail. Linking works;
+               a task created from a message carries no anchor and reports anchor_not_linkable. *@
+            ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+            ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+            ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+            ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+            ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
         }
         @await Html.PartialAsync("_EntityConversation")
     </div></div>

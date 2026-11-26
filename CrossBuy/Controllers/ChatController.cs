@@ -11,6 +11,7 @@ namespace CrossBuy.Controllers
     // Communication Hub P3 — internal Teams-style chat. Renders the chat shell + JSON endpoints;
     // realtime is over ChatHub (/hubs/chat). Internal employee↔employee only.
     [SessionValidation]
+    [AutoValidateAntiforgeryToken]
     public partial class ChatController : Controller
     {
         private readonly IChatService _chat;
@@ -18,10 +19,11 @@ namespace CrossBuy.Controllers
         private readonly CrossDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
+        private readonly IFileManagerService _files;
 
         public ChatController(IChatService chat, IEmployeeService employees, CrossDbContext db, IWebHostEnvironment env,
-            CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
-        { _chat = chat; _employees = employees; _db = db; _env = env; _contexts = contexts; }
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts, IFileManagerService files)
+        { _chat = chat; _employees = employees; _db = db; _env = env; _contexts = contexts; _files = files; }
 
         // F5 — THE COMPANY COMES FROM THE RESOLVED BUSINESS CONTEXT.
         //
@@ -92,6 +94,17 @@ namespace CrossBuy.Controllers
             return Json(await _chat.DirectoryAsync(me.Value.companyId, me.Value.empId, q));
         }
 
+        // GET /Chat/Search?q=…  — messages across the conversations this caller belongs to.
+        //
+        // The service resolves the company and the authority itself and returns an empty list when
+        // either is missing, so this action adds no gate of its own: a second rule here would be a
+        // second place for the two to disagree.
+        public async Task<IActionResult> Search(string? q)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            return Json(await _chat.SearchMessagesAsync(q));
+        }
+
         [HttpPost]
         public async Task<IActionResult> StartDirect(int otherId)
         {
@@ -117,6 +130,8 @@ namespace CrossBuy.Controllers
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
             string? path = null, name = null, type = null;
+            int? libraryItemId = null;
+            string? physicalPath = null;
             if (file != null && file.Length > 0)
             {
                 // F8-A — AUTHORIZE BEFORE ANYTHING REACHES DISK.
@@ -134,26 +149,97 @@ namespace CrossBuy.Controllers
 
                 // F8-B — CONSERVATIVE ALLOW-LIST, EXTENSION *AND* DECLARED TYPE.
                 // The old code accepted any extension and only used it to choose an icon. Files land under
-                // /uploads/chat, which PrivateFileGate requires authentication for — so this was never an
-                // anonymous hole — but an authenticated colleague opening a .html or .svg attachment would
-                // execute its script in the application's own origin. Active content is therefore refused
-                // outright rather than relied upon to be delivered safely.
+                // Chat files are stored under the company's File Manager library, in its isolated "chat"
+                // subfolder. The static-file gate denies that subfolder entirely; message links are served
+                // only by Attachment after the conversation membership check below. Active content is also
+                // refused so a member cannot execute an uploaded script in the application's origin.
                 var ext = Path.GetExtension(file.FileName ?? string.Empty).ToLowerInvariant();
                 if (!ChatAttachments.IsAcceptedType(ext, file.ContentType)) return BadRequest(new { ok = false, code = "attachment_type" });
 
-                var dir = Path.Combine(_env.WebRootPath, "uploads", "chat");
+                var dir = Path.Combine(_env.WebRootPath, "uploads", "library", me.Value.companyId.ToString(), "chat");
                 if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
                 // The stored name stays a GUID plus the validated extension — the client filename is never
                 // used to build a path, only kept as a display string.
-                var stored = Guid.NewGuid() + ext;
-                using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
-                path = "/uploads/chat/" + stored; name = Path.GetFileName(file.FileName);
+                var stored = Guid.NewGuid().ToString("N") + ext;
+                physicalPath = Path.Combine(dir, stored);
+                using (var s = System.IO.File.Create(physicalPath)) await file.CopyToAsync(s);
+                var storedPath = "/uploads/library/" + me.Value.companyId + "/chat/" + stored;
+                name = Path.GetFileName(file.FileName);
+                try
+                {
+                    libraryItemId = await _files.AddFileAsync(me.Value.companyId, me.Value.empId, null,
+                        name, null, storedPath, file.ContentType, file.Length);
+                }
+                catch
+                {
+                    System.IO.File.Delete(physicalPath);
+                    throw;
+                }
+                path = $"/Chat/Attachment?messageId={{messageId}}&fileId={libraryItemId.Value}";
                 type = ChatAttachments.IsImage(ext) ? "image" : ChatAttachments.IsAudio(ext) ? "audio" : "file";
             }
             var ids = (mentionedIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(s => int.TryParse(s, out var n) ? n : 0).Where(n => n > 0).ToList();
-            var dto = await _chat.SendAsync(me.Value.companyId, me.Value.empId, c, body, path, name, type, replyToId, ids);
-            return dto == null ? BadRequest() : Json(dto);
+            ChatMsgDto? dto;
+            try
+            {
+                dto = await _chat.SendAsync(me.Value.companyId, me.Value.empId, c, body, path, name, type, replyToId, ids);
+            }
+            catch
+            {
+                await RemoveUnreferencedUploadAsync(me.Value.companyId, me.Value.empId, libraryItemId, physicalPath);
+                throw;
+            }
+            if (dto == null)
+            {
+                // A rejected message must not leave a company-library orphan behind.
+                await RemoveUnreferencedUploadAsync(me.Value.companyId, me.Value.empId, libraryItemId, physicalPath);
+                return BadRequest();
+            }
+            return Json(dto);
+        }
+
+        private async Task RemoveUnreferencedUploadAsync(int companyId, int employeeId, int? itemId, string? physicalPath)
+        {
+            // SendAsync may throw after persisting the message (for example, while notifying SignalR).
+            // In that case retain the library row and bytes because the message already references them.
+            if (itemId.HasValue && await _db.ChatMessages.AsNoTracking().AnyAsync(m =>
+                    m.DeletedAt == null && m.AttachmentPath != null && m.AttachmentPath.EndsWith($"&fileId={itemId.Value}")))
+                return;
+            if (itemId.HasValue)
+                await _files.DeleteChatAttachmentAsync(companyId, employeeId, itemId.Value);
+            if (!string.IsNullOrWhiteSpace(physicalPath) && System.IO.File.Exists(physicalPath))
+                System.IO.File.Delete(physicalPath);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Attachment(int messageId, int fileId, bool preview = false, bool download = false)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            if (messageId <= 0 || fileId <= 0) return NotFound();
+            var expectedPath = $"/Chat/Attachment?messageId={messageId}&fileId={fileId}";
+            var message = await _db.ChatMessages.AsNoTracking()
+                .Where(m => m.ID == messageId && m.DeletedAt == null && m.AttachmentPath == expectedPath)
+                .Select(m => new { m.ConversationId }).FirstOrDefaultAsync();
+            if (message == null || !await _chat.CanReadAsync(message.ConversationId)) return NotFound();
+
+            var item = await _files.GetChatAttachmentAsync(me.Value.companyId, fileId);
+            if (item == null || string.IsNullOrWhiteSpace(item.StoredPath) ||
+                !FileManagerPaths.TryResolveLibraryFile(_env.WebRootPath, item.StoredPath, out var physicalPath) ||
+                !System.IO.File.Exists(physicalPath)) return NotFound();
+
+            var contentType = item.ContentType ?? "application/octet-stream";
+            if (preview && ChatAttachments.IsSafeInlinePreview(item.Name, contentType))
+            {
+                Response.Headers["X-Content-Type-Options"] = "nosniff";
+                Response.Headers["Cache-Control"] = "private, no-store";
+                return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);
+            }
+            if (download)
+                return PhysicalFile(physicalPath, contentType, item.Name, enableRangeProcessing: true);
+            if (ChatAttachments.IsImage(Path.GetExtension(item.Name)))
+                return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);
+            return PhysicalFile(physicalPath, contentType, item.Name, enableRangeProcessing: true);
         }
 
         [HttpPost]

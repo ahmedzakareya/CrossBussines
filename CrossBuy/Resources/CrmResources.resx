@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="act:Call" xml:space="preserve"><value>Call</value></data>
+  <data name="act:Email" xml:space="preserve"><value>Email</value></data>
+  <data name="act:Meeting" xml:space="preserve"><value>Meeting</value></data>
+  <data name="act:Task" xml:space="preserve"><value>Task</value></data>
+  <data name="appr:Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="appr:Pending" xml:space="preserve"><value>Waiting</value></data>
+  <data name="appr:Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="appr:Withdrawn" xml:space="preserve"><value>Withdrawn</value></data>
+  <data name="aud:Contact" xml:space="preserve"><value>Contacts</value></data>
+  <data name="aud:Lead" xml:space="preserve"><value>Leads</value></data>
+  <data name="band:Cold" xml:space="preserve"><value>Cold</value></data>
+  <data name="band:Hot" xml:space="preserve"><value>Hot</value></data>
+  <data name="band:Warm" xml:space="preserve"><value>Warm</value></data>
+  <data name="ch:Call" xml:space="preserve"><value>Call</value></data>
+  <data name="ch:Email" xml:space="preserve"><value>Email</value></data>
+  <data name="channel:Email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="channel:WebChat" xml:space="preserve"><value>Website chat</value></data>
+  <data name="channel:WhatsApp" xml:space="preserve"><value>WhatsApp</value></data>
+  <data name="chat:busy" xml:space="preserve"><value>Too many messages right now. Try again in a few minutes.</value></data>
+  <data name="chat:message" xml:space="preserve"><value>Please write your question.</value></data>
+  <data name="chat:name" xml:space="preserve"><value>Please write your name.</value></data>
+  <data name="chat:not_found" xml:space="preserve"><value>This chat is no longer available.</value></data>
+  <data name="cond:bought" xml:space="preserve"><value>Did they buy since entering?</value></data>
+  <data name="cond:emailOptIn" xml:space="preserve"><value>Have they agreed to e-mail?</value></data>
+  <data name="cond:inSegment" xml:space="preserve"><value>Are they still in the segment?</value></data>
+  <data name="cond:replied" xml:space="preserve"><value>Did they reply on any channel?</value></data>
+  <data name="cond:waOptIn" xml:space="preserve"><value>Have they agreed to WhatsApp?</value></data>
+  <data name="consent:OptIn" xml:space="preserve"><value>Agreed</value></data>
+  <data name="consent:OptOut" xml:space="preserve"><value>Withdrawn</value></data>
+  <data name="conv:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="conv:Open" xml:space="preserve"><value>Open</value></data>
+  <data name="conv:Pending" xml:space="preserve"><value>Waiting</value></data>
+  <data name="crmrole:CrmViewer" xml:space="preserve"><value>Viewer</value></data>
+  <data name="crmrole:Marketing" xml:space="preserve"><value>Marketing</value></data>
+  <data name="crmrole:SalesManager" xml:space="preserve"><value>Sales manager</value></data>
+  <data name="crmrole:SalesRep" xml:space="preserve"><value>Sales rep</value></data>
+  <data name="csat:1" xml:space="preserve"><value>Very poor</value></data>
+  <data name="csat:2" xml:space="preserve"><value>Poor</value></data>
+  <data name="csat:3" xml:space="preserve"><value>Okay</value></data>
+  <data name="csat:4" xml:space="preserve"><value>Good</value></data>
+  <data name="csat:5" xml:space="preserve"><value>Excellent</value></data>
+  <data name="disc:Approved" xml:space="preserve"><value>approved</value></data>
+  <data name="disc:NeedsApproval" xml:space="preserve"><value>needs approval</value></data>
+  <data name="disc:NotLimited" xml:space="preserve"><value>no limit set</value></data>
+  <data name="disc:Pending" xml:space="preserve"><value>waiting for approval</value></data>
+  <data name="disc:Rejected" xml:space="preserve"><value>rejected</value></data>
+  <data name="disc:Within" xml:space="preserve"><value>within limit</value></data>
+  <data name="dlv:Delivered" xml:space="preserve"><value>delivered</value></data>
+  <data name="dlv:Failed" xml:space="preserve"><value>not sent</value></data>
+  <data name="dlv:Queued" xml:space="preserve"><value>queued</value></data>
+  <data name="dlv:Read" xml:space="preserve"><value>read</value></data>
+  <data name="dlv:Sent" xml:space="preserve"><value>sent</value></data>
+  <data name="dup:SameAccount" xml:space="preserve"><value>Same account</value></data>
+  <data name="dup:SameEmail" xml:space="preserve"><value>Same email</value></data>
+  <data name="dup:SameEmailDomain" xml:space="preserve"><value>Same email domain</value></data>
+  <data name="dup:SameName" xml:space="preserve"><value>Same name</value></data>
+  <data name="dup:SamePhone" xml:space="preserve"><value>Same phone</value></data>
+  <data name="dup:SameTaxNumber" xml:space="preserve"><value>Same tax number</value></data>
+  <data name="dup:SimilarName" xml:space="preserve"><value>Similar name</value></data>
+  <data name="ev:Completed" xml:space="preserve"><value>All steps done</value></data>
+  <data name="ev:Enrolled" xml:space="preserve"><value>Enrolled</value></data>
+  <data name="ev:Failed" xml:space="preserve"><value>Step failed</value></data>
+  <data name="ev:Queued" xml:space="preserve"><value>E-mail queued</value></data>
+  <data name="ev:Sent" xml:space="preserve"><value>WhatsApp sent</value></data>
+  <data name="ev:Skipped" xml:space="preserve"><value>Step skipped</value></data>
+  <data name="ev:Stopped" xml:space="preserve"><value>Sequence stopped</value></data>
+  <data name="ev:Task" xml:space="preserve"><value>Task created for the owner</value></data>
+  <data name="fc:BestCase" xml:space="preserve"><value>Best case</value></data>
+  <data name="fc:Commit" xml:space="preserve"><value>Commit</value></data>
+  <data name="fc:Lost" xml:space="preserve"><value>Lost</value></data>
+  <data name="fc:Omitted" xml:space="preserve"><value>Left out</value></data>
+  <data name="fc:Pipeline" xml:space="preserve"><value>Pipeline</value></data>
+  <data name="fc:Won" xml:space="preserve"><value>Won</value></data>
+  <data name="finding:ActivityStopped" xml:space="preserve"><value>No activity in the last 30 days</value></data>
+  <data name="finding:DecliningActivity" xml:space="preserve"><value>Engagement dropped sharply</value></data>
+  <data name="finding:NoActivityEver" xml:space="preserve"><value>No activity ever recorded</value></data>
+  <data name="finding:NoNextAction" xml:space="preserve"><value>No next step scheduled</value></data>
+  <data name="finding:OpenOpportunitiesEngagementStopped" xml:space="preserve"><value>Open deals with nobody in touch</value></data>
+  <data name="finding:OverdueOpportunityExposure" xml:space="preserve"><value>A deal is past its expected close date</value></data>
+  <data name="form:busy" xml:space="preserve"><value>Too many requests from this device. Please try again in a few minutes.</value></data>
+  <data name="form:email" xml:space="preserve"><value>The email does not look right.</value></data>
+  <data name="form:failed" xml:space="preserve"><value>Could not send. Please try again.</value></data>
+  <data name="form:name" xml:space="preserve"><value>Please write your name.</value></data>
+  <data name="form:not_found" xml:space="preserve"><value>This form is no longer available.</value></data>
+  <data name="form:phone" xml:space="preserve"><value>The mobile number does not look right.</value></data>
+  <data name="form:reach" xml:space="preserve"><value>A mobile number or an email is needed so we can reach you.</value></data>
+  <data name="fst:Approved" xml:space="preserve"><value>Signed off</value></data>
+  <data name="fst:Returned" xml:space="preserve"><value>Returned</value></data>
+  <data name="fst:Submitted" xml:space="preserve"><value>Waiting for sign-off</value></data>
+  <data name="fst:Superseded" xml:space="preserve"><value>Replaced</value></data>
+  <data name="inv:Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="inv:Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="inv:PartiallyPaid" xml:space="preserve"><value>Partly paid</value></data>
+  <data name="inv:Posted" xml:space="preserve"><value>Posted</value></data>
+  <data name="jdef:body1" xml:space="preserve"><value>Hello {first},
+
+As a valued customer, here is this month's offer from us.
+
+{rep}</value></data>
+  <data name="jdef:call" xml:space="preserve"><value>Call {name} about the offer</value></data>
+  <data name="jdef:subject1" xml:space="preserve"><value>An offer for you, {first}</value></data>
+  <data name="jdef:thanks" xml:space="preserve"><value>Thank you for your order, {first}</value></data>
+  <data name="jdef:thanksBody" xml:space="preserve"><value>Hello {first},
+
+Thank you for your order. We are here whenever you need us.
+
+{rep}</value></data>
+  <data name="jev:Entered" xml:space="preserve"><value>Entered the journey</value></data>
+  <data name="jev:Exited" xml:space="preserve"><value>Left the journey</value></data>
+  <data name="jev:Failed" xml:space="preserve"><value>Step failed</value></data>
+  <data name="jev:Finished" xml:space="preserve"><value>Finished the journey</value></data>
+  <data name="jev:No" xml:space="preserve"><value>Condition: no</value></data>
+  <data name="jev:Queued" xml:space="preserve"><value>E-mail queued</value></data>
+  <data name="jev:Sent" xml:space="preserve"><value>WhatsApp sent</value></data>
+  <data name="jev:Skipped" xml:space="preserve"><value>Step skipped</value></data>
+  <data name="jev:Task" xml:space="preserve"><value>Task created for the owner</value></data>
+  <data name="jev:Waiting" xml:space="preserve"><value>Waiting</value></data>
+  <data name="jev:Yes" xml:space="preserve"><value>Condition: yes</value></data>
+  <data name="jexit:LeftSegment" xml:space="preserve"><value>Left the segment</value></data>
+  <data name="jexit:Manual" xml:space="preserve"><value>Taken off by hand</value></data>
+  <data name="jexit:OptOut" xml:space="preserve"><value>Withdrew consent</value></data>
+  <data name="jexit:Removed" xml:space="preserve"><value>Record removed</value></data>
+  <data name="jst:Active" xml:space="preserve"><value>Running</value></data>
+  <data name="jst:Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="jst:Paused" xml:space="preserve"><value>Paused</value></data>
+  <data name="kb:Archived" xml:space="preserve"><value>Archived</value></data>
+  <data name="kb:Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="kb:Published" xml:space="preserve"><value>Published</value></data>
+  <data name="kind:Account" xml:space="preserve"><value>Account</value></data>
+  <data name="kind:Contact" xml:space="preserve"><value>Contact</value></data>
+  <data name="kind:Lead" xml:space="preserve"><value>Lead</value></data>
+  <data name="meet:busy" xml:space="preserve"><value>Too many bookings right now. Try again in a few minutes.</value></data>
+  <data name="meet:email" xml:space="preserve"><value>That e-mail does not look right.</value></data>
+  <data name="meet:failed" xml:space="preserve"><value>Could not book. Please try again.</value></data>
+  <data name="meet:name" xml:space="preserve"><value>Please write your name.</value></data>
+  <data name="meet:phone" xml:space="preserve"><value>That mobile number does not look right.</value></data>
+  <data name="meet:reach" xml:space="preserve"><value>Leave a mobile or an e-mail so we can reach you.</value></data>
+  <data name="meet:taken" xml:space="preserve"><value>That time was just taken. Please choose another.</value></data>
+  <data name="move:Activities" xml:space="preserve"><value>Activities</value></data>
+  <data name="move:Calls" xml:space="preserve"><value>Calls</value></data>
+  <data name="move:Campaigns" xml:space="preserve"><value>Campaign memberships</value></data>
+  <data name="move:Consents" xml:space="preserve"><value>Consent decisions</value></data>
+  <data name="move:Contacts" xml:space="preserve"><value>Contacts</value></data>
+  <data name="move:Deals" xml:space="preserve"><value>Deals</value></data>
+  <data name="move:Leads" xml:space="preserve"><value>Leads</value></data>
+  <data name="move:Lists" xml:space="preserve"><value>List memberships</value></data>
+  <data name="move:Tickets" xml:space="preserve"><value>Tickets</value></data>
+  <data name="nba:answerCustomer" xml:space="preserve"><value>Answer the customer — they wrote and are waiting</value></data>
+  <data name="nba:chaseApproval" xml:space="preserve"><value>Follow up the discount approval</value></data>
+  <data name="nba:completeStage" xml:space="preserve"><value>Complete what the next stage needs</value></data>
+  <data name="nba:findDecisionMaker" xml:space="preserve"><value>Find out who decides and add them to the deal</value></data>
+  <data name="nba:fixCloseDate" xml:space="preserve"><value>The expected close date has passed: agree a new one</value></data>
+  <data name="nba:planNextStep" xml:space="preserve"><value>No next step is planned: set one</value></data>
+  <data name="nba:reconnect" xml:space="preserve"><value>No contact for a while: get back in touch</value></data>
+  <data name="nba:reviseDiscount" xml:space="preserve"><value>The discount was rejected: change the lines or ask again</value></data>
+  <data name="nba:sendQuote" xml:space="preserve"><value>Closing soon with no quotation: send it</value></data>
+  <data name="nba:setCloseDate" xml:space="preserve"><value>Set an expected close date</value></data>
+  <data name="no" xml:space="preserve"><value>no</value></data>
+  <data name="node:branch" xml:space="preserve"><value>Condition</value></data>
+  <data name="node:email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="node:task" xml:space="preserve"><value>Task for the account owner</value></data>
+  <data name="node:wait" xml:space="preserve"><value>Wait</value></data>
+  <data name="node:whatsapp" xml:space="preserve"><value>WhatsApp template</value></data>
+  <data name="order:1" xml:space="preserve"><value>The company is already an account → its owner</value></data>
+  <data name="order:2" xml:space="preserve"><value>The first matching territory by priority → the rep who waited longest</value></data>
+  <data name="order:3" xml:space="preserve"><value>A territory with nobody available is skipped for the next one</value></data>
+  <data name="order:4" xml:space="preserve"><value>Nothing matched → it waits unassigned and the sales managers are told</value></data>
+  <data name="pct:forecast" xml:space="preserve"><value>forecast</value></data>
+  <data name="pri:High" xml:space="preserve"><value>High</value></data>
+  <data name="pri:Low" xml:space="preserve"><value>Low</value></data>
+  <data name="pri:Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="pri:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="req:Amount" xml:space="preserve"><value>An amount</value></data>
+  <data name="req:Approver" xml:space="preserve"><value>A financial approver named</value></data>
+  <data name="req:CloseDate" xml:space="preserve"><value>An expected close date</value></data>
+  <data name="req:CustomField" xml:space="preserve"><value>A required field</value></data>
+  <data name="req:DecisionMaker" xml:space="preserve"><value>A decision maker named</value></data>
+  <data name="req:Discount" xml:space="preserve"><value>The discount approved or within limit</value></data>
+  <data name="req:NextStep" xml:space="preserve"><value>A planned next step</value></data>
+  <data name="req:Products" xml:space="preserve"><value>Product lines</value></data>
+  <data name="req:Quotation" xml:space="preserve"><value>A quotation created</value></data>
+  <data name="risk:ClosingSoon" xml:space="preserve"><value>closing soon</value></data>
+  <data name="risk:LongOpen" xml:space="preserve"><value>open a long time</value></data>
+  <data name="risk:NoActivityEver" xml:space="preserve"><value>no activity ever</value></data>
+  <data name="risk:NoExpectedCloseDate" xml:space="preserve"><value>no close date</value></data>
+  <data name="risk:NoNextAction" xml:space="preserve"><value>no next step</value></data>
+  <data name="risk:PastExpectedClose" xml:space="preserve"><value>past close date</value></data>
+  <data name="risk:StaleActivity" xml:space="preserve"><value>no recent activity</value></data>
+  <data name="role:Approver" xml:space="preserve"><value>Financial approver</value></data>
+  <data name="role:Champion" xml:space="preserve"><value>Champion</value></data>
+  <data name="role:DecisionMaker" xml:space="preserve"><value>Decision maker</value></data>
+  <data name="role:Influencer" xml:space="preserve"><value>Influencer</value></data>
+  <data name="role:User" xml:space="preserve"><value>User</value></data>
+  <data name="rule:boughtWithin" xml:space="preserve"><value>Bought within</value></data>
+  <data name="rule:customer" xml:space="preserve"><value>Is a financial customer</value></data>
+  <data name="rule:emailOptIn" xml:space="preserve"><value>Agreed to e-mail</value></data>
+  <data name="rule:hasEmail" xml:space="preserve"><value>Has an e-mail</value></data>
+  <data name="rule:hasMobile" xml:space="preserve"><value>Has a mobile</value></data>
+  <data name="rule:industry" xml:space="preserve"><value>Account industry</value></data>
+  <data name="rule:notBoughtFor" xml:space="preserve"><value>Has not bought for</value></data>
+  <data name="rule:openDeal" xml:space="preserve"><value>Has an open deal</value></data>
+  <data name="rule:owner" xml:space="preserve"><value>Account owner</value></data>
+  <data name="rule:primary" xml:space="preserve"><value>Primary contact of the account</value></data>
+  <data name="rule:sales12m" xml:space="preserve"><value>12-month sales at least</value></data>
+  <data name="rule:waOptIn" xml:space="preserve"><value>Agreed to WhatsApp</value></data>
+  <data name="rule:wonWithin" xml:space="preserve"><value>Won a deal within</value></data>
+  <data name="seqdef:body1" xml:space="preserve"><value>Hello {first},
+
+Thank you for your interest. I am {rep} and I will be looking after your request.
+If it suits you, pick a time for a short call here: {booking}
+
+Best regards,
+{rep}</value></data>
+  <data name="seqdef:body2" xml:space="preserve"><value>Hello {first},
+
+I wanted to check whether you have any questions. I am happy to help.
+Book a time that suits you: {booking}
+
+{rep}</value></data>
+  <data name="seqdef:call" xml:space="preserve"><value>Call {name} to follow up</value></data>
+  <data name="seqdef:subject1" xml:space="preserve"><value>Thank you for contacting us, {first}</value></data>
+  <data name="seqdef:subject2" xml:space="preserve"><value>Did you have a chance to look, {first}?</value></data>
+  <data name="sev:High" xml:space="preserve"><value>Serious</value></data>
+  <data name="sev:Low" xml:space="preserve"><value>Minor</value></data>
+  <data name="sev:Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="src:Import" xml:space="preserve"><value>Imported list</value></data>
+  <data name="src:Merge" xml:space="preserve"><value>Record merge</value></data>
+  <data name="src:Unsubscribe" xml:space="preserve"><value>Unsubscribe link</value></data>
+  <data name="src:Verbal" xml:space="preserve"><value>Verbally (call or visit)</value></data>
+  <data name="src:WebForm" xml:space="preserve"><value>Website form</value></data>
+  <data name="src:Written" xml:space="preserve"><value>In writing (signed form)</value></data>
+  <data name="stage:Lost" xml:space="preserve"><value>Lost</value></data>
+  <data name="stage:Negotiation" xml:space="preserve"><value>Negotiation</value></data>
+  <data name="stage:Proposal" xml:space="preserve"><value>Proposal</value></data>
+  <data name="stage:Prospecting" xml:space="preserve"><value>Prospecting</value></data>
+  <data name="stage:Qualification" xml:space="preserve"><value>Qualification</value></data>
+  <data name="stage:Won" xml:space="preserve"><value>Won</value></data>
+  <data name="step:1" xml:space="preserve"><value>The duplicate check: an open lead with the same mobile or email gets a new task instead of a second lead</value></data>
+  <data name="step:2" xml:space="preserve"><value>The lead is scored with the CRM's own rules, exactly as one typed in</value></data>
+  <data name="step:3" xml:space="preserve"><value>Assigned: the existing account's owner, else the territory in turn, else it waits unassigned</value></data>
+  <data name="step:4" xml:space="preserve"><value>Ticked consent is recorded on WhatsApp, SMS and email with the exact sentence</value></data>
+  <data name="step:5" xml:space="preserve"><value>A "first contact" call is due within the hour, with a reminder at 45 minutes</value></data>
+  <data name="step:Call" xml:space="preserve"><value>Call task</value></data>
+  <data name="step:Email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="step:Task" xml:space="preserve"><value>Task</value></data>
+  <data name="step:WhatsApp" xml:space="preserve"><value>WhatsApp template</value></data>
+  <data name="stop:Booked" xml:space="preserve"><value>Booked a meeting</value></data>
+  <data name="stop:Converted" xml:space="preserve"><value>Became a deal</value></data>
+  <data name="stop:Inactive" xml:space="preserve"><value>No longer active</value></data>
+  <data name="stop:Manual" xml:space="preserve"><value>Stopped by hand</value></data>
+  <data name="stop:OptOut" xml:space="preserve"><value>Withdrew consent</value></data>
+  <data name="stop:Replied" xml:space="preserve"><value>Replied</value></data>
+  <data name="sub:Converted" xml:space="preserve"><value>New lead</value></data>
+  <data name="sub:Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="sub:Linked" xml:space="preserve"><value>Added to an existing lead</value></data>
+  <data name="sub:Pending" xml:space="preserve"><value>Waiting</value></data>
+  <data name="sub:Spam" xml:space="preserve"><value>Spam</value></data>
+  <data name="sum:amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="sum:close" xml:space="preserve"><value>Expected close</value></data>
+  <data name="sum:committee" xml:space="preserve"><value>People on the deal</value></data>
+  <data name="sum:discount" xml:space="preserve"><value>Discount</value></data>
+  <data name="sum:lastTouch" xml:space="preserve"><value>Last contact</value></data>
+  <data name="sum:stage" xml:space="preserve"><value>Stage</value></data>
+  <data name="sum:unmet" xml:space="preserve"><value>Next stage needs</value></data>
+  <data name="sum:waiting" xml:space="preserve"><value>Customer waiting</value></data>
+  <data name="tk:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="tk:New" xml:space="preserve"><value>New</value></data>
+  <data name="tk:Open" xml:space="preserve"><value>Open</value></data>
+  <data name="tk:Pending" xml:space="preserve"><value>Waiting</value></data>
+  <data name="tk:Resolved" xml:space="preserve"><value>Resolved</value></data>
+  <data name="tok:booking" xml:space="preserve"><value>Booking link</value></data>
+  <data name="tok:company" xml:space="preserve"><value>Company</value></data>
+  <data name="tok:first" xml:space="preserve"><value>First name</value></data>
+  <data name="tok:name" xml:space="preserve"><value>Full name</value></data>
+  <data name="tok:rep" xml:space="preserve"><value>Owner's name</value></data>
+  <data name="why:A" xml:space="preserve"><value>Owner of the existing account</value></data>
+  <data name="why:AccountOwner" xml:space="preserve"><value>The company is already an account: its owner</value></data>
+  <data name="why:L" xml:space="preserve"><value>Same mobile or email as an open lead</value></data>
+  <data name="why:NoTerritoryMatched" xml:space="preserve"><value>No territory matched</value></data>
+  <data name="why:T" xml:space="preserve"><value>Territory, in turn</value></data>
+  <data name="why:Territory" xml:space="preserve"><value>Territory, in turn</value></data>
+  <data name="why:TerritoryHasNobodyAvailable" xml:space="preserve"><value>The matching territory has nobody available</value></data>
+  <data name="why:U" xml:space="preserve"><value>No territory matched</value></data>
+  <data name="why:booked" xml:space="preserve"><value>booked a meeting</value></data>
+  <data name="why:converted" xml:space="preserve"><value>already converted</value></data>
+  <data name="why:fit" xml:space="preserve"><value>fits your criteria</value></data>
+  <data name="why:messaged" xml:space="preserve"><value>messaged us this month</value></data>
+  <data name="why:messagedRecently" xml:space="preserve"><value>messaged us this week</value></data>
+  <data name="why:optIn" xml:space="preserve"><value>agreed to be contacted</value></data>
+  <data name="why:silent" xml:space="preserve"><value>days without contact</value></data>
+  <data name="why:webForm" xml:space="preserve"><value>filled a website form</value></data>
+  <data name="why:worked" xml:space="preserve"><value>work done on it</value></data>
+  <data name="yes" xml:space="preserve"><value>yes</value></data>
+</root>

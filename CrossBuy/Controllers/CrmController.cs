@@ -37,7 +37,23 @@ public partial class CrmController : Controller
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
 		private readonly ICrmAccessService _access;
-		public CrmController(ICrmService crm, CrossDbContext context, CrossBuy.BL.Platform.IRequestCompanyResolver company, ICrmAccessService access, IStringLocalizer<CrossBuy.SharedResources> localizer) { _crm = crm; _context = context; _company = company; _access = access; L = localizer; }
+		// A SERVICE REFUSAL IS A SENTENCE THE USER READS.
+		// CrmService returns its refusals as English text. That was invisible while they landed
+		// in an inline alert nobody looked at; a toast puts them in front of an Arabic reader at
+		// the moment a save fails. The English sentence IS the resource key, so an untranslated
+		// one still shows exactly what it shows today rather than a blank toast.
+		private string Say(string? serviceMessage) => string.IsNullOrWhiteSpace(serviceMessage)
+			? L["Operation failed"].Value
+			: L[serviceMessage].Value;
+
+		// THE SAME RECORD PICKER THE TASKS MODULE USES. ITaskLinkResolver is a thin company-scoped
+		// wrapper over IEntityRegistry - the frozen entity vocabulary, its search and its deep
+		// links. A second picker for CRM would be a second vocabulary, which is exactly what the
+		// registry exists to prevent.
+		private readonly CrossBuy.BL.ITaskLinkResolver _links;
+
+		public CrmController(ICrmService crm, CrossDbContext context, CrossBuy.BL.Platform.IRequestCompanyResolver company, ICrmAccessService access, IStringLocalizer<CrossBuy.SharedResources> localizer, CrossBuy.BL.ITaskLinkResolver links) { _crm = crm; _context = context; _company = company; _access = access; L = localizer; _links = links; }
+
 
 		// ---------------- CRM custom fields (3-7b-i) ----------------
 		// ---------------- Fail-closed company resolution ----------------
@@ -56,7 +72,7 @@ public partial class CrmController : Controller
 		private async Task<(bool ok, int cid, IActionResult deny)> ResolveCompanyAsync()
 		{
 			var scope = await _company.ResolveAsync();
-			if (scope.Ok && scope.CompanyId > 0) return (true, scope.CompanyId, null!);
+			if (scope.Ok && scope.CompanyId > 0 && await _access.CanAsync("read")) return (true, scope.CompanyId, null!);
 			return (false, 0, Forbid());
 		}
 
@@ -94,7 +110,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, _) = await CfSvc.SaveFieldAsync(new Models.Context.Crm.CrmCustomField { ID = id, CompanyID = cid, EntityType = entityType, Label = label ?? "", LabelEn = labelEn, FieldType = fieldType, Options = options, OptionsEn = optionsEn, Required = required, SortOrder = sortOrder, IsActive = isActive });
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Custom field saved"].Value : err;
+			this.ToastResult(ok, ok ? L["Custom field saved"].Value : Say(err));
 			return RedirectToAction(nameof(CustomFields), new { entityType });
 		}
 
@@ -104,10 +120,113 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			await CfSvc.DeleteFieldAsync(cid, id);
-			TempData["CrmMsg"] = L["Field deleted"].Value;
+			this.ToastSuccess(L["Field deleted"].Value);
 			return RedirectToAction(nameof(CustomFields), new { entityType });
 		}
 
+		// ---------------- The tag VOCABULARY ----------------
+		//
+		// Four CRM screens already let you ATTACH a tag, and the Tags table was empty with no way to
+		// put anything in it: ITagService had Create/Rename/Retire from the start and nothing in the
+		// application ever called them, so every tag picker rendered "No results found" permanently.
+		// This is the missing half - the place a tag is born, renamed and retired.
+		//
+		// WHY TagSvc IS WRITTEN TO HERE, when the note above says it is read-only in this controller.
+		// That rule is about ASSIGNMENTS: a tag attached to a record must be written inside that
+		// record’s own save transaction, or a half-saved record keeps tags it never had. The
+		// VOCABULARY is not part of any record’s save - it has no transaction to join - so it is
+		// written through the platform service that owns it, which is also where the normalization,
+		// the clash rules and the archive-vs-delete decision live.
+		
+		[HttpGet] public async Task<IActionResult> Tags()
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+		
+			// ARCHIVED TAGS ARE SHOWN, unlike every picker: this is the screen where you bring one
+			// back, and a tag you cannot see is one you cannot revive.
+			var tags = await TagSvc.GetTagsAsync(cid, includeArchived: true);
+		
+			// HOW MANY RECORDS CARRY EACH TAG, in one grouped query. The count is not decoration:
+			// RetireTagAsync DELETES an unused tag and ARCHIVES a used one, and the reader is
+			// entitled to know which of the two the button in front of them will do.
+			var ids = tags.Select(t => t.ID).ToList();
+			ViewBag.TagUsage = ids.Count == 0
+				? new Dictionary<int, int>()
+				: await _context.TagAssignments.AsNoTracking()
+					.Where(a => a.CompanyID == cid && ids.Contains(a.TagId))
+					.GroupBy(a => a.TagId)
+					.Select(g => new { TagId = g.Key, N = g.Count() })
+					.ToDictionaryAsync(x => x.TagId, x => x.N);
+		
+			ViewBag.CanManage = await _access.CanAsync("manage");
+			return View(tags);
+		}
+		
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("manage")]
+		public async Task<IActionResult> CreateTag(string name)
+		{
+			var scope = await _company.ResolveAsync();
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+		
+			// A name that matches an ARCHIVED tag revives it rather than failing or making a twin -
+			// the service’s own rule, and the reason the message below says "restored" in that case.
+			var (ok, err, tag) = await TagSvc.CreateTagAsync(cid, name ?? "", scope.EmployeeId);
+			this.ToastResult(ok, ok ? L["Tag saved"].Value : Say(err));
+			return RedirectToAction(nameof(Tags));
+		}
+		
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("manage")]
+		public async Task<IActionResult> RenameTag(int id, string name)
+		{
+			var scope = await _company.ResolveAsync();
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+		
+			// A rename does NOT touch the assignments: every record keeps the same tag, now spelled
+			// correctly. That is the whole reason a tag is an id on the wire and never a name.
+			var (ok, err) = await TagSvc.RenameTagAsync(cid, id, name ?? "", scope.EmployeeId);
+			this.ToastResult(ok, ok ? L["Tag saved"].Value : Say(err));
+			return RedirectToAction(nameof(Tags));
+		}
+		
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("manage")]
+		public async Task<IActionResult> RetireTag(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+		
+			// The service decides: ARCHIVE when the tag has history, DELETE when it has none. The
+			// answer tells the user which happened, because "archived" and "deleted" are not the
+			// same promise and the screen must not report one as the other.
+			var (ok, err, archived) = await TagSvc.RetireTagAsync(cid, id, scope.EmployeeId);
+			this.ToastResult(ok, ok
+				? (archived ? L["Tag archived"].Value : L["Tag deleted"].Value)
+				: Say(err));
+			return RedirectToAction(nameof(Tags));
+		}
+		
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("manage")]
+		public async Task<IActionResult> ReviveTag(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+		
+			// Reviving IS creating by the same name: CreateTagAsync finds the archived row by its
+			// normalized key and reactivates it. Going through that one path keeps a single set of
+			// rules for what a tag name may be, instead of a second flag-flip that skips them.
+			var existing = (await TagSvc.GetTagsAsync(cid, includeArchived: true))
+				.FirstOrDefault(t => t.ID == id);
+			if (existing == null) { this.ToastResult(false, Say(null)); return RedirectToAction(nameof(Tags)); }
+		
+			var (ok, err, _) = await TagSvc.CreateTagAsync(cid, existing.Name, scope.EmployeeId);
+			this.ToastResult(ok, ok ? L["Tag restored"].Value : Say(err));
+			return RedirectToAction(nameof(Tags));
+		}
+		
 		[HttpGet] public async Task<IActionResult> EntityCustomValues(string entityType, int id)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
@@ -159,7 +278,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, _) = await AutoSvc.SaveRuleAsync(new Models.Context.Crm.CrmAutomationRule { ID = id, CompanyID = cid, Name = name ?? "", NameEn = nameEn, TriggerType = triggerType, StageFilter = stageFilter, ActionType = actionType, ActivityType = activityType, Subject = subject, SubjectEn = subjectEn, DueInDays = dueInDays, NotifyTitle = notifyTitle, NotifyBody = notifyBody, IsActive = isActive, SortOrder = sortOrder });
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Automation rule saved"].Value : err;
+			this.ToastResult(ok, ok ? L["Automation rule saved"].Value : Say(err));
 			return RedirectToAction(nameof(AutomationRules));
 		}
 
@@ -169,7 +288,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			await AutoSvc.DeleteRuleAsync(cid, id);
-			TempData["CrmMsg"] = L["Rule deleted"].Value;
+			this.ToastSuccess(L["Rule deleted"].Value);
 			return RedirectToAction(nameof(AutomationRules));
 		}
 
@@ -185,11 +304,26 @@ public partial class CrmController : Controller
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
+            var permittedOwners = await _access.VisibleOwnerIdsAsync();
+            var leadSource = _context.Leads.AsNoTracking().Where(x => x.CompanyID == cid);
+            var opportunitySource = _context.Opportunities.AsNoTracking().Where(x => x.CompanyID == cid);
+            var activitySource = _context.Activities.AsNoTracking().Where(x => x.CompanyID == cid);
+            var accountSource = _context.CrmAccounts.AsNoTracking().Where(x => x.CompanyID == cid);
+            var campaignSource = _context.Campaigns.AsNoTracking().Where(x => x.CompanyID == cid);
+            var contactSource = _context.CrmContacts.AsNoTracking().Where(x => x.CompanyID == cid);
+            if(permittedOwners != null) {
+                campaignSource = campaignSource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+                leadSource = leadSource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+                opportunitySource = opportunitySource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+                activitySource = activitySource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+                accountSource = accountSource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+                contactSource = contactSource.Where(x => permittedOwners.Count > 0 && (x.OwnerEmployeeId == null || permittedOwners.Contains(x.OwnerEmployeeId.Value)));
+            }
 			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			var dto = new CrmDashboardDto();
 			dto.Pipeline = await _crm.PipelineSummaryAsync(cid);
 
-			var opps = await _context.Opportunities.AsNoTracking()
+			var opps = await opportunitySource.AsNoTracking()
 				.Where(o => o.CompanyID == cid)
 				.Select(o => new { o.Stage, o.Amount, o.Probability, o.AccountId, o.CreatedAt })
 				.ToListAsync();
@@ -219,7 +353,7 @@ public partial class CrmController : Controller
 				.Select(g => new { AccountId = g.Key, Value = g.Sum(x => x.Amount) })
 				.OrderByDescending(x => x.Value).Take(5).ToList();
 			var accIds = topAcc.Select(t => t.AccountId).ToList();
-			var accNames = await _context.CrmAccounts.AsNoTracking().Where(a => a.CompanyID == cid && accIds.Contains(a.ID))
+			var accNames = await accountSource.AsNoTracking().Where(a => a.CompanyID == cid && accIds.Contains(a.ID))
 				.Select(a => new { a.ID, a.Name, a.NameEn }).ToListAsync();
 			decimal maxAcc = topAcc.Count > 0 ? topAcc.Max(x => x.Value) : 0;
 			foreach (var t in topAcc)
@@ -230,19 +364,19 @@ public partial class CrmController : Controller
 					Value = t.Value, Pct = maxAcc > 0 ? (int)Math.Round(100m * t.Value / maxAcc) : 0 });
 			}
 
-			dto.LeadCount = await _context.Leads.CountAsync(l => l.CompanyID == cid && l.Status != "Converted" && l.Status != "Lost");
-			dto.RecentLeads = (await _context.Leads.AsNoTracking().Where(l => l.CompanyID == cid)
+			dto.LeadCount = await leadSource.CountAsync(l => l.CompanyID == cid && l.Status != "Converted" && l.Status != "Lost");
+			dto.RecentLeads = (await leadSource.AsNoTracking().Where(l => l.CompanyID == cid)
 				.OrderByDescending(l => l.ID).Take(6)
 				.Select(l => new { l.Name, l.NameEn, l.Status, l.Score, l.CreatedAt }).ToListAsync())
 				.Select(l => new CrmRecentLead { Name = (isEn && !string.IsNullOrWhiteSpace(l.NameEn)) ? l.NameEn! : l.Name, Status = l.Status, Score = l.Score, CreatedAt = l.CreatedAt }).ToList();
 
-			dto.OpenActivities = await _context.Activities.CountAsync(a => a.CompanyID == cid && !a.Done);
-			dto.OverdueActivities = await _context.Activities.CountAsync(a => a.CompanyID == cid && !a.Done && a.DueDate != null && a.DueDate < now);
+			dto.OpenActivities = await activitySource.CountAsync(a => a.CompanyID == cid && !a.Done);
+			dto.OverdueActivities = await activitySource.CountAsync(a => a.CompanyID == cid && !a.Done && a.DueDate != null && a.DueDate < now);
 			var ts = await _crm.TicketStatsAsync(cid);
 			dto.OpenTickets = ts.open;
-			dto.AccountCount = await _context.CrmAccounts.CountAsync(a => a.CompanyID == cid);
-			dto.ContactCount = await _context.CrmContacts.CountAsync(c => c.CompanyID == cid);
-			dto.ActiveCampaigns = await _context.Campaigns.CountAsync(c => c.CompanyID == cid && c.Status == "Active");
+			dto.AccountCount = await accountSource.CountAsync(a => a.CompanyID == cid);
+			dto.ContactCount = await contactSource.CountAsync(c => c.CompanyID == cid);
+			dto.ActiveCampaigns = await campaignSource.CountAsync(c => c.CompanyID == cid && c.Status == "Active");
 			return View(dto);
 		}
 
@@ -314,7 +448,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, newId) = await _crm.SaveAccountAsync(cid, new Models.Context.Crm.CrmAccount { ID = id, Name = name ?? "", NameEn = nameEn, Industry = industry, IndustryEn = industryEn, Phone = phone, Email = email, Website = website, Address = address, Source = source, Segment = segment, IsActive = isActive, Notes = notes }, User?.Identity?.Name, TagsFromForm(tagIds));
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Account updated"].Value : L["Account created"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Account updated"].Value : L["Account created"].Value) : Say(err));
 			return ok ? RedirectToAction(nameof(AccountEditor), new { id = newId }) : RedirectToAction(nameof(Accounts));
 		}
 
@@ -324,7 +458,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err) = await _crm.SaveContactAsync(cid, new Models.Context.Crm.CrmContact { ID = id, AccountId = accountId, Name = name ?? "", NameEn = nameEn, Title = title, TitleEn = titleEn, Phone = phone, Email = email, IsPrimary = isPrimary, Notes = notes });
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Contact saved"].Value : err;
+			this.ToastResult(ok, ok ? L["Contact saved"].Value : Say(err));
 			return RedirectToAction(nameof(AccountEditor), new { id = accountId });
 		}
 
@@ -334,7 +468,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			await _crm.DeleteContactAsync(cid, id);
-			TempData["CrmMsg"] = L["Contact deleted"].Value;
+			this.ToastSuccess(L["Contact deleted"].Value);
 			return RedirectToAction(nameof(AccountEditor), new { id = accountId });
 		}
 
@@ -396,7 +530,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err) = await _crm.SaveCampaignAsync(cid, new Campaign { ID = id, Name = name ?? "", NameEn = nameEn, Channel = channel, Status = status, StartDate = startDate, EndDate = endDate, Budget = budget, Notes = notes }, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Campaign updated"].Value : L["Campaign added"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Campaign updated"].Value : L["Campaign added"].Value) : Say(err));
 			return RedirectToAction(nameof(Campaigns));
 		}
 
@@ -406,7 +540,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var detail = await _crm.GetCampaignDetailAsync(cid, id);
-			if (detail == null) { TempData["CrmErr"] = L["Campaign not found"].Value; return RedirectToAction(nameof(Campaigns)); }
+			if (detail == null) { this.ToastError(L["Campaign not found"].Value); return RedirectToAction(nameof(Campaigns)); }
 			ViewBag.Members = await _crm.GetCampaignMembersAsync(cid, id);
 			ViewBag.Lists = await _crm.GetListsForPickAsync(cid);
 			return View(detail);
@@ -426,7 +560,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var n = await _crm.AddCampaignMembersAsync(cid, campaignId, new[] { (entityType, entityId, memberName) });
-			TempData[n > 0 ? "CrmMsg" : "CrmErr"] = n > 0 ? L["Member added"].Value : L["Member already exists"].Value;
+			this.ToastResult(n > 0, n > 0 ? L["Member added"].Value : L["Member already exists"].Value);
 			return RedirectToAction(nameof(CampaignDetail), new { id = campaignId });
 		}
 
@@ -436,7 +570,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var n = await _crm.AddListToCampaignAsync(cid, campaignId, listId);
-			TempData["CrmMsg"] = L["Added {0} members from the list", n].Value;
+			this.ToastSuccess(L["Added {0} members from the list", n].Value);
 			return RedirectToAction(nameof(CampaignDetail), new { id = campaignId });
 		}
 
@@ -511,7 +645,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, newId) = await _crm.SaveListAsync(cid, new Models.Context.Crm.CrmMarketingList { ID = id, Name = name ?? "", NameEn = nameEn, Description = description, DescriptionEn = descriptionEn, IsActive = isActive }, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["List updated"].Value : L["List created"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["List updated"].Value : L["List created"].Value) : Say(err));
 			return ok ? RedirectToAction(nameof(ListEditor), new { id = newId }) : RedirectToAction(nameof(MarketingLists));
 		}
 
@@ -521,7 +655,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var n = await _crm.AddListMembersAsync(cid, listId, new[] { (entityType, entityId, memberName) });
-			TempData[n > 0 ? "CrmMsg" : "CrmErr"] = n > 0 ? L["Member added"].Value : L["Member already exists"].Value;
+			this.ToastResult(n > 0, n > 0 ? L["Member added"].Value : L["Member already exists"].Value);
 			return RedirectToAction(nameof(ListEditor), new { id = listId });
 		}
 
@@ -543,17 +677,24 @@ public partial class CrmController : Controller
 			return View();
 		}
 
-		[HttpGet] public async Task<IActionResult> TicketsData(string? q, string? status, string? priority, int page = 1, int pageSize = 25)
+		[HttpGet] public async Task<IActionResult> TicketsData(string? q, string? status, string? priority, bool myUnit = false, int page = 1, int pageSize = 25)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
-			var (rows, total) = await _crm.SearchTicketsAsync(cid, q, status, priority, page, pageSize);
+			var (rows, total) = await _crm.SearchTicketsAsync(cid, q, status, priority, page, pageSize, myUnit);
+			// The unit NAMES for the rows on this page - one read, not one per row, and it covers
+			// units that have since been deactivated so history stays readable.
+			ViewBag.DeptNames = await _crm.DepartmentNamesAsync(rows.Select(r => r.DepartmentId ?? 0));
 			SetPaging(total, page, pageSize);
 			return PartialView("_TicketRows", rows);
 		}
 
 		[HttpGet] public async Task<IActionResult> TicketEditor(int? id)
 		{
+			// The calls on this ticket. A support record whose history of phone calls lives
+			// somewhere else is a record nobody can read in one place.
+			if (id is > 0) ViewBag.TicketCalls = await _crm.GetCallsAsync(
+				(await _company.ResolveAsync()).CompanyId, 50, id);
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var model = (id.HasValue && id.Value > 0)
@@ -565,18 +706,33 @@ public partial class CrmController : Controller
 				var acc = await _context.CrmAccounts.AsNoTracking().Where(a => a.CompanyID == cid && a.ID == model.AccountId.Value).Select(a => new { a.Name, a.NameEn }).FirstOrDefaultAsync();
 				ViewBag.AccountName = acc == null ? null : (!tkIsAr && !string.IsNullOrWhiteSpace(acc.NameEn) ? acc.NameEn : acc.Name);
 			}
-			if (model.ID > 0) { ViewBag.Timeline = await _crm.GetTimelineAsync(cid, "Ticket", model.ID); ViewBag.EntityType = "Ticket"; ViewBag.EntityId = model.ID; }
+			// The same chart the call screen offers, so a problem routed on the phone and one routed
+			// from its own screen are picked from one structure.
+			ViewBag.OrgTree = await _crm.OrgTreeAsync(cid);
+			// The call rows on this page are the SAME partial the call log draws, and it names the
+			// agent (with their photo) and the unit each call went to - so this page has to supply
+			// the two lookups that partial reads, exactly as the call screen does.
+			var tcalls = ViewBag.TicketCalls as List<Models.Context.Crm.CrmCall> ?? new();
+			ViewBag.Employees = await _context.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == cid).ToListAsync();
+			ViewBag.DeptNames = await _crm.DepartmentNamesAsync(tcalls.Select(c => c.DepartmentId ?? 0));
+			ViewBag.RecordTypes = _links.Types();
+			// Resolved rather than stored: a label copied onto the ticket at creation would still say
+				// "Order #118 - Ahmed" after the order was renamed or cancelled.
+			ViewBag.SourceLink = await _links.ResolveAsync(cid, model.SourceType, model.SourceId);
+			if (model.ID > 0) { ViewBag.Timeline
+ = await _crm.GetTimelineAsync(cid, "Ticket", model.ID); ViewBag.EntityType = "Ticket"; ViewBag.EntityId = model.ID; }
 			return View(model);
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
-		public async Task<IActionResult> SaveTicket(int id, string subject, string? subjectEn, string? description, string? descriptionEn, int? accountId, string? category, string? categoryEn, string priority, int? ownerEmployeeId)
+		public async Task<IActionResult> SaveTicket(int id, string subject, string? subjectEn, string? description, string? descriptionEn, int? accountId, string? category, string? categoryEn, string priority, int? ownerEmployeeId, string? channel, string? callerPhone, int? departmentId, string? sourceType, int? sourceId)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, newId) = await _crm.SaveTicketAsync(cid, new Models.Context.Crm.CrmTicket {
-				ID = id, Subject = subject ?? "", SubjectEn = subjectEn, Description = description, DescriptionEn = descriptionEn, AccountId = accountId, Category = category, CategoryEn = categoryEn, Priority = priority, OwnerEmployeeId = ownerEmployeeId }, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Ticket updated"].Value : L["Ticket created"].Value) : err;
+				ID = id, Subject = subject ?? "", SubjectEn = subjectEn, Description = description, DescriptionEn = descriptionEn, AccountId = accountId, Category = category, CategoryEn = categoryEn, Priority = priority, OwnerEmployeeId = ownerEmployeeId, Channel = channel, CallerPhone = callerPhone, DepartmentId = departmentId, SourceType = sourceType, SourceId = sourceId }, User?.Identity?.Name);
+			this.ToastResult(ok, ok ? (id > 0 ? L["Ticket updated"].Value : L["Ticket created"].Value) : Say(err));
 			return ok ? RedirectToAction(nameof(TicketEditor), new { id = newId }) : RedirectToAction(nameof(Tickets));
 		}
 
@@ -586,8 +742,196 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			await _crm.UpdateTicketStatusAsync(cid, id, status);
-			TempData["CrmMsg"] = L["Ticket status updated"].Value;
+			// CRM C8: a resolved request gets its one satisfaction survey now, while the request knows the site's address
+			if (status is "Resolved" or "Closed") await DeskSvc.SurveyForAsync(cid, id, Origin);
+			this.ToastSuccess(L["Ticket status updated"].Value);
 			return RedirectToAction(nameof(TicketEditor), new { id });
+		}
+
+		// ============================================================================================
+		// CALL CENTRE
+		//
+		// Actions on the EXISTING CRM controller, not a new one: the controller count is frozen, and
+		// a call belongs to the same bounded context as the ticket it is about anyway.
+		// ============================================================================================
+
+		[HttpGet] public async Task<IActionResult> Calls(string? q, int? ticketId)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			var calls = await _crm.GetCallsAsync(cid, 100);
+			ViewBag.Calls = calls;
+			// The picker draws the chart as it is NOW; the log has to name the node each call
+			// actually went to, which may since have been deactivated or moved. Two reads, because
+			// they are two different questions and one list cannot answer both.
+			ViewBag.OrgTree = await _crm.OrgTreeAsync(cid);
+			ViewBag.DeptNames = await _crm.DepartmentNamesAsync(calls.Select(c => c.DepartmentId ?? 0));
+			ViewBag.RecordTypes = _links.Types();
+
+			// ARRIVED FROM A TICKET. The form opens attached to it, with the number and the caller
+			// filled in from the ticket itself - both are facts the ticket already knows.
+			//
+			// The ROUTING is deliberately NOT pre-filled, even when the ticket is already routed:
+			// setting a department is what sends the notification, so carrying it over would ping
+			// the unit again for every call logged against the ticket.
+			if (ticketId is > 0)
+			{
+				var t = await _crm.GetTicketAsync(cid, ticketId.Value);
+				// Resolved through the service, so a ticket the caller may not see simply does not
+				// attach - the query string cannot be used to confirm one exists.
+				if (t != null)
+				{
+					ViewBag.ForTicketId = t.ID;
+					ViewBag.ForTicketSubject = CrossBuy.BL.DisplayName.Of(t.Subject, t.SubjectEn);
+					ViewBag.ForTicketPhone = t.CallerPhone;
+					// WHAT THE TICKET IS ABOUT, resolved live for the same read-only treatment as the
+					// routing below: both are properties of the TICKET, both are edited on its screen,
+					// and a second place to set them is a second answer to the same question.
+					ViewBag.ForTicketSource = await _links.ResolveAsync(cid, t.SourceType, t.SourceId);
+
+					// Where the TICKET stands, shown read-only. Routing belongs to the ticket, so the
+					// call screen reports it and does not offer to change it.
+					if (t.DepartmentId is > 0)
+					{
+						var dn = await _crm.DepartmentNamesAsync(new[] { t.DepartmentId.Value });
+						ViewBag.ForTicketDept = dn.TryGetValue(t.DepartmentId.Value, out var dd)
+							? CrossBuy.BL.DisplayName.Of(dd.NameAr, dd.NameEn)
+							: "#" + t.DepartmentId.Value;
+					}
+				}
+			}
+			ViewBag.Breached = await _crm.BreachedTicketsAsync(cid);
+			ViewBag.Stats = await _crm.TicketStatsAsync(cid);
+			// THE ENTITY, NOT AN ANONYMOUS PROJECTION.
+			//
+			// An anonymous type is internal to the assembly that declares it, and Razor RUNTIME
+			// compilation builds views into a different one - so `@e.ID` on a dynamic threw
+			// RuntimeBinderException: 'object' does not contain a definition for 'ID'. It compiles
+			// clean and fails only when the page is requested, which is why it has to be caught by
+			// loading the page rather than by building.
+			ViewBag.Employees = await _context.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == cid).OrderBy(e => e.FullName).ToListAsync();
+			return View();
+		}
+
+		// WHAT IS IT ABOUT. Feeds the "بخصوص" picker: the caller names an order, an invoice or an
+		// item, and the agent attaches the actual record rather than retyping its number into a
+		// subject line where nothing can ever join on it.
+		[HttpGet] public async Task<IActionResult> RecordSearch(string? entityType, string? term)
+		{
+			if (string.IsNullOrWhiteSpace(entityType)) return Json(new { results = Array.Empty<object>() });
+			var (okCo, cid, _) = await ResolveCompanyAsync();
+			// A picker with no resolved company offers NOTHING - the same empty answer an unknown
+			// type gets, so a caller cannot tell the two apart by probing.
+			if (!okCo || cid <= 0) return Json(new { results = Array.Empty<object>() });
+			var rows = await _links.SearchAsync(cid, entityType, term);
+			return Json(new { results = rows.Select(r => new { id = r.Id, text = r.Label }) });
+		}
+
+		// WHO IS THIS. The lookup an agent needs in the seconds before answering: every earlier call
+		// from the same number, and whatever each of them turned out to be about.
+		[HttpGet] public async Task<IActionResult> CallerLookup(string? phone)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			var calls = await _crm.HistoryForNumberAsync(cid, phone ?? "");
+			var ticketIds = calls.Where(c => c.TicketId != null).Select(c => c.TicketId!.Value).Distinct().ToList();
+			var subjects = await _context.CrmTickets.AsNoTracking()
+				.Where(t => t.CompanyID == cid && ticketIds.Contains(t.ID))
+				.Select(t => new { t.ID, t.Subject, t.Status }).ToListAsync();
+			return Json(new
+			{
+				count = calls.Count,
+				calls = calls.Select(c => new { c.ID, c.Direction, c.Outcome, c.StartedAt, c.DurationSeconds, c.TicketId }),
+				tickets = subjects,
+			});
+		}
+
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
+		public async Task<IActionResult> LogCall(string direction, string? phoneNumber, int? ticketId,
+			int? accountId, int? agentEmployeeId, int? departmentId, DateTime? startedAt,
+			int? durationSeconds, string outcome, string? notes, string? ticketSubject,
+			string? sourceType, int? sourceId)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			var res = await _crm.LogCallAsync(cid, new Models.Context.Crm.CrmCall
+			{
+				Direction = direction, PhoneNumber = phoneNumber, TicketId = ticketId, AccountId = accountId,
+				AgentEmployeeId = agentEmployeeId, DepartmentId = departmentId,
+				SourceType = sourceType, SourceId = sourceId,
+				StartedAt = startedAt ?? DateTime.UtcNow,
+				DurationSeconds = durationSeconds, Outcome = outcome, Notes = notes,
+			}, User?.Identity?.Name, ticketSubject);
+
+			// SAY WHAT ACTUALLY HAPPENED TO THE ROUTING. "Call logged" alone would hide the one
+			// outcome the agent must act on: the department exists, the call was routed to it, and
+			// nobody is assigned to it - so no notification went anywhere and the agent is still the
+			// only person who knows. That is a warning, not a success.
+			if (!res.Ok)
+			{
+				this.ToastError(Say(res.Error));
+			}
+			else
+			{
+				// The ticket, if one was opened, leads - it is the thing the agent will be asked
+				// about later, and its number is the only part of this they need to carry away.
+				var opened = res.TicketId is > 0 ? L["Ticket #{0} opened", res.TicketId!.Value].Value + " · " : "";
+				if (departmentId is > 0)
+				{
+					var names = await _crm.DepartmentNamesAsync(new[] { departmentId.Value });
+					var dept = names.TryGetValue(departmentId.Value, out var d)
+						? DisplayName.Of(d.NameAr, d.NameEn)
+						: "#" + departmentId.Value;
+					if (res.Notified > 0) this.ToastSuccess(opened + L["Call logged and routed to {0}; {1} notified", dept, res.Notified].Value);
+					else this.ToastWarning(opened + L["Call logged and routed to {0}, but no employee is assigned to that department yet", dept].Value);
+				}
+				else
+				{
+					this.ToastSuccess(opened + L["Call logged"].Value);
+				}
+			}
+			// An agent who TYPED an existing ticket number was already heading for that ticket; one
+			// who opened a new one from here is still on the phones, and the new row links to it.
+			return ticketId is > 0
+				? RedirectToAction(nameof(TicketEditor), new { id = ticketId })
+				: RedirectToAction(nameof(Calls));
+		}
+
+		// ESCALATE ONE TICKET, UP THE CHART. Different from EscalateBreaches below, which sweeps
+		// everything past its deadline and tells the OWNER: this is a human deciding that one
+		// problem has outgrown the unit holding it, and it moves the ticket to the unit above.
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
+		public async Task<IActionResult> EscalateTicket(int id, string? reason)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			var (ok, err, toName, notified) = await _crm.EscalateTicketAsync(cid, id, reason, User?.Identity?.Name);
+			if (!ok) this.ToastError(Say(err));
+			else if (notified > 0) this.ToastSuccess(L["Escalated to {0}; {1} notified", toName ?? "", notified].Value);
+			else this.ToastWarning(L["Escalated to {0}, but no employee is assigned to that unit yet", toName ?? ""].Value);
+			return RedirectToAction(nameof(TicketEditor), new { id });
+		}
+
+		// ESCALATE WHAT IS ALREADY LATE.
+		//
+		// `crm_ticket` has been a declared notification type with a mapped route since the module
+		// was written, and NOTHING in the codebase ever raised it - so a breach was discovered only
+		// by a human who happened to open the screen. Measured on this database at the time: 4 of 6
+		// tickets were past their resolution deadline and nobody had been told.
+		//
+		// Deliberately an ACTION a supervisor runs, not a background worker: a worker that notifies
+		// on every pass would send the same breach every few minutes forever. The dedup key below
+		// makes a repeat run idempotent per ticket per day.
+		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("manage")]
+		public async Task<IActionResult> EscalateBreaches([FromServices] CrossBuy.BL.INotificationService notify)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			// CRM C8: the same sweep the CRM worker now runs, in one place
+			var (sent, unowned) = await DeskSvc.SweepBreachesAsync(cid);
+			this.ToastSuccess(string.Format(L["Escalated {0} breached ticket(s); {1} have no owner"].Value, sent, unowned));
+			return RedirectToAction(nameof(Calls));
 		}
 
 		[HttpGet][CrossBuy.Models.CrmPerm("manage")]
@@ -606,7 +950,7 @@ public partial class CrmController : Controller
 			if (!okCo) return denyCo;
 			var (ok, err) = await _crm.SaveSlaPolicyAsync(cid, new Models.Context.Crm.CrmSlaPolicy {
 				ID = id, Name = name ?? "", Priority = priority, FirstResponseMins = firstResponseMins, ResolutionMins = resolutionMins, IsActive = isActive });
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["SLA policy saved"].Value : err;
+			this.ToastResult(ok, ok ? L["SLA policy saved"].Value : Say(err));
 			return RedirectToAction(nameof(SlaPolicies));
 		}
 
@@ -628,7 +972,7 @@ public partial class CrmController : Controller
 			if (!okCo) return denyCo;
 			var (ok, err) = await _crm.SaveScoringRuleAsync(cid, new Models.Context.Crm.CrmScoringRule {
 				ID = id, Name = name ?? "", NameEn = nameEn, Field = field, Operator = @operator, Value = value, Points = points, IsActive = isActive });
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Rule saved"].Value : err;
+			this.ToastResult(ok, ok ? L["Rule saved"].Value : Say(err));
 			return RedirectToAction(nameof(ScoringRules));
 		}
 
@@ -638,7 +982,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			await _crm.SaveCrmSettingsAsync(cid, new Models.Context.Crm.CrmSettings { AutoRouteLeads = autoRouteLeads, HotScore = hotScore, WarmScore = warmScore });
-			TempData["CrmMsg"] = L["Settings saved"].Value;
+			this.ToastSuccess(L["Settings saved"].Value);
 			return RedirectToAction(nameof(ScoringRules));
 		}
 
@@ -648,17 +992,10 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var n = await _crm.RecomputeAllLeadScoresAsync(cid);
-			TempData["CrmMsg"] = L["Recomputed scores for {0} leads", n].Value;
+			this.ToastSuccess(L["Recomputed scores for {0} leads", n].Value);
 			return RedirectToAction(nameof(ScoringRules));
 		}
 
-		[HttpGet] public async Task<IActionResult> Forecast()
-		{
-			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
-			if (!okCo) return denyCo;
-			ViewBag.Forecast = await _crm.GetForecastAsync(cid);
-			return View();
-		}
 
 		// ---------------- 360° report (3-8) ----------------
 		[HttpGet] public async Task<IActionResult> Reports()
@@ -708,7 +1045,7 @@ public partial class CrmController : Controller
 				var owner = await _context.Leads.Where(l => l.CompanyID == cid && l.ID == lead.ID).Select(l => l.OwnerEmployeeId).FirstOrDefaultAsync();
 				await AutoSvc.RunAsync(cid, "LeadCreated", null, lead.ID, null, owner);   // CRM 3-7b(ii)
 			}
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Lead updated"].Value : L["Lead added"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Lead updated"].Value : L["Lead added"].Value) : Say(err));
 			return RedirectToAction(nameof(Leads));
 		}
 
@@ -718,7 +1055,7 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (ok, err, _) = await _crm.ConvertLeadToAccountAsync(cid, id, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Lead converted to account"].Value : err;
+			this.ToastResult(ok, ok ? L["Lead converted to account"].Value : Say(err));
 			return RedirectToAction(nameof(Leads));
 		}
 
@@ -744,7 +1081,7 @@ public partial class CrmController : Controller
 			var scope = await _company.ResolveAsync();
 			if (!scope.Ok)
 			{
-				TempData["CrmErr"] = L["You do not have permission to perform this action"].Value;
+				this.ToastError(L["You do not have permission to perform this action"].Value);
 				return RedirectToAction(nameof(Index));
 			}
 
@@ -779,6 +1116,11 @@ public partial class CrmController : Controller
 				{
 					// Nothing examined is NOT a healthy customer base. Map(200, 0) yields InsufficientData.
 					vm.Panel = AiInsightMapper.Map(200, 0, scope.CompanyId, nowUtc);
+					// THE COMPANY BY NAME, for the provenance strip. All four insight screens printed the
+					// integer primary key as "Company 1", which is an internal handle: it tells a reader
+					// nothing and looks identical on every installation. ViewBag.CompanyName is the
+					// convention the Workspace layout already uses, and the partial falls back to the id.
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 					return View(vm);
 				}
 
@@ -895,6 +1237,7 @@ public partial class CrmController : Controller
 				vm.Panel = AiInsightMapper.Failed("crm-account:unreadable-data", scope.CompanyId, nowUtc);
 			}
 
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 			return View(vm);
 		}
 
@@ -921,7 +1264,7 @@ public partial class CrmController : Controller
 			{
 				// The resolver's reason is deliberately not rendered: it names companies, and "your company is
 				// 2, the record is 1" tells a caller a record exists where they cannot see it.
-				TempData["CrmErr"] = L["You do not have permission to perform this action"].Value;
+				this.ToastError(L["You do not have permission to perform this action"].Value);
 				return RedirectToAction(nameof(Index));
 			}
 
@@ -962,6 +1305,11 @@ public partial class CrmController : Controller
 				{
 					// Nothing examined is NOT a clean pipeline. Map(200, 0) yields InsufficientData.
 					vm.Panel = AiInsightMapper.Map(200, 0, scope.CompanyId, nowUtc);
+					// THE COMPANY BY NAME, for the provenance strip. All four insight screens printed the
+					// integer primary key as "Company 1", which is an internal handle: it tells a reader
+					// nothing and looks identical on every installation. ViewBag.CompanyName is the
+					// convention the Workspace layout already uses, and the partial falls back to the id.
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 					return View(vm);
 				}
 
@@ -987,10 +1335,17 @@ public partial class CrmController : Controller
 					.Select(a => new { a.ID, a.Name })
 					.ToDictionaryAsync(a => a.ID, a => a.Name);
 
-				var ownerNames = await _context.Employee.AsNoTracking()
+				// THE OWNER’S PHOTO RIDES ON THE QUERY THAT WAS ALREADY FETCHING THEIR NAME. One extra
+				// column on a dictionary this screen builds anyway - no second round trip, and no lookup
+				// per row.
+				var owners = await _context.Employee.AsNoTracking()
 					.Where(e => e.EmpCompanyID == scope.CompanyId)
-					.Select(e => new { e.ID, e.FullName, e.FullNameEn })
-					.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage })
+					.ToDictionaryAsync(e => e.ID, e => new
+					{
+						Name = CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn),
+						e.ProfileImage,
+					});
 
 				var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 				var signals = rows.Select(r => new CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Signal
@@ -1005,7 +1360,8 @@ public partial class CrmController : Controller
 					ExpectedCloseDate = r.ExpectedCloseDate,
 					CreatedAt = r.CreatedAt,
 					OwnerEmployeeId = r.OwnerEmployeeId,
-					OwnerName = r.OwnerEmployeeId != null && ownerNames.TryGetValue(r.OwnerEmployeeId.Value, out var on) ? on : null,
+					OwnerName = r.OwnerEmployeeId != null && owners.TryGetValue(r.OwnerEmployeeId.Value, out var on) ? on.Name : null,
+					OwnerAvatarUrl = r.OwnerEmployeeId != null && owners.TryGetValue(r.OwnerEmployeeId.Value, out var op) ? op.ProfileImage : null,
 					LastActivityAt = activityById.TryGetValue(r.ID, out var ac) ? ac.LastAt : null,
 					OpenActivityCount = activityById.TryGetValue(r.ID, out var ac2) ? ac2.Open : 0,
 				});
@@ -1024,6 +1380,7 @@ public partial class CrmController : Controller
 				vm.Panel = AiInsightMapper.Failed("crm-insight:unreadable-data", scope.CompanyId, nowUtc);
 			}
 
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 			return View(vm);
 		}
 
@@ -1100,7 +1457,7 @@ public partial class CrmController : Controller
 			List<Models.Context.Crm.CrmPipelineStage> stages;
 			try { stages = System.Text.Json.JsonSerializer.Deserialize<List<Models.Context.Crm.CrmPipelineStage>>(stagesJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { stages = new(); }
 			var (ok, err, newId) = await _crm.SavePipelineAsync(cid, new Models.Context.Crm.CrmPipeline { ID = id, Name = name ?? "", NameEn = nameEn, IsDefault = isDefault, IsActive = isActive }, stages);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Pipeline updated"].Value : L["Pipeline created"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Pipeline updated"].Value : L["Pipeline created"].Value) : Say(err));
 			return ok ? RedirectToAction(nameof(PipelineEditor), new { id = newId }) : RedirectToAction(nameof(Pipelines));
 		}
 
@@ -1109,6 +1466,9 @@ public partial class CrmController : Controller
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
+			// CRM C3: a stage may require things before a deal ENTERS it; the board is one of its two doors.
+			if (await StageGateAsync(cid, id, stage, null, null) is { } gate)
+				return Json(new { ok = false, code = "gate", error = gate.message, missing = gate.missing, url = Url.Action("Deal", new { id }) });
 			var (ok, err) = await _crm.UpdateOpportunityStageAsync(cid, id, stage);
 			if (ok)
 			{
@@ -1123,10 +1483,16 @@ public partial class CrmController : Controller
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
+			// CRM C3: the form is the other door into a stage. Only an existing deal changes stage here.
+			if (id > 0 && await StageGateAsync(cid, id, stage, null, pipelineId) is { } gate)
+			{
+				this.ToastError(gate.message);
+				return RedirectToAction("Deal", new { id });
+			}
 			var opp = new Opportunity { ID = id, Title = title ?? "", TitleEn = titleEn, AccountId = accountId, PipelineId = pipelineId, Stage = stage, Amount = amount, ExpectedCloseDate = expectedCloseDate, Notes = notes, CampaignId = campaignId, WinLossReason = winLossReason };
 			var (ok, err) = await _crm.SaveOpportunityAsync(cid, opp, User?.Identity?.Name, TagsFromForm(tagIds));
 			if (ok && opp.ID > 0) await CfSvc.SaveValuesAsync(cid, "Opportunity", opp.ID, ParseCustomFields(customFieldsJson));
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Opportunity updated"].Value : L["Opportunity added"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Opportunity updated"].Value : L["Opportunity added"].Value) : Say(err));
 			return RedirectToAction(nameof(Opportunities));
 		}
 
@@ -1137,7 +1503,28 @@ public partial class CrmController : Controller
 			if (!okCo) return denyCo;
 			var opp = await _crm.GetOpportunityAsync(cid, id);
 			if (opp == null) return RedirectToAction(nameof(Opportunities));
-			ViewBag.Products = await _crm.GetOpportunityProductsAsync(cid, id);
+			var lines = await _crm.GetOpportunityProductsAsync(cid, id);
+			ViewBag.Products = lines;
+
+			// THE ITEM’S OWN NAME, which this screen did not have.
+			//
+			// An OpportunityProduct row stores an ItemId and a free-text ItemDescription, and nothing
+			// else - the name lives in Items. The view had no second source for it, so it labelled the
+			// item picker with the DESCRIPTION: type "delivered in March" into the description, save,
+			// reload, and the item column read "delivered in March" too. The row was never corrupted;
+			// the screen was showing one field twice.
+			//
+			// Code and name both travel, because that is exactly what /Inventory/ItemPickData returns
+			// and what cbItemSelectSet renders ("CODE — Name"). A reloaded line has to look identical
+			// to one the user just picked, or the screen tells them the item changed when it did not.
+			var lineItemIds = lines.Where(p => p.ItemId != null).Select(p => p.ItemId!.Value).Distinct().ToList();
+			ViewBag.LineItems = lineItemIds.Count == 0
+				? new Dictionary<int, (string Code, string Name)>()
+				: (await _context.Items.AsNoTracking()
+					.Where(i => i.CompanyID == cid && lineItemIds.Contains(i.ID))
+					.Select(i => new { i.ID, i.ItemCode, i.Name })
+					.ToListAsync())
+					.ToDictionary(i => i.ID, i => (i.ItemCode ?? "", i.Name ?? ""));
 			if (opp.AccountId.HasValue) ViewBag.AccountName = await _context.CrmAccounts.AsNoTracking().Where(a => a.CompanyID == cid && a.ID == opp.AccountId.Value).Select(a => a.Name).FirstOrDefaultAsync();
 			return View(opp);
 		}
@@ -1150,7 +1537,7 @@ public partial class CrmController : Controller
 			List<Models.Context.Crm.OpportunityProduct> lines;
 			try { lines = System.Text.Json.JsonSerializer.Deserialize<List<Models.Context.Crm.OpportunityProduct>>(linesJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
 			var (ok, err) = await _crm.SaveOpportunityProductsAsync(cid, id, lines);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Opportunity lines saved"].Value : err;
+			this.ToastResult(ok, ok ? L["Opportunity lines saved"].Value : Say(err));
 			return RedirectToAction(nameof(OpportunityProducts), new { id });
 		}
 
@@ -1159,8 +1546,15 @@ public partial class CrmController : Controller
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
+			// CRM C3: a quotation leaves the CRM for the customer, so the discount on it must be within the limit of the
+			// person sending it, or approved by someone else for these exact lines.
+			if (await DealSvc.QuotationRefusalAsync(cid, id, _access.CurrentEmployeeId()) is { } refusal)
+			{
+				this.ToastError(CL[refusal].Value);
+				return RedirectToAction("Deal", new { id });
+			}
 			var (ok, err, qid) = await _crm.ConvertOpportunityToQuotationAsync(cid, id, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? L["Quotation #{0} created", qid].Value : err;
+			this.ToastResult(ok, ok ? L["Quotation #{0} created", qid].Value : Say(err));
 			return RedirectToAction(nameof(OpportunityProducts), new { id });
 		}
 
@@ -1185,7 +1579,7 @@ public partial class CrmController : Controller
 			var (ok, err) = await _crm.SaveActivityAsync(cid, new Activity {
 				ID = id, Type = type, Subject = subject ?? "", SubjectEn = subjectEn, DueDate = dueDate, Notes = notes,
 				EntityType = entityType, EntityId = entityId, ReminderAt = reminderAt }, User?.Identity?.Name);
-			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Activity updated"].Value : L["Activity added"].Value) : err;
+			this.ToastResult(ok, ok ? (id > 0 ? L["Activity updated"].Value : L["Activity added"].Value) : Say(err));
 			if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
 			return RedirectToAction(nameof(Activities));
 		}
@@ -1231,15 +1625,15 @@ public partial class CrmController : Controller
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var allowed = new[] { "SalesManager", "SalesRep", "Marketing", "CrmViewer" };
-			if (employeeId <= 0 || !allowed.Contains(role)) { TempData["CrmErr"] = L["Invalid data"].Value; return RedirectToAction(nameof(CrmRoles)); }
+			if (employeeId <= 0 || !allowed.Contains(role)) { this.ToastError(L["Invalid data"].Value); return RedirectToAction(nameof(CrmRoles)); }
 			// The employee must belong to the resolved company. Without this a manager could grant CRM
 			// authority over their own tenant to a stranger from another one, and the role row would look
 			// perfectly ordinary afterwards. An outsider id is answered exactly like a nonexistent one.
 			bool ours = await _context.Employee.AsNoTracking().AnyAsync(e => e.ID == employeeId && e.EmpCompanyID == cid);
-			if (!ours) { TempData["CrmErr"] = L["Invalid data"].Value; return RedirectToAction(nameof(CrmRoles)); }
+			if (!ours) { this.ToastError(L["Invalid data"].Value); return RedirectToAction(nameof(CrmRoles)); }
 			bool exists = await _context.CrmUserRoles.AnyAsync(r => r.CompanyID == cid && r.EmployeeId == employeeId && r.Role == role);
 			if (!exists) { _context.CrmUserRoles.Add(new Models.Context.Crm.CrmUserRole { CompanyID = cid, EmployeeId = employeeId, Role = role, CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(); }
-			TempData["CrmMsg"] = L["Role assigned"].Value;
+			this.ToastSuccess(L["Role assigned"].Value);
 			return RedirectToAction(nameof(CrmRoles));
 		}
 
@@ -1250,7 +1644,7 @@ public partial class CrmController : Controller
 			if (!okCo) return denyCo;
 			var r = await _context.CrmUserRoles.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == cid);
 			if (r != null) { _context.CrmUserRoles.Remove(r); await _context.SaveChangesAsync(); }
-			TempData["CrmMsg"] = L["Role deleted"].Value;
+			this.ToastSuccess(L["Role deleted"].Value);
 			return RedirectToAction(nameof(CrmRoles));
 		}
 	}

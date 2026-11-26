@@ -122,7 +122,13 @@ namespace CrossBuy.Tests
             Assert.Equal(leave.SupportsSearch, mine.SupportsSearch);
             Assert.Equal(leave.SupportsTimeline, mine.SupportsTimeline);
             Assert.Equal(leave.SupportsComments, mine.SupportsComments);
-            Assert.Equal(leave.SupportsFiles, mine.SupportsFiles);
+            // SupportsFiles DIVERGED, deliberately and documented at the registry: LeaveRequest gained files
+            // for HR3 - the medical certificate, via LeaveRequestDocumentOwnerResolver. An employee request
+            // carries no attachment of its own, and A05 above asserts it stays false. Equality here would
+            // force one of those two to be wrong, so the divergence is NAMED rather than erased: both sides
+            // are pinned, and the other five flags still cannot drift apart unnoticed.
+            Assert.True(leave.SupportsFiles, "LeaveRequest is expected to support files (HR3: the medical certificate).");
+            Assert.False(mine.SupportsFiles, "EmployeeRequest carries no attachment of its own.");
             Assert.Equal(leave.SupportsFollowers, mine.SupportsFollowers);
             Assert.Equal(leave.ListedInRecordPicker, mine.ListedInRecordPicker);
         }

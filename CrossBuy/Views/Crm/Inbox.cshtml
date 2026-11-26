@@ -1,0 +1,135 @@
+@model List<CrossBuy.BL.CrmIdentity.ConversationRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var counts = (CrossBuy.BL.CrmIdentity.InboxCounts)ViewBag.Counts;
+    var view = (string)ViewBag.View;
+    var selected = ViewBag.Selected as int?;
+    var channels = (List<CrossBuy.BL.CrmIdentity.ChannelView>)ViewBag.Channels;
+    var tabs = new List<(string key, string label, int n)> { ("all", T["All"].Value, counts.All), ("mine", T["Mine"].Value, counts.Mine), ("unassigned", T["No owner"].Value, counts.Unassigned) };
+    foreach (var k in new[] { "WhatsApp", "WebChat", "Email" }) if (channels.Any(c => c.Channel.Kind == k)) tabs.Add((k, T["channel:" + k].Value, counts.ByChannel.GetValueOrDefault(k)));
+    tabs.Add(("closed", T["conv:Closed"].Value, -1));
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Unified inbox"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Unified inbox"]</li></ul></div>
+        <a href="@Url.Action("Channels","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Channels"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (channels.Count == 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+                <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-messages fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["No channel is connected yet"]</h4><div class="fs-6 text-gray-700">@T["Connect a website chat, a WhatsApp Business number or the company mailbox, and every conversation lands here."] <a href="@Url.Action("Channels","Crm")">@T["Channels"]</a></div></div>
+            </div>
+        }
+        <div class="d-flex flex-wrap gap-2 mb-5 align-items-center">
+            @foreach (var t in tabs)
+            {
+                <a href="?view=@t.key" class="btn btn-sm @(view == t.key ? "btn-primary" : "btn-light")">@t.label@if (t.n >= 0) { <span class="num ms-1">@t.n</span> }</a>
+            }
+            <div class="ms-auto d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                <input type="text" id="inboxSearch" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search…"]" autocomplete="off" /></div>
+        </div>
+        <div class="crm-ib">
+            <div class="crm-ib-list" id="convList">@await Html.PartialAsync("_InboxList", Model)</div>
+            <div id="threadHost" class="d-contents" style="display:contents">
+                @if (selected == null) { <div class="crm-ib-thread d-flex align-items-center justify-content-center text-muted"><div class="text-center"><i class="ki-outline ki-messages fs-3x text-gray-300 d-block mb-3"></i>@T["Choose a conversation"]</div></div><div class="crm-ib-side"></div> }
+            </div>
+        </div>
+        @Html.AntiForgeryToken()
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var view = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(view));
+  var current = @(selected?.ToString() ?? "null");
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["close"] = T["Close this conversation?"].Value, ["lead"] = T["Create a lead from this conversation?"].Value,
+    ["ticket"] = T["The ticket's subject"].Value, ["assign"] = T["Hand this conversation to"].Value, ["note"] = T["Write an internal note…"].Value, ["cancel"] = T["Cancel"].Value }));
+  function token(){ return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+  function post(url, data){ var fd = new FormData(); Object.keys(data).forEach(function(k){ if (data[k] != null) fd.append(k, data[k]); }); fd.append('__RequestVerificationToken', token());
+    return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  function fail(msg){ if (window.CB && CB.toast) CB.toast(msg, 'error'); }
+  var host = document.getElementById('threadHost'), list = document.getElementById('convList');
+  async function loadThread(id, keepScroll){
+    var html = await fetch('@Url.Action("InboxThread","Crm")?id=' + id, { credentials:'same-origin' }).then(function(r){ return r.ok ? r.text() : ''; });
+    if (!html) return;
+    var box = document.getElementById('msgs'), atBottom = !box || box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    var draft = document.getElementById('composerText'), keep = draft && draft.value, mode = document.getElementById('composer') && document.getElementById('composer').getAttribute('data-mode');
+    host.innerHTML = html;
+    var nb = document.getElementById('msgs'); if (nb && (atBottom || !keepScroll)) nb.scrollTop = nb.scrollHeight;
+    if (keepScroll && keep) { document.getElementById('composerText').value = keep; if (mode) setMode(mode); }
+    current = id;
+    list.querySelectorAll('.crm-ib-row').forEach(function(a){ a.classList.toggle('on', +a.getAttribute('data-conv') === id); if (+a.getAttribute('data-conv') === id) { a.classList.remove('unread'); var b = a.querySelector('.badge-circle'); if (b) b.remove(); } });
+    history.replaceState(null, '', '?view=' + encodeURIComponent(view) + '&id=' + id);
+  }
+  async function loadList(){
+    var q = document.getElementById('inboxSearch').value;
+    var html = await fetch('@Url.Action("InboxList","Crm")?view=' + encodeURIComponent(view) + '&q=' + encodeURIComponent(q), { credentials:'same-origin' }).then(function(r){ return r.ok ? r.text() : null; }).catch(function(){ return null; });
+    if (html == null) return;
+    var scroll = list.scrollTop; list.innerHTML = html; list.scrollTop = scroll;
+    list.querySelectorAll('.crm-ib-row').forEach(function(a){ a.classList.toggle('on', +a.getAttribute('data-conv') === current); });
+  }
+  function setMode(m){
+    var comp = document.getElementById('composer'); if (!comp) return;
+    comp.setAttribute('data-mode', m);
+    document.querySelectorAll('[data-mode]').forEach(function(b){ if (b.tagName === 'BUTTON') { b.classList.toggle('btn-primary', b.getAttribute('data-mode') === m); b.classList.toggle('btn-light', b.getAttribute('data-mode') !== m); } });
+    var tpl = document.getElementById('composerTemplate'), ta = document.getElementById('composerText');
+    if (tpl) tpl.classList.toggle('d-none', m !== 'template');
+    ta.classList.toggle('d-none', m === 'template');
+    ta.style.background = m === 'note' ? '#FAF7FF' : '';
+  }
+  list.addEventListener('click', function(e){ var a = e.target.closest('.crm-ib-row'); if (!a) return; e.preventDefault(); loadThread(+a.getAttribute('data-conv')); });
+  document.addEventListener('click', async function(e){
+    var b = e.target.closest('#threadHost [data-mode], #composerSend, #threadHost [data-status], #threadHost [data-act]');
+    if (!b) return;
+    if (b.hasAttribute('data-mode') && b.tagName === 'BUTTON') { setMode(b.getAttribute('data-mode')); return; }
+    if (b.id === 'composerSend') {
+      var mode = document.getElementById('composer').getAttribute('data-mode'), ta = document.getElementById('composerText');
+      var r = mode === 'template' ? await post('@Url.Action("InboxTemplate","Crm")', { id: current, template: document.getElementById('composerTemplate').value })
+            : await post(mode === 'note' ? '@Url.Action("InboxNote","Crm")' : '@Url.Action("InboxSend","Crm")', { id: current, body: ta.value });
+      if (r.ok) { ta.value = ''; loadThread(current, false); loadList(); } else fail(r.error || txt.failed);
+      return;
+    }
+    if (b.hasAttribute('data-status')) {
+      if (b.getAttribute('data-status') === 'Closed' && window.cbConfirm && !(await window.cbConfirm(txt.close, { kind:'primary', title: '' }))) return;
+      var r2 = await post('@Url.Action("InboxStatus","Crm")', { id: current, status: b.getAttribute('data-status') });
+      if (r2.ok) { loadThread(current, true); loadList(); } else fail(r2.error || txt.failed);
+      return;
+    }
+    var act = b.getAttribute('data-act');
+    if (act === 'lead') {
+      if (window.cbConfirm && !(await window.cbConfirm(txt.lead, { kind:'primary', title: '' }))) return;
+      var r3 = await post('@Url.Action("InboxCreateLead","Crm")', { id: current });
+      if (r3.ok) { loadThread(current, true); loadList(); } else fail(r3.error || txt.failed);
+    } else if (act === 'ticket') {
+      var subject = '';
+      if (window.Swal) { var res = await Swal.fire({ title: txt.ticket, input: 'text', showCancelButton: true, buttonsStyling: false, confirmButtonText: b.textContent.trim(), cancelButtonText: txt.cancel,
+        customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } }); if (!res.isConfirmed) return; subject = res.value || ''; }
+      var r4 = await post('@Url.Action("InboxCreateTicket","Crm")', { id: current, subject: subject });
+      if (r4.ok) loadThread(current, true); else fail(r4.error || txt.failed);
+    }
+  });
+  document.addEventListener('change', async function(e){
+    if (e.target.id !== 'convOwner') return;
+    var r = await post('@Url.Action("InboxAssign","Crm")', { id: current, owner: e.target.value || null });
+    if (r.ok) { loadThread(current, true); loadList(); } else fail(r.error || txt.failed);
+  });
+  var st; document.getElementById('inboxSearch').addEventListener('input', function(){ clearTimeout(st); st = setTimeout(loadList, 350); });
+  // keep current: a quiet poll that redraws only when something changed and never while the tab is hidden
+  setInterval(function(){
+    if (document.hidden) return;
+    loadList();
+    if (current) fetch('@Url.Action("InboxThread","Crm")?id=' + current, { credentials:'same-origin' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(h){
+      var m = h.match(/data-last="(\d+)"/), t = document.getElementById('thread');
+      if (m && t && m[1] !== t.getAttribute('data-last')) loadThread(current, true);
+    });
+  }, 8000);
+  if (current) loadThread(current, false);
+})();
+</script>
+}

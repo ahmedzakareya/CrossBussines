@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Add line" xml:space="preserve">
+    <value>Add line</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="Approve version" xml:space="preserve">
+    <value>Approve version</value>
+  </data>
+  <data name="Approved history is read-only. Changes require a new version." xml:space="preserve">
+    <value>Approved history is read-only. Changes require a new version.</value>
+  </data>
+  <data name="Baseline" xml:space="preserve">
+    <value>Baseline</value>
+  </data>
+  <data name="Choose explicitly" xml:space="preserve">
+    <value>Choose explicitly</value>
+  </data>
+  <data name="Company budget policy" xml:space="preserve">
+    <value>Company budget policy</value>
+  </data>
+  <data name="Copy from approved history" xml:space="preserve">
+    <value>Copy from approved history</value>
+  </data>
+  <data name="Cost code" xml:space="preserve">
+    <value>Cost code</value>
+  </data>
+  <data name="Create a version" xml:space="preserve">
+    <value>Create a version</value>
+  </data>
+  <data name="Create draft" xml:space="preserve">
+    <value>Create draft</value>
+  </data>
+  <data name="Current policy" xml:space="preserve">
+    <value>Current policy</value>
+  </data>
+  <data name="Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Kind.Original" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="Kind.Revised" xml:space="preserve">
+    <value>Revised</value>
+  </data>
+  <data name="Kind.Scenario" xml:space="preserve">
+    <value>Scenario</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="No previous version" xml:space="preserve">
+    <value>No previous version</value>
+  </data>
+  <data name="Not configured" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>Policy</value>
+  </data>
+  <data name="Policy.ApprovalRequired" xml:space="preserve">
+    <value>Require approval for budget overrun</value>
+  </data>
+  <data name="Policy.HardBlock" xml:space="preserve">
+    <value>Block budget overrun</value>
+  </data>
+  <data name="Policy.Warning" xml:space="preserve">
+    <value>Warn on budget overrun</value>
+  </data>
+  <data name="Previous amount" xml:space="preserve">
+    <value>Previous amount</value>
+  </data>
+  <data name="Project budget versions" xml:space="preserve">
+    <value>Project budget versions</value>
+  </data>
+  <data name="Project structure" xml:space="preserve">
+    <value>Project structure</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>Rate</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Reason for this save" xml:space="preserve">
+    <value>Reason for this save</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Save draft" xml:space="preserve">
+    <value>Save draft</value>
+  </data>
+  <data name="Save policy" xml:space="preserve">
+    <value>Save policy</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Status.Approved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="Status.Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Status.Submitted" xml:space="preserve">
+    <value>Submitted</value>
+  </data>
+  <data name="Status.Superseded" xml:space="preserve">
+    <value>Superseded</value>
+  </data>
+  <data name="Submit saved draft" xml:space="preserve">
+    <value>Submit saved draft</value>
+  </data>
+  <data name="The creator and submitter cannot approve this version." xml:space="preserve">
+    <value>The creator and submitter cannot approve this version.</value>
+  </data>
+  <data name="The policy applies to the company. No policy is selected automatically." xml:space="preserve">
+    <value>The policy applies to the company. No policy is selected automatically.</value>
+  </data>
+  <data name="These are versioned budget estimates. Commitment enforcement and actual-cost reconciliation are not activated by this page." xml:space="preserve">
+    <value>These budgets support planning and approval. They do not yet block purchase orders or financial postings.</value>
+  </data>
+  <data name="These values were not saved. Current stored values appear below; review them before submitting another edit." xml:space="preserve">
+    <value>These values were not saved. Current stored values appear below; review them before submitting another edit.</value>
+  </data>
+  <data name="Unrecognized dimension" xml:space="preserve">
+    <value>Unrecognized dimension</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>Versions</value>
+  </data>
+  <data name="WBS" xml:space="preserve">
+    <value>WBS</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Your submitted values" xml:space="preserve">
+    <value>Your submitted values</value>
+  </data>
+  <data name="Save your changes before submitting this version." xml:space="preserve">
+    <value>Save your changes before submitting this version.</value>
+  </data>
+  <data name="Exposure.Actual" xml:space="preserve"><value>Actual costs</value></data>
+  <data name="Exposure.AllocationCoverageRequired" xml:space="preserve"><value>Allocate the open orders to project work items and cost codes first.</value></data>
+  <data name="Exposure.AllocationSourceChanged" xml:space="preserve"><value>A source or policy changed after allocation. Review the allocation again.</value></data>
+  <data name="Exposure.ApprovedBaselineRequired" xml:space="preserve"><value>Approve a baseline budget before reviewing available funds.</value></data>
+  <data name="Exposure.Baseline" xml:space="preserve"><value>Current approved baseline</value></data>
+  <data name="Exposure.BaselineVersion" xml:space="preserve"><value>Approved baseline version {0}</value></data>
+  <data name="Exposure.Budget" xml:space="preserve"><value>Approved budget</value></data>
+  <data name="Exposure.BudgetCurrencyMismatch" xml:space="preserve"><value>The source currency does not match the approved budget. No conversion has been assumed.</value></data>
+  <data name="Exposure.BudgetDimensionCoverageRequired" xml:space="preserve"><value>Some costs or commitments have no matching approved budget line.</value></data>
+  <data name="Exposure.Commitment" xml:space="preserve"><value>Open commitments</value></data>
+  <data name="Exposure.CostCode" xml:space="preserve"><value>Cost code</value></data>
+  <data name="Exposure.Currency" xml:space="preserve"><value>Currency</value></data>
+  <data name="Exposure.Heading" xml:space="preserve"><value>Budget coverage</value></data>
+  <data name="Exposure.PolicyNotConfigured" xml:space="preserve"><value>Choose the company budget policy explicitly before reviewing availability.</value></data>
+  <data name="Exposure.RealizationCoverageRequired" xml:space="preserve"><value>Complete cost classification and source reconciliation before relying on an available balance.</value></data>
+  <data name="Exposure.Remaining" xml:space="preserve"><value>Available budget</value></data>
+  <data name="Exposure.ReservationAmendmentRequired" xml:space="preserve"><value>Actual cost differs from the reserved allocation. A reviewed amendment is required.</value></data>
+  <data name="Exposure.ReservationRebaseRequired" xml:space="preserve"><value>Review existing reservations against the current approved budget.</value></data>
+  <data name="Exposure.ReviewNotice" xml:space="preserve"><value>Verified figures support review. Purchase-order budget enforcement is not activated yet.</value></data>
+  <data name="Exposure.SubcontractCoverageRequired" xml:space="preserve"><value>Subcontract commitments and certificates still need verified coverage.</value></data>
+  <data name="Exposure.Unavailable" xml:space="preserve"><value>Verified figures are unavailable until source checks are complete. No available balance is assumed.</value></data>
+  <data name="Exposure.WorkItem" xml:space="preserve"><value>Work item</value></data>
+  <data name="Exposure.ReceiptCoverageRequired" xml:space="preserve"><value>Receipt quantities or posting evidence do not match the approved purchase. Review receipt reconciliation before continuing.</value></data>
+</root>

@@ -84,8 +84,8 @@
                                 <input type="hidden" name="id" value="@t.ID" />
                                 <span class="fw-semibold text-gray-800">@(isAr ? t.NameAr : DisplayName.Or(t.NameEn, t.NameAr))</span>
                                 <div class="form-check form-switch">
-                                    <input type="hidden" name="isEncashable" value="false" />
-                                    <input class="form-check-input" type="checkbox" name="isEncashable" value="true" @(t.IsEncashable ? "checked" : "") onchange="this.form.submit()" />
+                                    
+                                    <input class="form-check-input" type="checkbox" name="isEncashable" value="true" @(t.IsEncashable ? "checked" : "") onchange="this.form.submit()" /><input type="hidden" name="isEncashable" value="false" />
                                 </div>
                             </form>
                         }

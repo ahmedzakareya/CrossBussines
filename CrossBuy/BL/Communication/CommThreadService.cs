@@ -99,6 +99,13 @@ namespace CrossBuy.BL.Communication
                     CommValidationException.Codes.VisibilityInvalid,
                     $"Visibility '{request.Visibility}' is not one of {string.Join(" | ", CommVisibility.Values)}.");
 
+            _options.GovernanceFor(definition.Code);
+
+            if (!_options.MayAuthorVisibility(definition.Code, request.Visibility))
+                throw new CommValidationException(
+                    CommValidationException.Codes.VisibilityInvalid,
+                    "The entity privacy policy does not permit this conversation visibility.");
+
             var entityDecision = await _access.CanAccessEntityAsync(
                 context, request.Entity, CommCapabilities.Comments, cancellationToken);
             if (!entityDecision.Allowed)

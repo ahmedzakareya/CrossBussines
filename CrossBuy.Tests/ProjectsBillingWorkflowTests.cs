@@ -1,4 +1,5 @@
 using CrossBuy.BL;
+using CrossBuy.BL.Construction;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context.Accounting;
 using CrossBuy.Models.Context.Admin;
@@ -141,7 +142,8 @@ namespace CrossBuy.Tests
             await db.SaveChangesAsync();
 
             var ar = new WritingArDouble(host.Db);
-            var billing = new ProgressBillingService(host.Db, ar, Progress(host), Contract(host), Events(host), Access(host));
+            var billing = new ProgressBillingService(host.Db, ar, Progress(host), Contract(host), Events(host), Access(host),
+                new CommercialRevisionService(host.Db, new ConstructionAuditService(host.Db)));
             return new Fixture(host, billing, ar, 5, 7);
         }
 

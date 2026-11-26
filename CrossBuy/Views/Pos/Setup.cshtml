@@ -15,6 +15,8 @@
     var presets = ViewBag.Presets as List<ActivityPreset> ?? new();
     var capDefs = ViewBag.CapabilityDefs as (string key, string ar, string en)[] ?? Array.Empty<(string, string, string)>();
     var caps = ViewBag.Caps as Dictionary<string, bool> ?? new();
+    @* Distinguishes "every capability is off" from "this branch was never configured". *@
+    bool hasCapConfig = ViewBag.HasCapConfig as bool? ?? false;
     var setting = ViewBag.PosSetting as BranchPosSetting;
     var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
     var priceLists = ViewBag.PriceLists as List<PriceList> ?? new();
@@ -85,6 +87,27 @@
                     <div class="card h-100"><div class="card-header"><div class="card-title"><h3>@Localizer["Enabled capabilities"]</h3></div>
                         <div class="card-toolbar"><button type="submit" form="capForm" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button></div></div>
                         <div class="card-body">
+                            @* THE STATE THE SWITCHES CANNOT SHOW.
+
+                               All seven off is what a branch looks like when nothing was ever set
+                               up, and also what it looks like when everything was deliberately
+                               turned off. The first is the common case on a new branch and it reads
+                               as a screen that failed to load its data - which is how it was
+                               reported. The banner is the one from /Accounting/VendorStatement, so
+                               the answer arrives in the shape the rest of the product uses. *@
+                            @if (!hasCapConfig)
+                            {
+                                <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                                    <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                                    <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                                        <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                            <h4 class="text-gray-900 fw-bold mb-1">@Localizer["No capabilities configured yet"]</h4>
+                                            <div class="fs-6 text-gray-700">@Localizer["Nothing has been saved for this branch. Choose an activity type above to enable its defaults, or set the switches and save."]</div>
+                                        </div>
+                                        <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;">@Localizer["Not set"]</span>
+                                    </div>
+                                </div>
+                            }
                             <form id="capForm" asp-action="SaveCapabilities" method="post">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" />
                                 <div class="row g-3">
                                     @foreach (var c in capDefs)

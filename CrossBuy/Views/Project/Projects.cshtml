@@ -16,6 +16,8 @@
     var actName = activityTypes.ToDictionary(a => a.ID, a => nm(a.Name, a.NameEn));
     var statuses = new[] { "Draft", "Active", "OnHold", "Completed", "Cancelled" };
     string statusBadge(string? s) => s switch { "Active" => "success", "Completed" => "primary", "OnHold" => "warning", "Cancelled" => "danger", _ => "secondary" };
+    var constructionDestination = ViewBag.ConstructionDestination as string;
+    var constructionTitleKey = constructionDestination switch { "structure" => "Construction.Structure.Title", "budget" => "Construction.Budget.Title", "exceptions" => "Construction.Exception.Title", "purchase" => "Construction.Editor.DraftTitle", "actual-cost" => "Construction.ActualUi.Title", "rebase" => "Construction.Rebase.Title", "consumption" => "Construction.ConsumptionUi.Title", "transfer-preview" => "Construction.TransferUi.Title", "cost-forecast" => "Construction.ForecastUi.Title", "daily-report" => "Construction.Dsr.Title", _ => "" };
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -30,6 +32,10 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
         @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+        @if (constructionDestination != null)
+        {
+            <div class="alert alert-primary" role="status">@SR["Construction.Navigation.ChooseProject", SR[constructionTitleKey].Value]</div>
+        }
 
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
             <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>@Localizer["Customer"]</th><th>@Localizer["Activity type"]</th><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@SR["Actions"]</th></tr></thead>
@@ -51,17 +57,59 @@
                     <td class="text-end">@(p.ContractValue.HasValue ? p.ContractValue.Value.ToString("N2") : "—")</td>
                     <td class="text-center"><span class="badge badge-light-@statusBadge(p.Status)">@(string.IsNullOrEmpty(p.Status) ? "—" : Localizer[p.Status].Value)</span></td>
                     <td class="text-center text-nowrap">
-                        <a href="@Url.Action("Boq","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Bill of Quantities (BOQ)"]"><i class="ki-outline ki-questionnaire-tablet fs-5"></i></a>
-                        <a href="@Url.Action("Progress","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Execution & progress"]"><i class="ki-outline ki-chart-line-up fs-5"></i></a>
-                        <a href="@Url.Action("Billing","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-warning me-1" title="@Localizer["Progress billing"]"><i class="ki-outline ki-bill fs-5"></i></a>
-                        <a href="@Url.Action("MaterialIssues","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-dark me-1" title="@Localizer["Material issue"]"><i class="ki-outline ki-parcel fs-5"></i></a>
-                        <a href="@Url.Action("Labor","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Project labor"]"><i class="ki-outline ki-people fs-5"></i></a>
-                        <a href="@Url.Action("Budget","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Budget vs actual"]"><i class="ki-outline ki-chart-pie-simple fs-5"></i></a>
-                        <a href="@Url.Action("Subcontracts","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Subcontractors"]"><i class="ki-outline ki-handcart fs-5"></i></a>
-                        <a href="@Url.Action("VariationOrders","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-warning me-1" title="@Localizer["Variation orders"]"><i class="ki-outline ki-arrows-loop fs-5"></i></a>
-                        <a href="@Url.Action("EquipmentDepreciation","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-dark me-1" title="@Localizer["Equipment depreciation"]"><i class="ki-outline ki-delivery-24 fs-5"></i></a>
-                        <button type="button" class="btn btn-sm btn-icon btn-light-primary me-1" onclick="prjEdit(this)" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>
-                        <form asp-action="DeleteProject" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete project?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                        @if (constructionDestination == "purchase")
+                        {
+                            <a asp-controller="Inventory" asp-action="NewConstructionPurchase" asp-route-projectId="@p.ID" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-primary me-2">@SR[constructionTitleKey]</a>
+                        }
+                        else if (constructionDestination is "actual-cost" or "rebase" or "consumption" or "transfer-preview" or "cost-forecast")
+                        {
+                            <a asp-controller="@(constructionDestination == "cost-forecast" ? "ConstructionCostForecast" : constructionDestination == "transfer-preview" ? "ConstructionBudgetTransfer" : constructionDestination == "consumption" ? "ConstructionConsumption" : constructionDestination == "actual-cost" ? "ConstructionActualCost" : "ConstructionRebase")" asp-action="Index" asp-route-projectId="@p.ID" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-primary me-2">@SR[constructionTitleKey]</a>
+                        }
+                        else if (constructionDestination is "structure" or "budget" or "exceptions")
+                        {
+                            var destinationAction = constructionDestination == "structure" ? "Structure" : constructionDestination == "budget" ? "BudgetVersions" : "BudgetExceptions";
+                            <a asp-controller="Project" asp-action="@destinationAction" asp-route-id="@p.ID" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-primary me-2">@SR[constructionTitleKey]</a>
+                        }
+                        else if (constructionDestination == "daily-report")
+                        {
+                            <a asp-controller="ConstructionDailySiteReports" asp-action="Index" asp-route-projectId="@p.ID" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-primary me-2">@SR[constructionTitleKey]</a>
+                        }
+                        @* ONE actions menu, per design-system 08-Tables: "Row actions live in the final logical
+                           column and use an accessible menu." Twelve icon-only buttons in four arbitrary colours
+                           were the previous treatment; colour carried no meaning there (seven primary, two amber,
+                           two dark) and 02-Color-System forbids a status colour without text or an icon beside it.
+                           Every entry now carries its label, so nothing depends on a tooltip. *@
+                        <a href="#" class="btn btn-sm btn-light btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">@SR["Actions"]<i class="ki-outline ki-down fs-5 ms-1"></i></a>
+                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-225px py-3 text-start" data-kt-menu="true">
+                            @* Scope and execution *@
+                            <div class="menu-item px-3"><a href="@Url.Action("Boq","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-questionnaire-tablet fs-6 me-2 text-primary"></i>@Localizer["Bill of Quantities (BOQ)"]</a></div>
+                            @if (ViewBag.CanViewStructure is true)
+                            {
+                                <div class="menu-item px-3"><a asp-action="Structure" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" asp-route-id="@p.ID" class="menu-link px-3"><i class="ki-outline ki-element-11 fs-6 me-2 text-primary"></i>@SR["Construction.Structure.Title"]</a></div>
+                            }
+                            @if (ViewBag.CanViewDailySiteReports is true)
+                            {
+                                <div class="menu-item px-3"><a asp-controller="ConstructionDailySiteReports" asp-action="Index" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" asp-route-projectId="@p.ID" class="menu-link px-3"><i class="ki-outline ki-calendar-8 fs-6 me-2 text-primary"></i>@SR["Construction.Dsr.Title"]</a></div>
+                            }
+                            <div class="menu-item px-3"><a href="@Url.Action("Progress","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-chart-line-up fs-6 me-2 text-primary"></i>@Localizer["Execution & progress"]</a></div>
+                            <div class="separator my-2"></div>
+                            @* Money *@
+                            <div class="menu-item px-3"><a href="@Url.Action("Billing","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-bill fs-6 me-2 text-primary"></i>@Localizer["Progress billing"]</a></div>
+                            <div class="menu-item px-3"><a href="@Url.Action("Budget","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-chart-pie-simple fs-6 me-2 text-primary"></i>@Localizer["Budget vs actual"]</a></div>
+                            <div class="menu-item px-3"><a href="@Url.Action("VariationOrders","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-arrows-loop fs-6 me-2 text-primary"></i>@Localizer["Variation orders"]</a></div>
+                            <div class="separator my-2"></div>
+                            @* Resources consumed *@
+                            <div class="menu-item px-3"><a href="@Url.Action("MaterialIssues","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-parcel fs-6 me-2 text-primary"></i>@Localizer["Material issue"]</a></div>
+                            <div class="menu-item px-3"><a href="@Url.Action("Labor","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-people fs-6 me-2 text-primary"></i>@Localizer["Project labor"]</a></div>
+                            <div class="menu-item px-3"><a href="@Url.Action("Subcontracts","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-handcart fs-6 me-2 text-primary"></i>@Localizer["Subcontractors"]</a></div>
+                            <div class="menu-item px-3"><a href="@Url.Action("EquipmentDepreciation","Project", new { id = p.ID })" class="menu-link px-3"><i class="ki-outline ki-delivery-24 fs-6 me-2 text-primary"></i>@Localizer["Equipment depreciation"]</a></div>
+                            <div class="separator my-2"></div>
+                            @* Edit is NEUTRAL - it is not a warning and carries no semantic colour. *@
+                            <div class="menu-item px-3"><button type="button" class="menu-link px-3 w-100 text-start bg-transparent border-0" data-prj="@p.ID" onclick="prjEdit(this)"><i class="ki-outline ki-pencil fs-6 me-2 text-gray-600"></i>@SR["Edit"]</button></div>
+                            <form asp-action="DeleteProject" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete project?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.ID" />
+                                <div class="menu-item px-3"><button type="submit" class="menu-link px-3 w-100 text-start bg-transparent border-0 text-danger"><i class="ki-outline ki-trash fs-6 me-2"></i>@SR["Delete"]</button></div>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }
@@ -107,7 +155,7 @@
                 </select></div>
             <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Advance %"]</label><input name="advancePercent" id="prj_advance" type="number" step="0.01" min="0" max="100" class="form-control form-control-solid" /></div>
             <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Retention %"]</label><input name="retentionPercent" id="prj_retention" type="number" step="0.01" min="0" max="100" class="form-control form-control-solid" /></div>
-            <div class="col-md-6 mb-4 d-flex align-items-end"><input type="hidden" name="isActive" value="false" /><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="prj_active" checked /><label class="form-check-label fw-semibold ms-2" for="prj_active">@SR["Active"]</label></div></div>
+            <div class="col-md-6 mb-4 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="prj_active" checked /><input type="hidden" name="isActive" value="false" /><label class="form-check-label fw-semibold ms-2" for="prj_active">@SR["Active"]</label></div></div>
         </div></div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
     </form>
@@ -135,7 +183,12 @@ function prjNew() {
     prjShow();
 }
 function prjEdit(btn) {
-    var r = btn.closest('tr'); var g = function (k) { return r.getAttribute('data-' + k) || ''; };
+    // The edit action now lives inside a KTMenu dropdown. Metronic positions those with Popper and may
+    // reparent the menu out of the row, which makes closest('tr') return null and the modal open blank with
+    // no error. data-prj carries the id so the row is found either way.
+    var r = btn.closest('tr') || document.querySelector('tr[data-id="' + btn.getAttribute('data-prj') + '"]');
+    if (!r) { return; }
+    var g = function (k) { return r.getAttribute('data-' + k) || ''; };
     document.getElementById('prjTitle').textContent = '@Localizer["Edit project"]';
     pval('prj_id', g('id')); pval('prj_code', g('code')); pval('prj_name', g('name')); pval('prj_nameEn', g('nameen'));
     pval('prj_location', g('location')); pval('prj_start', g('start')); pval('prj_end', g('end'));

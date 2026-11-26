@@ -195,8 +195,12 @@ namespace CrossBuy.Tests
         public async Task An_employee_with_no_company_does_not_resolve_to_company_1()
         {
             using var host = new PlatformTestHost();
-            host.Db.Employee.Add(Emp(7, companyId: 0));   // data defect: no company on the row
+            // EF cannot write this row: EmpCompanyID is a required FK, so the tracker reads 0 as
+            // "unknown" and waits for a principal. Seed it legally, then break the column the way a
+            // company FK added WITH NOCHECK leaves it broken. See PlatformTestHost.MakeEmployeeCompanyless.
+            host.Db.Employee.Add(Emp(7, CompanyOne));
             await host.Db.SaveChangesAsync();
+            host.MakeEmployeeCompanyless(7);   // the data defect: no company on the row
 
             var factory = host.Contexts(http: Http(new EmployeeViewModel { ID = 7, UserId = "user-7" }));
 
@@ -250,15 +254,23 @@ namespace CrossBuy.Tests
         // catalog and cash accounts live under company 1 while branches sit under 65–79. The test pins that it
         // stays contained in its named policy and does not spread back into the access service's own logic.
         [Fact]
-        public void The_pos_catalog_company_constant_lives_only_in_its_named_policy()
+        public void The_pos_catalog_company_comes_from_configuration_and_not_from_a_literal()
         {
             var root = FindRepoRoot();
             var code = StripComments(File.ReadAllText(Path.Combine(root, "CrossBuy", "BL", "PosAccessService.cs")));
 
-            Assert.Contains("PosCompanyPolicy.CatalogCompanyId", code);
-            // Exactly one literal assignment, inside the policy class itself.
-            var literals = System.Text.RegularExpressions.Regex.Matches(code, @"CatalogCompanyId\s*=\s*1\s*;");
-            Assert.Equal(1, literals.Count);
+            // WAS: "exactly ONE literal CatalogCompanyId = 1, inside PosCompanyPolicy". That constant is gone -
+            // the value moved into the "Pos" configuration section - so the ratchet TIGHTENS from one permitted
+            // literal to none. Keeping the old assertion would have recorded a real improvement as a failure,
+            // and a guard that fails on progress is one somebody eventually deletes.
+            Assert.DoesNotMatch(@"CatalogCompanyId\s*=\s*1\s*;", code);
+
+            // The value is INJECTED, and from the options type rather than read back from anywhere else.
+            Assert.Contains("posCompany.Value.CatalogCompanyId", code);
+
+            // ...and the REASON the till is pinned still has a named home. That is the half worth keeping when
+            // the literal left: removing the pin is a business change with GL consequences, not a refactor.
+            Assert.Contains("PosCompanyPolicy", code);
         }
 
         // =====================================================================================
@@ -384,8 +396,12 @@ namespace CrossBuy.Tests
         public async Task An_orphan_employee_row_uses_only_an_explicit_company_never_a_default()
         {
             using var host = new PlatformTestHost();
-            host.Db.Employee.Add(Emp(7, companyId: 0));   // data defect
+            // EF cannot write this row: EmpCompanyID is a required FK, so the tracker reads 0 as
+            // "unknown" and waits for a principal. Seed it legally, then break the column the way a
+            // company FK added WITH NOCHECK leaves it broken. See PlatformTestHost.MakeEmployeeCompanyless.
+            host.Db.Employee.Add(Emp(7, CompanyOne));
             await host.Db.SaveChangesAsync();
+            host.MakeEmployeeCompanyless(7);   // data defect
 
             var factory = host.Contexts();
 

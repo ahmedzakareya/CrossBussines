@@ -1,0 +1,41 @@
+@model List<CrossBuy.BL.CrmIdentity.ForecastDeal>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+    var assignable = ViewBag.Assignable as List<CrossBuy.BL.CrmIdentity.PersonRef> ?? new();
+    var colour = new Dictionary<string, string> { ["Won"] = "badge-light-success", ["Lost"] = "badge-light-danger", ["Commit"] = "badge-light-primary", ["BestCase"] = "badge-light-info", ["Pipeline"] = "badge-light", ["Omitted"] = "badge-light" };
+}
+@foreach (var d in Model)
+{
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("Deal","Crm", new { id = d.Id })" class="fw-bold text-gray-900 text-hover-primary d-block">@d.Title</a>@if (d.Account != null) { <span class="text-muted fs-8">@d.Account</span> }</td>
+        <td>@if (d.CanReassign && assignable.Count > 1)
+            {
+                var oi = Initials(d.Owner?.Name);
+                <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (d.Owner?.HasPhoto == true) { <img src="/People/Photo/@d.Owner.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-9&quot;>@oi</span>'" /> } else { <span class="symbol-label crm-initials fs-9">@(oi.Length > 0 ? oi : "—")</span> }</div>
+                <select class="form-select form-select-sm form-select-solid w-140px" data-owner="@d.Id" data-was="@(d.Owner?.EmployeeId)">
+                    @if (d.Owner == null) { <option value="">—</option> }
+                    @foreach (var a in assignable) { <option value="@a.EmployeeId" selected="@(a.EmployeeId == d.Owner?.EmployeeId)">@a.Name</option> }
+                </select></div>
+            }
+            else if (d.Owner != null)
+            {
+                var ini = Initials(d.Owner.Name);
+                <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (d.Owner.HasPhoto) { <img src="/People/Photo/@d.Owner.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-9&quot;>@ini</span>'" /> } else { <span class="symbol-label crm-initials fs-9">@ini</span> }</div><span class="fs-7">@d.Owner.Name</span></div>
+            }</td>
+        <td class="num fs-7">@(d.Close?.ToString("yyyy-MM-dd") ?? "—")</td>
+        <td class="text-end num fs-7">@d.Probability%</td>
+        <td class="text-end num fw-semibold">@d.Amount.ToString("N0")</td>
+        <td class="pe-4">
+            @if (d.CanEdit)
+            {
+                <select class="form-select form-select-sm form-select-solid" style="min-width:135px" data-deal="@d.Id" data-was="@d.Category">
+                    @foreach (var c in CrossBuy.BL.CrmIdentity.CrmForecastRules.Categories) { <option value="@c" selected="@(c == d.Category)">@T["fc:" + c]</option> }
+                </select>
+                <div class="fs-9 text-muted mt-1 crm-fc-chosen @(d.Chosen ? "" : "d-none")">@T["placed by hand"]</div>
+                @if (!d.Chosen) { <div class="fs-9 text-muted mt-1">@T["from its probability"]</div> }
+            }
+            else { <span class="badge @colour.GetValueOrDefault(d.Category, "badge-light")">@T["fc:" + d.Category]</span> }
+        </td>
+    </tr>
+}

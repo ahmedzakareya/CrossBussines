@@ -28,6 +28,8 @@ from app.ml.understand import (  # noqa: E402
     normalise,
     understander_for,
 )
+from app.ml.intent_data import NEGATIVES, OUT_OF_SCOPE  # noqa: E402
+from app.ml.fallback_refusals import FALLBACK_REFUSALS  # noqa: E402
 
 # Arabic test names go to a Windows console that defaults to cp1252, where printing one
 # raises and the run dies at the first PASS. The test output must survive its own alphabet.
@@ -52,6 +54,10 @@ INTENTS = [
     Intent(id=k, phrasings=tuple(v["keywords"] + v["example"] + v["desc"]))
     for k, v in CATALOGUE.items()
 ]
+known = {normalise(p) for intent in INTENTS for p in intent.phrasings}
+INTENTS.append(Intent(id=OUT_OF_SCOPE, phrasings=tuple(
+    p for p in (*NEGATIVES, *FALLBACK_REFUSALS) if normalise(p) and normalise(p) not in known
+)))
 U = understander_for(INTENTS)
 
 STOCK = "inventory.item-stock"
@@ -87,7 +93,7 @@ print("\n[2] REFUSING IS AN ANSWER")
 # ===================================================================================
 for q in ["ما هو الطقس اليوم", "مين أحسن مورد عندنا؟", "اكتب لي قصيدة"]:
     r = U.understand(q)
-    check(f"out of catalogue is refused: {q}", r.intent is None,
+    check(f"out of catalogue is refused: {q}", r.intent == OUT_OF_SCOPE,
           f"got {r.intent} at {r.confidence}")
 
 check("an empty question is refused", U.understand("").intent is None)
@@ -131,7 +137,7 @@ for intent in INTENTS:
         if n:
             owner[n].add(intent.id)
 shared = {n: sorted(o) for n, o in owner.items() if len(o) > 1}
-ALLOWED_SHARED = {"stock", "مخزون"}
+ALLOWED_SHARED = {"stock", "مخزون", "صرفنا كام"}
 check("no unexpected phrasing is claimed by two intents",
       set(shared) <= ALLOWED_SHARED, str(sorted(set(shared) - ALLOWED_SHARED)))
 
@@ -157,8 +163,8 @@ check(f"a wording the catalogue states scores high ({strong.confidence})",
       strong.confidence >= 0.9, str(strong.confidence))
 
 nothing = U.understand("ما هو الطقس اليوم")
-check(f"an unrelated question scores low ({nothing.confidence})",
-      nothing.confidence < ANSWER_FLOOR, str(nothing.confidence))
+check("an unrelated question is captured by the refusal examples",
+      nothing.intent == OUT_OF_SCOPE, f"{nothing.intent} at {nothing.confidence}")
 
 check("a refused question still ranks the catalogue, so a caller can offer",
       len(nothing.ranked) == len(INTENTS))

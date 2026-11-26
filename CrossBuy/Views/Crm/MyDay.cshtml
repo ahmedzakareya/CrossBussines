@@ -1,0 +1,85 @@
+@model CrossBuy.BL.CrmIdentity.MyDayView
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var m = Model; var me = m.Me;
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+    var hour = DateTime.Now.Hour;
+    var greet = hour < 12 ? T["Good morning"].Value : hour < 17 ? T["Good afternoon"].Value : T["Good evening"].Value;
+    var first = (me?.Name ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    var kinds = new Dictionary<string, (string ic, string c)> { ["Inbox"] = ("ki-messages", "#0F766E"), ["Deal"] = ("ki-briefcase", "#3A5795"), ["Call"] = ("ki-phone", "#0F766E"),
+        ["Meeting"] = ("ki-calendar-tick", "#7239EA"), ["Task"] = ("ki-check-square", "#3A5795"), ["Email"] = ("ki-sms", "#3A5795") };
+    string Sub(string? s)
+    {
+        if (s == null) return "";
+        if (!s.StartsWith("nba:")) return s;
+        var p = s[4..].Split('|', 2);
+        return T["nba:" + p[0]].Value + (p.Length > 1 ? " — " + p[1] + (p[0] is "fixCloseDate" or "reconnect" ? " " + T["days"].Value : "") : "");
+    }
+    var pct = m.QuotaMonth is decimal q && q > 0 ? (int)Math.Round(m.WonMonth * 100 / q) : (int?)null;
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["My day"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["My day"]</li></ul></div>
+        <span class="text-muted fw-semibold fs-7 num">@DateTime.Today.ToString(isAr ? "dddd d MMMM yyyy" : "dddd, d MMMM yyyy", new System.Globalization.CultureInfo(isAr ? "ar-KW" : "en-GB"))</span>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-6">
+            @if (me != null)
+            {
+                var ini = Initials(me.Name);
+                <div class="symbol symbol-70px symbol-circle">@if (me.HasPhoto) { <img src="/People/Photo/@me.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-2&quot;>@ini</span>'" /> } else { <span class="symbol-label crm-initials fs-2">@ini</span> }</div>
+            }
+            <div class="flex-grow-1 min-w-200px">
+                <div class="fs-2 fw-bold text-gray-900">@greet @first</div>
+                <div class="text-muted fw-semibold">
+                    <span class="num">@m.TasksToday</span> @T["due today"]@if (m.Overdue > 0) { <span> · <span class="text-danger num fw-bold">@m.Overdue</span> <span class="text-danger">@T["overdue"]</span></span> }
+                    @if (m.WaitingCustomers > 0) { <span> · <span class="num fw-bold" style="color:#0F766E">@m.WaitingCustomers</span> @T["customers waiting for your reply"]</span> }
+                    @if (m.HotLeads.Count > 0) { <span> · <span class="num">@m.HotLeads.Count(h => h.ins.Band == "Hot")</span> @T["hot leads"]</span> }
+                </div>
+            </div>
+            <div class="d-flex gap-8">
+                <div><div class="text-muted fs-7">@T["This month's target"]</div><div class="fw-bold fs-3 num">@(m.QuotaMonth?.ToString("N0") ?? "—")</div></div>
+                <div><div class="text-muted fs-7">@T["fc:Won"]</div><div class="fw-bold fs-3 num" style="color:#15803D">@m.WonMonth.ToString("N0")@if (pct != null) { <span class="fs-7 text-muted"> · @pct%</span> }</div></div>
+            </div>
+        </div></div>
+        <div class="row g-5">
+            <div class="col-xl-7"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Today, in order"]</span>
+                <span class="text-muted fs-7 mt-1">@T["A customer waiting comes first, then what is late, then the deals that need you most."]</span></div></div>
+                <div class="card-body pt-2">
+                    @if (m.Items.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-like fs-3x text-gray-300 d-block mb-3"></i>@T["Nothing is waiting for you today."]</div> }
+                    @foreach (var i in m.Items)
+                    {
+                        var (ic, c) = kinds.GetValueOrDefault(i.Kind, ("ki-check-square", "#3A5795"));
+                        <a href="@i.Url" class="d-flex align-items-center gap-4 py-4 border-bottom border-gray-200 text-hover-primary">
+                            <span class="crm-step-ico" style="--c:@c"><i class="ki-outline @ic fs-3"></i></span>
+                            <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-900 text-truncate">@i.Title @if (i.Badge != null && i.Kind == "Inbox") { <span class="badge badge-circle badge-success ms-1 num">@i.Badge</span> }</div>
+                                <div class="text-muted fs-7 text-truncate">@Sub(i.Sub)@if (i.Kind == "Deal" && i.Badge != null) { <span class="num"> · @i.Badge</span> }</div></div>
+                            <div class="text-end text-nowrap">
+                                @if (i.Due != null) { <div class="num fw-bold @(i.Late ? "text-danger" : "text-gray-700")">@(i.Due.Value.Date == DateTime.Today ? i.Due.Value.ToString("HH:mm") : i.Due.Value.ToString("MM-dd"))</div> }
+                                @if (i.Late) { <span class="badge badge-light-danger fs-9">@(i.Kind == "Deal" ? T["at risk"] : T["overdue"])</span> }
+                            </div>
+                        </a>
+                    }
+                </div></div></div>
+            <div class="col-xl-5"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Leads warming up"]</span>
+                <span class="text-muted fs-7 mt-1">@T["Scored by what they did, not only by who they are — each with the reason."]</span></div></div>
+                <div class="card-body pt-2">
+                    @if (m.HotLeads.Count == 0) { <div class="text-muted fs-7 py-6">@T["None of your leads is warm right now."]</div> }
+                    @foreach (var (id, name, company, ins) in m.HotLeads)
+                    {
+                        var col = ins.Band == "Hot" ? "#DC2626" : "#3A5795";
+                        <a href="@Url.Action("Leads","Crm", new { q = name })" class="d-flex gap-4 py-4 border-bottom border-gray-200 text-hover-primary">
+                            <div class="crm-score" style="--c:@col"><span class="num">@ins.Score</span></div>
+                            <div class="min-w-0 flex-grow-1"><div class="fw-bold text-gray-900">@name @if (company != null) { <span class="text-muted fw-semibold fs-8">· @company</span> }</div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">@foreach (var r in ins.Reasons.Take(3)) { <span class="badge @(r.Points >= 0 ? "badge-light-success" : "badge-light-danger") fs-9 fw-semibold"><span class="num">@((r.Points > 0 ? "+" : "") + r.Points)</span>&nbsp;@T["why:" + r.Code]@if (r.Evidence != null && r.Code != "fit") { <span class="num">&nbsp;(@r.Evidence)</span> }</span> }</div></div>
+                        </a>
+                    }
+                    <div class="notice d-flex bg-light rounded p-4 mt-6 fs-8 text-gray-700"><i class="ki-outline ki-shield-tick fs-3 me-3" style="color:#3A5795"></i>@T["Every suggestion here comes from rules on your own records. Nothing is sent outside the company."]</div>
+                </div></div></div>
+        </div>
+    </div></div>
+</div>

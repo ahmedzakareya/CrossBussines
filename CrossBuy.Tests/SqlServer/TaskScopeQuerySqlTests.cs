@@ -37,6 +37,12 @@ namespace CrossBuy.Tests.SqlServer
         // This family GENERATES SCHEMA, so it owns a dedicated probe database and never touches the shared platform
         // fixture. Calling EnsureEfSchemaAsync on the shared fixture is what broke three PlatformSchemaDeploymentTests
         // twice. The lifecycle comes from SqlServerFixture so the rule lives in ONE helper.
+        // A LEASE, NOT A HANDLE. _probe used to be a value this class had to remember to drop; the lease
+        // owns the database and the fixture records what happened to it. xUnit calls DisposeAsync on a
+        // failing test as well as a passing one - measured, not assumed - so cleanup was already correct
+        // here. What the lease adds is EVIDENCE: the database appears in LeaseHistory as Released, and a
+        // drop that fails is reported at fixture teardown instead of surfacing as a bare cleanup error.
+        private SqlServerFixture.ProbeLease? _lease;
         private SqlServerFixture.ProbeDatabase? _probe;
         private string _sharedFingerprintBefore = "";
 
@@ -44,12 +50,18 @@ namespace CrossBuy.Tests.SqlServer
         {
             if (!_sql.Available) return;
             _sharedFingerprintBefore = await _sql.SharedFixtureFingerprintAsync();
-            _probe = await _sql.CreateProbeDatabaseAsync("TaskScope");
+
+            // Acquired BEFORE any test body touches the probe, and released by DisposeAsync below on
+            // every exit path the runner controls.
+            _lease = await _sql.LeaseProbeDatabaseAsync("TaskScope");
+            _probe = _lease.Database;
         }
 
         public async Task DisposeAsync()
         {
-            if (_probe != null) await _sql.DropProbeDatabaseAsync(_probe);
+            // The ONLY release path. There is deliberately no second DropProbeDatabaseAsync anywhere in
+            // this class: two owners of one database is how a drop races its own verification.
+            if (_lease != null) await _lease.DisposeAsync();
         }
 
         private string Conn => _probe!.ConnectionString;

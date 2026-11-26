@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
-from app.ml.intent_data import OUT_OF_SCOPE  # noqa: E402
+from app.ml.intent_data import OUT_OF_SCOPE, TASKS  # noqa: E402
 from app.ml.intent_model import ARTIFACT, MIN_MARGIN, load  # noqa: E402
 from real_questions import REAL  # noqa: E402
 
@@ -116,6 +116,14 @@ for q, want in [
     got = MODEL.predict(q).intent
     check(f"{q}  ->  {want.split('.')[-1]}", got == want, f"got {got}")
 
+# Tasks are a new governed surface: keep conversational Arabic and English phrasings reachable
+# after retraining, while the real-question benchmark continues to guard wrong routes and leaks.
+print("\n[2b] TASKS ARE REACHABLE IN ARABIC AND ENGLISH")
+for q in ["وريني المهام المفتوحة", "ما المهام المتأخرة", "عدد المهام حسب الحالة",
+          "show overdue tasks", "list my tasks", "which tasks are due soon"]:
+    got = MODEL.predict(q).intent
+    check(f"{q}  ->  tasks.query", got == TASKS, f"got {got}")
+
 
 # ===================================================================================
 print("\n[3] A NEAR-TIE IS OFFERED, NOT RESOLVED")
@@ -147,6 +155,14 @@ check("it does NOT cover an unknown intent",
 check("it does not cover an empty catalogue", not MODEL.covers([]))
 check("every id it knows is a real .NET intent id",
       all("." in i for i in MODEL.intents), str(MODEL.intents))
+
+# A permission-filtered request may carry only a subset of the full model catalogue. The model
+# must neither emit an unavailable intent nor reveal it in its ranked suggestions.
+scoped = MODEL.predict("كام رصيد مياه معدنية", ["accounting.cash-balance"])
+check("a filtered catalogue never receives a hidden intent",
+      scoped.intent is None or scoped.intent == "accounting.cash-balance", str(scoped.intent))
+check("hidden intents are absent from scoped rankings",
+      all(intent == "accounting.cash-balance" for intent, _ in scoped.ranked), str(scoped.ranked))
 
 
 # ===================================================================================

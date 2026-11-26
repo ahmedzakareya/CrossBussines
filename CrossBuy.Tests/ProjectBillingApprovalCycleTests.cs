@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using CrossBuy.BL;
+using CrossBuy.BL.Construction;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.Platform.Orchestration;
 using CrossBuy.BL.TasksCalendar;
@@ -60,7 +61,8 @@ namespace CrossBuy.Tests
                 NullLogger<BusinessEventService>.Instance);
 
             _billing = new ProgressBillingService(_host.Db, new InertAr(), new ProgressService(_host.Db),
-                new ContractService(_host.Db, new InertJournal()), _events, Access(_host));
+                new ContractService(_host.Db, new InertJournal()), _events, Access(_host),
+                new CommercialRevisionService(_host.Db, new ConstructionAuditService(_host.Db)));
         }
 
         public Task DisposeAsync() { _host.Dispose(); return Task.CompletedTask; }
@@ -84,7 +86,8 @@ namespace CrossBuy.Tests
             int id = await DraftAsync();
             var failing = new FailAfterRecord(_events);
             var service = new ProgressBillingService(_host.Db, new InertAr(), new ProgressService(_host.Db),
-                new ContractService(_host.Db, new InertJournal()), failing, Access(_host));
+                new ContractService(_host.Db, new InertJournal()), failing, Access(_host),
+                new CommercialRevisionService(_host.Db, new ConstructionAuditService(_host.Db)));
             await Assert.ThrowsAsync<InvalidOperationException>(() => service.SubmitAsync(CompanyOne, id, Preparer));
             Assert.True(failing.Saved);
             using (var fresh = _host.NewContext())
@@ -192,7 +195,8 @@ namespace CrossBuy.Tests
             var staleEvents = new BusinessEventService(stale, _host.Registry(),
                 new StubContextAccessor(Ctx(Preparer, CompanyOne)), NullLogger<BusinessEventService>.Instance);
             var retry = new ProgressBillingService(stale, new InertAr(), new ProgressService(stale),
-                new ContractService(stale, new InertJournal()), staleEvents, Access(_host));
+                new ContractService(stale, new InertJournal()), staleEvents, Access(_host),
+                new CommercialRevisionService(stale, new ConstructionAuditService(stale)));
             Assert.False((await retry.SubmitAsync(CompanyOne, id, Preparer)).ok);
             using var fresh = _host.NewContext();
             var facts = await fresh.BusinessEvents.AsNoTracking()

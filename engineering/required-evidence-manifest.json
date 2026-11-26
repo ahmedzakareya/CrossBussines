@@ -56,6 +56,87 @@
       ]
     },
     {
+      "group": "Hospital facility slice (H1)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalFacilitySqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_the_entities_round_trip_through_it",
+        "The_database_itself_refuses_a_drawing_that_is_not_json_and_a_room_off_the_grid"
+      ]
+    },
+    {
+      "group": "Hospital patients slice (H2)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalPatientsSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_the_patient_and_its_access_log_round_trip_through_it",
+        "The_database_keeps_one_file_per_national_id_and_refuses_an_unknown_sex_or_blood_group"
+      ]
+    },
+    {
+      "group": "Hospital admissions slice (H3)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalAdmissionsSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_an_admission_with_its_stay_and_photo_round_trips",
+        "The_database_refuses_a_second_open_admission_and_a_second_open_stay_in_one_bed"
+      ]
+    },
+    {
+      "group": "Hospital outpatient slice (H4)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalOutpatientSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_a_practitioner_and_an_appointment_round_trip",
+        "The_database_keeps_one_live_appointment_per_slot_and_a_cancelled_one_frees_it"
+      ]
+    },
+    {
+      "group": "Hospital consultation slice (H5)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalConsultationSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_an_encounter_with_its_vitals_diagnosis_and_prescription_round_trips",
+        "The_database_keeps_one_encounter_per_appointment_and_a_signed_one_records_when"
+      ]
+    },
+    {
+      "group": "Hospital billing slice (H6)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalBillingSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_a_bill_with_its_line_shift_and_payment_round_trips",
+        "The_database_keeps_one_bill_per_visit_one_open_shift_per_cashier_and_real_payments"
+      ]
+    },
+    {
+      "group": "Hospital price lists slice (H7)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalPricingSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_a_list_its_lines_and_a_foreign_bill_round_trip",
+        "The_database_keeps_one_line_per_item_one_version_per_code_and_known_kinds"
+      ]
+    },
+    {
+      "group": "Hospital laboratory slice (H8)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalLabSqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_a_test_an_order_and_its_results_round_trip",
+        "The_database_keeps_one_order_per_visit_line_and_only_known_states"
+      ]
+    },
+    {
+      "group": "Hospital radiology slice (H9)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalRadiologySqlTests",
+      "tests": [
+        "The_slice_runs_twice_and_an_exam_a_room_a_report_and_its_alert_round_trip",
+        "The_database_keeps_one_order_per_visit_line_known_states_and_one_alert_source"
+      ]
+    },
+    {
+      "group": "Hospital pharmacy slice and dispensing (H10)",
+      "class": "CrossBuy.Tests.SqlServer.HospitalPharmacySqlTests",
+      "tests": [
+        "The_slice_runs_twice",
+        "A_dispense_leaves_nearest_expiry_first_books_cost_of_goods_and_charges_the_bill",
+        "A_dispense_that_cannot_be_covered_in_full_leaves_nothing_behind"
+      ]
+    },
+    {
       "group": "Authorization baseline (Batch 00)",
       "class": "CrossBuy.Tests.Stage1PermissionBacklogTests",
       "tests": [
@@ -543,6 +624,13 @@
         "I9_an_approver_in_another_company_cannot_approve_or_reject",
         "The_decision_is_saved_BEFORE_the_transaction_commits",
         "The_failure_seam_is_never_armed_by_production_code"
+      ]
+    },
+    {
+      "group": "SQL scratch orphan detection (read-only)",
+      "class": "CrossBuy.Tests.SqlServer.ScratchOrphanLiveInventoryTests",
+      "tests": [
+        "Reports_the_scratch_database_inventory_without_modifying_anything"
       ]
     }
   ],

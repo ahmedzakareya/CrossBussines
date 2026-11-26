@@ -43,13 +43,20 @@ namespace CrossBuy.Tests
         {
             var rel = relative.Replace('/', Path.DirectorySeparatorChar);
 
-            // CROSSBUY_REPO_ROOT, the repo's existing escape hatch, is honoured for ONE reason: three of the
-            // six workers belong to TAB-1, and a guard must be mutation-proved before it is believed. Proving
-            // it by editing those files would mean modifying another tab's source in a shared tree. Instead a
-            // shadow root holds a mutated COPY at the same relative path and this resolver reads that. A path
-            // absent from the shadow root falls through to the real tree, so a shadow containing one file
-            // leaves the other five rows reading the real sources and still green — which is what makes the
-            // mutation evidence legible.
+            // CROSSBUY_REPO_ROOT, the repo's existing escape hatch, names the tree to read. It exists because
+            // the walk-up below starts at AppContext.BaseDirectory and only works when the test binary sits
+            // inside the repo. It does not when this file is compiled by a small standalone runner — a bare
+            // csproj with one <Compile Include> pointing AT THIS FILE IN PLACE, which is how the guard gets
+            // run while the application is up and holding CrossBuy.dll, since nothing here references it.
+            // Point the variable at the real worktree. A path it does not resolve falls through to the walk-up.
+            //
+            // DO NOT POINT IT AT A TREE OF COPIED SOURCES. An earlier revision of this comment recommended
+            // exactly that — a shadow root holding mutated copies, so TAB-1's three workers could be
+            // mutation-proved without editing their files. The programme owner's 2026-11-08 ruling forbids
+            // copies of project sources anywhere, scratchpad included. Mutation evidence now comes from the
+            // main tree: mutate, build, restore, inside a build window. Each tab proves the workers it owns,
+            // because the alternative is editing another tab's source in the one tree everyone shares, with no
+            // guaranteed restore if a cycle dies partway. TAB-5 proves the first three rows; TAB-1 the rest.
             var root = Environment.GetEnvironmentVariable("CROSSBUY_REPO_ROOT");
             if (!string.IsNullOrWhiteSpace(root))
             {

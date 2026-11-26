@@ -8,7 +8,9 @@
     string oppNm(string s) => Localizer[s].Value;
     var totalLeads = Model.LeadsByStatus.Values.Sum();
     string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
 }
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["CRM 360° reports"]</h1>
@@ -90,7 +92,9 @@
                     <tbody>
                     @foreach (var o in Model.Owners)
                     {
-                        <tr><td class="fw-semibold text-gray-800">@o.Name</td><td class="text-center">@o.Leads</td><td class="text-center">@o.OpenOpps</td><td class="text-end fw-bold text-primary">@o.WonValue.ToString("N0")</td></tr>
+                        <tr><td><div class="d-flex align-items-center">
+                            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (o.HasPhoto) {<img src="@Url.Content("~/People/Photo/" + o.EmployeeId)" alt="" style="object-fit:cover" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>@Initials(o.Name)</span>'" />} else {<span class="symbol-label crm-initials fs-8">@Initials(o.Name)</span>}</div>
+                            <span class="fw-semibold text-gray-800">@o.Name</span></div></td><td class="text-center">@o.Leads</td><td class="text-center">@o.OpenOpps</td><td class="text-end fw-bold text-primary">@o.WonValue.ToString("N0")</td></tr>
                     }
                     @if (Model.Owners.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-6">@Localizer["No data"]</td></tr> }
                     </tbody>

@@ -1,0 +1,267 @@
+@using CrossBuy.Controllers
+@using CrossBuy.BL
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var cats = ViewBag.Categories as List<HyperController.HyperCatRow> ?? new();
+    var rows = ViewBag.Rows as List<BulkPriceRow> ?? new();
+    var previewed = ViewBag.Previewed as bool? ?? false;
+    var categoryId = ViewBag.CategoryId as int?;
+    var q = ViewBag.Q as string;
+    var mode = (ViewBag.Mode as string) ?? "Percent";
+    var value = ViewBag.Value as decimal?;
+    var dp = (int)(ViewBag.Dp ?? 2);
+    var fmt = dp > 0 ? "0." + new string('0', dp) : "0";
+    ViewData["Title"] = isAr ? "تغيير سعر جماعي" : "Bulk price change";
+
+    int willChange = rows.Count(r => !r.Blocked && r.OldPrice != r.NewPrice);
+    int willBlock = rows.Count(r => r.Blocked);
+    int willSkip = rows.Count(r => !r.Blocked && r.OldPrice == r.NewPrice);
+    int unknownCost = rows.Count(r => r.CostUnknown);
+    int warnOnly = rows.Count(r => r.BelowFloor && !r.Blocked);
+
+    Func<object, string> say = c =>
+    {
+        var k = c as string ?? "";
+        if (k.StartsWith("bulk-price-done|"))
+        {
+            var p = k.Split('|');
+            var stale = p.Length > 4 ? p[4] : "0";
+            var baseMsg = isAr
+                ? $"تم التغيير. عُدِّل {p[1]} صنفاً، رُفض {p[2]} لنزوله تحت حدّ الهامش، وبقي {p[3]} بلا تغيير."
+                : $"Done. {p[1]} items were re-priced, {p[2]} were refused for falling under the margin floor, and {p[3]} were already at the new price.";
+            // A stale row is NOT a silent skip: somebody else moved that price while this preview was open,
+            // so the figure that was approved is not the figure that would have been written.
+            if (stale != "0")
+            {
+                baseMsg += isAr
+                    ? $" ولم يُمسّ {stale} صنفاً لأن سعرها تغيّر بعد المعاينة — عاين من جديد لترى وضعها الحالي."
+                    : $" {stale} were left untouched because their price changed after the preview — preview again to see where they stand.";
+            }
+            return baseMsg;
+        }
+        var map = new Dictionary<string, string> {
+            ["no-permission"] = isAr ? "تغيير الأسعار جماعياً يحتاج صلاحية مدير." : "Changing prices in bulk needs manager permission."
+        };
+        return map.TryGetValue(k, out var v) ? v : k;
+    };
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (TempData["HyperMsg"] != null)
+        {
+            <div class="alert alert-success d-flex align-items-start mb-6"><i class="ki-outline ki-check-circle fs-2 me-3 mt-1"></i><div>@say(TempData["HyperMsg"])</div></div>
+        }
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-danger d-flex align-items-start mb-6"><i class="ki-outline ki-information-5 fs-2 me-3 mt-1"></i><div>@say(TempData["HyperErr"])</div></div>
+        }
+
+        @* THE WARNING BELONGS AT THE TOP, not next to the button. There is no previous-price column to roll
+           back to, and the person about to click has to know that before they choose a number. *@
+        <div class="alert alert-danger d-flex align-items-start mb-6">
+            <i class="ki-outline ki-information-5 fs-2tx me-4 mt-1"></i>
+            <div>
+                <div class="fw-bold fs-6 mb-1">@(isAr ? "لا تراجع عن هذا التغيير" : "This change cannot be undone")</div>
+                <div class="fs-7 text-gray-700" style="line-height:1.9">
+                    @(isAr
+                        ? "الأسعار تُكتب مكان القديمة، ولا يوجد عمود يحتفظ بالسعر السابق. راجع المعاينة سطراً سطراً قبل التنفيذ — علامة ناقص في «النسبة» تخفّض الأسعار، وعلامة الزائد ترفعها."
+                        : "Prices are written over the old ones and nothing keeps the previous value. Read the preview line by line before applying — a minus in “percent” lowers prices and a plus raises them.")
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header min-h-50px align-items-center">
+                <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "ما الذي يتغيّر" : "What changes")</h3>
+            </div>
+            <div class="card-body pt-4">
+                <form method="get" action="/hyper/pricing/bulk" class="row g-4 align-items-end">
+                    <div class="col-md-3">
+                        <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "الفئة" : "Category")</label>
+                        <select name="categoryId" class="form-select form-select-solid">
+                            <option value="">@(isAr ? "كل الفئات" : "All categories")</option>
+                            @foreach (var c in cats)
+                            {
+                                <option value="@c.Id" selected="@(categoryId == c.Id)">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "بحث (اسم / كود / باركود)" : "Search (name / code / barcode)")</label>
+                        <input name="q" value="@q" type="text" class="form-control form-control-solid" />
+                    </div>
+                    @* 3+3+2+2+2 = 12. At 13 the Preview button wrapped onto a line of its own. *@
+                    <div class="col-md-2">
+                        <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "نوع التغيير" : "Change type")</label>
+                        <select name="mode" class="form-select form-select-solid">
+                            <option value="Percent" selected="@(mode == "Percent")">@(isAr ? "نسبة مئوية %" : "Percent %")</option>
+                            <option value="Amount" selected="@(mode == "Amount")">@(isAr ? "مبلغ ثابت ±" : "Fixed amount ±")</option>
+                            <option value="Set" selected="@(mode == "Set")">@(isAr ? "تثبيت على سعر" : "Set to a price")</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "القيمة" : "Value")</label>
+                        <input name="value" value="@(value?.ToString())" type="number" step="any" required class="form-control form-control-solid" style="font-variant-numeric:tabular-nums" />
+                    </div>
+                    @* col-md-1 was too narrow for the word: the button rendered as a vertical stack of
+                       single letters. A control nobody can read is a broken control, not a cramped one. *@
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-light-primary w-100 text-nowrap">@(isAr ? "عاين" : "Preview")</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (!previewed)
+        {
+            <div class="card"><div class="card-body p-10 text-center">
+                <i class="ki-outline ki-price-tag fs-3tx text-muted mb-4 d-block"></i>
+                <div class="fs-6 fw-bold text-gray-800 mb-2">@(isAr ? "اختر نطاقاً وقيمة ثم عاين" : "Choose a scope and a value, then preview")</div>
+                <div class="fs-7 text-muted" style="line-height:1.9">
+                    @(isAr
+                        ? "لا يُكتب شيء قبل أن ترى القائمة وتضغط التنفيذ."
+                        : "Nothing is written until you have seen the list and pressed apply.")
+                </div>
+            </div></div>
+            return;
+        }
+
+        @if (rows.Count == 0)
+        {
+            @* The refusal notice by kind: nothing matched is not an error, and must not look like one. *@
+            <div class="card"><div class="card-body p-10 text-center" style="border:1px dashed var(--bs-gray-300);border-radius:.625rem">
+                <div class="fs-6 fw-bold text-gray-800 mb-2">@(isAr ? "لا صنف يطابق هذا النطاق" : "No item matches this scope")</div>
+                <div class="fs-7 text-muted" style="line-height:1.9">
+                    @(isAr
+                        ? "الأصناف بلا سعر بيع لا تدخل في التغيير الجماعي: نسبة من «لا سعر» تظل لا سعر، وإعطاؤها سعراً هنا يمنح سعراً لأصناف تُركت بلا سعر عن قصد."
+                        : "Items with no sales price are left out of a bulk change: a percentage of “no price” is still no price, and setting one here would give a price to items somebody deliberately left unpriced.")
+                </div>
+            </div></div>
+            return;
+        }
+
+        <form method="post" action="/hyper/pricing/bulk">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="categoryId" value="@(categoryId?.ToString())" />
+            <input type="hidden" name="q" value="@q" />
+            <input type="hidden" name="mode" value="@mode" />
+            <input type="hidden" name="value" value="@(value?.ToString())" />
+
+            <div class="card">
+                <div class="card-header min-h-55px align-items-center">
+                    <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "المعاينة" : "Preview")</h3>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge badge-light-success fw-bold">@(isAr ? "سيتغيّر" : "Will change") @willChange</span>
+                        @if (willBlock > 0)
+                        {
+                            <span class="badge badge-light-danger fw-bold">@(isAr ? "مرفوض" : "Refused") @willBlock</span>
+                        }
+                        @if (willSkip > 0)
+                        {
+                            <span class="badge badge-light fw-bold text-muted">@(isAr ? "بلا تغيير" : "No change") @willSkip</span>
+                        }
+                        <button type="submit" class="btn btn-sm btn-primary ms-2" @(willChange == 0 ? "disabled" : "")>
+                            <i class="ki-outline ki-check fs-5"></i>@(isAr ? "نفّذ على المعروض" : "Apply to what is shown")
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+
+                    @if (willBlock > 0)
+                    {
+                        <div class="alert alert-danger d-flex align-items-start mb-5">
+                            <i class="ki-outline ki-shield-cross fs-2tx me-4 mt-1"></i>
+                            <div class="fs-7 text-gray-800" style="line-height:1.9">
+                                @(isAr
+                                    ? $"{willBlock} صنفاً سينزل سعره تحت حدّ الهامش، وإعداد الشركة «منع». لن تُكتب أسعارها حتى لو نفّذت — والباقي يُنفَّذ."
+                                    : $"{willBlock} items would fall under the gross-margin floor and the company setting is Block. Their prices will not be written even if you apply — the rest will be.")
+                            </div>
+                        </div>
+                    }
+                    @if (warnOnly > 0)
+                    {
+                        <div class="alert alert-primary d-flex align-items-start mb-5">
+                            <i class="ki-outline ki-information-5 fs-2tx me-4 mt-1"></i>
+                            <div class="fs-7 text-gray-800" style="line-height:1.9">
+                                @(isAr
+                                    ? $"{warnOnly} صنفاً تحت حدّ الهامش، لكن إعداد الشركة «تحذير» لا «منع» — ستُكتب أسعارها."
+                                    : $"{warnOnly} items are under the margin floor, but the company setting is Warn rather than Block — their prices will be written.")
+                            </div>
+                        </div>
+                    }
+                    @if (unknownCost > 0)
+                    {
+                        <div class="fs-8 text-muted mb-4" style="line-height:1.9">
+                            @(isAr
+                                ? $"{unknownCost} صنفاً بلا تكلفة معروفة، فلا حكم على هامشها — غياب الحكم ليس موافقة."
+                                : $"{unknownCost} items have no known cost, so no margin judgement was possible — the absence of an objection is not approval.")
+                        </div>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                <th class="ps-4">@(isAr ? "الصنف" : "Item")</th>
+                                <th class="text-end" style="width:130px">@(isAr ? "السعر الحالي" : "Current")</th>
+                                <th class="text-end" style="width:130px">@(isAr ? "السعر الجديد" : "New")</th>
+                                <th class="pe-4" style="width:200px">@(isAr ? "الهامش" : "Margin")</th>
+                            </tr></thead>
+                            <tbody class="fs-6">
+                                @foreach (var r in rows)
+                                {
+                                    <tr class="@(r.Blocked ? "bg-light-danger" : "")">
+                                        <td class="ps-4">
+                                            @* The price AS SHOWN travels with the id, so the apply can refuse a row
+                                               somebody else re-priced while this preview was on screen. *@
+                                            <input type="hidden" name="seen" value="@($"{r.ItemId}:{(r.OldPrice ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture)}")" />
+                                            <a href="/Inventory/EditItem?id=@r.ItemId" class="fw-bold text-gray-800 text-hover-primary d-block">@(isAr ? r.Name : (r.NameEn ?? r.Name))</a>
+                                            <span class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">@r.Code</span>
+                                        </td>
+                                        <td class="text-end text-muted" style="font-variant-numeric:tabular-nums">@((r.OldPrice ?? 0m).ToString(fmt))</td>
+                                        <td class="text-end fw-bolder @(r.Blocked ? "text-danger" : (r.OldPrice == r.NewPrice ? "text-muted" : "text-gray-900"))" style="font-variant-numeric:tabular-nums">
+                                            @r.NewPrice.ToString(fmt)
+                                        </td>
+                                        <td class="pe-4 fs-8">
+                                            @if (r.Blocked)
+                                            {
+                                                <span class="badge badge-light-danger fw-bold">@(isAr ? "مرفوض — تحت الحدّ" : "Refused — under the floor")</span>
+                                            }
+                                            else if (r.BelowFloor)
+                                            {
+                                                <span class="badge badge-light-primary fw-bold">@(isAr ? "تحت الحدّ" : "Under the floor")</span>
+                                            }
+                                            else if (r.CostUnknown)
+                                            {
+                                                <span class="text-muted">@(isAr ? "تكلفة غير معروفة" : "Cost unknown")</span>
+                                            }
+                                            else if (r.MarginMode == "Off")
+                                            {
+                                                <span class="text-muted">@(isAr ? "الفحص متوقف" : "Check is off")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success">@(isAr ? "فوق الحدّ" : "Above the floor")</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (rows.Count >= 500)
+                    {
+                        <div class="fs-8 text-muted mt-4" style="line-height:1.9">
+                            @(isAr
+                                ? "تُعرض أول 500 صنف فقط، ولن يُنفَّذ التغيير إلا عليها. ضيّق النطاق بالفئة أو بالبحث لتغطية الباقي."
+                                : "Only the first 500 items are shown, and only those are changed. Narrow the scope by category or search to cover the rest.")
+                        </div>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

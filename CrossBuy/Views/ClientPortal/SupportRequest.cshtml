@@ -1,0 +1,214 @@
+@model CrossBuy.BL.CrmIdentity.PortalTicketView
+@using System.Globalization
+@*
+    ONE SUPPORT REQUEST — the thread with our team (our replies and the customer's, never internal notes), a reply box
+    while it is open, and the 1–5 rating once it is resolved. The team member's FIRST name only, never a role or id.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["PortalSection"] = "Support";
+}
+<!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: Metronic
+Product Version: 8.3.3 (demo30)
+Purchase: https://1.envato.market/EA4JP
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+	<!--begin::Head-->
+	<head>
+		<title>@(isAr ? Model.T.Subject : Model.T.Subject) — @CrossBuy.BL.Platform.ProductIdentity.Name</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="@(CrossBuy.BL.Platform.ProductIdentity.ShortName) client portal." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.Icon)" asp-append-version="true" />
+		<!--begin::Fonts(mandatory for all pages)-->
+		<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
+		<!--end::Fonts-->
+		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+		@if (isAr)
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/css/crm-rating.css" rel="stylesheet" asp-append-version="true" />
+			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+			<style>
+				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+				html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] select, html[lang="ar"] textarea,
+				html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6 { font-family: 'Cairo', sans-serif; }
+				html[lang="ar"] td, html[lang="ar"] th, html[lang="ar"] .fs-2hx, html[lang="ar"] .app-toolbar .fs-3 { unicode-bidi: plaintext; }
+			</style>
+		}
+		else
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/css/crm-rating.css" rel="stylesheet" asp-append-version="true" />
+		}
+		<!--end::Global Stylesheets Bundle-->
+	</head>
+	<!--end::Head-->
+	<!--begin::Body-->
+	<body id="kt_app_body" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" class="app-default">
+		<!--begin::Theme mode setup on page load-->
+		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+		<!--end::Theme mode setup on page load-->
+		<!--begin::App-->
+		<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+			<!--begin::Page-->
+			<div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+				@await Html.PartialAsync("_PortalHeader")
+				<!--begin::Wrapper-->
+				<div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+					<!--begin::Toolbar-->
+					<div id="kt_app_toolbar" class="app-toolbar py-6">
+						<!--begin::Toolbar container-->
+						<div id="kt_app_toolbar_container" class="app-container container-xxl d-flex align-items-start">
+							<div class="d-flex flex-column flex-row-fluid">
+								<!--begin::Toolbar wrapper-->
+								<div class="d-flex align-items-center pt-1">
+									<ul class="breadcrumb breadcrumb-separatorless fw-semibold">
+										<li class="breadcrumb-item text-white fw-bold lh-1">
+											<i class="ki-outline ki-home text-white fs-3"></i>
+										</li>
+									</ul>
+								</div>
+								<!--end::Toolbar wrapper-->
+								<!--begin::Toolbar wrapper-->
+								<div class="d-flex flex-stack flex-wrap flex-lg-nowrap gap-4 gap-lg-10 pt-6 pb-18 py-lg-13">
+									<!--begin::Page title-->
+									<div class="page-title d-flex flex-column me-3">
+										<h1 class="page-heading d-flex text-white fw-bolder fs-2 flex-column justify-content-center my-0">@(isAr ? Model.T.Subject : Model.T.Subject)</h1>
+										<span class="text-white opacity-75 pt-2 fs-6">
+											@(isAr ? "طلب رقم " + Model.T.ID : "Request #" + Model.T.ID)
+										</span>
+									</div>
+									<!--end::Page title-->
+									<!--begin::Status-->
+									@{ var sb = Badge(Model.T.Status); }
+									<div class="d-flex align-items-center flex-shrink-0"><span class="badge @sb.cls fs-6 fw-bold px-4 py-3">@(isAr ? sb.ar : sb.en)</span></div>
+									<!--end::Status-->
+								</div>
+								<!--end::Toolbar wrapper-->
+							</div>
+						</div>
+						<!--end::Toolbar container-->
+					</div>
+					<!--end::Toolbar-->
+					<!--begin::Wrapper container-->
+					<div class="app-container container-xxl">
+						<!--begin::Main-->
+						<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+							<!--begin::Content wrapper-->
+							<div class="d-flex flex-column flex-column-fluid">
+								<!--begin::Content-->
+								<div id="kt_app_content" class="app-content">
+@functions {
+    static (string cls, string ar, string en) Badge(string s) => s switch {
+        "New" => ("badge-light-primary", "جديد", "New"), "Open" => ("badge-light-primary", "قيد المعالجة", "In progress"),
+        "Pending" => ("badge-light", "بانتظار ردك", "Waiting for you"), "Resolved" => ("badge-light-success", "تم الحل", "Resolved"),
+        "Closed" => ("badge-light", "مغلق", "Closed"), _ => ("badge-light", s, s) };
+}
+										@{ var err = TempData["PortalSupportError"] as string; var closed = Model.T.Status == "Resolved" || Model.T.Status == "Closed"; var sug = (List<CrossBuy.Models.Context.Crm.CrmKbArticle>)ViewBag.Suggested;
+										   string First(string? n) => (n ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? ""; }
+										<div class="row g-6">
+										<div class="col-xl-8">
+										<!--begin::Card-->
+										<div class="card">
+											<div class="card-header border-0 pt-6"><div class="card-title"><a href="@Url.Action("Support", "ClientPortal")" class="btn btn-sm btn-light me-3"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-4"></i></a><h2 class="fw-bold">@(isAr ? "المحادثة" : "Conversation")</h2></div></div>
+											<div class="card-body pt-0">
+												@foreach (var e in Model.Thread)
+												{
+													<div class="d-flex @(e.Ours ? "justify-content-start" : "justify-content-end") mb-6">
+														<div class="d-flex flex-column @(e.Ours ? "align-items-start" : "align-items-end")" style="max-width:80%">
+															<div class="d-flex align-items-center mb-2"><span class="fs-7 fw-bold text-gray-900 me-2">@(e.Ours ? First(e.Who) + (isAr ? " — فريق الدعم" : " — support team") : (isAr ? "أنت" : "You"))</span><span class="text-muted fs-8">@e.M.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</span></div>
+															<div class="p-5 rounded @(e.Ours ? "bg-light-info" : "bg-light-primary") text-gray-900 fw-semibold" style="white-space:pre-wrap">@e.M.Body</div>
+														</div>
+													</div>
+												}
+												@if (!closed || Model.T.Status == "Resolved")
+												{
+													@if (err != null) { <div class="alert alert-danger py-3">@(isAr ? "تعذّر إرسال الرد. حاول مرة أخرى." : "The reply could not be sent. Please try again.")</div> }
+													<form method="post" action="@Url.Action("SupportReply", "ClientPortal", new { id = Model.T.ID })" class="mt-4">
+														@Html.AntiForgeryToken()
+														<textarea name="body" class="form-control form-control-solid mb-3" rows="3" maxlength="4000" placeholder="@(closed ? (isAr ? "ما زالت المشكلة قائمة؟ اكتب هنا وسيُعاد فتح الطلب." : "Still a problem? Write here and the request reopens.") : (isAr ? "اكتب ردك…" : "Write your reply…"))"></textarea>
+														<button type="submit" class="btn btn-primary"><i class="ki-outline ki-send fs-3"></i>@(isAr ? "إرسال" : "Send")</button>
+													</form>
+												}
+											</div>
+										</div>
+										<!--end::Card-->
+										</div>
+										<div class="col-xl-4">
+										@if (closed)
+										{
+											<div class="card mb-6"><div class="card-body">
+												@if (Model.Survey?.AnsweredAt != null)
+												{
+													<div class="text-center"><div class="mb-3">@await Html.PartialAsync("~/Views/Shared/_CrmRating.cshtml", (Model.Survey.Score is byte sc ? (int?)sc : null, false))</div><div class="fw-bold">@(isAr ? "شكراً على تقييمك" : "Thank you for your rating")</div></div>
+												}
+												else
+												{
+													<h3 class="fw-bold mb-4">@(isAr ? "كيف كانت خدمتنا؟" : "How did we do?")</h3>
+													<form method="post" action="@Url.Action("SupportRate", "ClientPortal", new { id = Model.T.ID })">
+														@Html.AntiForgeryToken()
+														<div class="mb-5">@await Html.PartialAsync("~/Views/Shared/_CrmRating.cshtml", ((int?)null, true))</div>
+														<textarea name="comment" class="form-control form-control-solid mb-4" rows="2" maxlength="1000" placeholder="@(isAr ? "ملاحظة (اختياري)" : "A note (optional)")"></textarea>
+														<button type="submit" class="btn btn-primary w-100">@(isAr ? "أرسل التقييم" : "Send the rating")</button>
+													</form>
+												}
+											</div></div>
+										}
+										@if (sug.Any())
+										{
+											<div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@(isAr ? "قد تفيدك" : "This may help")</h3></div></div>
+												<div class="card-body pt-0">@foreach (var a in sug) { <a href="@Url.Action("HelpArticle", "ClientPortal", new { id = a.ID })" class="d-flex align-items-start py-3 border-bottom border-gray-200 text-hover-primary"><i class="ki-outline ki-book-open fs-3 text-primary me-3 mt-1"></i><span class="fw-bold text-gray-900">@(!isAr && !string.IsNullOrWhiteSpace(a.TitleEn) ? a.TitleEn : a.Title)</span></a> }</div></div>
+										}
+										</div>
+										</div>
+								</div>
+								<!--end::Content-->
+							</div>
+							<!--end::Content wrapper-->
+							<!--begin::Footer-->
+							<div id="kt_app_footer" class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
+								<div class="text-gray-900 order-2 order-md-1">
+									<span class="text-muted fw-semibold me-1">@DateTime.UtcNow.Year&copy;</span>
+									<span class="text-gray-800">@CrossBuy.BL.Platform.ProductIdentity.ShortName</span>
+								</div>
+							</div>
+							<!--end::Footer-->
+						</div>
+						<!--end::Main-->
+					</div>
+					<!--end::Wrapper container-->
+				</div>
+				<!--end::Wrapper-->
+			</div>
+			<!--end::Page-->
+		</div>
+		<!--end::App-->
+		<!--begin::Javascript-->
+		<script>var hostUrl = "/portal-assets/";</script>
+		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
+		<script src="/portal-assets/js/scripts.bundle.js"></script>
+		<!--end::Javascript-->
+	</body>
+	<!--end::Body-->
+</html>

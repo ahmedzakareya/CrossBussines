@@ -107,37 +107,24 @@
                     <div class="fs-7 text-gray-700">
                         @Localizer["Engagement is compared across two equal, adjacent windows of"] @Model.RecentWindowDays @Localizer["days each, using your own CRM records. There is no predictive model: nothing here estimates churn, health or a probability, and every finding shows the counts it came from."]
                     </div>
+                    @* PROVENANCE, in ONE partial. These four screens each carried their own copy of this
+                    strip, which is how all four came to print the raw company id as "Company 1". *@
+                    @await Html.PartialAsync("_InsightsProvenance", new CrossBuy.Models.InsightsProvenance
+                    {
+                    CompanyName = ViewBag.CompanyName as string,
+                    Inline = true,
+                    CompanyId = Model.CompanyId,
+                    Method = Localizer["Business rules"].Value,
+                    Facts = new List<(string, string, bool)>
+                    {
+                    (Localizer["Comparison windows"].Value,
+                    Model.RecentWindowDays + " " + Localizer["vs previous"].Value + " " + Model.PreviousWindowDays + " " + Localizer["days"].Value, false),
+                    },
+                    GeneratedAtUtc = Model.Panel.GeneratedAtUtc,
+                    })
                 </div>
             </div>
 
-            @* PROVENANCE *@
-            <div class="card card-flush mb-5">
-                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Method"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Business rules"]</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Comparison windows"]</div>
-                        <div class="fw-bold text-gray-800">@Model.RecentWindowDays @Localizer["vs previous"] @Model.PreviousWindowDays @Localizer["days"]</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
-                        <div class="fw-bold text-gray-800">
-                            @(Model.Panel.GeneratedAtUtc.HasValue
-                                ? Model.Panel.GeneratedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
-                                : Localizer["Not generated"].Value)
-                        </div>
-                    </div>
-                    <div class="ms-auto text-gray-500 fs-8">
-                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
-                    </div>
-                </div>
-            </div>
 
             @if (!Model.Panel.HasResult)
             {

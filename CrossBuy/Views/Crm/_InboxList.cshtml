@@ -1,0 +1,31 @@
+@model List<CrossBuy.BL.CrmIdentity.ConversationRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    var ch = new Dictionary<string, (string, string)> { ["WhatsApp"] = ("ki-whatsapp", "#25D366"), ["WebChat"] = ("ki-message-text-2", "#0F766E"), ["Email"] = ("ki-sms", "#3A5795") };
+    var selected = ViewBag.Selected as int?;
+    string When(DateTime utc) { var l = utc.ToLocalTime(); return l.Date == DateTime.Today ? l.ToString("HH:mm") : l.Date == DateTime.Today.AddDays(-1) ? T["Yesterday"].Value : l.ToString("MM-dd"); }
+}
+@foreach (var r in Model)
+{
+    var c = r.C; var (ic, col) = ch.GetValueOrDefault(r.ChannelKind, ("ki-message-text-2", "#3A5795"));
+    var name = r.PartyName ?? c.Phone ?? c.Email ?? T["Visitor"].Value;
+    <a href="?id=@c.ID" class="crm-ib-row @(c.ID == selected ? "on" : "") @(c.UnreadCount > 0 ? "unread" : "")" data-conv="@c.ID">
+        <div class="position-relative flex-shrink-0"><span class="symbol symbol-40px symbol-circle"><span class="symbol-label crm-initials fs-7">@Initials(name)</span></span>
+            <span class="crm-ch-mini"><span class="crm-ch" style="--ch:@col"><i class="ki-outline @ic fs-8"></i></span></span></div>
+        <div class="flex-grow-1 min-w-0">
+            <div class="d-flex flex-stack"><span class="crm-ib-name fw-bold text-gray-900 text-truncate">@name</span><span class="text-muted fs-8 num ms-2">@When(c.LastMessageAt)</span></div>
+            <div class="text-muted fs-7 text-truncate">@c.LastPreview</div>
+            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                @if (r.AccountName != null) { <span class="badge badge-light-primary fs-9">@r.AccountName</span> }
+                @if (c.LeadId != null && c.ContactId == null) { <span class="badge badge-light-info fs-9">@T["kind:Lead"]</span> }
+                @if (!c.Linked || (c.ContactId == null && c.LeadId == null)) { <span class="badge badge-light fs-9">@T["New person"]</span> }
+                @if (c.Status == "Pending") { <span class="badge badge-light-info fs-9">@T["conv:Pending"]</span> }
+                @if (c.Status == "Closed") { <span class="badge badge-light fs-9">@T["conv:Closed"]</span> }
+                @if (r.Owner == null) { <span class="badge badge-light-danger fs-9">@T["No owner"]</span> }
+                @if (c.UnreadCount > 0) { <span class="badge badge-circle ms-auto num" style="background:var(--cb-brand,#3A5795);color:#fff">@c.UnreadCount</span> }
+            </div>
+        </div>
+    </a>
+}
+@if (Model.Count == 0) { <div class="text-center text-muted py-15 px-5"><i class="ki-outline ki-messages fs-3x text-gray-300 d-block mb-3"></i>@T["No conversations here."]</div> }

@@ -2,6 +2,10 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model List<Notification>
+@* SEC-02 — this page's own antiforgery token for the ToggleMute fetch below. _LayoutBackend already
+   renders one through _AnnouncementsBanner, but depending on a sibling partial for a security token
+   is a coupling that breaks silently the day that partial moves. *@
+@Html.AntiForgeryToken()
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
@@ -146,6 +150,9 @@
             document.querySelectorAll('.prefs-chk').forEach(function (chk) {
                 chk.addEventListener('change', function () {
                     var fd = new FormData(); fd.append('category', chk.getAttribute('data-cat'));
+                    // SEC-02 — ToggleMute persists a per-user preference and had no CSRF protection.
+                    var tok = document.querySelector('input[name="__RequestVerificationToken"]');
+                    fd.append('__RequestVerificationToken', tok ? tok.value : '');
                     fetch('/Notifications/ToggleMute', { method: 'POST', credentials: 'same-origin', body: fd });
                 });
             });

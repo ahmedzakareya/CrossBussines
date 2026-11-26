@@ -67,25 +67,16 @@
                 var panels = new[] { Model.AnomalyPanel, Model.CashflowPanel, Model.InventoryPanel };
                 var newest = panels.Where(p => p.GeneratedAtUtc.HasValue).Select(p => p.GeneratedAtUtc!.Value).DefaultIfEmpty().Max();
             }
-            <div class="card card-flush mb-5">
-                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Analysis source"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["On-premises model"] <span class="text-gray-400 fs-8">(@Model.AnomalyPanel.Source)</span></div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
-                        <div class="fw-bold text-gray-800">@(newest == default ? Localizer["Not generated"].Value : newest.ToString("yyyy-MM-dd HH:mm") + " UTC")</div>
-                    </div>
-                    <div class="ms-auto text-gray-500 fs-8">
-                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
-                    </div>
-                </div>
-            </div>
+            @* PROVENANCE, in ONE partial. These four screens each carried their own copy of this
+               strip, which is how all four came to print the raw company id as "Company 1". *@
+            @await Html.PartialAsync("_InsightsProvenance", new CrossBuy.Models.InsightsProvenance
+            {
+                CompanyName = ViewBag.CompanyName as string,
+                CompanyId = Model.CompanyId,
+                Method = Localizer["On-premises model"].Value + " (" + Model.AnomalyPanel.Source + ")",
+                Facts = new List<(string, string, bool)>(),
+                GeneratedAtUtc = (newest == default ? (DateTime?)null : newest),
+            })
 
             @if (Model.AllUnavailable)
             {
@@ -133,8 +124,21 @@
                             <div class="card-body d-flex flex-column justify-content-between">
                                 <i class="ki-outline ki-handcart fs-2x text-warning"></i>
                                 <div class="mt-5">
-                                    <span class="fs-2hx fw-bold text-gray-900">@(Model.Inventory?.Summary?.SlowMoving ?? 0)</span>
-                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Slow-moving items"]</div>
+                                    @* A REFUSED measurement is not a measurement of zero. When the
+                                       window held no business the analyser declines to class anything
+                                       dormant, and printing a 0 here would read as no dead stock when
+                                       the truth is that it could not be told. *@
+                                    @if (Model.Inventory?.WindowTooQuiet == true)
+                                    {
+                                        <span class="fs-2hx fw-bold text-gray-400">&mdash;</span>
+                                        <div class="text-gray-500 fw-semibold fs-7">@Localizer["Slow-moving items"]</div>
+                                        <div class="text-gray-400 fs-8">@Localizer["not measurable in this period"]</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="fs-2hx fw-bold text-gray-900">@(Model.Inventory?.Summary?.SlowMoving ?? 0)</span>
+                                        <div class="text-gray-500 fw-semibold fs-7">@Localizer["Slow-moving items"]</div>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -144,8 +148,17 @@
                             <div class="card-body d-flex flex-column justify-content-between">
                                 <i class="ki-outline ki-dropbox fs-2x text-danger"></i>
                                 <div class="mt-5">
-                                    <span class="fs-2x fw-bold text-gray-900">@Money(Model.Inventory?.Summary?.DeadStockValue ?? 0)</span>
-                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Dead-stock value"]</div>
+                                    @if (Model.Inventory?.WindowTooQuiet == true)
+                                    {
+                                        <span class="fs-2x fw-bold text-gray-400">&mdash;</span>
+                                        <div class="text-gray-500 fw-semibold fs-7">@Localizer["Dead-stock value"]</div>
+                                        <div class="text-gray-400 fs-8">@Localizer["not measurable in this period"]</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="fs-2x fw-bold text-gray-900">@Money(Model.Inventory?.Summary?.DeadStockValue ?? 0)</span>
+                                        <div class="text-gray-500 fw-semibold fs-7">@Localizer["Dead-stock value"]</div>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -156,7 +169,13 @@
                 <div class="card card-flush mb-5 mb-xl-8">
                     <div class="card-header pt-5">
                         <h3 class="card-title text-gray-900 fw-bold">@Localizer["Journal anomalies"]</h3>
-                        <div class="card-toolbar"><span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Duplicates"]: @(Model.Anomaly?.Summary?.Duplicates ?? 0)</span></div>
+                        <div class="card-toolbar d-flex gap-2">
+                            <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Duplicates"]: @(Model.Anomaly?.Summary?.Duplicates ?? 0)</span>
+                            @if ((Model.Anomaly?.Summary?.NotCheckedForDuplicates ?? 0) > 0)
+                            {
+                                <span class="badge badge-light-secondary fw-bold" title="@Localizer["These entries carry no source document, so duplication cannot be judged"]">@Localizer["Not checked"]: @(Model.Anomaly!.Summary.NotCheckedForDuplicates)</span>
+                            }
+                        </div>
                     </div>
                     <div class="card-body pt-2">
                         @if (!Model.AnomalyPanel.HasResult)
@@ -202,8 +221,63 @@
                                 <div class="text-gray-400 fs-8 mt-1">@Localizer["Entries examined"]: @(Model.AnomalyPanel.RecordsConsidered ?? 0)</div>
                             </div>
                         }
+
+                        @* WHAT THE SCAN DID NOT COVER. The engine computes this; leaving it out of the
+                           screen would let a reader take "60 flagged" as a statement about the whole
+                           ledger when duplication could not be judged on part of it at all. *@
+                        @if (Model.Anomaly != null && Model.Anomaly.Summary.NotCheckedForDuplicates > 0)
+                        {
+                            var notChecked = Model.Anomaly.Summary.NotCheckedForDuplicates;
+                            var covered = Model.Anomaly.Scanned - notChecked;
+                            <div class="notice d-flex bg-light-secondary rounded border-secondary border border-dashed p-3 mt-4">
+                                <i class="ki-outline ki-information-5 fs-2 text-gray-600 me-3"></i>
+                                <div class="fs-8 text-gray-700">
+                                    @Localizer["Duplicate checking covered"] <bdi>@covered</bdi> @Localizer["of"] <bdi>@Model.Anomaly.Scanned</bdi> @Localizer["entries"].
+                                    @Localizer["The remaining"] <bdi>@notChecked</bdi> @Localizer["carry no source document and a generated description, so a duplicate cannot be told apart from a coincidence. Nothing is claimed about them either way."]
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
+
+                @* THE RANKING, kept apart from the findings on purpose. IsolationForest can order
+                   entries by strangeness but can never decide one is wrong, so presenting it beside
+                   the anomalies would relabel a ranking as evidence. *@
+                @if (Model.Anomaly != null && Model.Anomaly.ReviewQueue.Any())
+                {
+                    <div class="card card-flush mb-5 mb-xl-8">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title text-gray-900 fw-bold">@Localizer["Review queue"]</h3>
+                            <div class="card-toolbar"><span class="badge badge-light-secondary fw-bold">@Model.Anomaly.ReviewQueue.Count</span></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="fs-8 text-gray-600 mb-4">
+                                @Localizer["These are not findings. They are the entries whose amount and line count look least like the rest, ordered by how unusual they are — somewhere to start looking, not a list of errors."]
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-3">
+                                    <thead class="fs-8 fw-bold text-uppercase text-muted"><tr>
+                                        <th>@Localizer["Entry"]</th><th>@SR["Date"]</th><th>@Localizer["Source"]</th>
+                                        <th class="text-end">@SR["Amount"]</th><th class="text-end">@Localizer["Lines"]</th>
+                                        <th class="text-end">@Localizer["Unusualness"]</th></tr></thead>
+                                    <tbody>
+                                    @foreach (var q in Model.Anomaly.ReviewQueue.Take(15))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-800">@q.EntryNo</td>
+                                            <td class="text-gray-600">@q.Date</td>
+                                            <td><span class="badge badge-light">@q.SourceType</span></td>
+                                            <td class="text-end fw-semibold">@Money(q.Amount)</td>
+                                            <td class="text-end text-gray-600"><bdi>@q.LineCount</bdi></td>
+                                            <td class="text-end text-gray-600"><bdi>@q.Score.ToString("N3")</bdi></td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
 
                 <div class="row g-5 g-xl-8">
                     <!-- Cash-flow -->
@@ -280,6 +354,16 @@
                                             }
                                             </tbody>
                                         </table>
+                                    </div>
+                                }
+                                else if (Model.Inventory?.WindowTooQuiet == true)
+                                {
+                                    @* An empty list because the WINDOW held no business is not the
+                                       same as no alerts. One is a healthy shelf; the other is a
+                                       period nobody traded in. *@
+                                    <div class="notice d-flex bg-light-secondary rounded border-secondary border border-dashed p-4">
+                                        <i class="ki-outline ki-information-5 fs-2 text-gray-600 me-3"></i>
+                                        <div class="fs-8 text-gray-700">@(isAr ? Model.Inventory.WindowNote?.Ar : Model.Inventory.WindowNote?.En)</div>
                                     </div>
                                 }
                                 else

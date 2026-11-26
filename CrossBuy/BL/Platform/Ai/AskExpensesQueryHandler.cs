@@ -29,10 +29,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن المصروفات: المبلغ مجمَّعًا حسب الحساب أو مركز التكلفة أو الشهر",
-			"Any expense question: amount grouped by account, cost centre or month");
+			"Any expense question: amount grouped by account, cost centre or month",
+			"Questions sur les dépenses : montants regroupés par compte, centre de coûts ou mois");
 
 		public override AskText Example => AskText.Of(
-			"إيه المصروفات حسب الحساب؟", "What are the expenses by account?");
+			"إيه المصروفات حسب الحساب؟", "What are the expenses by account?", "Quel est le montant des dépenses par compte ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

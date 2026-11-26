@@ -76,6 +76,9 @@ namespace CrossBuy.BL
 		public string Priority { get; set; } = "";
 		public string Status { get; set; } = "";
 		public int? OwnerEmployeeId { get; set; }
+		// The unit it was routed to. On the ROW because "whose queue is this in" is a question you
+		// scan a list for, and because the list now filters on it.
+		public int? DepartmentId { get; set; }
 		public DateTime? CreatedAt { get; set; }
 		public DateTime? FirstResponseDueAt { get; set; }
 		public DateTime? ResolutionDueAt { get; set; }
@@ -93,6 +96,7 @@ namespace CrossBuy.BL
 	{
 		public int EmployeeId { get; set; }
 		public string Name { get; set; } = "";
+		public bool HasPhoto { get; set; }   // served by /People/Photo/{EmployeeId}
 		public int Leads { get; set; }
 		public int OpenOpps { get; set; }
 		public decimal OpenValue { get; set; }
@@ -149,6 +153,18 @@ namespace CrossBuy.BL
 		public int Contacts { get; set; }
 		public int Opps { get; set; }
 	}
+
+	/// ONE NODE OF THE COMPANY’S ORG CHART, flattened for a picker: the depth is what lets a
+	/// <select> draw the shape of the tree, and the type is what lets it say whether a node is a
+	/// branch, a department or a post. Deliberately not the Hierarchical entity - that carries
+	/// parents, children and a deputy, and handing a view the tree invites it to start walking.
+	public sealed record CrmOrgNode(int Id, string NameAr, string? NameEn, int Depth, int? TypeId,
+		string? TypeAr, string? TypeEn, string? Avatar = null, int? EmployeeId = null);
+
+	/// What logging a call produced. A tuple stopped being readable at five members, and two of
+	/// these - how many people the routing reached, and the ticket that was created along the
+	/// way - exist precisely so the screen can say what happened instead of guessing.
+	public sealed record CallLogResult(bool Ok, string? Error, int Id, int Notified, int? TicketId);
 
 	public interface ICrmService
 	{
@@ -231,8 +247,36 @@ namespace CrossBuy.BL
 		Task<List<CrmSlaPolicy>> GetSlaPoliciesAsync(int companyId);
 		Task<CrmSlaPolicy?> GetSlaPolicyAsync(int companyId, int id);
 		Task<(bool ok, string? error)> SaveSlaPolicyAsync(int companyId, CrmSlaPolicy dto);
-		Task<(List<TicketRow> rows, int total)> SearchTicketsAsync(int companyId, string? q, string? status, string? priority, int page, int pageSize);
-		Task<CrmTicket?> GetTicketAsync(int companyId, int id);
+		Task<(List<TicketRow> rows, int total)> SearchTicketsAsync(int companyId, string? q, string? status, string? priority, int page, int pageSize, bool myUnitOnly = false);
+		Task<CrmTicket?> GetTicketAsync(int companyId, int id);
+		// ---- call centre -------------------------------------------------------------------
+		Task<List<CrmCall>> GetCallsAsync(int companyId, int take = 50, int? ticketId = null);
+		/// Logs a call, and - when <paramref name="newTicketSubject"/> is given - opens the ticket
+		/// for it first, so an agent can turn a call into a problem record without leaving the
+		/// phone screen. The result says how many people the routing reached (zero is a real and
+		/// common answer) and which ticket, if any, was created.
+		Task<CallLogResult> LogCallAsync(int companyId, CrmCall dto, string? userId, string? newTicketSubject = null);
+
+		/// The company’s whole org chart, depth-first and carrying each node’s depth, so a picker
+		/// can draw the structure rather than a flat list of leaves.
+		Task<List<CrmOrgNode>> OrgTreeAsync(int companyId);
+
+		/// Names for org-node ids already stored on this company’s rows, INCLUDING ones that have
+		/// since been deactivated - history has to stay readable.
+		Task<Dictionary<int, CrmOrgNode>> DepartmentNamesAsync(IEnumerable<int> ids);
+
+		/// Moves a routed ticket to the unit ABOVE the one holding it, and tells that unit.
+		Task<(bool ok, string? error, string? toName, int notified)> EscalateTicketAsync(
+			int companyId, int ticketId, string? reason, string? userId);
+
+		/// Stamps the first response. Called when someone REPLIES, not only when a status changes.
+		/// Returns the instant it stamped, or null when it was already answered.
+		Task<DateTime?> MarkRespondedAsync(int companyId, int ticketId, string? userId);
+		// Who has called from this number before - the lookup an inbound call needs in the
+		// three seconds before it is answered.
+		Task<List<CrmCall>> HistoryForNumberAsync(int companyId, string phone, int take = 10);
+		// Open tickets past a deadline, newest breach first. Used by the queue and the escalation.
+		Task<List<CrmTicket>> BreachedTicketsAsync(int companyId);
 		Task<(bool ok, string? error, int id)> SaveTicketAsync(int companyId, CrmTicket dto, string? userId);
 		Task<bool> UpdateTicketStatusAsync(int companyId, int id, string status);
 		Task<(int open, int breachedFr, int breachedRes)> TicketStatsAsync(int companyId);
@@ -339,15 +383,16 @@ namespace CrossBuy.BL
 		// narrower kind of access, it is the same access behind a worse door.
 		//
 		// Three behaviours are preserved deliberately, because they are the list's behaviours:
-		//   * scope == null is UNRESTRICTED — manager-with-team, marketing, viewer, and the unconfigured
-		//     bootstrap case. Manager and system authority keep working exactly as policy already says.
-		//   * an UNOWNED row (null owner) stays visible to everyone, as it is in every list predicate.
+		//   * scope == null is UNRESTRICTED — manager-with-team, marketing and viewer; the unconfigured
+		//     bootstrap case instead receives an explicit own or empty scope from the access service.
+		//   * an UNOWNED row stays visible to a permitted reader; an empty whitelist is NoAccess.
 		//   * a hidden row is reported as ABSENT, never as forbidden, so the id cannot be probed for
 		//     existence — the same reason a foreign company's id is answered like a missing one.
 		private async Task<bool> OwnerVisibleAsync(int? ownerEmployeeId)
 		{
 			var scope = await ScopeAsync();
 			if (scope == null) return true;
+            if (scope.Count == 0) return false;
 			if (ownerEmployeeId is not int owner) return true;
 			return scope.Contains(owner);
 		}
@@ -776,7 +821,7 @@ namespace CrossBuy.BL
 			}
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(l => l.Status == status);
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(l => l.OwnerEmployeeId == null || scope.Contains(l.OwnerEmployeeId.Value));
+			if (scope != null) query = query.Where(l => scope.Count > 0 && (l.OwnerEmployeeId == null || scope.Contains(l.OwnerEmployeeId.Value)));
 
 			// AFTER the company and owner predicates, never before them.
 			if (unassignedOnly) query = query.Where(l => l.OwnerEmployeeId == null);
@@ -899,6 +944,39 @@ namespace CrossBuy.BL
 				.GroupBy(l => l.OwnerEmployeeId!.Value).Select(g => new { Emp = g.Key, Cnt = g.Count() }).ToListAsync();
 			var map = loads.ToDictionary(x => x.Emp, x => x.Cnt);
 			return reps.OrderBy(r => map.TryGetValue(r, out var c) ? c : 0).ThenBy(r => r).First();
+		}
+
+		// WHO PICKS UP A TICKET NOBODY NAMED.
+		//
+		// Modelled on RouteLeadOwnerAsync above, with two deliberate differences:
+		//
+		//   · it counts only OPEN tickets. A lead stays with its owner forever, so total count is
+		//     the right load measure there; an agent who closed two hundred tickets last month is
+		//     not busy today, and ranking them by lifetime volume would starve the best worker.
+		//   · it is NOT gated behind a setting. AutoRouteLeads exists because routing a lead is a
+		//     sales-policy choice; leaving a support ticket unassigned is not a policy, it is a
+		//     dropped ticket. This runs only when no owner was given and none could be derived.
+		//
+		// Returns null when the company has no CRM agents at all, in which case the ticket stays
+		// unowned - which is still the truth, and the queue screen says so.
+		private async Task<int?> RouteTicketOwnerAsync(int companyId)
+		{
+			// Anyone who works tickets: reps and managers both answer, a viewer does not.
+			var agents = await _context.CrmUserRoles.AsNoTracking()
+				.Where(r => r.CompanyID == companyId && (r.Role == "SalesRep" || r.Role == "SalesManager" || r.Role == "Marketing"))
+				.Select(r => r.EmployeeId).Distinct().ToListAsync();
+			if (agents.Count == 0) return null;
+
+			var open = await _context.CrmTickets.AsNoTracking()
+				.Where(t => t.CompanyID == companyId && t.OwnerEmployeeId != null
+					   && t.Status != "Resolved" && t.Status != "Closed")
+				.GroupBy(t => t.OwnerEmployeeId!.Value)
+				.Select(g => new { Emp = g.Key, Cnt = g.Count() }).ToListAsync();
+			var load = open.ToDictionary(x => x.Emp, x => x.Cnt);
+
+			// ThenBy(id) makes the choice deterministic when several agents are equally free, so the
+			// same input always produces the same assignment and a test can assert it.
+			return agents.OrderBy(a => load.TryGetValue(a, out var c) ? c : 0).ThenBy(a => a).First();
 		}
 
 		// CRM 3-7: sum points of active scoring rules whose Field matches the lead by Operator.
@@ -1043,7 +1121,7 @@ namespace CrossBuy.BL
 		{
 			if (!o.AccountId.HasValue) return (true, null);
 			var custId = await EnsureAccountCustomerAsync(companyId, o.AccountId.Value);
-			if (custId == null) return (false, "تعذّر ربط الحساب بعميل مالي");
+			if (custId == null) return (false, "Could not link the account to a financial customer");
 			if (o.CustomerId != custId)
 			{
 				var live = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == o.ID);
@@ -1058,7 +1136,7 @@ namespace CrossBuy.BL
 		{
 			var scope = await ScopeAsync();
 			var oppSrc = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId);
-			if (scope != null) oppSrc = oppSrc.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+			if (scope != null) oppSrc = oppSrc.Where(o => scope.Count > 0 && (o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value)));
 
 			// AFTER the company and owner predicates, and before the projection so the database still
 			// counts and pages the narrowed set.
@@ -1098,7 +1176,7 @@ namespace CrossBuy.BL
 		{
 			var scope = await ScopeAsync();
 			var oppSrc = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId);
-			if (scope != null) oppSrc = oppSrc.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+			if (scope != null) oppSrc = oppSrc.Where(o => scope.Count > 0 && (o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value)));
 			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			return await (from o in oppSrc
 				   join a in _context.CrmAccounts.AsNoTracking() on o.AccountId equals (int?)a.ID into aj
@@ -1239,7 +1317,7 @@ namespace CrossBuy.BL
 		{
 			var scope = await ScopeAsync();
 			var src = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId);
-			if (scope != null) src = src.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+			if (scope != null) src = src.Where(o => scope.Count > 0 && (o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value)));
 			return await src.GroupBy(o => o.Stage).Select(g => new PipelineStage { Stage = g.Key, Count = g.Count(), Amount = g.Sum(x => x.Amount) }).ToListAsync();
 		}
 
@@ -1596,7 +1674,7 @@ namespace CrossBuy.BL
 			return (true, null);
 		}
 
-		public async Task<(List<TicketRow> rows, int total)> SearchTicketsAsync(int companyId, string? q, string? status, string? priority, int page, int pageSize)
+		public async Task<(List<TicketRow> rows, int total)> SearchTicketsAsync(int companyId, string? q, string? status, string? priority, int page, int pageSize, bool myUnitOnly = false)
 		{
 			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			var query = from t in _context.CrmTickets.AsNoTracking().Where(t => t.CompanyID == companyId)
@@ -1604,7 +1682,8 @@ namespace CrossBuy.BL
 						from a in ga.DefaultIfEmpty()
 						select new TicketRow {
 							Id = t.ID, Subject = t.Subject, SubjectEn = t.SubjectEn, AccountId = t.AccountId, AccountName = a != null ? (isEn ? (a.NameEn ?? a.Name) : a.Name) : null,
-							Priority = t.Priority, Status = t.Status, OwnerEmployeeId = t.OwnerEmployeeId, CreatedAt = t.CreatedAt,
+							Priority = t.Priority, Status = t.Status, OwnerEmployeeId = t.OwnerEmployeeId,
+							DepartmentId = t.DepartmentId, CreatedAt = t.CreatedAt,
 							FirstResponseDueAt = t.FirstResponseDueAt, ResolutionDueAt = t.ResolutionDueAt,
 							FirstRespondedAt = t.FirstRespondedAt, ResolvedAt = t.ResolvedAt, ClosedAt = t.ClosedAt };
 			var terms = SearchTerms.Parse(q);
@@ -1615,8 +1694,25 @@ namespace CrossBuy.BL
 			}
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(r => r.Status == status);
 			if (!string.IsNullOrWhiteSpace(priority)) query = query.Where(r => r.Priority == priority);
+			// VISIBILITY IS OWNER **OR** UNIT.
+			//
+			// Routing used to tell a unit about a ticket it could not then open: the notification
+			// arrived, the reader clicked, and the row was filtered out of their list and answered
+			// null by the single read - because the scope rule only ever asked who OWNED it.
+			// Measured at the time: ticket #13 was routed to a post held by two SalesReps and owned
+			// by the sales manager, so both of the people who were told could not see it.
+			//
+			// A ticket routed to a unit at or ABOVE me is mine to work on. Nothing else widens:
+			// an unrouted ticket, or one routed somewhere else, is exactly as visible as before.
+			var myUnits = await MyUnitIdsAsync(companyId);
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(r => r.OwnerEmployeeId == null || scope.Contains(r.OwnerEmployeeId.Value));
+			if (scope != null)
+				query = query.Where(r =>
+					(scope.Count > 0 && (r.OwnerEmployeeId == null || scope.Contains(r.OwnerEmployeeId.Value)))
+					|| (r.DepartmentId != null && myUnits.Contains(r.DepartmentId.Value)));
+
+			// The deliberate narrowing: show me ONLY what my unit was handed.
+			if (myUnitOnly) query = query.Where(r => r.DepartmentId != null && myUnits.Contains(r.DepartmentId.Value));
 			var total = await query.CountAsync();
 			page = Clamp(page, ref pageSize);
 			var rows = await query.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -1626,12 +1722,22 @@ namespace CrossBuy.BL
 		public async Task<CrmTicket?> GetTicketAsync(int companyId, int id)
 		{
 			var e = await _context.CrmTickets.AsNoTracking().FirstOrDefaultAsync(t => t.CompanyID == companyId && t.ID == id);
-			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
+			if (e == null) return null;
+			// The SAME rule as the list. A row the list shows and the id-read refuses (or the reverse)
+			// is the hole this service already closed once for owners; the unit arm has to close it
+			// too, or the notification still lands on a "not found".
+			if (await OwnerVisibleAsync(e.OwnerEmployeeId)) return e;
+			if (e.DepartmentId is > 0 && (await MyUnitIdsAsync(companyId)).Contains(e.DepartmentId.Value)) return e;
+			return null;
 		}
 
 		public async Task<(bool ok, string? error, int id)> SaveTicketAsync(int companyId, CrmTicket dto, string? userId)
 		{
 			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "Ticket title is required", 0);
+			// Same foreign-key-off-a-POST check the call takes: the department id arrives from the
+			// browser and decides who gets told about this ticket.
+			if (dto.DepartmentId is > 0 && !await IsOwnDepartmentAsync(companyId, dto.DepartmentId.Value))
+				return (false, "Department not found", 0);
 			var priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority;
 			CrmTicket e;
 			if (dto.ID > 0)
@@ -1640,19 +1746,503 @@ namespace CrossBuy.BL
 				var priorityChanged = e.Priority != priority;
 				e.Subject = dto.Subject.Trim(); e.SubjectEn = string.IsNullOrWhiteSpace(dto.SubjectEn) ? null : dto.SubjectEn.Trim(); e.Description = dto.Description; e.DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim(); e.AccountId = dto.AccountId; e.ContactId = dto.ContactId;
 				e.CustomerId = dto.CustomerId; e.Category = dto.Category; e.CategoryEn = string.IsNullOrWhiteSpace(dto.CategoryEn) ? null : dto.CategoryEn.Trim(); e.Priority = priority;
+				e.Channel = string.IsNullOrWhiteSpace(dto.Channel) ? null : dto.Channel.Trim();
+				e.CallerPhone = string.IsNullOrWhiteSpace(dto.CallerPhone) ? null : dto.CallerPhone.Trim();
+				e.SourceType = string.IsNullOrWhiteSpace(dto.SourceType) ? null : dto.SourceType;
+				e.SourceId = dto.SourceId;
 				if (dto.OwnerEmployeeId.HasValue) e.OwnerEmployeeId = dto.OwnerEmployeeId;
+				// Assigned unconditionally, unlike the owner above: clearing the department back to
+				// "not routed" is a real edit, and a null that cannot be saved is a field that only
+				// ever fills up.
+				e.DepartmentId = dto.DepartmentId;
 				if (priorityChanged) await StampSlaAsync(companyId, e);
 			}
 			else
 			{
 				e = new CrmTicket { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, Status = "New", Priority = priority,
 					Subject = dto.Subject.Trim(), SubjectEn = string.IsNullOrWhiteSpace(dto.SubjectEn) ? null : dto.SubjectEn.Trim(), Description = dto.Description, DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim(), AccountId = dto.AccountId, ContactId = dto.ContactId,
-					CustomerId = dto.CustomerId, Category = dto.Category, CategoryEn = string.IsNullOrWhiteSpace(dto.CategoryEn) ? null : dto.CategoryEn.Trim(), OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() };
+					CustomerId = dto.CustomerId, Category = dto.Category, CategoryEn = string.IsNullOrWhiteSpace(dto.CategoryEn) ? null : dto.CategoryEn.Trim(),
+					Channel = string.IsNullOrWhiteSpace(dto.Channel) ? null : dto.Channel.Trim(),
+					CallerPhone = string.IsNullOrWhiteSpace(dto.CallerPhone) ? null : dto.CallerPhone.Trim(),
+					DepartmentId = dto.DepartmentId,
+					SourceType = string.IsNullOrWhiteSpace(dto.SourceType) ? null : dto.SourceType,
+					SourceId = dto.SourceId,
+					// A TICKET MUST END UP WITH AN OWNER.
+					//
+					// This read `dto.OwnerEmployeeId ?? Me()`, and Me() is the session employee - which is
+					// null for anyone whose session has no employee blob. Measured on this database: 0 of 6
+					// tickets had an owner. Combined with OwnerVisibleAsync, an unowned ticket is one
+					// nobody is accountable for and, for a rep, one nobody can even see.
+					//
+					// So the fallback goes one step further: route it the way a lead is routed.
+					OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() ?? await RouteTicketOwnerAsync(companyId) };
 				_context.CrmTickets.Add(e);
 				await StampSlaAsync(companyId, e);
 			}
 			await _context.SaveChangesAsync();
 			return (true, null, e.ID);
+		}
+
+		// ============================================================================================
+		// CALL CENTRE
+		// ============================================================================================
+
+		public async Task<List<CrmCall>> GetCallsAsync(int companyId, int take = 50, int? ticketId = null)
+		{
+			var q = _context.CrmCalls.AsNoTracking().Where(c => c.CompanyID == companyId);
+			if (ticketId is > 0) q = q.Where(c => c.TicketId == ticketId);
+			return await q.OrderByDescending(c => c.StartedAt).Take(Math.Clamp(take, 1, 500)).ToListAsync();
+		}
+
+		// A CALL CAN BE LOGGED WITH ALMOST NOTHING, on purpose: an inbound call is a ringing phone
+		// and the agent fills the rest in as they learn it. The only thing required is when it
+		// started, and even that defaults to now, because the common case is logging it as it ends.
+		public async Task<CallLogResult> LogCallAsync(int companyId, CrmCall dto, string? userId, string? newTicketSubject = null)
+		{
+			var dir = dto.Direction == "Outbound" ? "Outbound" : "Inbound";
+			var outcome = new[] { "Answered", "NoAnswer", "Busy", "Voicemail", "Dropped" }
+				.Contains(dto.Outcome) ? dto.Outcome : "Answered";
+
+			// A ticket named on a call must belong to THIS company, or a caller could attach their
+			// call to another tenant’s ticket by typing its id.
+			if (dto.TicketId is > 0 &&
+				!await _context.CrmTickets.AnyAsync(t => t.ID == dto.TicketId && t.CompanyID == companyId))
+				return new CallLogResult(false, "Ticket not found", 0, 0, null);
+
+			// THE SAME HOLE THE TICKET ID HAD. A department id is a number off a browser POST; without
+			// this check an agent could route a call to another tenant’s department by typing its id,
+			// and that department’s people would be notified about a call they cannot open.
+			if (dto.DepartmentId is > 0 && !await IsOwnDepartmentAsync(companyId, dto.DepartmentId.Value))
+				return new CallLogResult(false, "Department not found", 0, 0, null);
+
+			// THE CALL IS WHERE THE PROBLEM IS FIRST HEARD, so it is where the ticket should be able
+			// to start. Before this, an agent had to log the call, leave for the ticket screen, open
+			// a ticket and type the caller and the channel again - so in practice the ticket was
+			// never opened and the call record was the only trace.
+			//
+			// SaveTicketAsync, not a hand-built CrmTicket: it is the one place that stamps the SLA
+			// clocks and routes an owner, and a ticket created here with neither would be invisible
+			// to the breach report that exists to catch exactly this.
+			int? createdTicketId = null;
+			if (dto.TicketId is not > 0 && !string.IsNullOrWhiteSpace(newTicketSubject))
+			{
+				var (tOk, tErr, tId) = await SaveTicketAsync(companyId, new CrmTicket
+				{
+					Subject = newTicketSubject.Trim(),
+					Description = dto.Notes,          // what the agent wrote IS the first description
+					Channel = "Phone",
+					CallerPhone = string.IsNullOrWhiteSpace(dto.PhoneNumber) ? null : dto.PhoneNumber.Trim(),
+					AccountId = dto.AccountId, ContactId = dto.ContactId, CustomerId = dto.CustomerId,
+					DepartmentId = dto.DepartmentId,
+					SourceType = dto.SourceType, SourceId = dto.SourceId,
+				}, userId);
+				if (!tOk) return new CallLogResult(false, tErr, 0, 0, null);
+				dto.TicketId = tId;
+				createdTicketId = tId;
+			}
+
+			var started = dto.StartedAt == default ? DateTime.UtcNow : dto.StartedAt;
+			int? secs = dto.DurationSeconds;
+			// Derive the duration only when the agent did not state one and both ends are known.
+			if (secs == null && dto.EndedAt.HasValue && dto.EndedAt.Value > started)
+				secs = (int)(dto.EndedAt.Value - started).TotalSeconds;
+
+			var e = new CrmCall
+			{
+				CompanyID = companyId, Direction = dir, Outcome = outcome,
+				PhoneNumber = string.IsNullOrWhiteSpace(dto.PhoneNumber) ? null : dto.PhoneNumber.Trim(),
+				TicketId = dto.TicketId, AccountId = dto.AccountId, ContactId = dto.ContactId,
+				CustomerId = dto.CustomerId, LeadId = dto.LeadId,
+				AgentEmployeeId = dto.AgentEmployeeId ?? Me(),
+				StartedAt = started, EndedAt = dto.EndedAt, DurationSeconds = secs,
+				DepartmentId = dto.DepartmentId,
+				SourceType = string.IsNullOrWhiteSpace(dto.SourceType) ? null : dto.SourceType,
+				SourceId = dto.SourceId,
+				Notes = dto.Notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow,
+			};
+			_context.CrmCalls.Add(e);
+
+			// THE PROBLEM OUTLIVES THE CALL. Routing a call that names a ticket has to move the
+			// TICKET too, or the department sees one phone record and the work itself stays where
+			// it was. Same transaction: a routed call whose ticket did not move is the worse state.
+			if (e.DepartmentId is > 0 && e.TicketId is > 0)
+			{
+				var t = await _context.CrmTickets.FirstOrDefaultAsync(x => x.ID == e.TicketId && x.CompanyID == companyId);
+				if (t != null) t.DepartmentId = e.DepartmentId;
+			}
+
+			await _context.SaveChangesAsync();
+
+			int notified = e.DepartmentId is > 0 ? await NotifyDepartmentAsync(companyId, e) : 0;
+
+			// The routing goes on the TICKET’s history, where the department will be reading, not
+			// only on the call row the department never opens.
+			if (e.DepartmentId is > 0 && e.TicketId is > 0)
+			{
+				var names = await DepartmentNamesAsync(new[] { e.DepartmentId.Value });
+				// BOTH NAMES, not the reader’s one twice. DisplayName.Of answers in the CURRENT ui
+				// culture, so building the English subject with it stamped the Arabic name into the
+				// English column - and the row then read the same in both languages forever.
+				names.TryGetValue(e.DepartmentId.Value, out var d);
+				var toAr = d == null ? "#" + e.DepartmentId.Value : DisplayName.Or(d.NameAr, d.NameEn);
+				var toEn = d == null ? "#" + e.DepartmentId.Value : DisplayName.Or(d.NameEn, d.NameAr);
+				await LogSystemActivityAsync(companyId, "Ticket", e.TicketId.Value, userId,
+					"توجيه إلى " + toAr, "Routed to " + toEn);
+			}
+			return new CallLogResult(true, null, e.ID, notified, createdTicketId);
+		}
+
+		// WHO A NODE REACHES IS ITS WHOLE SUBTREE. Routing to a branch has to mean everyone under
+		// that branch, or a picker that draws the structure would be a lie - you would choose a
+		// branch and reach only the handful of people whose record names that exact node.
+		//
+		// Two ways in, because the org data has two:
+		//   - Employee.DepartmentID pointing at any node in the subtree (what the HR screens write)
+		//   - an employee NODE inside the subtree (H_Type = 5, H_ObjectID = the employee id)
+		//
+		// Measured when this was built: 3 of 20 employees in company 1 carry a DepartmentID at all,
+		// and all three point at nodes under OTHER companies’ roots - so zero recipients is a real
+		// answer today, and the count travels back to the screen rather than hiding behind "routed".
+		private Task<int> NotifyDepartmentAsync(int companyId, CrmCall call)
+		{
+			var who = string.IsNullOrWhiteSpace(call.PhoneNumber) ? "" : " — " + call.PhoneNumber;
+			var tk = call.TicketId is > 0 ? " #" + call.TicketId : "";
+			// WHERE THE READER SHOULD LAND. A routed call that opened a ticket is really a routed
+			// TICKET as far as the receiving unit is concerned - that is the thing they will work
+			// on - so the link goes to the ticket and only falls back to the call log without one.
+			var url = call.TicketId is > 0 ? "/Crm/TicketEditor/" + call.TicketId.Value : null;
+			return NotifyUnitAsync(companyId, call.DepartmentId!.Value,
+				"مكالمة موجّهة إلى وحدتك", "A call was routed to your unit",
+				"مكالمة" + who + tk, "Call" + who + tk,
+				NotificationTypes.CrmCallRouted, call.ID, url,
+				entityType: call.TicketId is > 0 ? "CrmTicket" : null, entityId: call.TicketId);
+		}
+
+		// ONE NOTIFIER FOR EVERY ROUTING DECISION - a first routing and an escalation differ only
+		// in their words, and two copies of the subtree resolution would be two chances to disagree
+		// about who a unit actually reaches.
+		private async Task<int> NotifyUnitAsync(int companyId, int nodeId,
+			string titleAr, string titleEn, string bodyAr, string bodyEn,
+			string type, int refId, string? url = null, string? entityType = null, int? entityId = null)
+		{
+			try
+			{
+				var me = Me();
+				var subtree = await SubtreeIdsAsync(companyId, nodeId);
+				if (subtree.Count == 0) return 0;
+
+				var byDept = await _context.Employee.AsNoTracking()
+					.Where(x => x.EmpCompanyID == companyId && x.DepartmentID != null && subtree.Contains(x.DepartmentID.Value))
+					.Select(x => x.ID).ToListAsync();
+
+				var byNode = await _context.Hierarchicals.AsNoTracking()
+					.Where(h => subtree.Contains(h.H_ID) && h.H_Type == EmployeeNodeType && h.H_ObjectID != null)
+					.Select(h => h.H_ObjectID!.Value).ToListAsync();
+				// An employee node under another company’s branch would still be an id here, so the
+				// company is re-asserted on the employee itself rather than trusted from the tree.
+				byNode = await _context.Employee.AsNoTracking()
+					.Where(x => x.EmpCompanyID == companyId && byNode.Contains(x.ID))
+					.Select(x => x.ID).ToListAsync();
+
+				var recipients = byDept.Union(byNode).ToList();
+				recipients.RemoveAll(id => id == me);   // nobody needs telling what they just did
+				if (recipients.Count == 0) return 0;
+
+				foreach (var r in recipients)
+					await _notify.NotifyAsync(r, titleAr: titleAr, titleEn: titleEn,
+						bodyAr: bodyAr, bodyEn: bodyEn, type: type, refId: refId,
+						url: url, companyId: companyId, actorEmployeeId: me,
+						entityType: entityType, entityId: entityId);
+				return recipients.Count;
+			}
+			catch { return 0; }   // notifications never block the business flow
+		}
+
+		// THE COMPANY’S OWN ORG SUBTREE, anchored exactly where AdministrativeStructureService
+		// anchors it: the H_Type = 1 node whose H_ObjectID is the company. Hierarchicals has NO
+		// CompanyID column, so this descent IS the tenancy boundary - there is nothing else to
+		// filter on, and a query that forgets it reads every tenant’s org chart.
+		//
+		// Returned DEPTH-FIRST with each node’s depth, because the caller is a picker that has to
+		// draw the chart. A flat alphabetical list of the same ids would hide the one thing the
+		// chart is for: what sits under what.
+		private async Task<List<CrmOrgNode>> OrgNodesAsync(int companyId, bool activeOnly)
+		{
+			var all = await _context.Hierarchicals.AsNoTracking()
+				.Select(h => new { h.H_ID, h.H_Parent, h.H_Type, h.H_ObjectID, h.IsActive, h.H_Name, h.H_NameEn, h.Sort })
+				.ToListAsync();
+			var types = await _context.HierarchicalTypes.AsNoTracking()
+				.Select(t => new { t.ID, t.TypeNameAr, t.TypeNameEn }).ToListAsync();
+			var typeById = types.ToDictionary(t => t.ID);
+
+			// A NODE THAT IS A PERSON SHOWS THAT PERSON. The employee nodes carry the employee id in
+			// H_ObjectID, so one extra read turns the chart from a list of words into a list of
+			// faces - which is how anyone actually recognises who they are routing a call to.
+			// One query for the whole chart, not one per node.
+			var personIds = all.Where(h => h.H_Type == EmployeeNodeType && h.H_ObjectID != null)
+				.Select(h => h.H_ObjectID!.Value).Distinct().ToList();
+			var photoById = personIds.Count == 0
+				? new Dictionary<int, string?>()
+				: await _context.Employee.AsNoTracking()
+					.Where(e => personIds.Contains(e.ID))
+					.Select(e => new { e.ID, e.ProfileImage })
+					.ToDictionaryAsync(e => e.ID, e => e.ProfileImage);
+
+			var root = all.FirstOrDefault(h => h.H_ObjectID == companyId && h.H_Type == CompanyNodeType);
+			if (root == null) return new List<CrmOrgNode>();
+
+			var byParent = all.Where(h => h.H_Parent != null)
+				.GroupBy(h => h.H_Parent!.Value)
+				.ToDictionary(g => g.Key, g => g.OrderBy(x => x.Sort ?? int.MaxValue).ThenBy(x => x.H_Name).ToList());
+
+			var outp = new List<CrmOrgNode>();
+			var seen = new HashSet<int> { root.H_ID };   // self-referencing table, no cycle guard in the schema
+
+			void Walk(int parentId, int depth)
+			{
+				if (!byParent.TryGetValue(parentId, out var kids)) return;
+				foreach (var k in kids)
+				{
+					if (!seen.Add(k.H_ID)) continue;
+					if (!activeOnly || k.IsActive != false)
+					{
+						typeById.TryGetValue(k.H_Type ?? 0, out var ty);
+						int? empId = k.H_Type == EmployeeNodeType ? k.H_ObjectID : null;
+						string? photo = empId.HasValue && photoById.TryGetValue(empId.Value, out var pi) ? pi : null;
+						outp.Add(new CrmOrgNode(k.H_ID, k.H_Name ?? "", k.H_NameEn, depth, k.H_Type,
+							ty?.TypeNameAr, ty?.TypeNameEn, photo, empId));
+					}
+					Walk(k.H_ID, depth + 1);
+				}
+			}
+			Walk(root.H_ID, 0);
+			return outp;
+		}
+
+		// ROUTING TARGETS ARE UNITS AND POSTS, NEVER PEOPLE.
+		//
+		// A support desk routes a problem to whoever is on that desk today - "the Maadi branch",
+		// "accounts", "the shift supervisor" - and must not care which person picks it up. Routing
+		// to a named person makes the ticket that person’s private queue: it stalls when they are
+		// on leave, and the unit cannot see what it owes anybody.
+		//
+		// The PEOPLE are still reached - NotifyDepartmentAsync walks the whole subtree, and the
+		// employee nodes under the chosen unit are exactly who gets told. They are simply not
+		// offered as destinations. A post still SHOWS the face of whoever holds it, because that is
+		// how anyone recognises a post in a list.
+		public async Task<List<CrmOrgNode>> OrgTreeAsync(int companyId)
+		{
+			var all = await OrgNodesAsync(companyId, activeOnly: true);
+
+			// THE INDENT IS RECOMPUTED, not inherited. Dropping the people out of a depth-first list
+			// leaves holes: a post that hung under an employee node kept depth 2 while its parent was
+			// gone, so the chart drew it indented under nothing. Display depth is the number of
+			// ancestors that SURVIVED, which the ordering makes a single pass.
+			var kept = all.Where(n => n.TypeId != EmployeeNodeType).ToList();
+			var ancestors = new Stack<int>();
+			var outp = new List<CrmOrgNode>(kept.Count);
+			foreach (var n in kept)
+			{
+				while (ancestors.Count > 0 && ancestors.Peek() >= n.Depth) ancestors.Pop();
+				var shown = n with { Depth = ancestors.Count };
+				ancestors.Push(n.Depth);
+				// NO HOLDER IS ATTACHED. A post used to carry the face and name of whoever held it,
+				// and a list of photographed names reads as a list of people - the one thing this
+				// list must not be. A unit is its own name and the glyph for its kind.
+				outp.Add(shown);
+			}
+			return outp;
+		}
+
+
+		// ANY node of the chart can be routed to, not only the administrative bodies: a call can
+		// belong to a branch, to a post, or to one person, and the picker now offers all three.
+		private async Task<bool> IsOwnDepartmentAsync(int companyId, int departmentId)
+			=> (await OrgNodesAsync(companyId, activeOnly: false)).Any(n => n.Id == departmentId);
+
+		/// The node itself plus everything under it - who a routing decision actually reaches.
+		private async Task<HashSet<int>> SubtreeIdsAsync(int companyId, int nodeId)
+		{
+			var flat = await OrgNodesAsync(companyId, activeOnly: false);
+			int at = flat.FindIndex(n => n.Id == nodeId);
+			if (at < 0) return new HashSet<int>();
+			// Depth-first order means a node’s descendants are exactly the rows that follow it until
+			// the depth returns to its own. No second walk, and no chance of the two disagreeing.
+			var ids = new HashSet<int> { nodeId };
+			for (int i = at + 1; i < flat.Count && flat[i].Depth > flat[at].Depth; i++) ids.Add(flat[i].Id);
+			return ids;
+		}
+
+		// 1 = "شركة", 5 = "موظف" in HierarchicalTypes. Named once rather than written as bare
+		// numbers next to H_Type, where a 1 or a 5 reads like a row id.
+		private const int CompanyNodeType = 1;
+		private const int EmployeeNodeType = 5;
+
+		/// THE UNITS I SIT UNDER - the chain from my own place in the chart up to the company root,
+		/// inclusive. A ticket routed to any of them was routed to me.
+		///
+		/// Two entry points, because the org data has two: my employee NODE in the chart
+		/// (H_Type = 5, H_ObjectID = my id) and Employee.DepartmentID, which the HR screens write.
+		/// Measured when this was built: 3 of 20 employees in company 1 carry the column at all, so
+		/// relying on it alone would leave almost everyone seeing nothing.
+		private async Task<HashSet<int>> MyUnitIdsAsync(int companyId)
+		{
+			var me = Me();
+			if (me is not > 0) return new HashSet<int>();
+
+			var flat = await OrgNodesAsync(companyId, activeOnly: false);
+			var ids = new HashSet<int>();
+
+			void ClimbFrom(int index)
+			{
+				// Depth-first order: my ancestors are the rows BEFORE me whose depth steps down one
+				// at a time. One pass, no second walk to disagree with the first.
+				int want = flat[index].Depth;
+				for (int i = index; i >= 0 && want >= 0; i--)
+					if (flat[i].Depth == want) { ids.Add(flat[i].Id); want--; }
+			}
+
+			int mine = flat.FindIndex(n => n.TypeId == EmployeeNodeType && n.EmployeeId == me);
+			if (mine >= 0) ClimbFrom(mine);
+
+			var deptId = await _context.Employee.AsNoTracking()
+				.Where(e => e.ID == me.Value).Select(e => e.DepartmentID).FirstOrDefaultAsync();
+			if (deptId is > 0)
+			{
+				int at = flat.FindIndex(n => n.Id == deptId.Value);
+				if (at >= 0) ClimbFrom(at);
+			}
+			return ids;
+		}
+
+		/// The UNIT above one, stopping at the company root - escalation walks this.
+		///
+		/// It climbs PAST employee nodes rather than stopping at them. The real chart has people in
+		/// the middle of it (a post hangs under the manager who created it), so the literal parent of
+		/// “accountant” is a person - and escalating to a person is exactly what routing to units was
+		/// meant to stop. The first ancestor that is not a person is the unit now expected to act.
+		private async Task<CrmOrgNode?> ParentOfAsync(int companyId, int nodeId)
+		{
+			var flat = await OrgNodesAsync(companyId, activeOnly: false);
+			int at = flat.FindIndex(n => n.Id == nodeId);
+			if (at <= 0) return null;                      // unknown, or already a child of the root
+			int want = flat[at].Depth - 1;
+			for (int i = at - 1; i >= 0 && want >= 0; i--)
+			{
+				if (flat[i].Depth != want) continue;
+				if (flat[i].TypeId != EmployeeNodeType) return flat[i];
+				want--;                                    // a person is not a destination; keep climbing
+			}
+			return null;                                   // nothing above it but the company itself
+		}
+
+		// ESCALATION IS A MOVE UP THE CHART, not a flag. "Escalated" as a boolean tells nobody who
+		// is now expected to act; moving the routing to the parent unit does, and it reuses the
+		// same notification path a first routing takes.
+		//
+		// A ticket already sitting under the company root has nowhere further to go, and saying so
+		// is more useful than silently doing nothing and reporting success.
+		public async Task<(bool ok, string? error, string? toName, int notified)> EscalateTicketAsync(
+			int companyId, int ticketId, string? reason, string? userId)
+		{
+			var t = await _context.CrmTickets.FirstOrDefaultAsync(x => x.ID == ticketId && x.CompanyID == companyId);
+			if (t == null) return (false, "Ticket not found", null, 0);
+			if (t.DepartmentId is not > 0) return (false, "Route it to a unit before escalating it", null, 0);
+
+			var up = await ParentOfAsync(companyId, t.DepartmentId.Value);
+			if (up == null) return (false, "It is already with the highest unit", null, 0);
+
+			var fromNames = await DepartmentNamesAsync(new[] { t.DepartmentId.Value });
+			fromNames.TryGetValue(t.DepartmentId.Value, out var f);
+			var fromAr = f == null ? "#" + t.DepartmentId.Value : DisplayName.Or(f.NameAr, f.NameEn);
+			var fromEn = f == null ? "#" + t.DepartmentId.Value : DisplayName.Or(f.NameEn, f.NameAr);
+			var toAr = DisplayName.Or(up.NameAr, up.NameEn);
+			var toEn = DisplayName.Or(up.NameEn, up.NameAr);
+			var toName = DisplayName.Of(up.NameAr, up.NameEn);   // for the toast, in the reader’s language
+
+			t.DepartmentId = up.Id;
+			await _context.SaveChangesAsync();
+
+			await LogSystemActivityAsync(companyId, "Ticket", t.ID, userId,
+				"تصعيد: من " + fromAr + " إلى " + toAr + (string.IsNullOrWhiteSpace(reason) ? "" : " — " + reason.Trim()),
+				"Escalated: " + fromEn + " → " + toEn + (string.IsNullOrWhiteSpace(reason) ? "" : " — " + reason.Trim()));
+
+			int notified = await NotifyUnitAsync(companyId, up.Id,
+				"تصعيد تذكرة إلى وحدتك", "A ticket was escalated to your unit",
+				"#" + t.ID + " — " + t.Subject, "#" + t.ID + " — " + t.Subject,
+				NotificationTypes.CrmTicket, t.ID);
+			return (true, null, toName, notified);
+		}
+
+		// A REPLY IS A RESPONSE. FirstRespondedAt only moved when somebody changed the STATUS, so a
+		// department that answered the customer properly and left the status alone still counted as
+		// never having responded - and the breach report escalated a ticket that had been answered.
+		public async Task<DateTime?> MarkRespondedAsync(int companyId, int ticketId, string? userId)
+		{
+			var t = await _context.CrmTickets.FirstOrDefaultAsync(x => x.ID == ticketId && x.CompanyID == companyId);
+			if (t == null || t.FirstRespondedAt != null) return null;
+			t.FirstRespondedAt = DateTime.UtcNow;
+			await _context.SaveChangesAsync();
+			await LogSystemActivityAsync(companyId, "Ticket", t.ID, userId,
+				"أول رد على العميل", "First response sent");
+			// RETURNED so the screen can repaint the SLA card it just changed. Stamping a value the
+			// page still shows as "—" until someone reloads is a mutation the reader cannot see.
+			return t.FirstRespondedAt;
+		}
+
+		// WHAT HAPPENED TO THIS TICKET, on the timeline the screen already draws. Type "System"
+		// marks the rows nobody planned: a routing, an escalation, a first response. Done = true
+		// because they are facts, not work to do - an undone system row would sit in every
+		// "overdue activities" count forever.
+		private async Task LogSystemActivityAsync(int companyId, string entityType, int entityId,
+			string? userId, string subjectAr, string subjectEn)
+		{
+			try
+			{
+				_context.Activities.Add(new Activity
+				{
+					CompanyID = companyId, Type = "System", Done = true,
+					Subject = subjectAr, SubjectEn = subjectEn,
+					EntityType = entityType, EntityId = entityId,
+					OwnerEmployeeId = Me(), CreatedBy = userId, CreatedAt = DateTime.UtcNow,
+				});
+				await _context.SaveChangesAsync();
+			}
+			catch { /* a missing history line must never fail the thing it describes */ }
+		}
+
+		public async Task<Dictionary<int, CrmOrgNode>> DepartmentNamesAsync(IEnumerable<int> ids)
+
+		{
+			var want = ids.Where(i => i > 0).Distinct().ToList();
+			if (want.Count == 0) return new Dictionary<int, CrmOrgNode>();
+			return await _context.Hierarchicals.AsNoTracking()
+				.Where(h => want.Contains(h.H_ID))
+				// every argument spelled out: an expression tree cannot fall back on a default 
+				.Select(h => new CrmOrgNode(h.H_ID, h.H_Name ?? "", h.H_NameEn, 0, h.H_Type, null, null, null, null))
+				.ToDictionaryAsync(d => d.Id);
+		}
+
+		public async Task<List<CrmCall>> HistoryForNumberAsync(int companyId, string phone, int take = 10)
+		{
+			var p = (phone ?? "").Trim();
+			if (p.Length < 3) return new();   // too short to identify anybody
+			return await _context.CrmCalls.AsNoTracking()
+				.Where(c => c.CompanyID == companyId && c.PhoneNumber != null && c.PhoneNumber.Contains(p))
+				.OrderByDescending(c => c.StartedAt).Take(Math.Clamp(take, 1, 50)).ToListAsync();
+		}
+
+		// OPEN AND PAST A DEADLINE. Either deadline counts: a ticket nobody has answered yet is as
+		// breached as one nobody has resolved, and a supervisor needs both in one list.
+		public async Task<List<CrmTicket>> BreachedTicketsAsync(int companyId)
+		{
+			var now = DateTime.UtcNow;
+			return await _context.CrmTickets.AsNoTracking()
+				.Where(t => t.CompanyID == companyId && t.Status != "Resolved" && t.Status != "Closed"
+					   && ((t.FirstRespondedAt == null && t.FirstResponseDueAt != null && t.FirstResponseDueAt < now)
+					    || (t.ResolvedAt == null && t.ResolutionDueAt != null && t.ResolutionDueAt < now)))
+				.OrderBy(t => t.ResolutionDueAt ?? t.FirstResponseDueAt)
+				.ToListAsync();
 		}
 
 		// stamp SLA policy + due dates from the active policy matching the ticket priority
@@ -1679,7 +2269,21 @@ namespace CrossBuy.BL
 			if (t.Status != "New" && t.FirstRespondedAt == null) t.FirstRespondedAt = now;
 			if (t.Status == "Resolved" && t.ResolvedAt == null) t.ResolvedAt = now;
 			if (t.Status == "Closed") { if (t.ResolvedAt == null) t.ResolvedAt = now; t.ClosedAt = now; }
+			// REOPENING RESTARTS THE RESOLUTION CLOCK.
+			//
+			// This cleared ResolvedAt and left the ORIGINAL ResolutionDueAt in place, so a ticket
+			// reopened a week later was already past due the moment it reopened - permanently
+			// breached, with no action an agent could take to fix it. A reopened ticket is new work
+			// and gets a new deadline; the first-response stamp is deliberately NOT cleared, because
+			// the customer HAS been answered once and that fact does not become untrue.
+			bool reopened = t.Status != "Resolved" && t.Status != "Closed" && t.ResolvedAt != null;
 			if (t.Status != "Resolved" && t.Status != "Closed") { t.ResolvedAt = null; t.ClosedAt = null; }
+			if (reopened)
+			{
+				var pol = await _context.CrmSlaPolicies.AsNoTracking()
+					.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.IsActive && p.Priority == t.Priority);
+				if (pol != null) t.ResolutionDueAt = now.AddMinutes(pol.ResolutionMins);
+			}
 			await _context.SaveChangesAsync();
 			return true;
 		}
@@ -1687,10 +2291,13 @@ namespace CrossBuy.BL
 		public async Task<(int open, int breachedFr, int breachedRes)> TicketStatsAsync(int companyId)
 		{
 			var now = DateTime.UtcNow;
-			var open = await _context.CrmTickets.CountAsync(t => t.CompanyID == companyId && t.Status != "Resolved" && t.Status != "Closed");
-			var fr = await _context.CrmTickets.CountAsync(t => t.CompanyID == companyId && t.Status != "Resolved" && t.Status != "Closed"
+            var tickets = _context.CrmTickets.Where(t => t.CompanyID == companyId);
+            var scope = await ScopeAsync();
+            if (scope != null) tickets = tickets.Where(t => scope.Count > 0 && (t.OwnerEmployeeId == null || scope.Contains(t.OwnerEmployeeId.Value)));
+			var open = await tickets.CountAsync(t => t.Status != "Resolved" && t.Status != "Closed");
+			var fr = await tickets.CountAsync(t => t.Status != "Resolved" && t.Status != "Closed"
 				&& t.FirstRespondedAt == null && t.FirstResponseDueAt != null && t.FirstResponseDueAt < now);
-			var res = await _context.CrmTickets.CountAsync(t => t.CompanyID == companyId && t.Status != "Resolved" && t.Status != "Closed"
+			var res = await tickets.CountAsync(t => t.Status != "Resolved" && t.Status != "Closed"
 				&& t.ResolvedAt == null && t.ResolutionDueAt != null && t.ResolutionDueAt < now);
 			return (open, fr, res);
 		}
@@ -1741,7 +2348,7 @@ namespace CrossBuy.BL
 		{
 			var q = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId && o.ExpectedCloseDate != null && o.Stage != "Lost");
 			var scope = await ScopeAsync();
-			if (scope != null) q = q.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+			if (scope != null) q = q.Where(o => scope.Count > 0 && (o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value)));
 			var list = await q.Select(o => new { o.ExpectedCloseDate, o.Amount, o.Probability, o.Stage }).ToListAsync();
 			return list.GroupBy(o => o.ExpectedCloseDate!.Value.ToString("yyyy-MM"))
 				.Select(g => new ForecastRow {
@@ -1761,7 +2368,7 @@ namespace CrossBuy.BL
 
 			// leads (+ scoring bands)
 			var lq = _context.Leads.AsNoTracking().Where(l => l.CompanyID == companyId);
-			if (scope != null) lq = lq.Where(l => l.OwnerEmployeeId == null || scope.Contains(l.OwnerEmployeeId.Value));
+			if (scope != null) lq = lq.Where(l => scope.Count > 0 && (l.OwnerEmployeeId == null || scope.Contains(l.OwnerEmployeeId.Value)));
 			var leads = await lq.Select(l => new { l.Status, l.Score, l.OwnerEmployeeId }).ToListAsync();
 			var st = await GetCrmSettingsAsync(companyId);
 			rep.LeadsByStatus = leads.GroupBy(l => l.Status ?? "New").ToDictionary(g => g.Key, g => g.Count());
@@ -1771,7 +2378,7 @@ namespace CrossBuy.BL
 
 			// opportunities (pipeline / win-loss)
 			var oq = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId);
-			if (scope != null) oq = oq.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+			if (scope != null) oq = oq.Where(o => scope.Count > 0 && (o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value)));
 			var opps = await oq.Select(o => new { o.Stage, o.Amount, o.Probability, o.OwnerEmployeeId, o.CampaignId }).ToListAsync();
 			var open = opps.Where(o => o.Stage != "Won" && o.Stage != "Lost").ToList();
 			rep.Pipeline = open.GroupBy(o => o.Stage).Select(g => new PipelineStage { Stage = g.Key, Count = g.Count(), Amount = g.Sum(x => x.Amount) }).OrderByDescending(p => p.Amount).ToList();
@@ -1785,7 +2392,7 @@ namespace CrossBuy.BL
 
 			// activities
 			var aq = _context.Activities.AsNoTracking().Where(a => a.CompanyID == companyId);
-			if (scope != null) aq = aq.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			if (scope != null) aq = aq.Where(a => scope.Count > 0 && (a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value)));
 			var acts = await aq.Select(a => new { a.Done, a.DueDate }).ToListAsync();
 			var today = DateTime.UtcNow.Date;
 			rep.ActOpen = acts.Count(a => !a.Done);
@@ -1807,10 +2414,11 @@ namespace CrossBuy.BL
 			var ownerIds = leads.Where(l => l.OwnerEmployeeId != null).Select(l => l.OwnerEmployeeId!.Value)
 				.Concat(opps.Where(o => o.OwnerEmployeeId != null).Select(o => o.OwnerEmployeeId!.Value)).Distinct().ToList();
 			var repIsEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
-			var names = await _context.Employee.AsNoTracking().Where(e => ownerIds.Contains(e.ID)).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync();
+			var names = await _context.Employee.AsNoTracking().Where(e => ownerIds.Contains(e.ID)).Select(e => new { e.ID, e.FullName, e.FullNameEn, HasPhoto = e.ProfileImage != null && e.ProfileImage != "" }).ToListAsync();
+			var photoSet = names.Where(n => n.HasPhoto).Select(n => n.ID).ToHashSet();
 			var nameMap = names.ToDictionary(n => n.ID, n => (repIsEn && !string.IsNullOrWhiteSpace(n.FullNameEn) ? n.FullNameEn! : n.FullName) ?? ("#" + n.ID));
 			rep.Owners = ownerIds.Select(id => new OwnerPerf {
-				EmployeeId = id, Name = nameMap.TryGetValue(id, out var nm) ? nm : ("#" + id),
+				EmployeeId = id, Name = nameMap.TryGetValue(id, out var nm) ? nm : ("#" + id), HasPhoto = photoSet.Contains(id),
 				Leads = leads.Count(l => l.OwnerEmployeeId == id),
 				OpenOpps = open.Count(o => o.OwnerEmployeeId == id),
 				OpenValue = open.Where(o => o.OwnerEmployeeId == id).Sum(o => o.Amount),
@@ -1832,7 +2440,7 @@ namespace CrossBuy.BL
 			}
 			if (done.HasValue) query = query.Where(a => a.Done == done.Value);
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			if (scope != null) query = query.Where(a => scope.Count > 0 && (a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value)));
 
 			var total = await query.CountAsync();
 			page = Clamp(page, ref pageSize);
@@ -1910,7 +2518,7 @@ namespace CrossBuy.BL
 			var query = _context.Activities.AsNoTracking()
 				.Where(a => a.CompanyID == companyId && a.EntityType == entityType && a.EntityId == entityId);
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			if (scope != null) query = query.Where(a => scope.Count > 0 && (a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value)));
 			return await query.OrderByDescending(a => a.CreatedAt ?? DateTime.MinValue).ThenByDescending(a => a.ID).ToListAsync();
 		}
 
@@ -1942,7 +2550,7 @@ namespace CrossBuy.BL
 				if (pred != null) query = query.Where(pred);
 			}
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			if (scope != null) query = query.Where(a => scope.Count > 0 && (a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value)));
 			// Accounts carry the same authoritative owner field, so Unassigned means the same thing
 			// here. Overdue follow-up does NOT reach this list: Activity has typed columns for a lead
 			// and an opportunity and none for an account, so an account "follow-up" would be a
@@ -2032,7 +2640,7 @@ namespace CrossBuy.BL
 			var query = _context.CrmAccounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.IsActive);
 			if (t.Length > 0) query = query.Where(a => a.Name.Contains(t) || (a.NameEn != null && a.NameEn.Contains(t)) || (a.Phone != null && a.Phone.Contains(t)));
 			var scope = await ScopeAsync();
-			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			if (scope != null) query = query.Where(a => scope.Count > 0 && (a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value)));
 			var rows = await query.OrderBy(a => a.Name).Take(20).Select(a => new { a.ID, a.Name }).ToListAsync();
 			return rows.Select(r => (r.ID, r.Name)).ToList();
 		}

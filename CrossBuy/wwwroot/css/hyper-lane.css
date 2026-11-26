@@ -1,0 +1,222 @@
+/* ============================================================================
+   CASHIER LANE — the prototype's components, carried over unchanged.
+
+   The numbers here are the ones agreed on the prototype, not new ones: 44px is
+   the floor for anything a finger hits, 56-62px for a control pressed all day,
+   82px for the item keys that are hit hardest, 12px of separation so two
+   neighbours cannot be caught together. Copying the VALUES is the point - a
+   screen that merely "looks similar" drifts the first time either side changes.
+
+   Colour is brand only. No green: one brand family, with danger kept for
+   refusals - which here means the age gate and the delete control, nothing else.
+   No amber either; the "weigh it" hint is a neutral chip, not a warning.
+   ============================================================================ */
+
+:root {
+	--lane-brand: #3A5795;
+	--lane-brand-soft: #EEF3FC;
+	--lane-ink: #071437;
+	--lane-muted: #78829D;
+	--lane-line: #E7EAF3;
+	--lane-danger: #D7263D;
+	--lane-danger-soft: #FDEEF0;
+	--lane-radius: 12px;
+	--lane-gap: 12px;
+}
+
+/* ---- scan bar ---- */
+.lane-scan { position: relative; flex: 1 1 auto; }
+.lane-scan .form-control {
+	height: 68px; padding-inline-start: 60px; font-size: 1.25rem; font-weight: 700;
+	border-radius: var(--lane-radius); background: #fff; border: 2px solid var(--lane-line);
+	transition: border-color .15s ease, box-shadow .15s ease;
+}
+.lane-scan .form-control:focus { border-color: var(--lane-brand); box-shadow: 0 0 0 4px rgba(58,87,149,.12); }
+.lane-scan > i { position: absolute; inset-inline-start: 18px; top: 50%; transform: translateY(-50%);
+	font-size: 1.6rem; color: var(--lane-muted); pointer-events: none; }
+.lane-scan-hint { position: absolute; inset-inline-end: 16px; top: 50%; transform: translateY(-50%);
+	font-size: .7rem; font-weight: 700; color: var(--lane-muted);
+	border: 1px solid var(--lane-line); border-radius: 6px; padding: 2px 8px; background: #F6F8FD; }
+.lane-scan-add { height: 68px; min-width: 128px; border-radius: var(--lane-radius); font-weight: 700; }
+
+/* ---- item quick keys ---- */
+.lane-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--lane-gap); }
+@media (max-width: 991px) { .lane-keys { grid-template-columns: repeat(2, 1fr); } }
+.lane-key { min-height: 82px; border: 1px solid var(--lane-line); border-radius: var(--lane-radius);
+	background: #fff; padding: 10px 12px; text-align: start; cursor: pointer;
+	display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+	transition: border-color .12s ease, box-shadow .12s ease, background .12s ease; width: 100%; }
+.lane-key:hover { border-color: var(--lane-brand); box-shadow: 0 4px 14px rgba(7,20,55,.07); }
+.lane-key:active, .lane-key:focus-visible { background: var(--lane-brand); border-color: var(--lane-brand); outline: none; }
+.lane-key:active .lane-key-name, .lane-key:active .lane-key-price,
+.lane-key:focus-visible .lane-key-name, .lane-key:focus-visible .lane-key-price { color: #fff; }
+.lane-key-name { font-weight: 700; font-size: .82rem; line-height: 1.25; color: var(--lane-ink);
+	display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lane-key-foot { display: flex; align-items: center; gap: 6px; }
+.lane-key-price { font-weight: 800; font-size: .95rem; color: var(--lane-brand); }
+.lane-key-no { font-size: .6rem; font-weight: 700; color: var(--lane-muted); border: 1px solid var(--lane-line);
+	border-radius: 4px; padding: 0 4px; margin-inline-start: auto; }
+.lane-chip { font-size: .62rem; font-weight: 700; border-radius: 5px; padding: 2px 6px;
+	background: var(--lane-brand-soft); color: var(--lane-brand); white-space: nowrap; }
+.lane-chip-age { background: var(--lane-danger-soft); color: var(--lane-danger); }
+
+/* ---- basket rows ---- */
+.lane-row { display: grid; grid-template-columns: 1fr 150px 110px 48px; align-items: center;
+	gap: var(--lane-gap); padding: 14px 4px; border-bottom: 1px solid var(--lane-line); }
+@media (max-width: 767px) { .lane-row { grid-template-columns: 1fr 120px; row-gap: 8px; } }
+.lane-row:last-child { border-bottom: 0; }
+.lane-row.is-sel { background: var(--lane-brand-soft); border-radius: 10px;
+	box-shadow: inset 3px 0 0 var(--lane-brand); }
+.lane-row-name { font-weight: 700; font-size: .95rem; color: var(--lane-ink); }
+.lane-row-sub { font-size: .74rem; color: var(--lane-muted); margin-top: 2px; }
+.lane-row-total { font-weight: 800; font-size: 1.05rem; color: var(--lane-ink); text-align: end; }
+.lane-row-save { font-size: .72rem; font-weight: 700; color: var(--lane-brand); }
+
+.lane-step { display: inline-flex; align-items: center; border: 1px solid var(--lane-line);
+	border-radius: 10px; overflow: hidden; background: #fff; }
+.lane-step button { width: 44px; height: 44px; border: 0; background: #fff; font-size: 1.2rem;
+	font-weight: 700; color: var(--lane-ink); cursor: pointer; }
+.lane-step button:hover { background: var(--lane-brand-soft); color: var(--lane-brand); }
+/* the quantity is an INPUT inside the stepper, so it must lose its own chrome and read as
+   part of the one control rather than a field wedged between two buttons */
+.lane-step .lane-step-v { min-width: 46px; width: 58px; height: 44px; text-align: center;
+	font-weight: 800; font-size: 1.05rem; border: 0; background: #fff; color: var(--lane-ink);
+	outline: none; -moz-appearance: textfield; }
+.lane-step .lane-step-v::-webkit-outer-spin-button,
+.lane-step .lane-step-v::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.lane-step:focus-within { border-color: var(--lane-brand); box-shadow: 0 0 0 3px rgba(58,87,149,.12); }
+.lane-weighed { display: inline-flex; align-items: baseline; gap: 5px; font-weight: 800; font-size: 1.05rem; }
+.lane-weighed small { font-weight: 600; font-size: .72rem; color: var(--lane-muted); }
+.lane-del { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--lane-line);
+	background: #fff; color: var(--lane-muted); cursor: pointer; }
+.lane-del:hover { background: var(--lane-danger-soft); border-color: var(--lane-danger); color: var(--lane-danger); }
+
+/* ---- money ---- */
+.lane-due { border-radius: var(--lane-radius); background: var(--lane-brand); color: #fff;
+	padding: 22px 16px; text-align: center; }
+.lane-due-label { font-size: .76rem; font-weight: 600; opacity: .82; }
+.lane-due-value { font-size: 3rem; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+.lane-due-cur { font-size: .74rem; opacity: .82; }
+.lane-sum { display: flex; justify-content: space-between; padding: 6px 0; font-size: .82rem; }
+.lane-sum span:first-child { color: var(--lane-muted); }
+
+.lane-tenders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lane-tender { min-height: 62px; border: 1px solid var(--lane-line); border-radius: 10px; background: #fff;
+	display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+	font-weight: 700; font-size: .76rem; color: var(--lane-ink); cursor: pointer; transition: all .12s ease; }
+.lane-tender i { font-size: 1.25rem; color: var(--lane-muted); }
+.lane-tender:hover, .lane-tender:focus-visible { border-color: var(--lane-brand); outline: none; }
+.lane-tender.is-on { background: var(--lane-brand); border-color: var(--lane-brand); color: #fff; }
+.lane-tender.is-on i { color: #fff; }
+
+.lane-change { border-radius: var(--lane-radius); border: 2px dashed var(--lane-brand);
+	background: var(--lane-brand-soft); padding: 14px; text-align: center; }
+.lane-change-value { font-size: 2rem; font-weight: 800; color: var(--lane-brand); line-height: 1.1; }
+
+.lane-pay { width: 100%; min-height: 66px; border-radius: var(--lane-radius); border: 0;
+	background: var(--lane-brand); color: #fff; font-weight: 800; font-size: 1.05rem; cursor: pointer; }
+.lane-pay:hover:not(:disabled) { filter: brightness(1.08); }
+.lane-pay:disabled { background: #C8CFE0; cursor: not-allowed; }
+.lane-sec { min-height: 50px; border-radius: 10px; border: 1px solid var(--lane-line); background: #fff;
+	font-weight: 700; font-size: .82rem; color: var(--lane-ink); cursor: pointer; width: 100%; }
+.lane-sec:hover:not(:disabled) { background: #F6F8FD; }
+.lane-sec:disabled { opacity: .45; cursor: not-allowed; }
+.lane-sec-danger:hover:not(:disabled) { background: var(--lane-danger-soft); border-color: var(--lane-danger); color: var(--lane-danger); }
+
+/* ---- empty basket ---- */
+.lane-empty { text-align: center; padding: 48px 12px; }
+.lane-empty i { font-size: 2.6rem; color: #C8CFE0; }
+.lane-empty-t { font-weight: 700; font-size: 1rem; color: var(--lane-ink); margin-top: 10px; }
+.lane-empty-s { font-size: .8rem; color: var(--lane-muted); margin-top: 2px; }
+
+/* ============================================================================
+   KEYBOARD LAYER — the strip, the help sheet and the flash message.
+   The strip is pinned so it is always readable, and its hints are real buttons
+   so the same affordance serves a touch-only tablet.
+   ============================================================================ */
+.lane-keysbar { position: fixed; inset-inline: 0; bottom: 0; z-index: 60;
+	display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+	padding: 8px 12px; background: rgba(255,255,255,.96);
+	border-top: 1px solid var(--lane-line); backdrop-filter: blur(6px); }
+.lane-keysbar-item { display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+	padding: 6px 12px; border: 1px solid var(--lane-line); border-radius: 9px; background: #fff;
+	font-size: .74rem; font-weight: 600; color: var(--lane-ink); cursor: pointer; }
+.lane-keysbar-item:hover { border-color: var(--lane-brand); background: var(--lane-brand-soft); }
+.lane-keysbar kbd, .lane-help kbd { background: var(--lane-ink); color: #fff; border-radius: 5px;
+	padding: 2px 7px; font-size: .68rem; font-weight: 700; font-family: inherit; white-space: nowrap; }
+body.has-lane-keysbar { padding-bottom: 68px; }
+
+.lane-help { position: fixed; inset: 0; z-index: 70; background: rgba(7,20,55,.45);
+	display: flex; align-items: center; justify-content: center; padding: 20px; }
+.lane-help-card { width: min(560px, 100%); max-height: 86vh; overflow: auto; background: #fff;
+	border-radius: 16px; box-shadow: 0 24px 60px rgba(7,20,55,.28); }
+.lane-help-head { display: flex; align-items: center; justify-content: space-between;
+	padding: 16px 20px; border-bottom: 1px solid var(--lane-line); font-weight: 800; font-size: 1rem; }
+.lane-help-x { border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
+	color: var(--lane-muted); cursor: pointer; min-width: 44px; min-height: 44px; }
+.lane-help-body { padding: 10px 20px; }
+.lane-help-row { display: flex; align-items: center; gap: 12px; padding: 9px 0;
+	border-bottom: 1px dashed var(--lane-line); font-size: .84rem; }
+.lane-help-row:last-child { border-bottom: 0; }
+.lane-help-row kbd { min-width: 92px; text-align: center; }
+.lane-help-foot { padding: 14px 20px; border-top: 1px solid var(--lane-line);
+	font-size: .76rem; color: var(--lane-muted); }
+
+.lane-flash { position: fixed; inset-inline: 0; bottom: 84px; z-index: 65; margin: 0 auto;
+	width: max-content; max-width: 90vw; background: var(--lane-ink); color: #fff;
+	padding: 10px 18px; border-radius: 10px; font-size: .82rem; font-weight: 600;
+	opacity: 0; transform: translateY(8px); transition: opacity .15s ease, transform .15s ease;
+	pointer-events: none; }
+.lane-flash.is-on { opacity: 1; transform: none; }
+
+/* A shortcut printed ON its own button: the key and the action are learned together, which is
+   what makes a keyboard-only lane usable by someone who was never trained on it. */
+.lane-kbd { background: rgba(255,255,255,.22); color: inherit; border-radius: 5px;
+	padding: 1px 6px; font-size: .62rem; font-weight: 700; font-family: inherit;
+	margin-inline-start: 6px; white-space: nowrap; }
+.lane-sec .lane-kbd, .lane-tender .lane-kbd { background: #EEF1F7; color: var(--lane-muted); }
+.lane-tender.is-on .lane-kbd { background: rgba(255,255,255,.24); color: #fff; }
+
+/* ---- HM-AGE: the age gate ---------------------------------------------------------------------
+   A refusal, so it borrows the danger colour the lane already reserves for refusals - never amber,
+   which this product does not use. It sits INSIDE the pay form, above the tenders, because a notice
+   anywhere else is a notice the cashier scrolls past with a queue waiting. */
+.lane-gate {
+	border: 2px solid var(--lane-danger);
+	background: var(--lane-danger-soft);
+	border-radius: var(--lane-radius);
+	padding: 14px 16px;
+	margin-bottom: var(--lane-gap);
+}
+.lane-gate-head {
+	display: flex; align-items: center;
+	font-size: 1.05rem; font-weight: 700; color: var(--lane-danger);
+	margin-bottom: 6px;
+}
+.lane-gate-body { color: var(--lane-ink); font-size: .95rem; line-height: 1.5; margin-bottom: 12px; }
+.lane-gate-ok {
+	display: inline-flex; align-items: center; gap: 8px;
+	min-height: 56px; padding: 0 20px; width: 100%;
+	border: 0; border-radius: var(--lane-radius);
+	background: var(--lane-danger); color: #fff;      /* white inside a solid element - house rule */
+	font-size: 1rem; font-weight: 700; cursor: pointer;
+	justify-content: center;
+}
+.lane-gate-ok:hover { filter: brightness(.94); }
+.lane-gate-ok:focus-visible { outline: 3px solid var(--lane-ink); outline-offset: 2px; }
+/* Cleared: the panel stops shouting but does NOT disappear - the cashier must still be able to see
+   that this sale carried a restriction, and a manager reading over the shoulder must see it too. */
+.lane-gate.is-ok { border-color: var(--lane-brand); background: var(--lane-brand-soft); }
+.lane-gate.is-ok .lane-gate-head { color: var(--lane-brand); }
+.lane-gate.is-ok .lane-gate-ok { background: var(--lane-brand); cursor: default; }
+/* A disabled pay button must still be READABLE. Fading the whole element to 45% took the navy
+   almost to white and the white label with it, which is the same contrast failure as light-variant
+   buttons turning solid. So the disabled state changes the COLOURS, not the opacity. */
+.lane-pay:disabled { background: #EDF0F7; color: var(--lane-muted); cursor: not-allowed; box-shadow: none; }
+.lane-pay:disabled .lane-kbd { background: #DDE2EE; color: var(--lane-muted); }
+
+/* ---- HM-RET: the return row ---------------------------------------------------------------------
+   The basket row's grid assumes a price and a delete button. A return row carries a stepper and an
+   "all" shortcut instead, so it gets its own track sizes rather than borrowing ones that do not fit
+   and letting the buttons squeeze. */
+.lane-ret-row { grid-template-columns: 1fr auto auto; gap: 10px; }

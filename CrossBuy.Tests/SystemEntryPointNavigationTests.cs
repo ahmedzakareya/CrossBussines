@@ -10,8 +10,13 @@ namespace CrossBuy.Tests;
 ///
 ///   1. The Systems quick-switch, `sysItems` in Views/Shared/_MainMenu.cshtml. Rendered inside every
 ///      sidebar, so it is how you cross from one module to another.
-///   2. The tiles on Views/Portal/Choose.cshtml — the page login redirects to, and the destination of
+///   2. The opening screen, /Portal/Choose — the page login redirects to, and the destination of
 ///      the quick-switch's own "All systems" row.
+///
+/// SINCE 2026-11-02 BOTH READ ONE LIST, <see cref="SystemCatalog"/>: the switcher renders
+/// SystemCatalog.Sidebar and the opening screen renders SystemCatalog.All (less what the user may not
+/// open). The gap below can no longer open by forgetting one surface; these tests pin that both surfaces
+/// still read the catalogue, and what the catalogue must contain.
 ///
 /// WHY THIS FILE EXISTS. NavigationGuardTests proves every MainMenu row points somewhere real, and it
 /// proved the Tasks and Calendar SIDEBARS were complete and correct the whole time. None of that says
@@ -34,6 +39,7 @@ public sealed class SystemEntryPointNavigationTests
         new object[] { "Calendar",  "Index" },
         new object[] { "Inventory", "Index" },
         new object[] { "Crm",       "Index" },
+        new object[] { "Chat",      "Index" },   // on the opening screen since it was rebuilt on SystemCatalog
     };
 
     private static string RepoRoot()
@@ -56,6 +62,10 @@ public sealed class SystemEntryPointNavigationTests
 
     private static string MainMenuPartial() => View("Shared", "_MainMenu.cshtml");
     private static string PortalChoose() => View("Portal", "Choose.cshtml");
+    private static string PortalControllerSource() => File.ReadAllText(Path.Combine(RepoRoot(), "CrossBuy", "Controllers", "PortalController.cs"));
+
+    private static bool InCatalog(IEnumerable<SystemEntry> list, string controller, string action) =>
+        list.Any(e => e.Controller == controller && e.Action == action);
 
     /// `Url.Action("Index","Calendar")` with any spacing/quoting the file happens to use.
     private static Regex UrlActionFor(string controller, string action) =>
@@ -73,7 +83,9 @@ public sealed class SystemEntryPointNavigationTests
         var partial = MainMenuPartial();
         var switcher = partial[partial.IndexOf("var sysItems", StringComparison.Ordinal)..];
 
-        Assert.Matches(UrlActionFor(controller, action), switcher);
+        // The switcher renders the catalogue's sidebar list, and that list holds the system.
+        Assert.Contains("SystemCatalog.Sidebar", switcher, StringComparison.Ordinal);
+        Assert.True(InCatalog(SystemCatalog.Sidebar, controller, action), $"{controller}/{action} is not in SystemCatalog.Sidebar");
     }
 
     /// A row in the switcher that never lights up is a row that cannot tell you where you are. Each
@@ -93,6 +105,77 @@ public sealed class SystemEntryPointNavigationTests
     }
 
     // ---------------------------------------------------------------------------------------------
+    // 1b. The Communication Hub row - the one gated entry in the switcher
+    // ---------------------------------------------------------------------------------------------
+
+    /// THE GAP THIS CLOSES. /Chat was built, routed and reachable, and listed on no navigation
+    /// surface at all: the only way in was to already know the URL. That is the same defect this file
+    /// was written for, one module further on.
+    ///
+    /// The stated gap — the hub in the switcher but not on the portal — closed when the opening screen
+    /// was rebuilt on SystemCatalog: Chat is now in <see cref="EnterableSystems"/>.
+    [Fact]
+    public void The_communication_hub_is_listed_in_the_systems_quick_switch()
+    {
+        Assert.True(InCatalog(SystemCatalog.Sidebar, "Chat", "Index"), "Chat/Index is not in SystemCatalog.Sidebar");
+    }
+
+    /// Same rule the Tasks and Calendar rows are held to: a row that never lights up cannot tell you
+    /// where you are, and /chat does not fall out of the generic URL-segment branch.
+    [Fact]
+    public void The_communication_hub_switcher_row_has_an_explicit_active_rule()
+    {
+        var partial = MainMenuPartial();
+
+        Assert.Matches(
+            new Regex(@"key\s*==\s*""chat""\s*\)\s*return\s+path\.StartsWith\(\s*""/chat""\s*\)",
+                RegexOptions.CultureInvariant),
+            partial);
+    }
+
+    /// THE PERMISSION QUESTION, PINNED TO THE ONE THE SCREEN ASKS.
+    ///
+    /// ChatController carries no module permission. Its gate is [SessionValidation] plus MeAsync(),
+    /// which refuses unless the resolved business context names both a company and an employee. A menu
+    /// predicate invented for the row - some "chat-view" key nothing enforces - would hide the hub from
+    /// people who can open it and show it to people who cannot, which is the drift this file already
+    /// records for platform-ops.
+    ///
+    /// So this pins three things: the row IS gated, the gate resolves the business context, and it tests
+    /// EmployeeId - the field that distinguishes an employee from an external portal visitor.
+    [Fact]
+    public void The_communication_hub_row_is_gated_on_the_same_context_the_controller_resolves()
+    {
+        var partial = MainMenuPartial();
+
+        Assert.Matches(
+            new Regex(@"s\.key\s*==\s*""chat""\s*&&\s*!canChat\s*\)\s*\{\s*continue;",
+                RegexOptions.CultureInvariant),
+            partial);
+
+        var predicate = Regex.Match(partial,
+            @"bool canChat = false;(?<body>.*?)catch \{ canChat = false; \}",
+            RegexOptions.Singleline | RegexOptions.CultureInvariant);
+
+        Assert.True(predicate.Success, "canChat is not computed in _MainMenu.cshtml");
+        Assert.Contains("IBusinessContextAccessor", predicate.Groups["body"].Value, StringComparison.Ordinal);
+        Assert.Contains("EmployeeId", predicate.Groups["body"].Value, StringComparison.Ordinal);
+    }
+
+    /// The hub must reach the screen that exists. A row pointing at a controller or action the product
+    /// does not have is the failure mode UrlActionFor cannot see, because Url.Action returns "#".
+    [Fact]
+    public void The_communication_hub_row_points_at_a_controller_action_that_exists()
+    {
+        var controller = typeof(CrossBuy.Controllers.ChatController);
+        var index = controller.GetMethod("Index");
+
+        Assert.NotNull(index);
+        Assert.True(File.Exists(Path.Combine(RepoRoot(), "CrossBuy", "Views", "Chat", "Index.cshtml")),
+            "Views/Chat/Index.cshtml is missing, so the switcher row would resolve to a view that does not exist");
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // 2. The portal — the page a user actually lands on
     // ---------------------------------------------------------------------------------------------
 
@@ -102,51 +185,49 @@ public sealed class SystemEntryPointNavigationTests
     [MemberData(nameof(EnterableSystems))]
     public void Every_enterable_system_can_be_entered_from_the_portal(string controller, string action)
     {
-        var choose = PortalChoose();
-        var link = UrlActionFor(controller, action);
-
-        Assert.True(link.IsMatch(choose),
-            $"Views/Portal/Choose.cshtml offers no way into {controller}. That page is where sign-in lands " +
+        Assert.True(InCatalog(SystemCatalog.All, controller, action),
+            $"SystemCatalog.All offers no way into {controller}. The opening screen is where sign-in lands " +
             "and where the 'All systems' row goes, so a system missing from it can only be reached by " +
             "entering a different system first and borrowing its sidebar.");
+        // ...and the opening screen really renders the catalogue, not a list of its own.
+        Assert.Contains("SystemCatalog.All", PortalControllerSource(), StringComparison.Ordinal);
+        Assert.Contains("Model.Systems", PortalChoose(), StringComparison.Ordinal);
     }
 
-    /// The portal must reuse the page's own tile component. A system added with bespoke markup would be
-    /// a second navigation language on the one page the whole product funnels through.
-    [Theory]
-    [InlineData("Tasks")]
-    [InlineData("Calendar")]
-    public void A_system_tile_on_the_portal_uses_the_pages_existing_tile_component(string controller)
+    /// Every system the catalogue offers must open a screen that exists: a Url.Action to a missing action
+    /// renders "#" and the tile goes nowhere.
+    [Fact]
+    public void Every_catalogue_system_points_at_a_controller_action_that_exists()
+    {
+        var asm = typeof(CrossBuy.Controllers.PortalController).Assembly;
+        var missing = SystemCatalog.All.Where(e =>
+        {
+            var type = asm.GetTypes().FirstOrDefault(t => t.Name == e.Controller + "Controller");
+            return type == null || type.GetMethods().All(m => !string.Equals(m.Name, e.Action, StringComparison.Ordinal));
+        }).Select(e => $"{e.Key}: {e.Controller}/{e.Action}").ToList();
+        Assert.True(missing.Count == 0, "Catalogue systems pointing nowhere:\n  " + string.Join("\n  ", missing));
+    }
+
+    /// The portal draws every system with its ONE tile component. A system added with bespoke markup would
+    /// be a second navigation language on the one page the whole product funnels through.
+    [Fact]
+    public void Every_system_tile_on_the_portal_is_the_pages_one_tile_component()
     {
         var choose = PortalChoose();
 
-        var tile = Regex.Match(choose,
-            @"<a class=""msys""[^>]*href=""@Url\.Action\(""Index"",""" + Regex.Escape(controller) + @"""\)""" +
-            @"[^>]*>(?<body>.*?)</a>",
-            RegexOptions.Singleline | RegexOptions.CultureInvariant);
-
-        Assert.True(tile.Success, $"{controller} is not rendered as an .msys tile on the portal");
-        Assert.Contains("msys-ic", tile.Groups["body"].Value, StringComparison.Ordinal);
-        Assert.Contains("msys-t", tile.Groups["body"].Value, StringComparison.Ordinal);
-        Assert.Contains("msys-d", tile.Groups["body"].Value, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(choose, @"class=""lx-app""", RegexOptions.CultureInvariant));
+        Assert.Single(Regex.Matches(choose, @"function app\(s\)", RegexOptions.CultureInvariant));
+        Assert.DoesNotContain("msys", choose, StringComparison.Ordinal);   // the old hand-written tiles are gone
     }
 
     /// Two tiles pointing at one system is a menu telling the user two things.
     [Fact]
     public void No_portal_tile_destination_is_listed_twice()
     {
-        var choose = PortalChoose();
-
-        // The href is a Razor expression that CONTAINS quotes — href="@Url.Action("Index","Tasks")" —
-        // so it cannot be captured as "everything up to the next quote": that yields `Url.Action(` for
-        // every tile and reports six identical destinations. Capture the call itself.
-        var destinations = Regex.Matches(choose,
-                @"<a class=""msys""[^>]*href=""@(?<href>Url\.Action\([^)]*\))""",
-                RegexOptions.CultureInvariant)
-            .Select(m => m.Groups["href"].Value.Trim())
-            .ToList();
+        var destinations = SystemCatalog.All.Select(e => e.Controller + "/" + e.Action).ToList();
 
         Assert.NotEmpty(destinations);
+        Assert.Equal(SystemCatalog.All.Count, SystemCatalog.All.Select(e => e.Key).Distinct().Count());
 
         var duplicates = destinations.GroupBy(d => d, StringComparer.Ordinal)
             .Where(g => g.Count() > 1)
@@ -245,8 +326,8 @@ public sealed class SystemEntryPointNavigationTests
     public void Entry_point_discovery_is_not_vacuous()
     {
         Assert.Contains("var sysItems", MainMenuPartial(), StringComparison.Ordinal);
-        Assert.True(Regex.Matches(PortalChoose(), @"<a class=""msys""").Count >= 5,
-            "the portal tile parse found too few tiles to be real");
+        Assert.True(SystemCatalog.All.Count >= 13, "the catalogue holds too few systems to be real");
+        Assert.Equal(13, SystemCatalog.Sidebar.Count());
         Assert.Equal(8, MainMenu.Tasks().SelectMany(c => c.Items).Count());
         Assert.Equal(3, MainMenu.Calendar().SelectMany(c => c.Items).Count());
     }

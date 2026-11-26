@@ -1,4 +1,5 @@
-﻿using CrossBuy.BL;
+﻿using System.Linq;
+using CrossBuy.BL;
 using CrossBuy.BL.Platform;
 using Xunit;
 
@@ -52,6 +53,29 @@ namespace CrossBuy.Tests
                     Assert.Equal(definition.RouteTemplate, url);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(EntityRegistry.ProjectMilestone)]
+        [InlineData(EntityRegistry.ProjectBilling)]
+        [InlineData(EntityRegistry.CalendarEvent)]
+        public void Entities_without_record_detail_screens_do_not_emit_misleading_links(string code)
+        {
+            using var host = new PlatformTestHost();
+            var registry = host.Registry();
+
+            Assert.True(registry.TryGetDefinition(code, out var definition));
+            Assert.Null(definition!.RouteTemplate);
+            Assert.Null(registry.BuildUrl(code, 42));
+        }
+
+        [Fact]
+        public void Task_registry_link_opens_the_task_detail_route()
+        {
+            using var host = new PlatformTestHost();
+            var registry = host.Registry();
+
+            Assert.Equal("/Tasks/Detail/42", registry.BuildUrl(EntityRegistry.Task, 42));
         }
 
         // ---- Test 2: the TaskLinkResolver compatibility wrapper still behaves as before promotion ----
@@ -177,6 +201,61 @@ namespace CrossBuy.Tests
             Assert.Equal("Company one customer", rows[0].Label);
 
             var crossCompany = await registry.ResolveAsync(EntityRegistry.Customer, otherCompanyId, PlatformTestHost.DefaultContext(companyId: 1));
+            Assert.False(crossCompany.Found);
+            Assert.Null(crossCompany.Url);
+        }
+
+        /// THE SEARCHABLE ENTITY THAT COULD NOT BE FOUND, and the tenant line it must not cross.
+        ///
+        /// CrmTicket declares SupportsSearch = true and had no arm in the switch, so every search for
+        /// a ticket fell to the default and came back empty - not an error, just nothing, which reads
+        /// as "no tickets match" however many there are.
+        ///
+        /// AND CrmTickets HAS NO GLOBAL COMPANY FILTER. It is absent from CompanyQueryFilters, so the
+        /// predicate in the search arm is the only thing between two tenants - the same shape as the
+        /// Employee defect, and the reason the company check is asserted here rather than assumed.
+        [Fact]
+        public async Task Crm_ticket_search_is_company_scoped_and_matches_both_subjects()
+        {
+            using var host = new PlatformTestHost();
+
+            host.Seed.CrmTickets.Add(new CrossBuy.Models.Context.Crm.CrmTicket
+            { CompanyID = 1, Subject = "\u0634\u0643\u0648\u0649 \u0627\u0644\u062a\u0633\u0644\u064a\u0645", SubjectEn = "Delivery complaint" });
+
+            // Arabic subject only: it must still be reachable, and it must NOT be reachable by an
+            // English word it does not contain.
+            host.Seed.CrmTickets.Add(new CrossBuy.Models.Context.Crm.CrmTicket
+            { CompanyID = 1, Subject = "\u0637\u0644\u0628 \u0635\u064a\u0627\u0646\u0629", SubjectEn = null });
+
+            // Another tenant's ticket, with a subject that WOULD match the term.
+            host.Seed.CrmTickets.Add(new CrossBuy.Models.Context.Crm.CrmTicket
+            { CompanyID = 2, Subject = "Delivery complaint from company two", SubjectEn = "Delivery complaint from company two" });
+            await host.Seed.SaveChangesAsync();
+
+            using var all = host.AllCompanies();
+            var foreignId = all.CrmTickets.Single(t => t.CompanyID == 2).ID;
+
+            var registry = host.Registry();
+            var context = PlatformTestHost.DefaultContext(companyId: 1);
+
+            // The ENGLISH twin is matched, which is the half that did not exist before: the Arabic
+            // subject carries none of these letters.
+            var english = await registry.SearchAsync(EntityRegistry.CrmTicket, "Delivery", context);
+            Assert.Single(english);
+            Assert.DoesNotContain(english, r => r.EntityId == foreignId);
+
+            // The Arabic subject is matched on its own terms.
+            var arabic = await registry.SearchAsync(EntityRegistry.CrmTicket, "\u0635\u064a\u0627\u0646\u0629", context);
+            Assert.Single(arabic);
+
+            // AN EMPTY TERM IS THE WIDEST QUERY THIS ENDPOINT ANSWERS, so it is the one that would
+            // expose the whole table if the company predicate were missing.
+            var everything = await registry.SearchAsync(EntityRegistry.CrmTicket, null, context);
+            Assert.Equal(2, everything.Count);
+            Assert.DoesNotContain(everything, r => r.EntityId == foreignId);
+
+            // And the id of a ticket in another company resolves to nothing a reader can use.
+            var crossCompany = await registry.ResolveAsync(EntityRegistry.CrmTicket, foreignId, context);
             Assert.False(crossCompany.Found);
             Assert.Null(crossCompany.Url);
         }

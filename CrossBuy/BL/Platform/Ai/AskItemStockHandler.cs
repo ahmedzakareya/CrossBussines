@@ -46,7 +46,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"رصيد صنف معيّن موزّعًا على المخازن التي تملك صلاحية عليها",
-			"The on-hand quantity of one item, across the warehouses you are allowed to see");
+			"The on-hand quantity of one item, across the warehouses you are allowed to see",
+			"La quantité disponible d'un article dans les entrepôts auxquels vous avez accès");
 
 		// A SUGGESTION SHOWS THE SHAPE OF A QUESTION, NOT ONE ROW'S DATA.
 		//
@@ -58,7 +59,7 @@ namespace CrossBuy.BL.Platform.Ai
 		// Naming no item is not a loss: a question that names none makes the handler ASK which one,
 		// which is behaviour this already has. The chip teaches the shape and the assistant asks
 		// for the noun.
-		public AskText Example => AskText.Of("كام رصيد صنف معيّن؟", "How much of an item do we hold?");
+		public AskText Example => AskText.Of("كام رصيد صنف معيّن؟", "How much of an item do we hold?", "Quelle quantité avons-nous en stock pour cet article ?");
 
 		// ONLY WORDS THAT IDENTIFY THIS QUESTION. The first version of this list held "كام",
 		// "عندنا" and "كمية", and the screen proved why that was wrong within three questions:

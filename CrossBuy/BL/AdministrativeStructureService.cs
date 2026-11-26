@@ -81,7 +81,9 @@ namespace CrossBuy.BL
 			var root = all.FirstOrDefault(h => h.H_ObjectID == companyId && h.H_Type == 1);
 			if (root == null) return new List<HierarchicalDto>();
 
-			var result = new List<Hierarchical>();
+			// The company node itself comes first. It used to be left out, so every tree built from this list had
+			// no root and drew nothing (the HR structure screen showed an empty tree once it was scoped here).
+			var result = new List<Hierarchical> { root };
 			CollectDescendants(all, root.H_ID, result);
 
 			return result.Select(h => new HierarchicalDto
@@ -89,7 +91,9 @@ namespace CrossBuy.BL
 				H_ID       = h.H_ID,
 				H_Name     = h.H_Name,
 				H_NameEn   = h.H_NameEn,
-				H_Parent   = h.H_Parent,
+				// The root is a root here even when the company sits under a parent company: its parent is
+				// outside this list, and a dangling parent id would orphan the whole tree.
+				H_Parent   = h.H_ID == root.H_ID ? null : h.H_Parent,
 				H_Notes    = h.H_Notes,
 				H_Type     = h.H_Type,
 				H_ObjectID = h.H_ObjectID,
@@ -130,11 +134,43 @@ namespace CrossBuy.BL
 			return hierarchy;
 		}
 
+		// SEC-01 part C — THE ACTOR COMES FROM THE RESOLVED CONTEXT, NOT FROM THE SESSION.
+		//
+		// WHAT WAS WRONG, AND IT WAS TWO THINGS.
+		//
+		// 1. The actor was deserialised from `HttpContext.Session["Employee"]`. Stage 1 removed exactly
+		//    this pattern everywhere else: a session blob is client-influenced state that survives role
+		//    changes, deactivation and company reassignment, and `BusinessContextFactory` exists to replace
+		//    it — it reads the signed-in employee's own row and a session value that disagrees loses.
+		//
+		// 2. `employee.ID` was dereferenced with no null check, so a request arriving without that session
+		//    key did not refuse — it threw NullReferenceException AFTER the method had been entered. A
+		//    write path whose failure mode is a 500 is not a refusal; it is an accident that happened to
+		//    stop short.
+		//
+		// NOW IT FAILS CLOSED, AND IT REFUSES THROUGH THE CALLER'S EXISTING PATH. An unresolved context,
+		// or one carrying no employee, throws BEFORE the entity is constructed, so nothing is written.
+		//
+		// WHY AN EXCEPTION RATHER THAN A NULL RETURN. The sole caller is
+		// AdminController.AddHierarchicalItem, which already wraps this call in try/catch and answers
+		// `{ success = false, message }`. Returning null would have moved the NullReferenceException from
+		// here to `dto.H_ID` one line later — the same crash, one frame further out, and a change whose
+		// benefit never reaches the user. Throwing lands in a handler that already exists, so the refusal
+		// is clean with NO edit to that controller, which this wave does not own (it is staged by another
+		// TAB). The message is deliberately generic: the caller echoes `ex.Message` to the client, so it
+		// must not name a company, a role or whether a record exists.
+		//
+		// WHAT THIS DOES NOT FIX, stated so nobody reads more into it than is here: this method still has
+		// no PERMISSION check and `Hierarchical` still has no company column, so the tree remains global.
+		// Both belong to AdminController.AddHierarchicalItem and to a schema decision, and both are blocked
+		// in this wave — the controller is staged by another TAB and the column needs owner approval.
 		public async Task<HierarchicalDto> Save(HierarchicalDto dto)
 		{
-			var employeeJson = _httpContextAccessor.HttpContext?.Session.GetString("Employee");
-			var employee = employeeJson != null ? JsonConvert.DeserializeObject<EmployeeViewModel>(employeeJson) : null;
-
+			var contexts = _serviceProvider.GetService(typeof(CrossBuy.BL.Platform.IBusinessContextAccessor))
+				as CrossBuy.BL.Platform.IBusinessContextAccessor;
+			var context = contexts == null ? null : await contexts.TryGetCurrentAsync();
+			if (context?.EmployeeId is not > 0)
+				throw new UnauthorizedAccessException("Not permitted.");
 
 			var newEntity = new Hierarchical
 			{
@@ -144,7 +180,7 @@ namespace CrossBuy.BL
 				H_Type = 3,
 				IsActive = true,
 				CreatedAt = DateTime.UtcNow,
-				CreatedBy = employee.ID
+				CreatedBy = context.EmployeeId.Value
 			};
 
 			// 3. أضفه إلى الـ DbContext واحفظ

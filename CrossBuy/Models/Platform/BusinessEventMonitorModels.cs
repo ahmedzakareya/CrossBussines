@@ -54,6 +54,10 @@ namespace CrossBuy.Models.Platform
         public int? BranchId { get; init; }
         public int? ActorEmployeeId { get; init; }
         public string? ActorName { get; init; }
+        // Resolved from Employee.ProfileImage in the SAME query as the name — the two are always
+        // wanted together, because every surface that says who did something also draws them.
+        // Null for a system-raised event, which has no person behind it and must not be given a face.
+        public string? ActorAvatarUrl { get; init; }
         public required DateTime CreatedAt { get; init; }
         public DateTime? CompletedAt { get; init; }      // ALL consumers done — distinct from the row's own status
         public required string Visibility { get; init; }

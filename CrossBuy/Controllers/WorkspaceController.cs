@@ -65,10 +65,11 @@ namespace CrossBuy.Controllers
         // it is bookmarkable, back-button-correct and needs no script — the same choice the Agenda
         // panel already made.
         public async Task<IActionResult> Notifications(bool unreadOnly = false, int page = 1,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, long? commAfter = null)
         {
             var panel = await _workspace.GetNotificationsAsync(unreadOnly, take: 25, page, cancellationToken);
             ViewBag.UnreadOnly = unreadOnly;
+            ViewBag.CommunicationInbox = await _workspace.GetCommunicationInboxAsync(unreadOnly, commAfter, cancellationToken: cancellationToken);
             ViewBag.Capabilities = await _workspace.GetCapabilitiesAsync(cancellationToken);
             return View(panel);
         }

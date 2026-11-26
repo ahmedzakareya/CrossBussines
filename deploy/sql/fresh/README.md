@@ -1,8 +1,9 @@
-# Build CrossBuyDB2 from scratch (clean production database)
+# Build the CrossBuy bootstrap database (not production-ready)
 
-These four scripts create a **brand-new, empty-of-test-data** CrossBuyDB2 with only the schema
-and the minimum config needed to log in and operate. Generated from — and **verified against** —
-the live verified schema (a fresh DB built from these files boots the app and logs in as Admin).
+These four scripts create a **brand-new, empty-of-test-data** CrossBuyDB2 with a snapshot schema
+and the minimum config needed to log in. Generated from — and **verified against** — the live
+verified schema (a fresh DB built from these files boots the app and logs in as Admin). This is a
+bootstrap snapshot, not proof that current versioned module slices have been applied.
 
 | File | What it does |
 |---|---|
@@ -42,5 +43,22 @@ sqlcmd -S %SVR% -d CrossBuyDB2 -E -C -b -i "02_foreign_keys.sql"
 - Verified end-to-end: a fresh DB from these scripts boots under `ASPNETCORE_ENVIRONMENT=Production`,
   Admin logs in, and the CRM + Accounting screens load. `/api/dev/*` returns 404 in Production.
 
-> This from-scratch build and the **restore-from-backup** path (see `../../README.md`) are two ways
-> to the same place. Restore preserves *all* dev data verbatim; this build gives a clean slate.
+## Schema-history admission — required before promotion
+
+The fresh snapshot does **not** contain `dbo.PlatformSchemaHistory` or `dbo.CommTaskLinks`.
+Therefore it does not yet satisfy the canonical applied-history contract or enable Communication
+Hub task linking. Do not treat a successful login as production acceptance.
+
+1. After the four bootstrap scripts complete, apply the canonical
+   `CrossBuy/deploy/sql/platform_schema_history.sql` slice to this database.
+2. Record the four completed `deploy/sql/fresh/*.sql` scripts and the history slice in
+   `dbo.PlatformSchemaHistory` with `CrossBuy/deploy/report-schema-history.ps1 -Record`, using
+   their exact repository paths and current raw hashes.
+3. Reconcile release-required canonical slices against the resulting schema. Baseline only slices
+   verified individually; a matching table name or successful login is not enough. Apply only
+   reviewed, release-accepted slices in dependency order.
+4. Re-run schema-history reporting and the integration gate before promotion. Any required slice
+   still pending, changed, failed or missing keeps the environment out of promotion.
+
+> This bootstrap snapshot and the **restore-from-backup** path (see `../../README.md`) are
+> provisioning options. Neither replaces canonical slice authority or applied-history reconciliation.

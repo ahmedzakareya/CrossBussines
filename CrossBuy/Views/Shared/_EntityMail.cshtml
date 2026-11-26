@@ -1,0 +1,540 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // =========================================================================================
+    // SEND A MAIL ABOUT THIS RECORD, WITHOUT LEAVING IT.
+    //
+    // The product already has a mailbox: /Comm with its folders, its outbox, its dispatcher and its
+    // people-picker. This panel does NOT reimplement any of it - it posts to the SAME
+    // CommController.Send and reads the SAME /Comm/Contacts, and the only thing added server-side
+    // was an `ajax` arm that answers with json instead of redirecting into a folder listing.
+    //
+    // IT IS THE COMPOSE SCREEN, IN A MODAL. Same anatomy, deliberately, down to the class names:
+    // the bordered To / Cc / Subject rows with their 75px label column, the TinyMCE editor with the
+    // same toolbar and the same local bundle, the same attachment bar and the same file chips.
+    // Somebody who has written one mail in this product has written this one - a "simplified"
+    // compose box would be a second, worse editor for the same job.
+    //
+    // WHY A MODAL AND NOT A SCREEN. Composing a mail about a document is something you do WHILE
+    // reading it: the number, the amount, the customer and the last comment are all on the page
+    // behind. Navigating to /Comm/Compose takes every one of them away and asks the sender to
+    // remember them - which is how a mail about invoice SV-2026-12546 ends up titled "the invoice".
+    //
+    // IT RIDES WITH THE CONVERSATION. It reads the same ViewBag the conversation panel does, so any
+    // screen that already carries a conversation gets mail with no change of its own.
+    // =========================================================================================
+    var mailEntityCode = ViewBag.ConversationEntityCode as string ?? "";
+    var mailEntityId = (int)(ViewBag.ConversationEntityId ?? 0);
+    var mailIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+
+<style>
+    /* The compose screen's own recipient control, same names so the two cannot drift apart. */
+    .cbmail-box { min-height: 38px; align-content: center; }
+    .cbmail-input { outline: 0; border: 0; background: transparent; min-width: 140px; padding: 6px 2px; }
+    .cbmail-menu { position: absolute; top: 100%; inset-inline-start: 0; z-index: 1065; background: #fff;
+                   border: 1px solid #e1e3ea; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+                   width: 360px; max-width: 100%; max-height: 300px; overflow: auto; margin-top: 4px; }
+    .cbmail-opt { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+    .cbmail-opt:hover { background: #f4f6fa; }
+    /* TinyMCE renders its own chrome; inside a modal it must not fight the rounded card edge. */
+    #cbMailModal .tox-tinymce { border: 0; }
+</style>
+
+<div class="modal fade" id="cbMailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            @* THE HEADER IS THE COMPOSE SCREEN'S HEADER: the title on one side, discard and send on
+               the other. The send button lives here rather than in a footer for the same reason it
+               does there - it is the screen's one action, not an afterthought under a divider. *@
+            <div class="modal-header align-items-center py-4">
+                <h2 class="fw-bold fs-4 m-0">
+                    <i class="ki-outline ki-sms fs-2 text-primary me-2"></i>@Localizer["Send an email"]
+                </h2>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@Localizer["Discard"]</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="cbMailSend">
+                        <i class="ki-outline ki-send fs-4"></i>@Localizer["Send"]
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-body pt-0">
+                @* The record this mail is about, stated rather than assumed. If the subject is edited
+                   into something else the reader still knows what was on screen when it was written. *@
+                <div id="cbMailAbout" class="d-none align-items-center rounded p-3 mt-4 mb-2"
+                     style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                    <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-primary">
+                        <i class="ki-outline ki-document fs-5 text-primary"></i></span></span>
+                    <div class="flex-grow-1" style="min-width:0">
+                        <div class="fs-8 text-gray-500">@Localizer["About"]</div>
+                        <a id="cbMailAboutLink" href="#" class="fw-bold text-truncate d-block"></a>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start border-bottom px-2 py-2">
+                    <span class="text-muted w-75px fw-semibold pt-2">@SR["To"]</span>
+                    <div class="cbmail-recip flex-grow-1 position-relative" data-field="to">
+                        <div class="cbmail-box d-flex flex-wrap align-items-center gap-1">
+                            <input type="text" class="cbmail-input flex-grow-1" placeholder="name@@example.com" autocomplete="off" />
+                        </div>
+                        <div class="cbmail-menu d-none"></div>
+                        <input type="hidden" id="cbMailTo" value="" />
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-start border-bottom px-2 py-2">
+                    <span class="text-muted w-75px fw-semibold pt-2">@SR["Cc"]</span>
+                    <div class="cbmail-recip flex-grow-1 position-relative" data-field="cc">
+                        <div class="cbmail-box d-flex flex-wrap align-items-center gap-1">
+                            <input type="text" class="cbmail-input flex-grow-1" placeholder="a@@x.com, b@@y.com" autocomplete="off" />
+                        </div>
+                        <div class="cbmail-menu d-none"></div>
+                        <input type="hidden" id="cbMailCc" value="" />
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center border-bottom px-2 py-3">
+                    <span class="text-muted w-75px fw-semibold">@SR["Subject"]</span>
+                    <input id="cbMailSubject" type="text" maxlength="300" required
+                           class="form-control form-control-transparent border-0" />
+                </div>
+
+                @* THE SAME EDITOR, not a textarea. A mail written here goes to customers and
+                   suppliers beside mail written on the compose screen; one of the two being plain
+                   text is a difference the recipient sees. *@
+                <textarea id="cbMailBody"></textarea>
+
+                @* THE WHOLE ATTACHMENT BAR, not half of it. The compose screen offers two ways to
+                   attach - upload from this machine, or pick what the company already holds in the
+                   document library - and a mail written here goes to the same recipients. Leaving
+                   the library out would mean re-uploading a file the system is already storing. *@
+                <div class="d-flex align-items-center flex-wrap gap-2 border-top px-2 pt-4">
+                    <label class="btn btn-sm btn-light-primary mb-0">
+                        <i class="ki-outline ki-paper-clip fs-5"></i>@SR["Attach files"]
+                        <input type="file" id="cbMailFiles" class="d-none" multiple />
+                    </label>
+                    <button type="button" class="btn btn-sm btn-light-primary" id="cbMailLibBtn">
+                        <i class="ki-outline ki-folder fs-5"></i>@SR["Attach from library"]
+                    </button>
+                    <input type="hidden" id="cbMailLibIds" value="" />
+                    <div id="cbMailFileList" class="d-flex flex-wrap gap-2"></div>
+                    <div id="cbMailLibList" class="d-flex flex-wrap gap-2"></div>
+                </div>
+                <div id="cbMailErr" class="d-none fs-8 fw-semibold mt-3 px-2" style="color:#C0392B;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* The library browser is the compose screen's own modal, kept a SIBLING of the mail modal
+   rather than a child: a modal nested inside another is removed from the dom together with its
+   parent by some themes, and this one has to outlive nothing - it opens, returns a pick, closes,
+   and the mail modal behind it never moved. *@
+<div class="modal fade" id="cbMailLibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-700px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">@SR["Attach from library"]</h2>
+                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+            </div>
+            <div class="modal-body py-6 px-lg-10">
+                <div class="badge badge-lg badge-light-primary mb-4"><div class="d-flex align-items-center flex-wrap" id="cbMailLibPath"></div></div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <tbody id="cbMailLibRows"></tbody>
+                    </table>
+                </div>
+                <div id="cbMailLibEmpty" class="text-center text-muted py-8 d-none">@SR["This folder is empty"]</div>
+            </div>
+            <div class="modal-footer flex-center">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                <button type="button" class="btn btn-light-primary me-3" id="cbMailLibAttach"><i class="ki-outline ki-paper-clip fs-5"></i>@SR["Attach a copy"]</button>
+                <button type="button" class="btn btn-primary" id="cbMailLibLink"><i class="ki-outline ki-link fs-5"></i>@SR["Insert link"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="@Url.Content("~/Backend-assets/plugins/custom/tinymce/tinymce.bundle.js")"></script>
+<script>
+(function () {
+    var modalEl = document.getElementById('cbMailModal');
+    if (!modalEl) { return; }
+
+    var ENTITY = @Html.Raw(Json.Serialize(mailEntityCode));
+    var ENTITY_ID = @mailEntityId;
+    var URL_SEND = @Html.Raw(Json.Serialize(Url.Action("Send", "Comm")));
+    var URL_CONTACTS = @Html.Raw(Json.Serialize(Url.Action("Contacts", "Comm")));
+    var URL_SUBJECT = @Html.Raw(Json.Serialize(Url.Action("RecordSubject", "Comm")));
+    var RTL = @(mailIsAr ? "true" : "false");
+
+    var T = {
+        sending: @Html.Raw(Json.Serialize(Localizer["Sending…"].Value)),
+        needTo: @Html.Raw(Json.Serialize(Localizer["Add at least one recipient"].Value)),
+        needSubject: @Html.Raw(Json.Serialize(Localizer["Write a subject"].Value)),
+        failed: @Html.Raw(Json.Serialize(Localizer["The message was not sent"].Value)),
+        queued: @Html.Raw(Json.Serialize(Localizer["Queued for sending"].Value)),
+        sent: @Html.Raw(Json.Serialize(Localizer["The message was sent"].Value)),
+        aboutLine: @Html.Raw(Json.Serialize(Localizer["Regarding:"].Value))
+    };
+
+    function esc(t) {
+        return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+            return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&quot;';
+        });
+    }
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    // ---- the recipient chips -----------------------------------------------------------------
+    // A CHIP IS AN ADDRESS, not a name: the hidden field carries what the mailer needs and the chip
+    // shows what the sender recognises. Both come from the same pick, so they cannot disagree.
+    function initRecip(wrap) {
+        var box = wrap.querySelector('.cbmail-box');
+        var input = wrap.querySelector('.cbmail-input');
+        var menu = wrap.querySelector('.cbmail-menu');
+        var hidden = wrap.querySelector('input[type=hidden]');
+        var chosen = [];
+        var timer = null;
+
+        function sync() {
+            hidden.value = chosen.map(function (c) { return c.email; }).join('; ');
+            [].slice.call(box.querySelectorAll('.cbmail-chip')).forEach(function (n) { n.remove(); });
+            chosen.forEach(function (c, i) {
+                var chip = document.createElement('span');
+                chip.className = 'cbmail-chip badge badge-light-primary d-inline-flex align-items-center gap-1 py-2 fs-8';
+                chip.innerHTML = esc(c.name || c.email) +
+                    '<i class="ki-outline ki-cross fs-7" style="cursor:pointer" data-i="' + i + '"></i>';
+                box.insertBefore(chip, input);
+            });
+        }
+        box.addEventListener('click', function (e) {
+            var x = e.target.closest ? e.target.closest('[data-i]') : null;
+            if (x) { chosen.splice(parseInt(x.getAttribute('data-i'), 10), 1); sync(); return; }
+            input.focus();
+        });
+
+        function add(name, email) {
+            email = (email || '').trim();
+            if (!email) { return; }
+            if (chosen.some(function (c) { return c.email.toLowerCase() === email.toLowerCase(); })) { return; }
+            chosen.push({ name: name || email, email: email });
+            input.value = ''; menu.classList.add('d-none'); sync();
+        }
+        wrap.cbClear = function () { chosen = []; sync(); };
+
+        function search() {
+            fetch(URL_CONTACTS + '?q=' + encodeURIComponent(input.value.trim()), { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (rows) {
+                    if (!rows || !rows.length) { menu.classList.add('d-none'); return; }
+                    menu.innerHTML = rows.map(function (p) {
+                        var av = p.photo
+                            ? '<img src="' + esc(p.photo) + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover" alt="" />'
+                            : '<span class="symbol-label bg-light-primary text-primary fw-bold fs-8" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center">' +
+                              esc((p.name || '?').trim().charAt(0)) + '</span>';
+                        return '<div class="cbmail-opt" data-name="' + esc(p.name) + '" data-email="' + esc(p.email) + '">' + av +
+                               '<span class="d-flex flex-column" style="min-width:0">' +
+                               '<span class="fw-semibold fs-7 text-gray-900 text-truncate">' + esc(p.name) + '</span>' +
+                               '<span class="fs-8 text-muted text-truncate">' + esc(p.email) + '</span></span></div>';
+                    }).join('');
+                    menu.classList.remove('d-none');
+                })
+                .catch(function () { menu.classList.add('d-none'); });
+        }
+        input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 250); });
+        input.addEventListener('focus', function () { clearTimeout(timer); timer = setTimeout(search, 150); });
+        menu.addEventListener('mousedown', function (e) {
+            var o = e.target.closest ? e.target.closest('.cbmail-opt') : null;
+            if (!o) { return; }
+            e.preventDefault();
+            add(o.getAttribute('data-name'), o.getAttribute('data-email'));
+        });
+        // A TYPED ADDRESS COUNTS. Not every recipient is an employee - a customer or a supplier is
+        // exactly who a mail about a document often goes to, and they are not in the picker.
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+                if (input.value.trim()) { e.preventDefault(); add(null, input.value); }
+            } else if (e.key === 'Backspace' && !input.value) { chosen.pop(); sync(); }
+        });
+        input.addEventListener('blur', function () {
+            setTimeout(function () { menu.classList.add('d-none'); }, 150);
+            if (input.value.trim()) { add(null, input.value); }
+        });
+        sync();
+    }
+    var recips = [].slice.call(modalEl.querySelectorAll('.cbmail-recip'));
+    recips.forEach(initRecip);
+
+    // ---- attachments -------------------------------------------------------------------------
+    var fileInput = document.getElementById('cbMailFiles');
+    var fileList = document.getElementById('cbMailFileList');
+    function human(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+    fileInput.addEventListener('change', function () {
+        fileList.innerHTML = Array.prototype.map.call(fileInput.files, function (f) {
+            return '<span class="badge badge-light-primary d-inline-flex align-items-center gap-1 py-2">' +
+                   '<i class="ki-outline ki-file fs-6"></i>' + esc(f.name) +
+                   ' <span class="text-muted">(' + human(f.size) + ')</span></span>';
+        }).join('');
+    });
+
+    // ---- attach from the document library ----------------------------------------------------
+    // The same /FileManager/List the compose screen browses, and the same two answers: "a copy"
+    // hands the server a list of ids and it attaches the stored bytes (nothing is re-uploaded),
+    // while "insert link" drops a document card into the body the way a cloud attachment reads.
+    var libSel = {};                       // id -> {name,url,size}, kept while folders are walked
+    var libIds = document.getElementById('cbMailLibIds');
+    var libChips = document.getElementById('cbMailLibList');
+    var libEl = document.getElementById('cbMailLibModal');
+    if (libEl) {
+        // LAZY, AND THAT IS THE POINT. This partial is rendered in the page body and the layout
+        // loads plugins.bundle.js AFTER it, so bootstrap does not exist yet at this line. Building
+        // the modal on first click is the only moment it is certainly there.
+        var libModal = null;
+        function libDialog() {
+            if (!libModal && window.bootstrap) { libModal = new bootstrap.Modal(libEl); }
+            return libModal;
+        }        var libRows = document.getElementById('cbMailLibRows');
+        var libPath = document.getElementById('cbMailLibPath');
+        var libEmpty = document.getElementById('cbMailLibEmpty');
+        var LIB_ROOT = @Html.Raw(Json.Serialize(SR["Library"].Value));
+        var LIB_FROM = @Html.Raw(Json.Serialize(SR["From the library"].Value));
+
+        // TWO MODALS AT ONCE. Bootstrap gives every modal and every backdrop the same z-index,
+        // so the second one opens UNDER the first one's backdrop and looks frozen. Lifting the
+        // inner pair on show, and putting back the body class bootstrap strips on hide, is the
+        // whole of it - the outer modal is still open and must stay scroll-locked.
+        libEl.addEventListener('shown.bs.modal', function () {
+            libEl.style.zIndex = 1065;
+            var bds = document.querySelectorAll('.modal-backdrop');
+            if (bds.length) { bds[bds.length - 1].style.zIndex = 1060; }
+        });
+        libEl.addEventListener('hidden.bs.modal', function () {
+            document.body.classList.add('modal-open');
+        });
+
+        document.getElementById('cbMailLibBtn').addEventListener('click', function () {
+            var m = libDialog(); if (!m) { return; }
+            libLoad(null); m.show();
+        });
+        function libLoad(folderId) {
+            fetch('/FileManager/List' + (folderId != null ? '?folderId=' + folderId : ''),
+                  { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d) { return; }
+                    var ph = '<i class="ki-outline ki-abstract-32 fs-3 me-1"></i>' +
+                             '<a class="cursor-pointer cbml-crumb" data-fid="">' + esc(LIB_ROOT) + '</a>';
+                    (d.path || []).forEach(function (c) {
+                        ph += '<i class="ki-outline ki-right fs-4 mx-1"></i>' +
+                              '<a class="cursor-pointer cbml-crumb" data-fid="' + c.id + '">' + esc(c.name) + '</a>';
+                    });
+                    libPath.innerHTML = ph;
+                    libPath.querySelectorAll('.cbml-crumb').forEach(function (a) {
+                        a.addEventListener('click', function () {
+                            var f = a.getAttribute('data-fid'); libLoad(f ? parseInt(f, 10) : null);
+                        });
+                    });
+                    libRows.innerHTML = (d.items || []).map(function (it) {
+                        if (it.isFolder) {
+                            return '<tr><td style="width:28px"></td><td>' +
+                                   '<a class="cursor-pointer text-gray-800 text-hover-primary fw-semibold cbml-nav" data-fid="' + it.id + '">' +
+                                   '<i class="ki-outline ki-folder fs-2 text-primary me-2"></i>' + esc(it.name) + '</a></td>' +
+                                   '<td class="text-muted text-end">' + esc(it.sizeText || '') + '</td></tr>';
+                        }
+                        return '<tr><td style="width:28px">' +
+                               '<input type="checkbox" class="form-check-input cbml-pick" data-id="' + it.id +
+                               '" data-name="' + esc(it.name) + '" data-url="' + esc(it.url || '') +
+                               '" data-size="' + esc(it.sizeText || '') + '" ' + (libSel[it.id] ? 'checked' : '') + ' /></td>' +
+                               '<td><i class="ki-outline ki-document fs-2 text-primary me-2"></i>' + esc(it.name) + '</td>' +
+                               '<td class="text-muted text-end">' + esc(it.sizeText || '') + '</td></tr>';
+                    }).join('');
+                    libEmpty.classList.toggle('d-none', (d.items || []).length > 0);
+                    libRows.querySelectorAll('.cbml-nav').forEach(function (a) {
+                        a.addEventListener('click', function () { libLoad(parseInt(a.getAttribute('data-fid'), 10)); });
+                    });
+                    libRows.querySelectorAll('.cbml-pick').forEach(function (c) {
+                        c.addEventListener('change', function () {
+                            var id = c.getAttribute('data-id');
+                            if (c.checked) {
+                                libSel[id] = { name: c.getAttribute('data-name'),
+                                               url: c.getAttribute('data-url'),
+                                               size: c.getAttribute('data-size') };
+                            } else { delete libSel[id]; }
+                        });
+                    });
+                })
+                .catch(function () { });
+        }
+
+        function libRenderChips() {
+            libIds.value = Object.keys(libSel).join(',');
+            libChips.innerHTML = Object.keys(libSel).map(function (id) {
+                return '<span class="badge badge-light-success d-inline-flex align-items-center gap-1 py-2" data-id="' + id + '">' +
+                       '<i class="ki-outline ki-paper-clip fs-6"></i>' + esc(libSel[id].name) +
+                       ' <i class="ki-outline ki-cross fs-7 cursor-pointer cbml-rm"></i></span>';
+            }).join('');
+            libChips.querySelectorAll('.cbml-rm').forEach(function (x) {
+                x.addEventListener('click', function () {
+                    delete libSel[x.closest('[data-id]').getAttribute('data-id')];
+                    libRenderChips();
+                });
+            });
+        }
+        window.cbMailLibClear = function () { libSel = {}; libIds.value = ''; libChips.innerHTML = ''; };
+
+        document.getElementById('cbMailLibAttach').addEventListener('click', function () {
+            libRenderChips(); libDialog().hide();
+        });
+
+        document.getElementById('cbMailLibLink').addEventListener('click', function () {
+            var ids = Object.keys(libSel);
+            if (!ids.length) { libDialog().hide(); return; }
+            var html = ids.map(function (id) {
+                var it = libSel[id];
+                if (!it.url) { return ''; }
+                // ABSOLUTE, for the same reason the record link is: this is read in a mail client.
+                var abs = window.location.origin + it.url;
+                return '<a href="' + abs + '" target="_blank" rel="noopener" style="display:inline-flex;' +
+                       'align-items:center;gap:10px;border:1px solid #e1e3ea;border-radius:8px;padding:10px 14px;' +
+                       'text-decoration:none;color:#181c32;margin:6px 0;background:#f9f9f9;max-width:100%">' +
+                       '<span style="font-size:22px">\uD83D\uDCC4</span>' +
+                       '<span style="line-height:1.3"><strong>' + esc(it.name) + '</strong><br>' +
+                       '<span style="color:#7e8299;font-size:12px">' + esc(it.size || '') + ' \u00b7 ' + esc(LIB_FROM) + '</span></span></a>';
+            }).join('<br>');
+            try {
+                var ed = window.tinymce && tinymce.get('cbMailBody');
+                if (ed) { ed.insertContent('<p>' + html + '</p>'); }
+                else { document.getElementById('cbMailBody').value += '\n' + html; }
+            } catch (e) { }
+            libSel = {}; libIds.value = ''; libChips.innerHTML = ''; libDialog().hide();
+        });
+    }
+
+    // ---- the editor --------------------------------------------------------------------------
+    // SAME CONFIG AS THE COMPOSE SCREEN, and initialised on `shown` rather than at load: TinyMCE
+    // measures itself when it starts, and a modal that is still display:none gives it a zero box.
+    var edReady = false;
+    function initEditor() {
+        if (edReady || !window.tinymce) { return; }
+        edReady = true;
+        tinymce.init({
+            selector: '#cbMailBody',
+            height: 340,
+            menubar: false, statusbar: false, branding: false,
+            directionality: RTL ? 'rtl' : 'ltr',
+            // A LINK IN A MAIL IS READ OUTSIDE THIS APP, so it must stay absolute. TinyMCE rewrites
+            // urls to be relative to the page by default, and with no document_base_url it produced
+            // href="../../../../undefined//Crm/..." - a dead link in every mail that carried one.
+            convert_urls: false,
+            plugins: 'lists link table code autolink',
+            toolbar: 'undo redo | formatselect fontselect fontsizeselect | bold italic underline strikethrough forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link table | removeformat code',
+            content_style: 'body{font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;color:#181c32}'
+        });
+    }
+    // BOOTSTRAP'S FOCUS TRAP FIGHTS TINYMCE. The modal pulls focus back to itself, which makes the
+    // editor's own dialogs (link, table) impossible to type in. Letting those keep focus is the
+    // documented fix and costs the modal nothing.
+    document.addEventListener('focusin', function (e) {
+        if (e.target.closest && e.target.closest('.tox-tinymce-aux, .tox-dialog, .moxman-window, .tam-assetmanager-root')) {
+            e.stopImmediatePropagation();
+        }
+    }, true);
+
+    function bodyValue() {
+        var ed = window.tinymce && tinymce.get('cbMailBody');
+        return ed ? ed.getContent() : (document.getElementById('cbMailBody').value || '');
+    }
+    function setBody(html) {
+        var ed = window.tinymce && tinymce.get('cbMailBody');
+        if (ed) { ed.setContent(html); } else { document.getElementById('cbMailBody').value = html; }
+    }
+    function bodyIsEmpty() {
+        return bodyValue().replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '';
+    }
+
+    // ---- what this mail is about -------------------------------------------------------------
+    var about = null;
+    function loadAbout() {
+        if (!ENTITY || !ENTITY_ID) { return Promise.resolve(); }
+        return fetch(URL_SUBJECT + '?entity=' + encodeURIComponent(ENTITY) + '&id=' + ENTITY_ID,
+                     { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) { if (d && d.ok) { about = d; } })
+            .catch(function () { });
+    }
+    function prime() {
+        var subj = document.getElementById('cbMailSubject');
+        var panel = document.getElementById('cbMailAbout');
+        var link = document.getElementById('cbMailAboutLink');
+        if (!about) { return; }
+        // Only ever PREFILL an untouched box: reopening after a mistake must not erase what was typed.
+        if (!subj.value) { subj.value = about.subject || ''; }
+        if (bodyIsEmpty() && about.url) {
+            setBody('<p></p><p>' + esc(T.aboutLine) + ' <a href="' + esc(about.url) + '">' + esc(about.subject || about.url) + '</a></p>');
+        }
+        if (link && about.url) {
+            link.textContent = about.subject || about.label || '';
+            link.setAttribute('href', about.url);
+            panel.classList.remove('d-none');
+            panel.classList.add('d-flex');
+        }
+    }
+    modalEl.addEventListener('shown.bs.modal', function () {
+        initEditor();
+        loadAbout().then(function () { setTimeout(prime, 150); });
+    });
+
+    // ---- send --------------------------------------------------------------------------------
+    var sendBtn = document.getElementById('cbMailSend');
+    var err = document.getElementById('cbMailErr');
+    sendBtn.addEventListener('click', function () {
+        var to = document.getElementById('cbMailTo').value.trim();
+        var cc = document.getElementById('cbMailCc').value.trim();
+        var subject = document.getElementById('cbMailSubject').value.trim();
+        err.classList.add('d-none');
+        if (!to) { err.textContent = T.needTo; err.classList.remove('d-none'); return; }
+        if (!subject) { err.textContent = T.needSubject; err.classList.remove('d-none'); return; }
+
+        var fd = new FormData();
+        fd.append('to', to); fd.append('cc', cc);
+        fd.append('subject', subject); fd.append('body', bodyValue());
+        fd.append('kind', 'New'); fd.append('ajax', 'true');
+        fd.append('__RequestVerificationToken', token());
+        // The field name is what CommController.Send binds - `files`, exactly as the compose form posts.
+        for (var i = 0; i < fileInput.files.length; i++) { fd.append('files', fileInput.files[i]); }
+        // ...and the library picks, under the name the compose form posts them with.
+        if (libIds && libIds.value) { fd.append('libraryFileIds', libIds.value); }
+
+        var label = sendBtn.innerHTML;
+        sendBtn.disabled = true; sendBtn.textContent = T.sending;
+
+        fetch(URL_SEND, { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) {
+                // Same reasoning as the conversation composer: an expired page answers 400 with no
+                // json at all, so keep the status rather than losing it in a parse error.
+                return r.json().catch(function () { return { ok: false, httpStatus: r.status }; });
+            })
+            .then(function (d) {
+                if (d && d.ok) {
+                    if (window.CB && CB.toast) { CB.toast.success(d.status === 'Queued' ? T.queued : T.sent); }
+                    document.getElementById('cbMailSubject').value = '';
+                    setBody('');
+                    fileInput.value = ''; fileList.innerHTML = '';
+                    if (window.cbMailLibClear) { window.cbMailLibClear(); }
+                    recips.forEach(function (w) { if (w.cbClear) { w.cbClear(); } });
+                    if (window.bootstrap && bootstrap.Modal) { bootstrap.Modal.getInstance(modalEl).hide(); }
+                } else {
+                    err.textContent = (d && d.error) ? d.error
+                        : (d && d.httpStatus ? T.failed + ' (' + d.httpStatus + ')' : T.failed);
+                    err.classList.remove('d-none');
+                }
+            })
+            .catch(function () { err.textContent = T.failed; err.classList.remove('d-none'); })
+            .finally(function () { sendBtn.disabled = false; sendBtn.innerHTML = label; });
+    });
+})();
+</script>

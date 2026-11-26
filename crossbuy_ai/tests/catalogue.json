@@ -152,6 +152,173 @@
    "Journal entries worth reviewing, from the on-premises model"
   ]
  },
+ "hospital.appointments": {
+  "keywords": [
+   "المواعيد",
+   "مواعيد",
+   "مواعيد اليوم",
+   "جيب مواعيد اليوم",
+   "كام موعد",
+   "عدد المواعيد",
+   "المواعيد حسب الطبيب",
+   "المواعيد حسب القسم",
+   "جدول العيادة",
+   "الحجوزات",
+   "مدة الانتظار",
+   "متوسط الانتظار",
+   "مدة الكشف",
+   "appointments",
+   "todays appointments",
+   "how many appointments",
+   "clinic schedule",
+   "bookings",
+   "waiting time",
+   "average wait",
+   "consultation time"
+  ],
+  "example": [
+   "جيب مواعيد اليوم",
+   "Show today's appointments"
+  ],
+  "desc": [
+   "أي سؤال عن مواعيد العيادات: العدد أو الانتظار أو مدة الكشف حسب الحالة أو الطبيب أو اليوم",
+   "Any question about clinic appointments: the count, the wait or the consultation length by status, practitioner or day"
+  ]
+ },
+ "accounting.expenses": {
+  "keywords": [
+   "المصروفات",
+   "مصروفات",
+   "المصاريف",
+   "مصاريف",
+   "ايه المصروفات",
+   "المصروفات حسب الحساب",
+   "المصروفات حسب النوع",
+   "بنود المصروفات",
+   "صرفنا كام",
+   "احنا بنصرف على ايه",
+   "اكبر بند مصروف",
+   "اكتر حاجة بنصرف عليها",
+   "المصروفات حسب مركز التكلفة",
+   "المصروفات الشهرية",
+   "مصروفات الشهر",
+   "تحليل المصروفات",
+   "expenses",
+   "expense breakdown",
+   "what do we spend on",
+   "spending by account",
+   "operating expenses",
+   "costs by account",
+   "expenses by cost centre",
+   "biggest expense",
+   "monthly expenses",
+   "where the money goes"
+  ],
+  "example": [
+   "إيه المصروفات حسب الحساب؟",
+   "What are the expenses by account?"
+  ],
+  "desc": [
+   "أي سؤال عن المصروفات: المبلغ مجمَّعًا حسب الحساب أو مركز التكلفة أو الشهر",
+   "Any expense question: amount grouped by account, cost centre or month"
+  ]
+ },
+ "hospital.billing": {
+  "keywords": [
+   "فواتير المستشفى",
+   "فوترة المستشفى",
+   "ايراد المستشفى",
+   "ايرادات المستشفى",
+   "كام فوترنا",
+   "كام فوترت المستشفى",
+   "المبلغ المفوتر",
+   "اجمالي الفواتير",
+   "فواتير المرضى",
+   "الفوترة",
+   "ايراد العيادات",
+   "فواتير حسب القسم",
+   "hospital billing",
+   "hospital revenue",
+   "billed amount",
+   "patient bills",
+   "how much did we bill",
+   "billing by department",
+   "hospital charges"
+  ],
+  "example": [
+   "كام فوترت المستشفى الشهر ده؟",
+   "How much did the hospital bill this month?"
+  ],
+  "desc": [
+   "أي سؤال عن فواتير المستشفى: المبلغ المفوتر وعدد البنود حسب التصنيف أو القسم أو الشهر",
+   "Any question about hospital bills: the billed amount and line count by category, department or month"
+  ]
+ },
+ "hospital.claims": {
+  "keywords": [
+   "المطالبات",
+   "مطالبات",
+   "مطالبات التامين",
+   "حالة المطالبات",
+   "ملف المطالبات",
+   "المبلغ المطالب به",
+   "قيمة المطالبات",
+   "المطالبات حسب جهة الدفع",
+   "claims",
+   "insurance claims",
+   "claim status",
+   "claimed amount",
+   "claims by payer",
+   "claim lines"
+  ],
+  "example": [
+   "إيه حالة المطالبات؟",
+   "What is the state of the claims?"
+  ],
+  "desc": [
+   "أي سؤال عن مطالبات التأمين: المبلغ المطالَب به والمعتمد وعدد البنود حسب الحالة أو جهة الدفع",
+   "Any question about insurance claims: the claimed and accepted amounts and line count by status or payer"
+  ]
+ },
+ "hospital.diagnoses": {
+  "keywords": [
+   "الكشوف",
+   "الكشف",
+   "التشخيصات",
+   "تشخيصات",
+   "التشخيص",
+   "اكتر التشخيصات",
+   "اكتر الامراض",
+   "الامراض",
+   "امراض المرضى",
+   "التشخيصات حسب القسم",
+   "التشخيصات حسب الطبيب",
+   "الحالات المرضية",
+   "تشخيصات الشهر",
+   "اكواد التشخيص",
+   "diagnoses",
+   "diagnosis",
+   "commonest diagnoses",
+   "top diagnoses",
+   "conditions",
+   "diseases",
+   "case mix",
+   "casemix",
+   "icd",
+   "icd10",
+   "diagnoses by department",
+   "diagnoses by doctor",
+   "what are we treating"
+  ],
+  "example": [
+   "ايه اكتر التشخيصات عندنا",
+   "What are our commonest diagnoses"
+  ],
+  "desc": [
+   "أي سؤال عن التشخيصات المسجَّلة على الكشوف: أكتر الأمراض، وتوزيعها على الأقسام والأطباء والشهور",
+   "Any question about the diagnoses recorded on consultations: the commonest conditions and how they fall across departments, practitioners and months"
+  ]
+ },
  "inventory.item-movements": {
   "keywords": [
    "حركات",
@@ -172,8 +339,8 @@
    "latest movements"
   ],
   "example": [
-   "آخر حركات مياه معدنية",
-   "Latest movements for mineral water"
+   "آخر حركات صنف معيّن",
+   "Latest movements for an item"
   ],
   "desc": [
    "آخر حركات صنف معيّن في المخازن التي تملك صلاحية عليها",
@@ -203,6 +370,78 @@
    "The warehouses you are allowed to see"
   ]
  },
+ "inventory.stock-query": {
+  "keywords": [
+   "حركة المخزون",
+   "حركات المخزون",
+   "الوارد والمنصرف",
+   "الوارد",
+   "المنصرف",
+   "الوارد لكل مخزن",
+   "المخزون حسب المخزن",
+   "حركة المخازن",
+   "ايه اتحرك",
+   "اكتر صنف اتحرك",
+   "انواع الحركات",
+   "حركات حسب النوع",
+   "صرفنا كام من المخزن",
+   "stock movements",
+   "inventory movements",
+   "goods in",
+   "goods out",
+   "stock by warehouse",
+   "movements by warehouse",
+   "what moved",
+   "movement types",
+   "inbound",
+   "outbound",
+   "stock activity"
+  ],
+  "example": [
+   "إيه الوارد لكل مخزن؟",
+   "What came in by warehouse?"
+  ],
+  "desc": [
+   "أي سؤال عن حركة المخزون: الوارد أو المنصرف أو الصافي أو التكلفة، مجمَّعًا حسب المخزن أو الصنف أو نوع الحركة أو الشهر",
+   "Any stock movement question: in, out, net or cost, grouped by warehouse, item, movement type or month"
+  ]
+ },
+ "inventory.item-categories": {
+  "keywords": [
+   "الفئات",
+   "فئات",
+   "فئة",
+   "الفئة",
+   "فئات الاصناف",
+   "فئات الأصناف",
+   "فئات المنتجات",
+   "التصنيفات",
+   "تصنيفات",
+   "تصنيف الاصناف",
+   "المجموعات",
+   "مجموعات الاصناف",
+   "انواع الاصناف",
+   "اقسام الاصناف",
+   "قول علي الفئات",
+   "ايه الفئات",
+   "categories",
+   "item categories",
+   "product categories",
+   "category list",
+   "what categories",
+   "item groups",
+   "product groups",
+   "classifications"
+  ],
+  "example": [
+   "إيه فئات الأصناف اللي عندنا؟",
+   "What item categories do we have?"
+  ],
+  "desc": [
+   "فئات الأصناف المسجَّلة وعدد الأصناف في كل فئة",
+   "The registered item categories and how many items are in each"
+  ]
+ },
  "inventory.item-stock": {
   "keywords": [
    "رصيد",
@@ -230,8 +469,8 @@
    "left"
   ],
   "example": [
-   "كام رصيد مياه معدنية؟",
-   "How much mineral water do we hold?"
+   "كام رصيد صنف معيّن؟",
+   "How much of an item do we hold?"
   ],
   "desc": [
    "رصيد صنف معيّن موزّعًا على المخازن التي تملك صلاحية عليها",
@@ -265,12 +504,200 @@
    "average cost"
   ],
   "example": [
-   "كام تكلفة لاب توب؟",
-   "What does a laptop cost us?"
+   "كام تكلفة صنف معيّن؟",
+   "What does an item cost us?"
   ],
   "desc": [
    "تكلفة صنف وقيمة رصيده في المخازن التي تملك صلاحية عليها",
    "The cost of an item and the value of its stock, in the warehouses you may see"
+  ]
+ },
+ "hospital.lab": {
+  "keywords": [
+   "التحاليل",
+   "تحاليل",
+   "طلبات التحاليل",
+   "تحاليل المعمل",
+   "المعمل",
+   "المختبر",
+   "عدد التحاليل",
+   "التحاليل حسب الحالة",
+   "زمن التحاليل",
+   "العينات",
+   "lab",
+   "laboratory",
+   "lab orders",
+   "lab tests",
+   "specimens",
+   "accessions",
+   "lab turnaround",
+   "lab status",
+   "tests by status"
+  ],
+  "example": [
+   "في نتايج تحاليل حرجة محدش استلمها",
+   "Are there critical lab results nobody has acknowledged"
+  ],
+  "desc": [
+   "أي سؤال عن طلبات المعمل: العدد وفين وصلت وزمن التنفيذ، والنتايج الحرجة واللي لسه محدش استلمها",
+   "Any question about laboratory orders: the count, the stage, the turnaround, and the critical results including any not yet acknowledged"
+  ]
+ },
+ "hospital.medications": {
+  "keywords": [
+   "الادوية",
+   "ادوية",
+   "قائمة الادوية",
+   "الاوامر الدوائية",
+   "اوامر الدواء",
+   "الادوية الاكثر وصفا",
+   "اكتر دواء بيتوصف",
+   "كام امر دوائي",
+   "الوصفات",
+   "الادوية حسب طريقة الاعطاء",
+   "العلاج الموصوف",
+   "ايه الادوية",
+   "medications",
+   "medicines",
+   "drugs prescribed",
+   "medication orders",
+   "most prescribed",
+   "prescriptions",
+   "what medicines"
+  ],
+  "example": [
+   "إيه الأدوية الأكثر وصفًا؟",
+   "Which medicines are prescribed most?"
+  ],
+  "desc": [
+   "أي سؤال عن أوامر الأدوية للمنوَّمين: العدد حسب الدواء أو طريقة الإعطاء أو الحالة",
+   "Any question about inpatient medication orders: the count by drug, route or status"
+  ]
+ },
+ "pos.query": {
+  "keywords": [
+   "نقطة البيع",
+   "الكاشير",
+   "الكاشيرات",
+   "المحل",
+   "الفرع",
+   "الفروع",
+   "مبيعات الفروع",
+   "مبيعات الفرع",
+   "اي فرع بيبيع اكتر",
+   "اي ساعة اكتر زحمة",
+   "وقت الذروة",
+   "ساعات الذروة",
+   "الزحمة امتى",
+   "تيك اواي",
+   "دليفري",
+   "صالة",
+   "كام طلب",
+   "عدد الطلبات",
+   "متوسط الطلب",
+   "مبيعات الكاشير",
+   "point of sale",
+   "pos",
+   "till",
+   "counter",
+   "cashier sales",
+   "branch sales",
+   "busiest hour",
+   "peak hour",
+   "rush hour",
+   "takeaway",
+   "dine in",
+   "delivery",
+   "order count",
+   "how many orders",
+   "sales by branch",
+   "sales by hour"
+  ],
+  "example": [
+   "أي ساعة أكتر زحمة؟",
+   "Which hour is busiest?"
+  ],
+  "desc": [
+   "أي سؤال عن مبيعات نقطة البيع: المبلغ أو الكمية أو عدد الطلبات، حسب الصنف أو الفرع أو الساعة أو نوع الطلب",
+   "Any point-of-sale question: amount, quantity or order count, by item, branch, hour or order type"
+  ]
+ },
+ "hospital.practitioners": {
+  "keywords": [
+   "الاطباء",
+   "اطباء",
+   "قائمة الاطباء",
+   "جيب قائمة الاطباء",
+   "كام طبيب",
+   "عدد الاطباء",
+   "الاطباء حسب القسم",
+   "كام طبيب في كل قسم",
+   "الدكاترة",
+   "قائمة الدكاترة",
+   "كام دكتور",
+   "مين الاطباء عندنا",
+   "الاطباء حسب التخصص",
+   "اطباء القسم",
+   "الاطباء الزائرين",
+   "الاستشاريين",
+   "الاطباء النشطين",
+   "الاطباء الزائرين",
+   "الزائرين",
+   "practitioners",
+   "doctors",
+   "list the doctors",
+   "how many doctors",
+   "doctors by department",
+   "physicians",
+   "medical staff",
+   "clinical staff"
+  ],
+  "example": [
+   "كام طبيب في كل قسم؟",
+   "How many practitioners in each department?"
+  ],
+  "desc": [
+   "أي سؤال عن الأطباء: العدد حسب القسم أو نوع التعاقد أو الدرجة، أو طبيب بعينه بالاسم",
+   "Any question about the practitioners: the count by department, engagement or title, or one doctor by name"
+  ]
+ },
+ "purchases.query": {
+  "keywords": [
+   "المشتريات",
+   "مشتريات",
+   "الشراء",
+   "شراء",
+   "اشترينا",
+   "اشترينه",
+   "المشتراه",
+   "المشتراة",
+   "الاصناف المشتراه",
+   "الاصناف المشتراة",
+   "اشترينا كام",
+   "صرفنا كام",
+   "موردينا",
+   "فواتير الشراء",
+   "فاتورة شراء",
+   "تحليل المشتريات",
+   "من مين اشترينا",
+   "purchases",
+   "purchasing",
+   "bought",
+   "purchased",
+   "procurement",
+   "spend",
+   "what did we buy",
+   "purchase invoices",
+   "supplier spend",
+   "vendor spend"
+  ],
+  "example": [
+   "إيه الأصناف اللي اشتريناها؟",
+   "What items have we purchased?"
+  ],
+  "desc": [
+   "أي سؤال عن المشتريات: المبلغ أو الكمية، مجمَّعًا حسب الصنف أو المورد أو الشهر",
+   "Any purchasing question: amount or quantity, grouped by item, vendor or month"
   ]
  },
  "sales.query": {
@@ -302,6 +729,109 @@
   "desc": [
    "أي سؤال عن المبيعات: الإيراد أو التكلفة أو الهامش أو الكمية، مجمَّعًا حسب الصنف أو العميل أو الشهر",
    "Any sales question: revenue, cost, margin or quantity, grouped by item, customer or month"
+  ]
+ },
+ "tasks.query": {
+  "keywords": [
+   "المهام",
+   "المهام المفتوحة",
+   "المهام المتأخرة",
+   "المهام المستحقة",
+   "مهامي",
+   "مهماتي",
+   "عدد المهام",
+   "المهام حسب الحالة",
+   "المهام حسب الأولوية",
+   "مهمة عاجلة",
+   "tasks",
+   "my tasks",
+   "open tasks",
+   "overdue tasks",
+   "tasks due",
+   "task list",
+   "task count",
+   "tasks by status",
+   "urgent tasks",
+   "what tasks are due"
+  ],
+  "example": [
+   "ما المهام المتأخرة؟",
+   "Which tasks are overdue?"
+  ],
+  "desc": [
+   "قائمة المهام وأعدادها حسب الحالة والأولوية والتصنيف وتاريخ الاستحقاق",
+   "List or count tasks by status, priority, category, or due date"
+  ]
+ },
+ "hospital.ward": {
+  "keywords": [
+   "الاسرة",
+   "اسرة",
+   "سرير",
+   "سراير",
+   "كام سرير",
+   "عدد الاسرة",
+   "لوحة الاسرة",
+   "الاسرة حسب الجناح",
+   "الاجنحة",
+   "الغرف",
+   "غرف المستشفى",
+   "سعة المستشفى",
+   "beds",
+   "how many beds",
+   "bed board",
+   "beds by ward",
+   "wards",
+   "rooms",
+   "bed capacity",
+   "hospital capacity"
+  ],
+  "example": [
+   "كام سرير فاضي",
+   "How many beds are free"
+  ],
+  "desc": [
+   "أي سؤال عن الأسرّة: العدد والمتاح والمشغول دلوقتي، حسب الجناح أو الغرفة أو نوع الغرفة",
+   "Any question about beds: how many, and which are free or occupied right now, by ward, room or room type"
+  ]
+ },
+ "hr.workforce": {
+  "keywords": [
+   "كام موظف",
+   "عدد الموظفين",
+   "الموظفين",
+   "موظفينا",
+   "فريق العمل",
+   "حجم الفريق",
+   "الموظفين حسب الوظيفة",
+   "المسميات الوظيفية",
+   "الوظائف اللي عندنا",
+   "كام موظف في كل فرع",
+   "الموظفين حسب الفرع",
+   "مين على رأس العمل",
+   "كام واحد شغال",
+   "الموظفين النشطين",
+   "اللي سابوا الشغل",
+   "headcount",
+   "how many employees",
+   "staff count",
+   "team size",
+   "the roster",
+   "employees by job title",
+   "employees by branch",
+   "who works here",
+   "active employees",
+   "job titles",
+   "staff by role",
+   "how many staff"
+  ],
+  "example": [
+   "كام موظف عندنا في كل وظيفة؟",
+   "How many employees in each job title?"
+  ],
+  "desc": [
+   "عدد الموظفين وتوزيعهم: حسب المسمى الوظيفي أو الفرع أو الحالة أو سنة الالتحاق — بلا أي بيانات رواتب",
+   "Headcount and how the roster is distributed: by job title, branch, status or year joined — no pay data"
   ]
  }
 }

@@ -29,6 +29,16 @@
         var t = SR[prefix + val];
         return t.IsResourceNotFound ? val! : t.Value;
     }
+
+    // Two initials, the same rule the document timeline and the Workspace cards use, so a person
+    // without a photograph looks identical wherever they appear.
+    string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpperInvariant();
+    }
 }
 @if (Model.Rows.Count == 0)
 {
@@ -69,8 +79,39 @@ else
                 @if (r.BranchId.HasValue) { <span class="badge badge-light fs-8 ms-1">B@(r.BranchId)</span> }
             </td>
             <td>
-                <span class="text-gray-700 fs-7">@(r.ActorName ?? Localizer["System"].Value)</span>
-                <div class="text-muted fs-8">@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+                @* WHO RAISED IT. A page of events is read by scanning this column, and a face is read
+                   faster than a name. An event with no ActorEmployeeId was raised by the platform
+                   itself: that gets a marked tile, NOT a person's silhouette, because inventing a
+                   face for the system is the one thing worse than showing none. *@
+                @if (!string.IsNullOrWhiteSpace(r.ActorName))
+                {
+                    var photo = string.IsNullOrWhiteSpace(r.ActorAvatarUrl)
+                        ? null
+                        : Url.Content("~" + r.ActorAvatarUrl!.Replace("\\", "/"));
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-circle symbol-25px me-2 flex-shrink-0">
+                            @if (photo != null)
+                            {
+                                <img src="@photo" alt="@r.ActorName" class="rounded-circle object-fit-cover" />
+                            }
+                            else
+                            {
+                                <span class="symbol-label bg-light-primary text-primary fw-bold fs-9">@Initials(r.ActorName)</span>
+                            }
+                        </div>
+                        <span class="text-gray-700 fs-7">@r.ActorName</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center">
+                        <div class="symbol symbol-circle symbol-25px me-2 flex-shrink-0">
+                            <span class="symbol-label bg-light-secondary text-gray-600"><i class="ki-outline ki-setting-2 fs-8"></i></span>
+                        </div>
+                        <span class="text-gray-600 fs-7">@Localizer["System"]</span>
+                    </div>
+                }
+                <div class="text-muted fs-8 mt-1">@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
             </td>
             <td><span class="badge badge-@visBadge(r.Visibility) fs-8">@Disp("evt_vis_", r.Visibility)</span></td>
             <td><span class="fw-semibold fs-7">@Disp("evt_consumer_", r.Consumer)</span></td>

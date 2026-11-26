@@ -26,10 +26,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن المشتريات: المبلغ أو الكمية، مجمَّعًا حسب الصنف أو المورد أو الشهر",
-			"Any purchasing question: amount or quantity, grouped by item, vendor or month");
+			"Any purchasing question: amount or quantity, grouped by item, vendor or month",
+			"Questions sur les achats : montants ou quantités regroupés par article, fournisseur ou mois");
 
 		public override AskText Example => AskText.Of(
-			"إيه الأصناف اللي اشتريناها؟", "What items have we purchased?");
+			"إيه الأصناف اللي اشتريناها؟", "What items have we purchased?", "Quels articles avons-nous achetés ?");
 
 		// THE WORDS PEOPLE ACTUALLY USED. "المشتراه" is here because it is the exact spelling in the
 		// question that was refused, and "مشتريات" because it is the word anyone else would reach

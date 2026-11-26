@@ -25,10 +25,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن فواتير المستشفى: المبلغ المفوتر وعدد البنود حسب التصنيف أو القسم أو الشهر",
-			"Any question about hospital bills: the billed amount and line count by category, department or month");
+			"Any question about hospital bills: the billed amount and line count by category, department or month",
+			"Questions sur la facturation de l'hôpital : montants facturés et nombre de lignes, par catégorie, service ou mois");
 
 		public override AskText Example => AskText.Of(
-			"كام فوترت المستشفى الشهر ده؟", "How much did the hospital bill this month?");
+			"كام فوترت المستشفى الشهر ده؟", "How much did the hospital bill this month?", "Quel montant l'hôpital a-t-il facturé ce mois-ci ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

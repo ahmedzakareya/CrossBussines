@@ -37,7 +37,9 @@ namespace CrossBuy.Controllers
             return Json(new { categories = MutableCategories, muted });
         }
 
+        // SEC-02 — persists a per-user preference; token now sent by Views/Notifications/Index.cshtml.
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleMute(string category)
         {
             var empId = await CurrentEmployeeIdAsync();

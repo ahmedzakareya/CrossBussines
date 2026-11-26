@@ -120,14 +120,6 @@ function Get-Rank([string]$relative, [string]$name) {
     if ($name -in @('pos_schema_master.sql', 'pos_setup.sql', 'manuf_schema_4x.sql', 'projects_contracting.sql',
                     'notifications_hub_p1.sql', 'comm_mail.sql', 'tasks_tm1.sql', 'crm_schema_updates_3x.sql',
                     'brand_foundation.sql', 'schema_sync_2026-07.sql')) { return 20 }
-    # Additive deltas on top of a base.
-    if ($name -eq 'comm_outbox_slice_003.sql')               { return 31 }
-    if ($name -like 'notification_mutes*')                   { return 31 }
-    if ($name -like 'pos_*' -or $name -like 'hm*' -or $name -like 'hyper_*') { return 30 }
-    if ($name -like 'tasks_*' -or $name -like 'projects_*' -or $name -like 'crm_*' -or
-        $name -like 'hr*' -or $name -like 'pricing_*' -or $name -like 'manuf_*') { return 30 }
-    # Utility / operational scripts that are never part of an ordinary deploy.
-    if ($name -in @('00_backup_dev_db.sql', '10_purge_for_production.sql', 'script.sql')) { return 90 }
     # R7 schemas are dependent, not interchangeable rank-40 files. Rank 40 sorts by path, and
     # alphabetical order reverses every request/decision/application chain (applications < decisions
     # < requests, while the dependency runs the other way) - 28 real ordering edges break under it.
@@ -169,7 +161,15 @@ function Get-Rank([string]$relative, [string]$name) {
         'construction_r7_warehouse_exception_application.sql' { return 71 }
         'construction_r7_rebased_warehouse_consent.sql' { return 72 }
     }
-
+    # Additive deltas on top of a base.
+    if ($name -eq 'crm_call_centre_reconciled_001.sql') { return 31 }
+    if ($name -eq 'comm_outbox_slice_003.sql')               { return 31 }
+    if ($name -like 'notification_mutes*')                   { return 31 }
+    if ($name -like 'pos_*' -or $name -like 'hm*' -or $name -like 'hyper_*') { return 30 }
+    if ($name -like 'tasks_*' -or $name -like 'projects_*' -or $name -like 'crm_*' -or
+        $name -like 'hr*' -or $name -like 'pricing_*' -or $name -like 'manuf_*') { return 30 }
+    # Utility / operational scripts that are never part of an ordinary deploy.
+    if ($name -in @('00_backup_dev_db.sql', '10_purge_for_production.sql', 'script.sql')) { return 90 }
     return 40
 }
 
@@ -313,9 +313,11 @@ $files = Get-ChildItem -Path $repo -Recurse -Filter *.sql -File |
 
 $entries = @()
 $packageOrigins = @{}
+$retiredPackageSources = @{}
 $originPath = Join-Path $PSScriptRoot 'package-sql-origin.json'
 if (Test-Path -LiteralPath $originPath) {
-    foreach ($origin in (Get-Content -LiteralPath $originPath -Raw -Encoding UTF8 | ConvertFrom-Json).copies) {
+    $originRegistry = Get-Content -LiteralPath $originPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($origin in $originRegistry.copies) {
         if ($packageOrigins.ContainsKey($origin.packagePath)) { throw 'Duplicate generated SQL package path' }
         if ($origin.packagePath -notlike 'deploy/sql/*.sql' -or $origin.canonicalPath -notlike 'CrossBuy/deploy/sql/*.sql' -or
             $origin.packagePath.Contains('..') -or $origin.canonicalPath.Contains('..')) { throw 'Invalid SQL package origin path' }
@@ -324,6 +326,20 @@ if (Test-Path -LiteralPath $originPath) {
         if ((Get-Sha256 $canonical) -ne $origin.rawSha256 -or
             (Get-Sha256 (Join-Path $repo $origin.packagePath)) -ne $origin.rawSha256) { throw 'Generated SQL package drift; republish before scanning' }
         $packageOrigins[$origin.packagePath] = $origin
+    }
+    foreach ($retired in $originRegistry.retiredSources) {
+        if ($retired.path -notlike 'deploy/sql/*.sql' -or $retired.path.Contains('..') -or
+            $retired.rawSha256 -notmatch '^[a-f0-9]{64}$' -or
+            [string]::IsNullOrWhiteSpace([string]$retired.reason) -or
+            $retiredPackageSources.ContainsKey($retired.path) -or $packageOrigins.ContainsKey($retired.path)) {
+            throw 'Invalid, duplicate, or generated-copy-overlapping retired SQL source'
+        }
+        $retiredFullPath = Assert-SqlPackageRootPath $repo $retired.path 'deploy\sql'
+        if (-not (Test-Path -LiteralPath $retiredFullPath -PathType Leaf) -or
+            (Get-Sha256 $retiredFullPath) -cne $retired.rawSha256) {
+            throw "Retired SQL source is missing or its preserved hash changed: $($retired.path)"
+        }
+        $retiredPackageSources[$retired.path] = $retired
     }
 }
 foreach ($f in $files) {
@@ -401,8 +417,8 @@ foreach ($f in $files) {
         reviewEvidence    = $reviewEvidence
         authoredSourcePath = if ($packageOrigins.ContainsKey($relative)) { $packageOrigins[$relative].canonicalPath } else { $relative }
         isGeneratedPackageCopy = $packageOrigins.ContainsKey($relative)
-        excludedFromDeploy = $excluded.ContainsKey($f.Name) -or $packageOrigins.ContainsKey($relative)
-        excludedReason    = if ($packageOrigins.ContainsKey($relative)) { 'Generated compatibility copy; deploy its canonical authored source exactly once.' } elseif ($excluded.ContainsKey($f.Name)) { $excluded[$f.Name] } else { $null }
+        excludedFromDeploy = $excluded.ContainsKey($f.Name) -or $packageOrigins.ContainsKey($relative) -or $retiredPackageSources.ContainsKey($relative)
+        excludedReason    = if ($packageOrigins.ContainsKey($relative)) { 'Generated compatibility copy; deploy its canonical authored source exactly once.' } elseif ($retiredPackageSources.ContainsKey($relative)) { $retiredPackageSources[$relative].reason } elseif ($excluded.ContainsKey($f.Name)) { $excluded[$f.Name] } else { $null }
     }
 }
 

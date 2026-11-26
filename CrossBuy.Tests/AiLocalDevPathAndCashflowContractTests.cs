@@ -190,7 +190,35 @@ namespace CrossBuy.Tests
 
             var src = File.ReadAllText(Path.Combine(dir!.FullName, "CrossBuy", "BL", "AiInsightsService.cs"));
 
-            Assert.Contains("new { openingCash, asOf = today, horizonDays, inflows, outflows }", src, StringComparison.Ordinal);
+            // THE PAYLOAD WIDENED, and this test demanding a conscious update is exactly why it exists.
+            // Eight AGGREGATE fields were added so the projection can state its own gaps: how much of the
+            // schedule rests on terms nobody recorded - PaymentTermsDays is null for all 42 customers and all
+            // 10 vendors, so every open item dates to its invoice, lands in the past and piles into week one -
+            // plus money recorded but not tied to a dated item, and items dropped for want of a base amount.
+            //
+            // They are SUMS. No customer, no document number, no identity, which is why the classification
+            // stays FinancialAggregate; the forbidden-property test above guards that independently.
+            //
+            // THE RATCHET IS KEPT: the whole field list is compared, comments stripped and whitespace
+            // collapsed, so one more field added later fails here again instead of slipping past a per-name
+            // check that only looks for what it already knows.
+            var marker = src.IndexOf("/forecast/cashflow", StringComparison.Ordinal);
+            Assert.True(marker >= 0, "the cashflow call site moved");
+            var payloadStart = src.IndexOf("new", marker, StringComparison.Ordinal);
+            var payloadEnd = src.IndexOf("}, ct);", payloadStart, StringComparison.Ordinal);
+            Assert.True(payloadEnd > payloadStart, "the cashflow payload block could not be delimited");
+
+            var fields = string.Join(" ", src[payloadStart..payloadEnd]
+                .Split("\n")
+                .Select(l => { var i = l.IndexOf("//", StringComparison.Ordinal); return i >= 0 ? l[..i] : l; })
+                .Select(l => l.Trim())
+                .Where(l => l.Length > 0 && l != "new" && l != "{"));
+
+            Assert.Equal(
+                "openingCash, asOf = today, horizonDays, inflows, outflows, " +
+                "arOnRecordedTerms, arOnAssumedTerms, apOnRecordedTerms, apOnAssumedTerms, " +
+                "arUnapplied, apUnapplied, arSkippedNoBaseAmount, apSkippedNoBaseAmount",
+                fields);
             Assert.Contains("AiDataClassification.FinancialAggregate", src, StringComparison.Ordinal);
         }
 

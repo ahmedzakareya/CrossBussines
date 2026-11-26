@@ -65,6 +65,8 @@ namespace CrossBuy.BL.Communication
         private readonly ICommAttachmentService _attachments;
         private readonly ICommEventPublisher _events;
         private readonly ICommActorDirectory _actors;
+        // Used ONLY for GetDefinition - the frozen display-name table, never a record query.
+        private readonly Platform.IEntityRegistry _registry;
         private readonly ICommEntitySurface _surface;
         private readonly CommunicationPlatformOptions _options;
 
@@ -79,6 +81,7 @@ namespace CrossBuy.BL.Communication
             ICommAttachmentService attachments,
             ICommEventPublisher events,
             ICommActorDirectory actors,
+            Platform.IEntityRegistry registry,
             ICommEntitySurface surface,
             IOptions<CommunicationPlatformOptions> options)
         {
@@ -92,6 +95,7 @@ namespace CrossBuy.BL.Communication
             _attachments = attachments;
             _events = events;
             _actors = actors;
+            _registry = registry;
             _surface = surface;
             _options = options.Value;
         }
@@ -170,6 +174,8 @@ namespace CrossBuy.BL.Communication
             // ---- 3b. authorization.
             var threadAccess = await _access.RequireThreadAsync(
                 context, thread, CommPermissionLevel.Comment, cancellationToken);
+
+            _options.GovernanceFor(thread.EntityType);
 
             // ---- 4. visibility. Two ceilings: the caller's own tier and the thread's.
             if (!CommVisibility.IsValid(request.Visibility))
@@ -308,6 +314,8 @@ namespace CrossBuy.BL.Communication
                     : new CommAccessDeniedException(
                         "comment-edit", new CommEntityRef(thread.EntityType, thread.EntityId), rights.Reason);
 
+            _options.GovernanceFor(thread.EntityType).RequireMutable();
+
             var prepared = _body.Prepare(request.Body, request.BodyFormat ?? comment.BodyFormat);
 
             string newVisibility = request.Visibility ?? comment.Visibility;
@@ -433,6 +441,8 @@ namespace CrossBuy.BL.Communication
 
             await using var tx = await CommTransaction.BeginAsync(_db.Context, cancellationToken);
 
+            _options.GovernanceFor(thread.EntityType).RequireMutable();
+
             // SOFT DELETE. The row survives so revisions, mentions and the reply chain beneath it stay intact —
             // deleting a parent must not orphan its replies, and the audit trail already knows it existed.
             comment.DeletedAt = DateTime.UtcNow;
@@ -513,6 +523,8 @@ namespace CrossBuy.BL.Communication
                     "only a moderator may restore a deleted comment");
 
             await using var tx = await CommTransaction.BeginAsync(_db.Context, cancellationToken);
+
+            _options.GovernanceFor(thread.EntityType).RequireMutable();
 
             comment.DeletedAt = null;
             comment.DeletedBy = null;
@@ -809,12 +821,13 @@ namespace CrossBuy.BL.Communication
                 actorName = actor.Display(arabic: false);
             }
 
-            var entityLabel = await ResolveEntityLabelAsync(thread, cancellationToken);
+            var entityLabel = await ResolveEntityLabelAsync(context, thread, cancellationToken);
 
             var tokens = new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [CommTemplateTokens.ActorName] = actorName ?? "-",
-                [CommTemplateTokens.EntityLabel] = entityLabel,
+                [CommTemplateTokens.EntityLabel] = entityLabel.Ar,
+                [CommTemplateTokens.EntityLabelEn] = entityLabel.En,
                 [CommTemplateTokens.EntityKind] = thread.EntityType,
                 [CommTemplateTokens.ThreadSubject] = thread.SubjectEn ?? thread.SubjectAr ?? "",
             };
@@ -822,18 +835,93 @@ namespace CrossBuy.BL.Communication
             return tokens;
         }
 
-        // The record's own display label, through the registry when it can resolve one.
+        // The record's own display label, in both languages.
         //
-        // A BusinessContext is required by IEntityRegistry.ResolveAsync, and this platform deliberately does NOT
-        // call it here: resolution runs a per-type query against the business table, which is a read of module
-        // data from inside a notification path. The entity KEY ("SalesInvoice#42") is enough for a notification
-        // title and costs nothing. Recorded in CPS-001 §9 as a deliberate simplification, not an oversight.
-        private Task<string> ResolveEntityLabelAsync(CommThread thread, CancellationToken cancellationToken)
+        // STILL NOT IEntityRegistry.ResolveAsync: that needs a BusinessContext and runs a per-type query
+        // against the business table, which is a read of module data from inside a notification path. That
+        // decision stands and is recorded in CPS-001 §9.
+        //
+        // What changed is the FALLBACK. "JournalEntry#16172" is a key, not a sentence - the recipient was
+        // handed a type name in PascalCase, in English, inside an Arabic body, and asked to recognise their
+        // own document in it. GetDefinition is a lookup in the registry's frozen table: no query, no
+        // context, nothing read from a module - and it carries the bilingual display name the rest of the
+        // product already shows for that type.
+        private Task<(string Ar, string En)> ResolveEntityLabelAsync(
+            BusinessContext context, CommThread thread, CancellationToken cancellationToken)
+            => EntityLabelAsync(_registry, context, thread, cancellationToken);
+
+        // SHARED, so one kind of record reads the same whoever announced it. The reaction service used to
+        // call EntityWords directly, which skipped the thread-subject rule this method applies — the two
+        // paths claimed to agree in a comment and did not actually agree in code.
+        internal static async Task<(string Ar, string En)> EntityLabelAsync(
+            Platform.IEntityRegistry registry, BusinessContext context, CommThread thread,
+            CancellationToken cancellationToken)
         {
-            var label = !string.IsNullOrWhiteSpace(thread.SubjectEn) ? thread.SubjectEn!
-                : !string.IsNullOrWhiteSpace(thread.SubjectAr) ? thread.SubjectAr!
-                : thread.EntityType + "#" + thread.EntityId;
-            return Task.FromResult(label);
+            // The thread's own subject is the record's own words and beats any generated label.
+            var subject = !string.IsNullOrWhiteSpace(thread.SubjectAr) ? thread.SubjectAr
+                : !string.IsNullOrWhiteSpace(thread.SubjectEn) ? thread.SubjectEn : null;
+            if (!string.IsNullOrWhiteSpace(subject))
+                return (subject!, thread.SubjectEn ?? subject!);
+
+            // G12. THE RECORD'S OWN IDENTIFIER, not merely its TYPE.
+            //
+            // EntityWords alone produces "Sales invoice #1001" — the registry's display name plus a primary
+            // key. That is already better than the raw code, but #1001 is not what the document is called on
+            // the screen the notification links to: there it reads INV-2026-0042. A notification that names
+            // the record differently from the record is a notification the reader has to translate.
+            //
+            // ResolveAsync is the ONE place that turns (code, id) into the business identifier, and it
+            // applies the per-type company predicate while doing so. So this is also the tenancy-safe
+            // reading: another company's record, or a deleted one, comes back Found=false and is never
+            // named here.
+            //
+            // ONE READ PER NOTIFICATION EVENT, not per recipient — TokensAsync runs once for the whole
+            // batch, which is the cost CPS-001 §9 named and accepted for this gap.
+            //
+            // IT DEGRADES, IT NEVER THROWS. An entity whose definition carries no ResolveAsync arm returns
+            // Found=false rather than raising, and a failed read falls back to the type-and-key label that
+            // shipped before. A notification must not be lost because its title could not be improved.
+            if (registry != null && !string.IsNullOrWhiteSpace(thread.EntityType))
+            {
+                try
+                {
+                    var resolved = await registry.ResolveAsync(
+                        thread.EntityType, thread.EntityId, context, cancellationToken);
+
+                    if (resolved is { Found: true } && !string.IsNullOrWhiteSpace(resolved.Label))
+                    {
+                        var def = resolved.Definition;
+                        var ar = string.IsNullOrWhiteSpace(def?.DisplayNameAr)
+                            ? resolved.Label
+                            : def!.DisplayNameAr + " " + resolved.Label;
+                        var en = string.IsNullOrWhiteSpace(def?.DisplayNameEn)
+                            ? resolved.Label
+                            : def!.DisplayNameEn + " " + resolved.Label;
+                        return (ar, en);
+                    }
+                }
+                catch (OperationCanceledException) { throw; }
+                catch
+                {
+                    // Deliberately swallowed: the fallback below is a correct label, and a notification is
+                    // not worth failing over a cosmetic read.
+                }
+            }
+
+            return EntityWords(registry, thread.EntityType, thread.EntityId);
+        }
+
+        // Shared with the reaction service so one kind of record reads the same whoever announced it.
+        internal static (string Ar, string En) EntityWords(Platform.IEntityRegistry registry, string? code, int entityId)
+        {
+            var number = " #" + entityId;
+            if (registry != null && registry.TryGetDefinition(code, out var def) && def != null)
+                return ((def.DisplayNameAr ?? code ?? "") + number, (def.DisplayNameEn ?? code ?? "") + number);
+
+            // An unregistered code cannot be dressed up, and inventing a name for it would be worse
+            // than showing the key it really is.
+            var raw = (code ?? "") + "#" + entityId;
+            return (raw, raw);
         }
 
         // ---------------------------------------------------------------------------------------------

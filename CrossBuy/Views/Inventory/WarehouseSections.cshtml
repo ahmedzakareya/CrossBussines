@@ -9,6 +9,11 @@
     var bins = ViewBag.Bins as List<BinLocation> ?? new();
     var sections = bins.Where(b => b.LocationType == "Section").OrderBy(b => b.Code).ToList();
     var racksBySection = bins.Where(b => b.LocationType == "Rack").GroupBy(b => b.ParentId ?? 0).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Code).ToList());
+    @* WHAT IS BEHIND EACH RACK. Keyed by rack id; a rack with nothing assigned is absent, which is
+       itself a state the plan draws. Read CrossBuy.BL.RackLoad before using these numbers: they are
+       the balances of the items ASSIGNED to a rack, because the ledger records no rack on a
+       movement. The plan says so in its own caption rather than leaving the reader to assume. *@
+    var rackLoad = ViewBag.RackLoad as Dictionary<int, CrossBuy.BL.RackLoad> ?? new();
 }
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
     <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Warehouse sections / racks"]</h1>
@@ -115,10 +120,25 @@
                                being the building. Same value all round, so the border is even. *@
                             const int MARGIN = 26;                // floor margin inside the wall
                             const int ROOM_TOP = 14 + 26;         // wall/2 + the same margin, so the top matches the sides
-                            const int ROOM_GAP = 40;              // white aisle between rooms
-                            const int ROOM_PAD = 18;
-                            const int HEAD_H = 62;                // room header block
-                            const int RACK_H = 30, RACK_SLOT = 48, LABEL_W = 56;
+                            @* THE AISLE WAS MEASURED OFF A THREE-ROOM DRAWING. At five rooms its four
+                               copies eat 160px of the 792 available, which is what squeezed the room
+                               headers until the code wrapped onto a second line. The aisle is floor
+                               furniture; the names are the data, so the aisle gives way first. *@
+                            int ROOM_GAP = sections.Count >= 5 ? 22 : sections.Count == 4 ? 30 : 40;
+                            const int ROOM_PAD = 14;
+                            const int HEAD_H = 68;                // room header block
+                            @* The strip along the bottom of a room. A section used to be a coloured
+                               box whose only content was its racks; this is where it says, for itself,
+                               how much of what lives in it is actually on hand. *@
+                            const int FOOT_H = 26;
+                            @* LABEL_W down from 56 and ROOM_PAD from 18: the rack body is what now
+                               carries a reading, so it gets the pixels. At five sections the body was
+                               48px wide and its own end posts covered a fifth of it. *@
+                            @* RACK_H up from 30: a market gondola is three shelf boards with product
+                               standing on each, and 30px could not hold one without the boards
+                               touching. RACK_SLOT follows it so the units do not crowd each other.
+                               The canvas grows from the tallest room, so this costs nothing above. *@
+                            const int RACK_H = 56, RACK_SLOT = 72, LABEL_W = 48;
 
                             int shellL = OUT, shellR = W - OUT;
                             int innerL = shellL + WALL / 2 + MARGIN;
@@ -134,7 +154,7 @@
                             int roomsN = Math.Max(1, sections.Count);
                             int usableW = (innerR - innerL) - ROOM_GAP * Math.Max(0, sections.Count - 1);
 
-                            Func<int, int> roomH = n => HEAD_H + Math.Max(1, n) * RACK_SLOT + ROOM_PAD;
+                            Func<int, int> roomH = n => HEAD_H + Math.Max(1, n) * RACK_SLOT + 4 + FOOT_H;
                             int tallest = rackCounts.Count == 0 ? roomH(1) : rackCounts.Max(c => roomH(c));
                             @* The canvas ends just under the tallest room. The dock band that used to sit
                                below it was floor furniture, not data, so it has gone and nothing is left
@@ -176,28 +196,71 @@
                                     var nmR = isAr || string.IsNullOrWhiteSpace(sec.NameEn) ? sec.Name : sec.NameEn;
                                     var ic = roomIcon(sec);
 
+                                    // THE SECTION’S OWN NUMBERS, summed from the racks drawn inside it.
+                                    var secLoads = rks.Select(r => rackLoad.TryGetValue(r.ID, out var slv) ? slv : null)
+                                                      .Where(slv => slv != null).ToList();
+                                    int secAssigned = secLoads.Sum(slv => slv!.Items);
+                                    int secStocked = secLoads.Sum(slv => slv!.InStock);
+                                    double secPct = secAssigned == 0 ? 0 : (double)secStocked / secAssigned;
                                     <g>
+                                        @* ---- THE ROOM ----
+                                           A flat coloured box with racks loose inside it was a key, not a
+                                           room: nothing said where the header ended, nothing said the racks
+                                           stood on anything, and the section itself carried no reading at
+                                           all. It now has a banded header, a floor plate the units stand on,
+                                           and a strip along the bottom stating how much of what lives here
+                                           is on hand. ---- *@
                                         <rect x="@rx0" y="@ROOM_TOP" width="@rw" height="@rh" rx="12"
                                               fill="@pal.bg" stroke="@pal.line" stroke-width="2"></rect>
+
+                                        @* the header band, a shade deeper than the room, closed by a rule *@
+                                        <path d="M@(rx0 + 1) @(ROOM_TOP + 12) a 11 11 0 0 1 11 -11 h @(rw - 24) a 11 11 0 0 1 11 11 v @(HEAD_H - 14) h @(-(rw - 2)) z"
+                                              fill="#FFFFFF" fill-opacity=".45"></path>
+                                        <line x1="@(rx0 + 10)" y1="@(ROOM_TOP + HEAD_H - 2)" x2="@(rx0 + rw - 10)" y2="@(ROOM_TOP + HEAD_H - 2)"
+                                              stroke="@pal.line" stroke-width="1.5"></line>
+
+                                        @* the floor the units stand on *@
+                                        <rect x="@(rx0 + 6)" y="@(ROOM_TOP + HEAD_H + 2)" width="@(rw - 12)"
+                                              height="@(rh - HEAD_H - FOOT_H - 6)" rx="6"
+                                              fill="#FFFFFF" fill-opacity=".3"></rect>
 
                                         @* THE HEADER IS HTML, NOT SVG TEXT. An Arabic run in <text> is
                                            anchored at x and lays out leftwards, so the name ran back over
                                            the code and the icon. Inside a foreignObject the browser does
                                            the bidi, `dir` is inherited from the page, and the icon is the
                                            real Keenicons glyph instead of one I drew by hand. *@
-                                        <foreignObject x="@(rx0 + 10)" y="@(ROOM_TOP + 8)" width="@(rw - 20)" height="@(HEAD_H - 12)">
+                                        <foreignObject x="@(rx0 + 8)" y="@(ROOM_TOP + 8)" width="@(rw - 16)" height="@(HEAD_H - 10)">
                                             @* CENTRED, and laid out LTR: in the drawing the icon sits to the
                                                left of the code with the Arabic name under it, which is the one
                                                place on this page that does not follow the page direction. *@
+                                            @* THE HEADER SIZES ITSELF TO THE ROOM. Fixed 30px/20px/14px was
+                                               read off a drawing with three wide rooms; at five rooms the
+                                               code no longer fitted on one line, wrapped, and pushed the
+                                               Arabic name out of the foreignObject - which CLIPS, so the
+                                               name was sliced through the middle with nothing to show it
+                                               had happened. Below ~110px the icon is dropped entirely: a
+                                               decoration must not be the reason a name cannot be read. *@
+                                            @{
+                                                int iconPx = rw >= 180 ? 30 : rw >= 150 ? 26 : 22;
+                                                int codePx = rw >= 180 ? 20 : rw >= 150 ? 18 : 16;
+                                                string namePx = rw >= 180 ? "14" : rw >= 150 ? "12.5" : "11.5";
+                                                bool showIcon = rw >= 110;
+                                            }
                                             <div xmlns="http://www.w3.org/1999/xhtml" dir="ltr"
-                                                 style="display:flex;align-items:center;justify-content:flex-start;gap:12px;height:100%;padding-inline-start:8px;font-family:inherit">
-                                                <i class="ki-outline @(ic == "snow" ? "ki-abstract-25" : ic == "home" ? "ki-home-2" : "ki-parcel")"
-                                                   style="font-size:30px;color:@pal.ink;flex:0 0 auto;line-height:1"></i>
-                                                <div style="min-width:0;line-height:1.25">
-                                                    <div style="font-size:20px;font-weight:700;color:#2B3648">@sec.Code</div>
+                                                 title="@sec.Code@(string.IsNullOrWhiteSpace(nmR) ? "" : " — " + nmR)"
+                                                 style="display:flex;align-items:center;justify-content:flex-start;gap:8px;height:100%;padding-inline-start:4px;font-family:inherit;overflow:hidden">
+                                                @if (showIcon)
+                                                {
+                                                    <i class="ki-outline @(ic == "snow" ? "ki-abstract-25" : ic == "home" ? "ki-home-2" : "ki-parcel")"
+                                                       style="font-size:@(iconPx)px;color:@pal.ink;flex:0 0 auto;line-height:1"></i>
+                                                }
+                                                <div style="min-width:0;flex:1 1 auto;line-height:1.25">
+                                                    @* nowrap on the CODE as well. Without it this is the line that
+                                                       wrapped, and everything below it was pushed out of the box. *@
+                                                    <div style="font-size:@(codePx)px;font-weight:700;color:#2B3648;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@sec.Code</div>
                                                     @if (!string.IsNullOrWhiteSpace(nmR))
                                                     {
-                                                        <div dir="rtl" style="font-size:14px;font-weight:600;color:#5A6472;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@nmR</div>
+                                                        <div dir="rtl" style="font-size:@(namePx)px;font-weight:600;color:#5A6472;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@nmR</div>
                                                     }
                                                 </div>
                                             </div>
@@ -219,31 +282,186 @@
                                         {
                                             foreach (var rk in rks)
                                             {
+                                                @* ---- THE RACK NOW CARRIES ITS OWN STATE ----
+                                                   Five identical racks tell a manager nothing the list beside
+                                                   them did not already say. The SAME geometry can carry the one
+                                                   fact they come here for: is there anything in it? So the BAYS
+                                                   become the meter - one bay fills for each sixth of the assigned
+                                                   items that actually has stock - and a rack with nothing assigned
+                                                   to it draws as a dashed empty frame. No new furniture; the
+                                                   drawing simply starts meaning something.
+
+                                                   WHAT THE FILL IS NOT: physical occupancy. StockMovement.BinLocationId
+                                                   is null on every row in this database, so no ledger knows what
+                                                   stands in a rack. This is the stock of the items ASSIGNED here,
+                                                   and the caption under the plan says exactly that rather than
+                                                   leaving a reader to assume the stronger claim. ---- *@
+                                                var load = rackLoad.TryGetValue(rk.ID, out var lv) ? lv : null;
+                                                int assigned = load?.Items ?? 0;
+                                                int stocked = load?.InStock ?? 0;
+                                                bool unassigned = assigned == 0;
+                                                // ONE SLOT PER ASSIGNED ITEM, up to eight - two levels of four,
+                                                // which is what fits legibly at this width. Beyond eight the
+                                                // slots stop being countable, so they become a proportion and
+                                                // the exact figure is left to the label beside the rack.
+                                                int slots = Math.Min(Math.Max(assigned, 0), 8);
+                                                int slotsFull = assigned == 0 || stocked == 0
+                                                    ? 0
+                                                    : Math.Max(1, (int)Math.Round(slots * (double)stocked / assigned));
+                                                bool slotsAreExact = assigned <= 8;
                                                 <g>
-                                                    @* body, a lighter top edge for depth, five bays, heavy end posts *@
-                                                    @* A SHELVING UNIT as it is drawn in the reference: a translucent
-                                                       body, one shelf line splitting it into two levels, five bays,
-                                                       and heavy end posts that OVERHANG top and bottom - the posts
-                                                       are what make it read as a rack instead of a bar. *@
-                                                    <rect x="@ux" y="@uy" width="@uw" height="@RACK_H" rx="2"
-                                                          fill="@pal.shelf" fill-opacity=".75" stroke="@pal.shelfInk" stroke-width="2"></rect>
-                                                    <rect x="@ux" y="@uy" width="@uw" height="7" rx="2"
-                                                          fill="#FFFFFF" fill-opacity=".5"></rect>
-                                                    <line x1="@ux" y1="@(uy + RACK_H / 2)" x2="@(ux + uw)" y2="@(uy + RACK_H / 2)"
-                                                          stroke="@pal.shelfInk" stroke-width="1.8" stroke-opacity=".85"></line>
-                                                    @for (int b = 1; b < 6; b++)
-                                                    {
-                                                        int bx = ux + (int)Math.Round((double)uw * b / 6);
-                                                        <line x1="@bx" y1="@uy" x2="@bx" y2="@(uy + RACK_H)"
-                                                              stroke="@pal.shelfInk" stroke-width="1.4" stroke-opacity=".75"></line>
+                                                    @* ---- A MARKET GONDOLA, DRAWN FRONT-ON ----
+                                                       The previous unit was warehouse pallet racking - a frame with
+                                                       boxes in it - and this is a retail section, so it read wrong
+                                                       whatever its proportions. What a shop floor actually has is a
+                                                       gondola: a back panel, three shelf boards, a price rail along
+                                                       the front lip of each one, product standing on the boards, and
+                                                       a kick plate underneath.
+
+                                                       AND THE RETAIL READING IS THE RIGHT ONE. An item with no stock
+                                                       is drawn as a GAP in the facing - which is exactly how anyone
+                                                       who has walked a shop floor reads a shelf. The encoding and the
+                                                       picture finally say the same thing. ---- *@
+                                                    @{
+                                                        const int SHELVES = 3;
+                                                        int gTop = uy + 5;                      // under the header valance
+                                                        int gBottom = uy + RACK_H - 5;          // above the kick plate
+                                                        int bayH = (gBottom - gTop) / SHELVES;  // one shelf + its product
+                                                        int inX = ux + 4;
+                                                        int inW = uw - 8;
+                                                        int perShelf = Math.Max(1, (int)Math.Ceiling(slots / (double)SHELVES));
+                                                        @* A FACING IS TALLER THAN IT IS WIDE. Dividing the board edge to
+                                                           edge between two items gave each a 27x8 brick, which reads as
+                                                           a progress bar segment and not as something standing on a
+                                                           shelf. Each item gets an equal SHARE of the board and stands
+                                                           centred in it at a product width, so the board shows through
+                                                           between them the way a real facing plan does. *@
+                                                        int share = Math.Max(5, inW / perShelf);
+                                                        int faceW = Math.Min(13, Math.Max(4, share - 3));
                                                     }
-                                                    <rect x="@(ux - 5)" y="@(uy - 3)" width="10" height="@(RACK_H + 6)" rx="2" fill="@pal.shelfInk"></rect>
-                                                    <rect x="@(ux + uw - 5)" y="@(uy - 3)" width="10" height="@(RACK_H + 6)" rx="2" fill="@pal.shelfInk"></rect>
-                                                    @svgText(ux + uw + 20, uy + RACK_H / 2 + 6, "fill='#2B3648' font-size='15' font-weight='700' direction='ltr'", rk.Code)
+
+                                                    @* the back panel *@
+                                                    <rect x="@ux" y="@uy" width="@uw" height="@RACK_H" rx="2"
+                                                          fill="#FFFFFF" fill-opacity="@(unassigned ? ".3" : ".8")"
+                                                          stroke="@pal.shelfInk" stroke-width="1.4"
+                                                          stroke-dasharray="@(unassigned ? "5 4" : "")"
+                                                          stroke-opacity="@(unassigned ? ".45" : ".75")"></rect>
+
+                                                    @* the header valance - the signed board across the top of every
+                                                       gondola, and the one place the section colour touches the unit *@
+                                                    <rect x="@(ux + 1)" y="@(uy + 1)" width="@(uw - 2)" height="4" rx="1.5"
+                                                          fill="@pal.ink" fill-opacity="@(unassigned ? ".25" : ".65")"></rect>
+
+                                                    @* ---- shelves, bottom-most first ---- *@
+                                                    @for (int sh = 0; sh < SHELVES; sh++)
+                                                    {
+                                                        int boardY = gBottom - sh * bayH;      // sh = 0 is the lowest board
+
+                                                        @* THE PRODUCT STANDING ON THIS BOARD. Heights vary by a fixed
+                                                           pattern, not at random: a shelf of identical blocks reads as
+                                                           a bar chart, and a shelf that changes between two renders
+                                                           cannot be compared with yesterday. *@
+                                                        @for (int c = 0; c < perShelf; c++)
+                                                        {
+                                                            int idx = sh * perShelf + c;
+                                                            if (idx < slots)
+                                                            {
+                                                                bool stockedFace = idx < slotsFull;
+                                                                int trim = new[] { 0, 3, 1, 4, 2 }[idx % 5];
+                                                                int fh = Math.Max(4, bayH - 4 - trim);
+                                                                int fx = inX + c * share + (share - faceW) / 2;
+                                                                int fy = boardY - fh;
+                                                                if (stockedFace)
+                                                                {
+                                                                    <rect x="@fx" y="@fy" width="@faceW" height="@fh" rx="1.5"
+                                                                          fill="@pal.shelfInk" fill-opacity=".9"></rect>
+                                                                    @* a label band across the facing, so it reads as
+                                                                       packaging rather than as a filled rectangle *@
+                                                                    <rect x="@fx" y="@(fy + fh / 3)" width="@faceW" height="@Math.Max(2, fh / 4)"
+                                                                          fill="#FFFFFF" fill-opacity=".45"></rect>
+                                                                }
+                                                                else
+                                                                {
+                                                                    @* AN EMPTY FACING. Drawn as the outline of what is
+                                                                       missing, not as nothing, because a gap a reader
+                                                                       can measure is the whole point. *@
+                                                                    <rect x="@fx" y="@fy" width="@faceW" height="@fh" rx="1.5"
+                                                                          fill="#FFFFFF" fill-opacity=".75"
+                                                                          stroke="@pal.shelfInk" stroke-width="1"
+                                                                          stroke-opacity=".45" stroke-dasharray="2.5 2"></rect>
+                                                                }
+                                                            }
+                                                        }
+
+                                                        @* the board itself, drawn over the product so the product sits
+                                                           ON it, with the price rail along its front lip *@
+                                                        <rect x="@(ux + 1)" y="@boardY" width="@(uw - 2)" height="2.5" rx="1"
+                                                              fill="@pal.shelfInk" fill-opacity="@(unassigned ? ".3" : ".85")"></rect>
+                                                        <rect x="@(ux + 1)" y="@(boardY + 3)" width="@(uw - 2)" height="2" rx="1"
+                                                              fill="#FFFFFF" fill-opacity="@(unassigned ? ".3" : ".75")"></rect>
+                                                    }
+
+                                                    @* uprights down both sides, and the kick plate the unit stands on *@
+                                                    <rect x="@(ux - 2)" y="@(uy - 2)" width="4" height="@(RACK_H + 4)" rx="1.5"
+                                                          fill="@pal.shelfInk" fill-opacity="@(unassigned ? ".4" : ".95")"></rect>
+                                                    <rect x="@(ux + uw - 2)" y="@(uy - 2)" width="4" height="@(RACK_H + 4)" rx="1.5"
+                                                          fill="@pal.shelfInk" fill-opacity="@(unassigned ? ".4" : ".95")"></rect>
+                                                    <rect x="@(ux - 2)" y="@(uy + RACK_H - 3)" width="@(uw + 4)" height="5" rx="1.5"
+                                                          fill="@pal.shelfInk" fill-opacity="@(unassigned ? ".35" : ".8")"></rect>
+
+                                                    @* TWO LINES, because the code alone was the whole message before.
+                                                       The ratio is written LTR as stocked/assigned: digits and a
+                                                       slash read the same in both languages, which a label strip
+                                                       this narrow cannot afford a word for. *@
+                                                    @svgText(ux + uw + 16, uy + RACK_H / 2 - 1, "fill='#2B3648' font-size='13' font-weight='700' direction='ltr'", rk.Code)
+                                                    @if (unassigned)
+                                                    {
+                                                        @svgText(ux + uw + 16, uy + RACK_H / 2 + 12, "fill='#94A3B8' font-size='10' font-weight='600'", "—")
+                                                    }
+                                                    else
+                                                    {
+                                                        @svgText(ux + uw + 16, uy + RACK_H / 2 + 12,
+                                                            "fill='" + (stocked == 0 ? "#B91C1C" : "#475569") + "' font-size='10.5' font-weight='700' direction='ltr'",
+                                                            stocked + "/" + assigned)
+                                                        @* MEASURED, not estimated: this rack has had a movement
+                                                           posted onto it and the number is its own. A dot rather
+                                                           than a word, because it repeats on every row and the
+                                                           caption already carries the sentence. *@
+                                                        @if (load?.Measured == true)
+                                                        {
+                                                            <circle cx="@(ux + uw + 10)" cy="@(uy + RACK_H / 2 + 8)" r="2.2"
+                                                                    fill="@pal.ink" fill-opacity=".85"></circle>
+                                                        }
+                                                    }
                                                 </g>
                                                 uy += RACK_SLOT;
                                             }
                                         }
+
+                                        @* ---- THE SECTION’S FOOTER ----
+                                           foreignObject, not <text>: the word beside the figure is Arabic on
+                                           an Arabic UI and an SVG <text> run anchors at x and lays out
+                                           leftwards, which is what sent the header name back over its own
+                                           icon before this file stopped using it for mixed content. ---- *@
+                                        <foreignObject x="@(rx0 + 10)" y="@(ROOM_TOP + rh - FOOT_H)" width="@(rw - 20)" height="@(FOOT_H - 5)">
+                                            <div xmlns="http://www.w3.org/1999/xhtml"
+                                                 style="display:flex;align-items:center;gap:6px;height:100%;font-family:inherit">
+                                                @* the track is the section’s assigned items, the fill the
+                                                   stocked ones - the same statement the slots make inside each
+                                                   rack, totalled for the room *@
+                                                <div style="flex:1 1 auto;min-width:0;height:6px;border-radius:3px;background:#FFFFFF;opacity:.95;overflow:hidden">
+                                                    <div style="width:@(((int)Math.Round(secPct * 100)))%;height:100%;background:@pal.ink;opacity:.85"></div>
+                                                </div>
+                                                @if (secAssigned > 0)
+                                                {
+                                                    <span dir="ltr" style="flex:0 0 auto;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums;color:@(secStocked == 0 ? "#B91C1C" : "#475569")">@secStocked/@secAssigned</span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="flex:0 0 auto;font-size:10px;font-weight:600;color:#94A3B8">@Lz("no items", "لا أصناف")</span>
+                                                }
+                                            </div>
+                                        </foreignObject>
                                     </g>
 
                                     @* the white lane between this room and the next, carried down as a
@@ -268,8 +486,62 @@
                             </svg>
                             </div>
 
+                            @* ---- THE KEY, AND THE LIMIT OF THE CLAIM ----
+                               A plan that encodes something must say what it encoded, in the same
+                               breath, or the reader supplies their own meaning - and the meaning they
+                               would supply here ("this rack is 40% full") is the one thing the data
+                               cannot support. Three sample racks rather than a sentence, because the
+                               thing being explained is a picture. ---- *@
+                            int legendAssigned = rackLoad.Values.Sum(v => v.Items);
+                            int legendStocked = rackLoad.Values.Sum(v => v.InStock);
+                            // how many racks speak for themselves rather than being estimated
+                            int measuredRacks = rackLoad.Values.Count(v => v.Measured);
+                            <div class="d-flex flex-wrap align-items-center gap-4 mt-3 pt-3 border-top border-gray-200">
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <svg width="34" height="16" aria-hidden="true">
+                                        <rect x="1" y="1" width="32" height="14" rx="2" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"></rect>
+                                        <rect x="3" y="3" width="28" height="10" rx="1" fill="#475569" fill-opacity=".85"></rect>
+                                    </svg>
+                                    <span class="fs-8 fw-semibold text-gray-700">@Lz("All assigned items in stock", "كل أصنافه متوفرة")</span>
+                                </span>
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <svg width="34" height="16" aria-hidden="true">
+                                        <rect x="1" y="1" width="32" height="14" rx="2" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"></rect>
+                                        <rect x="3" y="3" width="9" height="10" rx="1" fill="#475569" fill-opacity=".85"></rect>
+                                    </svg>
+                                    <span class="fs-8 fw-semibold text-gray-700">@Lz("Some in stock", "جزء منها متوفر")</span>
+                                </span>
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <svg width="34" height="16" aria-hidden="true">
+                                        <rect x="1" y="1" width="32" height="14" rx="2" fill="#FFFFFF" stroke="#475569" stroke-width="1.6"></rect>
+                                    </svg>
+                                    <span class="fs-8 fw-semibold" style="color:#B91C1C">@Lz("Nothing in stock", "لا يوجد مخزون")</span>
+                                </span>
+                                <span class="d-inline-flex align-items-center gap-2">
+                                    <svg width="34" height="16" aria-hidden="true">
+                                        <rect x="1" y="1" width="32" height="14" rx="2" fill="#FFFFFF" fill-opacity=".35"
+                                              stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="5 4"></rect>
+                                    </svg>
+                                    <span class="fs-8 fw-semibold text-gray-600">@Lz("No items assigned", "لا أصناف مخصّصة")</span>
+                                </span>
+                                <span class="fs-8 fw-semibold text-gray-700 ms-auto" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                                    @legendStocked / @legendAssigned
+                                </span>
+                            </div>
+
                             <div class="text-gray-500 fw-semibold fs-8 mt-2">
-                                @Lz("Rooms and racks are drawn from your data.", "الغرف والرفوف مرسومة من بياناتك.")
+                                @* THE SENTENCE FOLLOWS THE DATA. It used to say flatly that movements are
+                                   not recorded per rack, which was true of every row in the database and is
+                                   no longer true of all of them. A caption that stays put while the data
+                                   underneath it changes becomes the next wrong claim, so it counts. *@
+                                @if (measuredRacks > 0)
+                                {
+                                    @Lz("The figure under each rack is: items in stock / items assigned to it. A rack marked with a dot is counted from movements actually recorded on it; the rest are estimated from the balances of the items assigned there, until a movement passes through.", "الرقم أسفل كل رف هو: المتوفر / المخصّص له. الرف المعلّم بنقطة رقمه مأخوذ من حركات مُسجّلة عليه فعلاً؛ والباقي تقدير من أرصدة الأصناف المخصّصة له لحد ما تمر عليه حركة.")
+                                }
+                                else
+                                {
+                                    @Lz("The figure under each rack is: items in stock / items assigned to it. Still an estimate from item balances: no movement has yet been recorded onto a rack in this warehouse.", "الرقم أسفل كل رف هو: المتوفر / المخصّص له. ما زال تقديرًا من أرصدة الأصناف: لم تُسجّل بعد أي حركة على رف في هذا المخزن.")
+                                }
                             </div>
                         }
                     </div>
@@ -371,23 +643,50 @@
                                     <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Racks", "رفوف")</div>
                                 </div>
 
-                                @* NOT COMPUTED, AND SAID SO RATHER THAN FILLED IN. "Locations" needs the
-                                   third level (BinLocation.LocationType = "Bin") and the database holds
-                                   NONE - 15 racks, 8 sections, zero bins. *@
-                                <div class="flex-grow-1 px-2 border-start border-gray-300"
-                                     title='@Lz("Locations need the Bin level, which has no rows yet.", "المواقع تحتاج مستوى Bin ولا يوجد منه أي صف بعد.")'>
-                                    <div class="fw-bold fs-4 text-gray-400">&mdash;</div>
-                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Locations", "المواقع")</div>
+                                @* TWO EM-DASHES REPLACED BY TWO FACTS. "Locations" needed the Bin level
+                                   (zero rows) and "Occupancy" needed a capacity per rack (no column),
+                                   so both were honestly blank - but blank in the two places a reader
+                                   looks first. These two ARE computable and complete: every
+                                   ItemWarehouseSetting row in this warehouse carries a rack, and
+                                   StockBalance carries the quantity. Capacity stays unclaimed, in the
+                                   note under the figures, where it belongs. *@
+                                @{
+                                    var cLoads = (racksBySection.TryGetValue(sec.ID, out var cRkList) ? cRkList : new List<BinLocation>())
+                                        .Select(r => rackLoad.TryGetValue(r.ID, out var lv2) ? lv2 : null)
+                                        .Where(lv2 => lv2 != null)!
+                                        .ToList();
+                                    int cItems = cLoads.Sum(lv2 => lv2!.Items);
+                                    int cStocked = cLoads.Sum(lv2 => lv2!.InStock);
+                                    decimal cValue = cLoads.Sum(lv2 => lv2!.Value);
+                                }
+                                <div class="flex-grow-1 px-2 border-start border-gray-300">
+                                    <div class="fw-bold fs-4 text-gray-900" dir="ltr"
+                                         style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@cItems</div>
+                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Items assigned", "أصناف مخصّصة")</div>
                                 </div>
 
-                                @* Occupancy needs a capacity per rack: BinLocations has no capacity
-                                   column at all, and BinStocks holds one row in the whole database. A
-                                   percentage without a denominator would be a number somebody acts on. *@
-                                <div class="flex-grow-1 px-2 border-start border-gray-300"
-                                     title='@Lz("Occupancy needs a capacity per rack, which is not stored yet.", "نسبة الإشغال تحتاج سعة لكل رف وهي غير مخزّنة بعد.")'>
-                                    <div class="fw-bold fs-4 text-gray-400">&mdash;</div>
-                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Occupancy", "نسبة الإشغال")</div>
+                                @* The one that is usually the reason somebody opened this screen: of the
+                                   items that live here, how many are actually on hand. Zero is drawn in
+                                   the refusal red the rest of the page uses, not left as a neutral 0. *@
+                                <div class="flex-grow-1 px-2 border-start border-gray-300">
+                                    <div class="fw-bold fs-4 @(cItems > 0 && cStocked == 0 ? "text-danger" : "text-gray-900")" dir="ltr"
+                                         style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@cStocked</div>
+                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("In stock", "متوفر منها")</div>
                                 </div>
+                            </div>
+
+                            @if (cValue > 0)
+                            {
+                                <div class="d-flex align-items-center justify-content-between mt-4 px-2">
+                                    <span class="fs-8 text-gray-500 fw-semibold">@Lz("Stock value", "قيمة المخزون")</span>
+                                    <span class="fw-bold fs-6 text-gray-900" dir="ltr"
+                                          style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@cValue.ToString("N2")</span>
+                                </div>
+                            }
+
+                            <div class="fs-9 text-gray-500 fw-semibold mt-3 px-2">
+                                @Lz("Figures cover the items assigned to this section's racks. Occupancy needs a capacity per rack, which is not stored yet.",
+                                    "الأرقام للأصناف المخصّصة لرفوف هذا السيكشن. نسبة الإشغال تحتاج سعة لكل رف وهي غير مخزّنة بعد.")
                             </div>
 
                             <a href="@Url.Action("ItemLocations", "Inventory", new { warehouseId = fWh })"

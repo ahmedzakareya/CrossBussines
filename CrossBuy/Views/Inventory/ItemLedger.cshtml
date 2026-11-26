@@ -43,17 +43,66 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="row g-5 g-xl-8 mb-5">
             <div class="col-12">
-                <div class="card card-flush"><div class="card-body d-flex flex-wrap justify-content-between align-items-center py-6">
-                    <div>
-                        <div class="fs-3 fw-bold text-gray-900">@(item == null ? "" : (item.ItemCode + " — " + (isAr ? item.Name : (string.IsNullOrEmpty(item.NameEn) ? item.Name : item.NameEn))))</div>
-                        <div class="text-muted fs-7">@Localizer["Barcode"]: @item?.Barcode</div>
+                @* ---- THE HEADER CARRIES THE IDENTITY, SO IT CARRIES THE BRAND ----
+                   It was a white card with three dark figures spaced apart on it, which made the
+                   most important numbers on the page look like the least important - nothing
+                   separated them from each other and nothing separated the strip from the six
+                   analytic cards beneath it. A filled band fixes both at once: the page now has
+                   one obvious anchor, and the figures sit INSIDE tiles instead of floating.
+
+                   COLOURS COME FROM THE TOKEN LAYER, never literals, and every pair here was
+                   measured rather than eyeballed:
+                     white on --cb-brand-fill ................ 7.05   (AAA)
+                     white 80% label on the band ............. 5.19
+                     white on the 12% tile (#526BA2) ......... 5.27
+                     white on the danger tile ................ 5.31
+                   The lowest is 5.19, against a 4.5 floor. ---- *@
+                @{
+                    // THE BALANCE IS THE ONE FIGURE WITH A STATE. Nothing on hand is not a neutral
+                    // number on a stock ledger - it is the answer somebody came to the page for -
+                    // so that tile changes tone rather than just reading 0 in the same white.
+                    bool outOfStock = balQty <= 0m;
+                }
+                <div class="card card-flush" style="background:var(--cb-brand-fill)">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-5 py-6">
+                        <div class="min-w-0">
+                            <div class="fs-3 fw-bold text-white" style="unicode-bidi:plaintext" dir="auto">@(item == null ? "" : (item.ItemCode + " — " + (isAr ? item.Name : (string.IsNullOrEmpty(item.NameEn) ? item.Name : item.NameEn))))</div>
+                            <div class="fs-7 fw-semibold" style="color:rgba(255,255,255,.8)">@Localizer["Barcode"]: <span dir="ltr" style="unicode-bidi:isolate">@item?.Barcode</span></div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-3">
+                            @* ONE TILE PER FIGURE. `gap-10` between bare numbers was the whole
+                               separation before, and at this size three numbers in a row read as
+                               one long number. A ground and a border give each one an edge. *@
+                            @* OUT OF STOCK TURNS THE TILE WHITE AND THE FIGURE RED, rather than filling
+                               the tile with red. A saturated block on the navy band was shouting; a white
+                               tile with a red number states the same fact at the volume of the page it
+                               sits on. It also matches the Value tile beside it, so the surface stays
+                               consistent and the COLOUR is the only thing carrying meaning.
+                               #C0392B on white measures 5.44, against a 4.5 floor. *@
+                            <div class="text-center rounded-3 px-6 py-3"
+                                 style="min-width:120px;background:@(outOfStock ? "#FFFFFF" : "rgba(255,255,255,.12)");border:1px solid rgba(255,255,255,.18)">
+                                <div class="fs-2hx fw-bold lh-1 @(outOfStock ? "" : "text-white")" dir="ltr" style="@(outOfStock ? "color:var(--cb-danger-flat);" : "")unicode-bidi:isolate;font-variant-numeric:tabular-nums">@balQty.ToString("0.##")</div>
+                                <div class="fs-8 fw-semibold mt-2" style="color:@(outOfStock ? "var(--cb-danger-flat)" : "rgba(255,255,255,.8)")">@Localizer["On hand"]</div>
+                            </div>
+                            <div class="text-center rounded-3 px-6 py-3"
+                                 style="min-width:120px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)">
+                                <div class="fs-2hx fw-bold text-white lh-1" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@balAvg.ToString("0.00")</div>
+                                <div class="fs-8 fw-semibold mt-2" style="color:rgba(255,255,255,.8)">@Localizer["Avg cost"]</div>
+                            </div>
+                            @* VALUE IS THE ONE THE EYE SHOULD LAND ON LAST AND REMEMBER, so it is the
+                               one tile that is solid white: on a blue band, white reads as louder
+                               than any accent colour would, and it needs no new token. *@
+                            <div class="text-center rounded-3 px-6 py-3"
+                                 style="min-width:140px;background:#FFFFFF">
+                                @* A NEGATIVE STOCK VALUE IS AN ANOMALY, not a smaller number, and it was
+                                   reading in the same calm navy as a healthy one. Same rule as the
+                                   balance tile beside it. #DC2626 on white measures 4.83. *@
+                                <div class="fs-2hx fw-bold lh-1" dir="ltr" style="color:@(balVal < 0m ? "var(--cb-danger-flat)" : "var(--cb-brand-ink)");unicode-bidi:isolate;font-variant-numeric:tabular-nums">@balVal.ToString("0.00")</div>
+                                <div class="fs-8 fw-semibold mt-2" style="color:var(--cb-brand-fill)">@Localizer["Value"]</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex gap-10">
-                        <div class="text-center"><div class="fs-2hx fw-bold text-gray-900">@balQty.ToString("0.##")</div><div class="text-muted fs-7">@Localizer["On hand"]</div></div>
-                        <div class="text-center"><div class="fs-2hx fw-bold text-gray-900">@balAvg.ToString("0.00")</div><div class="text-muted fs-7">@Localizer["Avg cost"]</div></div>
-                        <div class="text-center"><div class="fs-2hx fw-bold text-primary">@balVal.ToString("0.00")</div><div class="text-muted fs-7">@Localizer["Value"]</div></div>
-                    </div>
-                </div></div>
+                </div>
             </div>
         </div>
 

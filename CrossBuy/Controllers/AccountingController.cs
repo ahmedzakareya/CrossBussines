@@ -165,6 +165,11 @@ namespace CrossBuy.Controllers
 			vm.Inventory = inventory.Result;
 			vm.InventoryPanel = inventory.Panel;
 
+			// THE COMPANY BY NAME, for the provenance strip. All four insight screens printed the
+			// integer primary key as "Company 1", which is an internal handle: it tells a reader
+			// nothing and looks identical on every installation. ViewBag.CompanyName is the
+			// convention the Workspace layout already uses, and the partial falls back to the id.
+			ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 			return View(vm);
 		}
 
@@ -398,7 +403,23 @@ namespace CrossBuy.Controllers
 			var inv = await _context.PurchaseInvoices.AsNoTracking().Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
 			if (inv == null) return RedirectToAction(nameof(PurchaseInvoices));
 			ViewBag.Vendor = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.ID == inv.VendorId);
+			// The item names for the lines, in ONE query. A line's description is often blank, and the
+			// screen has to say what was bought; both halves are carried so the view picks by culture.
+			ViewBag.LineItemNames = await LineItemNamesAsync(inv.Lines);
 			return View(inv);
+		}
+
+
+		// Item names for a document's lines, keyed by item id, both language halves kept separate.
+		// One query for the whole document - a per-row lookup in the view would be N queries on a
+		// screen that renders every line.
+		private async Task<Dictionary<int, string[]>> LineItemNamesAsync(IEnumerable<CrossBuy.Models.Context.Accounting.PurchaseInvoiceLine>? lines)
+		{
+			var ids = (lines ?? Enumerable.Empty<CrossBuy.Models.Context.Accounting.PurchaseInvoiceLine>())
+				.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
+			if (ids.Count == 0) return new Dictionary<int, string[]>();
+			return await _context.Items.AsNoTracking().Where(i => ids.Contains(i.ID))
+				.ToDictionaryAsync(i => i.ID, i => new[] { i.Name ?? "", i.NameEn ?? "" });
 		}
 
 		// كشف حساب عميل
@@ -2220,9 +2241,17 @@ namespace CrossBuy.Controllers
 			if (string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Name is required"].Value });
 			var scope = await _company.ResolveAsync();
 			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
-			var v = await _ap.CreateVendorAsync(scope.CompanyId, name.Trim(),
-				string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
-				string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim());
+			// The service refuses when the payables control account is missing, and the reason is the whole
+			// point - a bare 500 here would put "something went wrong" in front of a problem that names its
+			// own fix. This endpoint already answers {ok,error}, so the refusal travels on its own contract.
+			CrossBuy.Models.Context.Accounting.Vendor v;
+			try
+			{
+				v = await _ap.CreateVendorAsync(scope.CompanyId, name.Trim(),
+					string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
+					string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim());
+			}
+			catch (InvalidOperationException ex) { return Json(new { ok = false, error = ex.Message }); }
 			var isAr = (HttpContext.Items["Culture"]?.ToString() == "ar");
 			return Json(new { ok = true, id = v.ID, name = isAr ? v.Name : (v.NameEn ?? v.Name) });
 		}
@@ -2238,9 +2267,15 @@ namespace CrossBuy.Controllers
 			if (string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Name is required"].Value });
 			var scope = await _company.ResolveAsync();
 			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
-			var c = await _ar.CreateCustomerAsync(scope.CompanyId, name.Trim(),
-				string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
-				string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim(), null);
+			// Same as VendorQuickAdd: the refusal names the missing account, so it must reach the screen.
+			CrossBuy.Models.Context.Accounting.Customer c;
+			try
+			{
+				c = await _ar.CreateCustomerAsync(scope.CompanyId, name.Trim(),
+					string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
+					string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim(), null);
+			}
+			catch (InvalidOperationException ex) { return Json(new { ok = false, error = ex.Message }); }
 			var isAr = (HttpContext.Items["Culture"]?.ToString() == "ar");
 			return Json(new { ok = true, id = c.ID, name = isAr ? c.Name : (c.NameEn ?? c.Name) });
 		}
@@ -2281,10 +2316,256 @@ namespace CrossBuy.Controllers
 			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
 			// line items are now searched on-demand via Inventory/ItemPickData (no full-catalog preload)
 			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			// THE SECTIONS AND RACKS INSIDE THOSE WAREHOUSES, so a purchase line can say where the
+			// goods were put away. One flat list for every warehouse the user may pick; the editor
+			// filters it client-side when the warehouse on a line changes, which beats a round trip
+			// per keystroke on a grid where every row has its own warehouse.
+			//
+			// Scoped through Warehouses, which carries the company filter - BinLocation has no
+			// CompanyID of its own, exactly as WarehouseService.GetBinLocationsAsync documents.
+			ViewBag.InvBins = await _context.BinLocations.AsNoTracking()
+				.Where(b => b.IsActive && b.LocationType != "Bin"
+					&& _context.Warehouses.Any(w => w.ID == b.WarehouseId && w.CompanyID == co && w.IsActive))
+				.OrderBy(b => b.WarehouseId).ThenBy(b => b.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
 			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
 			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 			return View();
+		}
+
+		// =====================================================================================
+		// COPYING LINES OFF AN EARLIER INVOICE FROM THE SAME VENDOR.
+		//
+		// A purchase invoice to a regular supplier is mostly last month's invoice again. Retyping
+		// it is where the wrong item code and the stale price come from, and the information that
+		// would prevent both is already in the database - one vendor away.
+		//
+		// TWO READS, NOT ONE. The list is cheap and is asked for every time the picker opens; the
+		// lines are only fetched for the one invoice the reader actually chooses. Returning every
+		// invoice WITH its lines would be most of a vendor's purchase history on one click.
+		//
+		// NOTHING HERE WRITES. Copying is a convenience on an unsaved form: the lines land in the
+		// browser, the reader edits them, and the invoice is created by the ordinary post. So
+		// these are GETs, and the new invoice goes through CreatePurchaseInvoice exactly as a
+		// hand-typed one does - including its authorization.
+		// =====================================================================================
+
+		/// Earlier invoices from ONE vendor, newest first. The vendor is part of the question, not
+		/// a filter applied afterwards: a picker opened from a vendor must not be able to page
+		/// through somebody else's purchases.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> PurchaseInvoicesForVendor(int vendorId, string? q = null, int take = 25)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok || vendorId <= 0) return Json(System.Array.Empty<object>());
+			if (take < 1) take = 25; else if (take > 100) take = 100;
+
+			var query = _context.PurchaseInvoices.AsNoTracking()
+				.Where(i => i.CompanyID == scope.CompanyId && i.VendorId == vendorId);
+
+			if (!string.IsNullOrWhiteSpace(q))
+			{
+				var s = q.Trim();
+				query = query.Where(i => (i.InvoiceNo != null && i.InvoiceNo.Contains(s))
+									  || (i.Notes != null && i.Notes.Contains(s)));
+			}
+
+			var rows = await query.OrderByDescending(i => i.InvoiceDate).ThenByDescending(i => i.ID)
+				.Take(take)
+				.Select(i => new
+				{
+					id = i.ID,
+					no = i.InvoiceNo,
+					date = i.InvoiceDate,
+					total = i.GrandTotal,
+					status = i.Status,
+					currencyId = i.CurrencyId,
+					// Counted in the database rather than by loading the lines: the picker shows
+					// "6 lines" and would otherwise pay for six hundred rows to say so.
+					lines = i.Lines.Count(),
+				})
+				.ToListAsync();
+
+			var codes = (await CurrencyListAsync()).ToDictionary(c => c.ID, c => c.Code);
+			return Json(rows.Select(r => new
+			{
+				r.id, r.no, r.total, r.status, r.lines,
+				date = r.date.ToString("yyyy-MM-dd"),
+				currency = (r.currencyId != null && codes.ContainsKey(r.currencyId.Value)) ? codes[r.currencyId.Value] : "",
+			}));
+		}
+
+		/// One invoice's lines, in the exact shape the new-invoice screen's own fillRow() consumes,
+		/// so a copied line and an edited line travel the same path and cannot drift apart.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> PurchaseInvoiceLinesForCopy(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok || id <= 0) return Json(new { ok = false, lines = System.Array.Empty<object>() });
+
+			var inv = await _context.PurchaseInvoices.AsNoTracking().Include(i => i.Lines)
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
+			if (inv == null) return Json(new { ok = false, lines = System.Array.Empty<object>() });
+
+			var itemIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+			// THE ITEM, NOT THE DESCRIPTION, IS WHAT IDENTIFIES A LINE.
+			//
+			// The picker first showed the line description, on the assumption that it names the
+			// thing bought. It often does not: the description is free text an operator may leave
+			// blank, or fill with a note, or - seen on real data - with "0". Picking lines off that
+			// means picking blind, and the item is the only field that cannot be anything else.
+			//
+			// THE BARCODE COMES WITH IT. It is how this warehouse's staff say which item they mean;
+			// two items can share a name and never a barcode. It travels anyway for the copied row,
+			// so showing it costs nothing and settles the ambiguity the name can leave.
+			//
+			// The description stays, in its own column, because it carries the note that is NOT the
+			// item - a size, a project, a delivery reference - and that is worth seeing before
+			// copying a line.
+			var items = await _context.Items.AsNoTracking()
+				.Where(i => i.CompanyID == scope.CompanyId && itemIds.Contains(i.ID))
+				.Select(i => new { i.ID, i.Barcode, i.Name, i.NameEn })
+				.ToListAsync();
+			var barcodes = items.ToDictionary(i => i.ID, i => i.Barcode ?? "");
+			var itemNames = items.ToDictionary(i => i.ID, i => ar ? i.Name : DisplayName.Or(i.NameEn, i.Name));
+
+			string ItemNameOf(Models.Context.Accounting.PurchaseInvoiceLine l) =>
+				l.ItemId != null && itemNames.TryGetValue(l.ItemId.Value, out var n) ? (n ?? "") : "";
+
+			/// The description as this reader should see it. Returned as stored-but-localized; it is
+			/// NOT dressed up with the item name any more - that has its own column now, and folding
+			/// the two together made a line with no description look as though it had one.
+			string Label(Models.Context.Accounting.PurchaseInvoiceLine l) =>
+				ar ? (l.ItemDescription ?? "") : (DisplayName.Or(l.ItemDescriptionEn, l.ItemDescription) ?? "");
+
+			return Json(new
+			{
+				ok = true,
+				no = inv.InvoiceNo,
+				date = inv.InvoiceDate.ToString("yyyy-MM-dd"),
+				lines = inv.Lines.OrderBy(l => l.LineNo).Select(l => new
+				{
+					itemId = l.ItemId,
+					name = l.ItemDescription,
+					wh = l.WarehouseId,
+					// THE STORED DESCRIPTION, not the localized one. This value is copied into a
+					// field that will be SAVED, so handing an English reader the English twin would
+					// quietly replace the Arabic primary on the new invoice. `label` below is the
+					// localized one, and it is what the picker shows.
+					d = l.ItemDescription,
+					q = l.Qty,
+					p = l.UnitPrice,
+					disc = l.DiscountAmount,
+					tax = l.TaxRate,
+					acc = l.ExpenseAccountId,
+					cc = l.CostCenterId,
+					barcode = (l.ItemId != null && barcodes.ContainsKey(l.ItemId.Value)) ? barcodes[l.ItemId.Value] : "",
+					itemName = ItemNameOf(l),
+					label = Label(l),
+					lineTotal = l.LineTotal,
+				}).ToList()
+			});
+		}
+
+		// ---- the same two reads for the SALES side ------------------------------------------
+		//
+		// A repeat sale to a regular customer is mostly last month's invoice again, exactly as a
+		// repeat purchase is. The shape is deliberately identical - same payload field names, same
+		// two-step picker - because the two screens' fillRow() already agree on them, and one
+		// dialog serving both is one dialog to keep right.
+		//
+		// WHAT IS NOT THE SAME: a sales line carries a REVENUE account and a unit of measure where
+		// a purchase line carries an expense account and a cost centre. `acc` means the account the
+		// screen's own save handler reads, so it means a different column here - which is why these
+		// are two endpoints rather than one with a flag.
+
+		/// Earlier invoices to ONE customer, newest first.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> SalesInvoicesForCustomer(int customerId, string? q = null, int take = 25)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok || customerId <= 0) return Json(System.Array.Empty<object>());
+			if (take < 1) take = 25; else if (take > 100) take = 100;
+
+			var query = _context.SalesInvoices.AsNoTracking()
+				.Where(i => i.CompanyID == scope.CompanyId && i.CustomerId == customerId);
+
+			if (!string.IsNullOrWhiteSpace(q))
+			{
+				var s = q.Trim();
+				query = query.Where(i => (i.InvoiceNo != null && i.InvoiceNo.Contains(s))
+									  || (i.Notes != null && i.Notes.Contains(s)));
+			}
+
+			var rows = await query.OrderByDescending(i => i.InvoiceDate).ThenByDescending(i => i.ID)
+				.Take(take)
+				.Select(i => new
+				{
+					id = i.ID,
+					no = i.InvoiceNo,
+					date = i.InvoiceDate,
+					total = i.GrandTotal,
+					status = i.Status,
+					currencyId = i.CurrencyId,
+					lines = i.Lines.Count(),
+				})
+				.ToListAsync();
+
+			var codes = (await CurrencyListAsync()).ToDictionary(c => c.ID, c => c.Code);
+			return Json(rows.Select(r => new
+			{
+				r.id, r.no, r.total, r.status, r.lines,
+				date = r.date.ToString("yyyy-MM-dd"),
+				currency = (r.currencyId != null && codes.ContainsKey(r.currencyId.Value)) ? codes[r.currencyId.Value] : "",
+			}));
+		}
+
+		/// One sales invoice's lines, in the shape the new-invoice screen's own fillRow() consumes.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> SalesInvoiceLinesForCopy(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok || id <= 0) return Json(new { ok = false, lines = System.Array.Empty<object>() });
+
+			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines)
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
+			if (inv == null) return Json(new { ok = false, lines = System.Array.Empty<object>() });
+
+			var itemIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+			var items = await _context.Items.AsNoTracking()
+				.Where(i => i.CompanyID == scope.CompanyId && itemIds.Contains(i.ID))
+				.Select(i => new { i.ID, i.Barcode, i.Name, i.NameEn })
+				.ToListAsync();
+			var barcodes = items.ToDictionary(i => i.ID, i => i.Barcode ?? "");
+			var itemNames = items.ToDictionary(i => i.ID, i => ar ? i.Name : DisplayName.Or(i.NameEn, i.Name));
+
+			return Json(new
+			{
+				ok = true,
+				no = inv.InvoiceNo,
+				date = inv.InvoiceDate.ToString("yyyy-MM-dd"),
+				lines = inv.Lines.OrderBy(l => l.LineNo).Select(l => new
+				{
+					itemId = l.ItemId,
+					name = l.ItemDescription,
+					wh = l.WarehouseId,
+					d = l.ItemDescription,          // stored, because this is what gets SAVED
+					q = l.Qty,
+					p = l.UnitPrice,
+					disc = l.DiscountAmount,
+					tax = l.TaxRate,
+					acc = l.RevenueAccountId,       // the sales screen's `.acc` is the revenue account
+					uom = l.UoMId,
+					barcode = (l.ItemId != null && barcodes.ContainsKey(l.ItemId.Value)) ? barcodes[l.ItemId.Value] : "",
+					itemName = l.ItemId != null && itemNames.TryGetValue(l.ItemId.Value, out var n) ? (n ?? "") : "",
+					label = ar ? (l.ItemDescription ?? "") : (DisplayName.Or(l.ItemDescriptionEn, l.ItemDescription) ?? ""),
+					lineTotal = l.LineTotal,
+				}).ToList()
+			});
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
@@ -2364,6 +2645,17 @@ namespace CrossBuy.Controllers
 			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
 			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
 			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			// THE SECTIONS AND RACKS INSIDE THOSE WAREHOUSES, so a purchase line can say where the
+			// goods were put away. One flat list for every warehouse the user may pick; the editor
+			// filters it client-side when the warehouse on a line changes, which beats a round trip
+			// per keystroke on a grid where every row has its own warehouse.
+			//
+			// Scoped through Warehouses, which carries the company filter - BinLocation has no
+			// CompanyID of its own, exactly as WarehouseService.GetBinLocationsAsync documents.
+			ViewBag.InvBins = await _context.BinLocations.AsNoTracking()
+				.Where(b => b.IsActive && b.LocationType != "Bin"
+					&& _context.Warehouses.Any(w => w.ID == b.WarehouseId && w.CompanyID == co && w.IsActive))
+				.OrderBy(b => b.WarehouseId).ThenBy(b => b.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
 			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
 			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
@@ -3084,7 +3376,20 @@ namespace CrossBuy.Controllers
 				// The money documents, for the same reason: a receipt is discussed exactly as often as the
 				// invoice it settled, and it had nowhere to be discussed because it had no family at all.
 				["Receipt"] = CrossBuy.BL.Platform.EntityRegistry.Receipt,
+
+				// THE SUPPORT TICKET, through these same endpoints and for the reason stated above: a
+				// conversation is one question asked of a different table, and a second copy of this
+				// gate in CrmController would be a permission rule written twice. The AUTHORITY still
+				// differs - a ticket is governed by the CRM module, not Accounting - and the gate picks
+				// it per family below rather than assuming its own module everywhere.
+				["CrmTicket"] = CrossBuy.BL.Platform.EntityRegistry.CrmTicket,
 				["Payment"] = CrossBuy.BL.Platform.EntityRegistry.Payment,
+
+				// THE JOURNAL ENTRY, which every document above eventually becomes. It is the record an
+				// accountant argues about — why this account, why this date, why it was reversed — and it
+				// is the one place where the answer belongs beside the posting rather than in a mail
+				// thread nobody can find from the entry.
+				["JournalEntry"] = CrossBuy.BL.Platform.EntityRegistry.JournalEntry,
 			};
 
 		/// Resolved outcome of steps 1-3. `Ok == false` carries no detail on purpose.
@@ -3120,13 +3425,35 @@ namespace CrossBuy.Controllers
 			// state. IAccountingAccessService only publishes the session-based CanAsync(action), which is
 			// why TasksController takes the concrete type for exactly this call — same precedent here.
 			// If the service cannot be resolved the gate REFUSES; it does not fall through to allow.
-			var accounting = HttpContext.RequestServices.GetService(typeof(AccountingAccessService))
-				as AccountingAccessService;
-			if (accounting == null) return new ConversationGate();
+			// THE AUTHORITY IS THE ONE THAT OWNS THE RECORD, not the controller these actions live on.
+			// Accounting documents are governed by AccountingAccessService; a CRM ticket is governed by
+			// the CRM module, and asking the accounting authority about it would grant or refuse a
+			// conversation on a rule that has nothing to do with the record.
+			//
+			// Either way an unresolvable authority REFUSES; neither branch falls through to allow.
+			if (code == CrossBuy.BL.Platform.EntityRegistry.CrmTicket)
+			{
+				var crm = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.ICrmAccessService))
+					as CrossBuy.BL.ICrmAccessService;
+				if (crm == null) return new ConversationGate();
+				if (!await crm.CanAsync("read")) return new ConversationGate();
+				// Module access alone is not enough: apply the same owner/department visibility
+				// rule used by CRM's ticket detail screen before exposing the conversation.
+				var crmRecords = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.ICrmService))
+					as CrossBuy.BL.ICrmService;
+				if (crmRecords == null || await crmRecords.GetTicketAsync(ctx.CompanyId, id) == null)
+					return new ConversationGate();
+			}
+			else
+			{
+				var accounting = HttpContext.RequestServices.GetService(typeof(AccountingAccessService))
+					as AccountingAccessService;
+				if (accounting == null) return new ConversationGate();
 
-			if (!await accounting.CanAsync(ctx, "read",
-					CrossBuy.Models.Platform.PermissionTarget.ForEntity(code, id), ct))
-				return new ConversationGate();
+				if (!await accounting.CanAsync(ctx, "read",
+						CrossBuy.Models.Platform.PermissionTarget.ForEntity(code, id), ct))
+					return new ConversationGate();
+			}
 
 			// 3 — the ROW, in the caller's own company. Company is in the WHERE clause, never checked
 			// after loading: a row from another company must never be materialised here at all.
@@ -3150,6 +3477,15 @@ namespace CrossBuy.Controllers
 				var c when c == CrossBuy.BL.Platform.EntityRegistry.Payment =>
 					await _context.Payments.AsNoTracking()
 						.AnyAsync(p => p.ID == id && p.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.JournalEntry =>
+					await _context.JournalEntries.AsNoTracking()
+						.AnyAsync(j => j.ID == id && j.CompanyID == ctx.CompanyId, ct),
+
+				// The ticket, in the caller’s own company - company in the WHERE clause like every
+				// arm above. GetTicketAsync above also enforces the CRM record-visibility rule.
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.CrmTicket =>
+					await _context.CrmTickets.AsNoTracking()
+						.AnyAsync(t => t.ID == id && t.CompanyID == ctx.CompanyId, ct),
 
 				// A family in the map with no row check here would be a document nobody verified
 				// exists — refuse rather than fall through to the last table in the chain.
@@ -3201,6 +3537,34 @@ namespace CrossBuy.Controllers
 				error = L["Conversations are unavailable in this environment"].Value,
 			});
 
+		// GET /Accounting/InvoiceConversationMentions?entity=SalesInvoice&id=123&q=ahm
+		//
+		// WHO CAN BE OFFERED IN THE @-PICKER on this document's conversation.
+		//
+		// IT GOES THROUGH THE SAME GATE AS THE CONVERSATION ITSELF, and that is the point: a caller
+		// who may not read this thread may not page through the staff directory from it either. The
+		// Tasks equivalent checks only the session, which is right for a screen whose own gate ran
+		// before it rendered; here the picker is reachable by url, so it repeats the document's gate
+		// rather than assuming the page did.
+		//
+		// A REFUSAL IS AN EMPTY LIST, not a 404. The picker is a typeahead: it has no state to put a
+		// refusal in, and a "not found" would be reported as a broken feature rather than as "there
+		// is nobody to offer". The gate above already decides whether the panel renders at all.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> InvoiceConversationMentions(
+			string? entity, int id, string? q, CancellationToken ct = default)
+		{
+			var gate = await ConversationGateAsync(entity, id, ct);
+			if (!gate.Ok || gate.Context == null) return Json(System.Array.Empty<object>());
+
+			var rows = await CrossBuy.BL.Communication.CommMentionCandidates.SearchAsync(
+				_context, gate.Context.CompanyId, gate.Context.EmployeeId, q,
+				arabic: System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar",
+				cancellationToken: ct);
+
+			return Json(rows.Select(r => new { id = r.Id, name = r.Name, avatar = r.Avatar }));
+		}
+
 		// GET /Accounting/InvoiceConversation?entity=SalesInvoice&id=123
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> InvoiceConversation(string? entity, int id, CancellationToken ct = default)
@@ -3223,10 +3587,25 @@ namespace CrossBuy.Controllers
 					error = L["Conversations are unavailable in this environment"].Value,
 				});
 
-			var thread = await comm.Value.Threads.GetOrCreateAsync(gate.Context!,
-				new CrossBuy.Models.Communication.CommThreadRequest { Entity = reference }, ct);
+			// READ, NEVER CREATE. This is a GET: opening an invoice must not write a CommThreads row, nor
+			// stamp a CreatedBy and CreatedAt for somebody who only looked at the record. The thread is
+			// created by the FIRST COMMENT — CommCommentService.AddAsync resolves it itself when no
+			// ThreadId is supplied, which is exactly what InvoiceConversationAdd passes.
+			//
+			// SELECTED BY IDENTITY, NOT BY RECENCY. ListForEntityAsync returns every thread on this
+			// record ordered by LastActivityAt, across all kinds. UX_CommThreads_Anchor keys the
+			// canonical thread on (CompanyID, EntityType, EntityId, Kind, ThreadKey) and
+			// CommThreadRequest defaults to Discussion with an empty key — so taking the first row back
+			// would hand this panel a Notes or Review thread whenever one of those was busier, which is
+			// a different conversation wearing the same name.
+			var threads = await comm.Value.Threads.ListForEntityAsync(gate.Context!, reference, ct);
+			var thread = threads.FirstOrDefault(t =>
+				string.Equals(t.Kind, CrossBuy.Models.Communication.CommThreadKind.Discussion, StringComparison.Ordinal)
+				&& t.ThreadKey.Length == 0);
 
-			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
+			var page = thread == null
+				? CrossBuy.Models.Communication.CommPage<CrossBuy.Models.Communication.CommCommentDto>.Empty()
+				: await comm.Value.Comments.ListAsync(gate.Context!, thread.ThreadId, null, ct);
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 
 			// THE AUTHORS' PHOTOGRAPHS, resolved once for the page rather than per comment. Scoped to
@@ -3236,10 +3615,20 @@ namespace CrossBuy.Controllers
 			var avatars = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
 				_context, gate.Context!, page.Items.Select(c => c.Author.EmployeeId), ct);
 
+			var meId = gate.Context!.EmployeeId ?? 0;
+			var pageIds = page.Items.Select(c => c.CommentId).ToList();
+			var mentionedMe = meId <= 0 || pageIds.Count == 0
+				? new HashSet<long>()
+				: (await new CrossBuy.BL.Communication.CommDb(_context).MentionRecipients.AsNoTracking()
+					.Where(r => r.EmployeeId == meId && pageIds.Contains(r.CommentId))
+					.Select(r => r.CommentId).Distinct().ToListAsync(ct)).ToHashSet();
+
 			return Json(new
 			{
 				ok = true,
-				threadId = thread.Id,
+				// NULL until the first comment creates the thread. The field is kept so the response
+				// shape is unchanged; no client reads it today.
+				threadId = thread?.ThreadId,
 				entity = new { code = gate.EntityCode, id },
 				canReact = comm.Value.Reactions is not null,
 				me = await CrossBuy.BL.Communication.CommPanel.MeAsync(_context, gate.Context!, isAr, ct),
@@ -3247,7 +3636,10 @@ namespace CrossBuy.Controllers
 				// ONE PROJECTION for every module that renders this panel — parent, attachments,
 				// reactions and per-comment capabilities included. See CommPanel for what is
 				// deliberately left out (raw storage keys, mention target ids).
-				comments = CrossBuy.BL.Communication.CommPanel.Project(page.Items, isAr, avatars),
+				// WHICH OF THESE NAMED ME. One read for the whole page, from the recipient table the
+				// platform already materialises - so a mention that arrived through a team or a
+				// department is counted the same as one that used my name.
+				comments = CrossBuy.BL.Communication.CommPanel.Project(page.Items, isAr, avatars, mentionedMe),
 			});
 		}
 
@@ -3255,7 +3647,7 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 		[RequestSizeLimit(21_000_000)]   // CommPanel.MaxUploadBytes plus the form envelope
 		public async Task<IActionResult> InvoiceConversationAdd(string? entity, int id, string? body,
-			long? parentCommentId, IFormFile? file, CancellationToken ct = default)
+			long? parentCommentId, IFormFile? file, int[]? mentionIds, CancellationToken ct = default)
 		{
 			// The SAME gate as the read. A caller who may not read the invoice may not comment on it,
 			// and the refusal is identical so the write path is not an existence oracle either.
@@ -3310,9 +3702,43 @@ namespace CrossBuy.Controllers
 					Body = body ?? "",
 					ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
 					Attachments = attachment is null ? null : new[] { attachment },
+
+					// THE PICKER'S OWN IDS. The composer shows the reader a NAME and sends the id beside
+					// it, because the platform grammar is unreadable in the middle of a sentence someone
+					// is writing. The service unions these with whatever it parses out of the body and
+					// dedupes, so an author who types the raw token still works.
+					//
+					// NOT TRUSTED AS A GRANT. An id arriving here only says "mention this employee"; who
+					// actually ends up notified is still decided by CommNotificationService, which drops
+					// the author and anyone who may not read this document.
+					Mentions = (mentionIds ?? Array.Empty<int>())
+						.Where(m => m > 0).Distinct()
+						.Select(m => new CrossBuy.Models.Communication.CommMentionRequest
+						{
+							TargetKind = CrossBuy.Models.Communication.CommMentionTargetKind.Employee,
+							TargetId = m,
+						}).ToList(),
 				}, ct);
 
-			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+			// A REPLY ON A TICKET IS A RESPONSE.
+			//
+			// FirstRespondedAt only moved when somebody changed the ticket STATUS, so a department
+			// that answered the customer here and left the status alone still counted as never
+			// having responded - and the breach sweep escalated a ticket that had been answered.
+			//
+			// Resolved per request rather than injected: this constructor is long and shared, and the
+			// CRM service is needed on exactly one branch of one action.
+			DateTime? firstResponded = null;
+			if (string.Equals(gate.EntityCode, CrossBuy.BL.Platform.EntityRegistry.CrmTicket, StringComparison.Ordinal))
+			{
+				var crm = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.ICrmService)) as CrossBuy.BL.ICrmService;
+				if (crm != null && gate.Context != null)
+					firstResponded = await crm.MarkRespondedAsync(gate.Context.CompanyId, id, User?.Identity?.Name);
+			}
+
+			// firstResponded travels back so the ticket screen can repaint its SLA card in place. It is
+			// null on every other entity and on every later reply, and the screen ignores it then.
+			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId, firstResponded });
 		}
 
 		/// One sentence per machine code, so the browser never has to compose a refusal.

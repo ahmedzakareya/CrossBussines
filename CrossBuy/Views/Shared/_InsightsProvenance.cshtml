@@ -1,0 +1,111 @@
+@using CrossBuy.Models
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@model InsightsProvenance
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+
+    @* A new resource key needs a rebuilt satellite assembly, and IViewLocalizer returns the KEY
+       when it cannot resolve one. Resource first, Arabic literal only as the fallback. *@
+    Func<string, string, string> Lz = (key, ar) =>
+    {
+        var v = Localizer[key].Value;
+        return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? ar : v;
+    };
+
+    @* THE COMPANY BY NAME. All four screens printed "Company 1" - the integer primary key - which is
+       an internal handle a reader cannot interpret and which reads identically on every
+       installation. The id survives only as the fallback, so the line still says something true. *@
+    var scope = string.IsNullOrWhiteSpace(Model.CompanyName)
+        ? Lz("Company", "الشركة") + " " + Model.CompanyId
+        : Model.CompanyName!;
+
+    @* RELATIVE FIRST, ABSOLUTE ON HOVER. "2026-10-14 12:02 UTC" asks the reader to subtract two
+       timestamps in their head to answer the only question they have, which is "is this fresh?".
+       The exact stamp stays in the title, labelled UTC, because a zoneless stamp presented as local
+       time is a lie. *@
+    string ago = "", exact = "";
+    if (Model.GeneratedAtUtc.HasValue)
+    {
+        var at = Model.GeneratedAtUtc.Value;
+        exact = at.ToString("yyyy-MM-dd HH:mm") + " UTC";
+        var mins = (int)Math.Max(0, (DateTime.UtcNow - at).TotalMinutes);
+        ago = mins < 1 ? Lz("just now", "الآن")
+            : mins < 60 ? string.Format(Lz("{0} min ago", "منذ {0} دقيقة"), mins)
+            : mins < 1440 ? string.Format(Lz("{0} h ago", "منذ {0} ساعة"), mins / 60)
+            : string.Format(Lz("{0} d ago", "منذ {0} يوم"), mins / 1440);
+    }
+}
+
+@* ================================================================================================
+   PROVENANCE — WHERE THIS LIST CAME FROM.
+
+   THE FIRST VERSION WAS OFF-BRAND AND THE OWNER WAS RIGHT TO SAY SO. It was a white card with
+   UPPERCASE micro-labels, hairline vertical rules between the facts, and a GREEN badge for the
+   privacy line. Three faults, in order of seriousness:
+
+     · Green is this product's SUCCESS colour. "No data leaves this installation" is not a success
+       state, and crossbuy-brand.css says so in as many words beside --cb-violet-strong: "red, amber
+       and green belong to danger/warning/success". A reassurance dressed as a status reads as a
+       result the screen just produced.
+     · It sat directly under the explanation notice as a SECOND, differently-styled block. One idea
+       - what this screen is and where its numbers came from - split across two visual languages.
+     · Uppercase labels divided by hairlines is the dialect of a telemetry bar, not of this product,
+       whose explanatory surfaces are all the dashed light-primary notice.
+
+   So it is now in the notice language, in the blue family, with no status colour anywhere - and it
+   renders INSIDE the explanation notice on the screens that have one (Inline), rather than beside
+   it. Everything else on the page keeps its own weight.
+   ================================================================================================ *@
+
+@{
+    var facts = new List<(string Label, string Value, bool Numeric, string? Title)>
+    {
+        (Lz("Data scope", "نطاق البيانات"), scope, false, null),
+        (Lz("Method", "الطريقة"), Model.Method, false, null),
+    };
+    foreach (var c in Model.Facts) { facts.Add((c.Label, c.Value, c.Numeric, null)); }
+    facts.Add((Lz("Generated", "وقت الإنشاء"),
+               Model.GeneratedAtUtc.HasValue ? ago : Lz("Not generated", "لم يُنشأ بعد"),
+               false,
+               Model.GeneratedAtUtc.HasValue ? exact : null));
+}
+
+@* `Inline` draws only the facts, to be placed inside an existing notice; otherwise the same facts
+   carry the notice's own skin so the block still belongs to the family on its own. *@
+<div class="@(Model.Inline
+        ? "mt-3 pt-3 border-top border-primary border-opacity-25"
+        : "notice bg-light-primary rounded border-primary border border-dashed p-4 mb-5")">
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        @for (var i = 0; i < facts.Count; i++)
+        {
+            var f = facts[i];
+            @* A MIDDOT, NOT A RULE. A hairline between every pair turned six facts into a grid of
+               cells; a separator at text weight lets them read as one sentence of metadata. *@
+            @if (i > 0)
+            {
+                <span class="text-gray-400 fs-7 mx-1">·</span>
+            }
+            <span class="d-inline-flex align-items-baseline gap-2" @(f.Title != null ? "title=" + f.Title : "")>
+                <span class="text-gray-600 fs-8 fw-semibold">@f.Label</span>
+                @if (f.Numeric)
+                {
+                    @* A figure beside Arabic text needs isolating or its digits swap sides with the
+                       label; tabular figures keep repeated counts aligned. *@
+                    <span class="text-gray-900 fw-bold fs-7" dir="ltr"
+                          style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@f.Value</span>
+                }
+                else
+                {
+                    <span class="text-gray-900 fw-bold fs-7" style="unicode-bidi:plaintext" dir="auto">@f.Value</span>
+                }
+            </span>
+        }
+
+        @* THE ASSURANCE, IN THE BRAND'S OWN BLUE. It was a green badge, which made a standing
+           property of the deployment look like something that had just succeeded. *@
+        <span class="ms-auto d-inline-flex align-items-center gap-1 text-primary fs-8 fw-semibold">
+            <i class="ki-outline ki-shield-tick fs-6"></i>@Lz("No data leaves this installation", "لا تغادر أي بيانات هذا التثبيت")
+        </span>
+    </div>
+</div>

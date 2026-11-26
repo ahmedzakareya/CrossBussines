@@ -10,6 +10,17 @@
     ViewData["Title"] = Localizer["Kitchen Display"].Value;
 }
 
+<style>
+    /* KDS brand status (prototype): teal = ready/fresh, slate = preparing/ageing — no green, no amber */
+    #kdsGrid .card{border:0;border-radius:16px;box-shadow:0 1px 2px rgba(31,45,77,.05),0 10px 28px -14px rgba(31,45,77,.18)}
+    #kdsGrid .badge-light-success,#kdsGrid .btn-light-success{color:#0E7490!important;background:#D4F3F8!important}
+    #kdsGrid .btn-light-success:hover{color:#fff!important;background:#0891B2!important}
+    #kdsGrid .badge-light-warning,#kdsGrid .btn-light-warning{color:#475569!important;background:#EEF1F6!important}
+    #kdsGrid .text-success{color:#0891B2!important}#kdsGrid .text-warning{color:#64748B!important}
+    #kdsGrid .border-success{border-color:#0891B2!important}#kdsGrid .border-warning{border-color:#64748B!important}
+    #kdsGrid .bg-light-success{background:#D4F3F8!important}#kdsGrid .bg-light-warning{background:#EEF1F6!important}
+    #kdsGrid .bg-success,#kdsGrid .progress-bar{background-color:#0891B2!important}
+</style>
 <div class="d-flex flex-column flex-column-fluid">
     <!--begin::Toolbar-->
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">

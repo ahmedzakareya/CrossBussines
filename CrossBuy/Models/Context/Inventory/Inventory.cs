@@ -72,7 +72,11 @@ namespace CrossBuy.Models.Context.Inventory
 		public bool TrackExpiry { get; set; }
 		public bool TrackSerial { get; set; }
 		public bool IsWeighted { get; set; }                  // HM-3: sold by weight (scale barcode → weight qty in KG)
-		public int? ScaleCode { get; set; }                   // HM-3: numeric code embedded in the scale barcode; unique per company (filtered index)
+		public int? ScaleCode { get; set; }
+		// HM-AGE: the minimum age the buyer must prove, in YEARS. null = no restriction, which is
+		// almost every row. A number rather than a flag because the bar differs by jurisdiction and
+		// by licence, and a flag would force that number into code where nobody can change it.
+		public int? MinAgeYears { get; set; }                   // HM-3: numeric code embedded in the scale barcode; unique per company (filtered index)
 		public int? DefaultTaxCodeId { get; set; }
 		public string? ItemEgsCode { get; set; }
 		public decimal? SalesPrice { get; set; }

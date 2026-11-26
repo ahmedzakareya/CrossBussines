@@ -1,6 +1,7 @@
 @using CrossBuy.BL.TasksCalendar
 @using CrossBuy.Models.Context.Tasks
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject CrossBuy.BL.Platform.IEntityRegistry Entities
 @{
     @* GLOBAL UI RULE: the Inventory module is the only visual authority. Inventory shell, Inventory
        card, Metronic nav-tabs and badges. No view-local stylesheet, no invented colour.
@@ -34,6 +35,9 @@
 }
 
 <!--begin::Toolbar-->
+@section Styles {
+    <link rel="stylesheet" href="~/css/tasks.css" asp-append-version="true" />
+}
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
     <div class="page-title d-flex flex-column justify-content-center gap-1">
         @* The reference page leads its heading with the record's own icon. *@
@@ -293,6 +297,118 @@
     <div class="row g-5">
         <div class="col-lg-4">
 
+            @*  CONVERSATION — NAVIGATION, NOT A SECOND DISCUSSION.
+
+                This screen already OWNS a conversation: the Comments tab below reads the Communication
+                Platform for this task. Rendering _EntityConversation here as well would put two live
+                threads on one page, each with its own composer, and a person would have to guess which
+                one their colleague will read.
+
+                So this section routes rather than repeats. Two destinations, and the second only when
+                the task actually has a business anchor:
+
+                  · the task's own discussion — the tab on this page;
+                  · the linked record's discussion — on that record's screen, where its own
+                    _EntityConversation panel already lives.
+
+                THE ROUTE AND THE LABEL COME FROM THE REGISTRY, never from a switch written here. A task
+                may be linked to eleven entity types and each knows its own detail URL; a local map would
+                be a twelfth opinion that goes stale the first time a module moves a screen.  *@
+            @{
+                var anchorType = t?.EntityType;
+                var anchorId = t?.EntityId;
+                CrossBuy.Models.Platform.EntityDefinition? anchorDef = null;
+                string? anchorUrl = null;
+                if (!string.IsNullOrWhiteSpace(anchorType) && anchorId is > 0
+                    && Entities.TryGetDefinition(anchorType, out var ad) && ad is not null)
+                {
+                    anchorDef = ad;
+                    // A definition with no RouteTemplate has no screen to send anyone to, so the row
+                    // renders as a label without a link rather than as a dead href.
+                    anchorUrl = string.IsNullOrWhiteSpace(ad.RouteTemplate)
+                        ? null
+                        : ad.RouteTemplate.Replace("{id}", anchorId.Value.ToString());
+                }
+            }
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4">
+                    <h3 class="card-title fw-bold text-gray-900">@T("المناقشة", "Conversation")</h3>
+                </div>
+                <div class="card-body pt-0">
+                    <a href="#cbTabComments" data-bs-toggle="tab"
+                       class="d-flex flex-stack py-3 border-bottom border-gray-300 text-hover-primary"
+                       onclick="cbLoadComments()">
+                        <span class="d-flex align-items-center">
+                            <i class="ki-outline ki-messages fs-4 me-2 ms-0"></i>
+                            <span class="fw-semibold text-gray-700">@T("مناقشة هذه المهمة", "This task's discussion")</span>
+                        </span>
+                        <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-5 text-muted"></i>
+                    </a>
+
+                    @if (anchorDef is not null)
+                    {
+                        <div class="d-flex flex-stack py-3">
+                            <span class="d-flex align-items-center">
+                                <i class="ki-outline @anchorDef.Icon fs-4 me-2 ms-0 text-@anchorDef.Color"></i>
+                                <span class="d-flex flex-column">
+                                    <span class="fw-semibold text-gray-700">
+                                        @T("مناقشة السجل المرتبط", "The linked record's discussion")
+                                    </span>
+                                    <span class="fs-8 text-muted">
+                                        @(isAr ? anchorDef.DisplayNameAr : anchorDef.DisplayNameEn) #@anchorId
+                                    </span>
+                                </span>
+                            </span>
+                            @if (anchorUrl is not null)
+                            {
+                                <a href="@anchorUrl" class="btn btn-sm btn-light">@T("فتح", "Open")</a>
+                            }
+                            else
+                            {
+                                @* No route registered for this type: say so rather than offer a dead link. *@
+                                <span class="badge badge-light text-muted">@T("لا توجد شاشة", "No screen")</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted fs-7 py-3">
+                            @T("هذه المهمة غير مرتبطة بسجل.", "This task is not linked to a record.")
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @*  LINKED MESSAGES — THE TASK SIDE OF THE RELATIONSHIP.
+
+                The conversation panel on a record has been able to attach a task to a message for some
+                time; from the task there was no way back. MessagesForTask answered that question on the
+                server and nothing called it, so a task could be attached to four messages and its own
+                screen showed none of them.
+
+                THIS IS NOT A SECOND CONVERSATION. The card above already routes to the two discussions
+                that exist; this one lists the individual MESSAGES somebody attached to this task and
+                sends the reader to each at its anchor. No composer, no reply, no live thread — adding
+                one here would reintroduce exactly the "two threads on one page" problem the card above
+                was written to avoid.
+
+                EVERY ROW IS ONE LINK. A task linked twice in one conversation is two rows with two
+                LinkIds, because each was a separate act and each unlinks on its own.  *@
+            <div class="card card-flush mb-5" id="cbTaskMsgCard">
+                <div class="card-header py-4">
+                    <h3 class="card-title fw-bold text-gray-900">@T("الرسائل المرتبطة", "Linked messages")</h3>
+                    <div class="card-toolbar">
+                        <span class="badge badge-light-primary fs-8 d-none" id="cbTaskMsgCount"></span>
+                    </div>
+                </div>
+                <div class="card-body pt-0" id="cbTaskMsgBody">
+                    <div class="d-flex align-items-center text-muted fs-8 py-3" id="cbTaskMsgLoading">
+                        <span class="spinner-border spinner-border-sm me-3" role="presentation"></span>
+                        @T("جارٍ التحميل…", "Loading…")
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-flush mb-5">
                 <div class="card-header py-4"><h3 class="card-title fw-bold text-gray-900">@T("التفاصيل", "Details")</h3></div>
                 <div class="card-body pt-0">
@@ -454,24 +570,31 @@
                             @* ONE composer, not three loose controls. A textarea (a comment is not a
                                single line), the picked files as removable chips inside the same frame,
                                and the actions on one footer row. Ctrl/Cmd+Enter sends. *@
-                            <div class="border border-gray-300 rounded mb-4" id="cbComposer">
+                            <div class="border border-gray-300 rounded-3 shadow-sm mb-4 position-relative" id="cbComposer">
                                 <textarea id="cbCommentBody" rows="2"
                                           class="form-control border-0 bg-transparent shadow-none px-4 pt-3" style="resize:none"
                                           placeholder="@T("اكتب تعليقًا…", "Write a comment…")"></textarea>
                                 <div id="cbFileChips" class="d-flex flex-wrap gap-2 px-4 pb-1"></div>
-                                <div class="d-flex flex-stack border-top border-gray-300 px-3 py-2">
+                                <div class="d-flex align-items-center justify-content-between gap-2 border-top border-gray-300 px-3 py-2">
                                     <div class="d-flex align-items-center gap-2">
                                         <input type="file" id="cbCommentFiles" multiple class="d-none" />
+                                        <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary rounded-circle w-36px h-36px"
+                                                id="cbTaskEmoji" title="@T("إدراج رمز تعبيري", "Insert an emoji")"
+                                                aria-label="@T("إدراج رمز تعبيري", "Insert an emoji")">
+                                            <i class="ki-outline ki-emoji-happy fs-4" aria-hidden="true"></i>
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-icon btn-light-primary"
                                                 title="@T("إرفاق ملفات", "Attach files")"
                                                 onclick="document.getElementById('cbCommentFiles').click()">
-                                            <i class="ki-outline ki-paper-clip fs-4"></i></button>
+                                            <i class="ki-outline ki-paper-clip fs-4" aria-hidden="true"></i></button>
                                         <span id="cbFileHint" class="text-muted fs-8"></span>
                                     </div>
-                                    <button type="button" id="cbCommentSend" class="btn btn-sm btn-primary" disabled
+                                    <button type="button" id="cbCommentSend" class="btn btn-sm btn-primary rounded-pill px-4 py-2 flex-shrink-0" disabled
                                             onclick="cbCommentAdd()">
-                                        <i class="ki-outline ki-send fs-5"></i>@T("إرسال", "Send")</button>
+                                        <i class="ki-outline ki-send fs-5 me-1" aria-hidden="true"></i>@T("إرسال", "Send")</button>
                                 </div>
+                                <div id="cbTaskEmojiPane" class="cb-task-emoji-picker d-none" role="dialog"
+                                     aria-label="@T("إدراج رمز تعبيري", "Insert an emoji")"></div>
                                 @* Inside the composer box: it is positioned against it, so the menu
                                    follows the frame as the textarea grows. *@
                                 <div id="cbAtMenu" class="cb-at-menu d-none" role="listbox"></div>
@@ -496,6 +619,50 @@
     <script>
         (function () {
             var taskId = document.getElementById('cbTaskId').value;
+
+            var taskEmojiButton = document.getElementById('cbTaskEmoji');
+            var taskEmojiPane = document.getElementById('cbTaskEmojiPane');
+            var taskEmojiInput = document.getElementById('cbCommentBody');
+            var taskEmojiSet = ['😀','😃','😄','😁','😆','😂','🤣','🥹','😊','😍','🥰','😘','😎','🤩','🥳','🫠','🥲','🤔','🫡','🤯','🫣','🤗','🫶','🙂','😉','👍','👎','👏','🙌','🙏','🤝','💪','👌','🫰','❤️','🩷','✨','🔥','🎉','🚀','🌟','💯','✅','❌','⚡','🎯','🧠','🫧','🪩','🪄'];
+            if (taskEmojiButton && taskEmojiPane && taskEmojiInput) {
+                var taskEmojiHeading = document.createElement('div');
+                taskEmojiHeading.className = 'cb-task-emoji-heading';
+                taskEmojiHeading.innerHTML = '<i class="ki-outline ki-emoji-happy" aria-hidden="true"></i>';
+                var taskEmojiHeadingText = document.createElement('span');
+                taskEmojiHeadingText.textContent = taskEmojiButton.title;
+                taskEmojiHeading.appendChild(taskEmojiHeadingText);
+                taskEmojiPane.appendChild(taskEmojiHeading);
+                var taskEmojiGrid = document.createElement('div');
+                taskEmojiGrid.className = 'cb-task-emoji-grid';
+                taskEmojiSet.forEach(function (emoji) {
+                    var choice = document.createElement('button');
+                    choice.type = 'button'; choice.className = 'cb-task-emoji-choice';
+                    choice.textContent = emoji; choice.title = emoji;
+                    choice.setAttribute('aria-label', emoji);
+                    taskEmojiGrid.appendChild(choice);
+                });
+                taskEmojiPane.appendChild(taskEmojiGrid);
+                taskEmojiButton.addEventListener('click', function () {
+                    taskEmojiPane.classList.toggle('d-none');
+                });
+                taskEmojiPane.addEventListener('click', function (event) {
+                    var choice = event.target.closest('.cb-task-emoji-choice');
+                    if (!choice) return;
+                    var start = taskEmojiInput.selectionStart == null ? taskEmojiInput.value.length : taskEmojiInput.selectionStart;
+                    var end = taskEmojiInput.selectionEnd == null ? start : taskEmojiInput.selectionEnd;
+                    taskEmojiInput.value = taskEmojiInput.value.slice(0, start) + choice.textContent + taskEmojiInput.value.slice(end);
+                    taskEmojiInput.focus();
+                    taskEmojiInput.setSelectionRange(start + choice.textContent.length, start + choice.textContent.length);
+                    taskEmojiInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    taskEmojiPane.classList.add('d-none');
+                });
+                document.addEventListener('click', function (event) {
+                    if (!taskEmojiPane.contains(event.target) && !taskEmojiButton.contains(event.target)) taskEmojiPane.classList.add('d-none');
+                });
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') taskEmojiPane.classList.add('d-none');
+                });
+            }
 
             function tok() {
                 var el = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -724,6 +891,197 @@
                 if (filesEl) { filesEl.disabled = true; }
                 if (btn) { btn.disabled = true; }
             }
+
+            // =============================================================================================
+            // LINKED MESSAGES. Read-only: this list never writes, so it needs no token and no busy guard.
+            // =============================================================================================
+            (function cbTaskMessages() {
+                var card = document.getElementById('cbTaskMsgCard');
+                var body = document.getElementById('cbTaskMsgBody');
+                if (!card || !body) { return; }
+
+                var LOC = document.documentElement.lang || 'ar';
+                var AR = LOC.indexOf('ar') === 0;
+                var taskId = @(t?.ID ?? 0);
+
+                function esc(v) {
+                    return String(v == null ? '' : v).replace(/[&<>"']/g, function (ch) {
+                        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+                    });
+                }
+
+                // ASSEMBLED FROM PARTS, never toLocaleDateString: the Arabic locale embeds RIGHT-TO-LEFT MARKS
+                // between the components and they survive an isolate, which renders 2026-10-11 as "112026/10/".
+                function dateText(iso) {
+                    if (!iso) { return ''; }
+                    var d = new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : iso + 'Z');
+                    if (isNaN(d.getTime())) { return ''; }
+                    function p(n) { return (n < 10 ? '0' : '') + n; }
+                    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+                }
+
+                // Initials on a tint when there is no photo — never a broken frame and never a generic glyph.
+                function avatar(name, src) {
+                    var ch = (name || '?').trim().charAt(0) || '?';
+                    var tile = '<span class="symbol-label bg-light-primary text-primary fw-bold fs-8">' +
+                               esc(ch) + '</span>';
+                    var inner = src
+                        ? '<img src="' + esc(src) + '" alt="" style="width:24px;height:24px;object-fit:cover;' +
+                          'border-radius:50%;display:block;" ' +
+                          "onerror=\"this.outerHTML=this.getAttribute('data-fallback')\" " +
+                          'data-fallback="' + esc(tile) + '" />'
+                        : tile;
+                    return '<span class="symbol symbol-24px symbol-circle flex-shrink-0" ' +
+                           'style="width:24px;height:24px;overflow:hidden;" title="' + esc(name || '') + '">' +
+                           inner + '</span>';
+                }
+
+                function notice(text) {
+                    return '<div class="notice d-flex align-items-center bg-light-primary rounded ' +
+                           'border-primary border border-dashed p-4" role="status">' +
+                           '<i class="ki-outline ki-information-5 fs-3 text-primary me-3" aria-hidden="true"></i>' +
+                           '<span class="fs-8 text-gray-700">' + esc(text) + '</span></div>';
+                }
+
+                // Entity routes come from the registry and intentionally contain no user's locale.
+                // Carry the task page's Arabic/English choice back to the source record/message.
+                function cbWithCurrentCulture(path) {
+                    try {
+                        var target = new URL(path, window.location.origin);
+                        if (target.origin !== window.location.origin) { return path; }
+                        var current = new URLSearchParams(window.location.search);
+                        var fallback = (document.documentElement.lang || '').trim();
+                        var culture = current.get('culture') || fallback;
+                        var uiCulture = current.get('ui-culture') || fallback || culture;
+                        if (culture && !target.searchParams.has('culture')) { target.searchParams.set('culture', culture); }
+                        if (uiCulture && !target.searchParams.has('ui-culture')) { target.searchParams.set('ui-culture', uiCulture); }
+                        return target.pathname + target.search + target.hash;
+                    } catch (_) { return path; }
+                }
+
+                function row(m) {
+                    var isMessage = m.scope === 'message';
+
+                    // THE SOURCE LABEL. Type plus id, the same shape the Conversation card above uses. The
+                    // record's own label is deliberately not fetched: it would be a read per row against a
+                    // module this screen does not own, for a record the reader may not be allowed to open.
+                    var source = (m.entityLabel || m.entityType || '')
+                               + (m.entityId ? ' \u2066#' + m.entityId + '\u2069' : '');
+
+                    var icon = m.entityIcon || 'ki-outline ki-messages';
+                    var colour = m.entityColor || 'primary';
+
+                    // THE PREVIEW IS CONDITIONAL ON AUTHORIZATION, not on presence. readable:false means the
+                    // relationship is real and the content is not ours to show — which is a different thing
+                    // from an empty message, and is said in words rather than left as a blank line.
+                    // FOUR STATES, NOT TWO. `readable` answers one question only - may this
+                    // caller read THIS MESSAGE - and a conversation-level link has no message to
+                    // read, so it arrives here false by construction. The old two-arm branch
+                    // therefore told a reader they lacked a permission they in fact held. What is
+                    // WITHHELD on a message row and what is ABSENT on a conversation row are
+                    // different facts and are now worded differently.
+                    var content;
+                    if (isMessage && m.readable) {
+                        content = '<span class="fs-8 text-gray-700 d-block text-truncate">' +
+                                  esc(m.preview || '') + '</span>';
+                    } else if (isMessage) {
+                        content = '<span class="fs-9 text-muted fst-italic d-block">' +
+                                  esc(AR ? 'لا يمكن عرض هذه الرسالة هنا.'
+                                         : 'This message is not available to show here.') + '</span>';
+                    } else if (m.threadReadable) {
+                        content = '<span class="fs-9 text-muted d-block">' +
+                                  esc(AR ? 'المحادثة بأكملها مرتبطة بهذه المهمة.'
+                                         : 'The whole conversation is linked to this task.') + '</span>';
+                    } else {
+                        content = '<span class="fs-9 text-muted fst-italic d-block">' +
+                                  esc(AR ? 'لا يمكن عرض هذه المحادثة هنا.'
+                                         : 'This conversation is not available to show here.') + '</span>';
+                    }
+
+                    var who = m.readable && m.authorName
+                        ? '<span class="d-inline-flex align-items-center gap-2">' +
+                          avatar(m.authorName, m.authorAvatar) +
+                          '<span class="fs-9 text-gray-600">' + esc(m.authorName) + '</span></span>'
+                        : '';
+
+                    var when = m.postedAt
+                        ? '<span class="fs-9 text-gray-500">\u2066' + esc(dateText(m.postedAt)) + '\u2069</span>'
+                        : '';
+
+                    var kind = '<span class="badge badge-light-' + (isMessage ? 'primary' : 'secondary') +
+                               ' fs-9 fw-semibold">' +
+                               esc(isMessage ? (AR ? 'رسالة' : 'Message')
+                                             : (AR ? 'محادثة' : 'Conversation')) + '</span>';
+
+                    // PROVENANCE IS NOT THE RELATIONSHIP. Both rows are links; only this one says the
+                    // task exists BECAUSE of that message. The server has carried origin since the
+                    // create-from-message path was closed and nothing drew it.
+                    var origin = m.origin === 'CreatedFromMessage'
+                        ? '<span class="badge badge-light-success fs-9 fw-semibold">' +
+                          esc(AR ? 'أُنشئت من هذه الرسالة' : 'Created from this message') + '</span>'
+                        : '';
+
+                    // A ROUTE OR A PLAIN LABEL — never an invented url and never a list screen. The server
+                    // sends null when the entity has no detail route registered or the thread is not ours to
+                    // open, and a dead link that silently lands on a list is worse than an honest label.
+                    var target = m.route
+                        ? '<a href="' + esc(cbWithCurrentCulture(m.route)) + '" class="btn btn-sm btn-light-primary flex-shrink-0">' +
+                          esc(AR ? 'فتح' : 'Open') + '</a>'
+                        : '<span class="badge badge-light text-muted flex-shrink-0">' +
+                          esc(AR ? 'لا توجد شاشة' : 'No screen') + '</span>';
+
+                    return '<div class="cb-row d-flex align-items-center gap-3 px-2 py-3">' +
+                             '<span class="symbol symbol-35px flex-shrink-0">' +
+                               '<span class="symbol-label bg-light-' + esc(colour) + '">' +
+                                 '<i class="ki-outline ' + esc(icon) + ' fs-5 text-' + esc(colour) + '"></i>' +
+                               '</span>' +
+                             '</span>' +
+                             '<span class="d-flex flex-column flex-grow-1" style="min-width:0;">' +
+                               '<span class="d-flex align-items-center flex-stack gap-2">' +
+                                 '<span class="fw-semibold text-gray-800 fs-8 text-truncate" style="min-width:0;">' +
+                                 esc(source) + '</span>' +
+                                 '<span class="d-flex align-items-center gap-2 flex-shrink-0">' +
+                                   kind + origin + '</span>' +
+                               '</span>' +
+                               content +
+                               '<span class="d-flex align-items-center flex-wrap gap-3 mt-1">' + who + when + '</span>' +
+                             '</span>' + target +
+                           '</div>';
+                }
+
+                fetch('@Url.Action("MessagesForTask", "Tasks")?taskId=' + taskId,
+                      { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) {
+                        if (!d || d.ok !== true) { throw new Error('failed'); }
+
+                        // UNPROVISIONED IS NOT EMPTY. A deployment with no link table has nothing to say here,
+                        // so the card removes itself rather than claiming this task has no linked messages.
+                        if (d.linkingAvailable !== true) { card.remove(); return; }
+
+                        var rows = d.messages || [];
+                        if (!rows.length) {
+                            body.innerHTML = '<div class="text-muted fs-8 py-3">' +
+                                esc(AR ? 'لا توجد رسائل مرتبطة بهذه المهمة.'
+                                       : 'No messages are linked to this task.') + '</div>';
+                            return;
+                        }
+
+                        body.innerHTML = rows.map(row).join('');
+
+                        // The count is DERIVED from the rows just drawn, in the same pass — a counter computed
+                        // anywhere else is the first thing to disagree with the list.
+                        var badge = document.getElementById('cbTaskMsgCount');
+                        if (badge) {
+                            badge.textContent = '\u2066' + rows.length + '\u2069';
+                            badge.classList.remove('d-none');
+                        }
+                    })
+                    .catch(function () {
+                        body.innerHTML = notice(AR ? 'تعذّر تحميل الرسائل المرتبطة.'
+                                                   : 'The linked messages could not be loaded.');
+                    });
+            })();
 
             window.cbLoadComments = function () {
                 var box = document.getElementById('cbCommentList');

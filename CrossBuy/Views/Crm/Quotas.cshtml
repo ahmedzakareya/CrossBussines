@@ -1,0 +1,109 @@
+@model List<CrossBuy.BL.CrmIdentity.QuotaRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var ci = new System.Globalization.CultureInfo(isAr ? "ar-KW" : "en-GB");
+    var year = (int)ViewBag.Year; var q = (string?)ViewBag.Q;
+    var months = Enumerable.Range(1, 12).Select(m => new DateTime(year, m, 1)).ToList();
+    string Key(DateTime d) => d.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+    var anyEdit = Model.Any(r => r.CanEdit);
+    // the sheet is paged like every list: 25 people a page
+    var pageSize = 25; int.TryParse(Context.Request.Query["page"], out var page); page = Math.Max(1, page);
+    var pages = Math.Max(1, (int)Math.Ceiling(Model.Count / (double)pageSize)); page = Math.Min(page, pages);
+    var shown = Model.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Sales targets"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Forecast","Crm")" class="text-muted text-hover-primary">@T["Forecast"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Sales targets"]</li></ul></div>
+        <div class="d-flex gap-2 align-items-center">
+            <div class="d-flex align-items-center bg-light rounded px-2">
+                <a href="?year=@(year - 1)" class="btn btn-icon btn-sm btn-active-light-primary"><i class="ki-outline ki-@(isAr ? "right" : "left") fs-3"></i></a>
+                <span class="fw-bold fs-6 px-3 num">@year</span>
+                <a href="?year=@(year + 1)" class="btn btn-icon btn-sm btn-active-light-primary"><i class="ki-outline ki-@(isAr ? "left" : "right") fs-3"></i></a>
+            </div>
+            @if (anyEdit) { <button type="button" class="btn btn-sm btn-primary" id="btnSave" disabled><i class="ki-outline ki-check fs-4"></i>@T["Save targets"] <span class="num" id="dirtyN"></span></button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="card"><div class="card-header border-0 pt-6 flex-wrap gap-3">
+            <div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["A target for each person, month by month"]</span>
+                <span class="text-muted fs-7 mt-1">@T["A quarter is the sum of its three months. A manager sets the team's targets; only someone with CRM settings rights sets a manager's own."]</span></div>
+            <form method="get" class="card-toolbar d-flex gap-2"><input type="hidden" name="year" value="@year" />
+                <div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                    <input type="text" name="q" value="@q" class="form-control form-control-solid form-control-sm w-225px ps-12" placeholder="@T["Search a person…"]" autocomplete="off" /></div>
+            </form></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-2 mb-0 crm-table crm-quota" style="min-width:1080px">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                    <th class="ps-4" style="min-width:200px">@T["Person"]</th>
+                    @foreach (var m in months) { <th class="text-end @((m.Month - 1) % 3 == 0 ? "crm-q-start" : "")" data-month="@Key(m)">@m.ToString("MMM", ci)</th> }
+                    <th class="text-end pe-4">@T["Year"]</th></tr></thead>
+                <tbody class="fs-7">
+                @foreach (var r in shown)
+                {
+                    var ini = Initials(r.Person.Name);
+                    <tr data-emp="@r.Person.EmployeeId">
+                        <td class="ps-4"><div class="d-flex align-items-center gap-3"><div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.Person.HasPhoto) { <img src="/People/Photo/@r.Person.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>@ini</span>'" /> } else { <span class="symbol-label crm-initials fs-8">@ini</span> }</div>
+                            <div><div class="fw-bold text-gray-900">@r.Person.Name</div><div class="text-muted fs-8">@(r.Role != null ? T["crmrole:" + r.Role].Value : "")@if (!r.CanEdit) { <span> · <i class="ki-outline ki-lock-2 fs-8"></i> @T["set by their manager"]</span> }</div></div></div></td>
+                        @foreach (var m in months)
+                        {
+                            var v = r.Months.GetValueOrDefault(Key(m));
+                            <td class="text-end @((m.Month - 1) % 3 == 0 ? "crm-q-start" : "")">
+                                @if (r.CanEdit) { <input class="form-control form-control-sm form-control-solid text-end num crm-q-in" inputmode="decimal" dir="ltr" name="q_@(r.Person.EmployeeId)_@Key(m)" value="@(v == 0 ? "" : v.ToString("N0", System.Globalization.CultureInfo.InvariantCulture))" data-was="@(v == 0 ? "" : v.ToString("N0", System.Globalization.CultureInfo.InvariantCulture))" placeholder="—" /> }
+                                else { <span class="num">@(v == 0 ? "—" : v.ToString("N0"))</span> }
+                            </td>
+                        }
+                        <td class="text-end pe-4 fw-bold num crm-q-year">@r.Months.Values.Sum().ToString("N0")</td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="14" class="text-center text-muted py-10">@(string.IsNullOrWhiteSpace(q) ? T["Nobody has a sales role yet. Give people the Sales rep or Sales manager role in CRM permissions."] : T["Nobody matches"])</td></tr> }
+                </tbody></table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted num">@(Model.Count == 0 ? "" : ((page - 1) * pageSize + 1) + "–" + Math.Min(page * pageSize, Model.Count) + " " + T["of"].Value + " " + Model.Count)</div>
+                    @if (pages > 1) { <ul class="pagination">@for (var i = 1; i <= pages; i++) { <li class="page-item @(i == page ? "active" : "")"><a class="page-link" href="?year=@year&q=@Uri.EscapeDataString(q ?? "")&page=@i">@i</a></li> }</ul> }</div>
+                <div class="text-danger fs-7 fw-semibold mt-3 d-none" id="saveErr"></div>
+            </div></div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  // open on this month: the year is wider than the screen, and the month that matters is rarely January
+  var now = document.querySelector('th[data-month="' + new Date().toISOString().slice(0, 7) + '"]');
+  if (now) now.scrollIntoView({ inline: 'center', block: 'nearest' });
+  var btn = document.getElementById('btnSave'); if (!btn) return;
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["saved"] = T["Targets saved"].Value }));
+  function num(s){ var v = parseFloat(String(s || '').replace(/,/g, '')); return isNaN(v) ? 0 : v; }
+  function dirty(){ return Array.prototype.filter.call(document.querySelectorAll('.crm-q-in'), function(i){ return num(i.value) !== num(i.getAttribute('data-was')); }); }
+  function refresh(){
+    var d = dirty(); btn.disabled = d.length === 0; document.getElementById('dirtyN').textContent = d.length ? '(' + d.length + ')' : '';
+    document.querySelectorAll('tr[data-emp]').forEach(function(tr){
+      var ins = tr.querySelectorAll('.crm-q-in'); if (!ins.length) return;
+      var s = 0; ins.forEach(function(i){ s += num(i.value); i.classList.toggle('crm-q-dirty', num(i.value) !== num(i.getAttribute('data-was'))); });
+      tr.querySelector('.crm-q-year').textContent = s.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    });
+  }
+  document.addEventListener('input', function(e){ if (e.target.classList.contains('crm-q-in')) refresh(); });
+  // copy across: a value typed with Ctrl+Enter fills the rest of the person's year
+  document.addEventListener('keydown', function(e){
+    if (!e.target.classList.contains('crm-q-in') || e.key !== 'Enter' || !e.ctrlKey) return;
+    e.preventDefault(); var ins = Array.prototype.slice.call(e.target.closest('tr').querySelectorAll('.crm-q-in'));
+    ins.slice(ins.indexOf(e.target) + 1).forEach(function(i){ i.value = e.target.value; }); refresh();
+  });
+  btn.addEventListener('click', async function(){
+    var fd = new FormData(); fd.append('year', '@year');
+    dirty().forEach(function(i){ fd.append(i.name, String(num(i.value))); });
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveQuotas","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    var err = document.getElementById('saveErr');
+    if (!r.ok) { err.textContent = r.error || txt.failed; err.classList.remove('d-none'); return; }
+    err.classList.add('d-none');
+    dirty().forEach(function(i){ i.setAttribute('data-was', i.value); }); refresh();
+    if (window.CB && CB.toast) CB.toast(txt.saved, 'success');
+  });
+})();
+</script>
+}

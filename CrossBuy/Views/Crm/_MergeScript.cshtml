@@ -1,0 +1,55 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var txt = new Dictionary<string, string>
+    {
+        ["confirm"] = T["Merge these two records? This cannot be undone."].Value,
+        ["title"] = T["Merge"].Value,
+        ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+        ["dismiss"] = T["Mark these two as different records? They will not be proposed again."].Value,
+        ["dismissed"] = T["Marked as different records"].Value,
+    };
+}
+@Html.AntiForgeryToken()
+<script>
+// One handler for every merge / dismiss button on the page, bound once (rows can be repainted).
+(function(){
+  if (window.__cbCrmMergeBound) return; window.__cbCrmMergeBound = true;
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(txt));
+  function token(){ var t=document.querySelector('input[name="__RequestVerificationToken"]'); return t?t.value:''; }
+  function post(url, data){ var fd=new FormData(); Object.keys(data).forEach(function(k){ [].concat(data[k]).forEach(function(v){ fd.append(k,v); }); }); fd.append('__RequestVerificationToken',token());
+    return fetch(url,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){ return r.json().catch(function(){ return {ok:false,error:txt.failed}; }); }).catch(function(){ return {ok:false,error:txt.failed}; }); }
+  function say(msg, kind){ if (window.CB && CB.toast) CB.toast(msg, kind); }
+  async function preview(type, s, m){
+    var old = document.getElementById('mergeModal'); if (old) { var inst = bootstrap.Modal.getInstance(old); if (inst) inst.hide(); old.remove(); document.querySelectorAll('.modal-backdrop').forEach(function(b){ b.remove(); }); }
+    var html = await fetch('@Url.Action("MergePreview","Crm")?type='+encodeURIComponent(type)+'&survivorId='+s+'&mergedId='+m, {credentials:'same-origin'}).then(function(r){ return r.ok ? r.text() : ''; });
+    if (!html) { say(txt.failed, 'error'); return; }
+    var host = document.getElementById('mergeHost') || document.body.appendChild(Object.assign(document.createElement('div'), { id:'mergeHost' }));
+    host.innerHTML = html;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('mergeModal')).show();
+  }
+  document.addEventListener('click', async function(e){
+    var b = e.target.closest('[data-merge-type]');
+    if (b) { e.preventDefault(); preview(b.getAttribute('data-merge-type'), b.getAttribute('data-survivor'), b.getAttribute('data-merged')); return; }
+    var go = e.target.closest('#mergeGo');
+    if (go) {
+      var take = [].map.call(document.querySelectorAll('#mergeModal input[value="m"]:checked'), function(r){ return r.getAttribute('data-key'); });
+      var ok = window.cbConfirm ? await window.cbConfirm(txt.confirm, { kind:'danger', title: txt.title }) : true;
+      if (!ok) return;
+      go.disabled = true;
+      var r = await post('@Url.Action("MergeRecords","Crm")', { type: go.getAttribute('data-type'), survivorId: go.getAttribute('data-survivor'), mergedId: go.getAttribute('data-merged'), take: take });
+      if (!r.ok) { go.disabled = false; say(r.error || txt.failed, 'error'); return; }
+      location.href = r.url;   // the merged subject is gone; open the record that remains
+      return;
+    }
+    var d = e.target.closest('[data-dismiss-pair]');
+    if (d) {
+      var ok2 = window.cbConfirm ? await window.cbConfirm(txt.dismiss, { kind:'primary', title: txt.title }) : true;
+      if (!ok2) return;
+      var r2 = await post('@Url.Action("DismissDuplicate","Crm")', { type: d.getAttribute('data-type'), a: d.getAttribute('data-a'), b: d.getAttribute('data-b') });
+      if (!r2.ok) { say(r2.error || txt.failed, 'error'); return; }
+      var row = d.closest('tr'); if (row) row.remove();
+      say(txt.dismissed, 'success');
+    }
+  });
+})();
+</script>

@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -168,6 +168,22 @@ namespace CrossBuy.BL
             ITasksAccessService access, CrossBuy.BL.Platform.IOrgHierarchy hierarchy,
             ITaskReadAuthorizer readAuth)
             : this(db, events, notify, businessEvents, contexts, access, hierarchy) { _readAuth = readAuth; }
+
+        // THE REGISTRY, OPTIONAL AND GREEDIEST. A new overload rather than a parameter added to the one
+        // above, so every existing hand-construction in the test suites keeps compiling and keeps its
+        // exact previous behaviour. The container picks the greediest constructor it can satisfy and
+        // IEntityRegistry is registered (Program.cs), so production always takes this one.
+        private readonly CrossBuy.BL.Platform.IEntityRegistry? _entities;
+        public TaskService(CrossDbContext db,
+            CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
+            CrossBuy.BL.TasksCalendar.ITaskNotificationService notify,
+            CrossBuy.BL.Platform.IBusinessEventService businessEvents,
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
+            ITasksAccessService access, CrossBuy.BL.Platform.IOrgHierarchy hierarchy,
+            ITaskReadAuthorizer readAuth,
+            CrossBuy.BL.Platform.IEntityRegistry entities)
+            : this(db, events, notify, businessEvents, contexts, access, hierarchy, readAuth)
+            { _entities = entities; }
 
         private async Task<IQueryable<TaskItem>> AuthorizedBaseAsync(int companyId)
         {
@@ -369,8 +385,16 @@ namespace CrossBuy.BL
 			if (input.AssigneeEmployeeId <= 0) return (false, "An assignee must be chosen for the task", 0);
 			var priority = Priorities.Contains(input.Priority) ? input.Priority : "Normal";
 			// TM-2: normalize the optional link — either BOTH set or BOTH null (an unlinked task is valid)
-			var linkTypes = new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" };
-			string? entType = (!string.IsNullOrWhiteSpace(input.EntityType) && input.EntityId > 0 && linkTypes.Contains(input.EntityType)) ? input.EntityType : null;
+
+			// UNCHANGED BEHAVIOUR FOR AN INELIGIBLE TYPE: it normalises to null rather than refusing the
+			// save, which is what the Communication adapter reports to its caller as an AnchorWarning.
+			// The DECISION moved; the consequence did not.
+			// A REGISTRY IS ALWAYS SUPPLIED. DI gives one; a hand-constructed TaskService (the reduced
+			// graphs several suites build) gets one made from the context this service already holds.
+			// The policy fails closed on null, and nothing here should ever hand it one.
+			string? entType = TaskEntityLinkPolicy.IsEligible(
+				_entities ?? new CrossBuy.BL.Platform.EntityRegistry(_db), input.EntityType, input.EntityId)
+				? input.EntityType : null;
 			int? entId = entType != null ? input.EntityId : null;
 			// TM-5: normalize billing — only keep rate/customer when billable
 			bool billable = input.IsBillable;

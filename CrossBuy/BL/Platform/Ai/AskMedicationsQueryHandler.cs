@@ -24,10 +24,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن أوامر الأدوية للمنوَّمين: العدد حسب الدواء أو طريقة الإعطاء أو الحالة",
-			"Any question about inpatient medication orders: the count by drug, route or status");
+			"Any question about inpatient medication orders: the count by drug, route or status",
+			"Questions sur les prescriptions des patients hospitalisés : nombre par médicament, voie d'administration ou statut");
 
 		public override AskText Example => AskText.Of(
-			"إيه الأدوية الأكثر وصفًا؟", "Which medicines are prescribed most?");
+			"إيه الأدوية الأكثر وصفًا؟", "Which medicines are prescribed most?", "Quels médicaments sont les plus prescrits ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

@@ -1,0 +1,336 @@
+@model CrossBuy.BL.CrmIdentity.DealFile
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@using DS = CrossBuy.BL.CrmIdentity.CrmDealRules.DiscountState
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    var d = Model.Deal;
+    var canEdit = ViewBag.CanEdit == true;
+    var myId = (int?)ViewBag.MyId;
+    var unmet = (List<string>)ViewBag.Unmet;
+    var needs = (List<string>)ViewBag.Needs;
+    var curCode = (string)ViewBag.CurCode; var curDec = (int)ViewBag.CurDec;
+    string M(decimal v) => v.ToString("N" + curDec, System.Globalization.CultureInfo.InvariantCulture);
+    string StageName(CrossBuy.BL.CrmIdentity.StageView s) => T["stage:" + s.Name].Value is var t && t != "stage:" + s.Name ? t : N(s.Name, s.NameEn);
+    var total = Model.Lines.Sum(l => l.LineTotal);
+    var gross = Model.Lines.Sum(l => l.Qty * l.UnitPrice);
+    var roleTone = new Dictionary<string, string> { ["DecisionMaker"] = "primary", ["Approver"] = "success", ["Influencer"] = "info", ["Champion"] = "danger", ["User"] = "light" };
+    var actIcon = new Dictionary<string, (string, string)> { ["Call"] = ("ki-phone", "#7239EA"), ["Meeting"] = ("ki-calendar", "#DC2626"), ["Email"] = ("ki-sms", "#3A5795"), ["Task"] = ("ki-check-square", "#0F766E") };
+    var daysLeft = d.ExpectedCloseDate is DateTime cd ? (int)Math.Round((cd.Date - DateTime.Today).TotalDays) : (int?)null;
+    var pending = Model.Approvals.FirstOrDefault(a => a.A.Status == "Pending");
+    Microsoft.AspNetCore.Html.IHtmlContent Face(int? id, string? name, bool photo, int size = 30)
+    {
+        var ini = System.Net.WebUtility.HtmlEncode(Initials(name));
+        var inner = photo && id != null ? $"<img src=\"/People/Photo/{id}\" alt=\"\" onerror=\"this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>{ini}</span>'\" />" : $"<span class=\"symbol-label crm-initials fs-8\">{ini}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString($"<span class=\"symbol symbol-{size}px symbol-circle\">{inner}</span>");
+    }
+}
+@section Styles {
+<link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    /* the stage path, as in the approved prototype */
+    .crm-path { display: flex; gap: 4px; }
+    .crm-path .st { flex: 1; text-align: center; padding: .6rem .3rem; font-size: .8rem; font-weight: 700; background: var(--bs-gray-100); color: var(--bs-gray-600); border: 0; }
+    .crm-path .st:first-child { border-start-start-radius: .6rem; border-end-start-radius: .6rem; }
+    .crm-path .st:last-child { border-start-end-radius: .6rem; border-end-end-radius: .6rem; }
+    .crm-path .st.done { background: var(--cb-brand-surface, #E7F0FF); color: var(--cb-brand, #3A5795); }
+    .crm-path .st.cur { background: var(--cb-brand, #3A5795); color: #fff; }
+    .crm-path .st.won.cur { background: var(--cb-success-strong, #15803D); }
+    .crm-path button.st:hover:not(.cur) { box-shadow: inset 0 0 0 2px var(--cb-brand, #3A5795); }
+</style>
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@N(d.Title, d.TitleEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Pipeline","Crm")" class="text-muted text-hover-primary">@T["Deal pipeline"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">#@d.ID</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Opportunities","Crm", new { q = d.Title })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit details"]</a>
+            <a href="@Url.Action("OpportunityProducts","Crm", new { id = d.ID })" class="btn btn-sm btn-primary"><i class="ki-outline ki-handcart fs-4"></i>@T["Products & quote"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body">
+            <div class="crm-path mb-6" id="stagePath">
+                @for (var i = 0; i < Model.Stages.Count; i++)
+                {
+                    var s = Model.Stages[i];
+                    var cls = (i < Model.CurrentIndex ? "done" : i == Model.CurrentIndex ? "cur" : "") + (s.IsWon ? " won" : "");
+                    if (canEdit && i != Model.CurrentIndex)
+                    {
+                        <button type="button" class="st @cls" data-stage-id="@s.Id" data-stage-name="@StageName(s)" title="@T["Move the deal to this stage"]">@StageName(s)</button>
+                    }
+                    else
+                    {
+                        <div class="st @cls">@StageName(s)</div>
+                    }
+                }
+            </div>
+            <div class="d-flex flex-wrap gap-8 align-items-center">
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center gap-2 mb-1"><span class="badge crm-code num">OPP-@d.ID.ToString("D4")</span><span class="badge badge-light-primary">@d.Probability%</span></div>
+                    <div class="fs-2 fw-bold text-gray-900">@N(d.Title, d.TitleEn)</div>
+                    @if (d.AccountId != null)
+                    {
+                        <a href="@Url.Action("Account360","Crm", new { id = d.AccountId })" class="d-inline-flex align-items-center gap-2 mt-2 text-gray-800 text-hover-primary fw-bold">
+                            <span class="symbol symbol-30px"><span class="symbol-label crm-initials fs-8">@Initials(Model.AccountNameEn ?? Model.AccountName)</span></span>@N(Model.AccountName ?? "", Model.AccountNameEn)</a>
+                    }
+                </div>
+                <div><div class="text-muted fs-7">@T["Amount"]</div><div class="fw-bold fs-2"><span class="num">@M(d.Amount)</span> <span class="text-muted fs-8">@curCode</span></div></div>
+                <div><div class="text-muted fs-7">@T["Expected close"]</div><div class="fw-bold fs-4"><span class="num">@(d.ExpectedCloseDate?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                    @if (daysLeft is int dl) { <div class="fs-8 @(dl < 0 ? "text-danger fw-bold" : "text-muted")">@(dl < 0 ? T["overdue by"].Value : T["in"].Value) <span class="num">@Math.Abs(dl)</span> @T["days"]</div> }</div>
+                <div><div class="text-muted fs-7 mb-1">@T["Owner"]</div>
+                    @if (Model.Owner != null) { <div class="d-flex align-items-center gap-2">@Face(Model.Owner.EmployeeId, Model.Owner.Name, Model.Owner.HasPhoto, 35)<span class="fw-bold fs-7">@Model.Owner.Name</span></div> }
+                    else { <span class="badge badge-light-danger">@T["No owner"]</span> }</div>
+            </div>
+        </div></div>
+
+        <div id="gateNotice">
+        @if (Model.NextStage != null && needs.Count > 0)
+        {
+            if (unmet.Count > 0)
+            {
+                <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                    <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-lock-2 fs-2x text-white"></i></span></span>
+                    <div class="fw-semibold flex-grow-1"><h4 class="text-gray-900 fw-bold mb-2">@T["Before"] «@StageName(Model.NextStage)» @T["the deal still needs"]</h4>
+                        <div class="d-flex flex-wrap gap-2">@foreach (var u in unmet) { <span class="badge badge-light-danger fs-7 fw-bold"><i class="ki-outline ki-minus-circle fs-7 text-danger me-1"></i>@u</span> }</div></div>
+                </div>
+            }
+            else
+            {
+                <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-6 mb-5">
+                    <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-success"><i class="ki-outline ki-check fs-2x text-white"></i></span></span>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Ready for"] «@StageName(Model.NextStage)»</h4><div class="fs-7 text-gray-700">@string.Join(" · ", needs)</div></div>
+                </div>
+            }
+        }
+        </div>
+
+        <div class="row g-5">
+            <div class="col-xl-8">
+                <div class="card mb-5"><div class="card-body pt-6">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold mb-6" role="tablist">
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 active" data-bs-toggle="tab" href="#dl_p">@T["Products & quote"] <span class="badge badge-light-primary ms-1 num">@Model.Lines.Count</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#dl_t">@T["Activity"] <span class="badge badge-light-primary ms-1 num">@Model.Timeline.Count</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#dl_a">@T["Discount approvals"] <span class="badge badge-light-primary ms-1 num">@Model.Approvals.Count</span></a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="dl_p" role="tabpanel">
+                            <div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Discount"]</th><th class="text-end pe-4">@T["Total"]</th></tr></thead>
+                                <tbody class="fs-6">
+                                @foreach (var l in Model.Lines)
+                                {
+                                    var over = Model.MyLimit is decimal lim && l.DiscountPercent > lim;
+                                    <tr><td class="ps-4">@if (l.ItemCode != null) { <span class="badge crm-code num me-1">@l.ItemCode</span> }<span class="fw-semibold">@l.Name</span></td>
+                                        <td class="text-end num">@l.Qty.ToString("0.###")</td><td class="text-end num">@M(l.UnitPrice)</td>
+                                        <td class="text-end"><span class="num fw-bold @(over ? "text-danger" : "")">@l.DiscountPercent.ToString("0.##")%</span></td>
+                                        <td class="text-end pe-4 fw-bold num">@M(l.LineTotal)</td></tr>
+                                }
+                                @if (Model.Lines.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@T["No lines yet."] <a href="@Url.Action("OpportunityProducts","Crm", new { id = d.ID })">@T["Add products"]</a></td></tr> }
+                                </tbody>
+                                @if (Model.Lines.Count > 0)
+                                {
+                                    <tfoot><tr style="background:var(--cb-brand-surface,#E7F0FF);border-top:2px solid var(--cb-brand,#3A5795)"><td class="ps-4 fw-bold" colspan="4">@T["Total after discount"] <span class="text-muted fs-8 fw-semibold">(@T["before discount"] <span class="num">@M(gross)</span>)</span></td><td class="text-end pe-4 fw-bolder num">@M(total) <span class="text-muted fs-8">@curCode</span></td></tr></tfoot>
+                                }
+                            </table></div>
+                            <div class="mt-5" id="discountBox">
+                                @switch (Model.Discount)
+                                {
+                                    case DS.NotLimited:
+                                        <div class="text-muted fs-7"><i class="ki-outline ki-information-2 fs-6"></i> @T["Discount limits are not set up, so no approval is needed."] <a href="@Url.Action("DealRules","Crm")">@T["Set them up"]</a></div>
+                                        break;
+                                    case DS.Within:
+                                        <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-5"><i class="ki-outline ki-check-circle fs-2x text-success me-4"></i><div class="fw-semibold fs-6 text-gray-800">@T["The highest discount"] <span class="num fw-bold">@Model.MaxDiscount.ToString("0.##")%</span> @T["is within your limit"] (<span class="num">@Model.MyLimit?.ToString("0.##")%</span>).</div></div>
+                                        break;
+                                    case DS.Approved:
+                                        <div class="notice d-flex bg-light-success rounded border-success border border-dashed p-5"><i class="ki-outline ki-shield-tick fs-2x text-success me-4"></i><div class="fw-semibold fs-6 text-gray-800">@T["A discount of"] <span class="num fw-bold">@Model.MaxDiscount.ToString("0.##")%</span> @T["was approved for these exact lines."]</div></div>
+                                        break;
+                                    case DS.Pending:
+                                        <div class="notice d-flex rounded border border-dashed p-5" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;"><i class="ki-outline ki-time fs-2x text-primary me-4"></i><div class="fw-semibold fs-6 text-gray-800">@T["Waiting for approval of"] <span class="num fw-bold">@Model.MaxDiscount.ToString("0.##")%</span>. @T["The quotation cannot leave until it is decided."]</div></div>
+                                        break;
+                                    default:
+                                        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5">
+                                            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-lock-2 fs-2x text-white"></i></span></span>
+                                            <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@(Model.Discount == DS.Rejected ? T["The discount was rejected"] : T["The discount is above your limit"]) — <span class="num">@Model.MaxDiscount.ToString("0.##")%</span> / <span class="num">@Model.MyLimit?.ToString("0.##")%</span></h4>
+                                                <div class="fs-7 text-gray-700">@T["The quotation cannot leave for the customer until someone with a higher limit approves it."]</div></div>
+                                                @if (canEdit) { <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#discModal"><i class="ki-outline ki-send fs-5"></i>@T["Ask for approval"]</button> }</div>
+                                        </div>
+                                        break;
+                                }
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-5">
+                                @if (d.QuotationId != null) { <span class="badge badge-light-success fs-7 py-3 px-4"><i class="ki-outline ki-document fs-6 text-success me-1"></i>@T["Quotation"] #<span class="num">@d.QuotationId</span></span> }
+                                else if (canEdit && Model.Lines.Count > 0)
+                                {
+                                    <form asp-action="ConvertOpportunityToQuotation" asp-route-id="@d.ID" method="post" data-cb-confirm data-cb-action="save" data-cb-text="@T["Create the quotation from these lines?"]">@Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-primary" @(CrossBuy.BL.CrmIdentity.CrmDealRules.DiscountCleared(Model.Discount) ? "" : "disabled")><i class="ki-outline ki-document fs-5"></i>@T["Create the quotation"]</button></form>
+                                }
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="dl_t" role="tabpanel">
+                            @if (Model.Timeline.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No activity recorded on this deal yet."]</div> }
+                            @foreach (var a in Model.Timeline)
+                            {
+                                var (ic, col) = actIcon.TryGetValue(a.Type, out var v) ? v : ("ki-check-square", "#0F766E");
+                                <div class="crm-tl-item"><span class="crm-ch" style="--ch:@col"><i class="ki-outline @ic fs-4"></i></span>
+                                    <div><div class="fw-semibold text-gray-900">@(!isAr && !string.IsNullOrWhiteSpace(a.SubjectEn) ? a.SubjectEn : a.Subject)</div>
+                                        <div class="text-muted fs-8">@T["act:" + a.Type] · <span class="num">@(a.DueDate?.ToString("yyyy-MM-dd HH:mm") ?? a.CreatedAt?.ToLocalTime().ToString("yyyy-MM-dd"))</span>@(a.Done ? " · " + T["done"].Value : "")</div></div></div>
+                            }
+                        </div>
+                        <div class="tab-pane fade" id="dl_a" role="tabpanel">
+                            @if (Model.Approvals.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No discount requests on this deal."]</div> }
+                            @foreach (var av in Model.Approvals)
+                            {
+                                var a = av.A;
+                                var tone = a.Status switch { "Approved" => "success", "Rejected" => "danger", "Pending" => "primary", _ => "light" };
+                                <div class="py-4 crm-row-sep" data-approval="@a.ID">
+                                    <div class="d-flex flex-stack flex-wrap gap-3">
+                                        <div class="d-flex align-items-center gap-3">@Face(a.RequestedByEmployeeId, av.RequesterName, av.RequesterPhoto, 35)
+                                            <div><div class="fw-bold">@av.RequesterName <span class="text-muted fw-semibold fs-7">@T["asked for"]</span> <span class="num fw-bolder">@a.RequestedPercent.ToString("0.##")%</span></div>
+                                                <div class="text-muted fs-8 num">@a.RequestedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div></div></div>
+                                        <span class="badge badge-light-@tone fs-7">@T["appr:" + a.Status]</span>
+                                    </div>
+                                    <div class="fs-7 text-gray-800 mt-2">@a.Reason</div>
+                                    @if (a.DecidedByEmployeeId != null) { <div class="d-flex align-items-center gap-2 mt-2 fs-8 text-muted">@Face(a.DecidedByEmployeeId, av.DeciderName, av.DeciderPhoto, 25) @av.DeciderName · <span class="num">@a.DecidedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>@if (a.DecisionNote != null) { <span>— @a.DecisionNote</span> }</div> }
+                                    @if (a.Status == "Pending" && canEdit)
+                                    {
+                                        <div class="d-flex gap-2 mt-3">
+                                            @if (a.RequestedByEmployeeId == myId) { <button type="button" class="btn btn-sm btn-light" data-withdraw="@a.ID">@T["Withdraw"]</button> }
+                                            else { <button type="button" class="btn btn-sm btn-success" data-decide="@a.ID" data-approve="true">@T["Approve"]</button><button type="button" class="btn btn-sm btn-light-danger" data-decide="@a.ID" data-approve="false">@T["Reject"]</button> }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div></div>
+            </div>
+            <div class="col-xl-4">
+                @* CRM C9: the assistant — do next, summary, a draft reply — loaded by crm-assist.js *@
+                <div id="dealAssist" data-src="@Url.Action("DealAssist","Crm", new { id = Model.Deal.ID })" data-copied="@T["Copied"]"></div>
+                <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Buying committee"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Who decides, who approves, who influences"]</span></div></div>
+                    <div class="card-body pt-2" id="committee">
+                        @foreach (var m in Model.Committee)
+                        {
+                            <div class="d-flex flex-stack py-3 crm-row-sep">
+                                <a href="@Url.Action("Contact","Crm", new { id = m.ContactId })" class="d-flex align-items-center min-w-0 text-hover-primary">
+                                    <span class="symbol symbol-35px symbol-circle flex-shrink-0"><span class="symbol-label crm-initials fs-8">@Initials(m.NameEn ?? m.Name)</span></span>
+                                    <span class="d-flex flex-column ms-3 min-w-0"><span class="fw-bold text-gray-900 text-truncate">@N(m.Name, m.NameEn)</span><span class="text-muted fs-8 text-truncate">@N(m.Title ?? "", m.TitleEn)</span></span></a>
+                                <div class="d-flex align-items-center gap-1"><span class="badge badge-light-@(roleTone.GetValueOrDefault(m.Role, "light")) fs-8">@T["role:" + m.Role]</span>
+                                    @if (canEdit) { <button type="button" class="btn btn-sm btn-icon btn-light" style="opacity:.5" data-remove-member="@m.LinkId" title="@T["Remove"]"><i class="ki-outline ki-cross fs-5"></i></button> }</div>
+                            </div>
+                        }
+                        @if (Model.Committee.Count == 0) { <div class="text-muted fs-7 py-3">@T["Nobody on this deal yet."]</div> }
+                        @if (!Model.Committee.Any(m => m.Role == "Approver")) { <div class="text-danger fs-8 fw-semibold mt-2"><i class="ki-outline ki-information-2 fs-7 text-danger"></i> @T["No financial approver on this deal"]</div> }
+                        @if (canEdit && Model.CanAdd.Count > 0)
+                        {
+                            <div class="row g-2 mt-3">
+                                <div class="col-7"><select id="cmContact" class="form-select form-select-solid form-select-sm">@foreach (var c in Model.CanAdd) { <option value="@c.ContactId">@N(c.Name, c.NameEn)@(c.Title != null ? " — " + c.Title : "")</option> }</select></div>
+                                <div class="col-5"><select id="cmRole" class="form-select form-select-solid form-select-sm">@foreach (var r in CrossBuy.Models.Context.Crm.CrmDealVocabulary.Roles) { <option value="@r">@T["role:" + r]</option> }</select></div>
+                                <div class="col-12"><button type="button" class="btn btn-sm btn-light-primary w-100" id="cmAdd"><i class="ki-outline ki-plus fs-5"></i>@T["Add to the deal"]</button></div>
+                            </div>
+                        }
+                        else if (d.AccountId == null) { <div class="text-muted fs-8 mt-2">@T["Link the deal to an account to choose its people."]</div> }
+                    </div></div>
+                <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Next step"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.NextStep is { } n)
+                        {
+                            var (ic2, col2) = actIcon.TryGetValue(n.Type, out var v2) ? v2 : ("ki-check-square", "#0F766E");
+                            <div class="d-flex gap-3 align-items-center"><span class="crm-ch" style="--ch:@col2"><i class="ki-outline @ic2 fs-4"></i></span>
+                                <div><div class="fw-bold text-gray-900">@n.Subject</div><div class="fs-8 @(n.Late ? "text-danger fw-bold" : "text-muted")"><span class="num">@n.Due?.ToString("yyyy-MM-dd HH:mm")</span>@(n.Late ? " · " + T["late"].Value : "")</div></div></div>
+                        }
+                        else
+                        {
+                            <div class="text-danger fw-semibold fs-7">@T["No next step — every open deal must have one."]</div>
+                            <a href="@Url.Action("Activities","Crm")" class="btn btn-sm btn-light-primary mt-3"><i class="ki-outline ki-plus fs-5"></i>@T["Plan an activity"]</a>
+                        }
+                    </div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="discModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Ask for approval"] — <span class="num">@Model.MaxDiscount.ToString("0.##")%</span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="fs-7 text-gray-700 mb-4">@T["The approval covers these exact lines. Changing a quantity, a price or a discount will need a new approval."]</div>
+        <label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Why is this discount needed?"]</label>
+        <textarea id="discReason" class="form-control form-control-solid" rows="3" maxlength="500" placeholder="@T["e.g. renewal of an 18-month contract; a competitor offered 10%"]"></textarea>
+        <div class="notice d-none rounded border border-dashed border-danger bg-light-danger p-4 mt-4 fs-7 fw-semibold text-danger" id="discErr"></div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="discSend">@T["Send the request"]</button></div>
+</div></div></div>
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script src="~/js/crm-assist.js" asp-append-version="true"></script>
+<script>
+(function(){
+  var dealId = @d.ID;
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["move"] = T["Move the deal to «{0}»?"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+    ["blocked"] = T["This move is not possible yet"].Value, ["remove"] = T["Remove this person from the deal?"].Value,
+    ["approve"] = T["Approve this discount for these lines?"].Value, ["reject"] = T["Why is it rejected? (required)"].Value,
+    ["note"] = T["A note for the requester (optional)"].Value, ["withdraw"] = T["Withdraw this request?"].Value, ["title"] = T["Discount approvals"].Value, ["cancel"] = T["Cancel"].Value }));
+  function token(){ return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+  function post(url, data){ var fd = new FormData(); Object.keys(data).forEach(function(k){ fd.append(k, data[k]); }); fd.append('__RequestVerificationToken', token());
+    return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  function fail(msg){ if (window.Swal) Swal.fire({ text: msg, icon: 'error', buttonsStyling: false, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' }, iconColor: '#DC2626' }); else if (window.CB && CB.toast) CB.toast(msg, 'error'); }
+  function blocked(r){
+    if (!window.Swal) { fail(r.error); return; }
+    var list = (r.missing || []).map(function(m){ return '<li class="mb-1">' + m.replace(/[<>&]/g, '') + '</li>'; }).join('');
+    Swal.fire({ title: txt.blocked, html: '<ul class="text-start fw-semibold">' + list + '</ul>', icon: 'warning', iconColor: '#DC2626', buttonsStyling: false, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+  }
+  document.querySelectorAll('#stagePath button[data-stage-id]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      if (window.cbConfirm && !(await window.cbConfirm(txt.move.replace('{0}', b.getAttribute('data-stage-name')), { kind:'primary', title: b.getAttribute('data-stage-name') }))) return;
+      var r = await post('@Url.Action("DealMove","Crm")', { id: dealId, stageId: b.getAttribute('data-stage-id') });
+      if (r.ok) { location.reload(); return; }   // the stage moves the whole workspace (probability, path, what is next)
+      if (r.code === 'gate') blocked(r); else fail(r.error || txt.failed);
+    });
+  });
+  // A change repaints ITS section from the server and nothing else: no reload, the open tab and the scroll stay.
+  async function repaint(ids){
+    var html = await fetch(location.href, { credentials:'same-origin' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
+    if (!html) { location.reload(); return; }
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    ids.forEach(function(id){ var n = doc.getElementById(id), o = document.getElementById(id); if (n && o) { n.className = o.className; o.replaceWith(n); } });
+  }
+  document.addEventListener('click', async function(e){
+    var t = e.target.closest('#cmAdd, [data-remove-member], #discSend, [data-decide], [data-withdraw]');
+    if (!t) return;
+    if (t.id === 'cmAdd') {
+      var r = await post('@Url.Action("DealCommitteeAdd","Crm")', { id: dealId, contactId: document.getElementById('cmContact').value, role: document.getElementById('cmRole').value });
+      if (r.ok) repaint(['committee', 'gateNotice']); else fail(r.error || txt.failed);
+    } else if (t.hasAttribute('data-remove-member')) {
+      if (window.cbConfirm && !(await window.cbConfirm(txt.remove, { kind:'danger', title: '' }))) return;
+      var r2 = await post('@Url.Action("DealCommitteeRemove","Crm")', { linkId: t.getAttribute('data-remove-member') });
+      if (r2.ok) repaint(['committee', 'gateNotice']); else fail(r2.error || txt.failed);
+    } else if (t.id === 'discSend') {
+      var r3 = await post('@Url.Action("DealDiscountRequest","Crm")', { id: dealId, reason: document.getElementById('discReason').value });
+      if (r3.ok) { bootstrap.Modal.getInstance(document.getElementById('discModal')).hide(); repaint(['discountBox', 'dl_a', 'gateNotice']); return; }
+      var er = document.getElementById('discErr'); er.textContent = r3.error || txt.failed; er.classList.remove('d-none');
+    } else if (t.hasAttribute('data-decide')) {
+      var approve = t.getAttribute('data-approve') === 'true', note = '';
+      if (window.Swal) {
+        var res = await Swal.fire({ title: approve ? txt.approve : txt.reject, input: 'textarea', inputPlaceholder: approve ? txt.note : txt.reject, showCancelButton: true, buttonsStyling: false,
+          confirmButtonText: t.textContent.trim(), cancelButtonText: txt.cancel, customClass: { confirmButton: approve ? 'btn btn-success' : 'btn btn-danger', cancelButton: 'btn btn-light' },
+          inputValidator: function(v){ if (!approve && !(v || '').trim()) return txt.reject; } });
+        if (!res.isConfirmed) return; note = res.value || '';
+      }
+      var r4 = await post('@Url.Action("DealDiscountDecide","Crm")', { approvalId: t.getAttribute('data-decide'), approve: approve, note: note });
+      if (r4.ok) repaint(['discountBox', 'dl_a', 'gateNotice']); else fail(r4.error || txt.failed);
+    } else if (t.hasAttribute('data-withdraw')) {
+      if (window.cbConfirm && !(await window.cbConfirm(txt.withdraw, { kind:'primary', title: txt.title }))) return;
+      var r5 = await post('@Url.Action("DealDiscountWithdraw","Crm")', { approvalId: t.getAttribute('data-withdraw') });
+      if (r5.ok) repaint(['discountBox', 'dl_a', 'gateNotice']); else fail(r5.error || txt.failed);
+    }
+  });
+})();
+</script>
+}

@@ -56,6 +56,11 @@ namespace CrossBuy.BL.Platform.Ai
             public int? OwnerEmployeeId { get; init; }
             public string? OwnerName { get; init; }
 
+            /// Employee.ProfileImage. A review list is read to decide WHO to go and talk to, so the
+            /// owner column is the one column a reader scans by recognition rather than by reading.
+            /// The caller already queries Employee for the name; this rides on that same query.
+            public string? OwnerAvatarUrl { get; init; }
+
             /// The most recent activity of any kind on this opportunity. Null = none has ever existed.
             public DateTime? LastActivityAt { get; init; }
 

@@ -28,6 +28,7 @@ from app.ml.intent_data import (
     STOCK,
     VALUE,
     WAREHOUSES,
+    TASKS,
 )
 
 REAL: list[tuple[str, str]] = [
@@ -60,7 +61,11 @@ REAL: list[tuple[str, str]] = [
     # --- receivables -------------------------------------------------------------------------
     ("العملاء عليهم كام", RECEIVABLES),
     ("مين لسه مدفعش من العملاء", RECEIVABLES),
+    ("مين ما سددش حسابه؟", RECEIVABLES),
+    ("العملاء لسه عليهم فلوس قد ايه؟", RECEIVABLES),
     ("total outstanding from customers", RECEIVABLES),
+    # Collected cash is a separate capability; do not substitute sales or current receivables.
+    ("قبضنا كام من العملاء؟", OUT_OF_SCOPE),
     # --- anomalies ---------------------------------------------------------------------------
     ("فيه قيد غلط في اليومية", ANOMALIES),
     ("راجعلي اليومية فيه حاجة غريبة", ANOMALIES),
@@ -90,6 +95,18 @@ REAL: list[tuple[str, str]] = [
     ("طيب ممكن تجيب اخر فاتورة بيع؟", SALES_QUERY),
     ("وريني اخر ثلاث فواتير", SALES_QUERY),
     ("what was the most recent sale", SALES_QUERY),
+    ("وريني المهام المفتوحة", TASKS),
+    ("عندي شغل متأخر لازم أخلصه؟", TASKS),
+    ("في مهام قربت تستحق؟", TASKS),
+    ("اعرض المهام اللي لسه مخلصتش", TASKS),
+    ("What work is still waiting on me?", TASKS),
+    ("What should I finish before Friday?", TASKS),
+    ("ما المهام المتأخرة", TASKS),
+    ("عدد المهام حسب الحالة", TASKS),
+    ("show overdue tasks", TASKS),
+    ("list my tasks", TASKS),
+    ("which tasks are due soon", TASKS),
+    ("create a task for me", OUT_OF_SCOPE),
 
     ("طيب قول المخزن ال متسجله عندنا", WAREHOUSES),
     ("عندنا كام مخزن بالظبط", WAREHOUSES),

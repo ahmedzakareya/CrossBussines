@@ -130,7 +130,10 @@ namespace CrossBuy.BL.Platform
                     DescriptionEn = presentation.DescriptionEn,
                     ActorEmployeeId = r.ActorEmployeeId,
                     ActorDisplayName = r.ActorEmployeeId.HasValue
-                        ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value)
+                        ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value).Name
+                        : null,
+                    ActorAvatarUrl = r.ActorEmployeeId.HasValue
+                        ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value).Avatar
                         : null,
                     Icon = presentation.Icon,
                     Color = presentation.Color,
@@ -256,7 +259,8 @@ namespace CrossBuy.BL.Platform
                     TitleAr = presentation.TitleAr, TitleEn = presentation.TitleEn,
                     DescriptionAr = presentation.DescriptionAr, DescriptionEn = presentation.DescriptionEn,
                     ActorEmployeeId = r.ActorEmployeeId,
-                    ActorDisplayName = r.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value) : null,
+                    ActorDisplayName = r.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value).Name : null,
+                    ActorAvatarUrl = r.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value).Avatar : null,
                     Icon = presentation.Icon, Color = presentation.Color,
                     CreatedAt = r.CreatedAt, PayloadVersion = r.PayloadVersion,
                     Visibility = r.Visibility, Url = gate.Url,
@@ -349,20 +353,29 @@ namespace CrossBuy.BL.Platform
             return (allowed, false);
         }
 
-        private async Task<Dictionary<int, string>> ResolveActorNamesAsync(IEnumerable<int?> actorIds, CancellationToken cancellationToken)
+        /// The actor's display name AND their photo. One row per employee, one query, because the two
+        /// are always wanted together: every surface that names who did something also draws them.
+        ///
+        /// THE PHOTO WAS MISSING EVERYWHERE, not just in one view. _DocEventTimeline has read
+        /// `actorAvatar` since it was written and the projection never sent one, so the document
+        /// timeline has been falling back to an initials tile for every row; the Workspace activity
+        /// feed had nothing to draw at all. Adding the column here fixes both from the same place.
+        private async Task<Dictionary<int, (string Name, string? Avatar)>> ResolveActorNamesAsync(
+            IEnumerable<int?> actorIds, CancellationToken cancellationToken)
         {
             var ids = actorIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
-            if (ids.Count == 0) return new Dictionary<int, string>();
+            if (ids.Count == 0) return new Dictionary<int, (string, string?)>();
 
             bool isArabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
             var rows = await _db.Employee.AsNoTracking()
                 .Where(e => ids.Contains(e.ID))
-                .Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage })
                 .ToListAsync(cancellationToken);
 
             return rows.ToDictionary(
                 r => r.ID,
-                r => (isArabic ? (r.FullName ?? r.FullNameEn) : (r.FullNameEn ?? r.FullName)) ?? ("#" + r.ID));
+                r => ((isArabic ? (r.FullName ?? r.FullNameEn) : (r.FullNameEn ?? r.FullName)) ?? ("#" + r.ID),
+                      string.IsNullOrWhiteSpace(r.ProfileImage) ? null : r.ProfileImage));
         }
 
         // DEDUPLICATION RULE: the kernel is authoritative from the moment it recorded its first event for

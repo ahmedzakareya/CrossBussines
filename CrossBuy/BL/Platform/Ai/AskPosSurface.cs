@@ -72,7 +72,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"مبيعات نقطة البيع: المبلغ والكمية وعدد الطلبات، حسب الصنف أو الفرع أو نوع الطلب أو الساعة أو اليوم",
-			"Point-of-sale takings: amount, quantity and order count, by item, branch, order type, hour or day");
+			"Point-of-sale takings: amount, quantity and order count, by item, branch, order type, hour or day",
+			"Ventes au point de vente : montants, quantités et nombre de commandes par article, succursale, type de commande, heure ou jour");
 
 		public override AskText Rules => AskText.Of(
 			"الطلبات المدفوعة فقط (الملغاة والمفتوحة غير مشمولة) · الساعة هي ساعة فتح الطلب لا ساعة "
@@ -85,40 +86,40 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item"),
+			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item", "Article"),
 				Synonyms = new[] { "صنف", "اصناف", "الاصناف", "منتج", "منتجات", "المنتجات", "وجبة", "وجبات",
 					"item", "items", "product", "products", "dish", "dishes" } },
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category", "Catégorie"),
 				Synonyms = new[] { "فئة", "فئات", "الفئات", "تصنيف", "التصنيف", "تصنيفات", "التصنيفات",
 					"category", "categories", "item category", "group", "groups" } },
 			// THE BRANCH AND THE HOUR ARE WHY THIS SURFACE EXISTS. Neither was reachable before.
-			new AskColumn { Name = "branch", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفرع", "Branch"),
+			new AskColumn { Name = "branch", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفرع", "Branch", "Succursale"),
 				Synonyms = new[] { "فرع", "فروع", "الفروع", "الفرع", "محل", "محلات", "نقطة بيع", "نقاط البيع",
 					"branch", "branches", "store", "shop", "outlet", "location" } },
-			new AskColumn { Name = "hour", Kind = AskColumnKind.Dimension, Label = AskText.Of("الساعة", "Hour"),
+			new AskColumn { Name = "hour", Kind = AskColumnKind.Dimension, Label = AskText.Of("الساعة", "Hour", "Heure"),
 				Synonyms = new[] { "ساعة", "الساعة", "ساعات", "الساعات", "بالساعة", "وقت", "الوقت", "اوقات",
 					"ميعاد", "الزحمة", "وقت الذروة", "الذروة",
 					"hour", "hours", "by hour", "time of day", "peak", "busiest hour", "rush" } },
-			new AskColumn { Name = "ordertype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الطلب", "Order type"),
+			new AskColumn { Name = "ordertype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الطلب", "Order type", "Type de commande"),
 				Synonyms = new[] { "نوع الطلب", "انواع الطلبات", "تيك اواي", "سفري", "صالة", "دليفري", "توصيل",
 					"order type", "takeaway", "dine in", "dine-in", "delivery", "service type" } },
-			new AskColumn { Name = "cashier", Kind = AskColumnKind.Dimension, Label = AskText.Of("الكاشير", "Cashier"),
+			new AskColumn { Name = "cashier", Kind = AskColumnKind.Dimension, Label = AskText.Of("الكاشير", "Cashier", "Caissier"),
 				Synonyms = new[] { "كاشير", "الكاشير", "كاشيرات", "الموظف", "مين باع", "مين خدم",
 					"cashier", "cashiers", "server", "staff", "who sold" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "شهريا", "بالشهر",
 					"month", "monthly", "months", "per month", "by month" } },
 
-			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount"),
+			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount", "Montant"),
 				Synonyms = new[] { "مبلغ", "المبلغ", "ايراد", "الايراد", "مبيعات", "المبيعات", "بعنا",
 					"حصيلة", "الحصيلة", "دخل", "الدخل", "فلوس",
 					"amount", "revenue", "sales", "takings", "turnover", "income" } },
-			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity"),
+			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity", "Quantité"),
 				Synonyms = new[] { "كمية", "الكمية", "كميات", "عدد القطع", "اتباع",
 					"quantity", "qty", "units", "how many sold" } },
-			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الطلبات", "Orders"),
+			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الطلبات", "Orders", "Commandes"),
 				Synonyms = new[] { "عدد الطلبات", "كام طلب", "عدد الفواتير", "كام اوردر", "عدد الاوردرات",
 					"order count", "how many orders", "number of orders", "tickets", "covers" } },
 		};

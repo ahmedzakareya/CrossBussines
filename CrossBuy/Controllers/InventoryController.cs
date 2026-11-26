@@ -1,5 +1,6 @@
 ﻿using CrossBuy.BL;
 using CrossBuy.Models;
+using CrossBuy.BL.Construction;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Inventory;
 using CrossBuy.ViewModel.Ai;
@@ -118,9 +119,10 @@ namespace CrossBuy.Controllers
 			var items = await _items.GetItemsAsync(c);
 			var whs = await _warehouses.GetWarehousesAsync(c);
 			var balances = await _stock.GetBalancesAsync(c);
-			// ItemDisplayName, NOT i.Name: i.Name is the ARABIC name, so an English or French
-			// dashboard read "CD-MIDAZ5 — ميدازولام". The helper already picks the twin
-			// correctly and the manufacturing dashboard below already does this; this path never asked.
+			// ItemDisplayName, NOT i.Name. This dictionary feeds every item label on the dashboard, and
+			// i.Name is the ARABIC name, so an English or French dashboard read "CD-MIDAZ5 — ميدازولام".
+			// The helper at ItemDisplayName() already picks the twin correctly and the manufacturing
+			// dashboard below already does this; this one path simply never asked.
 			var itemName = items.ToDictionary(i => i.ID, i => i.ItemCode + " — " + ItemDisplayName(i));
 			var whName = whs.ToDictionary(w => w.ID, w => w.Code);
 
@@ -461,6 +463,11 @@ namespace CrossBuy.Controllers
 			ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(co);
 			ViewBag.FilterWarehouseId = warehouseId;
 			ViewBag.Bins = warehouseId != null ? await _warehouses.GetBinLocationsAsync(warehouseId.Value) : new List<BinLocation>();
+			// What is behind each rack, so the plan can carry meaning and not just geometry. See RackLoad
+			// for what this number is and is not — the view labels it as assignment, never as occupancy.
+			ViewBag.RackLoad = warehouseId != null
+				? await _warehouses.GetRackLoadAsync(warehouseId.Value, co)
+				: new Dictionary<int, CrossBuy.BL.RackLoad>();
 			return View();
 		}
 
@@ -742,6 +749,11 @@ namespace CrossBuy.Controllers
 				if (response.Status != 200)
 				{
 					vm.Panel = AiInsightMapper.Map(response.Status, null, scope.CompanyId, nowUtc);
+					// THE COMPANY BY NAME, for the provenance strip. All four insight screens printed the
+					// integer primary key as "Company 1", which is an internal handle: it tells a reader
+					// nothing and looks identical on every installation. ViewBag.CompanyName is the
+					// convention the Workspace layout already uses, and the partial falls back to the id.
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 					return View(vm);
 				}
 
@@ -750,6 +762,7 @@ namespace CrossBuy.Controllers
 				if (parsed == null)
 				{
 					vm.Panel = AiInsightMapper.Failed("ai-insight:unreadable-response", scope.CompanyId, nowUtc);
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 					return View(vm);
 				}
 
@@ -773,14 +786,311 @@ namespace CrossBuy.Controllers
 				vm.Panel = AiInsightMapper.Unavailable("ai-insight:service-timeout", scope.CompanyId, nowUtc);
 			}
 
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
 			return View(vm);
 		}
+
+		// ===== The assistant =====
+		//
+		// THERE IS NO PAGE. The assistant is a floating control rendered by Views/Shared/_AiAssistant
+		// into every back-office layout, because a question arrives while you are looking at something
+		// else and making someone navigate away to ask it is the same as not having it. Only the
+		// endpoint below lives here.
+		//
+		// A GET, BECAUSE ASKING IS READING. It was a POST first and the CBA001 analyzer was right to
+		// stop it: a mutating endpoint must carry authorization the analyzer can see, and this one
+		// authorizes inside IAskService where the analyzer cannot look. The fix is not to satisfy the
+		// analyzer — it is that POST was the wrong verb. Nothing here changes state; the question is
+		// a query, so it belongs in the URL, needs no antiforgery token, and is not a mutation for
+		// anyone to audit as one.
+		//
+		// Returns JSON so the transcript repaints in place. A redirect would throw away the
+		// conversation above it, which is the one thing a chat must not do.
+		[SessionValidation]
+		[HttpGet]
+		/// `c` is the conversation id the chat box invents per tab. It selects a remembered SUBJECT
+		/// and nothing else, and the store is keyed by the signed-in user as well, so a guessed id
+		/// reaches nobody else's context.
+		public async Task<IActionResult> Ask(string question, string? c, [FromServices] CrossBuy.BL.Platform.Ai.IAskService ask)
+		{
+			var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			string Say(CrossBuy.BL.Platform.Ai.AskText? t) => t == null ? "" : (isAr ? t.Ar : t.En);
+
+			if (string.IsNullOrWhiteSpace(question) || question.Length > 400)
+				return Json(new { ok = false, code = "notUnderstood", message = L["Ask a shorter question"].Value });
+
+			var answer = await ask.AskTextAsync(question, c, HttpContext.RequestAborted);
+
+			return Json(new
+			{
+				ok = answer.Answered,
+				code = answer.Refusal.ToString(),
+				message = Say(answer.Message),
+				// Said out loud above the rows: what the question was taken to be about when it did
+				// not say, and what spelling was corrected. An assumption the asker cannot see is an
+				// assumption they cannot correct.
+				// THE SENTENCE FIRST. A reply is what was asked for; the grid is the evidence under it.
+				spoken = Say(answer.Spoken),
+				about = Say(answer.About),
+				understood = Say(answer.Understood),
+				// Folded away under the answer by the client: reference the reader reaches for, not
+				// the paragraph they have to wade through to reach the figure they asked for.
+				notes = Say(answer.Notes),
+				suggestions = answer.Suggestions
+					.Select(s => new { label = s.Label, question = s.Question }).ToList(),
+				rows = answer.Rows,
+				provenance = new
+				{
+					companyId = answer.Provenance.CompanyId,
+					companyName = ViewBag.CompanyName as string,
+					sources = answer.Provenance.Sources,
+					authority = answer.Provenance.Authority,
+					rowsWithheld = answer.Provenance.RowsWithheld,
+					complete = answer.Provenance.Complete,
+					withheldNote = Say(answer.Provenance.WithheldNote),
+				},
+			});
+		}
+
+		// =================================================================================================
+		// WHAT THE ASSISTANT IS BEING ASKED AND CANNOT ANSWER.
+		//
+		// A GET, because it reads. Gated by inventory "manage" rather than "read": the list is a list of
+		// what people typed, and while it names no one, it is still a window onto the questions being
+		// asked across the company rather than a figure about stock.
+		//
+		// This is the thing that was missing while five separate gaps were found by screenshot. Sorted
+		// by how often each wording was refused, so the next one to fix is the first one on the page.
+		// =================================================================================================
+		// IT WAS A JSON ENDPOINT, WHICH MEANT NOBODY SAW IT.
+		//
+		// The log existed so the product would report its own gaps instead of the owner finding
+		// them one screenshot at a time. Returning JSON to a browser does not do that: it is a
+		// diagnostic only the person who wrote it can read, which is the same invisibility it was
+		// built to end. So it is a screen now, and the JSON shape is gone rather than kept beside
+		// it — two surfaces for one fact drift apart.
+		[SessionValidation]
+		[HttpGet]
+		[InvPerm("manage")]
+		public IActionResult AskGaps(
+			[FromServices] CrossBuy.BL.Platform.Ai.IAskRefusalLog log, int days = 14)
+		{
+			if (days is < 1 or > 365) days = 14;
+			var groups = log.Summarise(days, MaxGapWordings);
+
+			// THE HEADLINE FIGURES ARE OVER THE WHOLE SET, never over one page — the house rule for
+			// every server list. A "total refusals" that moved when you paged would be worthless.
+			ViewBag.Days = days;
+			ViewBag.DistinctWordings = groups.Count;
+			ViewBag.TotalRefusals = groups.Sum(g => g.Count);
+			ViewBag.TopCount = groups.Count == 0 ? 0 : groups[0].Count;
+			return View();
+		}
+
+		/// One page of the refused-question list, as the row partial cbServerList injects.
+		[SessionValidation]
+		[HttpGet]
+		[InvPerm("manage")]
+		public IActionResult AskGapsData(
+			[FromServices] CrossBuy.BL.Platform.Ai.IAskRefusalLog log,
+			int days = 14, string? q = null, int page = 1, int pageSize = 25)
+		{
+			if (days is < 1 or > 365) days = 14;
+			if (pageSize is < 1 or > 200) pageSize = 25;
+			if (page < 1) page = 1;
+
+			var groups = log.Summarise(days, MaxGapWordings);
+
+			// Tagify sends terms space- or comma-separated, and EVERY term must match — the same
+			// contract as the attendance list, so the two screens behave identically under search.
+			var terms = (q ?? "").Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+				.Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
+			var filtered = terms.Count == 0
+				? groups
+				: groups.Where(g => terms.All(t =>
+					g.Example.Contains(t, StringComparison.OrdinalIgnoreCase)
+					|| (g.Refusal ?? "").Contains(t, StringComparison.OrdinalIgnoreCase)
+					|| (g.TriedIntent ?? "").Contains(t, StringComparison.OrdinalIgnoreCase))).ToList();
+
+			var total = filtered.Count;
+			var pages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+			if (page > pages) page = pages;
+			var rows = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+			Response.Headers["X-Total"] = total.ToString();
+			Response.Headers["X-Page"] = page.ToString();
+			Response.Headers["X-Pages"] = pages.ToString();
+			return PartialView("_AskGapsRows", rows);
+		}
+
+		/// How many distinct wordings the screen will read at once. The log is one small file per
+		/// day; this bounds the read rather than the display, which pages on top of it.
+		private const int MaxGapWordings = 2000;
 
 		/// The window the model treats as "recent". Shown on the screen so the classification is judgeable.
 		private const int RiskWindowDays = 90;
 
+		// ===== Reorder point advice (AI, on-premises) =====
+		//
+		// WHY A SECOND AI SCREEN IN THIS CONTROLLER. RiskInsights classifies an item from a demand
+		// TOTAL. A reorder point cannot be computed from a total: on this installation 816 of 882
+		// outbound movements fall in two months and one of them put 2,470 units through a single day,
+		// so a total divided by its window reads a one-day burst as steady demand for ever. This
+		// screen sends the demand DISTRIBUTION instead, and the engine declines to answer where the
+		// history cannot carry a number.
+		//
+		// READ-ONLY. Loading this page writes nothing. A proposed figure reaches
+		// ItemWarehouseSettings only through ApplyReorderPoint below, one row at a time.
+		[HttpGet, InvPerm("read")]
+		public async Task<IActionResult> ReorderAdvice()
+		{
+			// Server-derived, and the action takes no company parameter at all, so there is nothing a
+			// caller could offer to be validated. Same reasoning as RiskInsights.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["InvErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var vm = new InventoryReorderVm
+			{
+				CompanyId = scope.CompanyId,
+				WindowDays = ReorderWindowDays,
+				ServiceLevel = ReorderServiceLevel,
+			};
+			var nowUtc = DateTime.UtcNow;
+
+			try
+			{
+				var response = await _insights.ComputeReorderPointsAsync(
+					scope.CompanyId, ReorderWindowDays, ReorderServiceLevel, ReorderDefaultLeadTimeDays);
+
+				if (response.Status != 200)
+				{
+					vm.Panel = AiInsightMapper.Map(response.Status, null, scope.CompanyId, nowUtc);
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
+					return View(vm);
+				}
+
+				var parsed = JsonSerializer.Deserialize<ReorderResult>(
+					response.Json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				if (parsed == null)
+				{
+					vm.Panel = AiInsightMapper.Failed("ai-insight:unreadable-response", scope.CompanyId, nowUtc);
+					ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
+					return View(vm);
+				}
+
+				// PairsAnalyzed, not Advised. Twelve proposals out of eighty-four pairs is a real
+				// result; twelve out of zero would be silence, and the panel must not render the two
+				// the same way. This is the same distinction RiskInsights draws with ItemsAnalyzed.
+				vm.Result = parsed;
+				vm.Panel = AiInsightMapper.Map(200, parsed.PairsAnalyzed, scope.CompanyId, nowUtc);
+			}
+			catch (JsonException)
+			{
+				vm.Panel = AiInsightMapper.Failed("ai-insight:unreadable-response", scope.CompanyId, nowUtc);
+			}
+			catch (HttpRequestException)
+			{
+				// The on-premises model is not running. Inventory keeps working; only this panel is empty.
+				vm.Panel = AiInsightMapper.Unavailable("ai-insight:service-unavailable", scope.CompanyId, nowUtc);
+			}
+			catch (TaskCanceledException)
+			{
+				vm.Panel = AiInsightMapper.Unavailable("ai-insight:service-timeout", scope.CompanyId, nowUtc);
+			}
+
+			ViewBag.CompanyName = await CrossBuy.BL.CompanyDisplay.NameAsync(_context, vm.CompanyId);
+			return View(vm);
+		}
+
+		// THE ONLY WRITE IN THIS FEATURE, and it is a human decision, not the model's.
+		//
+		// The figures arrive from the FORM rather than being recomputed here, which is deliberate: the
+		// buyer accepts the number they were actually shown, not whatever the engine would say on a
+		// second call a minute later. They are bounded and re-validated below, so a tampered form can
+		// write a wrong-but-harmless number into a settings row and nothing else.
+		//
+		// InvPerm("manage"), not "read": reading advice and changing a stocking policy are different
+		// authorities, and the screen is visible to people who may not hold the second.
+		// RETURNS JSON, NOT A REDIRECT. The house standard for a list the user can change is that a
+		// mutation repaints its own row and nothing else; a redirect would throw away the reader's
+		// place in a table whose whole point is comparing rows against one another. The refusal KIND
+		// travels as `code`, never as message text — matching a localised string works in Arabic and
+		// silently stops working in English.
+		[HttpPost, ValidateAntiForgeryToken, InvPerm("manage"), RequestSizeLimit(8192)]
+		public async Task<IActionResult> ApplyReorderPoint(
+			int itemId, int warehouseId, decimal reorderPoint, decimal safetyStock, int leadTimeDays)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+				return Json(new { ok = false, code = "forbidden", message = L["You do not have permission to perform this action"].Value });
+
+			// The ITEM carries the company, so this is what proves the target belongs to the caller's
+			// company. ItemWarehouseSettings has no CompanyID of its own and cannot be checked directly.
+			//
+			// The refusal is deliberately IDENTICAL to the permission refusal above: "that item is not
+			// yours" and "that item does not exist" must be indistinguishable to a caller probing ids.
+			var ownsItem = await _context.Items.AsNoTracking()
+				.AnyAsync(i => i.ID == itemId && i.CompanyID == scope.CompanyId);
+			if (!ownsItem)
+				return Json(new { ok = false, code = "forbidden", message = L["You do not have permission to perform this action"].Value });
+
+			if (reorderPoint < 0 || safetyStock < 0 || leadTimeDays < 0 || leadTimeDays > 365)
+				return Json(new { ok = false, code = "invalid", message = L["Invalid value"].Value });
+
+			var row = await _context.ItemWarehouseSettings
+				.FirstOrDefaultAsync(s => s.ItemId == itemId && s.WarehouseId == warehouseId);
+			if (row == null)
+			{
+				// No settings row has ever existed for this pair — the expected case here, since this
+				// feature exists precisely because these rows were never filled in.
+				row = new ItemWarehouseSetting { ItemId = itemId, WarehouseId = warehouseId };
+				_context.ItemWarehouseSettings.Add(row);
+			}
+
+			row.ReorderPoint = reorderPoint;
+			row.SafetyStock = safetyStock;
+			// Only overwrite the lead time when a real one was accepted. Writing the engine's 7-day
+			// fallback would turn an ASSUMPTION into a recorded fact, and the next run would then read
+			// it back as a setting and stop warning that it was never measured.
+			if (leadTimeDays > 0) row.LeadTimeDays = leadTimeDays;
+			await _context.SaveChangesAsync();
+
+			return Json(new
+			{
+				ok = true,
+				reorderPoint = row.ReorderPoint,
+				safetyStock = row.SafetyStock,
+				leadTimeDays = row.LeadTimeDays,
+				message = L["Saved"].Value
+			});
+		}
+
+		/// How far back the demand distribution is measured. Longer than RiskWindowDays because a
+		/// reorder point needs enough DAYS to grade, and this catalogue's movements are sparse.
+		private const int ReorderWindowDays = 180;
+
+		/// The probability of not stocking out during a lead time. It drives z, and therefore the
+		/// safety stock, directly — 0.95 is the common default and is shown on the screen so a reader
+		/// can see which promise the number is keeping.
+		private const double ReorderServiceLevel = 0.95;
+
+		/// Used only where ItemWarehouseSettings.LeadTimeDays is null, which on this installation is
+		/// every row. The engine marks any row that fell back to it, so the assumption is visible
+		/// rather than buried.
+		private const double ReorderDefaultLeadTimeDays = 7.0;
+
 		[HttpGet] public async Task<IActionResult> StockMovements(int? itemId, int? warehouseId)
 		{
+			// THE TYPES THIS COMPANY ACTUALLY HAS, read from the data instead of hard-coded. A fixed list
+			// goes stale the day a new document type posts its first movement, and the symptom is a filter
+			// that silently cannot reach rows the table is already showing.
+			ViewBag.SourceTypes = await _context.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == co && m.SourceType != null)
+				.Select(m => m.SourceType!).Distinct().OrderBy(x => x).ToListAsync();
 			await PopulateStockListsAsync();
 			ViewBag.FilterItemId = itemId; ViewBag.FilterWarehouseId = warehouseId;
 			return View();   // shell; rows via StockMovementsData
@@ -789,10 +1099,28 @@ namespace CrossBuy.Controllers
 		// ONE PLACE THAT BUILDS THE FILTER. The list and the summary MUST see the same rows: a total
 		// that describes a different set than the table under it is worse than no total. Rebuilding
 		// the predicate in two places is how they drift, so there is only one.
-		private IQueryable<MovementRow> MovementsFiltered(string? q, int? warehouseId)
+		// ONE FILTER, FOUR READERS: the list, the ticker above it, the movers chart and the Excel
+		// export. They must narrow identically or the page contradicts itself - a ticker describing
+		// 1,454 rows over a table showing 300 is worse than no ticker at all.
+		private IQueryable<MovementRow> MovementsFiltered(string? q, int? warehouseId,
+			string? sourceType = null, int? direction = null, DateTime? from = null, DateTime? to = null)
 		{
 			var src = _context.StockMovements.AsNoTracking().Where(m => m.CompanyID == co);
 			if (warehouseId.HasValue && warehouseId.Value > 0) src = src.Where(m => m.WarehouseId == warehouseId.Value);
+
+			// EXACT, not Contains: "PurchaseInvoice" and "PurchaseInvoiceEdit" are different documents,
+			// and the screen that prompted this was full of both. The free-text box still matches
+			// loosely; this control is the one that answers "show me only the edits".
+			if (!string.IsNullOrWhiteSpace(sourceType)) src = src.Where(m => m.SourceType == sourceType);
+
+			if (direction == 1) src = src.Where(m => m.Direction == 1);
+			else if (direction == -1) src = src.Where(m => m.Direction == -1);
+
+			// Whole days. `to` is compared against the START of the following day, so a movement stamped
+			// at 14:30 on the end date falls inside the range instead of just outside it - the classic
+			// off-by-one that makes a report quietly drop its last day.
+			if (from.HasValue) { var f = from.Value.Date; src = src.Where(m => m.MovementDate >= f); }
+			if (to.HasValue) { var t2 = to.Value.Date.AddDays(1); src = src.Where(m => m.MovementDate < t2); }
 			var q0 = from m in src
 					 join i in _context.Items.AsNoTracking() on m.ItemId equals i.ID
 					 join w in _context.Warehouses.AsNoTracking() on m.WarehouseId equals w.ID into wj
@@ -818,9 +1146,10 @@ namespace CrossBuy.Controllers
 
 		// THE TICKER. Quantity and value moved across the WHOLE filter, plus the items moving most.
 		// Read-only, and it issues no query the list does not already issue.
-		[HttpGet] public async Task<IActionResult> StockMovementsSummary(string? q, int? warehouseId)
+		[HttpGet] public async Task<IActionResult> StockMovementsSummary(string? q, int? warehouseId,
+			string? sourceType = null, int? direction = null, DateTime? from = null, DateTime? to = null)
 		{
-			var q0 = MovementsFiltered(q, warehouseId);
+			var q0 = MovementsFiltered(q, warehouseId, sourceType, direction, from, to);
 
 			// Direction is +1 in / -1 out. Summed separately so "moved 900 units" cannot hide 450 in
 			// and 450 out, which nets to nothing and is a completely different day.
@@ -866,8 +1195,9 @@ namespace CrossBuy.Controllers
 				})
 			});
 		}
-		[HttpGet] public async Task<IActionResult> StockMovementsData(string? q, int? warehouseId, int page = 1, int pageSize = 25)
-		{			var q0 = MovementsFiltered(q, warehouseId);
+		[HttpGet] public async Task<IActionResult> StockMovementsData(string? q, int? warehouseId, int page = 1, int pageSize = 25,
+			string? sourceType = null, int? direction = null, DateTime? from = null, DateTime? to = null)
+		{			var q0 = MovementsFiltered(q, warehouseId, sourceType, direction, from, to);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -1188,89 +1518,59 @@ namespace CrossBuy.Controllers
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Stock balances"].Value, headers, data, L["Stock balances — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "stock-balances.xlsx");
 		}
 
-		[HttpGet] public async Task<IActionResult> StockMovementsExport(string? q, int? warehouseId)
+		// THE EXPORT BUILT ITS OWN QUERY, a near-copy of MovementsFiltered that had already drifted:
+		// no bin-location join, and one fewer field in its search predicate. Adding a filter to the
+		// screen would therefore have exported MORE rows than the screen displayed - the worst kind
+		// of wrong, because the file looks authoritative and nobody re-counts it. One query now.
+		[HttpGet] public async Task<IActionResult> StockMovementsExport(string? q, int? warehouseId,
+			string? sourceType = null, int? direction = null, DateTime? from = null, DateTime? to = null)
 		{
-			var src = _context.StockMovements.AsNoTracking().Where(m => m.CompanyID == co);
-			if (warehouseId.HasValue && warehouseId.Value > 0) src = src.Where(m => m.WarehouseId == warehouseId.Value);
-			var q0 = from m in src
-					 join i in _context.Items.AsNoTracking() on m.ItemId equals i.ID
-					 join w in _context.Warehouses.AsNoTracking() on m.WarehouseId equals w.ID into wj from w in wj.DefaultIfEmpty()
-					 select new MovementRow { Id = m.ID, ItemCode = i.ItemCode, ItemName = i.Name, WarehouseCode = w != null ? w.Code : "", MovementDate = m.MovementDate, Direction = m.Direction, QtyBase = m.QtyBase, UnitCost = m.UnitCost, TotalCost = m.TotalCost, SourceType = m.SourceType, JournalEntryId = m.JournalEntryId };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<MovementRow>(terms, s => r => r.ItemCode.Contains(s) || r.ItemName.Contains(s) || (r.SourceType != null && r.SourceType.Contains(s)) || r.WarehouseCode.Contains(s)); if (pred != null) q0 = q0.Where(pred); }
+			var q0 = MovementsFiltered(q, warehouseId, sourceType, direction, from, to);
 			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
-			var headers = new[] { L["Date"].Value, L["Item code"].Value, L["Item"].Value, L["Warehouse"].Value, L["Type"].Value, L["In"].Value, L["Out"].Value, L["Unit cost"].Value, L["Value"].Value, L["Journal entry no."].Value };
-			var data = rows.Select(m => (IReadOnlyList<object?>)new object?[] { m.MovementDate, m.ItemCode, m.ItemName, m.WarehouseCode, m.SourceType, m.Direction == 1 ? m.QtyBase : 0m, m.Direction == -1 ? m.QtyBase : 0m, m.UnitCost, m.TotalCost, m.JournalEntryId });
+			// Location rides along in the shared query, so the file can carry the column the screen shows.
+			var headers = new[] { L["Date"].Value, L["Item code"].Value, L["Item"].Value, L["Warehouse"].Value, L["Location"].Value, L["Type"].Value, L["In"].Value, L["Out"].Value, L["Unit cost"].Value, L["Value"].Value, L["Journal entry no."].Value };
+			var data = rows.Select(m => (IReadOnlyList<object?>)new object?[] { m.MovementDate, m.ItemCode, m.ItemName, m.WarehouseCode, m.BinLocationCode, m.SourceType, m.Direction == 1 ? m.QtyBase : 0m, m.Direction == -1 ? m.QtyBase : 0m, m.UnitCost, m.TotalCost, m.JournalEntryId });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Stock movements"].Value, headers, data, L["Stock movements — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "stock-movements.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> PurchaseOrdersExport(string? q, string? status)
 		{
-			var q0 = from p in _context.PurchaseOrders.AsNoTracking().Where(p => p.CompanyID == co)
-					 join v in _context.Vendors.AsNoTracking() on p.VendorId equals v.ID into vj from v in vj.DefaultIfEmpty()
-					 select new PoRow { Id = p.ID, OrderNo = p.OrderNo, OrderDate = p.OrderDate, PartyName = v != null ? v.Name : null, GrandTotal = p.GrandTotal, Status = p.Status };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<PoRow>(terms, s => r => (r.OrderNo != null && r.OrderNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s))); if (pred != null) q0 = q0.Where(pred); }
-			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
-			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
+			var rows = await PurchaseOrdersFiltered(q, status).OrderByDescending(r => r.Id).ToListAsync();
 			var headers = new[] { L["Order no."].Value, L["Date"].Value, L["Vendor"].Value, L["Total"].Value, L["Status"].Value };
-			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.OrderNo, p.OrderDate, p.PartyName, p.GrandTotal, p.Status });
+			// The vendor cell reads the way the screen reads it, falling back when one language is blank.
+			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.OrderNo, p.OrderDate, CrossBuy.BL.DisplayName.Of(p.PartyName, p.PartyNameEn), p.GrandTotal, p.Status });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Purchase orders"].Value, headers, data, L["Purchase orders — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "purchase-orders.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> GoodsReceiptsExport(string? q)
 		{
-			var q0 = from g in _context.GoodsReceipts.AsNoTracking().Where(g => g.CompanyID == co)
-					 join v in _context.Vendors.AsNoTracking() on g.VendorId equals (int?)v.ID into vj from v in vj.DefaultIfEmpty()
-					 join w in _context.Warehouses.AsNoTracking() on g.WarehouseId equals w.ID into wj from w in wj.DefaultIfEmpty()
-					 select new GrRow { Id = g.ID, ReceiptNo = g.ReceiptNo, ReceiptDate = g.ReceiptDate, PartyName = v != null ? v.Name : null, WarehouseCode = w != null ? w.Code : "", RefId = g.PurchaseOrderId, TotalCost = g.TotalCost };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<GrRow>(terms, s => r => (r.ReceiptNo != null && r.ReceiptNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s)) || r.WarehouseCode.Contains(s)); if (pred != null) q0 = q0.Where(pred); }
-			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
+			var rows = await GoodsReceiptsFiltered(q).OrderByDescending(r => r.Id).ToListAsync();
 			var headers = new[] { L["Note no."].Value, L["Date"].Value, L["Vendor"].Value, L["Warehouse"].Value, L["Purchase order"].Value, L["Total cost"].Value };
-			var data = rows.Select(g => (IReadOnlyList<object?>)new object?[] { g.ReceiptNo, g.ReceiptDate, g.PartyName, g.WarehouseCode, g.RefId, g.TotalCost });
+			var data = rows.Select(g => (IReadOnlyList<object?>)new object?[] { g.ReceiptNo, g.ReceiptDate, CrossBuy.BL.DisplayName.Of(g.PartyName, g.PartyNameEn), g.WarehouseCode, g.RefId, g.TotalCost });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Goods receipts"].Value, headers, data, L["Goods receipts — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "goods-receipts.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> SalesOrdersExport(string? q, string? status)
 		{
-			var q0 = from p in _context.SalesOrders.AsNoTracking().Where(p => p.CompanyID == co)
-					 join c in _context.Customers.AsNoTracking() on p.CustomerId equals c.ID into cj from c in cj.DefaultIfEmpty()
-					 select new SoRow { Id = p.ID, OrderNo = p.OrderNo, OrderDate = p.OrderDate, PartyName = c != null ? c.Name : null, GrandTotal = p.GrandTotal, Status = p.Status };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<SoRow>(terms, s => r => (r.OrderNo != null && r.OrderNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s))); if (pred != null) q0 = q0.Where(pred); }
-			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
-			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
+			var rows = await SalesOrdersFiltered(q, status).OrderByDescending(r => r.Id).ToListAsync();
 			var headers = new[] { L["Order no."].Value, L["Date"].Value, L["Customer"].Value, L["Total"].Value, L["Status"].Value };
-			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.OrderNo, p.OrderDate, p.PartyName, p.GrandTotal, p.Status });
+			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.OrderNo, p.OrderDate, CrossBuy.BL.DisplayName.Of(p.PartyName, p.PartyNameEn), p.GrandTotal, p.Status });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Sales orders"].Value, headers, data, L["Sales orders — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "sales-orders.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> QuotationsExport(string? q, string? status)
 		{
-			var q0 = from p in _context.Quotations.AsNoTracking().Where(p => p.CompanyID == co)
-					 join c in _context.Customers.AsNoTracking() on p.CustomerId equals c.ID into cj from c in cj.DefaultIfEmpty()
-					 select new QuoteRow { Id = p.ID, QuoteNo = p.QuoteNo, QuoteDate = p.QuoteDate, ValidUntil = p.ValidUntil, PartyName = c != null ? c.Name : null, GrandTotal = p.GrandTotal, Status = p.Status };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<QuoteRow>(terms, s => r => (r.QuoteNo != null && r.QuoteNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s))); if (pred != null) q0 = q0.Where(pred); }
-			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
-			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
+			var rows = await QuotationsFiltered(q, status).OrderByDescending(r => r.Id).ToListAsync();
 			var headers = new[] { L["Quotation no."].Value, L["Date"].Value, L["Valid until"].Value, L["Customer"].Value, L["Total"].Value, L["Status"].Value };
-			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.QuoteNo, p.QuoteDate, p.ValidUntil, p.PartyName, p.GrandTotal, p.Status });
+			var data = rows.Select(p => (IReadOnlyList<object?>)new object?[] { p.QuoteNo, p.QuoteDate, p.ValidUntil, CrossBuy.BL.DisplayName.Of(p.PartyName, p.PartyNameEn), p.GrandTotal, p.Status });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Quotations"].Value, headers, data, L["Quotations — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "quotations.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> DeliveriesExport(string? q)
 		{
-			var q0 = from g in _context.DeliveryNotes.AsNoTracking().Where(g => g.CompanyID == co)
-					 join c in _context.Customers.AsNoTracking() on g.CustomerId equals (int?)c.ID into cj from c in cj.DefaultIfEmpty()
-					 join w in _context.Warehouses.AsNoTracking() on g.WarehouseId equals w.ID into wj from w in wj.DefaultIfEmpty()
-					 select new DeliveryRow { Id = g.ID, DeliveryNo = g.DeliveryNo, DeliveryDate = g.DeliveryDate, PartyName = c != null ? c.Name : null, WarehouseCode = w != null ? w.Code : "", RefId = g.SalesOrderId, TotalCost = g.TotalCost };
-			var terms = SearchTerms.Parse(q);
-			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<DeliveryRow>(terms, s => r => (r.DeliveryNo != null && r.DeliveryNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s)) || r.WarehouseCode.Contains(s)); if (pred != null) q0 = q0.Where(pred); }
-			var rows = await q0.OrderByDescending(r => r.Id).ToListAsync();
+			var rows = await DeliveriesFiltered(q).OrderByDescending(r => r.Id).ToListAsync();
 			var headers = new[] { L["Note no."].Value, L["Date"].Value, L["Customer"].Value, L["Warehouse"].Value, L["Sales order"].Value, L["Total cost"].Value };
-			var data = rows.Select(g => (IReadOnlyList<object?>)new object?[] { g.DeliveryNo, g.DeliveryDate, g.PartyName, g.WarehouseCode, g.RefId, g.TotalCost });
+			var data = rows.Select(g => (IReadOnlyList<object?>)new object?[] { g.DeliveryNo, g.DeliveryDate, CrossBuy.BL.DisplayName.Of(g.PartyName, g.PartyNameEn), g.WarehouseCode, g.RefId, g.TotalCost });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Deliveries"].Value, headers, data, L["Deliveries — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "deliveries.xlsx");
 		}
 
@@ -1621,8 +1921,13 @@ namespace CrossBuy.Controllers
 			var demands = await _manuf.GetPlanDemandsAsync(co, id);
 			ViewBag.Demands = demands;
 			var demandIds = demands.Select(d => d.ItemId).ToList();
-			ViewBag.DemandItemNames = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && demandIds.Contains(i.ID))
-				.ToDictionaryAsync(i => i.ID, i => i.ItemCode + " — " + i.Name);
+			// THE ARABIC NAME ONLY, on every culture. Materialised first because ItemDisplayName()
+			// cannot be used inside an EF expression and IsNullOrWhiteSpace is not reliably translated;
+			// this is the same shape the manufacturing dashboard below already uses.
+			var demandItems = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && demandIds.Contains(i.ID))
+				.Select(i => new { i.ID, i.ItemCode, i.Name, i.NameEn }).ToListAsync();
+			ViewBag.DemandItemNames = demandItems.ToDictionary(i => i.ID,
+				i => i.ItemCode + " — " + (!Ar() && !string.IsNullOrWhiteSpace(i.NameEn) ? i.NameEn! : i.Name));
 			ViewBag.Mrp = await _manuf.RunMrpAsync(co, id);
 			ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(co);
 			return View();
@@ -1736,7 +2041,11 @@ namespace CrossBuy.Controllers
 
 		[HttpGet] public IActionResult PurchaseOrders() => View();   // shell; rows via PurchaseOrdersData
 
-		[HttpGet] public async Task<IActionResult> PurchaseOrdersData(string? q, string? status, int page = 1, int pageSize = 25)
+		// ONE QUERY FOR THE SCREEN AND THE FILE. The export used to carry its own copy of this, and the
+		// copy had drifted: it searched PartyName only, never PartyNameEn. Searching a vendor by its
+		// English name therefore listed rows on screen and exported a file WITHOUT them - a silent
+		// subset, which is worse than a loud error because the file looks like the answer.
+		private IQueryable<PoRow> PurchaseOrdersFiltered(string? q, string? status)
 		{
 			var q0 = from p in _context.PurchaseOrders.AsNoTracking().Where(p => p.CompanyID == co)
 					 join v in _context.Vendors.AsNoTracking() on p.VendorId equals v.ID into vj
@@ -1749,10 +2058,17 @@ namespace CrossBuy.Controllers
 				if (pred != null) q0 = q0.Where(pred);
 			}
 			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
+			return q0;
+		}
+
+		[HttpGet] public async Task<IActionResult> PurchaseOrdersData([FromServices] IConstructionPurchaseApprovalService constructionPurchases, string? q, string? status, int page = 1, int pageSize = 25)
+		{
+			var q0 = PurchaseOrdersFiltered(q, status);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 			SetPaging(total, page, pageSize);
+			ViewBag.ConstructionPurchaseRequests = (await constructionPurchases.RequestLinksAsync(rows.Select(x => x.Id).ToArray(), HttpContext.RequestAborted)).ToDictionary(x => x.OrderId, x => x.ProjectId);
 			return PartialView("_PoRows", rows);
 		}
 
@@ -1772,7 +2088,7 @@ namespace CrossBuy.Controllers
 			var poTotal = lines.Sum(l => l.Qty * l.UnitPrice - l.DiscountAmount + (l.Qty * l.UnitPrice - l.DiscountAmount) * l.TaxRate / 100m);
 			if (await _approvals.RequiresApprovalAsync(poTotal))
 			{
-				await _approvals.SubmitAsync("PurchaseOrder", poTotal, new PoApprovalPayload { VendorId = vendorId, WarehouseId = warehouseId, OrderDate = orderDate, ExpectedDate = expectedDate, Notes = notes, Lines = lines }, _access.CurrentEmployeeId());
+				await _approvals.SubmitAsync("PurchaseOrder", poTotal, new PoApprovalPayload { VendorId = vendorId, WarehouseId = warehouseId, ProjectId = projectId, OrderDate = orderDate, ExpectedDate = expectedDate, Notes = notes, Lines = lines }, _access.CurrentEmployeeId());
 				TempData["InvMsg"] = L["Purchase order exceeds the approval limit — sent for approval"].Value;
 				return RedirectToAction(nameof(Approvals));
 			}
@@ -1787,13 +2103,17 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> ConvertPoToInvoice(int id)
 		{
 			var (ok, err, invId) = await _proc.ConvertToInvoiceAsync(co, id, null);
+			if (err == "The purchase order must be approved before invoicing") err = L[err].Value;
+			if (err == ProcurementService.PartialInvoiceConversionRefusal) err = L["Construction.PartialInvoice.FullConversionRefused"].Value;
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? string.Format(L["Purchase order converted to a purchase invoice (#{0})"].Value, invId) : err;
 			return RedirectToAction(nameof(PurchaseOrders));
 		}
 
 		[HttpGet] public IActionResult GoodsReceipts() => View();   // shell; rows via GoodsReceiptsData
 
-		[HttpGet] public async Task<IActionResult> GoodsReceiptsData(string? q, int page = 1, int pageSize = 25)
+		// ONE QUERY FOR THE SCREEN AND THE FILE - see PurchaseOrdersFiltered for why the export's own
+		// copy was a defect and not just duplication.
+		private IQueryable<GrRow> GoodsReceiptsFiltered(string? q)
 		{
 			var q0 = from g in _context.GoodsReceipts.AsNoTracking().Where(g => g.CompanyID == co)
 					 join v in _context.Vendors.AsNoTracking() on g.VendorId equals (int?)v.ID into vj
@@ -1807,6 +2127,12 @@ namespace CrossBuy.Controllers
 				var pred = PredicateBuilder.AnyTerm<GrRow>(terms, s => r => (r.ReceiptNo != null && r.ReceiptNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s)) || (r.PartyNameEn != null && r.PartyNameEn.Contains(s)) || r.WarehouseCode.Contains(s));
 				if (pred != null) q0 = q0.Where(pred);
 			}
+			return q0;
+		}
+
+		[HttpGet] public async Task<IActionResult> GoodsReceiptsData(string? q, int page = 1, int pageSize = 25)
+		{
+			var q0 = GoodsReceiptsFiltered(q);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -1835,6 +2161,8 @@ namespace CrossBuy.Controllers
 			if (currencyId.HasValue && currencyId.Value != functional && !await _accAccess.CanAsync("currency-override"))
 			{ TempData["InvErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(NewGoodsReceipt), new { poId }); }
 			var (ok, err, _) = await _proc.CreateReceiptAsync(co, vendorId, warehouseId, poId, receiptDate, notes, lines, null, currencyId, exchangeRate);
+			if (err == "The purchase order must be approved before receiving goods") err = L[err].Value;
+			if (err == "WarehouseExceptionContinuationUnavailable") err = L["Construction.Rebase.Error.WarehouseExceptionContinuationUnavailable"].Value;
 			if (!ok) { TempData["InvErr"] = err; return RedirectToAction(nameof(NewGoodsReceipt), new { poId }); }
 			TempData["InvMsg"] = L["Goods receipt posted; stock updated"].Value;
 			return RedirectToAction(nameof(GoodsReceipts));
@@ -1851,7 +2179,8 @@ namespace CrossBuy.Controllers
 
 		[HttpGet] public IActionResult SalesOrders() => View();   // shell; rows via SalesOrdersData
 
-		[HttpGet] public async Task<IActionResult> SalesOrdersData(string? q, string? status, int page = 1, int pageSize = 25)
+		// ONE QUERY FOR THE SCREEN AND THE FILE - see PurchaseOrdersFiltered.
+		private IQueryable<SoRow> SalesOrdersFiltered(string? q, string? status)
 		{
 			var q0 = from p in _context.SalesOrders.AsNoTracking().Where(p => p.CompanyID == co)
 					 join c in _context.Customers.AsNoTracking() on p.CustomerId equals c.ID into cj
@@ -1864,6 +2193,12 @@ namespace CrossBuy.Controllers
 				if (pred != null) q0 = q0.Where(pred);
 			}
 			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
+			return q0;
+		}
+
+		[HttpGet] public async Task<IActionResult> SalesOrdersData(string? q, string? status, int page = 1, int pageSize = 25)
+		{
+			var q0 = SalesOrdersFiltered(q, status);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -1924,7 +2259,8 @@ namespace CrossBuy.Controllers
 		// ---------------- Quotations (P3-2) ----------------
 		[HttpGet] public IActionResult Quotations() => View();   // shell; rows via QuotationsData
 
-		[HttpGet] public async Task<IActionResult> QuotationsData(string? q, string? status, int page = 1, int pageSize = 25)
+		// ONE QUERY FOR THE SCREEN AND THE FILE - see PurchaseOrdersFiltered.
+		private IQueryable<QuoteRow> QuotationsFiltered(string? q, string? status)
 		{
 			var q0 = from p in _context.Quotations.AsNoTracking().Where(p => p.CompanyID == co)
 					 join c in _context.Customers.AsNoTracking() on p.CustomerId equals c.ID into cj
@@ -1937,6 +2273,12 @@ namespace CrossBuy.Controllers
 				if (pred != null) q0 = q0.Where(pred);
 			}
 			if (!string.IsNullOrWhiteSpace(status)) q0 = q0.Where(r => r.Status == status);
+			return q0;
+		}
+
+		[HttpGet] public async Task<IActionResult> QuotationsData(string? q, string? status, int page = 1, int pageSize = 25)
+		{
+			var q0 = QuotationsFiltered(q, status);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -2137,6 +2479,26 @@ namespace CrossBuy.Controllers
 				error = L["Conversations are unavailable in this environment"].Value,
 			});
 
+		// GET /Inventory/QuotationConversationMentions?id=123&entity=Quotation&q=ahm
+		//
+		// The @-picker's list for this document's conversation. Same gate as the conversation, same
+		// shared rule as every other screen that mounts the panel — see CommMentionCandidates for
+		// why the query lives in one place rather than once per controller.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> QuotationConversationMentions(
+			int id, string? entity = null, string? q = null, CancellationToken ct = default)
+		{
+			var gate = await QuotationConversationGateAsync(id, "read", ct, entity);
+			if (!gate.Ok || gate.Context == null) return Json(System.Array.Empty<object>());
+
+			var rows = await CrossBuy.BL.Communication.CommMentionCandidates.SearchAsync(
+				_context, gate.Context.CompanyId, gate.Context.EmployeeId, q,
+				arabic: System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar",
+				cancellationToken: ct);
+
+			return Json(rows.Select(r => new { id = r.Id, name = r.Name, avatar = r.Avatar }));
+		}
+
 		// GET /Inventory/QuotationConversation?id=123
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> QuotationConversation(int id, string? entity = null, CancellationToken ct = default)
@@ -2154,10 +2516,25 @@ namespace CrossBuy.Controllers
 				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
 			if (!allowed.Allowed) return QuotationConversationUnavailable("capability_disabled");
 
-			var thread = await comm.Value.Threads.GetOrCreateAsync(gate.Context!,
-				new CrossBuy.Models.Communication.CommThreadRequest { Entity = reference }, ct);
+			// READ, NEVER CREATE. This is a GET: opening a quotation must not write a CommThreads row, nor
+			// stamp a CreatedBy and CreatedAt for somebody who only looked at the record. The thread is
+			// created by the FIRST COMMENT — CommCommentService.AddAsync resolves it itself when no
+			// ThreadId is supplied, which is exactly what QuotationConversationAdd passes.
+			//
+			// SELECTED BY IDENTITY, NOT BY RECENCY. ListForEntityAsync returns every thread on this
+			// record ordered by LastActivityAt, across all kinds. UX_CommThreads_Anchor keys the
+			// canonical thread on (CompanyID, EntityType, EntityId, Kind, ThreadKey) and
+			// CommThreadRequest defaults to Discussion with an empty key — so taking the first row back
+			// would hand this panel a Notes or Review thread whenever one of those was busier, which is
+			// a different conversation wearing the same name.
+			var threads = await comm.Value.Threads.ListForEntityAsync(gate.Context!, reference, ct);
+			var thread = threads.FirstOrDefault(t =>
+				string.Equals(t.Kind, CrossBuy.Models.Communication.CommThreadKind.Discussion, StringComparison.Ordinal)
+				&& t.ThreadKey.Length == 0);
 
-			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
+			var page = thread == null
+				? CrossBuy.Models.Communication.CommPage<CrossBuy.Models.Communication.CommCommentDto>.Empty()
+				: await comm.Value.Comments.ListAsync(gate.Context!, thread.ThreadId, null, ct);
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 
 			// THE AUTHORS' PHOTOGRAPHS, resolved once for the page rather than per comment. Scoped to
@@ -2170,7 +2547,9 @@ namespace CrossBuy.Controllers
 			return Json(new
 			{
 				ok = true,
-				threadId = thread.Id,
+				// NULL until the first comment creates the thread. The field is kept so the response
+				// shape is unchanged; no client reads it today.
+				threadId = thread?.ThreadId,
 				entity = new { code = gate.EntityCode, id },
 				canReact = comm.Value.Reactions is not null,
 				me = await CrossBuy.BL.Communication.CommPanel.MeAsync(_context, gate.Context!, isAr, ct),
@@ -2184,7 +2563,8 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 		[RequestSizeLimit(21_000_000)]   // CommPanel.MaxUploadBytes plus the form envelope
 		public async Task<IActionResult> QuotationConversationAdd(int id, string? body,
-			long? parentCommentId, IFormFile? file, string? entity = null, CancellationToken ct = default)
+			long? parentCommentId, IFormFile? file, string? entity = null, int[]? mentionIds = null,
+			CancellationToken ct = default)
 		{
 			// doc rather than read: adding to the record discussion is a mutation of the record history,
 			// so it claims the module document ability. A reader who may not change the quotation may not
@@ -2192,7 +2572,12 @@ namespace CrossBuy.Controllers
 			//
 			// The refusal is byte-identical to the read refusal, so the write path is not an existence
 			// oracle either.
-			var gate = await QuotationConversationGateAsync(id, "doc", ct);
+			// THE ENTITY CODE MUST TRAVEL. Omitting it makes the gate fall back to Quotation, so a
+			// purchase order, receipt, delivery, transfer, count, write-off or landed cost was looked
+			// up as a quotation that does not exist and the post answered 404. Reading worked the whole
+			// time because the read, mentions and react paths all pass it - this one did not, which is
+			// why the conversation rendered and then refused every message sent to it.
+			var gate = await QuotationConversationGateAsync(id, "doc", ct, entity);
 			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
 
 			if (string.IsNullOrWhiteSpace(body))
@@ -2226,6 +2611,22 @@ namespace CrossBuy.Controllers
 					Body = body ?? "",
 					ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
 					Attachments = attachment is null ? null : new[] { attachment },
+
+					// The picker's ids, same contract as the Accounting side: the composer shows a
+					// NAME and sends the id beside it, because the platform grammar is unreadable in
+					// the middle of a sentence someone is writing. The service unions these with
+					// whatever it parses from the body, so typing the raw token still works.
+					//
+					// NOT TRUSTED AS A GRANT. An id here only says "mention this employee"; who ends
+					// up notified is still decided by CommNotificationService, which drops the author
+					// and anyone who may not read this document.
+					Mentions = (mentionIds ?? Array.Empty<int>())
+						.Where(m => m > 0).Distinct()
+						.Select(m => new CrossBuy.Models.Communication.CommMentionRequest
+						{
+							TargetKind = CrossBuy.Models.Communication.CommMentionTargetKind.Employee,
+							TargetId = m,
+						}).ToList(),
 				}, ct);
 
 			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
@@ -2312,7 +2713,8 @@ namespace CrossBuy.Controllers
 
 		[HttpGet] public IActionResult Deliveries() => View();   // shell; rows via DeliveriesData
 
-		[HttpGet] public async Task<IActionResult> DeliveriesData(string? q, int page = 1, int pageSize = 25)
+		// ONE QUERY FOR THE SCREEN AND THE FILE - see PurchaseOrdersFiltered.
+		private IQueryable<DeliveryRow> DeliveriesFiltered(string? q)
 		{
 			var q0 = from g in _context.DeliveryNotes.AsNoTracking().Where(g => g.CompanyID == co)
 					 join c in _context.Customers.AsNoTracking() on g.CustomerId equals (int?)c.ID into cj
@@ -2326,6 +2728,12 @@ namespace CrossBuy.Controllers
 				var pred = PredicateBuilder.AnyTerm<DeliveryRow>(terms, s => r => (r.DeliveryNo != null && r.DeliveryNo.Contains(s)) || (r.PartyName != null && r.PartyName.Contains(s)) || (r.PartyNameEn != null && r.PartyNameEn.Contains(s)) || r.WarehouseCode.Contains(s));
 				if (pred != null) q0 = q0.Where(pred);
 			}
+			return q0;
+		}
+
+		[HttpGet] public async Task<IActionResult> DeliveriesData(string? q, int page = 1, int pageSize = 25)
+		{
+			var q0 = DeliveriesFiltered(q);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -2337,6 +2745,18 @@ namespace CrossBuy.Controllers
 		{
 			await PopulateSellingListsAsync();
 			if (soId != null) ViewBag.FromSO = await _sell.GetSalesOrderAsync(co, soId.Value);
+			// The orders still waiting on goods, so this screen can be TOLD what it is delivering.
+			// Reached from the Deliveries list there was no way to say, and a delivery that names no
+			// order leaves the order believing nothing shipped - which makes its invoice issue the
+			// stock all over again.
+			// SelectListItem, not an anonymous type: an anonymous type is internal to this assembly, so a
+			// Razor view reading it through `dynamic` throws at runtime rather than at build.
+			else ViewBag.OpenSOs = (await _context.SalesOrders.AsNoTracking()
+				.Where(o => o.CompanyID == co && (o.Status == "Approved" || o.Status == "Delivered"))
+				.OrderByDescending(o => o.ID).Take(200)
+				.Select(o => new { o.ID, o.OrderNo, o.GrandTotal }).ToListAsync())
+				.Select(o => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+					$"{o.OrderNo} — {o.GrandTotal:N2}", o.ID.ToString())).ToList();
 			return View();
 		}
 
@@ -2910,10 +3330,176 @@ namespace CrossBuy.Controllers
 			return View(rows.OrderBy(r => r.DaysToExpiry ?? int.MaxValue).ToList());
 		}
 
+		[HttpGet, InvPerm("purchase")]
+		public async Task<IActionResult> ConstructionPurchaseApproval(int projectId, int orderId, [FromServices] IConstructionPurchaseApprovalService constructionPurchases,
+            [FromServices] IConstructionWarehouseExceptionWorkspace? warehouseWorkspace=null,
+            [FromServices] IConstructionRebasedWarehouseConsentWorkspace? consentWorkspace=null,
+            [FromServices] IConstructionRebasedWarehouseConsentService? consentService=null,int? warehouseSiteId=null)
+		{
+			var page = await constructionPurchases.ReadRequestAsync(projectId, orderId, HttpContext.RequestAborted);
+            if(page!=null&&warehouseWorkspace!=null)
+            {
+                var warehousePage=await warehouseWorkspace.ReadAsync(projectId,orderId,warehouseSiteId,HttpContext.RequestAborted);
+                ViewBag.WarehouseException=warehousePage;
+                if(warehousePage!=null&&consentWorkspace!=null)
+                {
+                    ViewBag.RebasedWarehouseConsent=await consentWorkspace.ReadAsync(projectId,orderId,warehousePage.Sites,warehouseSiteId,HttpContext.RequestAborted);
+                    if(warehouseSiteId.HasValue&&consentService!=null)
+                        ViewBag.RebasedWarehouseConsentQuote=await consentService.PreviewAsync(projectId,orderId,warehouseSiteId.Value,HttpContext.RequestAborted);
+                }
+            }
+			return page == null ? NotFound() : View(page);
+		}
+
+        [HttpPost, ValidateAntiForgeryToken, InvPerm("purchase"), RequestSizeLimit(16384)]
+        public async Task<IActionResult> RequestConstructionRebasedWarehouseConsent(int projectId,int orderId,int destinationSiteId,string witness,Guid requestId,string reason,
+            [FromServices] IConstructionRebasedWarehouseConsentService consents)
+        {
+            var result=ModelState.IsValid?await consents.RequestAsync(projectId,orderId,destinationSiteId,witness,requestId,reason,HttpContext.RequestAborted):new ConstructionRebasedWarehouseConsentResult(false,"InvalidWarehouseExceptionRequest");
+            if(result.Code=="AccessDenied")return Forbid();
+            TempData[result.Ok?"InvMsg":"InvErr"]=RebasedConsentMessage(result.Ok,result.Code,"RequestSaved");
+            var routes=ConstructionPurchaseRoutes(projectId,orderId);routes["warehouseSiteId"]=destinationSiteId;
+            return RedirectToAction(nameof(ConstructionPurchaseApproval),routes);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken, InvPerm("manage"), RequestSizeLimit(16384)]
+        public async Task<IActionResult> DecideConstructionRebasedWarehouseConsent(int projectId,int orderId,int requestRowId,string outcome,Guid decisionId,string reason,
+            [FromServices] IConstructionRebasedWarehouseConsentService consents)
+        {
+            var result=ModelState.IsValid?await consents.DecideAsync(projectId,requestRowId,outcome,decisionId,reason,HttpContext.RequestAborted):new ConstructionRebasedWarehouseConsentResult(false,"InvalidWarehouseExceptionDecision");
+            if(result.Code=="AccessDenied")return Forbid();
+            TempData[result.Ok?"InvMsg":"InvErr"]=RebasedConsentMessage(result.Ok,result.Code,"DecisionSaved");
+            return RedirectToAction(nameof(ConstructionPurchaseApproval),ConstructionPurchaseRoutes(projectId,orderId));
+        }
+
+        private string RebasedConsentMessage(bool ok,string code,string successKey)
+        {
+            var key=ok?"Construction.RebasedWarehouseConsent."+successKey:"Construction.RebasedWarehouseConsent.Error."+code;
+            var message=L[key];
+            return message.ResourceNotFound?L["Construction.RebasedWarehouseConsent.Unavailable"].Value:message.Value;
+        }
+
+        [HttpPost, ValidateAntiForgeryToken, InvPerm("purchase"), RequestSizeLimit(16384)]
+        public async Task<IActionResult> RequestConstructionWarehouseException(int projectId,int orderId,int siteId,string witness,Guid requestId,string reason,
+            [FromServices] IConstructionWarehouseExceptionRequests requests,[FromServices] IConstructionWarehouseExceptionWorkspace workspace,[FromServices] IConstructionPurchaseApprovalService purchases)
+        {
+            var parent=await workspace.ReadAsync(projectId,orderId,siteId,HttpContext.RequestAborted);if(parent==null)return Forbid();
+            if(!parent.Sites.Any(x=>x.Id==siteId))return BadRequest();
+            var result=ModelState.IsValid?await requests.RequestAsync(orderId,siteId,witness,requestId,reason,HttpContext.RequestAborted):new ConstructionWarehouseExceptionRequestResult(false,"InvalidWarehouseExceptionRequest");
+            if(result.Code=="AccessDenied")return Forbid();
+            if(result.Ok){TempData["InvMsg"]=L["Construction.Warehouse.RequestSaved"].Value;return RedirectToAction(nameof(ConstructionPurchaseApproval),ConstructionPurchaseRoutes(projectId,orderId));}
+            var page=await purchases.ReadRequestAsync(projectId,orderId,HttpContext.RequestAborted);if(page==null)return NotFound();
+            var panel=await workspace.ReadAsync(projectId,orderId,siteId,HttpContext.RequestAborted);if(panel==null)return Forbid();
+            ViewBag.WarehouseException=panel with{Witness=witness,RequestId=requestId,Reason=reason??"",CanCreate=false,Refusal=true};Response.StatusCode=409;
+            return View(nameof(ConstructionPurchaseApproval),page with{CanSubmit=false});
+        }
+
+        [HttpPost, ValidateAntiForgeryToken, InvPerm("purchase"), RequestSizeLimit(16384)]
+        public async Task<IActionResult> DecideConstructionWarehouseException(int projectId,int orderId,int exceptionRequestId,string outcome,Guid decisionId,string reason,
+            [FromServices] IConstructionWarehouseExceptionDecisions decisions,[FromServices] IConstructionWarehouseExceptionWorkspace workspace,[FromServices] IConstructionPurchaseApprovalService purchases)
+        {
+            var panel=await workspace.ReadAsync(projectId,orderId,null,HttpContext.RequestAborted);if(panel==null)return Forbid();
+            if(!panel.History.Any(x=>x.Id==exceptionRequestId))return NotFound();
+            var result=ModelState.IsValid?await decisions.DecideAsync(projectId,exceptionRequestId,outcome,decisionId,reason,HttpContext.RequestAborted):new ConstructionWarehouseExceptionRequestResult(false,"InvalidWarehouseExceptionDecision");
+            if(result.Code=="AccessDenied")return Forbid();
+            if(result.Ok){TempData["InvMsg"]=L["Construction.Warehouse.DecisionSaved"].Value;return RedirectToAction(nameof(ConstructionPurchaseApproval),ConstructionPurchaseRoutes(projectId,orderId));}
+            var page=await purchases.ReadRequestAsync(projectId,orderId,HttpContext.RequestAborted);if(page==null)return NotFound();
+            ViewBag.WarehouseException=panel with{CanCreate=false,Refusal=true,Reason=reason??"",FailedRequestId=exceptionRequestId,FailedDecisionId=decisionId,FailedOutcome=outcome};Response.StatusCode=409;return View(nameof(ConstructionPurchaseApproval),page with{CanSubmit=false});
+        }
+
+		[HttpGet, InvPerm("purchase")]
+		public async Task<IActionResult> NewConstructionPurchase(int projectId, [FromServices] IConstructionPurchaseEditorService editor)
+		{
+			var page = await editor.ReadAsync(projectId, null, HttpContext.RequestAborted);
+			return page == null ? NotFound() : View(page);
+		}
+
+		[HttpGet, InvPerm("purchase")]
+		public async Task<IActionResult> ConstructionPurchaseAllocation(int projectId, int orderId, [FromServices] IConstructionPurchaseEditorService editor)
+		{
+			var page = await editor.ReadAsync(projectId, orderId, HttpContext.RequestAborted);
+			return page == null ? NotFound() : View(page);
+		}
+
+		private Microsoft.AspNetCore.Routing.RouteValueDictionary ConstructionPurchaseRoutes(int projectId, int? orderId = null) => new()
+		{
+			["projectId"] = projectId, ["orderId"] = orderId, ["culture"] = System.Globalization.CultureInfo.CurrentCulture.Name,
+			["ui-culture"] = System.Globalization.CultureInfo.CurrentUICulture.Name
+		};
+
+		private async Task<IActionResult> PurchaseEditorRefusal(int projectId, int? orderId, CrossBuy.ViewModel.ConstructionPurchaseEditorInput input,
+			string code, IConstructionPurchaseEditorService editor)
+		{
+			if (code == "AccessDenied") return Forbid();
+			var page = await editor.ReadAsync(projectId, orderId, HttpContext.RequestAborted); if (page == null) return NotFound();
+			var sameWitness = orderId.HasValue ? page.Input.SourceVersion == input.SourceVersion
+				: page.Input.BaselineId == input.BaselineId && page.Input.BaselineVersion == input.BaselineVersion;
+			var retryable = code is "InvalidDraftRequest" or "InvalidDraftLines" or "InvalidAllocation" or "AllocationPrecisionInvalid" or "DuplicateAllocation" or "ForeignSourceLine" or "DimensionNotEligible" or "LineAllocationIncomplete" or "AllocationOverflow" or "SupplierNotFound" or "WarehouseNotFound" or "ItemNotFound" or "UnitNotFound";
+			Response.StatusCode = retryable ? StatusCodes.Status400BadRequest : StatusCodes.Status409Conflict;
+			return View(orderId.HasValue ? nameof(ConstructionPurchaseAllocation) : nameof(NewConstructionPurchase), page with
+			{ Input = input, RefusalCode = code, CanSave = page.CanSave && sameWitness && retryable && input.RequestId != Guid.Empty });
+		}
+
+		[HttpPost, ValidateAntiForgeryToken, InvPerm("purchase"), RequestSizeLimit(2 * 1024 * 1024)]
+		public async Task<IActionResult> CreateConstructionPurchaseDraft(int projectId, CrossBuy.ViewModel.ConstructionPurchaseEditorInput input,
+			[FromServices] IConstructionPurchaseEditorService editor)
+		{
+			var result = ModelState.IsValid ? await editor.CreateAsync(projectId, input, HttpContext.RequestAborted) : new ConstructionPurchaseDraftResult(false, "InvalidDraftRequest");
+			if (!result.Ok) return await PurchaseEditorRefusal(projectId, null, input, result.Code, editor);
+			TempData["InvMsg"] = L["Construction.Editor.DraftSaved"].Value;
+			return RedirectToAction(nameof(ConstructionPurchaseAllocation), ConstructionPurchaseRoutes(projectId, result.OrderId));
+		}
+
+		[HttpPost, ValidateAntiForgeryToken, InvPerm("purchase"), RequestSizeLimit(2 * 1024 * 1024)]
+		public async Task<IActionResult> SaveConstructionPurchaseAllocation(int projectId, int orderId, CrossBuy.ViewModel.ConstructionPurchaseEditorInput input,
+			[FromServices] IConstructionPurchaseEditorService editor)
+		{
+			var result = ModelState.IsValid ? await editor.AllocateAsync(projectId, orderId, input, HttpContext.RequestAborted) : new ConstructionAllocationWrite(false, "InvalidAllocation");
+			if (!result.Ok) return await PurchaseEditorRefusal(projectId, orderId, input, result.Code, editor);
+			TempData["InvMsg"] = L["Construction.Editor.AllocationSaved"].Value;
+			return RedirectToAction(nameof(ConstructionPurchaseApproval), ConstructionPurchaseRoutes(projectId, orderId));
+		}
+
+		[HttpPost, ValidateAntiForgeryToken, InvPerm("purchase")]
+		public async Task<IActionResult> RequestConstructionPurchaseApproval(int projectId, int orderId, int allocationId, string sourceVersion,
+			int? exceptionId, Guid requestId, string reason, [FromServices] IConstructionPurchaseApprovalService constructionPurchases,
+            [FromServices] ConstructionPurchaseApprovalService? boundPurchases=null,[FromServices] IConstructionWarehouseExceptionWorkspace? warehouseWorkspace=null,int? warehouseDecisionId=null)
+		{
+            if(warehouseDecisionId.HasValue&&boundPurchases==null)return Forbid();
+			var result = ModelState.IsValid
+				? (warehouseDecisionId.HasValue?await boundPurchases!.RequestWithWarehouseExceptionAsync(projectId,orderId,allocationId,sourceVersion,exceptionId,warehouseDecisionId.Value,requestId,reason,HttpContext.RequestAborted):await constructionPurchases.RequestAsync(projectId, orderId, allocationId, sourceVersion, exceptionId, requestId, reason, HttpContext.RequestAborted))
+				: new ConstructionPurchaseApprovalResult(false, "InvalidApprovalRequest");
+			if (result.Code == "AccessDenied") return Forbid();
+			if (result.Ok)
+			{
+				TempData["InvMsg"] = L["Construction.Purchase.Request.Submitted"].Value;
+				return RedirectToAction(nameof(ConstructionPurchaseApproval), new Microsoft.AspNetCore.Routing.RouteValueDictionary
+				{
+					["projectId"] = projectId, ["orderId"] = orderId,
+					["culture"] = System.Globalization.CultureInfo.CurrentCulture.Name,
+					["ui-culture"] = System.Globalization.CultureInfo.CurrentUICulture.Name
+				});
+			}
+			var page = await constructionPurchases.ReadRequestAsync(projectId, orderId, HttpContext.RequestAborted);
+			if (page == null) return NotFound();
+            if(warehouseWorkspace!=null){ViewBag.WarehouseException=await warehouseWorkspace.ReadAsync(projectId,orderId,null,HttpContext.RequestAborted);ViewBag.WarehouseDecisionId=warehouseDecisionId;}
+			Response.StatusCode = result.Code == "InvalidApprovalRequest" ? StatusCodes.Status400BadRequest : StatusCodes.Status409Conflict;
+			// Preserve the rejected intent, including its old witness; never silently turn a stale POST into a fresh request.
+			return View(nameof(ConstructionPurchaseApproval), page with { CanSubmit = false, AllocationId = allocationId, SourceVersion = sourceVersion,
+				RequestId = requestId, Reason = reason ?? "", SelectedExceptionId = exceptionId, RefusalCode = result.Code });
+		}
+
 		// ================= Inventory approvals inbox =================
 		[HttpGet][InvPerm("manage")] public async Task<IActionResult> Approvals()
 		{
 			var list = await _approvals.RecentAsync(80);
+			var constructionIds = list.Where(x => x.DocType == CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DocumentType).Select(x => x.ID).ToArray();
+			ViewBag.ConstructionApprovalMoney = await (from request in _context.Set<CrossBuy.Models.Context.Construction.ConstructionPurchaseApprovalRequest>().AsNoTracking()
+				join draft in _context.Set<CrossBuy.Models.Context.Construction.ConstructionPurchaseDraft>().AsNoTracking() on request.DraftId equals draft.ID
+				join currency in _context.Currencies.AsNoTracking() on draft.CurrencyId equals currency.ID
+				where request.CompanyID == co && draft.CompanyID == co && constructionIds.Contains(request.ApprovalId)
+				select new { request.ApprovalId, currency.Code, draft.CurrencyDecimals }).ToDictionaryAsync(x => x.ApprovalId,
+					x => new CrossBuy.BL.Construction.ConstructionApprovalMoney(x.Code, x.CurrencyDecimals));
 			var empIds = list.Where(a => a.RequestedByEmployeeId != null).Select(a => a.RequestedByEmployeeId!.Value)
 				.Concat(list.Where(a => a.DecidedByEmployeeId != null).Select(a => a.DecidedByEmployeeId!.Value)).Distinct().ToList();
 			var apprIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
@@ -2927,6 +3513,7 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> ApproveDoc(int id, string? note)
 		{
 			var (ok, err) = await _approvals.ApproveAsync(id, _access.CurrentEmployeeId() ?? 0, note);
+			if (err?.StartsWith("Construction.Purchase.Error.", StringComparison.Ordinal) == true) { var message = L[err]; err = message.ResourceNotFound ? L["Construction.Purchase.Error.General"].Value : message.Value; }
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? L["Approved and executed"].Value : err;
 			return RedirectToAction(nameof(Approvals));
 		}
@@ -2935,6 +3522,7 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> RejectDoc(int id, string? note)
 		{
 			var (ok, err) = await _approvals.RejectAsync(id, _access.CurrentEmployeeId() ?? 0, note);
+			if (err?.StartsWith("Construction.Purchase.Error.", StringComparison.Ordinal) == true) { var message = L[err]; err = message.ResourceNotFound ? L["Construction.Purchase.Error.General"].Value : message.Value; }
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? L["Document rejected"].Value : err;
 			return RedirectToAction(nameof(Approvals));
 		}
@@ -3037,7 +3625,11 @@ namespace CrossBuy.Controllers
 				if (gr != null)
 				{
 					var itemIds = gr.Lines.Select(x => x.ItemId).ToList();
-					ViewBag.ItemNames = await _context.Items.AsNoTracking().Where(i => itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.ItemCode + " — " + i.Name);
+					// The Arabic name only, on every culture - see DemandItemNames above.
+					var grItems = await _context.Items.AsNoTracking().Where(i => itemIds.Contains(i.ID))
+						.Select(i => new { i.ID, i.ItemCode, i.Name, i.NameEn }).ToListAsync();
+					ViewBag.ItemNames = grItems.ToDictionary(i => i.ID,
+						i => i.ItemCode + " — " + (!Ar() && !string.IsNullOrWhiteSpace(i.NameEn) ? i.NameEn! : i.Name));
 				}
 			}
 			return View();

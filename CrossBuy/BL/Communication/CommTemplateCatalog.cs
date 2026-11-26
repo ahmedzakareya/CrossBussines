@@ -52,11 +52,13 @@ namespace CrossBuy.BL.Communication
                 // A mention is the one collaboration signal worth reaching somebody who is not looking at the
                 // product, so it is the only template that defaults to Email as well as InApp.
                 DefaultChannels = new[] { CommChannel.InApp, CommChannel.Email },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "أشار إليك {actor}",
                 DefaultTitleEn = "{actor} mentioned you",
+                DefaultTitleFr = "{actor} vous a mentionné",
                 DefaultBodyAr = "أشار إليك {actor} في تعليق على {entity}: {excerpt}",
-                DefaultBodyEn = "{actor} mentioned you in a comment on {entity}: {excerpt}",
+                DefaultBodyEn = "{actor} mentioned you in a comment on {entityEn}: {excerpt}",
+                DefaultBodyFr = "{actor} vous a mentionné dans un commentaire sur {entityEn} : {excerpt}",
                 ResourceKeyPrefix = "Comm.Notification.MentionedInComment",
                 Priority = "High",
             },
@@ -69,11 +71,13 @@ namespace CrossBuy.BL.Communication
                 // InApp only. A followed thread can produce dozens of comments a day; emailing each one is how
                 // a collaboration feature teaches people to filter it into a folder they never read.
                 DefaultChannels = new[] { CommChannel.InApp },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "تعليق جديد على {entity}",
-                DefaultTitleEn = "New comment on {entity}",
+                DefaultTitleEn = "New comment on {entityEn}",
+                DefaultTitleFr = "Nouveau commentaire sur {entityEn}",
                 DefaultBodyAr = "أضاف {actor} تعليقًا: {excerpt}",
                 DefaultBodyEn = "{actor} commented: {excerpt}",
+                DefaultBodyFr = "{actor} a ajouté un commentaire : {excerpt}",
                 ResourceKeyPrefix = "Comm.Notification.CommentOnFollowedThread",
             },
             new CommTemplateDefinition
@@ -82,11 +86,13 @@ namespace CrossBuy.BL.Communication
                 Category = CommNotificationCategories.Comments,
                 LegacyNotificationType = BL.NotificationTypes.DocComment,
                 DefaultChannels = new[] { CommChannel.InApp, CommChannel.Email },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "رد {actor} على تعليقك",
                 DefaultTitleEn = "{actor} replied to your comment",
+                DefaultTitleFr = "{actor} a répondu à votre commentaire",
                 DefaultBodyAr = "رد {actor} على تعليقك على {entity}: {excerpt}",
-                DefaultBodyEn = "{actor} replied to your comment on {entity}: {excerpt}",
+                DefaultBodyEn = "{actor} replied to your comment on {entityEn}: {excerpt}",
+                DefaultBodyFr = "{actor} a répondu à votre commentaire sur {entityEn} : {excerpt}",
                 ResourceKeyPrefix = "Comm.Notification.ReplyToMyComment",
             },
             new CommTemplateDefinition
@@ -98,8 +104,10 @@ namespace CrossBuy.BL.Communication
                 RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.ReactionKey },
                 DefaultTitleAr = "تفاعل {actor} مع تعليقك",
                 DefaultTitleEn = "{actor} reacted to your comment",
+                DefaultTitleFr = "{actor} a réagi à votre commentaire",
                 DefaultBodyAr = "أضاف {actor} تفاعل «{reaction}» على تعليقك",
                 DefaultBodyEn = "{actor} reacted \"{reaction}\" to your comment",
+                DefaultBodyFr = "{actor} a réagi « {reaction} » à votre commentaire",
                 ResourceKeyPrefix = "Comm.Notification.ReactionOnMyComment",
             },
             new CommTemplateDefinition
@@ -108,11 +116,13 @@ namespace CrossBuy.BL.Communication
                 Category = CommNotificationCategories.Participation,
                 LegacyNotificationType = BL.NotificationTypes.DocComment,
                 DefaultChannels = new[] { CommChannel.InApp },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "أضافك {actor} إلى محادثة",
                 DefaultTitleEn = "{actor} added you to a conversation",
+                DefaultTitleFr = "{actor} vous a ajouté à une conversation",
                 DefaultBodyAr = "أضافك {actor} إلى محادثة على {entity}",
-                DefaultBodyEn = "{actor} added you to the conversation on {entity}",
+                DefaultBodyEn = "{actor} added you to the conversation on {entityEn}",
+                DefaultBodyFr = "{actor} vous a ajouté à la conversation sur {entityEn}",
                 ResourceKeyPrefix = "Comm.Notification.AddedAsParticipant",
             },
             new CommTemplateDefinition
@@ -121,11 +131,13 @@ namespace CrossBuy.BL.Communication
                 Category = CommNotificationCategories.Moderation,
                 LegacyNotificationType = BL.NotificationTypes.DocComment,
                 DefaultChannels = new[] { CommChannel.InApp },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "أُغلقت المحادثة",
                 DefaultTitleEn = "Conversation locked",
+                DefaultTitleFr = "Conversation verrouillée",
                 DefaultBodyAr = "أغلق {actor} المحادثة على {entity}. {reason}",
-                DefaultBodyEn = "{actor} locked the conversation on {entity}. {reason}",
+                DefaultBodyEn = "{actor} locked the conversation on {entityEn}. {reason}",
+                DefaultBodyFr = "{actor} a verrouillé la conversation sur {entityEn}. {reason}",
                 ResourceKeyPrefix = "Comm.Notification.ThreadLocked",
             },
             new CommTemplateDefinition
@@ -137,11 +149,13 @@ namespace CrossBuy.BL.Communication
                 // Moderation of somebody's own words is always worth reaching them, hence Email as well: a
                 // deleted comment that the author only discovers by accident reads as censorship.
                 DefaultChannels = new[] { CommChannel.InApp, CommChannel.Email },
-                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel },
+                RequiredTokens = new[] { CommTemplateTokens.ActorName, CommTemplateTokens.EntityLabel, CommTemplateTokens.EntityLabelEn },
                 DefaultTitleAr = "حُذف تعليقك",
                 DefaultTitleEn = "Your comment was removed",
+                DefaultTitleFr = "Votre commentaire a été supprimé",
                 DefaultBodyAr = "حذف {actor} تعليقك على {entity}. {reason}",
-                DefaultBodyEn = "{actor} removed your comment on {entity}. {reason}",
+                DefaultBodyEn = "{actor} removed your comment on {entityEn}. {reason}",
+                DefaultBodyFr = "{actor} a supprimé votre commentaire sur {entityEn}. {reason}",
                 ResourceKeyPrefix = "Comm.Notification.MyCommentDeleted",
                 Priority = "High",
             },
@@ -177,8 +191,10 @@ namespace CrossBuy.BL.Communication
                 if (string.IsNullOrWhiteSpace(d.ResourceKeyPrefix)) continue;
                 keys.Add(d.ResourceKeyPrefix + ".TitleAr");
                 keys.Add(d.ResourceKeyPrefix + ".TitleEn");
+                keys.Add(d.ResourceKeyPrefix + ".TitleFr");
                 keys.Add(d.ResourceKeyPrefix + ".BodyAr");
                 keys.Add(d.ResourceKeyPrefix + ".BodyEn");
+                keys.Add(d.ResourceKeyPrefix + ".BodyFr");
             }
             return keys;
         }
@@ -200,8 +216,10 @@ namespace CrossBuy.BL.Communication
         {
             public const string TitleAr = "TitleAr";
             public const string TitleEn = "TitleEn";
+            public const string TitleFr = "TitleFr";
             public const string BodyAr = "BodyAr";
             public const string BodyEn = "BodyEn";
+            public const string BodyFr = "BodyFr";
         }
     }
 
@@ -212,6 +230,31 @@ namespace CrossBuy.BL.Communication
     public sealed class DefaultCommTemplateTextProvider : ICommTemplateTextProvider
     {
         public string Resolve(CommTemplateDefinition definition, string part, string fallback) => fallback;
+    }
+
+    // Resolves each stored language independently of the request culture: one notification row contains all
+    // supported languages, so a French browser request must not cause Arabic/English columns to contain French.
+    public sealed class ResourceCommTemplateTextProvider : ICommTemplateTextProvider
+    {
+        private static readonly IReadOnlyDictionary<string, System.Globalization.CultureInfo> Cultures =
+            new Dictionary<string, System.Globalization.CultureInfo>(StringComparer.Ordinal)
+            {
+                [ICommTemplateTextProvider.Parts.TitleAr] = System.Globalization.CultureInfo.GetCultureInfo("ar"),
+                [ICommTemplateTextProvider.Parts.BodyAr] = System.Globalization.CultureInfo.GetCultureInfo("ar"),
+                [ICommTemplateTextProvider.Parts.TitleEn] = System.Globalization.CultureInfo.GetCultureInfo("en"),
+                [ICommTemplateTextProvider.Parts.BodyEn] = System.Globalization.CultureInfo.GetCultureInfo("en"),
+                [ICommTemplateTextProvider.Parts.TitleFr] = System.Globalization.CultureInfo.GetCultureInfo("fr"),
+                [ICommTemplateTextProvider.Parts.BodyFr] = System.Globalization.CultureInfo.GetCultureInfo("fr"),
+            };
+
+        public string Resolve(CommTemplateDefinition definition, string part, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(definition.ResourceKeyPrefix) || !Cultures.TryGetValue(part, out var culture))
+                return fallback;
+
+            var key = definition.ResourceKeyPrefix + "." + part;
+            return CrossBuy.Resources.SharedResources.ResourceManager.GetString(key, culture) ?? fallback;
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -256,6 +299,8 @@ namespace CrossBuy.BL.Communication
                 TitleEn = Substitute(_text.Resolve(definition, ICommTemplateTextProvider.Parts.TitleEn, definition.DefaultTitleEn), tokens),
                 BodyAr = Substitute(_text.Resolve(definition, ICommTemplateTextProvider.Parts.BodyAr, definition.DefaultBodyAr), tokens),
                 BodyEn = Substitute(_text.Resolve(definition, ICommTemplateTextProvider.Parts.BodyEn, definition.DefaultBodyEn), tokens),
+                TitleFr = Substitute(_text.Resolve(definition, ICommTemplateTextProvider.Parts.TitleFr, definition.DefaultTitleFr), tokens),
+                BodyFr = Substitute(_text.Resolve(definition, ICommTemplateTextProvider.Parts.BodyFr, definition.DefaultBodyFr), tokens),
                 Category = definition.Category,
                 Priority = definition.Priority,
                 LegacyNotificationType = definition.LegacyNotificationType,

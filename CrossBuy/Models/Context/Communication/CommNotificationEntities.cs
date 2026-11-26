@@ -45,6 +45,9 @@ namespace CrossBuy.Models.Context.Communication
         public string TitleEn { get; set; } = "";
         public string BodyAr { get; set; } = "";
         public string BodyEn { get; set; } = "";
+        // Optional for compatibility with notifications created before French localization was added.
+        public string? TitleFr { get; set; }
+        public string? BodyFr { get; set; }
         public string? Url { get; set; }
 
         // TRUE idempotency, unique per company: (DedupKeyPrefix + recipient). Not the "unread-noise guard"

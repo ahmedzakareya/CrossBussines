@@ -26,6 +26,10 @@ namespace CrossBuy.Models.Context.Accounting
 		public string? SourceType { get; set; }             // Payroll/SalesInvoice/...
 		public int? SourceId { get; set; }
 		public int CurrencyId { get; set; }
+		// Captured by the writer's actual rounding basis, never backfilled from today's defaults.
+		// CurrencyId above is the document currency and cannot substitute for these facts.
+		public int? FunctionalCurrencyId { get; set; }
+		public int? FunctionalCurrencyDecimals { get; set; }
 		public string? Description { get; set; }
 		public string? DescriptionEn { get; set; }
 		public string Status { get; set; } = "Draft";

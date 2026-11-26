@@ -1,0 +1,18 @@
+@model List<CrossBuy.BL.CrmIdentity.JourneyRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var tone = new Dictionary<string, string> { ["Active"] = "badge-light-success", ["Paused"] = "badge-light", ["Draft"] = "badge-light-primary" };
+}
+@foreach (var r in Model)
+{
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("Journey","Crm", new { id = r.J.ID })" class="fw-bold text-gray-900 text-hover-primary">@(!isAr && !string.IsNullOrWhiteSpace(r.J.NameEn) ? r.J.NameEn : r.J.Name)</a></td>
+        <td class="fs-7"><i class="ki-outline ki-filter fs-6 me-1"></i>@r.Segment</td>
+        <td><span class="badge @tone[r.J.Status]">@T["jst:" + r.J.Status]</span></td>
+        <td class="text-end num fw-semibold">@r.Entered</td>
+        <td class="text-end num">@r.Active</td>
+        <td class="text-end num">@r.Finished</td>
+        <td class="text-end num text-muted">@r.Exited</td>
+    </tr>
+}

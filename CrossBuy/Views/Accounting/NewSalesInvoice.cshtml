@@ -61,7 +61,12 @@
                 <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Project"]</label><select name="projectId" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["None"]"><option value="">@Localizer["None"]</option>@foreach (var p in (ViewBag.Projects as List<(int id, string text)> ?? new())) { <option value="@p.id" selected="@(isEdit && edit!.ProjectId == p.id)">@p.text</option> }</select></div>
                 <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" value="@(isEdit ? edit!.Notes : "")" /></div>
             </div></div></div>
-            <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
+            <div class="card"><div class="card-header">@*  The theme pairs a card label with a muted descriptor (demo39 widgets/lists.html),
+                                   so the header says what the card is AND what it holds. *@
+                               <h3 class="card-title align-items-start flex-column">
+                                   <span class="card-label fw-bold text-gray-900">@Localizer["Lines"]</span>
+                                   <span class="text-muted mt-1 fw-semibold fs-7">@Localizer["Invoice lines"]</span>
+                               </h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button>@* Disabled until a customer is picked: the list it opens is that customer's history. *@<button type="button" class="btn btn-sm btn-light-primary" id="copyInv" disabled><i class="ki-outline ki-copy fs-3"></i>@Localizer["Copy from invoice"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
             <div class="card-body"><div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                 <th style="min-width:200px">@Localizer["Item (stock)"]</th><th style="min-width:130px">@SR["Warehouse"]</th><th style="min-width:170px">@SR["Description"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="width:120px">@SR["Unit"]</th><th style="width:120px">@SR["Price"]</th><th style="width:110px">@Localizer["Disc"]</th><th style="width:90px">@Localizer["Tax%"]</th><th style="min-width:180px">@Localizer["Revenue acct"]</th><th class="text-end" style="width:120px">@SR["Total"]</th><th style="width:40px"></th>
             </tr></thead><tbody id="rows"></tbody><tfoot>
@@ -71,6 +76,8 @@
     </div></div>
 </form>
 <partial name="~/Views/Inventory/_ItemScanModal.cshtml" />
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
+<partial name="~/Views/Accounting/_CopyFromInvoiceModal.cshtml" model="@("sales")" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
 <script>
@@ -130,10 +137,46 @@ document.getElementById('rows').addEventListener('input',function(e){ if(e.targe
 // re-price all rows when the customer changes (segment-based pricing)
 document.getElementById('custSel').addEventListener('change',function(){ document.querySelectorAll('#rows tr').forEach(applyPrice); });
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
+// ---- copy lines from an earlier invoice to the same customer -----------------------------
+// The customer drives the button, the same way the vendor drives it on the purchase screen.
+// CB.onSelectChange binds both the native and the select2 channel, so this holds whether or not
+// something has select2-ified the control by the time this runs.
+(function(){
+  var cSel=document.getElementById('custSel')||document.querySelector('select[name=customerId]');
+  var btn=document.getElementById('copyInv');
+  if(!cSel||!btn) return;
+  function sync(){ btn.disabled = !cSel.value; }
+  if(window.CB&&CB.onSelectChange) CB.onSelectChange(cSel, sync); else cSel.addEventListener('change', sync);
+  btn.addEventListener('click', function(){ if(window.cbCopyFromInvoice) cbCopyFromInvoice(cSel.value); });
+  sync();   // edit mode arrives with a customer already chosen
+})();
 document.getElementById('save').addEventListener('click',function(){
- var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var acc=tr.querySelector('.acc').value;var it=tr.querySelector('.it').value;var wh=tr.querySelector('.wh').value;var q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;
-  if(acc&&q*p>0)lines.push({itemDescription:tr.querySelector('.d').value,qty:q,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0,revenueAccountId:parseInt(acc),itemId:it?parseInt(it):null,warehouseId:wh?parseInt(wh):null,uoMId:(function(){var u=tr.querySelector('.u');return u&&u.value?parseInt(u.value):null;})()});});
- if(!lines.length){alert('@Localizer["Add at least one line"]');return;}
+ // The empty-vs-unfinished decision and the refusal live in _DocumentLineGuard, shared with every
+ // other document screen. What is local here is only what a SALES line is made of: a revenue
+ // account where the purchase side has an expense account, and a unit of measure.
+ var lines = CBLines.gather({
+   touched: function(tr){
+     return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.d')
+            || CBLines.num(tr,'.p') !== 0 || CBLines.num(tr,'.disc') !== 0
+            || CBLines.num(tr,'.q') !== 1);
+   },
+   problem: function(tr){
+     if(!CBLines.str(tr,'.acc')) return CBLines.T.account;
+     if(CBLines.num(tr,'.q') <= 0) return CBLines.T.qty;
+     if(CBLines.num(tr,'.p') <= 0) return CBLines.T.price;
+     return null;
+   },
+   build: function(tr){
+     var it=CBLines.str(tr,'.it'), wh=CBLines.str(tr,'.wh'), u=CBLines.str(tr,'.u');
+     return { itemDescription: tr.querySelector('.d').value,
+              qty: CBLines.num(tr,'.q'), unitPrice: CBLines.num(tr,'.p'),
+              discountAmount: CBLines.num(tr,'.disc'), taxRate: CBLines.num(tr,'.tax'),
+              revenueAccountId: parseInt(CBLines.str(tr,'.acc')),
+              itemId: it?parseInt(it):null, warehouseId: wh?parseInt(wh):null,
+              uoMId: u?parseInt(u):null };
+   }
+ });
+ if(!lines) return;   // refused, and nothing was sent
  document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
  if(window.CB&&CB.submitForm){CB.submitForm(_f,{type:'@(isEdit ? "edit" : "save")'@Html.Raw(isEdit ? ",text:(window.CB?CB.L('سيتم عكس القيد الأصلي للفاتورة وإعادة ترحيلها بالقيم الجديدة — هل تريد المتابعة؟','The original entry will be reversed and the invoice re-posted with the new values — continue?'):null)" : "")});}else{_f.submit();}});
 var FUNC=@funcCur; var curSel=document.getElementById('curSel'); var rateWrap=document.getElementById('rateWrap');

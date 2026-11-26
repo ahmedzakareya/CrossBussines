@@ -4,6 +4,7 @@
     Layout = "~/Views/Shared/_LayoutHyperPos.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var rows = ViewBag.Rows as List<object[]> ?? new List<object[]>();
+    var canReverse = ViewBag.CanReverse as bool? ?? false;
     int dp = ViewBag.Dp ?? 2;
     var fmt = dp > 0 ? "0." + new string('0', dp) : "0";
     ViewData["Title"] = isAr ? "الإيصالات" : "Receipts";
@@ -40,11 +41,30 @@
                                     var receiptNo = (string)r[1];
                                     var total = (decimal)r[2];
                                     var closedAt = (DateTime?)r[3];
+                                    var orderId = (int)r[4];
                                     <tr>
                                         <td class="fw-semibold text-gray-900">@(string.IsNullOrEmpty(receiptNo) ? ("#" + invId) : receiptNo)</td>
                                         <td class="text-end fw-bold" style="font-variant-numeric:tabular-nums">@total.ToString(fmt)</td>
                                         <td class="text-muted fs-7">@(closedAt?.ToString("yyyy/MM/dd HH:mm"))</td>
-                                        <td><a href="/hyper/pos/invoice/print/@invId" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-6"></i>@SR["Reprint"]</a></td>
+                                        <td class="text-nowrap">
+                                            <a href="/hyper/pos/invoice/print/@invId" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-6"></i>@SR["Reprint"]</a>
+                                            @* HM-RET: a PART of the sale, which is what a customer usually brings back.
+                                               It sits before the full reversal and is an ordinary cashier action, because
+                                               a return policy that needs a manager for one yoghurt is not a return policy.
+                                               Reversal stays a manager's right and keeps its own button. *@
+                                            <a href="/hyper/pos/return?orderId=@orderId" class="btn btn-sm btn-light-primary ms-1"><i class="ki-outline ki-handcart fs-6"></i>@(isAr ? "إرجاع جزئي" : "Return items")</a>
+                                            @if (canReverse)
+                                            {
+                                                @* HM-14: a FULL reversal, named as one. The confirmation is the house dialog,
+                                                   never the browser's confirm(), and the button is neutral-danger rather than
+                                                   amber — an amber control on a till reads as "you have done something wrong". *@
+                                                <form method="post" action="/hyper/pos/receipt/void" class="d-inline ms-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="orderId" value="@orderId" />
+                                                    <button type="submit" class="btn btn-sm btn-light-danger" data-cb-confirm="@(isAr ? "إرجاع البيعة كاملة وعكس المخزون والقيود؟" : "Reverse the whole sale, stock and entries?")"><i class="ki-outline ki-arrow-circle-left fs-6"></i>@(isAr ? "إرجاع" : "Reverse")</button>
+                                                </form>
+                                            }
+                                        </td>
                                     </tr>
                                 }
                             </tbody>

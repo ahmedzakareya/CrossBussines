@@ -8,13 +8,10 @@ namespace CrossBuy.BL.Platform
     // THE RULE THIS EXISTS TO ENFORCE: A PATH IS NOT AN AUTHORIZATION.
     //
     // Today a protected business document is reachable by anyone signed in who knows its URL.
-    // PrivateFileGate closed the ANONYMOUS hole and says so honestly — it declares a
-    // RequireCompanyMatch policy that is applied to no prefix, because the gate runs before
-    // UseSession() and therefore cannot resolve a BusinessContext at all. Knowing
-    // /uploads/hr-docs/<guid>.pdf is currently equivalent to being allowed to read it, for every
-    // authenticated user in every company. GUID names make the store un-enumerable; they do not make
-    // it authorized, and a URL that leaks through a forwarded mail or a proxy log grants permanent
-    // access with no way to revoke it.
+    // PrivateFileGate now company-scopes /uploads/library/{companyId}/ by resolving the authenticated
+    // employee from their principal. Other legacy URL families, including /uploads/hr-docs/<guid>.pdf,
+    // still require only sign-in because their physical paths do not identify an owning record. A leaked
+    // GUID is not authorization; record-backed access must use this resolver and its owning module.
     //
     // The fix cannot live in that middleware. It has to live where a BusinessContext exists, which
     // means a resolved decision taken per document rather than per path. This file is that decision.

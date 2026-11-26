@@ -1,0 +1,282 @@
+@using System.Globalization
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var p = ViewBag.Promo as CrossBuy.Models.Context.Pos.PosPromotion;
+    var targets = ViewBag.Targets as List<CrossBuy.Models.Context.Pos.PosPromotionItem> ?? new();
+    var branches = ViewBag.Branches as List<CrossBuy.Models.Context.Admin.Branch> ?? new();
+    var cats = ViewBag.Categories as List<CrossBuy.Models.Context.Inventory.ItemCategory> ?? new();
+    var itemNames = ViewBag.TargetItemNames as Dictionary<int, string> ?? new();
+    int? bid = ViewBag.BranchId as int?;
+    bool canManage = ViewBag.CanManageCaps as bool? ?? false;
+    ViewData["Title"] = p == null ? (isAr ? "عرض جديد" : "New promotion") : (isAr ? "تعديل عرض" : "Edit promotion");
+    var inv = CultureInfo.InvariantCulture;
+    string D(decimal v) => v.ToString("0.###", inv);
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-container container-fluid">
+
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-light-danger d-flex align-items-center p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@TempData["HyperErr"]</div>
+            </div>
+        }
+
+        <form method="post" action="/hyper/setup/promotion" id="promoForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@(p?.ID ?? 0)" />
+
+            <div class="card card-flush shadow-sm mb-6">
+                <div class="card-header pt-6">
+                    <h3 class="card-title fw-bold text-gray-900">@ViewData["Title"]</h3>
+                    <div class="card-toolbar">
+                        <a href="/hyper/setup/promotions?branchId=@bid" class="btn btn-light">
+                            <i class="ki-outline ki-arrow-left fs-4"></i>@(isAr ? "رجوع" : "Back")
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body pt-2">
+                    <div class="row g-5 mb-5">
+                        <div class="col-md-3">
+                            <label class="form-label required">@(isAr ? "الرمز" : "Code")</label>
+                            <input name="code" value="@p?.Code" class="form-control form-control-solid" required maxlength="40" />
+                            <div class="form-text">@(isAr ? "ما تُصفّى به تقارير المبيعات." : "What sales reports filter on.")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">@(isAr ? "الاسم بالعربية" : "Name (AR)")</label>
+                            <input name="nameAr" value="@p?.NameAr" class="form-control form-control-solid" required
+                                   style="unicode-bidi:plaintext" />
+                        </div>
+                        <div class="col-md-4">
+                            @* The English twin is never dropped: with English as the default presentation
+                               language an empty twin would render the Arabic name on an English screen. *@
+                            <label class="form-label">@(isAr ? "الاسم بالإنجليزية" : "Name (EN)")</label>
+                            <input name="nameEn" value="@p?.NameEn" class="form-control form-control-solid"
+                                   style="unicode-bidi:plaintext" />
+                        </div>
+                    </div>
+
+                    <div class="row g-5 mb-5">
+                        <div class="col-md-3">
+                            <label class="form-label">@(isAr ? "الفرع" : "Branch")</label>
+                            <select name="branchId" class="form-select form-select-solid">
+                                @foreach (var b in branches)
+                                {
+                                    <option value="@b.ID" selected="@(b.ID == (p?.BranchId ?? bid))">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            @* "Every branch" is a choice someone makes on purpose, not a blank field. *@
+                            <label class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="allBranches" value="true" id="allBranches" @(p != null && p.BranchId == null ? "checked" : "") />
+                                <input type="hidden" name="allBranches" value="false" />
+                                <span class="form-check-label fw-semibold ms-2">@(isAr ? "كل الفروع" : "Every branch")</span>
+                            </label>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">@(isAr ? "الأولوية" : "Priority")</label>
+                            <input name="priority" type="number" min="1" value="@(p?.Priority ?? 100)" class="form-control form-control-solid" />
+                            <div class="form-text">@(isAr ? "الأصغر يُطبَّق أولاً." : "Lower runs first.")</div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-5">
+                            <label class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="isExclusive" value="true" @(p?.IsExclusive == true ? "checked" : "") />
+                                <input type="hidden" name="isExclusive" value="false" />
+                                <span class="form-check-label fw-semibold ms-2">@(isAr ? "حصري" : "Exclusive")</span>
+                            </label>
+                            <label class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="isActive" value="true" @(p == null || p.IsActive ? "checked" : "") />
+                                <input type="hidden" name="isActive" value="false" />
+                                <span class="form-check-label fw-semibold ms-2">@(isAr ? "مُفعَّل" : "Active")</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-flush shadow-sm mb-6">
+                <div class="card-header pt-6"><h3 class="card-title fw-bold text-gray-900">@(isAr ? "القاعدة" : "The rule")</h3></div>
+                <div class="card-body pt-2">
+                    <div class="row g-5 mb-5">
+                        <div class="col-md-3">
+                            <label class="form-label">@(isAr ? "النوع" : "Type")</label>
+                            <select name="promoType" id="promoType" class="form-select form-select-solid">
+                                <option value="PercentOff" selected="@(p == null || p.PromoType == "PercentOff")">@(isAr ? "خصم نسبة" : "Percent off")</option>
+                                <option value="AmountOff" selected="@(p?.PromoType == "AmountOff")">@(isAr ? "خصم مبلغ" : "Amount off")</option>
+                                <option value="BuyXGetY" selected="@(p?.PromoType == "BuyXGetY")">@(isAr ? "اشترِ س واحصل على ص" : "Buy X get Y")</option>
+                                <option value="ThresholdAmount" selected="@(p?.PromoType == "ThresholdAmount")">@(isAr ? "عند بلوغ مبلغ" : "Basket threshold")</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 promo-f promo-PercentOff promo-ThresholdAmount">
+                            <label class="form-label">@(isAr ? "النسبة %" : "Percent %")</label>
+                            <input name="discountPct" type="number" step="any" min="0" max="100" value="@D(p?.DiscountPct ?? 0)" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-2 promo-f promo-AmountOff promo-ThresholdAmount">
+                            <label class="form-label">@(isAr ? "المبلغ" : "Amount")</label>
+                            <input name="discountAmount" type="number" step="any" min="0" value="@D(p?.DiscountAmount ?? 0)" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-2 promo-f promo-ThresholdAmount">
+                            <label class="form-label">@(isAr ? "حدّ السلة" : "Basket bar")</label>
+                            <input name="minBasket" type="number" step="any" min="0" value="@D(p?.MinBasket ?? 0)" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-2 promo-f promo-BuyXGetY">
+                            <label class="form-label">@(isAr ? "اشترِ (س)" : "Buy (X)")</label>
+                            <input name="triggerQty" type="number" step="any" min="0" value="@D(p?.TriggerQty ?? 0)" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-2 promo-f promo-BuyXGetY">
+                            <label class="form-label">@(isAr ? "واحصل (ص)" : "Get (Y)")</label>
+                            <input name="rewardQty" type="number" step="any" min="0" value="@D(p?.RewardQty ?? 0)" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">@(isAr ? "سقف الخصم %" : "Ceiling %")</label>
+                            <input name="maxDiscountPct" type="number" step="any" min="0" max="100" value="@D(p?.MaxDiscountPct ?? 0)" class="form-control form-control-solid" />
+                            <div class="form-text">@(isAr ? "صفر = بلا سقف." : "Zero = no ceiling.")</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-5">
+                        <div class="col-md-3">
+                            <label class="form-label">@(isAr ? "يبدأ" : "Starts")</label>
+                            <input name="startsAt" type="date" value="@(p?.StartsAt?.ToString("yyyy-MM-dd"))" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">@(isAr ? "ينتهي" : "Ends")</label>
+                            <input name="endsAt" type="date" value="@(p?.EndsAt?.ToString("yyyy-MM-dd"))" class="form-control form-control-solid" />
+                        </div>
+                    </div>
+
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-5 promo-f promo-BuyXGetY">
+                        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                        <div class="fs-7 text-gray-700">@(isAr
+                            ? "الوحدات المجانية تُحتسب على الأرخص أولاً — وإلا تحوّل «اشترِ ٢ واحصل على ١» إلى هدية مفتوحة في سلة مختلطة."
+                            : "The free units are taken from the CHEAPEST qualifying lines — otherwise \"buy 2 get 1\" becomes an unbounded giveaway on a mixed basket.")</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-flush shadow-sm mb-6">
+                <div class="card-header pt-6">
+                    <h3 class="card-title fw-bold text-gray-900">@(isAr ? "على ماذا ينطبق" : "What it applies to")</h3>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="text-muted fs-7 mb-4">@(isAr
+                        ? "اتركه فارغًا ليشمل السلة كاملة. «مُطلِق» يحتسب نحو الشرط، و«مكافأة» هو ما يُخصم عليه، و«كلاهما» للاثنين."
+                        : "Leave it empty to cover the whole basket. Trigger counts towards the condition, Reward is what gets discounted, Both does either.")</div>
+
+                    <table class="table table-row-dashed align-middle" id="tgtTable">
+                        <thead>
+                            <tr class="fw-bold text-muted fs-7 text-uppercase">
+                                <th>@(isAr ? "صنف" : "Item")</th>
+                                <th>@(isAr ? "أو فئة" : "or category")</th>
+                                <th class="w-150px">@(isAr ? "الدور" : "Role")</th>
+                                <th class="w-60px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in targets)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="hidden" name="tItem" value="@(t.ItemId ?? 0)" />
+                                        <span class="fw-semibold text-gray-800">@(t.ItemId != null && itemNames.ContainsKey(t.ItemId.Value) ? itemNames[t.ItemId.Value] : "—")</span>
+                                    </td>
+                                    <td>
+                                        <select name="tCategory" class="form-select form-select-solid form-select-sm">
+                                            <option value="0">—</option>
+                                            @foreach (var c in cats)
+                                            {
+                                                <option value="@c.ID" selected="@(t.CategoryId == c.ID)">@c.Name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="tRole" class="form-select form-select-solid form-select-sm">
+                                            <option value="Both" selected="@(t.Role == "Both")">@(isAr ? "كلاهما" : "Both")</option>
+                                            <option value="Trigger" selected="@(t.Role == "Trigger")">@(isAr ? "مُطلِق" : "Trigger")</option>
+                                            <option value="Reward" selected="@(t.Role == "Reward")">@(isAr ? "مكافأة" : "Reward")</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-light-danger" data-tgt-del><i class="ki-outline ki-trash fs-6"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <button type="button" class="btn btn-light-primary btn-sm" id="addTgt">
+                        <i class="ki-outline ki-plus fs-5"></i>@(isAr ? "إضافة فئة" : "Add a category")
+                    </button>
+                </div>
+            </div>
+
+            @if (canManage)
+            {
+                <div class="d-flex justify-content-end mb-10">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ki-outline ki-check fs-4"></i>@(isAr ? "حفظ العرض" : "Save promotion")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-10">
+                    <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+                    <div class="fs-7 text-gray-700">@(isAr
+                        ? "هذا العرض معروض للاطّلاع فقط — الحفظ يحتاج صلاحية إدارة نقاط البيع."
+                        : "This promotion is shown for reference only — saving needs the POS management permission.")</div>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+	'use strict';
+	var isAr = @(isAr ? "true" : "false");
+
+	/* Only the fields the chosen rule actually uses are shown. A percentage box beside a "buy 2 get 1"
+	   rule is not merely clutter - it invites someone to fill it in and expect it to do something. */
+	function syncType() {
+		var t = document.getElementById('promoType').value;
+		Array.prototype.forEach.call(document.querySelectorAll('.promo-f'), function (el) {
+			el.style.display = el.classList.contains('promo-' + t) ? '' : 'none';
+		});
+	}
+	document.getElementById('promoType').addEventListener('change', syncType);
+	syncType();
+
+	var cats = @Html.Raw(Json.Serialize(cats.Select(c => new { id = c.ID, name = c.Name })));
+
+	document.getElementById('addTgt').addEventListener('click', function () {
+		var tb = document.querySelector('#tgtTable tbody');
+		var tr = document.createElement('tr');
+		var opts = '<option value="0">—</option>' + cats.map(function (c) {
+			return '<option value="' + c.id + '">' + (c.name || '') + '</option>';
+		}).join('');
+		tr.innerHTML =
+			'<td><input type="hidden" name="tItem" value="0" /><span class="text-muted">—</span></td>' +
+			'<td><select name="tCategory" class="form-select form-select-solid form-select-sm">' + opts + '</select></td>' +
+			'<td><select name="tRole" class="form-select form-select-solid form-select-sm">' +
+				'<option value="Both">' + (isAr ? 'كلاهما' : 'Both') + '</option>' +
+				'<option value="Trigger">' + (isAr ? 'مُطلِق' : 'Trigger') + '</option>' +
+				'<option value="Reward">' + (isAr ? 'مكافأة' : 'Reward') + '</option>' +
+			'</select></td>' +
+			'<td class="text-end"><button type="button" class="btn btn-sm btn-light-danger" data-tgt-del><i class="ki-outline ki-trash fs-6"></i></button></td>';
+		tb.appendChild(tr);
+	});
+
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest ? e.target.closest('[data-tgt-del]') : null;
+		if (b) { var r = b.closest('tr'); if (r) r.remove(); }
+	});
+})();
+</script>
+}

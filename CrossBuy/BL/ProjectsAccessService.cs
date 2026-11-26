@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL.Platform;
+using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
 using CrossBuy.Models.Platform;
@@ -26,7 +26,7 @@ namespace CrossBuy.BL
             BusinessContext context, CancellationToken cancellationToken = default);
     }
 
-    // Eight actions. `member-manage` and `approve` from the brief's example list are ABSENT: there was no
+    // Module actions include project administration, billing, closure, and construction site reporting. `member-manage` and `approve` from the brief's example list are ABSENT: there was no
     // membership to manage before this batch and there is no project approval anywhere in the code. Membership
     // management is expressed by `manage` plus the Manager role on the project itself.
     public static class ProjectsActions
@@ -49,9 +49,14 @@ namespace CrossBuy.BL
         public const string BillingApprove = "billing-approve";   // approve or return a submitted billing
         public const string BillingPost = "billing-post";         // post an approved billing to the GL
         public const string Close = "close";
+        public const string SiteReportRead = "sitereport-read";
+        public const string SiteReportCreate = "sitereport-create";
+        public const string SiteReportReview = "sitereport-review";
+        public const string SiteReportApprove = "sitereport-approve";
 
         public static readonly IReadOnlyCollection<string> All = new[]
-        { Read, Create, Edit, Manage, BudgetView, BudgetManage, Billing, BillingPrepare, BillingApprove, BillingPost, Close };
+        { Read, Create, Edit, Manage, BudgetView, BudgetManage, Billing, BillingPrepare, BillingApprove, BillingPost, Close,
+            SiteReportRead, SiteReportCreate, SiteReportReview, SiteReportApprove };
     }
 
     // Module roles (PlatformRoleAssignments, Scope = 'Projects'). Distinct from ProjectMemberRoles, which is a
@@ -61,9 +66,11 @@ namespace CrossBuy.BL
         public const string ProjectsAdministrator = "ProjectsAdministrator"; // every project in the company
         public const string ProjectsFinance = "ProjectsFinance";             // budgets and billing
         public const string ProjectsViewer = "ProjectsViewer";               // read-only, company-wide
+        public const string ProjectsSiteEngineer = "ProjectsSiteEngineer";   // create and submit site reports
+        public const string ProjectsSiteReviewer = "ProjectsSiteReviewer";   // review and approve site reports
 
         public static readonly IReadOnlyList<string> All =
-            new[] { ProjectsAdministrator, ProjectsFinance, ProjectsViewer };
+            new[] { ProjectsAdministrator, ProjectsFinance, ProjectsViewer, ProjectsSiteEngineer, ProjectsSiteReviewer };
     }
 
     public sealed class ProjectsAccessService : ModuleAccessServiceBase, IProjectsAccessService
@@ -104,6 +111,23 @@ namespace CrossBuy.BL
             bool admin = Holds(grants, ProjectsRoles.ProjectsAdministrator);
             bool finance = Holds(grants, ProjectsRoles.ProjectsFinance);
             bool viewer = Holds(grants, ProjectsRoles.ProjectsViewer);
+            bool siteEngineer = Holds(grants, ProjectsRoles.ProjectsSiteEngineer);
+            bool siteReviewer = Holds(grants, ProjectsRoles.ProjectsSiteReviewer);
+
+            // Site evidence is deliberately not covered by budget or general project roles. New actions are
+            // fail-closed even when the module is in bootstrap-open mode; record decisions remain in the DSR service.
+            if (action is ProjectsActions.SiteReportRead or ProjectsActions.SiteReportCreate or
+                ProjectsActions.SiteReportReview or ProjectsActions.SiteReportApprove)
+            {
+                bool allowed = action switch
+                {
+                    ProjectsActions.SiteReportRead => admin || viewer || siteEngineer || siteReviewer,
+                    ProjectsActions.SiteReportCreate => admin || siteEngineer,
+                    ProjectsActions.SiteReportReview or ProjectsActions.SiteReportApprove => admin || siteReviewer,
+                    _ => false
+                };
+                return allowed && await ProjectIsInScopeAsync(context, target, requireMembership: false, cancellationToken);
+            }
 
             // ---- the financial tier is governed SEPARATELY, and delegates to Accounting ----
             //

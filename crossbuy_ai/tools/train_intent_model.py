@@ -31,6 +31,8 @@ from sklearn.model_selection import train_test_split  # noqa: E402
 from app.ml.intent_data import NEGATIVES, OUT_OF_SCOPE, TEMPLATES, generate  # noqa: E402
 from app.ml.intent_model import IntentModel, choose_floor, save, train  # noqa: E402
 from app.ml.intent_data import INTENT_IDS  # noqa: E402
+from app.ml.reviewed_examples import load_reviewed_examples  # noqa: E402
+from app.ml.release_gate import candidate_is_acceptable  # noqa: E402
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests"))
 from real_questions import REAL  # noqa: E402
@@ -72,17 +74,25 @@ def report(model: IntentModel, cases: list[tuple[str, str]], title: str) -> dict
     for m in misses[:14]:
         print(f"      - {m}")
     return {"correct": correct, "wrong": wrong, "leaked": leaked,
-            "refusedWrongly": refused_wrongly, "precision": precision, "answered": answered}
+            "refusedWrongly": refused_wrongly, "precision": precision, "answered": answered,
+            "total": total}
 
 
 if __name__ == "__main__":
     print("generating corpus ...")
     texts, labels = generate()
+    reviewed_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 "data", "reviewed_questions.jsonl")
+    reviewed = load_reviewed_examples(reviewed_path)
     print(f"  {len(texts)} examples across {len(set(labels))} classes "
           f"({len(INTENT_IDS)} intents + the refusal class)")
+    print(f"  {len(reviewed)} explicitly reviewed local examples")
 
     x_train, x_test, y_train, y_test = train_test_split(
         texts, labels, test_size=0.2, random_state=20261108, stratify=labels)
+    # Reviewed examples are training evidence only; they never enter either holdout.
+    x_train.extend(example.text for example in reviewed)
+    y_train.extend(example.intent for example in reviewed)
 
     print("training ...")
     t0 = time.time()
@@ -117,11 +127,14 @@ if __name__ == "__main__":
     per = (time.time() - t0) / max(1, len(REAL)) * 1000
     print(f"\n  latency: {per:.1f} ms per question")
 
-    path = save(pipeline, floor)
-    print(f"\n  saved -> {path}")
-
-    # A model that leaks questions it cannot answer is not shippable, whatever its accuracy.
-    if real["leaked"] > 2:
-        print(f"\n  REFUSING TO BLESS THIS MODEL: it answered {real['leaked']} questions it has no "
-              f"handler for. A confident wrong answer is worse than a refusal.")
+    # Never replace a good artifact with a candidate that fails the independent benchmark.
+    accepted = candidate_is_acceptable(real, generated)
+    if not accepted:
+        print("\n  CANDIDATE REJECTED: the current artifact was left untouched. "
+              "Required: zero wrong intents/leaks and 1.0 precision on human-written cases; "
+              "at least 20 correct, at most two false refusals; generated holdout wrong rate <=0.5% "
+              "and out-of-scope leak rate <=0.2%.")
         sys.exit(1)
+
+    path = save(pipeline, floor)
+    print(f"\n  candidate passed all release gates; atomically published -> {path}")

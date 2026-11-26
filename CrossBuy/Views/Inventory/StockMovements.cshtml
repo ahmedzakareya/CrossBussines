@@ -14,7 +14,12 @@
     {
         var v = Localizer[key].Value;
         return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? arFallback : v;
-    };}
+    };
+
+    @* The same label the rows show, from the same map - a user filters by the word in front of them. *@
+    string srcName(string? s) { var (k, ar) = CrossBuy.BL.MovementSourceLabels.For(s); return Lz(k, ar); }
+}
+
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Stock movements"]</h1>
@@ -28,6 +33,24 @@
                 <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Warehouse"]</label>
                 <select id="f_wh" class="form-select form-select-solid cb-filter" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Lz("Document type", "نوع المستند")</label>
+                @* READ FROM THE DATA, not a hard-coded list - see the ViewBag note on the action.
+                   The option TEXT is the same localized label the rows show, so a user filters by
+                   the word they are looking at; the VALUE is the raw SourceType the query matches. *@
+                <select id="f_src" class="form-select form-select-solid cb-filter" data-control="select2" data-placeholder="@Lz("All types", "كل الأنواع")">
+                    <option value="">@Lz("All types", "كل الأنواع")</option>
+                    @foreach (var st in (ViewBag.SourceTypes as List<string> ?? new List<string>())) { <option value="@st">@srcName(st)</option> }
+                </select></div>
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Lz("Direction", "الاتجاه")</label>
+                <select id="f_dir" class="form-select form-select-solid cb-filter">
+                    <option value="">@Lz("All", "الكل")</option>
+                    <option value="1">@Lz("In", "وارد")</option>
+                    <option value="-1">@Lz("Out", "منصرف")</option>
+                </select></div>
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Lz("From", "من تاريخ")</label>
+                <input type="date" id="f_from" class="form-control form-control-solid" /></div>
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Lz("To", "إلى تاريخ")</label>
+                <input type="date" id="f_to" class="form-control form-control-solid" /></div>
             <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
         </div></div></div>
 
@@ -111,14 +134,28 @@ var signed = function (v, dec) { var n = Number(v || 0); return (n > 0 ? '+' : n
 // `++undefined` is NaN, which made the stale-response guard below compare NaN to NaN and throw
 // away every answer it was meant to protect.
 var tickerReq = 0;
+// The extra filters, read off the controls and written onto whatever query string is being built.
+// A blank control adds nothing, so the URL stays short and a bookmark keeps meaning what it said.
+function addFilters(p){
+  var s=document.getElementById('f_src'); if(s&&s.value)p.set('sourceType',s.value);
+  var d=document.getElementById('f_dir'); if(d&&d.value)p.set('direction',d.value);
+  var f=document.getElementById('f_from'); if(f&&f.value)p.set('from',f.value);
+  var t=document.getElementById('f_to'); if(t&&t.value)p.set('to',t.value);
+}
 var sl = cbServerList({ url:'@Url.Action("StockMovementsData","Inventory")', suggestUrl:'@Url.Action("ItemsSuggest","Inventory")', isAr:@(isAr ? "true" : "false"),
   addParams:function(p){
     var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value);
+    // ONE BUILDER FOR THE EXTRA FILTERS, used by the table, the ticker and the export alike.
+    // Writing them out three times is how the export ends up disagreeing with the screen.
+    addFilters(p);
     // HOOKED HERE ON PURPOSE. cbServerList calls addParams on every load, so the ticker is
     // refreshed with exactly the parameters the table is about to be loaded with - it cannot
     // end up describing a different filter than the rows underneath it.
     var t=new URLSearchParams(); var qv=p.get('q'); if(qv)t.set('q',qv);
     var wv=p.get('warehouseId'); if(wv)t.set('warehouseId',wv);
+    // the ticker copies every narrowing the table applied, so the two can never describe
+    // different populations
+    ['sourceType','direction','from','to'].forEach(function(k){ var v=p.get(k); if(v)t.set(k,v); });
     loadTicker(t.toString());
   } });
 
@@ -222,6 +259,7 @@ function renderMovers(rows) {
 document.getElementById('f_export').addEventListener('click', function(){
   var p=new URLSearchParams(); var t=(sl.search&&sl.search.terms)?sl.search.terms():''; if(t)p.set('q',t);
   var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value);
+  addFilters(p);   // the file must be the table, not a superset of it
   window.location='@Url.Action("StockMovementsExport","Inventory")?'+p.toString();
 });
 </script>

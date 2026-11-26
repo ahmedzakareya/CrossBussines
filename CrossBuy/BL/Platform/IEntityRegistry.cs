@@ -34,7 +34,9 @@ namespace CrossBuy.BL.Platform
         Task<EntityResolveResult> ResolveAsync(string entityCode, int entityId, BusinessContext context, CancellationToken cancellationToken = default);
 
         // Deep link for a record, or null when the type has no screen. A RouteTemplate without "{id}"
-        // is a list-only screen and is returned unchanged.
+        // is a list-only screen and is returned unchanged. An UNREGISTERED code also returns null and
+        // does NOT throw: callers hold history that can outlive the vocabulary it was written against,
+        // so a retired code must cost one dead link, never the whole screen.
         string? BuildUrl(string entityCode, int entityId);
     }
 

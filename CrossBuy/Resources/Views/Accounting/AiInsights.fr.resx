@@ -217,4 +217,40 @@
   <data name="Items analysed" xml:space="preserve">
     <value>Articles analysés</value>
   </data>
+  <data name="These entries carry no source document, so duplication cannot be judged" xml:space="preserve">
+    <value>Ces écritures n'ont pas de document source ; la duplication ne peut être jugée</value>
+  </data>
+  <data name="Not checked" xml:space="preserve">
+    <value>Non vérifié</value>
+  </data>
+  <data name="Duplicate checking covered" xml:space="preserve">
+    <value>Le contrôle des doublons a couvert</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>sur</value>
+  </data>
+  <data name="entries" xml:space="preserve">
+    <value>écritures</value>
+  </data>
+  <data name="The remaining" xml:space="preserve">
+    <value>Les</value>
+  </data>
+  <data name="carry no source document and a generated description, so a duplicate cannot be told apart from a coincidence. Nothing is claimed about them either way." xml:space="preserve">
+    <value>restantes n'ont ni document source ni description rédigée : un doublon ne peut y être distingué d'une coïncidence. Rien n'est affirmé à leur sujet, dans un sens ou dans l'autre.</value>
+  </data>
+  <data name="Review queue" xml:space="preserve">
+    <value>File de revue</value>
+  </data>
+  <data name="These are not findings. They are the entries whose amount and line count look least like the rest, ordered by how unusual they are — somewhere to start looking, not a list of errors." xml:space="preserve">
+    <value>Ce ne sont pas des constats. Ce sont les écritures dont le montant et le nombre de lignes s'écartent le plus du reste, classées par étrangeté — un point de départ, pas une liste d'erreurs.</value>
+  </data>
+  <data name="Lines" xml:space="preserve">
+    <value>Lignes</value>
+  </data>
+  <data name="Unusualness" xml:space="preserve">
+    <value>Étrangeté</value>
+  </data>
+  <data name="not measurable in this period" xml:space="preserve">
+    <value>non mesurable sur cette période</value>
+  </data>
 </root>

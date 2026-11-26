@@ -15,7 +15,9 @@
     var terminals = ViewBag.Terminals as List<PosTerminal> ?? new();
     var open = ViewBag.OpenShifts as Dictionary<int, PosShift?> ?? new();
     var openCount = open.Values.Count(s => s != null);
-    var onCount = caps.Count(c => c.On);
+    // HM-27: a reserved key is not an enabled capability, whatever its row says. Counting it would
+    // make the headline disagree with the badges directly beneath it.
+    var onCount = caps.Count(c => c.On && !HyperController.NotBuilt.Contains(c.Key));
     string bName = branch == null ? "" : (isAr ? (branch.NameAr ?? branch.Name) : (branch.Name ?? branch.NameAr)) ?? "";
     string T(string ar, string en) => isAr ? ar : en;
 }
@@ -68,6 +70,88 @@
         }
         else
         {
+            @* ================= HM-23: TODAY, BEFORE THE SETUP =================
+               Everything below this block describes how the branch is configured. This describes what it has
+               done since it opened. It goes FIRST because that is the question the page is opened with.
+               Every figure links to the screen that owns it; none of them is recomputed a second way here. *@
+            var dDp = (int)(ViewBag.Dp ?? 2);
+            var dFmt = dDp > 0 ? "0." + new string('0', dDp) : "0";
+            var drawers = ViewBag.Drawers as List<CrossBuy.Controllers.HyperController.HyperDrawerRow> ?? new();
+            var todayCount = (int)(ViewBag.TodayCount ?? 0);
+            var todayTotal = (decimal)(ViewBag.TodayTotal ?? 0m);
+            var orphanTotal = drawers.Sum(d => d.OrphanMovements);
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-4">
+                    <a href="/hyper/sales?branchId=@(branch?.ID)" class="card card-flush h-100 text-decoration-none">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div class="fs-7 text-gray-500 fw-semibold">@T("مبيعات اليوم", "Sales today")</div>
+                            <div class="fs-2hx fw-bolder text-gray-900" style="font-variant-numeric:tabular-nums">@todayTotal.ToString(dFmt)</div>
+                            <div class="fs-7 text-gray-600 mt-1">
+                                @(todayCount == 0
+                                    ? T("لا بيعة مُسوّاة بعد اليوم", "No settled sale yet today")
+                                    : $"{todayCount} " + T("فاتورة", "receipts"))
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-xl-8">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-6">
+                            <h3 class="card-title fw-bold text-gray-900">@T("الأدراج المفتوحة الآن", "Drawers open now")</h3>
+                            <div class="card-toolbar"><span class="badge badge-light fs-7 fw-bold">@drawers.Count</span></div>
+                        </div>
+                        <div class="card-body pt-3">
+                            @if (drawers.Count == 0)
+                            {
+                                <div class="text-gray-500 fs-7 py-4">
+                                    @T("لا وردية مفتوحة — لا نقد تحت المسؤولية الآن.", "No open shift — no cash under anyone’s responsibility right now.")
+                                </div>
+                            }
+                            else
+                            {
+                                @if (orphanTotal > 0)
+                                {
+                                    <div class="alert alert-danger fs-8 py-3 mb-4" style="line-height:1.8">
+                                        @(orphanTotal + " " + T("حركة نقد تشير إلى حساب لم يعد موجوداً — محسوبة في المتوقَّع، والخلل في الحساب.", "cash movement(s) point at an account that no longer exists — counted in the expected figure; the account is what is broken."))
+                                    </div>
+                                }
+                                <div class="table-responsive">
+                                    <table class="table align-middle gy-3 mb-0">
+                                        <thead><tr class="fw-bold fs-8 text-uppercase text-gray-500">
+                                            <th class="ps-2">@T("الترمينال", "Terminal")</th>
+                                            <th class="text-end">@T("الافتتاح", "Opening")</th>
+                                            <th class="text-end">@T("خرج", "Out")</th>
+                                            <th class="text-end">@T("المتوقَّع الآن", "Expected now")</th>
+                                            <th class="text-end pe-2"></th>
+                                        </tr></thead>
+                                        <tbody class="fs-7">
+                                            @foreach (var d in drawers)
+                                            {
+                                                <tr>
+                                                    <td class="ps-2">
+                                                        <span class="fw-bold text-gray-900 d-block">@d.TerminalCode · @d.ShiftType</span>
+                                                        <span class="fs-8 text-gray-500" style="font-variant-numeric:tabular-nums">@T("منذ", "since") @d.OpenedAt.ToString("HH:mm")</span>
+                                                    </td>
+                                                    <td class="text-end text-gray-600" style="font-variant-numeric:tabular-nums">@d.OpeningFloat.ToString(dFmt)</td>
+                                                    <td class="text-end @(d.MovedOut > 0 ? "text-danger" : "text-gray-400")" style="font-variant-numeric:tabular-nums">
+                                                        @(d.MovedOut > 0 ? "−" + d.MovedOut.ToString(dFmt) : "—")
+                                                    </td>
+                                                    <td class="text-end fw-bolder text-gray-900" style="font-variant-numeric:tabular-nums">@d.ExpectedCash.ToString(dFmt)</td>
+                                                    <td class="text-end pe-2">
+                                                        <a href="/hyper/cash?branchId=@(branch?.ID)&amp;shiftId=@d.ShiftId" class="btn btn-sm btn-light">@T("الدرج", "Drawer")</a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!--begin::Row 1 — capabilities readiness + branch status card-->
             <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
                 <div class="col-xl-8">
@@ -90,7 +174,18 @@
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach (var c in caps)
                                 {
-                                    if (c.On)
+                                    @* HM-27: a key with NO consumer is RESERVED here too, exactly as the capability
+                                       setup screen shows it. This panel painted "Cash drawer" with a green tick while
+                                       that screen called the same key reserved — two screens disagreeing about one
+                                       fact, and the green one was the lie: nothing reads that capability. *@
+                                    if (HyperController.NotBuilt.Contains(c.Key))
+                                    {
+                                        <span class="badge badge-light fs-7 py-2 px-3 text-muted" style="border:1px dashed var(--bs-gray-400)">
+                                            <i class="ki-outline ki-information-5 fs-7 text-muted me-1"></i>@(isAr ? c.Ar : c.En)
+                                            <span class="fs-8 ms-1">@(isAr ? "محجوز" : "reserved")</span>
+                                        </span>
+                                    }
+                                    else if (c.On)
                                     {
                                         <span class="badge badge-light-success fs-7 py-2 px-3"><i class="ki-outline ki-check-circle fs-7 text-success me-1"></i>@(isAr ? c.Ar : c.En)</span>
                                     }

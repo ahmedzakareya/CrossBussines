@@ -1,0 +1,50 @@
+@model CrossBuy.BL.CrmIdentity.DealAssist
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var tone = new Dictionary<string, string> { ["ok"] = "#15803D", ["warn"] = "#3A5795", ["bad"] = "#DC2626", ["info"] = "#6B7280" };
+    string Val(CrossBuy.BL.CrmIdentity.SummaryFact f) => f.Code switch
+    {
+        "lastTouch" => f.Value == "0" ? T["today"].Value : f.Value + " " + T["days ago"].Value,
+        "committee" => f.Value == "0" ? T["nobody yet"].Value : f.Value + " " + T["people"].Value,
+        "discount" => T["disc:" + f.Value].Value,
+        "waiting" => f.Value == "0" ? T["nobody"].Value : f.Value + " " + T["conversations"].Value,
+        "stage" => f.Value ?? "—",
+        _ => f.Value ?? T["not set"].Value,
+    };
+}
+<div class="card mb-5 crm-assist">
+    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+        <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-abstract-26 fs-3 me-1" style="color:#7239EA"></i>@T["Assistant"]</span>
+        <span class="text-muted fs-8 mt-1">@T["From rules on this deal's own record"]</span></div></div>
+    <div class="card-body pt-2">
+        @if (Model.Actions.Count > 0)
+        {
+            <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Do next"]</div>
+            @foreach (var (a, i) in Model.Actions.Take(3).Select((a, i) => (a, i)))
+            {
+                <div class="d-flex gap-3 align-items-start mb-3">
+                    <span class="crm-assist-n @(i == 0 ? "first" : "")">@(i + 1)</span>
+                    <div class="fs-7 fw-semibold text-gray-800">@T["nba:" + a.Code]@if (a.Param != null) { <span class="text-muted fw-normal"> — <span class="num">@a.Param</span>@if (a.Code is "fixCloseDate" or "reconnect") { <span> @T["days"]</span> }</span> }</div>
+                </div>
+            }
+            <div class="separator my-4"></div>
+        }
+        <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Summary"]</div>
+        @foreach (var f in Model.Summary)
+        {
+            <div class="crm-line"><span class="text-muted">@T["sum:" + f.Code]</span><span class="fw-semibold" style="color:@tone[f.Tone]">@Val(f)</span></div>
+        }
+        @if (Model.Risks.Count > 0)
+        {
+            <div class="d-flex flex-wrap gap-1 mt-3">@foreach (var r in Model.Risks) { <span class="badge @(r.Severity == CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Severity.High ? "badge-light-danger" : "badge-light") fs-9">@T["risk:" + r.Finding]@if (r.EvidenceDays != null) { <span class="num">&nbsp;(@r.EvidenceDays)</span> }</span> }</div>
+        }
+        @foreach (var d in Model.Drafts)
+        {
+            <div class="separator my-4"></div>
+            <div class="d-flex flex-stack mb-2"><span class="fw-bold fs-7 text-gray-800">@T["Draft reply to"] @d.ToName</span>
+                <button type="button" class="btn btn-sm btn-light-primary py-1" data-copy-draft><i class="ki-outline ki-copy fs-6"></i>@T["Copy"]</button></div>
+            <textarea class="form-control form-control-solid fs-7" rows="6" data-draft>@d.Body</textarea>
+            <div class="fs-9 text-muted mt-1">@T["A starting point for your message: read it and change it before you send."]</div>
+        }
+    </div>
+</div>

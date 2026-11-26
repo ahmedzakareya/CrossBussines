@@ -2,6 +2,7 @@ using CrossBuy.BL.Communication;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Communication;
 using CrossBuy.Models.Context.Communication;
+using CrossBuy.Models.Context.Platform;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -158,10 +159,9 @@ namespace CrossBuy.Tests.Communication
             Assert.Equal(CommValidationException.Codes.GroupMentionTooLarge, ex.Code);
         }
 
-        // @role parses, and the service RECORDS WHY it reached nobody instead of silently dropping it. An author
-        // who typed @role deserves an answer.
+        // Role expansion remains explicitly disabled by default, and the author receives the actionable reason.
         [Fact]
-        public async Task An_unwired_role_mention_writes_no_mention_row_and_reports_a_reason()
+        public async Task A_role_mention_is_disabled_by_default_and_reports_the_gate()
         {
             var context = CommunicationTestHost.Context();
             var entity = CommunicationTestHost.Invoice();
@@ -184,11 +184,55 @@ namespace CrossBuy.Tests.Communication
 
             Assert.Empty(outcome.Mentions);
             Assert.Empty(outcome.RecipientEmployeeIds);
-            // The reason names the missing SOURCE, which is the actionable fact: the options flag exists, and
-            // turning it on still would not make role mentions work until a provider is registered (ADR-032 §5).
             var note = Assert.Single(outcome.UnresolvedNotes);
             Assert.Contains("Role", note);
-            Assert.Contains("ICommPrincipalSource", note);
+            Assert.Contains("EnableRoleMentions is off", note);
+        }
+
+        [Fact]
+        public async Task A_scoped_role_mention_expands_only_active_in_date_employees_in_the_company()
+        {
+            _host.Options.EnableRoleMentions = true;
+            var now = DateTime.UtcNow;
+            _host.Db.PlatformRoleAssignments.AddRange(
+                new PlatformRoleAssignment
+                {
+                    CompanyID = CommunicationTestHost.CompanyId, Scope = EntityRegistry.ScopeInventory,
+                    PrincipalType = PlatformPrincipalTypes.Employee, PrincipalId = CommunicationTestHost.Colleague,
+                    Role = "InventoryManager", IsActive = true,
+                },
+                new PlatformRoleAssignment
+                {
+                    CompanyID = CommunicationTestHost.OtherCompanyId, Scope = EntityRegistry.ScopeInventory,
+                    PrincipalType = PlatformPrincipalTypes.Employee, PrincipalId = CommunicationTestHost.OtherCompanyEmployee,
+                    Role = "InventoryManager", IsActive = true,
+                },
+                new PlatformRoleAssignment
+                {
+                    CompanyID = CommunicationTestHost.CompanyId, Scope = EntityRegistry.ScopeInventory,
+                    PrincipalType = PlatformPrincipalTypes.Employee, PrincipalId = CommunicationTestHost.Outsider,
+                    Role = "InventoryManager", IsActive = false,
+                },
+                new PlatformRoleAssignment
+                {
+                    CompanyID = CommunicationTestHost.CompanyId, Scope = EntityRegistry.ScopeInventory,
+                    PrincipalType = PlatformPrincipalTypes.Employee, PrincipalId = CommunicationTestHost.Manager,
+                    Role = "InventoryManager", IsActive = true, ValidTo = now.AddMinutes(-1),
+                },
+                new PlatformRoleAssignment
+                {
+                    CompanyID = CommunicationTestHost.CompanyId, Scope = EntityRegistry.ScopeHr,
+                    PrincipalType = PlatformPrincipalTypes.Employee, PrincipalId = CommunicationTestHost.Author,
+                    Role = "InventoryManager", IsActive = true,
+                });
+            await _host.Db.SaveChangesAsync();
+
+            var expanded = await _host.Principals().ExpandAsync(
+                CommMentionTargetKind.Role, null, "Inventory.InventoryManager", CommunicationTestHost.CompanyId);
+
+            Assert.True(expanded.Supported);
+            Assert.Equal(new[] { CommunicationTestHost.Colleague }, expanded.EmployeeIds);
+            Assert.Equal("Inventory.InventoryManager", expanded.LabelEn);
         }
 
         // A mention of a target that resolves to NOBODY still writes the mention row (the author did mention it)
@@ -245,6 +289,7 @@ namespace CrossBuy.Tests.Communication
                 _host.Attachments(),
                 _host.Events(),
                 _host.Actors(),
+                _host.Registry(),
                 _host.Surface(),
                 _host.Opt);
 
@@ -295,6 +340,163 @@ namespace CrossBuy.Tests.Communication
         }
 
         // ============================================================================================
+        // G11 — WHOSE RIGHTS DECIDE WHETHER A CONFIDENTIAL SUBJECT IS DELIVERED.
+        //
+        // CPS-001 §9 records G11 as "CanReceiveAsync synthesises a recipient BusinessContext with no roles,
+        // so role-derived elevation is not reconstructed: a recipient who genuinely holds ViewConfidential
+        // may still be skipped." That description assumes the elevation is read off context.Roles. It is not.
+        //
+        // The chain actually runs: CanReceiveAsync builds a context carrying the RECIPIENT's EmployeeId →
+        // ResolveVisibilitiesAsync → IPlatformPermissionProvider.CanAsync → ModuleAccessServiceBase gate 7 →
+        // IPlatformRoleDirectory.RolesAsync(context, scope), which reads PlatformRoleAssignments filtered by
+        // context.EmployeeId and context.CompanyId. The recipient's grants are therefore re-read from the
+        // database; the empty Roles array on the synthesised context is never consulted for this decision.
+        // (context.Roles is read in exactly one place in the kernel — CompanyIsolationBypass's admin-role
+        // check — which is cross-company bypass, not visibility.)
+        //
+        // WHAT THIS TEST PROVES, AND WHAT IT DOES NOT. The stub answers from context.EmployeeId, so these
+        // four cases prove the seam: the identity handed to the permission provider is the RECIPIENT's, one
+        // recipient at a time, and the decision is per-recipient rather than per-actor. They do not exercise
+        // the real PlatformRoleDirectory — that needs PlatformRoleAssignments rows on SQL Server, which this
+        // SQLite host cannot host. The database half is established by reading gate 7, not by this test.
+        //
+        // FOUR CONFIGURATIONS, because a single elevated recipient would pass against a service that
+        // notified everybody, or one that notified exactly one person for an unrelated reason.
+        // ============================================================================================
+        private sealed class ElevatedForOneEmployee : IPlatformPermissionProvider
+        {
+            private readonly int? _elevated;
+            public ElevatedForOneEmployee(int? elevatedEmployeeId) => _elevated = elevatedEmployeeId;
+
+            public Task<PermissionDecision> CanAsync(
+                BusinessContext context, string entityType, int entityId, string action,
+                CancellationToken cancellationToken = default)
+            {
+                // Everyone may open the record; that is the entity gate, not the elevation.
+                if (string.Equals(action, PlatformActions.View, StringComparison.Ordinal))
+                    return Task.FromResult(PermissionDecision.Allow("stub: view"));
+
+                // The elevation is granted to ONE employee, and the provider is told who is asking through
+                // the context — which is the whole point of the assertion.
+                if (string.Equals(action, PlatformActions.ViewConfidential, StringComparison.Ordinal)
+                    && _elevated != null && context.EmployeeId == _elevated)
+                    return Task.FromResult(PermissionDecision.Allow("stub: confidential for " + _elevated));
+
+                return Task.FromResult(PermissionDecision.Deny("stub denies " + action));
+            }
+        }
+
+        private async Task<CommNotificationResult> QueueConfidentialToTwoAsync(IPlatformPermissionProvider permissions)
+            => await _host.Notifications(permissions: permissions).QueueAsync(
+                CommunicationTestHost.Context(),
+                new CommNotificationRequest
+                {
+                    TemplateKey = CommTemplateKeys.MentionedInComment,
+                    Entity = CommunicationTestHost.Invoice(),
+                    CompanyId = CommunicationTestHost.CompanyId,
+                    ActorEmployeeId = CommunicationTestHost.Author,
+
+                    // Two recipients, NEITHER of them the actor, so nothing is dropped as ActorSelf.
+                    RecipientEmployeeIds = new[]
+                    {
+                        CommunicationTestHost.Colleague,
+                        CommunicationTestHost.Manager,
+                    },
+                    SubjectVisibility = CommVisibility.Confidential,
+                    Tokens = new Dictionary<string, string>
+                    {
+                        [CommTemplateTokens.ActorName] = "Ahmed",
+                        [CommTemplateTokens.EntityLabel] = "INV-1",
+                        [CommTemplateTokens.EntityLabelEn] = "INV-1",
+                    },
+                    DedupKeyPrefix = "test:g11:" + Guid.NewGuid().ToString("N"),
+                });
+
+        [Fact]
+        public async Task A_confidential_subject_reaches_only_the_recipient_whose_own_rights_allow_it()
+        {
+            // 1. The elevation sits on ONE of the two recipients.
+            var oneElevated = await QueueConfidentialToTwoAsync(
+                new ElevatedForOneEmployee(CommunicationTestHost.Manager));
+
+            Assert.Equal(2, oneElevated.RequestedRecipientCount);
+            Assert.Equal(1, oneElevated.NotifiedRecipientCount);
+
+            // 2. The elevation sits on somebody who is NOT a recipient. If the decision were taken on the
+            //    ACTOR's rights, or on any single context shared by the batch, this would still deliver.
+            var elevatedBystander = await QueueConfidentialToTwoAsync(
+                new ElevatedForOneEmployee(CommunicationTestHost.Outsider));
+
+            Assert.Equal(2, elevatedBystander.RequestedRecipientCount);
+            Assert.Equal(0, elevatedBystander.NotifiedRecipientCount);
+
+            // 3. Nobody is elevated — the floor.
+            var noneElevated = await QueueConfidentialToTwoAsync(new ElevatedForOneEmployee(null));
+            Assert.Equal(0, noneElevated.NotifiedRecipientCount);
+
+            // 4. Everybody is elevated — the ceiling. Without this the test would also pass against a
+            //    service that simply refused Confidential to everyone.
+            var allElevated = await QueueConfidentialToTwoAsync(Manager());
+            Assert.Equal(2, allElevated.NotifiedRecipientCount);
+        }
+
+        // ============================================================================================
+        // G12 — THE ENTITY LABEL, AND WHAT HAPPENS WHEN THE RECORD CANNOT BE RESOLVED.
+        //
+        // The label now goes through IEntityRegistry.ResolveAsync so a notification names the record
+        // the way its own screen does (INV-2026-0042) rather than by primary key. ResolveAsync reads a
+        // business table under a company predicate, which means it can legitimately answer "not found":
+        // the row may be in another company, soft-deleted, or of a type whose definition carries no
+        // resolve arm at all.
+        //
+        // A NOTIFICATION MUST NOT BE LOST BECAUSE ITS TITLE COULD NOT BE IMPROVED. That is the whole
+        // behaviour under test here: an unresolvable record degrades to the type-and-key label that
+        // shipped before, and the notification is still created.
+        //
+        // THIS FIXTURE CANNOT RESOLVE ANYTHING, and that is what makes it the right one — the SQLite
+        // host has no SalesInvoices row, so ResolveAsync returns Found=false for every invoice id and
+        // the fallback is the path actually exercised. The resolved path is covered in production by
+        // ResolveAsync's own suite; it cannot be reached from here without seeding a business table
+        // this platform deliberately does not own.
+        //
+        // NOT ASSERTED AGAINST A LITERAL. The expected words are read back out of the registry, so
+        // renaming a display name is not a test failure — pinning "Sales invoice" here would make this
+        // a test of the registry's wording rather than of the fallback.
+        // ============================================================================================
+        [Fact]
+        public async Task An_unresolvable_record_falls_back_to_the_type_label_and_still_notifies()
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var added = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context, _host.CommentOn(entity, $"please check @employee:{CommunicationTestHost.Colleague}"));
+
+            using var fresh = _host.NewContext();
+
+            // The notification EXISTS. If the registry read threw instead of degrading, there would be
+            // no row here and the comment itself would have failed.
+            var notification = Assert.Single(await fresh.Set<CommNotification>().AsNoTracking()
+                .Where(n => n.CommentId == added.CommentId
+                            && n.TemplateKey == CommTemplateKeys.MentionedInComment).ToListAsync());
+
+            Assert.False(string.IsNullOrWhiteSpace(notification.BodyEn));
+            Assert.False(string.IsNullOrWhiteSpace(notification.BodyAr));
+
+            // It fell back to the registry's DISPLAY NAME plus the key — not to the raw entity code.
+            Assert.True(_host.Registry(fresh).TryGetDefinition(EntityRegistry.SalesInvoice, out var def));
+            Assert.NotNull(def);
+            Assert.Contains(def!.DisplayNameEn!, notification.BodyEn!, StringComparison.Ordinal);
+            Assert.Contains("#" + entity.EntityId, notification.BodyEn!, StringComparison.Ordinal);
+
+            // THE DISCRIMINATOR. "SalesInvoice#1001" is the shape EntityWords emits when the registry
+            // has no definition for the code — the one case where a label genuinely cannot be dressed
+            // up. Seeing it here would mean the registry lookup failed, not that the record did, and
+            // the two must not be allowed to look alike.
+            Assert.DoesNotContain(EntityRegistry.SalesInvoice + "#", notification.BodyEn!, StringComparison.Ordinal);
+        }
+
+        // ============================================================================================
         // Idempotency and dedup
         // ============================================================================================
 
@@ -340,6 +542,9 @@ namespace CrossBuy.Tests.Communication
                 {
                     [CommTemplateTokens.ActorName] = "Ahmed",
                     [CommTemplateTokens.EntityLabel] = "INV-1",
+                    // Required since the bilingual migration: the English sentence carries its own
+                    // label, so a queue that supplies only the Arabic one is refused at decide time.
+                    [CommTemplateTokens.EntityLabelEn] = "INV-1",
                 },
                 DedupKeyPrefix = "comment:1:mention",
             };
@@ -384,15 +589,25 @@ namespace CrossBuy.Tests.Communication
         {
             var template = _host.Catalog().Get(CommTemplateKeys.MentionedInComment);
 
+            // THE TWO LABELS ARE DELIBERATELY DIFFERENT STRINGS. The bilingual migration gave the
+            // English bodies their own {entityEn} token, so supplying the same text for both would
+            // still pass if the renderer read the Arabic label into the English sentence. Distinct
+            // values are what make "substitutes BOTH languages" an assertion rather than a hope.
             var rendered = _host.Renderer().Render(template, new Dictionary<string, string>
             {
                 [CommTemplateTokens.ActorName] = "Ahmed",
-                [CommTemplateTokens.EntityLabel] = "INV-42",
+                [CommTemplateTokens.EntityLabel] = "فاتورة-42",
+                [CommTemplateTokens.EntityLabelEn] = "INV-42",
             }, url: "/Accounting/SalesInvoiceDetail?id=42");
 
             Assert.Contains("Ahmed", rendered.TitleEn);
             Assert.Contains("أشار", rendered.TitleAr);
+
+            // Each sentence carries its OWN language's label, and not the other one.
             Assert.Contains("INV-42", rendered.BodyEn);
+            Assert.DoesNotContain("فاتورة-42", rendered.BodyEn);
+            Assert.Contains("فاتورة-42", rendered.BodyAr);
+            Assert.DoesNotContain("INV-42", rendered.BodyAr);
 
             // {excerpt} was not supplied: it renders as EMPTY, never as a literal "{excerpt}" — which would look
             // like a bug to a recipient who cannot know it was optional.
@@ -411,9 +626,22 @@ namespace CrossBuy.Tests.Communication
             {
                 [CommTemplateTokens.ActorName] = "{entity}",
                 [CommTemplateTokens.EntityLabel] = "INV-42",
+                [CommTemplateTokens.EntityLabelEn] = "INV-42",
             }, url: null);
 
             Assert.Contains("{entity}", rendered.TitleEn);        // preserved verbatim, not expanded
+
+            // The English sentence is the one the migration rewired, so prove the injection guard
+            // holds on the {entityEn} path too - a value that looks like the NEW token must also
+            // survive untouched.
+            var viaEnglishToken = _host.Renderer().Render(template, new Dictionary<string, string>
+            {
+                [CommTemplateTokens.ActorName] = "{entityEn}",
+                [CommTemplateTokens.EntityLabel] = "INV-42",
+                [CommTemplateTokens.EntityLabelEn] = "INV-42",
+            }, url: null);
+
+            Assert.Contains("{entityEn}", viaEnglishToken.TitleEn);
         }
 
         // Every template's resource keys are PUBLISHED, so localizing the platform is a list rather than a grep.
@@ -423,7 +651,7 @@ namespace CrossBuy.Tests.Communication
             var catalog = _host.Catalog();
             var keys = catalog.RequiredResourceKeys();
 
-            Assert.Equal(catalog.All().Count * 4, keys.Count);
+            Assert.Equal(catalog.All().Count * 6, keys.Count);
             Assert.All(keys, k => Assert.StartsWith("Comm.Notification.", k));
         }
 

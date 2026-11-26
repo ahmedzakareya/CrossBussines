@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tags" xml:space="preserve">
+    <value>الوسوم</value>
+  </data>
+  <data name="One word, shared by every record that carries it." xml:space="preserve">
+    <value>كلمة واحدة، يتشاركها كل سجل يحملها.</value>
+  </data>
+  <data name="Tags created here are the ones offered on leads, opportunities, accounts and activities. A tag belongs to this company only." xml:space="preserve">
+    <value>الوسوم التي تُنشأ هنا هي التي تظهر على العملاء المحتملين والفرص والحسابات والأنشطة. الوسم يخصّ هذه الشركة وحدها.</value>
+  </data>
+  <data name="A tag that has never been used is deleted outright; one that records history is archived instead, so every record keeps its answer." xml:space="preserve">
+    <value>الوسم الذي لم يُستخدم قط يُحذف نهائيًا، أما الذي يحمل سجلًا فيُؤرشف بدلًا من ذلك، فيحتفظ كل سجل بإجابته.</value>
+  </data>
+  <data name="New tag" xml:space="preserve">
+    <value>وسم جديد</value>
+  </data>
+  <data name="e.g. Key account" xml:space="preserve">
+    <value>مثال: حساب رئيسي</value>
+  </data>
+  <data name="Case and spacing do not make a new tag: “Urgent” and “ urgent ” are the same one." xml:space="preserve">
+    <value>حالة الأحرف والمسافات لا تصنع وسمًا جديدًا: «عاجل» و« عاجل » هما الوسم نفسه.</value>
+  </data>
+  <data name="Records" xml:space="preserve">
+    <value>السجلات</value>
+  </data>
+  <data name="No tags yet" xml:space="preserve">
+    <value>لا توجد وسوم بعد</value>
+  </data>
+  <data name="Never used" xml:space="preserve">
+    <value>لم يُستخدم</value>
+  </data>
+  <data name="Archived" xml:space="preserve">
+    <value>مؤرشف</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>أرشفة</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>استعادة</value>
+  </data>
+  <data name="Archive “{0}”? It stays on {1} record(s) and leaves the pickers." xml:space="preserve">
+    <value>أرشفة «{0}»؟ ستبقى على {1} سجل وتختفي من قوائم الاختيار.</value>
+  </data>
+  <data name="Delete “{0}”? It has never been used." xml:space="preserve">
+    <value>حذف «{0}»؟ لم يُستخدم قط.</value>
+  </data>
+</root>

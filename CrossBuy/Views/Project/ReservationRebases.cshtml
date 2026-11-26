@@ -1,0 +1,66 @@
+@using System.Globalization
+@using CrossBuy.BL
+@using CrossBuy.ViewModel
+@model ConstructionRebasePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    string L(string key) => SR["Construction.Rebase." + key].Value;
+    var selected = Model.Selected;
+    var forms = new List<(ConstructionRebaseOperation Operation, string Version)>();
+    if (selected?.ProposalPreview is { Ok: true, Version: not null } request) { forms.Add((ConstructionRebaseOperation.Request, request.Version)); }
+    if (selected is { CanDecide: true, ProposalVersion: not null }) { forms.Add((ConstructionRebaseOperation.Approve, selected.ProposalVersion)); forms.Add((ConstructionRebaseOperation.Reject, selected.ProposalVersion)); }
+    if (selected?.SourcePreview is { Ok: true, Version: not null } source) { forms.Add((ConstructionRebaseOperation.Activate, source.Version)); }
+    if (selected?.PurchasePreview is { Ok: true, Version: not null } purchase) { forms.Add((ConstructionRebaseOperation.PurchaseRequest, purchase.Version)); }
+    var refusal = selected?.ProposalPreview is { Ok: false } p ? p.Code : selected?.SourcePreview is { Ok: false } s ? s.Code : selected?.PurchasePreview is { Ok: false } b ? b.Code : null;
+    string Message(string code) { var value = SR["Construction.Rebase.Error." + code]; return value.IsResourceNotFound ? L("Error.General") : value.Value; }
+}
+<div class="app-container container-fluid py-6">
+    <div class="d-flex flex-stack flex-wrap gap-3 mb-6">
+        <div><h1 class="fs-3 fw-bold">@L("Title")</h1><div class="text-muted">@Model.ProjectCode — @DisplayName.Of(Model.ProjectName, Model.ProjectNameEn)</div></div>
+        <a asp-controller="Project" asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@L("Budgets")</a>
+    </div>
+    <div class="alert alert-info">@L("Explanation")</div>
+    @if (TempData["ConstructionRebaseSaved"] != null) { <div class="alert alert-success" role="status">@L("Saved")</div> }
+    @if (Model.Error != null) { <div class="alert alert-danger" role="alert">@Message(Model.Error) @L("Preserved")</div> }
+    @if (Model.RejectedInput != null && !forms.Any(x => x.Operation == Model.FailedOperation)) { <div class="alert alert-warning"><p>@L("Preserved")</p><p class="mb-0">@Model.RejectedInput.Reason</p></div> }
+    <div class="card mb-6"><div class="card-header"><h2 class="card-title fs-5">@L("Orders")</h2></div><div class="card-body">
+        @if (Model.Truncated) { <div class="alert alert-warning">@L("Truncated")</div> }
+        @if (Model.Orders.Count == 0) { <p class="text-muted">@L("Empty")</p> }
+        <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr><th>@L("Order")</th><th>@L("State")</th><th>@L("Open")</th></tr></thead><tbody>
+        @foreach (var order in Model.Orders)
+        { <tr><td>@order.Number</td><td>@L("State." + (order.Status is "Draft" or "Approved" or "Received" or "Closed" ? order.Status : "Unknown"))</td><td><a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@order.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-light-primary">@L("Open")</a></td></tr> }
+        </tbody></table></div>
+    </div></div>
+    @if (selected != null)
+    {
+        <section class="card mb-6"><div class="card-header"><h2 class="card-title fs-5">@selected.Number — @L("Workflow")</h2></div><div class="card-body">
+            <dl class="row mb-4"><dt class="col-sm-3">@L("OriginalBudget")</dt><dd class="col-sm-9">@selected.OriginalVersionNo</dd><dt class="col-sm-3">@L("TargetBudget")</dt><dd class="col-sm-9">@(selected.TargetVersionNo?.ToString(CultureInfo.CurrentCulture) ?? "—")</dd><dt class="col-sm-3">@L("Commitment")</dt><dd class="col-sm-9"><span dir="ltr">@selected.NetAmount.ToString("0.############################", CultureInfo.CurrentCulture) @selected.CurrencyCode</span></dd></dl>
+            <p>@L("ReviewState"): <strong>@L("State." + selected.Outcome)</strong> · @L("ExposureState"): <strong>@L(selected.Activated ? "Activated" : "NotActivated")</strong></p>
+            <p class="text-muted">@L("Independent")</p>
+            @if (refusal != null) { <div class="alert alert-warning" role="status">@Message(refusal)</div> }
+            @foreach (var form in forms)
+            {
+                var retry = Model.FailedOperation == form.Operation ? Model.RejectedInput : null;
+                <form asp-action="@form.Operation.ToString()" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@selected.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="border rounded p-4 mb-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="RequestId" value="@(retry?.RequestId ?? Guid.NewGuid())" />
+                    <input type="hidden" name="Version" value="@(retry?.Version ?? form.Version)" />
+                    <input type="hidden" name="ProposalId" value="@(retry?.ProposalId ?? selected.ProposalId ?? 0)" />
+                    <input type="hidden" name="TargetId" value="@(retry?.TargetId ?? selected.TargetId ?? 0)" />
+                    <label class="form-label" for="reason-@form.Operation">@L("Reason") — @L(form.Operation.ToString())</label>
+                    <textarea id="reason-@form.Operation" name="Reason" class="form-control mb-3" maxlength="1000" required rows="2">@retry?.Reason</textarea>
+                    <button type="submit" class="btn @(form.Operation == ConstructionRebaseOperation.Reject ? "btn-light-danger" : "btn-primary")">@L(form.Operation.ToString())</button>
+                </form>
+            }
+            <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@selected.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@L("Reload")</a>
+            @if (selected.ApprovalId.HasValue) { <p class="mt-4">@L("PurchaseState"): @L("State." + (selected.ApprovalStatus is "Pending" or "Approved" or "Rejected" ? selected.ApprovalStatus : "Unknown")) · @L("ApprovalNumber") @selected.ApprovalId</p> }
+            <p class="mt-4 text-muted">@L("PurchaseNotice")</p>
+            @if (selected.CanReviewPurchase) { <a asp-controller="Inventory" asp-action="Approvals" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@L("Approvals")</a> }
+        </div></section>
+        <section class="card"><div class="card-header"><h2 class="card-title fs-5">@L("History")</h2></div><div class="card-body table-responsive"><table class="table table-row-dashed"><thead><tr><th>@L("RequestNumber")</th><th>@L("Reason")</th><th>@L("State")</th><th>@L("Date")</th><th>@L("Open")</th></tr></thead><tbody>
+        @foreach (var row in selected.History)
+        { <tr><td>@row.Id</td><td>@row.Reason</td><td>@L("State." + row.Outcome)</td><td>@row.RequestedAt.ToString("g", CultureInfo.CurrentCulture)</td><td><a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@selected.OrderId" asp-route-proposalId="@row.Id" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">@L("Open")</a></td></tr> }
+        </tbody></table></div></section>
+    }
+</div>

@@ -28,7 +28,9 @@
             else if (f.FieldType == "Select")
             {
                 <select class="form-select form-select-solid cf-input" data-cf="@f.ID">
-                    <option value=""></option>
+                    @* NOT empty: the layout's select2 enhancer takes this option's text as its placeholder, and an empty
+                       placeholder renders an empty line — the box collapsed to a thin strip in the lead modal. *@
+                    <option value="">—</option>
                     @{ var cfOpts = isAr ? f.Options : (string.IsNullOrEmpty(f.OptionsEn) ? f.Options : f.OptionsEn); }
                     @foreach (var opt in (cfOpts ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     { <option value="@opt">@opt</option> }

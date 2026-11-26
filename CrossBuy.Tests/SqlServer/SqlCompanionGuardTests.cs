@@ -39,6 +39,7 @@ namespace CrossBuy.Tests.SqlServer
         [InlineData("CrossBuyDB2")]
         [InlineData("CrossBuyDB")]
         [InlineData("CrossBuy")]
+        [InlineData("CrossBuyDev")]      // appsettings names it as DefaultConnection, so it is the one pasted by reflex
         [InlineData("crossbuydb2")]      // case must not be an escape hatch
         [InlineData("CROSSBUYDB2")]
         public void Guard1_refuses_a_connection_string_naming_a_production_catalog(string catalog)
@@ -397,8 +398,17 @@ namespace CrossBuy.Tests.SqlServer
             {
                 var master = new SqlConnectionStringBuilder(_sql.TestConnectionString) { InitialCatalog = "master" };
                 onServer = await SqlEvidenceGuards.OwnedDatabasesOnServerAsync(master.ConnectionString);
+                // ACCOUNTED FOR IS WHAT THIS RUN OWNS - the shared fixture database and nothing else.
+                //
+                // IT USED TO ADD ListOwnedProbeDatabasesAsync() AS WELL, which returns EVERY owned-prefix
+                // database on the instance. That made every leftover account for itself, so the summary
+                // reported zero leftovers while 297 probes sat on the server - the evidence file said the
+                // instance was clean for three weeks while it filled up. Guard3 had this exact defect and
+                // was corrected; the correction was never carried across to the summary Guard7 writes.
+                //
+                // A probe alive while this runs is NOT legitimate: the SqlServer tests share one xUnit
+                // collection and run serially, which is the same reasoning Guard3 records.
                 accountedFor.Add(new SqlConnectionStringBuilder(_sql.TestConnectionString).InitialCatalog);
-                accountedFor.AddRange(await _sql.ListOwnedProbeDatabasesAsync());
                 fingerprint = await _sql.SharedFixtureFingerprintAsync();
             }
 
@@ -475,6 +485,59 @@ namespace CrossBuy.Tests.SqlServer
 
             Assert.Contains("### Leftovers", text);
             Assert.Contains("CrossBuyProbe_F4_orphan", text);
+        }
+
+        // =============================================================================================
+        // GUARD 8 - probe leases released
+        //
+        // SUPPLEMENTARY, AND DELIBERATELY NOT THE ENFORCEMENT POINT. Read this before relying on it.
+        //
+        // xUnit gives no guarantee that this class runs after the others in the collection. Measured on
+        // this assembly: the 51 SqlServer classes are discovered alphabetically and SqlCompanionGuardTests
+        // is #48. Stage1F4DatabaseProofTests (#49) and TaskScopeQuerySqlTests (#50) both create probes
+        // AFTER it - and the F4 and TaskScope families are among the leftovers sitting on the instance
+        // right now. A guard here that claimed to enforce release would pass and then those two would leak:
+        // the "guard that passes by looking away" shape this file already records twice (Guard3, Guard7).
+        //
+        // ENFORCEMENT LIVES IN SqlServerFixture.DisposeAsync, the only point xUnit guarantees runs after
+        // every class in the collection. This test is an EARLY WARNING: it catches a lease leaked by a
+        // class that ran before it, and names it while that class is still fresh in the output.
+        // =============================================================================================
+
+        [SkippableFact]
+        public void Guard8_probe_leases_taken_before_this_point_were_released()
+        {
+            Skip.If(!_sql.Available, _sql.SkipReason);
+
+            var outstanding = _sql.OutstandingLeases;
+
+            Assert.True(outstanding.Count == 0,
+                "probe leases were not released. Enforcement is at fixture teardown; this is the earlier " +
+                "sighting, and it only sees classes that ran before this one:" + Environment.NewLine +
+                string.Join(Environment.NewLine, outstanding.Select(r =>
+                    $"  [{r.Status}] {r.DatabaseName} (lease {r.LeaseId}, family {r.Family})" +
+                    (r.CleanupError is null ? string.Empty : " - " + r.CleanupError))));
+        }
+
+        // A released lease must be RECORDED as released, not merely absent: history keeps every lease so a
+        // run can be audited after the fact, which is what the 2026-10-21 incident had no way to do.
+        [SkippableFact]
+        public void Guard8_history_distinguishes_active_released_and_failed()
+        {
+            Skip.If(!_sql.Available, _sql.SkipReason);
+
+            var history = _sql.LeaseHistory;
+            var active = _sql.ActiveLeases;
+            var outstanding = _sql.OutstandingLeases;
+
+            // Active is a subset of outstanding, and outstanding is a subset of history. A released lease is
+            // in history and in neither of the other two.
+            Assert.All(active, r => Assert.Equal(SqlServerFixture.ProbeCleanupStatus.Leased, r.Status));
+            Assert.All(outstanding, r => Assert.NotEqual(SqlServerFixture.ProbeCleanupStatus.Released, r.Status));
+            Assert.True(active.Count <= outstanding.Count && outstanding.Count <= history.Count);
+
+            Assert.All(history.Where(r => r.Status == SqlServerFixture.ProbeCleanupStatus.Released),
+                r => Assert.Null(r.CleanupError));
         }
     }
 }

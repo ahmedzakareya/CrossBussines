@@ -40,6 +40,18 @@ namespace CrossBuy.BL
 		public const string LibraryRelativeRoot = "uploads/library";
 
 		/// <summary>
+		/// Chat uploads share the library's physical storage, but remain conversation-private. They
+		/// must only be served through ChatController after conversation membership is checked.
+		/// </summary>
+		public static bool IsPrivateChatLibraryPath(int companyId, string? storedPath)
+		{
+			if (companyId <= 0 || string.IsNullOrWhiteSpace(storedPath)) return false;
+			var normalized = storedPath.Trim().Replace('\\', '/');
+			var prefix = $"/uploads/library/{companyId}/chat/";
+			return normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+		}
+
+		/// <summary>
 		/// Resolves a LibraryItem.StoredPath to a physical file path, but only if that path provably
 		/// stays inside the document library. Returns false — with no path — for anything else.
 		/// </summary>

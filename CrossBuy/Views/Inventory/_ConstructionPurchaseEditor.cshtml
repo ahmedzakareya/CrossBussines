@@ -1,0 +1,91 @@
+@using System.Globalization
+@using CrossBuy.BL
+@model CrossBuy.ViewModel.ConstructionPurchaseEditorPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var allocation = Model.OrderId.HasValue;
+    string Title() => SR[allocation ? "Construction.Editor.AllocationTitle" : "Construction.Editor.DraftTitle"].Value;
+    string Option(CrossBuy.BL.Construction.ConstructionReferenceOption value) => (string.IsNullOrWhiteSpace(value.Code) ? "" : value.Code + " — ") + DisplayName.Of(value.Name, value.NameEn);
+    string Exact(decimal value) => value.ToString(Model.CurrencyDecimals is >= 0 and <= 8 ? "F" + Model.CurrencyDecimals : "0.############################", CultureInfo.CurrentCulture);
+    string Notice(string code) { var value = SR["Construction.Purchase.Error." + code]; return value.IsResourceNotFound ? SR["Construction.Purchase.Error.General"].Value : value.Value; }
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@Title()</h1><p class="text-muted mb-0">@Model.ProjectCode — @DisplayName.Of(Model.ProjectName, Model.ProjectNameEn) @Model.OrderNumber</p></div>
+        <div class="d-flex gap-2">
+            <a asp-action="BudgetVersions" asp-controller="Project" asp-route-id="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@SR["Construction.Editor.Budget"]</a>
+            @if (allocation) { <a asp-action="ConstructionPurchaseApproval" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Purchase.Request.Title"]</a> }
+        </div>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["InvMsg"] is string message) { <div class="alert alert-success" role="status">@message</div> }
+        <div class="alert alert-info">@SR[allocation ? "Construction.Editor.AllocationNotice" : "Construction.Editor.DraftNotice"]</div>
+        @if (Model.RefusalCode != null)
+        {
+            <div class="alert alert-danger" role="alert">@Notice(Model.RefusalCode) @SR["Construction.Editor.Preserved"]</div>
+            <details class="mb-4"><summary>@SR["Construction.Editor.RejectedInput"]</summary><pre class="text-wrap">@Model.Input.RowsJson</pre></details>
+        }
+        @if (!Model.CanSave && Model.RefusalCode == null) { <div class="alert alert-warning" role="status">@Notice(Model.Code)</div> }
+        @if (allocation)
+        {
+            <div class="card mb-5"><div class="card-body table-responsive"><table class="table table-row-dashed">
+                <thead><tr><th>@SR["Construction.Editor.SourceLine"]</th><th>@SR["Construction.Purchase.Request.Description"]</th><th class="text-end">@SR["Construction.Purchase.Request.Net"]</th></tr></thead>
+                <tbody>@foreach(var line in Model.Lines) { <tr><td>@line.Number</td><td>@line.Description</td><td class="text-end" dir="ltr">@Exact(line.NetAmount) @Model.CurrencyCode</td></tr> }</tbody>
+            </table></div></div>
+        }
+        <div class="card mb-5"><div class="card-body">
+            <form asp-action="@(allocation ? "SaveConstructionPurchaseAllocation" : "CreateConstructionPurchaseDraft")" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post"
+                  data-construction-editor data-mode="@(allocation ? "allocation" : "draft")" data-invalid="@SR["Construction.Editor.InvalidNumbers"]" data-limit="@SR["Construction.Editor.Limit"]" data-maximum="@(allocation ? 10000 : 500)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="projectId" value="@Model.ProjectId" />
+                @if (allocation) { <input type="hidden" name="orderId" value="@Model.OrderId" /> }
+                <input type="hidden" name="input.RequestId" value="@Model.Input.RequestId" /><input type="hidden" name="input.BaselineId" value="@Model.Input.BaselineId" />
+                <input type="hidden" name="input.BaselineVersion" value="@Model.Input.BaselineVersion" /><input type="hidden" name="input.SourceVersion" value="@Model.Input.SourceVersion" />
+                <textarea name="input.RowsJson" data-editor-json hidden>@Model.Input.RowsJson</textarea>
+                @if (!allocation)
+                {
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6"><label class="form-label" for="construction-vendor">@SR["Construction.Editor.Supplier"]</label><select id="construction-vendor" name="input.VendorId" class="form-select" required><option value="">@SR["Construction.Editor.Choose"]</option>@foreach(var option in Model.Vendors) { <option value="@option.Id" selected="@(option.Id == Model.Input.VendorId)">@Option(option)</option> }</select></div>
+                        <div class="col-md-6"><label class="form-label" for="construction-warehouse">@SR["Construction.Editor.Warehouse"]</label><select id="construction-warehouse" name="input.WarehouseId" class="form-select"><option value="">@SR["Construction.Editor.NoWarehouse"]</option>@foreach(var option in Model.Warehouses) { <option value="@option.Id" selected="@(option.Id == Model.Input.WarehouseId)">@Option(option)</option> }</select></div>
+                        <div class="col-md-4"><label class="form-label" for="construction-order-date">@SR["Construction.Editor.OrderDate"]</label><input id="construction-order-date" name="input.OrderDate" class="form-control" type="date" required value="@Model.Input.OrderDate" /></div>
+                        <div class="col-md-4"><label class="form-label" for="construction-expected-date">@SR["Construction.Editor.ExpectedDate"]</label><input id="construction-expected-date" name="input.ExpectedDate" class="form-control" type="date" value="@Model.Input.ExpectedDate" /></div>
+                        <div class="col-md-4"><label class="form-label">@SR["Construction.Editor.Currency"]</label><p class="form-control-plaintext" dir="ltr">@Model.CurrencyCode</p></div>
+                        <div class="col-12"><label class="form-label" for="construction-notes">@SR["Construction.Editor.Notes"]</label><textarea id="construction-notes" name="input.Notes" class="form-control" maxlength="4000">@Model.Input.Notes</textarea></div>
+                    </div>
+                }
+                <p class="text-muted">@SR["Construction.Editor.DecimalHint"]</p>
+                <p data-editor-error class="alert alert-danger" role="alert" hidden></p>
+                <div class="table-responsive"><table class="table align-middle table-row-dashed">
+                    <thead><tr>
+                        @if (allocation) { <th>@SR["Construction.Editor.SourceLine"]</th><th>@SR["Construction.Editor.Dimension"]</th><th>@SR["Construction.Purchase.Request.Net"]</th> }
+                        else { <th>@SR["Construction.Editor.Item"]</th><th>@SR["Construction.Purchase.Request.Description"]</th><th>@SR["Construction.Purchase.Request.Quantity"]</th><th>@SR["Construction.Editor.Unit"]</th><th>@SR["Construction.Editor.UnitPrice"]</th><th>@SR["Construction.Editor.Discount"]</th><th>@SR["Construction.Editor.TaxRate"]</th> }
+                        <th>@SR["Construction.Editor.Remove"]</th>
+                    </tr></thead><tbody data-editor-rows></tbody>
+                </table></div>
+                <button type="button" data-editor-add class="btn btn-light-primary mb-4" disabled="@(!Model.CanSave)">@SR["Construction.Editor.Add"]</button>
+                <label class="form-label d-block" for="construction-editor-reason">@SR["Construction.Purchase.Request.Reason"]</label><textarea id="construction-editor-reason" name="input.Reason" class="form-control mb-4" maxlength="1000" rows="3" required>@Model.Input.Reason</textarea>
+                @if (Model.CanSave) { <button type="submit" class="btn btn-primary">@SR[allocation ? "Construction.Editor.SaveAllocation" : "Construction.Editor.SaveDraft"]</button> }
+                else { <a asp-action="@(allocation ? "ConstructionPurchaseAllocation" : "NewConstructionPurchase")" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Purchase.Request.Reload"]</a> }
+                <template data-editor-template><tr>
+                    @if (allocation)
+                    {
+                        <td><select class="form-select" data-field="SourceLineId" required><option value="">@SR["Construction.Editor.Choose"]</option>@foreach(var line in Model.Lines) { <option value="@line.Id">@line.Number — @line.Description (@Exact(line.NetAmount) @Model.CurrencyCode)</option> }</select></td>
+                        <td><select class="form-select" data-dimension required><option value="">@SR["Construction.Editor.Choose"]</option>@foreach(var dimension in Model.Dimensions) { <option value="@(dimension.NodeId + ":" + dimension.CostId)">@dimension.NodeCode — @DisplayName.Of(dimension.NodeName, dimension.NodeNameEn) / @dimension.CostCode — @DisplayName.Of(dimension.CostName, dimension.CostNameEn)</option> }</select></td>
+                        <td><input class="form-control" data-field="NetDocumentAmount" data-decimal inputmode="decimal" dir="ltr" required /></td>
+                    }
+                    else
+                    {
+                        <td><select class="form-select" data-field="ItemId"><option value="">@SR["Construction.Editor.FreeText"]</option>@foreach(var option in Model.Items) { <option value="@option.Id">@Option(option)</option> }</select></td>
+                        <td><input class="form-control" data-field="Description" maxlength="1000" /></td>
+                        <td><input class="form-control" data-field="Quantity" data-decimal inputmode="decimal" dir="ltr" required /></td>
+                        <td><select class="form-select" data-field="UnitId"><option value="">@SR["Construction.Editor.BaseUnit"]</option>@foreach(var option in Model.Units) { <option value="@option.Id">@Option(option)</option> }</select></td>
+                        <td><input class="form-control" data-field="UnitPrice" data-decimal inputmode="decimal" dir="ltr" required /></td>
+                        <td><input class="form-control" data-field="Discount" data-decimal inputmode="decimal" dir="ltr" value="0" required /></td>
+                        <td><input class="form-control" data-field="TaxRate" data-decimal inputmode="decimal" dir="ltr" value="0" required /></td>
+                    }
+                    <td><button type="button" class="btn btn-sm btn-light-danger" data-editor-remove>@SR["Construction.Editor.Remove"]</button></td>
+                </tr></template>
+            </form>
+        </div></div>
+    </div></div>
+</div>

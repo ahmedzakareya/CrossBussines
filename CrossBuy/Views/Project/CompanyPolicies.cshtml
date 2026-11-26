@@ -1,0 +1,91 @@
+@using System.Globalization
+@using CrossBuy.Models.Context.Construction
+@model CrossBuy.BL.Construction.ConstructionCompanyPolicyPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    string L(string key) => SR["Construction.PolicyUi." + key].Value;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("Title")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted"><a href="@Url.Action("Projects", "Project")" class="text-muted text-hover-primary">@SR["Projects"]</a></li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@L("Title")</li>
+        </ul>
+    </div>
+    <a href="@Url.Action("Projects", "Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@SR["Projects"]</a>
+</div></div>
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+        <i class="ki-outline ki-information-5 fs-2x text-primary me-4"></i>
+        <span class="fs-8 text-gray-700">@L("Explanation")</span>
+    </div>
+
+    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+        <span class="fw-semibold fs-7 text-gray-800">@L("Foundation")</span>
+    </div>
+
+    @if (TempData["ConstructionPolicySaved"] != null)
+    {
+        <div class="notice d-flex align-items-center bg-light-success rounded border-success border border-dashed p-4 mb-5" role="status">
+            <i class="ki-outline ki-information-5 fs-2 text-success me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L("Saved")</span>
+        </div>
+    }
+
+    @if (Model.Error != null)
+    {
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5" role="alert">
+            <i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L(Model.Error == "ConcurrencyConflict" ? "Conflict" : "Invalid")</span>
+        </div>
+    }
+
+    @foreach (var choice in ConstructionCompanyPolicies.Choices)
+    {
+        var policy = Model.Policies.SingleOrDefault(x => x.PolicyKey == choice.Key);
+        var choose = L("Choose");
+        <section class="card mb-5" aria-labelledby="policy-title-@choice.Key">
+            <div class="card-header align-items-center">
+                <h2 class="card-title fs-5 m-0" id="policy-title-@choice.Key">@L(choice.Key)</h2>
+                <div class="card-toolbar">
+                    <span class="badge @(policy == null ? "badge-light" : "badge-light-primary") fs-8">@L("Current"): @L(policy == null ? "Unconfigured" : policy.Mode)</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <form asp-action="Save" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="row g-4">
+                    @Html.AntiForgeryToken()
+                    <input name="key" type="hidden" value="@choice.Key" />
+                    <input name="token" type="hidden" value="@(policy == null ? "" : Convert.ToBase64String(policy.ConcurrencyToken))" />
+                    <div class="col-md-3">
+                        <label for="policy-@choice.Key" class="form-label fw-semibold fs-7">@L("Mode")</label>
+                        <select id="policy-@choice.Key" name="mode" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@choose" required>
+                            <option value="">@L("Choose")</option>
+                            @foreach (var mode in choice.Value) { <option value="@mode" selected="@(policy?.Mode == mode)">@L(mode)</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="reason-@choice.Key" class="form-label fw-semibold fs-7">@L("Reason")</label>
+                        <textarea id="reason-@choice.Key" name="reason" maxlength="1000" rows="2" required class="form-control form-control-solid"></textarea>
+                    </div>
+                    <div class="col-md-3 align-self-end">
+                        <button type="submit" class="btn btn-primary w-100">@L("Save")</button>
+                    </div>
+                </form>
+                @if (policy != null)
+                {
+                    <div class="separator separator-dashed my-5"></div>
+                    <span class="text-muted fs-8">@L("Changed"): @policy.UpdatedAt.ToString("g", CultureInfo.CurrentCulture) UTC — <bdi>@policy.UpdatedBy</bdi></span>
+                }
+            </div>
+        </section>
+    }
+
+</div></div>

@@ -58,7 +58,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"المصروفات المرحَّلة من دفتر الأستاذ: المبلغ حسب الحساب أو مركز التكلفة أو الشهر",
-			"Posted expenses from the general ledger: amount by account, cost centre or month");
+			"Posted expenses from the general ledger: amount by account, cost centre or month",
+			"Dépenses comptabilisées dans le grand livre : montants par compte, centre de coûts ou mois");
 
 		// THE SAME LENS THE LEDGER ITSELF USES. GeneralLedgerService reads Posted AND Reversed, and a
 		// surface that quietly used a narrower filter would disagree with the Trial Balance beside
@@ -70,30 +71,35 @@ namespace CrossBuy.BL.Platform.Ai
 			"Posted and reversed entries only — the same lens the general ledger reads through · an "
 			+ "expense is an account whose code begins with 5 · amount = debit minus credit, so a "
 			+ "reversal subtracts itself instead of counting twice · most lines carry no cost centre, "
-			+ "and those are shown under their own label rather than dropped.");
+			+ "and those are shown under their own label rather than dropped.",
+			"Écritures validées et extournées uniquement, selon les mêmes règles que le grand livre · une "
+			+ "dépense est un compte dont le code commence par 5 · montant = débit moins crédit, afin que "
+			+ "l'extourne s'annule au lieu d'être comptée deux fois · la plupart des lignes n'ont pas de centre "
+			+ "de coûts; elles restent visibles sous un libellé distinct.");
 
 		public static readonly string NoCostCentreAr = "(بلا مركز تكلفة)";
 		public static readonly string NoCostCentreEn = "(no cost centre)";
+		public static readonly string NoCostCentreFr = "(sans centre de coûts)";
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "account", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحساب", "Account"),
+			new AskColumn { Name = "account", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحساب", "Account", "Compte"),
 				Synonyms = new[] { "حساب", "حسابات", "الحسابات", "بند", "بنود", "البنود", "نوع المصروف",
 					"account", "accounts", "expense account", "line item" } },
-			new AskColumn { Name = "accountcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("رمز الحساب", "Account code"),
+			new AskColumn { Name = "accountcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("رمز الحساب", "Account code", "Code du compte"),
 				Synonyms = new[] { "رمز", "الرمز", "كود الحساب", "account code", "code" } },
-			new AskColumn { Name = "costcenter", Kind = AskColumnKind.Dimension, Label = AskText.Of("مركز التكلفة", "Cost centre"),
+			new AskColumn { Name = "costcenter", Kind = AskColumnKind.Dimension, Label = AskText.Of("مركز التكلفة", "Cost centre", "Centre de coûts"),
 				Synonyms = new[] { "مركز", "مراكز", "مركز تكلفة", "مراكز التكلفة", "ادارة", "الادارة",
 					"cost centre", "cost center", "department", "departments" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "شهريا", "بالشهر",
 					"month", "monthly", "months", "per month", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
-			new AskColumn { Name = "entry", Kind = AskColumnKind.Dimension, Label = AskText.Of("القيد", "Entry"),
+			new AskColumn { Name = "entry", Kind = AskColumnKind.Dimension, Label = AskText.Of("القيد", "Entry", "Écriture"),
 				Synonyms = new[] { "قيد", "قيود", "القيود", "entry", "entries", "journal", "voucher" } },
 
-			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount"),
+			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount", "Montant"),
 				Synonyms = new[] { "مبلغ", "المبلغ", "مصروف", "مصروفات", "المصروفات", "مصاريف", "المصاريف",
 					"صرفنا", "انفاق", "الانفاق", "تكلفة", "التكاليف", "expense", "expenses", "spend",
 					"spending", "cost", "costs", "outgoings", "amount" } },
@@ -103,6 +109,7 @@ namespace CrossBuy.BL.Platform.Ai
 			AskScope scope, CancellationToken ct = default)
 		{
 			var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var french = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
 
 			// The join is written out rather than navigated, because the expense test is on the
 			// ACCOUNT CODE and the company test is on the ENTRY — they live in different tables and
@@ -140,7 +147,7 @@ namespace CrossBuy.BL.Platform.Ai
 													 arabic ? l.AccountNameEn : l.AccountName)
 					?? l.Code;
 
-				var centreLabel = arabic ? NoCostCentreAr : NoCostCentreEn;
+				var centreLabel = arabic ? NoCostCentreAr : french ? NoCostCentreFr : NoCostCentreEn;
 				if (l.CostCenterId != null && centres.TryGetValue(l.CostCenterId.Value, out var cc))
 					centreLabel = AskItems.Readable(arabic ? cc.Name : cc.NameEn, arabic ? cc.NameEn : cc.Name)
 						?? ("#" + cc.ID);

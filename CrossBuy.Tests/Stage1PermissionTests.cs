@@ -53,7 +53,14 @@ namespace CrossBuy.Tests
                 new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance),
                 B6TestWiring.Policies(host.Db), NullLogger<CrmAccessService>.Instance);
 
-        private static PosAccessService Pos(PlatformTestHost host) => new(host.Db);
+        // OPS-01 — the catalogue company is configuration now, not `PosCompanyPolicy.CatalogCompanyId`. ONE
+        // options instance is shared by the constructor and by the assertion below, so the test still proves
+        // "the resolved company IS the configured catalogue company" rather than comparing against a literal
+        // that could drift away from what the service was actually built with.
+        private static readonly CrossBuy.Models.Platform.PosCompanyOptions PosOptions = new();
+
+        private static PosAccessService Pos(PlatformTestHost host) =>
+            new(host.Db, Microsoft.Extensions.Options.Options.Create(PosOptions));
 
         private static BusinessContext Ctx(int employeeId, int companyId, int? branchId = null, string? userId = null) => new()
         {
@@ -267,9 +274,11 @@ namespace CrossBuy.Tests
             var resolved = await Pos(host).ResolveByUserIdAsync("user-52");
 
             Assert.NotNull(resolved);
-            // The catalog company stays 1 — deliberately, per PosCompanyPolicy. Changing it would change POS
-            // accounting, which Stage 1 does not touch.
-            Assert.Equal(PosCompanyPolicy.CatalogCompanyId, resolved!.CompanyId);
+            // The catalogue company is deliberately NOT the branch's own company. Changing it would change POS
+            // accounting, which Stage 1 does not touch. The authority used to be the constant
+            // PosCompanyPolicy.CatalogCompanyId; it is now configuration, so the assertion reads the SAME
+            // options instance the service was constructed with — the original intent, against the new source.
+            Assert.Equal(PosOptions.CatalogCompanyId, resolved!.CompanyId);
             // The branch's REAL company is now reported too, which is what the session blob and the business
             // context need in order to state tenancy honestly.
             Assert.Equal(71, resolved.BranchCompanyId);

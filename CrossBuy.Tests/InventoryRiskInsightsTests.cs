@@ -41,8 +41,20 @@ namespace CrossBuy.Tests
             var src = Controller();
             var a = src.IndexOf("public async Task<IActionResult> RiskInsights()", StringComparison.Ordinal);
             Assert.True(a >= 0, "the RiskInsights action must exist");
-            var b = src.IndexOf("[HttpGet] public async Task<IActionResult> StockMovements", a, StringComparison.Ordinal);
-            return b < 0 ? src[a..] : src[a..b];
+            // STOP AT THE NEXT MEMBER, not at a named one far away. This used to run to
+            // "[HttpGet] public async Task<IActionResult> StockMovements" - three hundred lines and FOUR
+            // actions later - so the read-only scan below was also reading Ask, AskGaps, ReorderAdvice and
+            // ApplyReorderPoint. ApplyReorderPoint calls SaveChangesAsync, correctly: applying a reorder
+            // point IS a mutation. The guard reported that as "RiskInsights mutates inventory", which was
+            // never true - RiskInsights spans ~86 lines and writes nothing. The WINDOW was the defect, and
+            // it only opened when a new mutating action landed between the two markers.
+            var bodyStart = src.IndexOf('\n', a) + 1;
+            var next = new[] { "\n\t\t[Http", "\n\t\tpublic ", "\n\t\tprivate ", "\n\t\tinternal " }
+                .Select(m => src.IndexOf(m, bodyStart, StringComparison.Ordinal))
+                .Where(i => i >= 0)
+                .DefaultIfEmpty(-1)
+                .Min();
+            return next < 0 ? src[a..] : src[a..next];
         }
 
         /// <summary>Strips comments so a source scan measures code, not prose.</summary>

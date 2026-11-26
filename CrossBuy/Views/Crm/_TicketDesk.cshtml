@@ -1,0 +1,61 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var t = (CrossBuy.Models.Context.Crm.CrmTicket)ViewBag.Ticket;
+    var thread = (List<CrossBuy.BL.CrmIdentity.ThreadEntry>)ViewBag.Thread;
+    var suggested = (List<CrossBuy.Models.Context.Crm.CrmKbArticle>)ViewBag.Suggested;
+    var survey = ViewBag.Survey as CrossBuy.Models.Context.Crm.CrmTicketSurvey;
+    var canEdit = ViewBag.CanEdit == true;
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+}
+<div class="card mb-5" id="deskCard" data-ticket="@t.ID">
+    <div class="card-header"><div class="card-title fw-bold"><i class="ki-outline ki-messages fs-3 me-2"></i>@T["Conversation with the customer"]</div>
+        <div class="card-toolbar">
+            @if (t.Channel == "Portal") { <span class="badge badge-light-info"><i class="ki-outline ki-screen fs-8"></i> @T["Opened from the portal — the customer sees this"]</span> }
+            else { <span class="badge badge-light">@T["The customer sees this on the portal"]</span> }
+        </div></div>
+    <div class="card-body">
+        @if (survey?.AnsweredAt != null)
+        {
+            <div class="notice d-flex rounded p-4 mb-5 @(survey.Score >= 4 ? "bg-light-success" : survey.Score == 3 ? "bg-light" : "bg-light-danger")">
+                <span class="me-4">@await Html.PartialAsync("~/Views/Shared/_CrmRating.cshtml", (survey.Score is byte sc ? (int?)sc : null, false))</span>
+                <div><div class="fw-bold fs-7">@T["The customer's rating"]</div>@if (survey.Comment != null) { <div class="fs-7 text-gray-700">“@survey.Comment”</div> }</div>
+            </div>
+        }
+        else if (survey != null) { <div class="fs-8 text-muted mb-4"><i class="ki-outline ki-like fs-7"></i> @T["Satisfaction survey sent"] <span class="num">@survey.SentAt.ToLocalTime().ToString("MM-dd HH:mm")</span>@if (survey.SentTo != null) { <span> · @survey.SentTo</span> } — @T["no answer yet"]</div> }
+
+        <div class="crm-ib-msgs rounded mb-4" style="max-height:360px">
+            @if (thread.Count == 0) { <div class="text-muted fs-7 text-center py-6">@T["Nothing written to the customer yet."]</div> }
+            @foreach (var e in thread)
+            {
+                <div class="crm-bub @(e.Ours ? "out" : "in")">
+                    <div class="body">@e.M.Body</div>
+                    @if (e.ArticleTitle != null) { <div class="meta"><i class="ki-outline ki-book-open fs-8"></i> @e.ArticleTitle</div> }
+                    <div class="meta"><span class="num">@e.M.At.ToLocalTime().ToString("MM-dd HH:mm")</span> · @e.Who</div>
+                </div>
+            }
+        </div>
+        @if (canEdit)
+        {
+            <div class="d-flex gap-3">
+                <textarea class="form-control form-control-solid" id="deskBody" rows="2" maxlength="4000" placeholder="@T["Reply to the customer…"]"></textarea>
+                <button type="button" class="btn btn-primary btn-icon h-auto px-5" id="deskSend" title="@T["Send"]"><i class="ki-outline ki-send fs-2"></i></button>
+            </div>
+            @if (t.FirstRespondedAt == null) { <div class="fs-8 text-muted mt-2"><i class="ki-outline ki-time fs-8"></i> @T["Your first reply here stops the first-response clock."]</div> }
+        }
+        @if (suggested.Count > 0)
+        {
+            <div class="separator my-5"></div>
+            <div class="fw-bold fs-7 mb-3"><i class="ki-outline ki-book-open fs-5 me-1" style="color:#3A5795"></i>@T["Articles that may answer this"]</div>
+            @foreach (var a in suggested)
+            {
+                <div class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200">
+                    <div class="min-w-0 flex-grow-1 overflow-hidden"><a href="@Url.Action("KbEditor","Crm", new { id = a.ID })" target="_blank" class="fw-semibold text-gray-900 text-hover-primary d-block text-truncate">@N(a.Title, a.TitleEn)</a>
+                        <div class="fs-8 text-muted text-truncate">@N(a.Body, a.BodyEn)</div></div>
+                    @if (!a.IsPublic) { <span class="badge badge-light text-nowrap flex-shrink-0" title="@T["This article is internal and is not sent to customers"]"><i class="ki-outline ki-lock-2 fs-8"></i> @T["Internal"]</span> }
+                    else if (canEdit) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0" data-article="@a.ID"><i class="ki-outline ki-send fs-6"></i>@T["Send to the customer"]</button> }
+                </div>
+            }
+        }
+    </div>
+</div>

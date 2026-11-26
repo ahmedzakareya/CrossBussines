@@ -1,0 +1,108 @@
+@model CrossBuy.Models.Context.Crm.CrmSegment?
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var s = Model; var canManage = ViewBag.CanManage == true;
+    var industries = (List<(string value, int n)>)ViewBag.Industries;
+    var people = (List<CrossBuy.BL.CrmIdentity.PersonRef>)ViewBag.People;
+    var rules = s == null ? new List<CrossBuy.BL.CrmIdentity.CrmJourneyRules.Rule> { new("customer", "yes"), new("boughtWithin", "90") } : CrossBuy.BL.CrmIdentity.CrmJourneyService.ReadRules(s.RulesJson);
+    var fields = CrossBuy.BL.CrmIdentity.CrmJourneyRules.Fields.Select(f => new { key = f.Key, kind = f.Value, label = T["rule:" + f.Key].Value }).ToList();
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(s?.Name ?? T["New segment"].Value)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Segments","Crm")" class="text-muted text-hover-primary">@T["Segments"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(s?.Name ?? T["New segment"].Value)</li></ul></div>
+        <div class="d-flex gap-2">
+            @if (s != null) { <a href="@Url.Action("JourneyEditor","Crm", new { segment = s.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-route fs-4"></i>@T["Start a journey from it"]</a> }
+            @if (canManage) { <button type="button" class="btn btn-sm btn-primary" id="btnSave"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-5">
+            <div class="col-xl-8"><div class="card"><div class="card-body">
+                <div class="row g-4 mb-6">
+                    <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input id="sName" class="form-control form-control-solid" maxlength="150" value="@s?.Name" /></div>
+                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name in English"]</label><input id="sNameEn" class="form-control form-control-solid" maxlength="150" dir="ltr" value="@s?.NameEn" /></div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-4"><span class="fw-bold fs-6">@T["Contacts where"]</span>
+                    <div class="btn-group" role="group"><button type="button" class="btn btn-sm @(s == null || s.MatchAll ? "btn-primary" : "btn-light")" data-match="1">@T["all of these are true"]</button>
+                        <button type="button" class="btn btn-sm @(s != null && !s.MatchAll ? "btn-primary" : "btn-light")" data-match="0">@T["any of these is true"]</button></div></div>
+                <div id="rules"></div>
+                <button type="button" class="btn btn-sm btn-light-primary mt-3" id="addRule"><i class="ki-outline ki-plus fs-5"></i>@T["Condition"]</button>
+                <div class="text-danger fs-7 fw-semibold mt-4 d-none" id="err"></div>
+            </div></div></div>
+            <div class="col-xl-4"><div class="card h-100"><div class="card-body">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Matches now"]</div>
+                <div class="d-flex align-items-baseline gap-2 mb-5"><span class="fw-bold num lh-1" style="font-size:3rem;color:var(--cb-brand,#3A5795)" id="count">—</span><span class="text-muted fs-7">@T["(count) contacts"]</span></div>
+                <div id="sample"></div>
+                @if (s?.RefreshedAt != null) { <div class="fs-8 text-muted mt-5">@T["Refreshed"] <span class="num">@s.RefreshedAt.Value.ToLocalTime().ToString("MM-dd HH:mm")</span> · @T["every hour by itself"]</div> }
+            </div></div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var fields = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(fields));
+  var rules = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(rules.Select(r => new { field = r.Field, value = r.Value })));
+  var industries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(industries.Select(i => i.value)));
+  var people = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(people.Select(p => new { id = p.EmployeeId, name = p.Name })));
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["yes"] = T["yes"].Value, ["no"] = T["no"].Value, ["days"] = T["days"].Value,
+    ["and"] = T["and"].Value, ["or"] = T["or"].Value, ["where"] = T["where"].Value, ["remove"] = T["Remove"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["none"] = T["Nobody matches"].Value }));
+  var matchAll = @(s == null || s.MatchAll ? "true" : "false");
+  var box = document.getElementById('rules');
+  function esc(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function kind(f){ var x = fields.find(function(y){ return y.key === f; }); return x ? x.kind : 'text'; }
+  function valueEditor(r){
+    var k = kind(r.field);
+    if (k === 'bool') return '<select class="form-select form-select-solid form-select-sm" data-v><option value="yes"' + (r.value !== 'no' ? ' selected' : '') + '>' + txt.yes + '</option><option value="no"' + (r.value === 'no' ? ' selected' : '') + '>' + txt.no + '</option></select>';
+    if (k === 'employee') return '<select class="form-select form-select-solid form-select-sm" data-v>' + people.map(function(p){ return '<option value="' + p.id + '"' + (String(p.id) === String(r.value) ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</select>';
+    if (k === 'text') return '<input class="form-control form-control-solid form-control-sm" list="indList" data-v value="' + esc(r.value) + '" />';
+    return '<div class="input-group input-group-sm input-group-solid"><input class="form-control form-control-solid num" inputmode="decimal" data-v value="' + esc(r.value) + '" />' + (k === 'days' ? '<span class="input-group-text">' + txt.days + '</span>' : '') + '</div>';
+  }
+  function draw(){
+    box.innerHTML = rules.map(function(r, i){
+      return '<div class="d-flex gap-2 align-items-center mb-3"><span class="badge ' + (i ? 'badge-light-primary' : 'badge-light') + ' w-50px justify-content-center">' + (i ? (matchAll ? txt.and : txt.or) : txt.where) + '</span>'
+        + '<select class="form-select form-select-solid form-select-sm w-250px" data-f="' + i + '">' + fields.map(function(f){ return '<option value="' + f.key + '"' + (f.key === r.field ? ' selected' : '') + '>' + esc(f.label) + '</option>'; }).join('') + '</select>'
+        + '<div class="flex-grow-1" data-vbox="' + i + '">' + valueEditor(r) + '</div>'
+        + '<button type="button" class="btn btn-icon btn-sm btn-light-danger" data-rm="' + i + '" title="' + txt.remove + '"><i class="ki-outline ki-trash fs-5"></i></button></div>';
+    }).join('') + '<datalist id="indList">' + industries.map(function(v){ return '<option value="' + esc(v) + '">'; }).join('') + '</datalist>';
+  }
+  function read(){ Array.prototype.forEach.call(box.querySelectorAll('[data-vbox]'), function(b){ var i = +b.getAttribute('data-vbox'); var v = b.querySelector('[data-v]'); rules[i].value = v ? v.value : ''; }); return rules; }
+  var timer;
+  function preview(){ clearTimeout(timer); timer = setTimeout(async function(){
+    var fd = new FormData(); fd.append('rulesJson', JSON.stringify(read())); fd.append('matchAll', matchAll ? 'true' : 'false');
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SegmentPreview","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return null; });
+    if (!r) return;
+    document.getElementById('count').textContent = r.ok ? r.count : '—';
+    document.getElementById('sample').innerHTML = !r.ok ? '<div class="text-danger fs-8 fw-semibold">' + esc(r.error) + '</div>' : (r.sample.length ? r.sample.map(function(p){
+      return '<a href="/Crm/Contact/' + p.id + '" class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200 text-hover-primary"><span class="symbol symbol-30px symbol-circle"><span class="symbol-label crm-initials fs-9">' + esc((p.name || '?').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('')) + '</span></span><span class="min-w-0"><span class="fw-semibold text-gray-900 d-block text-truncate">' + esc(p.name) + '</span><span class="text-muted fs-8">' + esc(p.account || '') + '</span></span></a>'; }).join('')
+      : '<div class="text-muted fs-7">' + txt.none + '</div>');
+  }, 350); }
+  box.addEventListener('change', function(e){
+    var f = e.target.getAttribute('data-f');
+    if (f != null) { read(); rules[+f].field = e.target.value; rules[+f].value = kind(e.target.value) === 'bool' ? 'yes' : ''; draw(); }
+    preview();
+  });
+  box.addEventListener('input', preview);
+  box.addEventListener('click', function(e){ var b = e.target.closest('[data-rm]'); if (!b) return; read(); rules.splice(+b.getAttribute('data-rm'), 1); draw(); preview(); });
+  document.getElementById('addRule').addEventListener('click', function(){ read(); rules.push({ field: 'waOptIn', value: 'yes' }); draw(); preview(); });
+  document.querySelectorAll('[data-match]').forEach(function(b){ b.addEventListener('click', function(){ matchAll = b.getAttribute('data-match') === '1';
+    document.querySelectorAll('[data-match]').forEach(function(x){ x.classList.toggle('btn-primary', x === b); x.classList.toggle('btn-light', x !== b); }); read(); draw(); preview(); }); });
+  var save = document.getElementById('btnSave');
+  if (save) save.addEventListener('click', async function(){
+    var fd = new FormData(); fd.append('id', '@(s?.ID ?? 0)'); fd.append('name', document.getElementById('sName').value); fd.append('nameEn', document.getElementById('sNameEn').value);
+    fd.append('matchAll', matchAll ? 'true' : 'false'); fd.append('rulesJson', JSON.stringify(read()));
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveSegment","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    var err = document.getElementById('err');
+    if (!r.ok) { err.textContent = r.error || txt.failed; err.classList.remove('d-none'); return; }
+    location.href = '@Url.Action("SegmentEditor","Crm")/' + r.extra;
+  });
+  draw(); preview();
+})();
+</script>
+}

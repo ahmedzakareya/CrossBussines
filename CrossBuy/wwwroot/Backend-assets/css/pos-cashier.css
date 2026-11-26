@@ -1,16 +1,16 @@
 /* ===== CrossBuy Cashier — dark 3-panel POS theme (scoped under .posx) ===== */
 .posx {
-    --bg: #0e1726;          /* app background */
-    --panel: #16202f;       /* column panels */
-    --panel-2: #1b2740;     /* inner cards / header */
-    --card: #202d44;        /* item / order cards */
-    --line: #2a3852;        /* borders */
-    --txt: #e8edf5;
-    --muted: #8a97ab;
-    --green: #16a34a;
-    --green-2: #1f9d5c;
-    --blue: #2f6fed;
-    --amber: #e0a53f;
+    --bg: #eef1f7;          /* app background (light — prototype look) */
+    --panel: #ffffff;       /* column panels */
+    --panel-2: #f3f6fb;     /* inner cards / header */
+    --card: #ffffff;        /* item / order cards */
+    --line: #e4e9f2;        /* borders */
+    --txt: #1F2D4D;
+    --muted: #6b7688;
+    --green: #3A5795;       /* brand navy — identity accent (pay / order-type / totals) */
+    --green-2: #2B4170;
+    --blue: #3A5795;        /* brand navy — primary accent (rails / tabs / add) */
+    --amber: #64748B;       /* slate — "held / paused" (no amber in the brand) */
     --purple: #8b5cf6;
     --red: #e5484d;
     --rail: #101a29;
@@ -28,7 +28,7 @@
 /* ---- top header ---- */
 .posx-header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: var(--panel-2); border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .posx-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; white-space: nowrap; }
-.posx-brand .logo { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg,#1f9d5c,#0f6e3e); display: flex; align-items: center; justify-content: center; color: #fff; }
+.posx-brand .logo { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg,#3A5795,#1F2D4D); display: flex; align-items: center; justify-content: center; color: #fff; }
 .posx-search { flex: 1; max-width: 460px; display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px; color: var(--muted); }
 .posx-search input { flex: 1; background: transparent; border: 0; outline: 0; color: var(--txt); font-family: inherit; font-size: 14px; }
 .posx-hbtn { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px; color: var(--txt); font-weight: 600; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
@@ -113,7 +113,7 @@
 .posx-inv .amt small { color: var(--muted); font-weight: 600; }
 .posx-chip { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 20px; }
 .posx-chip.green { background: rgba(31,157,92,.18); color: #4ade80; }
-.posx-chip.amber { background: rgba(224,165,63,.18); color: #f5c464; }
+.posx-chip.amber { background: rgba(100,116,139,.2); color: #aebbce; }
 .posx-chip.purple { background: rgba(139,92,246,.2); color: #c4b5fd; }
 .posx-subhead { font-size: 12px; font-weight: 800; color: var(--muted); margin: 14px 0 8px; display: flex; align-items: center; gap: 6px; }
 
@@ -137,7 +137,7 @@
 .posx-seg .otype i { font-size: 17px; color: #c7d0de; }
 .posx-seg .otype:hover { color: #fff; }
 .posx-seg .otype:hover i { color: #fff; }
-.posx-seg .otype.active { background: var(--green); color: #fff; box-shadow: 0 2px 10px rgba(22,163,74,.45); }
+.posx-seg .otype.active { background: var(--green); color: #fff; box-shadow: 0 2px 10px rgba(31,45,77,.45); }
 .posx-seg .otype.active i { color: #fff; }
 .posx-seg .otype:active { transform: translateY(1px); }
 .posx-abtn:hover { border-color: var(--green-2); }
@@ -197,7 +197,7 @@
 .posx-item .pi-body { padding: 11px 12px 13px; text-align: center; background: #fff; }
 .posx-item .nm { font-weight: 800; font-size: 14px; color: #1f2a44; margin-bottom: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .posx-item .pi-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; direction: ltr; }
-.posx-item .pr { font-weight: 800; color: #16a34a; font-size: 14.5px; }
+.posx-item .pr { font-weight: 800; color: #3A5795; font-size: 14.5px; }
 .posx-item .pr small { color: #9aa7ba; font-weight: 700; font-size: 11px; }
 .posx-item .pi-add { width: 34px; height: 34px; border-radius: 10px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: none; box-shadow: 0 3px 8px rgba(47,111,237,.4); }
 .posx-item:hover .pi-add { background: #215ad0; }
@@ -269,11 +269,11 @@
 .tbv-list { width: 340px; min-width: 340px; background: #fff; border-inline-end: 1px solid #e9edf2; }
 .tbv-tabs { border-bottom: 1px solid #eef1f5; }
 .tbv-tab { flex: 1; border: 0; background: transparent; padding: 15px 8px; font-weight: 700; font-size: 13.5px; color: #78859c; cursor: pointer; border-bottom: 3px solid transparent; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.tbv-tab.active { color: #2f6fed; border-bottom-color: #2f6fed; }
-.tbv-badge { background: #2f6fed; color: #fff; border-radius: 999px; min-width: 22px; padding: 1px 7px; font-size: 12px; font-weight: 800; }
+.tbv-tab.active { color: #3A5795; border-bottom-color: #3A5795; }
+.tbv-badge { background: #3A5795; color: #fff; border-radius: 999px; min-width: 22px; padding: 1px 7px; font-size: 12px; font-weight: 800; }
 .tbv-orders { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .tbv-empty { text-align: center; color: #a1adbe; padding: 40px 10px; font-size: 13px; }
-.tbv-newbtn { width: 100%; border: 1.5px dashed #b9c4d6; background: #eef3fb; color: #2f6fed; font-weight: 800; border-radius: 12px; padding: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.tbv-newbtn { width: 100%; border: 1.5px dashed #b9c4d6; background: #eef3fb; color: #3A5795; font-weight: 800; border-radius: 12px; padding: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .tbv-newbtn:hover { background: #e3edfb; }
 .tbv-card { display: flex; align-items: center; gap: 11px; background: #fff; border: 1px solid #eef1f5; border-radius: 14px; padding: 11px 14px 11px 16px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(20,30,50,.05); }
 .tbv-card:hover { box-shadow: 0 6px 16px rgba(20,30,50,.11); transform: translateY(-1px); }
@@ -290,13 +290,13 @@
 .tbv-card .tmid { color: #8a97ab; font-size: 11.5px; white-space: nowrap; display: flex; align-items: center; gap: 4px; flex: none; }
 .tbv-card .tright { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none; }
 .tbv-card .stpill { padding: 3px 11px; border-radius: 999px; font-size: 10.5px; font-weight: 800; white-space: nowrap; }
-.tbv-card .amt { font-weight: 800; color: #16a34a; font-size: 13.5px; white-space: nowrap; }
+.tbv-card .amt { font-weight: 800; color: #3A5795; font-size: 13.5px; white-space: nowrap; }
 .tbv-card .amt small { color: #9aa7ba; font-weight: 700; }
 .tbv-map { flex: 1; min-width: 0; }
 .tbv-maphead { padding: 11px 18px; background: #fff; border-bottom: 1px solid #eef1f5; }
 .tbv-viewtog { display: inline-flex; background: #f1f3f7; border-radius: 10px; padding: 3px; }
 .tbv-viewtog .tvbtn { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 12.5px; color: #78859c; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-.tbv-viewtog .tvbtn.active { background: #2f6fed; color: #fff; }
+.tbv-viewtog .tvbtn.active { background: #3A5795; color: #fff; }
 .tbv-board { flex: 1; position: relative; overflow: auto; background: linear-gradient(#f3ecdc, #eee4d0); }
 .tbv-board::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(120,85,40,.09) 0 1.5px, transparent 1.5px 44px), repeating-linear-gradient(90deg, rgba(120,85,40,.045) 0 1.5px, transparent 1.5px 156px); pointer-events: none; }
 #floorZoom { transform-origin: top center; transition: transform .15s ease; padding: 30px; width: max-content; margin: 0 auto; }
@@ -321,3 +321,57 @@
 
 /* RC-3b/e — KDS moved to a PURE Metronic screen (Views/PosApp/Kitchen.cshtml under _LayoutAccounting).
    All former .kds/.kt-*/.kl-* custom CSS removed — the KDS now uses only theme components (card/badge/btn/nav-pills). */
+
+/* ===================== LIGHT brand theme (prototype look) — overrides dark-specific colours ===================== */
+.posx{ background:#eef1f7; }
+.posx-header,.posx-foot{ background:#ffffff; box-shadow:0 1px 0 var(--line); }
+.posx i{ color:#3A5795; }
+.posx-rail{ background:#f3f6fb; }
+.posx-rail .ri{ color:#5a6579; } .posx-rail .ri i{ color:#3A5795; }
+.posx-rail .ri:hover{ background:#e8eef9; color:#1F2D4D; }
+.posx-rail .ri.active,.posx-rail .ri.active i{ color:#fff; }
+.posx-search i,.posx-mtabs .mtab i{ color:#8a97ab; }
+.posx-mtabs .mtab{ background:#f3f6fb; } .posx-mtabs .mtab.active,.posx-mtabs .mtab.active i{ color:#fff; }
+.posx-usermenu{ box-shadow:0 16px 44px rgba(31,45,77,.18); } .posx-usermenu a i{ color:#3A5795; } .posx-usermenu a:hover{ background:#f1f4f9; }
+.posx-item .pi-img{ background:#eef1f7; } .posx-item .pi-img .ph{ color:#9aa7ba; }
+.posx *::-webkit-scrollbar-thumb{ background:#c7cfdd; } .posx *::-webkit-scrollbar-thumb:hover{ background:#aeb8ca; }
+.posx-seg .otype,.posx-seg .otype i{ color:#5a6579; }
+.posx-clock b,.posx-stat b,.posx-col-title,.posx-line .nm b,.posx-inv .big{ color:#1F2D4D; }
+.posx-pay .pay-3{ color:#1F2D4D; }
+.posx-item{ box-shadow:0 2px 10px rgba(31,45,77,.08); } .posx-item:hover{ box-shadow:0 10px 26px rgba(31,45,77,.16); }
+.posx-abtn,.posx-qty button,.posx-guests .gwrap button,.posx-tab{ color:#1F2D4D; }
+.posx-conn.is-online{ background:rgba(8,145,178,.1); border-color:rgba(8,145,178,.3); } .posx-conn.is-online .dot{ background:#0891B2; }
+
+/* ===== EXACT prototype floor tables (same design as the reservations floor) ===== */
+.tbl-unit{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:transform .14s ease}
+.tbl-unit:hover{transform:translate(-50%,-50%) scale(1.045);z-index:6}
+.tbl-stage{position:relative}
+.chair-back{position:absolute;width:27px;height:10px;border-radius:7px;background:linear-gradient(180deg,#C08E5E,#9A6C42);box-shadow:0 2px 4px rgba(31,45,77,.22),inset 0 1px 0 rgba(255,255,255,.3)}
+.chair-pad{position:absolute;transform:translate(-50%,-50%);width:29px;height:29px;border-radius:10px;background:linear-gradient(150deg,#F2F4F9,#D8DFEC);box-shadow:inset 0 1px 2px rgba(255,255,255,.8),inset 0 -2px 3px rgba(31,45,77,.08),0 2px 5px rgba(31,45,77,.14)}
+.chair-occ{position:absolute;transform:translate(-50%,-50%);z-index:2}
+.chair-occ .cface{width:30px;height:30px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#3A5795,#1F2D4D);box-shadow:0 0 0 2.5px #fff,0 3px 8px rgba(31,45,77,.28)}
+.chair-occ .cface img{width:100%;height:100%;object-fit:cover;display:block}
+.tbl-top{position:absolute;left:50%;top:50%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;--ring:transparent;color:#3c2b18;
+    background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(0,0,0,.05) 60%),repeating-linear-gradient(92deg,rgba(60,30,10,.05) 0 2px,rgba(255,255,255,.015) 2px 8px),linear-gradient(135deg,#D9B486,#B8895C 55%,#9E6F48);
+    box-shadow:0 0 0 3px var(--ring),0 8px 18px -6px rgba(31,45,77,.38),inset 0 2px 3px rgba(255,255,255,.35),inset 0 -5px 9px rgba(60,30,10,.22);transform:translate(-50%,-50%)}
+.tbl-top.round{border-radius:50%}.tbl-top.rect,.tbl-top.square{border-radius:13px}
+.tbl-top .tc{font-weight:800;font-size:.95rem;line-height:1;letter-spacing:.02em;color:#3c2b18}
+.tbl-top .tm{font-size:.6rem;font-weight:700;opacity:.85;line-height:1;color:#3c2b18}
+
+/* WHITE content on any filled (blue / red) background in the cashier */
+.posx-pay .pay-main, .posx-pay .pay-main i,
+.posx-pay .pay-2, .posx-pay .pay-2 i,
+.posx-item .pi-add, .posx-item .pi-add i,
+.posx-cat.allbtn, .posx-cat.allbtn i,
+.posx-cat.active, .posx-cat.active i, .posx-tab.active, .posx-tab.active .cnt,
+.posx-rail .ri.active, .posx-rail .ri.active i,
+.posx-rail-right .ri.new, .posx-rail-right .ri.new i,
+.posx-seg .otype.active, .posx-seg .otype.active i,
+.posx-mtabs .mtab.active, .posx-mtabs .mtab.active i,
+.pctool.active, .pctool.active i,
+.posx-foot .posx-fbtn.red, .posx-foot .posx-fbtn.red i,
+.posx-foot .posx-fbtn.green, .posx-foot .posx-fbtn.green i,
+.posx-fbtn.blue, .posx-fbtn.blue i,
+.posx-chip.green, .posx-chip.green i {
+    color: #fff !important;
+}

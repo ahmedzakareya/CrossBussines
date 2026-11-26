@@ -40,11 +40,27 @@ public sealed class KpiRegistry : IKpiRegistry
         // ACCOUNTING AND PROJECTS KEEP THE OLD BEHAVIOUR EXACTLY, and deliberately: they are
         // unconditional packs, so a missing dataset there is a genuine wiring bug that must still fail
         // loudly at graph construction rather than quietly producing a dashboard with fewer tiles.
+        // The work KPI key namespace. Declared here beside the code set it pairs with, so the two
+        // halves of "is this definition conditional" cannot drift apart.
+        const string WorkKpiKeyPrefix = "work.";
+
         var conditional = new HashSet<string>(
             WorkReportingDatasets.All().Select(d => d.DatasetCode), StringComparer.Ordinal);
 
+        // THE DROP IS A PROPERTY OF THE KPI, NOT OF THE DATASET CODE IT NAMES. Keying this off the
+        // DatasetCode alone silently swallowed any KPI that pointed at a work code - including an
+        // ACCOUNTING KPI whose DatasetCode was wrong. That is a wiring bug which must still fail
+        // loudly, and Invalid_definitions_fail_at_registry_construction caught exactly that case
+        // (an accounting KPI mutated to DatasetCode = "work.tasks" stopped throwing).
+        //
+        // A definition is conditional only when BOTH halves belong to the opt-in pack: its own Key
+        // sits in the work namespace AND the dataset it names is one the pack declares. Anything
+        // else keeps the old, loud behaviour.
+        static bool IsConditional(KpiDefinition k, HashSet<string> codes) =>
+            k.Key.StartsWith(WorkKpiKeyPrefix, StringComparison.Ordinal) && codes.Contains(k.DatasetCode);
+
         var items = definitions
-            .Where(k => !conditional.Contains(k.DatasetCode) || datasets.TryResolve(k.DatasetCode, out _))
+            .Where(k => !IsConditional(k, conditional) || datasets.TryResolve(k.DatasetCode, out _))
             .ToArray();
 
         var keys = new HashSet<string>(StringComparer.Ordinal);

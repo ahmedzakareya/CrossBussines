@@ -1,0 +1,133 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@*
+    =============================================================================================
+    THE GUARD THAT STOPS A DOCUMENT SCREEN LOSING A LINE SILENTLY.
+
+    WHAT WENT WRONG, ON FOURTEEN SCREENS. Each one collected its lines with a single filter -
+    `(acc||it) && q*p>0`, `it&&q>0`, `acc && (dr>0||cr>0)` - and every row that failed it was
+    simply not sent. The filter is there for a good reason: the screen opens with one empty row
+    and "Add line" leaves another behind, and neither is a document line. But one condition cannot
+    tell an EMPTY row from an UNFINISHED one, so a line somebody typed a description and a
+    quantity into and had not priced yet was dropped on the floor. The server saved the rest,
+    answered "saved", and the line was never mentioned again.
+
+    That is the worst shape a defect can take: the system reports that the thing you asked for
+    happened.
+
+    WHY THIS IS ONE FILE AND NOT FOURTEEN. The screens genuinely differ - a purchase line carries
+    an expense account and a cost centre, a sales line a revenue account and a unit, a transfer
+    only an item and a quantity. What does NOT differ is the part that was wrong: the distinction
+    between empty and unfinished, and what to do about each. Copied into fourteen save handlers it
+    becomes fourteen places to fix the next time, and the ones that get missed fail silently again.
+
+    SO THE SEAM IS: this file owns the DECISION and the REFUSAL; each screen says what its own
+    row looks like. A screen supplies `touched` (is there anything in this row at all), `problem`
+    (why can this row not be saved, or null), and `build` (turn the row into a line object).
+    =============================================================================================
+*@
+<style>
+    /* A refused row is pointed at, not merely described in a dialog that is then dismissed. */
+    tr.cb-row-bad { background: var(--bs-danger-light, #fff5f8); box-shadow: inset 3px 0 0 var(--bs-danger); }
+</style>
+<script>
+(function () {
+    if (window.CBLines) return;   // a page may include the guard once per document card
+
+    var T = {
+        title:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Incomplete lines"].Value)),
+        nothing: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Nothing was saved."].Value)),
+        line:    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Line {0}"].Value)),
+        empty:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Add at least one line"].Value)),
+        // "Got it", not "OK": it is already translated in SharedResources, and an untranslated
+        // key would put an English word in the one button of an Arabic refusal dialog.
+        ok:      @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Got it"].Value)),
+        // The reasons a row cannot be saved. Shared because they are the same sentences on every
+        // document; a screen that needs a different one passes its own string from `problem`.
+        qty:     @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["enter a quantity"].Value)),
+        price:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["enter a price"].Value)),
+        item:    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["choose an item"].Value)),
+        account: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["choose an account"].Value)),
+        store:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["choose a warehouse"].Value)),
+        itemOrAccount: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["choose an item or an account"].Value)),
+        // A journal line has no quantity or price: it is an account with a debit OR a credit.
+        amount:  @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["enter a debit or a credit"].Value))
+    };
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+    function refuse(html) {
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning', title: T.title, html: html,
+                buttonsStyling: false, confirmButtonText: T.ok,
+                customClass: { confirmButton: 'btn btn-primary' }
+            });
+        } else {
+            alert(T.title + '\n\n' + html.replace(/<br\s*\/?>/g, '\n'));
+        }
+    }
+
+    // Reading a numeric cell the way every one of these screens means it: absent or unparseable
+    // is zero, never NaN leaking into a comparison.
+    function num(tr, sel) { var e = tr.querySelector(sel); return e ? (parseFloat(e.value) || 0) : 0; }
+    function str(tr, sel) { var e = tr.querySelector(sel); return e ? (e.value || '').trim() : ''; }
+
+    window.CBLines = {
+        T: T,
+        num: num,
+        str: str,
+
+        // ---- the one decision ----------------------------------------------------------------
+        //
+        // Returns { lines, bad }. `bad` empty means it is safe to post.
+        //
+        //   touched(tr)  - is there ANYTHING in this row? A row nobody filled in is skipped in
+        //                  silence, which is what the old single filter was really for.
+        //   problem(tr)  - a sentence saying why this row cannot be saved, or null. Only asked of
+        //                  rows that were touched, so an untouched row never produces a complaint.
+        //   build(tr)    - the line object to post.
+        collect: function (opts) {
+            var rowSel = opts.rows || '#rows tr';
+            var lines = [], bad = [], first = null, n = 0;
+
+            document.querySelectorAll(rowSel).forEach(function (tr) {
+                n++;
+                tr.classList.remove('cb-row-bad');
+                if (!opts.touched(tr)) return;                 // empty: skipped, as before
+
+                var why = opts.problem ? opts.problem(tr) : null;
+                if (why) {
+                    bad.push(T.line.replace('{0}', n) + ': ' + why);
+                    tr.classList.add('cb-row-bad');
+                    if (!first) first = tr;
+                    return;
+                }
+                lines.push(opts.build(tr));
+            });
+
+            return { lines: lines, bad: bad, firstBad: first };
+        },
+
+        // ---- the refusal ---------------------------------------------------------------------
+        //
+        // Returns the lines when it is safe to post, or null when it refused. A caller that
+        // ignores the null and posts anyway is the defect this exists to prevent, so the shape
+        // makes the check hard to skip: there is nothing to post unless it returns an array.
+        gather: function (opts) {
+            var r = this.collect(opts);
+
+            if (r.bad.length) {
+                refuse(r.bad.map(esc).join('<br>') + '<br><br>' + esc(T.nothing));
+                if (r.firstBad) {
+                    r.firstBad.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    var f = r.firstBad.querySelector('.cb-focus, .p, .q, .it, .acc');
+                    if (f && f.focus) { try { f.focus(); } catch (e) { } }
+                }
+                return null;
+            }
+            if (!r.lines.length) { refuse(esc(opts.emptyMessage || T.empty)); return null; }
+            return r.lines;
+        }
+    };
+})();
+</script>

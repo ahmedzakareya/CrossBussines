@@ -76,7 +76,6 @@ BEGIN
         Name                nvarchar(200) NOT NULL,
         NameEn              nvarchar(200) NULL,
         [Description]       nvarchar(1000) NULL,
-        DescriptionEn       nvarchar(1000) NULL,
         IsActive            bit           NOT NULL CONSTRAINT DF_TaskTemplates_Active DEFAULT(1),
         CreatedAt           datetime2     NOT NULL CONSTRAINT DF_TaskTemplates_Created DEFAULT(SYSUTCDATETIME()),
         CreatedByEmployeeId int           NULL,
@@ -95,7 +94,6 @@ BEGIN
         Title                    nvarchar(400)  NOT NULL,
         TitleEn                  nvarchar(400)  NULL,
         [Description]            nvarchar(2000) NULL,
-        DescriptionEn            nvarchar(2000) NULL,
         Priority                 nvarchar(20)   NOT NULL CONSTRAINT DF_TaskTemplateItems_Prio DEFAULT('Normal'),
         EstimatedHours           decimal(9,2)   NULL,
         -- Days from the anchor date supplied at apply time, NOT an absolute date: a template that
@@ -113,20 +111,4 @@ BEGIN
     );
     CREATE INDEX IX_TaskTemplateItems_Template ON dbo.TaskTemplateItems (TaskTemplateId, SortOrder);
 END
-GO
-
--- ---- ADDITIVE: DescriptionEn ------------------------------------------------------------
---
--- OUTSIDE the CREATE TABLE guards, deliberately. Everything above only runs when the table does
--- not exist yet, so a column added to a CREATE body reaches a fresh database and NO existing one.
--- Both tables already carry an English twin for their name/title; the description had none, so an
--- English UI printed an Arabic description under an English template name.
---
--- Idempotent and additive: nullable, no default, no backfill, no data touched.
-IF COL_LENGTH('dbo.TaskTemplates', 'DescriptionEn') IS NULL
-    ALTER TABLE dbo.TaskTemplates ADD DescriptionEn nvarchar(1000) NULL;
-GO
-
-IF COL_LENGTH('dbo.TaskTemplateItems', 'DescriptionEn') IS NULL
-    ALTER TABLE dbo.TaskTemplateItems ADD DescriptionEn nvarchar(2000) NULL;
 GO

@@ -99,6 +99,53 @@ namespace CrossBuy.BL
 			using var scope = WorkerScope.ForCompany(_scopes, companyId);
 			var crm = scope.ServiceProvider.GetRequiredService<ICrmService>();
 			var notify = scope.ServiceProvider.GetRequiredService<INotificationService>();
+			// CRM C2: website-form submissions become leads here, inside this company's own scope - never in the
+			// anonymous request that stored them. A failure is logged and never stops the reminders below.
+			try
+			{
+				var capture = ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmCaptureService>(scope.ServiceProvider);
+				var r = await capture.ProcessPendingAsync(companyId);
+				if (r.Converted + r.Linked + r.Failed > 0)
+					_log.LogInformation("CRM web-form intake for company {CompanyId}: {Converted} new, {Linked} linked, {Failed} failed", companyId, r.Converted, r.Linked, r.Failed);
+			}
+			catch (Exception ex) { _log.LogError(ex, "CRM web-form intake failed for company {CompanyId}", companyId); }
+			// CRM C4: chat and WhatsApp conversations that arrived since the last pass are matched to the CRM and given an
+			// owner here, in this company's scope. Same isolation: a failure never stops the reminders.
+			try
+			{
+				var inbox = ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmInboxService>(scope.ServiceProvider);
+				var linked = await inbox.LinkPendingAsync(companyId);
+				if (linked > 0) _log.LogInformation("CRM inbox linked {Count} new conversations for company {CompanyId}", linked, companyId);
+			}
+			catch (Exception ex) { _log.LogError(ex, "CRM inbox linking failed for company {CompanyId}", companyId); }
+			// CRM C6: bookings become meetings, sequences check who answered and run the steps that are due. After the inbox
+			// pass on purpose: a WhatsApp reply linked a moment ago must stop its sequence before the next message goes out.
+			try
+			{
+				var seq = ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmSequenceService>(scope.ServiceProvider);
+				var r = await seq.RunAsync(companyId, cancellationToken);
+				if (r.Ran + r.Stopped + r.Bookings > 0) _log.LogInformation("CRM sequences for company {CompanyId}: {Ran} steps, {Stopped} stopped, {Bookings} bookings", companyId, r.Ran, r.Stopped, r.Bookings);
+			}
+			catch (Exception ex) { _log.LogError(ex, "CRM sequences failed for company {CompanyId}", companyId); }
+			// CRM C7: segments are recomputed hourly; whoever entered one starts its active journeys; journeys advance.
+			try
+			{
+				var journeys = ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmJourneyService>(scope.ServiceProvider);
+				var (refreshed, entered, ran) = await journeys.RunAsync(companyId, cancellationToken);
+				if (refreshed + entered + ran > 0) _log.LogInformation("CRM journeys for company {CompanyId}: {Refreshed} segments refreshed, {Entered} entered, {Ran} steps", companyId, refreshed, entered, ran);
+			}
+			catch (Exception ex) { _log.LogError(ex, "CRM journeys failed for company {CompanyId}", companyId); }
+			// CRM C8: the SLA breach notice (once per ticket per day) and surveys for tickets resolved without one.
+			try
+			{
+				var desk = ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmServiceDeskService>(scope.ServiceProvider);
+				var n = await desk.RunAsync(companyId);
+				if (n > 0) _log.LogInformation("CRM service desk for company {CompanyId}: {Surveys} surveys created", companyId, n);
+			}
+			catch (Exception ex) { _log.LogError(ex, "CRM service desk pass failed for company {CompanyId}", companyId); }
+			// CRM C9: every open lead's behavioural score, after the passes that create the behaviour it reads
+			try { await ActivatorUtilities.CreateInstance<CrossBuy.BL.CrmIdentity.CrmAssistService>(scope.ServiceProvider).RefreshLeadsAsync(companyId); }
+			catch (Exception ex) { _log.LogError(ex, "CRM lead scoring failed for company {CompanyId}", companyId); }
 
 			var due = await crm.GetDueRemindersAsync(companyId, DateTime.UtcNow);
 			if (due.Count == 0) return;

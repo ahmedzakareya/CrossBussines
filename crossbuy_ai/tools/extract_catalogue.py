@@ -27,7 +27,9 @@ ROOT = os.path.dirname(HERE)
 HANDLERS = os.path.normpath(os.path.join(ROOT, "..", "CrossBuy", "BL", "Platform", "Ai"))
 OUT = os.path.join(ROOT, "tests", "catalogue.json")
 
-CLASS = re.compile(r"public sealed class \w+\s*:\s*IAskHandler")
+# The catalogue has both hand-written handlers and composed-surface handlers. Omitting the latter
+# left the Python fixture at ten intents while the runtime and trained model exposed 24.
+CLASS = re.compile(r"public sealed class \w+\s*:\s*(?:IAskHandler|AskSurfaceQueryHandler)")
 INTENT = re.compile(r'IntentId\s*=\s*"([^"]+)"')
 KEYWORDS = re.compile(r"Keywords\s*\{\s*get;\s*\}\s*=\s*new\[\]\s*\{(.*?)\n\t*\};", re.S)
 EXAMPLE = re.compile(r'Example\s*=>\s*AskText\.Of\(\s*"([^"]*)"\s*,\s*"([^"]*)"')

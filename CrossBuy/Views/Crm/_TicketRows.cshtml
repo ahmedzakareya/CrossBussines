@@ -4,6 +4,7 @@
 @model List<TicketRow>
 @{
     var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    var deptNames = ViewBag.DeptNames as Dictionary<int, CrmOrgNode> ?? new();
     // brand-safe: red = urgent, amber = high/pending, green = normal/active/resolved, gray = low/closed (no blue/yellow/mint)
     string prStyle(string p) => p switch { "Urgent" => "background:#fdeaea;color:#d92d20;", "High" => "background:#fef3e2;color:#b96a00;", "Low" => "background:#f2f4f7;color:#475467;", _ => "background:#E7F0FF;color:#0E4A9E;" };
     string prNm(string p) => p switch { "Urgent" => Localizer["Urgent"].Value, "High" => Localizer["High"].Value, "Low" => Localizer["Low"].Value, "Normal" => Localizer["Normal"].Value, _ => p };
@@ -22,6 +23,14 @@
             @if (t.FrBreached) { <span class="badge fw-bold" style="background:#fdeaea;color:#d92d20;" title="@Localizer["First-response breached"]">FR</span> }
             @if (t.ResBreached) { <span class="badge fw-bold ms-1" style="background:#fdeaea;color:#d92d20;" title="@Localizer["Resolution breached"]">RES</span> }
             @if (!t.FrBreached && !t.ResBreached) { <i class="ki-outline ki-check-circle fs-4" style="color:#0E4A9E;" title="@Localizer["Within SLA"]"></i> }
+        </td>
+        @* WHOSE QUEUE IT IS IN. Resolved from one read done for the whole page, not per row, and
+           it covers units that have since been deactivated so old rows stay readable. *@
+        <td class="fs-7">
+            @if (t.DepartmentId is > 0 && deptNames.TryGetValue(t.DepartmentId.Value, out var dn))
+            { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@DisplayName.Of(dn.NameAr, dn.NameEn)</span> }
+            else if (t.DepartmentId is > 0) { <span class="text-muted">#@t.DepartmentId</span> }
+            else { <span class="text-gray-300">—</span> }
         </td>
         <td class="text-muted fs-7">@(t.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
         <td class="text-end pe-4"><a href="@Url.Action("TicketEditor","Crm", new { id = t.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["OpenDetail"]"><i class="ki-outline ki-eye fs-6"></i></a></td>

@@ -25,6 +25,7 @@ namespace CrossBuy.Controllers.Api
     [ApiController]
     [Route("api/platform/grants")]
     [Authorize]
+    [AutoValidateAntiforgeryToken]
     [Produces("application/json")]
     public sealed class PlatformGrantsApiController : ControllerBase
     {

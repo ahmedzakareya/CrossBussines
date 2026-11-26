@@ -23,7 +23,7 @@
             <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Goods receipt"]</label>
                 <select id="grSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select receipt"]</option>@foreach (var r in receipts) { <option value="@r.ID" selected="@(gr?.ID==r.ID)">@r.ReceiptNo — @Localizer["cost"] @r.TotalCost.ToString("N2")</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Allocation"]</label><select name="allocationMethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="Value">@Localizer["By value"]</option><option value="Qty">@Localizer["By quantity"]</option></select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="landedDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="landedDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
             <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div></div></div>
 

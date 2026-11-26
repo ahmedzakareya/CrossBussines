@@ -41,9 +41,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"القيود التي تستحق مراجعة، من النموذج المحلي",
-			"Journal entries worth reviewing, from the on-premises model");
+			"Journal entries worth reviewing, from the on-premises model",
+			"Écritures comptables à vérifier, détectées par le modèle local");
 
-		public AskText Example => AskText.Of("فيه قيود شاذة؟", "Are there any unusual journal entries?");
+		public AskText Example => AskText.Of("فيه قيود شاذة؟", "Are there any unusual journal entries?", "Y a-t-il des écritures comptables inhabituelles ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

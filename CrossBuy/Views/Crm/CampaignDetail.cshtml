@@ -7,9 +7,32 @@
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var members = ViewBag.Members as List<MemberRow> ?? new();
     var lists = ViewBag.Lists as List<(int id, string name)> ?? new();
-    var statuses = new[] { ("Targeted", "مستهدَف", "Targeted"), ("Sent", "أُرسل", "Sent"), ("Opened", "فُتح", "Opened"), ("Responded", "استجاب", "Responded"), ("Converted", "تحوّل", "Converted") };
+    @* THE ICON IS WHAT DISTINGUISHES A STAGE, not a colour. Each one names the ACT the stage
+       records - aimed at, sent, opened, replied, converted - so the five cards are told apart
+       by meaning rather than by five tints that would each read as a verdict. Every name here
+       is declared in the theme's own keenicons bundle; a misspelt one renders an empty box. *@
+    var statuses = new[]
+    {
+        ("Targeted",  "مستهدَف", "Targeted",  "ki-profile-user"),
+        ("Sent",      "أُرسل",   "Sent",      "ki-send"),
+        ("Opened",    "فُتح",    "Opened",    "ki-eye"),
+        ("Responded", "استجاب",  "Responded", "ki-messages"),
+        ("Converted", "تحوّل",   "Converted", "ki-verify"),
+    };
+
     string statName(string s) => statuses.FirstOrDefault(x => x.Item1 == s) is var f && f.Item1 != null ? (isAr ? f.Item2 : f.Item3) : s;
-    string statColor(string s) => s switch { "Converted" => "success", "Responded" => "primary", "Opened" => "info", "Sent" => "warning", _ => "secondary" };
+    @* A FUNNEL STAGE IS NOT A STATUS, AND IT IS NOT A COLOUR EITHER.
+
+       The original mapped the five stages onto the semantic palette - Converted=success,
+       Opened=info, Sent=WARNING - so a campaign that had merely sent its messages wore the
+       product’s warning amber, and "converted" wore the green used for a successful save.
+
+       My first replacement swapped that for a custom blue depth ramp with share bars. The owner
+       rejected it too, and correctly: the theme has a statistic card and this page already uses
+       it four times directly above. Inventing a second way to show a number on the same screen
+       is the fault, whatever palette it is painted in. The stages are now the SAME card as its
+       neighbours, and no stage carries a colour at all. *@
+
     string typeName(string t) => t switch { "Lead" => Localizer["Lead"].Value, "Account" => SR["Account"].Value, "Contact" => Localizer["Contact"].Value, _ => t };
     var cid = Model.Campaign.ID;
 }
@@ -26,8 +49,6 @@
         <a href="@Url.Action("Campaigns","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <!--begin::ROI cards-->
         <div class="row g-5 mb-5">
@@ -41,44 +62,156 @@
             <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
                 <div class="fs-7 text-muted mb-1">@Localizer["Cost / won"]</div><div class="fs-2 fw-bold text-gray-900">@(Model.CostPerWon == null ? "—" : Model.CostPerWon.Value.ToString("N0"))</div></div></div></div>
         </div>
-        <!--begin::Funnel-->
-        <div class="card mb-5"><div class="card-body py-5"><div class="d-flex flex-wrap gap-8 align-items-center">
-            <div><div class="fs-8 text-muted">@Localizer["Members"]</div><div class="fw-bold fs-3 text-gray-900">@Model.Members</div></div>
+        @* THE CAMPAIGN FUNNEL.
+
+           Three versions got here. The original mapped the stages onto the SEMANTIC palette, so
+           a campaign that had merely sent its messages wore the product’s warning amber. I
+           replaced that with a custom layout - bespoke header, hand-rolled bars, an invented
+           blue ramp - which was rejected for inventing a fifth way to show a number on a page
+           that already had the theme’s statistic card four times. Then I stripped it back to
+           bare cards, which was rejected again, and rightly: ten identical white boxes say
+           nothing about a funnel.
+
+           THE MEANING COMES FROM THE THEME’S OWN PARTS, every one of them verified present in
+           the bundled CSS before use:
+             · `symbol symbol-40px` + `symbol-label bg-light-primary` + a keenicon - the icon
+               chip this product already uses on its insight cards, so each stage is told apart
+               by WHAT IT IS rather than by a colour that would read as a verdict;
+             · `progress` / `progress-bar` - Bootstrap’s own, present in style.bundle.css. The
+               bar is what makes five counts a funnel: it is the share of members, the one
+               denominator every stage has in common.
+
+           One hue throughout. A stage further along is not a success, and a stage not reached
+           is not a warning. *@
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100"><div class="card-body p-5">
+                    <div class="mb-3">
+                        <span class="symbol symbol-40px"><span class="symbol-label bg-light-primary">
+                            <i class="ki-outline ki-people fs-2x text-primary"></i>
+                        </span></span>
+                    </div>
+                    <div class="fs-2hx fw-bold text-gray-900 lh-1" dir="ltr"
+                         style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@Model.Members</div>
+                    <div class="fs-7 fw-semibold text-gray-500 mt-2">@Localizer["Members"]</div>
+                </div></div>
+            </div>
             @foreach (var s in statuses)
             {
                 var cnt = Model.ByStatus.TryGetValue(s.Item1, out var n) ? n : 0;
-                <div><div class="fs-8 text-muted">@(isAr ? s.Item2 : s.Item3)</div><span class="badge badge-light-@statColor(s.Item1) fs-6">@cnt</span></div>
+                var share = Model.Members > 0 ? (int)Math.Round(100.0 * cnt / Model.Members) : 0;
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="card h-100"><div class="card-body p-5">
+                        <div class="mb-3">
+                            <span class="symbol symbol-40px"><span class="symbol-label bg-light-primary">
+                                <i class="ki-outline @s.Item4 fs-2x text-primary"></i>
+                            </span></span>
+                        </div>
+                        <div class="fs-2hx fw-bold text-gray-900 lh-1" dir="ltr"
+                             style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@cnt</div>
+                        <div class="fs-7 fw-semibold text-gray-500 mt-2">@(isAr ? s.Item2 : s.Item3)</div>
+                        @* The track is always drawn: a stage nobody reached is visibly empty,
+                           which is a different statement from a stage that is absent. *@
+                        <div class="progress h-6px bg-light mt-3">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width:@(share)%"
+                                 aria-valuenow="@share" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="fs-8 text-gray-500 fw-semibold mt-2">
+                            <span dir="ltr" style="unicode-bidi:isolate">@share%</span>
+                            @(isAr ? "من الأعضاء" : "of members")
+                        </div>
+                    </div></div>
+                </div>
             }
-            <div class="ms-auto"><div class="fs-8 text-muted">@Localizer["Response rate"]</div><div class="fw-bold fs-4 text-primary">@(Model.ResponseRatePct == null ? "—" : Model.ResponseRatePct + "%")</div></div>
-            <div><div class="fs-8 text-muted">@Localizer["Leads / Opps / Won"]</div><div class="fw-bold fs-5 text-gray-800">@Model.Leads / @Model.Opps / @Model.Won</div></div>
-        </div></div></div>
+        </div>
 
+        @* WHAT THE FUNNEL PRODUCED. Outcomes, not stages, so a row of their own - and the same
+           icon chip as the row above, or four bare boxes would sit beside six furnished ones.
+           The compound "0 / 0 / 0" is split into three labelled figures: a reader cannot tell
+           which slash belongs to which word. *@
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var o in new (string label, string value, string icon)[]
+            {
+                (@Localizer["Response rate"].Value, Model.ResponseRatePct == null ? "—" : Model.ResponseRatePct + "%", "ki-percentage"),
+                (isAr ? "محتملون" : "Leads", Model.Leads.ToString(), "ki-profile-circle"),
+                (isAr ? "فرص" : "Opportunities", Model.Opps.ToString(), "ki-chart-line-up"),
+                (isAr ? "رابحة" : "Won", Model.Won.ToString(), "ki-medal-star"),
+            })
+            {
+                <div class="col-6 col-xl-3">
+                    <div class="card h-100"><div class="card-body p-5">
+                        <div class="mb-3">
+                            <span class="symbol symbol-40px"><span class="symbol-label bg-light-primary">
+                                <i class="ki-outline @o.icon fs-2x text-primary"></i>
+                            </span></span>
+                        </div>
+                        <div class="fs-2hx fw-bold @(o.value == "—" ? "text-gray-400" : "text-gray-900") lh-1" dir="ltr"
+                             style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@o.value</div>
+                        <div class="fs-7 fw-semibold text-gray-500 mt-2">@o.label</div>
+                    </div></div>
+                </div>
+            }
+        </div>
+
+        @* ================================================================================
+           ADD A MEMBER / IMPORT A LIST.
+
+           The five controls did not sit on one line, for three separate reasons:
+
+             1. THREE DIFFERENT CONTROL SIZES in one row. `m_type` and the list select were
+                `form-select-sm`, the member picker was a full-size select2, and both buttons
+                were `btn-sm`. `align-items-end` lines up the BOTTOMS of boxes that are not the
+                same height, which is exactly what the screenshot showed. One size throughout.
+
+             2. `border-start-lg` DOES NOT EXIST. Zero matches in style.bundle.css and in
+                plugins.bundle.css - a class someone assumed Bootstrap had. Bootstrap 5 ships no
+                responsive border utilities, so the divider between the two halves rendered
+                nothing and the two forms ran together. Replaced with `border-start`, which is
+                real, plus the padding to stand off it.
+
+             3. The two forms used `g-3` inside a `g-5` card, so their internal rhythm did not
+                match the grid they sat in.
+           ================================================================================ *@
         <!--begin::Add member-->
         <div class="card mb-5"><div class="card-body py-5">
             <div class="row g-5">
                 <div class="col-lg-7">
-                    <div class="fw-bold fs-6 mb-3">@Localizer["Add member"]</div>
-                    <form asp-action="AddCampaignMember" method="post" class="row g-3 align-items-end" id="addMemberForm">@Html.AntiForgeryToken()
+                    <div class="fw-bold fs-6 mb-4">@Localizer["Add member"]</div>
+                    <form asp-action="AddCampaignMember" method="post" class="row g-5 align-items-end" id="addMemberForm">@Html.AntiForgeryToken()
                         <input type="hidden" name="campaignId" value="@cid" /><input type="hidden" name="memberName" id="m_name" />
-                        <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Type"]</label>
-                            <select id="m_type" name="entityType" class="form-select form-select-solid form-select-sm">
+                        <div class="col-md-4">
+                            <label class="form-label fs-7 fw-semibold text-muted mb-1">@SR["Type"]</label>
+                            <select id="m_type" name="entityType" class="form-select form-select-solid">
                                 <option value="Account">@SR["Account"]</option><option value="Lead">@Localizer["Lead"]</option><option value="Contact">@Localizer["Contact"]</option>
-                            </select></div>
-                        <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Member"]</label>
-                            <select id="m_entity" name="entityId" class="form-select form-select-solid" style="width:100%"></select></div>
-                        <div class="col-md-3"><button class="btn btn-primary btn-sm w-100"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button></div>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Member"]</label>
+                            @* select2 renders its own container; at the DEFAULT size the theme
+                               styles it to the same height as its plain siblings. *@
+                            <select id="m_entity" name="entityId" class="form-select form-select-solid" style="width:100%"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button>
+                        </div>
                     </form>
                 </div>
-                <div class="col-lg-5 border-start-lg">
-                    <div class="fw-bold fs-6 mb-3">@Localizer["Import from list"]</div>
-                    <form asp-action="AddListToCampaign" method="post" class="row g-3 align-items-end" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Add all list members to the campaign?"]">@Html.AntiForgeryToken()
+                <div class="col-lg-5 border-start border-gray-200 ps-lg-8">
+                    <div class="fw-bold fs-6 mb-4">@Localizer["Import from list"]</div>
+                    <form asp-action="AddListToCampaign" method="post" class="row g-5 align-items-end" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Add all list members to the campaign?"]">@Html.AntiForgeryToken()
                         <input type="hidden" name="campaignId" value="@cid" />
-                        <div class="col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["List"]</label>
-                            <select name="listId" class="form-select form-select-solid form-select-sm" required>
+                        <div class="col-md-7">
+                            <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["List"]</label>
+                            <select name="listId" class="form-select form-select-solid" required>
                                 <option value="">@Localizer["Choose a list…"]</option>
                                 @foreach (var l in lists) { <option value="@l.id">@l.name</option> }
-                            </select></div>
-                        <div class="col-md-4"><button class="btn btn-light-primary btn-sm w-100"><i class="ki-outline ki-down fs-4"></i>@Localizer["Import"]</button></div>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <button class="btn btn-light-primary w-100">@* ki-down is a CHEVRON. Beside a select that has its own chevron, the button read as a
+                               second dropdown rather than as the action that submits the form. *@
+                            <i class="ki-outline ki-entrance-right fs-4"></i>@Localizer["Import"]</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -98,7 +231,7 @@
                             <td>
                                 <form asp-action="UpdateMemberStatus" method="post" class="d-inline">@Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@m.Id" /><input type="hidden" name="campaignId" value="@cid" />
-                                    <select name="status" class="form-select form-select-sm form-select-solid badge-light-@statColor(m.Status)" onchange="this.form.submit()">
+                                    <select name="status" class="form-select form-select-sm form-select-solid" onchange="this.form.submit()">
                                         @foreach (var s in statuses) { <option value="@s.Item1" selected="@(m.Status == s.Item1)">@(isAr ? s.Item2 : s.Item3)</option> }
                                     </select>
                                 </form>

@@ -327,9 +327,26 @@ namespace CrossBuy.Tests
             // Added after CRM by the hospital pack (H1 room, H2 patient) - named, so the count stays exact.
             var hospital = new[] { EntityRegistry.HospitalRoom, EntityRegistry.HospitalPatient };
 
+            // Added AFTER the hospital pair, and named for exactly the same reason: the count stays exact and
+            // an addition is RECORDED rather than absorbed. CrmTicket is the support desk's; HospitalConsent
+            // and HospitalRadOrder are later hospital waves; JobApplication is recruitment's. Raising the
+            // arithmetic without naming them would have turned this ratchet into a number nobody can audit.
+            var since = new[]
+            {
+                EntityRegistry.CrmTicket,
+                EntityRegistry.HospitalConsent,
+                EntityRegistry.HospitalRadOrder,
+                EntityRegistry.JobApplication,
+                EntityRegistry.HospitalCall,   // H176: call recordings, files only
+                // 2026-11-24: a conversation on every hospital record (HospitalController.Conversations)
+                EntityRegistry.HospitalEncounter, EntityRegistry.HospitalLabOrder, EntityRegistry.HospitalBill, EntityRegistry.HospitalEstimate,
+                EntityRegistry.HospitalLabour, EntityRegistry.HospitalPregnancy, EntityRegistry.HospitalRehabEpisode, EntityRegistry.HospitalMorgueCase,
+            };
+
             Assert.All(preCrm, c => Assert.Contains(c, codes));
             Assert.All(hospital, c => Assert.Contains(c, codes));
-            Assert.Equal(preCrm.Length + 3 + hospital.Length, codes.Count);
+            Assert.All(since, c => Assert.Contains(c, codes));
+            Assert.Equal(preCrm.Length + 3 + hospital.Length + since.Length, codes.Count);
             Assert.Equal(codes.Count, codes.Distinct(StringComparer.Ordinal).Count());
         }
 

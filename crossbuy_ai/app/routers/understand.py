@@ -24,6 +24,8 @@ import asyncio
 from fastapi import APIRouter, Depends
 
 from app.config import get_settings
+from app.ml.intent_data import FRENCH_NEGATIVES, FRENCH_TEMPLATES, NEGATIVES, OUT_OF_SCOPE
+from app.ml.fallback_refusals import FALLBACK_REFUSALS
 from app.ml.intent_llm import engine as llm_engine
 from app.ml.intent_model import load as load_intent_model
 from app.ml.understand import ANSWER_FLOOR, OFFER_FLOOR, Intent, understander_for
@@ -31,11 +33,65 @@ from app.schemas.understand import UnderstandRequest, UnderstandResponse
 from app.security import require_secret
 
 router = APIRouter(prefix="/understand", tags=["understand"], dependencies=[Depends(require_secret)])
+_FRENCH_OUT_OF_SCOPE = "__crossbuy.out-of-scope.fr"
+
+
+def _is_french_question(text: str) -> bool:
+    """Conservative, dependency-free detector for French requests.
+
+    The trained artifact currently contains Arabic and English examples. Sending French through
+    it would produce a confident-looking result from unrelated character n-grams. French is a
+    supported UI culture, so route clear French wording through the runtime catalogue matcher,
+    which receives French examples below. Ambiguous short words stay on the existing path.
+    """
+    import re
+
+    words = set(re.findall(r"[\wÀ-ÿ]+", (text or "").casefold()))
+    markers = {
+        "combien", "quel", "quelle", "quels", "quelles", "estce", "avonsnous",
+        "puisje", "montre", "liste", "donne", "achats", "ventes", "factures",
+        "créances", "dépenses", "employés", "médecins", "médicaments", "entrepôts",
+        "trésorerie", "mouvements", "aujourd", "hui", "rendez", "vous", "écritures",
+        "articles", "fournisseur", "fournisseurs", "impayées", "disponibles",
+    }
+    common = {"de", "du", "des", "le", "la", "les", "un", "une", "et", "par",
+              "pour", "avec", "dans", "sur", "est", "sont", "mois", "notre", "nos"}
+    accented = any(ch in (text or "").casefold() for ch in "àâçéèêëîïôùûüÿœ")
+    return accented or bool(words & markers) or len(words & common) >= 2
 
 
 @router.post("", response_model=UnderstandResponse)
 async def understand(body: UnderstandRequest) -> UnderstandResponse:
     requested = [i.id for i in body.intents]
+
+    # French is registered in the product, but the persisted classifier was trained on Arabic
+    # and English only. Do not let that model infer across unrelated scripts/vocabulary. Build a
+    # permission-filtered, request-local French catalogue and use the same bounded nearest-neighbour
+    # matcher used for newly added/unknown catalogues. This selects only an offered intent; it never
+    # composes SQL or accesses business data.
+    if _is_french_question(body.question):
+        french_intents = tuple(
+            Intent(
+                id=i.id,
+                phrasings=tuple(dict.fromkeys(
+                    [p for p in i.phrasings if p and p.strip()]
+                    + FRENCH_TEMPLATES.get(i.id, [])
+                )),
+            )
+            for i in body.intents
+        ) + (Intent(id=_FRENCH_OUT_OF_SCOPE, phrasings=tuple(FRENCH_NEGATIVES)),)
+        result = understander_for(french_intents).understand(body.question)
+        ranked = [
+            {"intent": m.intent, "score": m.score}
+            for m in result.ranked if m.intent != _FRENCH_OUT_OF_SCOPE
+        ]
+        if result.intent is not None and result.intent != _FRENCH_OUT_OF_SCOPE:
+            return UnderstandResponse(
+                intent=result.intent, confidence=result.confidence, ranked=ranked,
+                engine="intent-knn-fr-v1", answerFloor=ANSWER_FLOOR, offerFloor=OFFER_FLOOR)
+        return UnderstandResponse(
+            intent=None, confidence=result.confidence, ranked=ranked,
+            engine="intent-knn-fr-v1", answerFloor=ANSWER_FLOOR, offerFloor=OFFER_FLOOR)
 
     # ---- 1. the trained classifier, when it knows this catalogue ------------------------------
     ranked: list[dict] = []
@@ -45,7 +101,7 @@ async def understand(body: UnderstandRequest) -> UnderstandResponse:
 
     model = load_intent_model()
     if model is not None and model.covers(requested):
-        p = model.predict(body.question)
+        p = model.predict(body.question, requested)
         ranked = [{"intent": k, "score": v} for k, v in p.ranked]
         confidence, engine_name, floor = p.confidence, p.engine, model.floor
         if p.intent is not None:
@@ -60,10 +116,18 @@ async def understand(body: UnderstandRequest) -> UnderstandResponse:
             Intent(id=i.id, phrasings=tuple(p for p in i.phrasings if p and p.strip()))
             for i in body.intents
         )
-        result = understander_for(intents).understand(body.question)
-        ranked = [{"intent": m.intent, "score": m.score} for m in result.ranked]
+        # The dynamic fallback must learn a refusal boundary too. Nearest-neighbour without a
+        # negative class necessarily assigns an unseen business question to something nearby.
+        known_phrasings = {p.casefold().strip() for intent in intents for p in intent.phrasings}
+        refusal = Intent(id=OUT_OF_SCOPE, phrasings=tuple(
+            p for p in (*NEGATIVES, *FALLBACK_REFUSALS)
+            if p.casefold().strip() not in known_phrasings
+        ))
+        result = understander_for(intents + (refusal,)).understand(body.question)
+        ranked = [{"intent": m.intent, "score": m.score} for m in result.ranked
+                  if m.intent != OUT_OF_SCOPE]
         confidence, engine_name = result.confidence, result.engine
-        if result.intent is not None:
+        if result.intent is not None and result.intent != OUT_OF_SCOPE:
             return UnderstandResponse(
                 intent=result.intent, confidence=confidence, ranked=ranked,
                 engine=engine_name, answerFloor=ANSWER_FLOOR, offerFloor=OFFER_FLOOR)

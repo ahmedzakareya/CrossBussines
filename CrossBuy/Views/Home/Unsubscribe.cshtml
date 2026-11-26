@@ -1,0 +1,36 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var sfx = isAr ? ".rtl" : "";
+    var done = ViewBag.Done == true; var name = ViewBag.Name as string; var token = (string)ViewBag.Token;
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>@T["Stop these e-mails"]</title>
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <style>html[lang="ar"] body { font-family: 'Cairo', sans-serif; } body { background: var(--bs-gray-100); min-height: 100vh; }</style>
+</head>
+<body class="d-flex align-items-center justify-content-center p-5">
+<div class="card shadow-sm mw-450px w-100"><div class="card-body p-10 text-center">
+    @if (done)
+    {
+        <div class="symbol symbol-65px symbol-circle mb-5"><span class="symbol-label" style="background:#DCFCE7"><i class="ki-outline ki-check fs-2x" style="color:#15803D"></i></span></div>
+        <h2 class="fw-bold mb-3">@T["You will not receive these e-mails any more"]</h2>
+        <div class="text-muted fs-6">@T["Your choice is recorded. If you change your mind, tell the person you deal with."]</div>
+    }
+    else
+    {
+        <div class="symbol symbol-65px symbol-circle mb-5"><span class="symbol-label" style="background:var(--cb-brand-surface,#E7F0FF)"><i class="ki-outline ki-sms fs-2x" style="color:var(--cb-brand,#3A5795)"></i></span></div>
+        <h2 class="fw-bold mb-3">@(name != null ? T["Hello"].Value + " " + name : T["Stop these e-mails"].Value)</h2>
+        <div class="text-muted fs-6 mb-8">@T["Do you want to stop receiving our marketing e-mails?"]</div>
+        <form method="post" action="/store/unsub/@token@Context.Request.QueryString"><button type="submit" class="btn btn-primary w-100">@T["Yes, stop them"]</button></form>
+    }
+</div></div>
+</body>
+</html>

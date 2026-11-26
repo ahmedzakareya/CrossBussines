@@ -23,8 +23,35 @@
         ViewBag.ConversationEntityCode = Model.TimelineCode;
         ViewBag.ConversationEntityId = Model.Id;
         ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+        ViewBag.ConversationMentionUrl = Url.Action("InvoiceConversationMentions", "Accounting");
         ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
         ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+
+        @* COMMUNICATION PHASE 3 - TASKS. Every endpoint below lives on the TASKS controller, not this
+           module: the conversation is this screen's, the work is Tasks'. Naming them here is the whole
+           of the opt-in - the shared partial resolves nothing on a caller's behalf, so a screen that
+           omits them keeps exactly its previous behaviour.
+
+           THE PANEL STILL DECIDES WHETHER TO SHOW ANYTHING. It reveals the link controls only when all
+           three link urls are present AND the service reports LinkingAvailable AND a thread exists, so a
+           deployment without the CommTaskLinks table shows nothing rather than a button that refuses.
+
+           ONE SCREEN, SIX ENTITY CODES. TimelineCode is already the code this panel is about, so the
+           endpoints below serve SalesInvoice, PurchaseInvoice, SalesReturn, PurchaseReturn, Receipt and
+           Payment without naming any of them.
+
+           AND THE SAME RECORD IS REACHABLE FROM TWO SCREENS. SalesInvoice, PurchaseInvoice, SalesReturn
+           and PurchaseReturn each have their own detail view as well. Wiring one and not the other would
+           show the Link button on one route and hide it on the other FOR THE SAME RECORD, which reads as
+           a broken screen rather than a scope decision - so the four move together with this one.
+
+           Of the six, only SalesInvoice and PurchaseInvoice are EligibleForTaskLink; the other four
+           create tasks without a business anchor and the panel reports it. *@
+        ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+        ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+        ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+        ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+        ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
     }
 
     string PartyUrl() => Model.PartyId == null ? null! : Url.Action(

@@ -25,14 +25,17 @@ namespace CrossBuy.Tests
         // ratchet went on counting a constant that no longer exists. The baseline over-reported the debt by
         // one and, worse, silently absorbed a real remediation that should have forced this list to be
         // updated. Stripping comments before matching (see DeclaringFiles) is what surfaced it.
-        private static readonly string[] KnownHardcodedCompanyControllers =
-        {
-            "AdminController.cs",               // HrCompanyId
-            "Api/InventoryApiController.cs",    // CompanyId
-            "HyperController.cs",               // PosCompanyId
-            "HyperPosController.cs",            // PosCompanyId
-            "PosAppController.cs",              // PosCompanyId
-        };
+        // 2026-11-10: NOW EMPTY, and that is the point of this list rather than a reason to delete it.
+        // The last five went between the previous reconciliation and today - AdminController (HrCompanyId),
+        // Api/InventoryApiController (CompanyId) and the three tills (PosCompanyId) all resolve their
+        // company now, and each left the old declaration behind as an explanatory comment. StripComments
+        // is why the ratchet can tell that note from a live constant and reported the removal instead of
+        // absorbing it. Verified by reading all five lines, not by grepping them: a grep matches the
+        // comment too, and reading them is what corrected my own first reading of this.
+        //
+        // An empty baseline makes the FIRST assertion strict rather than vacuous: any controller that
+        // hardcodes a company from now on is both a count change and an unexpected name.
+        private static readonly string[] KnownHardcodedCompanyControllers = Array.Empty<string>();
 
         // WAS TWELVE, NOW EIGHT. Four more were genuinely removed between the baseline and platform
         // stabilization - CrmController, InventoryController, PosController and ProjectController all
@@ -45,7 +48,8 @@ namespace CrossBuy.Tests
         // than left as an unexplained residue.
         // 2026-10-11 reconciliation records Accounting and Brand removals, and the already
         // removed Currency declaration. COMPANY-ONE-INVENTORY.md retains the old measurement.
-        private const int KnownCount = 5;
+        // WAS TWELVE, THEN EIGHT, THEN FIVE, NOW ZERO. No controller declares a hardcoded company constant.
+        private const int KnownCount = 0;
 
         private static string ControllersRoot()
         {

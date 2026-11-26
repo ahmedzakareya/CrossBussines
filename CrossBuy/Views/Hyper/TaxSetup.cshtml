@@ -1,0 +1,252 @@
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Accounting
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var branches = ViewBag.HyperBranches as List<HyperController.HyperBranchItem> ?? new();
+    var branch = ViewBag.Branch as CrossBuy.Models.Context.Admin.Branch;
+    var setting = ViewBag.Setting as CrossBuy.Models.Context.Pos.BranchPosSetting;
+    var codes = ViewBag.TaxCodes as List<TaxCode> ?? new();
+    var companyDefault = ViewBag.CompanyDefault as TaxCode;
+    var overriding = ViewBag.Overriding as List<HyperController.HyperTaxItemRow> ?? new();
+    var overridingTotal = (int)(ViewBag.OverridingTotal ?? 0);
+    var officialOn = ViewBag.OfficialInvoiceOn as bool? ?? false;
+    var branchCodeId = setting?.DefaultTaxCodeId;
+    var branchCode = branchCodeId == null ? null : codes.FirstOrDefault(t => t.ID == branchCodeId.Value);
+    ViewData["Title"] = isAr ? "الضرائب والفوترة" : "Tax & invoicing";
+
+    Func<TaxCode, string> nameOf = t => isAr ? t.Name : (t.NameEn ?? t.Name);
+
+    var msgMap = new Dictionary<string, string> {
+        ["tax-saved"] = isAr ? "حُفظ كود ضريبة الفرع." : "The branch tax code was saved.",
+        ["not-hyper-branch"] = isAr ? "هذا الفرع ليس فرع هايبر ماركت." : "This branch is not a hypermarket branch.",
+        ["no-permission"] = isAr ? "لا تملك صلاحية تعديل إعدادات هذا الفرع." : "You may not change this branch’s setup."
+    };
+    Func<object, string> say = c => { var k = c as string ?? ""; return msgMap.TryGetValue(k, out var v) ? v : k; };
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (TempData["HyperMsg"] != null)
+        {
+            <div class="alert alert-success d-flex align-items-center mb-6"><i class="ki-outline ki-check-circle fs-2 me-3"></i>@say(TempData["HyperMsg"])</div>
+        }
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-danger d-flex align-items-start mb-6"><i class="ki-outline ki-information-5 fs-2 me-3 mt-1"></i><div>@say(TempData["HyperErr"])</div></div>
+        }
+
+        @if (ViewBag.NoBranch == true)
+        {
+            <div class="card"><div class="card-body p-10 text-center">
+                <i class="ki-outline ki-shop fs-3tx text-muted mb-4 d-block"></i>
+                <div class="fs-5 fw-bold text-gray-800">@(isAr ? "لا يوجد فرع هايبر ماركت بعد" : "No hypermarket branch yet")</div>
+            </div></div>
+            return;
+        }
+
+        @if (branches.Count > 1)
+        {
+            <div class="d-flex flex-wrap gap-2 mb-5">
+                @foreach (var b in branches)
+                {
+                    var on = branch != null && b.Id == branch.ID;
+                    <a href="/hyper/setup/tax?branchId=@b.Id" class="btn btn-sm @(on ? "btn-primary" : "btn-light")">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</a>
+                }
+            </div>
+        }
+
+        @* THE RESOLUTION ORDER, stated before the field that sits in the middle of it. A manager who sets
+           this field without knowing an item can beat it will reach the wrong conclusion the first time
+           a tagged item rings up at a rate the branch did not choose. *@
+        <div class="alert alert-primary d-flex align-items-start mb-6">
+            <i class="ki-outline ki-percentage fs-2tx me-4 mt-1"></i>
+            <div class="min-w-0">
+                <div class="fw-bold fs-6 mb-2">@(isAr ? "كيف يُحتسب السعر الضريبي لكل سطر" : "How each line’s tax rate is decided")</div>
+                <div class="d-flex flex-wrap align-items-center gap-2 fs-7 mb-2">
+                    <span class="badge badge-light-primary fw-bold">1 · @(isAr ? "كود الصنف نفسه" : "The item’s own code")</span>
+                    <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-4 text-muted"></i>
+                    <span class="badge badge-light-primary fw-bold">2 · @(isAr ? "كود هذا الفرع" : "This branch’s code")</span>
+                    <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-4 text-muted"></i>
+                    <span class="badge badge-light-primary fw-bold">3 · @(isAr ? "افتراضي الشركة" : "The company default")</span>
+                    <i class="ki-outline @(isAr ? "ki-left" : "ki-right") fs-4 text-muted"></i>
+                    <span class="badge badge-light fw-bold text-muted">4 · @(isAr ? "صفر" : "Zero")</span>
+                </div>
+                <div class="fs-7 text-gray-700" style="line-height:1.9">
+                    @(isAr
+                        ? "أول خطوة تجد كوداً صالحاً هي التي تحكم. هذه الشاشة تكتب الخطوة الثانية فقط — ولا تنشئ أكواداً ولا تعدّل نسبها، فتلك أكواد الشركة."
+                        : "The first step that finds a usable code wins. This screen writes step 2 only — it does not create tax codes or change their rates, which belong to the company.")
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-5">
+                <form method="post" action="/hyper/setup/tax">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="branchId" value="@(branch?.ID ?? 0)" />
+                    <div class="card mb-5">
+                        <div class="card-header min-h-50px align-items-center">
+                            <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "كود ضريبة هذا الفرع" : "This branch’s tax code")</h3>
+                            <div class="card-toolbar"><button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-5"></i>@(isAr ? "حفظ" : "Save")</button></div>
+                        </div>
+                        <div class="card-body pt-4">
+                            @if (codes.Count == 0)
+                            {
+                                <div class="text-muted fs-7 py-4">
+                                    @(isAr ? "لا توجد أكواد ضريبة من نوع VAT على هذه الشركة بعد." : "This company has no VAT tax codes yet.")
+                                    <a href="/Accounting/TaxCodes" class="fw-bold ms-1">@(isAr ? "أنشئها أولاً" : "Create one first")</a>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="fv-row mb-4">
+                                    <select name="taxCodeId" class="form-select form-select-solid">
+                                        <option value="">@(isAr ? "— بلا كود للفرع (يرث افتراضي الشركة)" : "— No branch code (inherit the company default)")</option>
+                                        @foreach (var t in codes)
+                                        {
+                                            <option value="@t.ID" selected="@(branchCodeId == t.ID)" disabled="@(!t.IsActive && branchCodeId != t.ID)">
+                                                @nameOf(t) (@t.Rate.ToString("0.##")%)@(t.IsActive ? "" : (isAr ? " — موقوف" : " — inactive"))
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                @* The distinction that makes this field worth having at all. *@
+                                <div class="fs-8 text-muted" style="line-height:1.9">
+                                    @(isAr
+                                        ? "«بلا كود» ليست مثل «كود بنسبة صفر». الأولى تعني أن الفرع لا رأي له ويتبع الشركة — فإن تغيّر افتراضي الشركة غداً تغيّر معه. والثانية تعني أن هذا الفرع معفى بقرار، ويظل معفى مهما تغيّر افتراضي الشركة."
+                                        : "“No branch code” is not the same as a 0% code. The first means the branch has no opinion and follows the company — change the company default tomorrow and this branch changes with it. The second means this branch is exempt by decision, and stays exempt whatever the company default becomes.")
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </form>
+
+                <div class="card">
+                    <div class="card-header min-h-50px align-items-center">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "النسبة السارية الآن" : "The rate in force now")</h3>
+                    </div>
+                    <div class="card-body pt-4">
+                        @{
+                            var eff = branchCode ?? companyDefault;
+                        }
+                        <div class="fs-7 text-muted mb-3" style="line-height:1.9">
+                            @(isAr ? "على صنف لا يحمل كوداً خاصاً به:" : "On an item that carries no code of its own:")
+                        </div>
+                        @if (eff == null)
+                        {
+                            <div class="fs-2hx fw-bolder text-gray-500" style="font-variant-numeric:tabular-nums">0%</div>
+                            <div class="fs-8 text-muted mt-1">
+                                @(isAr ? "لا كود للفرع ولا افتراضي للشركة — تُباع بلا ضريبة." : "No branch code and no company default — sales carry no tax.")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="fs-2hx fw-bolder text-gray-900" style="font-variant-numeric:tabular-nums">@eff.Rate.ToString("0.##")%</div>
+                            <div class="fs-7 fw-bold text-gray-700 mt-1">@nameOf(eff)</div>
+                            <div class="fs-8 text-muted mt-1">
+                                @(branchCode != null
+                                    ? (isAr ? "من كود هذا الفرع." : "From this branch’s own code.")
+                                    : (isAr ? "موروثة من افتراضي الشركة — لا كود على هذا الفرع." : "Inherited from the company default — this branch has no code."))
+                            </div>
+                        }
+
+                        <div class="separator separator-dashed my-5"></div>
+                        <div class="fs-8 text-muted" style="line-height:1.9">
+                            <div class="fw-bold text-gray-700 mb-1">@(isAr ? "افتراضي الشركة" : "The company default")</div>
+                            @if (companyDefault == null)
+                            {
+                                <span>@(isAr ? "لا يوجد كود VAT مُعلَّم كافتراضي." : "No VAT code is marked as the default.")</span>
+                            }
+                            else
+                            {
+                                <span>@nameOf(companyDefault) · <span style="font-variant-numeric:tabular-nums">@companyDefault.Rate.ToString("0.##")%</span></span>
+                            }
+                            <a href="/Accounting/TaxCodes" class="d-block fw-bold mt-2">@(isAr ? "أكواد الضريبة في الحسابات" : "Tax codes in Accounting")</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-7">
+                @* THE OFFICIAL INVOICE. It is a capability, not a tax field - but it is the other half of the
+                   question a manager comes to this screen asking, so it answers it and points at the switch. *@
+                <div class="card mb-5">
+                    <div class="card-header min-h-50px align-items-center">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "الفاتورة الضريبية الرسمية" : "The official tax invoice")</h3>
+                        <div class="card-toolbar">
+                            <span class="badge @(officialOn ? "badge-light-success" : "badge-light text-muted") fw-bold">
+                                @(officialOn ? (isAr ? "مفعَّلة" : "On") : (isAr ? "متوقفة" : "Off"))
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body pt-4 fs-7 text-gray-700" style="line-height:1.9">
+                        @(isAr
+                            ? "إصدار الفاتورة الرسمية من الكاشير محكوم بقدرة «OfficialInvoice» على مستوى الفرع، لا بإعداد ضريبي. وهي مبنية بالفعل: الكاشير يطبع الفاتورة A4 من سجل الفواتير، ويمكنه ختم اسم المستفيد ورقمه الضريبي مرة واحدة فقط ولا يمكنه تغييره بعدها."
+                            : "Issuing the official invoice from the till is governed by the branch-level “OfficialInvoice” capability, not by a tax setting. It is already built: the cashier prints the A4 invoice from the receipts list and may stamp a beneficiary’s name and tax number once, with no way to change it afterwards.")
+                        <a href="/hyper/setup/capabilities?branchId=@(branch?.ID)" class="d-block fw-bold mt-3">
+                            @(isAr ? "تشغيلها أو إيقافها من قدرات الفرع" : "Turn it on or off in the branch capabilities")
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header min-h-50px align-items-center">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "أصناف تتجاوز إعداد الفرع" : "Items that override the branch")</h3>
+                        <div class="card-toolbar"><span class="badge badge-light">@overridingTotal</span></div>
+                    </div>
+                    <div class="card-body pt-4">
+                        @if (overridingTotal == 0)
+                        {
+                            <div class="text-muted fs-7 py-6 text-center" style="line-height:1.9">
+                                @(isAr
+                                    ? "لا صنف يحمل كوداً خاصاً به — كل الأصناف تتبع هذا الفرع."
+                                    : "No item carries a code of its own — every item follows this branch.")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="fs-8 text-muted mb-4" style="line-height:1.9">
+                                @(isAr
+                                    ? "هذه الأصناف لن تتأثر بما تختاره هنا، لأن الخطوة الأولى تغلب الثانية. تُعدَّل من بطاقة الصنف نفسه."
+                                    : "These items are unaffected by what you choose here, because step 1 beats step 2. They are changed on the item’s own card.")
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-3 mb-0">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                        <th class="ps-4">@(isAr ? "الصنف" : "Item")</th>
+                                        <th>@(isAr ? "كوده الضريبي" : "Its tax code")</th>
+                                        <th class="text-end pe-4" style="width:110px">@(isAr ? "النسبة" : "Rate")</th>
+                                    </tr></thead>
+                                    <tbody class="fs-6">
+                                        @foreach (var it in overriding)
+                                        {
+                                            <tr>
+                                                <td class="ps-4">
+                                                    <a href="/Inventory/EditItem?id=@it.Id" class="fw-bold text-gray-800 text-hover-primary d-block">@(isAr ? it.Name : (it.NameEn ?? it.Name))</a>
+                                                    <span class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">@it.Code</span>
+                                                </td>
+                                                <td class="text-gray-700">@(isAr ? it.TaxName : (it.TaxNameEn ?? it.TaxName))</td>
+                                                <td class="text-end pe-4 fw-bold" style="font-variant-numeric:tabular-nums">@it.Rate.ToString("0.##")%</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (overridingTotal > overriding.Count)
+                            {
+                                <div class="fs-8 text-muted mt-4">
+                                    @(isAr
+                                        ? $"تُعرض أول {overriding.Count} من {overridingTotal}."
+                                        : $"Showing the first {overriding.Count} of {overridingTotal}.")
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

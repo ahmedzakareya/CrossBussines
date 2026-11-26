@@ -23,8 +23,8 @@
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
             <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Customer"]</label><select name="customerId" id="custSel" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var v in custs) { <option value="@v.ID">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Issuing WH"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @DisplayName.Of(w.Name, w.NameEn)</option> }</select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="orderDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
-            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Expected"]</label><input type="text" name="expectedDate" class="form-control form-control-solid" data-control="flatpickr" /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="orderDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Expected"]</label><input type="date" name="expectedDate" class="form-control form-control-solid" data-control="flatpickr" /></div>
             <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label><select name="currencyId" id="curSel" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == funcCur)">@c.Code</option> }</select></div>
             <div class="col-md-2" id="rateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label><input type="number" step="0.0001" min="0" name="exchangeRate" class="form-control form-control-solid" placeholder="@Localizer["Auto"]" /></div>
         </div><div class="mt-4"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div></div></div>
@@ -34,6 +34,7 @@
         </tr></thead><tbody id="rows"></tbody><tfoot><tr class="fw-bold"><td colspan="7" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr></tfoot></table></div></div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
@@ -76,7 +77,25 @@ document.getElementById('custSel').addEventListener('change',function(){ documen
   function t(){ if(w) w.style.display=(parseInt(s.value)!==FUNC)?'':'none'; }
   if(s){ s.addEventListener('change',function(){ t(); document.querySelectorAll('#rows tr').forEach(applyPrice); }); t(); } })();
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
-document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;if((it||tr.querySelector('.d').value)&&q>0)lines.push({itemId:it?parseInt(it):null,itemDescription:tr.querySelector('.d').value,qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a line"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+document.getElementById('save').addEventListener('click',function(){
+var lines = CBLines.gather({
+  touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.d')
+      || CBLines.num(tr,'.q')!==1 || CBLines.num(tr,'.p')!==0 || CBLines.num(tr,'.disc')!==0); },
+  problem:function(tr){
+    // Either identifies the line - these documents legitimately carry a service or a one-off
+    // description with no catalogue item behind it.
+    if(!CBLines.str(tr,'.it') && !CBLines.str(tr,'.d')) return CBLines.T.item;
+    if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+    return null; },
+  build:function(tr){
+    var it=CBLines.str(tr,'.it'), u=CBLines.str(tr,'.u');
+    return {itemId:it?parseInt(it):null,itemDescription:tr.querySelector('.d').value,
+            qty:CBLines.num(tr,'.q'),uoMId:u?parseInt(u):null,
+            unitPrice:CBLines.num(tr,'.p'),discountAmount:CBLines.num(tr,'.disc'),
+            taxRate:CBLines.num(tr,'.tax')}; }
+});
+if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
 addRow();
 window.onItemScanned=function(p){ addRow(); var tr=document.querySelector('#rows tr:last-child'); if(!tr)return;
   cbItemSelectSet(tr.querySelector('.it'), {id:p.id, code:p.code, name:p.name, nameEn:p.nameEn, price:p.salesPrice, baseUom:p.baseUom}); if(p.uomId){tr.querySelector('.u').value=String(p.uomId);}

@@ -27,11 +27,14 @@
     // -------------------------------------------------------------------------------------------
     var tType = (ViewBag.TimelineEntityType as string) ?? "";
     var tId = ViewBag.TimelineEntityId?.ToString() ?? "0";
+    var pageCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    var pageUiCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
 }
 @* SHARED PARTIAL (SHF-20), used by three document views. card-flush + an h3 title is what the other
    121 cards use; a plain .card next to flush ones is the difference the owner pointed at on the
    work-order screen. *@
-<div class="card card-flush mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId">
+<div class="card card-flush mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId"
+     data-culture="@pageCulture" data-ui-culture="@pageUiCulture">
     <div class="card-header align-items-center py-4">
         <div class="card-title">
             <h3 class="fw-bold text-gray-900 fs-4 m-0">
@@ -143,7 +146,9 @@
     }
     function actorChip(name, src) {
         if (!name) { return ''; }
-        var c = hue(name), px = 24;
+        // A timeline is often viewed at reduced scale beside the document; 24px made the real
+        // employee photo indistinguishable from a decorative dot. Keep the face legible.
+        var c = hue(name), px = 36;
         var tile = '<span class="symbol-label fw-bold fs-9" style="background:' + rgba(c, 0.12) +
                    ';color:' + c + ';">' + esc(initials(name)) + '</span>';
         // Explicit pixels on BOTH boxes: `.symbol` is sized by its content, so a percentage on the
@@ -226,8 +231,19 @@
 
     var CAP = 200;   // TimelineProjectionService.MaxTake
 
-    fetch('/PlatformTimeline/List?entityType=' + encodeURIComponent(type) + '&entityId=' + encodeURIComponent(id),
-          { credentials: 'same-origin' })
+    var timelineUrl = '/PlatformTimeline/List?entityType=' + encodeURIComponent(type) +
+                      '&entityId=' + encodeURIComponent(id);
+    // The timeline endpoint resolves actor names and event text using RequestLocalization. Send the
+    // culture that rendered this page; URL query parameters may be absent when the language comes
+    // from the user's culture cookie, which otherwise makes the async panel use a different language.
+    try {
+        var culture = box.getAttribute('data-culture');
+        var uiCulture = box.getAttribute('data-ui-culture');
+        if (culture) { timelineUrl += '&culture=' + encodeURIComponent(culture); }
+        if (uiCulture) { timelineUrl += '&ui-culture=' + encodeURIComponent(uiCulture); }
+    } catch (e) { /* Keep the endpoint usable if culture attributes are unavailable. */ }
+
+    fetch(timelineUrl, { credentials: 'same-origin' })
         .then(function (r) {
             // 403 means "not authorised to view this record" — say so rather than showing an empty history.
             if (r.status === 403) { notice(T.denied, 'denied'); return null; }

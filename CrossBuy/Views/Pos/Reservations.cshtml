@@ -11,36 +11,43 @@
     var branches = ViewBag.Branches as List<Branch> ?? new();
     int? fB = ViewBag.FilterBranchId;
     var reservations = ViewBag.Reservations as List<ReservationDto> ?? new();
-    string Badge(string s) => s switch { "Booked" => "primary", "Arrived" => "success", "Cancelled" => "secondary", "NoShow" => "danger", _ => "light" };
+    string Badge(string s) => s switch { "Booked" => "primary", "Arrived" => "info", "Cancelled" => "secondary", "NoShow" => "danger", _ => "light" };
     string StatusT(string s) => s switch { "Booked" => Localizer["Booked"].Value, "Arrived" => Localizer["Arrived"].Value, "Cancelled" => Localizer["Cancelled"].Value, "NoShow" => Localizer["No-show"].Value, _ => s };
 }
 <style>
     /* SAME table/chair design as the Floor-plan editor (Pos/FloorPlan) — wood top + realistic armchairs. */
     .rz-floor{position:relative;overflow:auto;border:1px solid #e6eaef;border-radius:16px;background:linear-gradient(160deg,#faf7f1,#f1ece3);min-height:300px;padding:10px}
     .rz-stage{position:relative;transform-origin:0 0}
-    .rz-tbl{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-        background:repeating-linear-gradient(91deg,rgba(120,80,38,.045) 0 3px,rgba(120,80,38,0) 3px 10px),linear-gradient(160deg,#ecd4ac,#dcb888);
-        border:3px solid #16a34a;color:#4a3620;box-shadow:0 6px 16px rgba(80,55,25,.28);cursor:pointer;user-select:none;transition:box-shadow .15s ease,transform .15s ease}
-    .rz-tbl.rz-square{border-radius:22px}.rz-tbl.rz-rect{border-radius:18px}.rz-tbl.rz-round{border-radius:50%}
-    .rz-tbl:hover{box-shadow:0 10px 24px rgba(80,55,25,.35);transform:translateY(-2px);z-index:5}
-    .rz-code{font-weight:800;font-size:1.5rem;color:#3a2a18;line-height:1}
-    .rz-pill{font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:1px 11px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-    .rz-cap{font-size:9.5px;color:#3a2a18;background:rgba(255,255,255,.65);border-radius:7px;padding:0 7px;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .rz-rbadge{font-size:9px;font-weight:800;color:#fff;background:#7e3ff2;border-radius:7px;padding:1px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2);white-space:nowrap}
-    .rz-chair{position:absolute;background:#e9e3d4;border:2px solid #2f4a42;border-radius:16px 16px 9px 9px;box-shadow:0 2px 5px rgba(40,35,25,.22);pointer-events:none}
-    .rz-chair::before{content:"";position:absolute;top:3px;left:6px;right:6px;height:8px;background:#d6ccb6;border-radius:6px}
+    /* ===== EXACT prototype floor: wood top + flat chairs (wood back + pad) + guest faces + status ring ===== */
+    .tbl-unit{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:transform .14s ease}
+    .tbl-unit:hover{transform:translate(-50%,-50%) scale(1.045);z-index:6}
+    .tbl-stage{position:relative}
+    .chair-back{position:absolute;width:27px;height:10px;border-radius:7px;background:linear-gradient(180deg,#C08E5E 0%,#9A6C42 100%);box-shadow:0 2px 4px rgba(31,45,77,.22),inset 0 1px 0 rgba(255,255,255,.3)}
+    .chair-pad{position:absolute;transform:translate(-50%,-50%);width:29px;height:29px;border-radius:10px;background:linear-gradient(150deg,#F2F4F9 0%,#D8DFEC 100%);box-shadow:inset 0 1px 2px rgba(255,255,255,.8),inset 0 -2px 3px rgba(31,45,77,.08),0 2px 5px rgba(31,45,77,.14)}
+    .chair-occ{position:absolute;transform:translate(-50%,-50%);z-index:2}
+    .chair-occ .cface{width:30px;height:30px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#3A5795,#1F2D4D);box-shadow:0 0 0 2.5px #fff,0 3px 8px rgba(31,45,77,.28)}
+    .chair-occ .cface img{width:100%;height:100%;object-fit:cover;display:block}
+    .tbl-top{position:absolute;left:50%;top:50%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;--ring:transparent;color:#3c2b18;
+        background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(0,0,0,.05) 60%),repeating-linear-gradient(92deg,rgba(60,30,10,.05) 0 2px,rgba(255,255,255,.015) 2px 8px),linear-gradient(135deg,#D9B486 0%,#B8895C 55%,#9E6F48 100%);
+        box-shadow:0 0 0 3px var(--ring),0 8px 18px -6px rgba(31,45,77,.38),inset 0 2px 3px rgba(255,255,255,.35),inset 0 -5px 9px rgba(60,30,10,.22);transform:translate(-50%,-50%)}
+    .tbl-top.round{border-radius:50%}.tbl-top.rect,.tbl-top.square{border-radius:13px}
+    .tbl-top .tc{font-weight:800;font-size:.92rem;line-height:1;letter-spacing:.02em}
+    .tbl-top .tm{font-size:.6rem;font-weight:700;opacity:.85;line-height:1}
+    .tbl-top.available{--ring:rgba(123,152,210,.55)}.tbl-top.occupied{--ring:#3A5795}.tbl-top.reserved{--ring:#7C3AED}.tbl-top.cleaning{filter:grayscale(.65) brightness(1.02);--ring:#C4CADA}
+    .tbl-top::after{content:"";position:absolute;top:6px;inset-inline-end:6px;width:9px;height:9px;border-radius:50%;background:var(--ring);box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+    .tbl-top.available::after{background:#9DB2DE}
     /* time SLOTS — one field per time; colour shows how many chairs are booked (free/partial/full) */
     #rzSlots .rz-slot{border:1px solid #dfe3ea;border-radius:9px;padding:.4rem .55rem;cursor:pointer;text-align:center;min-width:96px;background:#fff;display:flex;flex-direction:column;gap:1px;line-height:1.15;transition:all .12s}
     #rzSlots .rz-slot>span:first-child{font-weight:700;font-size:.9rem}
     #rzSlots .rz-slot .rz-seat{font-size:.72rem;font-weight:600;display:flex;gap:2px;justify-content:center;flex-wrap:wrap;min-height:11px}
     /* one little seat per chair — coloured red if that chair is booked, green if free */
     #rzSlots .rz-seat .rz-dot{width:9px;height:9px;border-radius:3px 3px 1px 1px;display:inline-block}
-    #rzSlots .rz-seat .rz-dot.fr{background:#16a34a}
+    #rzSlots .rz-seat .rz-dot.fr{background:#0891B2}
     #rzSlots .rz-seat .rz-dot.bk{background:#e5484d}
-    #rzSlots .rz-slot.free{border-color:#c3e6d4;color:#16a34a}
-    #rzSlots .rz-slot.free:hover{background:#16a34a;color:#fff;border-color:#16a34a}
+    #rzSlots .rz-slot.free{border-color:#c3e6d4;color:#0891B2}
+    #rzSlots .rz-slot.free:hover{background:#0891B2;color:#fff;border-color:#0891B2}
     #rzSlots .rz-slot.free.active{background:#0E4A9E;color:#fff;border-color:#0E4A9E;box-shadow:0 0 0 3px rgba(14,74,158,.2)}
-    #rzSlots .rz-slot.partial{border-color:#f6c000;color:#a17a00;background:#fff8e1;cursor:not-allowed}
+    #rzSlots .rz-slot.partial{border-color:#cbd5e1;color:#475569;background:#f1f5f9;cursor:not-allowed}
     #rzSlots .rz-slot.full{border-color:#e5484d;color:#e5484d;background:#fdecec;cursor:not-allowed}
     #rzSlots .rz-slot.past{opacity:.45;cursor:not-allowed}
 </style>
@@ -73,9 +80,9 @@
                     <div class="card-toolbar"><ul class="nav nav-pills gap-2" id="rzAreaTabs"></ul></div></div>
                 <div class="card-body">
                     <div class="d-flex gap-4 mb-3 fs-8 text-muted flex-wrap">
-                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#16a34a"></span> @Localizer["Available"]</span>
+                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#0891B2"></span> @Localizer["Available"]</span>
                         <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#e5484d"></span> @Localizer["Reserved"]</span>
-                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#2f6fed"></span> @Localizer["Occupied"]</span>
+                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#3A5795"></span> @Localizer["Occupied"]</span>
                     </div>
                     <div class="rz-floor" id="rzFloor"></div>
                     <div class="text-muted fs-8 mt-2">@Localizer["Click any table to book it for a time — an occupied table can be booked for later (time-overlap is prevented)."]</div>
@@ -102,7 +109,7 @@
                                     {
                                         <form asp-action="SetReservationStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Mark as no-show?"]">
                                             @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="status" value="NoShow" />
-                                            <button class="btn btn-icon btn-sm btn-light-warning me-1" title="@Localizer["No-show"]"><i class="ki-outline ki-user-cross fs-5"></i></button>
+                                            <button class="btn btn-icon btn-sm btn-light-dark me-1" title="@Localizer["No-show"]"><i class="ki-outline ki-user-cross fs-5"></i></button>
                                         </form>
                                         <form asp-action="SetReservationStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel reservation?"]">
                                             @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="status" value="Cancelled" />
@@ -126,7 +133,7 @@
 <div class="modal fade" id="rzModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <div class="modal-header d-flex flex-column align-items-stretch gap-1"><div class="d-flex justify-content-between align-items-center w-100"><h3 class="modal-title">@Localizer["Reserve table"] <span id="rzTblCode" class="badge badge-light-primary ms-2"></span></h3>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div id="rzTblNote" class="text-warning fw-semibold fs-8" style="display:none"></div></div>
+        <div id="rzTblNote" class="text-gray-700 fw-semibold fs-8" style="display:none"></div></div>
     <form asp-action="SaveReservation" method="post" id="rzForm">
         @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
         <input type="hidden" name="tableId" id="rzTableId" /><input type="hidden" name="customerId" id="rzCustomerId" />
@@ -149,8 +156,8 @@
             <div class="mb-3"><label class="required fw-semibold fs-8 mb-1">@T("الوقت","Time")</label>
                 <div id="rzSlots" class="d-flex flex-wrap gap-2"></div>
                 <div class="d-flex gap-3 flex-wrap fs-8 text-muted mt-2 align-items-center">
-                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#16a34a"></span> @T("متاح","Free")</span>
-                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#f6c000"></span> @T("محجوز جزئيًا","Partly booked")</span>
+                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#0891B2"></span> @T("متاح","Free")</span>
+                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#64748B"></span> @T("محجوز جزئيًا","Partly booked")</span>
                     <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#e5484d"></span> @T("ممتلئ","Full")</span>
                     <span class="ms-auto">@T("الرقم = كراسي محجوزة ⁄ مقاعد الطاولة","number = booked chairs ⁄ table seats")</span>
                 </div></div>
@@ -188,60 +195,61 @@ if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?comp
     function labelOf(s){return {Available:'@Localizer["Available"]',Reserved:'@Localizer["Reserved"]',Occupied:'@Localizer["Occupied"]'}[s]||'@Localizer["Available"]';}
     function hallName(h){return (!isAr && h.nameEn) ? h.nameEn : (h.name||'');}
     function custLabel(n){return (n==='عميل نقدي (كاشير)') ? '@Localizer["Walk-in"]' : (n||'');}
-    function colOf(s){return s==='Occupied'?'#2f6fed':(s==='Reserved'?'#e5484d':'#16a34a');}
+    function colOf(s){return s==='Occupied'?'#3A5795':(s==='Reserved'?'#e5484d':'#0891B2');}
     function renderTabs(){
         tabs.innerHTML=halls.map(function(h){return '<li class="nav-item"><button type="button" class="nav-link'+(h.id===curArea?' active':'')+'" data-a="'+h.id+'">'+esc(hallName(h))+'</button></li>';}).join('');
     }
-    var CW=46, CH=42, COV=8, PITCH=58;
-    function chairAt(el,cx,cy,rot,occCol){var c=document.createElement('div');c.className='rz-chair';c.style.width=CW+'px';c.style.height=CH+'px';c.style.left=(cx-CW/2)+'px';c.style.top=(cy-CH/2)+'px';c.style.transform='rotate('+rot+'deg)';if(occCol){c.style.background=occCol;c.style.borderColor=occCol;}el.appendChild(c);}
-    function placeSide(el,side,n,w,h,st){for(var i=0;i<n;i++){var t=(i+1)/(n+1); var oc=(st.ci++ < st.occN)?st.col:null;
-        if(side==='top')chairAt(el,w*t,-(CH/2-COV),0,oc);
-        else if(side==='bottom')chairAt(el,w*t,h+(CH/2-COV),180,oc);
-        else if(side==='left')chairAt(el,-(CH/2-COV),h*t,-90,oc);
-        else chairAt(el,w+(CH/2-COV),h*t,90,oc);}}
-    function layoutTable(el,occN,occCol){
-        var seats=parseInt(el.getAttribute('data-seats'))||0, shape=el.getAttribute('data-shape')||'Square';
-        var st={ci:0, occN:occN||0, col:occCol||'#2f6fed'};
-        [].slice.call(el.querySelectorAll('.rz-chair')).forEach(function(c){c.remove();});
-        if(shape==='Round'){
-            var d=Math.max(110,74+seats*13); el.style.width=d+'px'; el.style.height=d+'px';
-            var R=d/2+(CH/2-COV);
-            for(var i=0;i<seats;i++){var a=-90+i*360/seats, ar=a*Math.PI/180; chairAt(el,d/2+R*Math.cos(ar),d/2+R*Math.sin(ar),a+90,(i<st.occN)?st.col:null);}
-            return;
+    var AV=['300-1.jpg','300-2.jpg','300-3.jpg','300-4.jpg','300-5.jpg','300-6.jpg','300-7.jpg','300-8.jpg','300-9.jpg','300-10.jpg','300-11.jpg','300-12.jpg','300-13.jpg','300-14.jpg','300-15.jpg','300-16.jpg'], avIdx=0;
+    function mapShape(sh){ sh=(sh||'Square').toLowerCase(); return (sh==='round'||sh==='rect'||sh==='square')?sh:'square'; }
+    /* ===== EXACT prototype geometry (rest.js seatGeo/tableUnit) ===== */
+    function seatGeo(shape, seats){
+        var seat=30, gapTbl=13, backOut=16, c;
+        if(shape==='round'){
+            var Dt=seats<=2?66:94, R=Dt/2+gapTbl+seat/2, reach=R+seat/2+backOut, S=2*reach+6; c=S/2;
+            var angs=seats<=2?[0,180]:seats===3?[0,120,240]:[0,90,180,270];
+            return {W:S,H:S,topW:Dt,topH:Dt,round:true,coords:angs.map(function(a){var r=a*Math.PI/180,ux=Math.sin(r),uy=-Math.cos(r);return{x:c+R*ux,y:c+R*uy,ux:ux,uy:uy};})};
         }
-        var top=0,bot=0,left=0,right=0;
-        if(seats<=4){ if(seats>=1)top=1; if(seats>=2)bot=1; if(seats>=3)left=1; if(seats>=4)right=1; }
-        else { top=Math.ceil(seats/2); bot=seats-top; }
-        var longMax=Math.max(top,bot,1), shortMax=Math.max(left,right,1);
-        var w=Math.max(104,longMax*PITCH+20), h=Math.max(104,(seats<=4?Math.max(longMax,shortMax):shortMax)*PITCH+20);
-        if(seats<=4){ var sq=Math.max(w,h); w=sq; h=sq; }
-        el.style.width=w+'px'; el.style.height=h+'px';
-        placeSide(el,'top',top,w,h,st); placeSide(el,'bottom',bot,w,h,st); placeSide(el,'left',left,w,h,st); placeSide(el,'right',right,w,h,st);
+        if(shape==='square'){
+            var Tt=86, off=Tt/2+gapTbl+seat/2, reach2=off+seat/2+backOut, st=2*reach2+6, cc=st/2;
+            var defs=[[0,-1],[0,1],[-1,0],[1,0]].slice(0,seats);
+            return {W:st,H:st,topW:Tt,topH:Tt,round:false,coords:defs.map(function(d){return{x:cc+off*d[0],y:cc+off*d[1],ux:d[0],uy:d[1]};})};
+        }
+        var per=Math.ceil(seats/2), Tw=per===2?132:per===3?170:206, Th=72;
+        var off=Th/2+gapTbl+seat/2, reach3=off+seat/2+backOut, Hh=2*reach3+6, Ww=Tw+seat+8, cx=Ww/2, cy=Hh/2;
+        function rowX(n){var xs=[],usable=Tw-40;for(var i=0;i<n;i++)xs.push(cx-Tw/2+20+(n===1?usable/2:usable*i/(n-1)));return xs;}
+        var topN=Math.ceil(seats/2), botN=seats-topN, coords=[];
+        rowX(topN).forEach(function(x){coords.push({x:x,y:cy-off,ux:0,uy:-1});});
+        rowX(botN).forEach(function(x){coords.push({x:x,y:cy+off,ux:0,uy:1});});
+        return {W:Ww,H:Hh,topW:Tw,topH:Th,round:false,coords:coords};
+    }
+    function faceHtml(){ return '<div class="cface"><img src="/Backend-assets/media/avatars/'+AV[(avIdx++)%AV.length]+'" onerror="this.remove();" alt=""/></div>'; }
+    function tableUnit(t, cx, cy){
+        var shape=mapShape(t.shape), s=(t.status||'Available').toLowerCase(), occ=(s==='occupied'), res=(s==='reserved');
+        var geo=seatGeo(shape, t.seats||4);
+        var nF=occ?Math.max(1,Math.min(t.guests||1,t.seats||1)):0;
+        var seats=geo.coords.map(function(cc,i){
+            var backAng=Math.atan2(cc.uy,cc.ux)*180/Math.PI+90;
+            var bx=cc.x+cc.ux*15, by=cc.y+cc.uy*15;
+            var back='<div class="chair-back" style="left:'+bx+'px;top:'+by+'px;transform:translate(-50%,-50%) rotate('+backAng+'deg)"></div>';
+            if(i<nF) return back+'<div class="chair-occ" style="left:'+cc.x+'px;top:'+cc.y+'px">'+faceHtml()+'</div>';
+            return back+'<div class="chair-pad" style="left:'+cc.x+'px;top:'+cc.y+'px"></div>';
+        }).join('');
+        var tm = occ ? ('<span class="tm">'+esc(custLabel(t.customerName))+'</span>') : (res ? ('<span class="tm">'+labelOf('Reserved')+'</span>') : ('<span class="tm"><span class="num">'+(t.seats||0)+'</span> '+'@T("مقاعد","seats")'+'</span>'));
+        var top='<div class="tbl-top '+s+' '+(geo.round?'round':shape)+'" style="width:'+geo.topW+'px;height:'+geo.topH+'px"><span class="tc num">'+esc(t.code)+'</span>'+tm+'</div>';
+        return '<div class="tbl-unit" style="left:'+cx+'px;top:'+cy+'px" data-id="'+t.id+'" data-code="'+esc(t.code)+'" data-status="'+t.status+'" data-seats="'+(t.seats||0)+'"><div class="tbl-stage" style="width:'+geo.W+'px;height:'+geo.H+'px">'+seats+top+'</div></div>';
     }
     function renderFloor(){
         if(!halls.length){floor.style.height='auto';floor.innerHTML='<div class="text-center text-muted py-10"><i class="ki-outline ki-geolocation fs-2x d-block mb-2"></i>@Localizer["No tables for this branch — add them in «Floor plan»."]</div>';return;}
         var h=halls.filter(function(x){return x.id===curArea;})[0]; var ts=h?h.tables:[];
         if(!ts.length){floor.style.height='auto';floor.innerHTML='<div class="text-center text-muted py-10">@Localizer["No tables in this area."]</div>';return;}
-        floor.style.height='auto'; floor.innerHTML='<div class="rz-stage" id="rzStage"></div>';
+        avIdx=0;
+        var items=ts.map(function(t){ var geo=seatGeo(mapShape(t.shape),t.seats||4); return {t:t, geo:geo, cx:t.x+geo.topW/2, cy:t.y+geo.topH/2}; });
+        var minX=1e9,minY=1e9; items.forEach(function(p){ minX=Math.min(minX,p.cx-p.geo.W/2); minY=Math.min(minY,p.cy-p.geo.H/2); });
+        var sx=(minX<16?16-minX:0), sy=(minY<16?16-minY:0), maxX=0,maxY=0;
+        var html=items.map(function(p){ var cx=p.cx+sx, cy=p.cy+sy; maxX=Math.max(maxX,cx+p.geo.W/2); maxY=Math.max(maxY,cy+p.geo.H/2); return tableUnit(p.t,cx,cy); }).join('');
+        floor.style.height='auto'; floor.innerHTML='<div class="rz-stage" id="rzStage">'+html+'</div>';
         var stage=document.getElementById('rzStage');
-        ts.forEach(function(t){
-            var s=t.status, col=colOf(s), occ=(s==='Occupied'), res=(s==='Reserved');
-            var shp=t.shape==='Round'?'rz-round':(t.shape==='Rect'?'rz-rect':'rz-square');
-            var cap = res ? ('<span class="rz-cap">'+(t.reservedAt?esc(t.reservedAt)+' · ':'')+esc(t.reservedFor||'')+'</span>') : (occ ? ('<span class="rz-cap">'+esc(custLabel(t.customerName))+'</span>') : '');
-            var el=document.createElement('div');
-            el.className='rz-tbl '+shp;
-            el.setAttribute('data-id',t.id); el.setAttribute('data-code',t.code); el.setAttribute('data-status',s);
-            el.setAttribute('data-seats',t.seats); el.setAttribute('data-shape',t.shape||'Square');
-            el.style.left=Math.round(t.x)+'px'; el.style.top=Math.round(t.y)+'px'; el.style.borderColor=col;
-            var rq=resvByTable[t.id];   // upcoming reservations TODAY on this table → visible badge on the floor
-            var rbadge = (rq&&rq.length) ? ('<span class="rz-rbadge">'+'@T("حجوزات","bookings")'+' '+rq.length+' · '+esc(rq[0])+'</span>') : '';
-            el.innerHTML='<span class="rz-code">'+esc(t.code)+'</span><span class="rz-pill" style="background:'+col+'">'+labelOf(s)+'</span>'+cap+rbadge;
-            stage.appendChild(el);
-            layoutTable(el, occ ? Math.max(1, Math.min(t.guests || 1, t.seats)) : 0, '#2f6fed');
-        });
-        var maxX=0,maxY=0;
-        [].slice.call(stage.children).forEach(function(el){ maxX=Math.max(maxX,el.offsetLeft+el.offsetWidth); maxY=Math.max(maxY,el.offsetTop+el.offsetHeight); });
-        maxX+=56; maxY+=56; stage.style.width=maxX+'px'; stage.style.height=maxY+'px';
+        maxX+=16; maxY+=16; stage.style.width=maxX+'px'; stage.style.height=maxY+'px';
         var fw=(floor.clientWidth||floor.getBoundingClientRect().width||900)-24;
         var fit=Math.min(1,(fw>0?fw:900)/maxX); if(!isFinite(fit)||fit<=0)fit=1;
         stage.style.transform='scale('+fit+')';
@@ -249,7 +257,7 @@ if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?comp
     }
     tabs.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;curArea=parseInt(b.getAttribute('data-a'));renderTabs();renderFloor();});
     floor.addEventListener('click',function(e){
-        var c=e.target.closest('.rz-tbl');if(!c)return;
+        var c=e.target.closest('.tbl-unit');if(!c)return;
         openModal(parseInt(c.getAttribute('data-id')), c.getAttribute('data-code'), c.getAttribute('data-status'), c.getAttribute('data-seats'));
     });
     // today's upcoming reservations per table → floor badges (so a new booking is visible on the plan immediately)

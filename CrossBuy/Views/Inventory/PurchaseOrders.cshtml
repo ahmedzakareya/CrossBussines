@@ -1,8 +1,10 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject CrossBuy.BL.IInventoryAccessService ConstructionNavigationAccess
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var constructionDestination = Context.Request.Query["construction"].ToString();
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -11,7 +13,23 @@
         <a href="@Url.Action("NewPurchaseOrder","Inventory")" class="btn btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New PO"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (constructionDestination is "allocation" or "approval" or "partial-invoice")
+        {
+            var destinationTitle = SR[constructionDestination == "allocation" ? "Construction.Editor.AllocationTitle" : constructionDestination == "partial-invoice" ? "Construction.PartialInvoice.Title" : "Construction.Purchase.Request.Title"].Value;
+            <div class="alert alert-primary" role="status">@SR["Construction.Navigation.ChooseOrder", destinationTitle]</div>
+        }
 
+        @if (await ConstructionNavigationAccess.CanAsync("purchase"))
+        {
+            <nav class="card card-flush mb-5" id="construction-purchase-navigation" aria-label="@SR["Projects"]">
+                <div class="card-body d-flex flex-wrap gap-3 py-4">
+                    <a class="btn btn-light-primary" asp-controller="Project" asp-action="Projects" asp-route-construction="purchase" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@SR["Construction.Editor.DraftTitle"]</a>
+                    <a class="btn @(constructionDestination == "allocation" ? "btn-primary" : "btn-light-primary")" asp-controller="Inventory" asp-action="PurchaseOrders" asp-route-construction="allocation" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@SR["Construction.Editor.AllocationTitle"]</a>
+                    <a class="btn @(constructionDestination == "approval" ? "btn-primary" : "btn-light-primary")" asp-controller="Inventory" asp-action="PurchaseOrders" asp-route-construction="approval" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@SR["Construction.Purchase.Request.Title"]</a>
+                    <a class="btn @(constructionDestination == "partial-invoice" ? "btn-primary" : "btn-light-primary")" asp-controller="Inventory" asp-action="PurchaseOrders" asp-route-construction="partial-invoice" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name">@SR["Construction.PartialInvoice.Title"]</a>
+                </div>
+            </nav>
+        }
         <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
             <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (PO no / vendor)"]</label>
                 <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>

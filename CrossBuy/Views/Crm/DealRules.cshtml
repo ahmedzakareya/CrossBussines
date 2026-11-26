@@ -1,0 +1,93 @@
+@model CrossBuy.BL.CrmIdentity.DealRulesSettings
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var canManage = ViewBag.CanManage == true;
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+    string StageName(CrossBuy.BL.CrmIdentity.StageView s) => T["stage:" + s.Name].Value is var t && t != "stage:" + s.Name ? t : N(s.Name, s.NameEn);
+    var kinds = new[] { "Amount", "CloseDate", "Products", "DecisionMaker", "Approver", "NextStep", "Discount", "Quotation" };
+    string Lim(string role) => Model.Limits.TryGetValue(role, out var v) ? v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "";
+    var dis = canManage ? "" : "disabled";
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Deal rules"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Deal rules"]</li></ul></div>
+        <a href="@Url.Action("DiscountApprovals","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notification-status fs-4"></i>@T["Discount approvals"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Discount limits"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["The largest line discount each role may give alone. Above it, someone with a higher limit approves — never the person asking. Empty for every role = no limits."]</span></div></div>
+            <div class="card-body pt-2"><div class="row g-5 align-items-end">
+                @foreach (var role in CrossBuy.Models.Context.Crm.CrmDealVocabulary.CrmRoles)
+                {
+                    <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["crmrole:" + role]</label>
+                        <div class="input-group input-group-solid"><input type="number" min="0" max="100" step="0.5" class="form-control form-control-solid" data-limit="@role" value="@Lim(role)" @dis /><span class="input-group-text">%</span></div></div>
+                }
+                @if (canManage) { <div class="col-12 d-flex justify-content-end"><button type="button" class="btn btn-primary" id="saveLimits"><i class="ki-outline ki-check fs-4"></i>@T["Save the limits"]</button></div> }
+            </div></div></div>
+
+        @foreach (var p in Model.Pipelines)
+        {
+            <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Stage requirements"] — @p.PipelineName</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["What a deal must have before it may ENTER each stage. Checked on the board, the deal form and the deal page alike."]</span></div></div>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Stage"]</th>
+                        @foreach (var k in kinds) { <th class="text-center" style="min-width:90px">@T["req:" + k]</th> }
+                        @foreach (var f in Model.OppFields) { <th class="text-center" style="min-width:90px">@f.Label</th> }
+                        <th class="text-end pe-4"></th></tr></thead>
+                    <tbody class="fs-6">
+                    @foreach (var s in p.Stages.Where(s => !s.IsLost))
+                    {
+                        var req = p.Required.TryGetValue(s.Id, out var rl) ? rl : new List<CrossBuy.BL.CrmIdentity.CrmDealRules.Requirement>();
+                        <tr data-stage="@s.Id">
+                            <td class="ps-4"><div class="fw-bold @(s.IsWon ? "text-success" : "text-gray-900")">@StageName(s)</div><div class="text-muted fs-8 num">@s.Probability%</div></td>
+                            @foreach (var k in kinds)
+                            {
+                                <td class="text-center"><input type="checkbox" class="form-check-input" data-kind="@k" @(req.Any(r => r.Kind == k) ? "checked" : "") @dis /></td>
+                            }
+                            @foreach (var f in Model.OppFields)
+                            {
+                                <td class="text-center"><input type="checkbox" class="form-check-input" data-field="@f.Id" @(req.Any(r => r.FieldId == f.Id) ? "checked" : "") @dis /></td>
+                            }
+                            <td class="text-end pe-4">@if (canManage) { <button type="button" class="btn btn-sm btn-light-primary" data-save-stage="@s.Id">@T["Save"]</button> }</td>
+                        </tr>
+                    }
+                    </tbody></table></div>
+                    <div class="text-muted fs-8 mt-4"><i class="ki-outline ki-information-2 fs-7"></i> @T["Moving a deal backwards, or to Lost, is never blocked."]</div>
+                </div></div>
+        }
+        @if (Model.Pipelines.Count == 0) { <div class="text-muted text-center py-10">@T["No active pipeline."]</div> }
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["saved"] = T["Saved"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["confirmLimits"] = T["Save the discount limits?"].Value, ["confirmStage"] = T["Save the requirements of this stage?"].Value }));
+  function token(){ return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+  async function post(url, fd){ fd.append('__RequestVerificationToken', token()); return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  function say(r){ if (window.CB && CB.toast) CB.toast(r.ok ? txt.saved : (r.error || txt.failed), r.ok ? 'success' : 'error'); }
+  var lb = document.getElementById('saveLimits');
+  if (lb) lb.addEventListener('click', async function(){
+    if (window.cbConfirm && !(await window.cbConfirm(txt.confirmLimits, { kind:'primary', title: '' }))) return;
+    var fd = new FormData(), map = { SalesRep:'salesRep', SalesManager:'salesManager', Marketing:'marketing', CrmViewer:'crmViewer' };
+    document.querySelectorAll('[data-limit]').forEach(function(i){ if (i.value !== '') fd.append(map[i.getAttribute('data-limit')], i.value); });
+    say(await post('@Url.Action("SaveDiscountLimits","Crm")', fd));
+  });
+  document.querySelectorAll('[data-save-stage]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      if (window.cbConfirm && !(await window.cbConfirm(txt.confirmStage, { kind:'primary', title: '' }))) return;
+      var row = b.closest('tr'), fd = new FormData(); fd.append('stageId', b.getAttribute('data-save-stage'));
+      row.querySelectorAll('[data-kind]:checked').forEach(function(c){ fd.append('kinds', c.getAttribute('data-kind')); });
+      row.querySelectorAll('[data-field]:checked').forEach(function(c){ fd.append('fieldIds', c.getAttribute('data-field')); });
+      say(await post('@Url.Action("SaveStageRequirements","Crm")', fd));
+    });
+  });
+})();
+</script>
+}

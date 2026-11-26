@@ -1,0 +1,46 @@
+@using System.Globalization
+@using CrossBuy.BL
+@model CrossBuy.ViewModel.ConstructionConsumptionPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+ Layout="~/Views/Shared/_LayoutBackend.cshtml";
+ string L(string key)=>SR["Construction.ConsumptionUi."+key].Value;
+ string Amount(decimal value)=>value.ToString("0.############################",CultureInfo.CurrentCulture);
+ string Error(string code){var message=SR["Construction.ConsumptionUi.Error."+code];return message.IsResourceNotFound?L("Error.General"):message.Value;}
+}
+<div class="app-container container-fluid py-6">
+ <div class="d-flex flex-stack flex-wrap gap-3 mb-6"><div><h1 class="fs-3 fw-bold">@L("Title")</h1><div class="text-muted">@Model.Code — @DisplayName.Of(Model.Name,Model.NameEn)</div></div>
+ <a asp-controller="ConstructionActualCost" asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@L("Actuals")</a></div>
+ <div class="alert alert-info">@L("Explanation")</div>
+ @if(TempData["ConstructionConsumptionSaved"]!=null){<div class="alert alert-success" role="status">@L("Saved")</div>}
+ @if(Model.Error!=null){<div class="alert alert-danger" role="alert">@Error(Model.Error)</div>}
+ <section class="card mb-6"><div class="card-body">
+ <form asp-action="@(Model.Preview?.Ok==true?"Register":"Preview")" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post">
+ @Html.AntiForgeryToken()
+ <input type="hidden" name="RequestId" value="@Model.Input.RequestId"/><input type="hidden" name="Version" value="@Model.Input.Version"/>
+ <div class="row g-4 mb-4"><div class="col-md-6"><label for="receipt-line" class="form-label">@L("Receipt")</label><input id="receipt-line" name="ReceiptLineId" list="receipt-options" type="number" min="1" value="@(Model.Input.ReceiptLineId>0?Model.Input.ReceiptLineId:null)" class="form-control" required readonly="@(Model.Preview?.Ok==true)"/></div>
+ <div class="col-md-6"><label for="issue-movement" class="form-label">@L("Issue")</label><input id="issue-movement" name="IssueMovementId" list="issue-options" type="number" min="1" value="@(Model.Input.IssueMovementId>0?Model.Input.IssueMovementId:null)" class="form-control" required readonly="@(Model.Preview?.Ok==true)"/></div></div>
+ <datalist id="receipt-options">@foreach(var source in Model.Sources?.Receipts ?? []){<option value="@source.Id">@DisplayName.Of(source.ItemName,source.ItemNameEn) — @DisplayName.Of(source.WarehouseName,source.WarehouseNameEn) — @Amount(source.Quantity) — @Amount(source.Cost) @(source.Currency??L("UnknownCurrency"))</option>}</datalist>
+ <datalist id="issue-options">@foreach(var source in Model.Sources?.Issues ?? []){<option value="@source.Id">@DisplayName.Of(source.ItemName,source.ItemNameEn) — @DisplayName.Of(source.WarehouseName,source.WarehouseNameEn) — @Amount(source.Quantity) — @Amount(source.Cost) @(source.Currency??L("UnknownCurrency"))</option>}</datalist>
+ <p class="text-muted">@L("CandidateNotice")</p>
+ <label for="consumption-reason" class="form-label">@L("Reason")</label><textarea id="consumption-reason" name="Reason" rows="2" maxlength="1000" class="form-control mb-4" required readonly="@(Model.Preview?.Ok==true)">@Model.Input.Reason</textarea>
+ @if(Model.Preview?.Ok==true){<div class="alert alert-info">@L("Confirmed") <strong dir="ltr">@Amount(Model.Preview.NetBaseCost!.Value)</strong></div>}
+ <button type="submit" class="btn btn-primary">@L(Model.Preview?.Ok==true?"Confirm":"Preview")</button>
+ <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@L("Reload")</a>
+ </form></div></section>
+ @foreach(var group in new[]{(Title:"ReceiptSources",Rows:Model.Sources?.Receipts,Truncated:Model.Sources?.ReceiptsTruncated??false),(Title:"IssueSources",Rows:Model.Sources?.Issues,Truncated:Model.Sources?.IssuesTruncated??false)})
+ {
+ <section class="card mb-6"><div class="card-header"><h2 class="card-title fs-5">@L(group.Title)</h2></div><div class="card-body table-responsive">
+ @if(group.Truncated){<p class="text-warning">@L("SourcesTruncated")</p>}
+ @if(group.Rows==null||group.Rows.Count==0){<p class="text-muted">@L("SourcesEmpty")</p>}
+ <table class="table table-row-dashed"><thead><tr><th>@L("SourceId")</th><th>@L("SourceDocument")</th><th>@L("Item")</th><th>@L("Warehouse")</th><th>@L("Quantity")</th><th>@L("Cost")</th></tr></thead><tbody>
+ @foreach(var source in group.Rows ?? []){<tr><td>@source.Id</td><td>@source.DocumentId</td><td>@DisplayName.Of(source.ItemName,source.ItemNameEn)</td><td>@DisplayName.Of(source.WarehouseName,source.WarehouseNameEn)</td><td dir="ltr">@Amount(source.Quantity)</td><td dir="ltr">@Amount(source.Cost) @(source.Currency??L("UnknownCurrency"))</td></tr>}
+ </tbody></table></div></section>
+ }
+ <section class="card"><div class="card-header"><h2 class="card-title fs-5">@L("History")</h2></div><div class="card-body table-responsive">
+ <p class="text-muted">@L("HistoryNotice")</p>
+ @if(Model.History.Count==0){<p>@L("Empty")</p>}
+ <table class="table table-row-dashed"><thead><tr><th>@L("Receipt")</th><th>@L("Issue")</th><th>@L("Quantity")</th><th>@L("Cost")</th><th>@L("Date")</th></tr></thead><tbody>
+ @foreach(var r in Model.History){<tr><td>@r.ReceiptLineId</td><td>@r.IssueMovementId</td><td dir="ltr">@Amount(r.Quantity)</td><td dir="ltr">@Amount(r.Cost) @(r.Currency??L("UnknownCurrency"))</td><td>@r.Date.ToString("g",CultureInfo.CurrentCulture)</td></tr>}
+ </tbody></table></div></section>
+</div>

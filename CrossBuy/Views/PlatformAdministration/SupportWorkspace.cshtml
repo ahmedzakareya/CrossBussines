@@ -1,0 +1,17 @@
+@model IReadOnlyList<CrossBuy.BL.TicketRow>
+@{
+ Layout="~/Views/Shared/_LayoutInventory.cshtml";
+ var ar=System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar";
+ string T(string a,string e)=>ar?a:e;
+ ViewData["Title"]=T("مساحة الدعم","Support Workspace");
+ int page=(int)ViewBag.Page,total=(int)ViewBag.Total;
+}
+<div class="d-flex flex-column gap-6" data-r6-screen="support-workspace">
+ <div class="d-flex justify-content-between align-items-center flex-wrap gap-3"><div><h1 class="fs-2 fw-bold">@ViewData["Title"]</h1><p class="text-muted">@T("بلاغات العملاء ضمن نطاق صلاحيتك","Customer cases within your authorized scope")</p></div><a class="btn btn-light-primary" asp-controller="Crm" asp-action="Tickets">@T("إدارة البلاغات","Manage tickets")</a></div>
+ <div class="row g-5"><div class="col-md-6"><div class="card"><div class="card-body"><div class="text-muted">@T("البلاغات المطابقة المسموح بها","Authorized matching cases")</div><div class="fs-2 fw-bold">@total</div></div></div></div><div class="col-md-6"><div class="card"><div class="card-body"><div class="text-muted">@T("البلاغات المفتوحة في هذه الصفحة","Open cases on this page")</div><div class="fs-2 fw-bold">@Model.Count(t=>t.Status!="Resolved" && t.Status!="Closed")</div></div></div></div></div>
+ <div class="card"><div class="card-body"><form method="get" action="/SupportWorkspace" class="row g-3"><input type="hidden" name="culture" value="@(ar?"ar":"en")"/><div class="col-md-6"><input name="q" value="@ViewBag.Query" class="form-control" placeholder="@T("ابحث في البلاغات","Search cases")" aria-label="@T("ابحث في البلاغات","Search cases")"/></div><div class="col-md-4"><select name="status" class="form-select" aria-label="@T("الحالة","Status")"><option value="">@T("كل الحالات","All statuses")</option>@foreach(var status in new[]{"New","Open","Pending","Resolved","Closed"}){<option value="@status" selected="@(string.Equals((string?)ViewBag.Status,status))">@status</option>}</select></div><div class="col-md-2"><button type="submit" class="btn btn-primary w-100">@T("بحث","Search")</button></div></form></div></div>
+ <div class="card"><div class="card-body table-responsive"><table class="table table-row-dashed align-middle"><thead><tr><th>@T("البلاغ","Case")</th><th>@T("العميل","Customer")</th><th>@T("الحالة","Status")</th><th>@T("الأولوية","Priority")</th><th>@T("التفاصيل","Details")</th></tr></thead><tbody>
+ @foreach(var t in Model){<tr><td>@(ar?CrossBuy.BL.DisplayName.Or(t.Subject,t.SubjectEn):CrossBuy.BL.DisplayName.Or(t.SubjectEn,t.Subject))</td><td>@t.AccountName</td><td><span class="badge badge-light-primary">@t.Status</span></td><td>@t.Priority</td><td><a class="btn btn-sm btn-light" asp-controller="Crm" asp-action="TicketEditor" asp-route-id="@t.Id">@T("فتح","Open")</a></td></tr>}
+ @if(Model.Count==0){<tr><td colspan="5" class="text-center text-muted">@T("لا بلاغات مطابقة ضمن صلاحيتك","No matching cases within your access")</td></tr>}
+ </tbody></table><div class="d-flex justify-content-between">@if(page>1){<a class="btn btn-light" asp-controller="Crm" asp-action="SupportWorkspace" asp-route-page="@(page-1)" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-culture="@(ar?"ar":"en")">@T("السابق","Previous")</a>}@if(page*25<total){<a class="btn btn-light" asp-controller="Crm" asp-action="SupportWorkspace" asp-route-page="@(page+1)" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-culture="@(ar?"ar":"en")">@T("التالي","Next")</a>}</div></div></div>
+</div>

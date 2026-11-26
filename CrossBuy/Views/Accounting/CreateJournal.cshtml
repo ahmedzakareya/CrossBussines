@@ -253,6 +253,7 @@
     </div>
 </div>
 
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 @section Scripts {
     <script>
         @* camelCase, explicitly. Serialize's default keeps the declared names (Id, Code, ID), which is
@@ -331,15 +332,29 @@
                not depend on a focus event having fired first. */
             if (typeof XL !== 'undefined' && XL.editing) xlEndEdit(true);
             if (typeof XL !== 'undefined' && XL.on) xlToClassic();
-            var lines = [];
-            document.querySelectorAll('#rows tr').forEach(function (tr) {
-                var acc = tr.querySelector('.acc').value;
-                var dr = parseFloat(tr.querySelector('.dr').value) || 0;
-                var cr = parseFloat(tr.querySelector('.cr').value) || 0;
-                var cc = tr.querySelector('.cc').value;
-                var prj = tr.querySelector('.prj') ? tr.querySelector('.prj').value : '';
-                if (acc && (dr > 0 || cr > 0)) lines.push({ accountId: parseInt(acc), debit: dr, credit: cr, costCenterId: cc ? parseInt(cc) : null, projectId: prj ? parseInt(prj) : null, description: tr.querySelector('.desc').value });
+            // The shared guard. A JOURNAL line is an account with a debit or a credit - never
+            // both blank - so the empty-vs-unfinished rule reads those rather than a quantity.
+            var lines = CBLines.gather({
+                touched: function (tr) {
+                    return !!(CBLines.str(tr, '.acc') || CBLines.num(tr, '.dr') !== 0
+                           || CBLines.num(tr, '.cr') !== 0 || CBLines.str(tr, '.desc'));
+                },
+                problem: function (tr) {
+                    if (!CBLines.str(tr, '.acc')) return CBLines.T.account;
+                    if (CBLines.num(tr, '.dr') <= 0 && CBLines.num(tr, '.cr') <= 0) return CBLines.T.amount;
+                    return null;
+                },
+                build: function (tr) {
+                    var cc = CBLines.str(tr, '.cc');
+                    var prj = tr.querySelector('.prj') ? CBLines.str(tr, '.prj') : '';
+                    return { accountId: parseInt(CBLines.str(tr, '.acc')),
+                             debit: CBLines.num(tr, '.dr'), credit: CBLines.num(tr, '.cr'),
+                             costCenterId: cc ? parseInt(cc) : null,
+                             projectId: prj ? parseInt(prj) : null,
+                             description: tr.querySelector('.desc').value };
+                }
             });
+            if (!lines) return;
             /* Re-read the totals AFTER the open cell was committed above — that commit is usually the
                very thing that balances the entry. */
             if (typeof XL !== 'undefined' && XL.on) xlStatus(); else recalc();

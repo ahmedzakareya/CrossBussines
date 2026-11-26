@@ -8,8 +8,27 @@
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var prj = ViewBag.Project as Project;
     var sum = ViewBag.Summary as BoqSummary ?? new BoqSummary();
+    var rejected = ViewBag.RejectedRows as List<BoqRowInput>;
+    var conflicts = new List<(BoqRowInput? Proposed, BoqItem? Current)>();
+    if (rejected != null)
+    {
+        var byId = Model.ToDictionary(x => x.ID);
+        var submittedIds = rejected.Where(x => x.Id > 0).Select(x => x.Id).ToHashSet();
+        for (var index = 0; index < rejected.Count; index++)
+        {
+            var proposed = rejected[index]; byId.TryGetValue(proposed.Id, out var current);
+            if (current == null || current.Code != proposed.Code || current.Description != proposed.Description || current.DescriptionEn != proposed.DescriptionEn
+                || current.Unit != proposed.Unit || current.Quantity != proposed.Quantity || current.UnitPrice != proposed.UnitPrice
+                || current.MaterialCost != proposed.MaterialCost || current.LaborCost != proposed.LaborCost || current.SubcontractCost != proposed.SubcontractCost
+                || current.EquipmentCost != proposed.EquipmentCost || current.SortOrder != index + 1
+                || current.ParentId.HasValue != string.Equals(proposed.Kind,"sub",StringComparison.OrdinalIgnoreCase)) conflicts.Add((proposed,current));
+        }
+        foreach (var current in Model.Where(x => !submittedIds.Contains(x.ID))) conflicts.Add((null,current));
+    }
+    string exact(decimal? value) => value?.ToString("0.############################",System.Globalization.CultureInfo.CurrentCulture) ?? "—";
     string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
     var existing = Model.Select(b => new {
+        id = b.ID,
         kind = b.ParentId.HasValue ? "sub" : "main",
         code = b.Code, desc = b.Description, descEn = b.DescriptionEn, unit = b.Unit, qty = b.Quantity, price = b.UnitPrice,
         mat = b.MaterialCost, lab = b.LaborCost, sub = b.SubcontractCost, equip = b.EquipmentCost
@@ -22,13 +41,16 @@
     .boq-ro{background:#E7F0FF!important;border-color:#cfe5da!important}
     #rows .form-control,#rows .form-select{height:44px}
 </style>
-<form asp-action="SaveBoq" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+<form asp-action="SaveBoq" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
     <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
     <input type="hidden" name="rowsJson" id="rowsJson" />
+    <input type="hidden" name="editorSnapshot" value="@ViewBag.EditorSnapshot" />
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Bill of Quantities (BOQ)"]</h1>
             <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn)) @(prj?.ContractValue != null ? "· " + Localizer["Contract value"].Value + ": " + prj!.ContractValue!.Value.ToString("N2") : "")</span></div>
         <div class="d-flex gap-2">
+            <a asp-action="BudgetVersions" asp-route-id="@(prj?.ID ?? 0)" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Budget.Title"]</a>
+            <a asp-action="Structure" asp-route-culture="@System.Globalization.CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@System.Globalization.CultureInfo.CurrentUICulture.Name" asp-route-id="@(prj?.ID ?? 0)" class="btn btn-light-primary">@SR["Construction.Structure.Title"]</a>
             <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
             <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
         </div>
@@ -36,6 +58,29 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
         @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+        @if (rejected != null)
+        {
+            <section class="card border-warning mb-6" aria-labelledby="boq-conflicts-title"><div class="card-header"><h2 class="card-title" id="boq-conflicts-title">@Localizer["Review conflicting changes"]</h2></div><div class="card-body">
+                <p>@Localizer["Your submitted values were not saved. The editable rows below contain the current database values."]</p>
+                @if(conflicts.Count==0){<p>@Localizer["The values match, but their version changed. Review before saving again."]</p>}
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed"><thead><tr><th>@Localizer["Code"]</th><th>@Localizer["Your submitted values"]</th><th>@Localizer["Current stored values"]</th></tr></thead><tbody>
+                    @foreach(var conflict in conflicts)
+                    {
+                        var proposed=conflict.Proposed;var current=conflict.Current;
+                        <tr><td><bdi dir="ltr">@(proposed?.Code??current?.Code)</bdi></td><td>
+                            @if(proposed==null){<span class="text-muted">@Localizer["No row was submitted for this item."]</span>}
+                            else{<div class="fw-semibold">@DisplayName.Of(proposed.Description,proposed.DescriptionEn)</div><div>@Localizer["Qty"]: @exact(proposed.Quantity) · @Localizer["Unit"]: @proposed.Unit · @Localizer["Unit price"]: @exact(proposed.UnitPrice)</div><div class="text-muted">@Localizer["Material"]: @exact(proposed.MaterialCost) · @Localizer["Labor"]: @exact(proposed.LaborCost) · @Localizer["Subcontract"]: @exact(proposed.SubcontractCost) · @Localizer["Equipment"]: @exact(proposed.EquipmentCost)</div>}
+                        </td><td>
+                            @if(current==null){<span class="text-muted">@Localizer["No matching current line in this project."]</span>}
+                            else{<div class="fw-semibold">@DisplayName.Of(current.Description,current.DescriptionEn)</div><div>@Localizer["Qty"]: @exact(current.Quantity) · @Localizer["Unit"]: @current.Unit · @Localizer["Unit price"]: @exact(current.UnitPrice)</div><div class="text-muted">@Localizer["Material"]: @exact(current.MaterialCost) · @Localizer["Labor"]: @exact(current.LaborCost) · @Localizer["Subcontract"]: @exact(current.SubcontractCost) · @Localizer["Equipment"]: @exact(current.EquipmentCost)</div>}
+                        </td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </div></section>
+        }
 
         <div class="card">
             <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items"]</h3>
@@ -116,7 +161,7 @@ document.getElementById('rows').addEventListener('input',calc);
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('.boq-card').remove();renum();calc();}});
 document.getElementById('save').addEventListener('click',function(){
  var rows=[];document.querySelectorAll('#rows .boq-card').forEach(function(tr){var d=tr.querySelector('.d').value.trim();if(!d)return;
-  rows.push({kind:tr.querySelector('.kind').value,code:tr.querySelector('.code').value,description:d,descriptionEn:tr.querySelector('.de').value,unit:tr.querySelector('.unit').value,
+  rows.push({id:Number(tr.dataset.lineId||0),kind:tr.querySelector('.kind').value,code:tr.querySelector('.code').value,description:d,descriptionEn:tr.querySelector('.de').value,unit:tr.querySelector('.unit').value,
    quantity:num(tr.querySelector('.q').value),unitPrice:num(tr.querySelector('.p').value),
    materialCost:num(tr.querySelector('.mat').value),laborCost:num(tr.querySelector('.lab').value),
    subcontractCost:num(tr.querySelector('.sub').value),equipmentCost:num(tr.querySelector('.equip').value)});});
@@ -124,6 +169,7 @@ document.getElementById('save').addEventListener('click',function(){
  var f=document.getElementById('f');if(window.CB&&CB.submitForm)CB.submitForm(f,{type:'save'});else f.submit();});
 var EX=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(existing));
 function fill(x){var tr=addRow(x.kind);
+  tr.dataset.lineId=String(x.id);
   tr.querySelector('.code').value=x.code||'';tr.querySelector('.d').value=x.desc||'';tr.querySelector('.de').value=x.descEn||'';tr.querySelector('.unit').value=x.unit||'';
   tr.querySelector('.q').value=x.qty;tr.querySelector('.p').value=x.price;
   tr.querySelector('.mat').value=x.mat||0;tr.querySelector('.lab').value=x.lab||0;tr.querySelector('.sub').value=x.sub||0;tr.querySelector('.equip').value=x.equip||0;}

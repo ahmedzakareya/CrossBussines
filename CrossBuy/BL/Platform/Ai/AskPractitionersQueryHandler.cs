@@ -25,10 +25,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن الأطباء: العدد حسب القسم أو نوع التعاقد أو الدرجة، أو طبيب بعينه بالاسم",
-			"Any question about the practitioners: the count by department, engagement or title, or one doctor by name");
+			"Any question about the practitioners: the count by department, engagement or title, or one doctor by name",
+			"Questions sur les praticiens : nombre par service, type de contrat ou titre, ou recherche d'un médecin par son nom");
 
 		public override AskText Example => AskText.Of(
-			"كام طبيب في كل قسم؟", "How many practitioners in each department?");
+			"كام طبيب في كل قسم؟", "How many practitioners in each department?", "Combien de praticiens y a-t-il dans chaque service ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

@@ -76,8 +76,17 @@
 </div></div></div>
 <!--end::New announcement modal-->
 
+@* SEC-02 — the antiforgery token this page's two fetch() calls now send. Both endpoints changed
+   state with no CSRF protection, so a third-party page could publish or deactivate a company-wide
+   announcement through a signed-in administrator. The token is rendered here and read by token()
+   below, which is the same shape _EntityConversation and _EntityMail already use. *@
+@Html.AntiForgeryToken()
 @section Scripts {
 <script>
+    function cbAnnToken() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
     // Metronic dropdowns (select2) — dropdownParent = the modal so the list renders above it
     (function () {
         if (!window.jQuery || !jQuery.fn.select2) return;
@@ -107,6 +116,7 @@
         fd.append('branchId', document.getElementById('annBranch').value || '');
         fd.append('startsAt', document.getElementById('annStarts').value || '');
         fd.append('expiresAt', document.getElementById('annExpires').value || '');
+        fd.append('__RequestVerificationToken', cbAnnToken());
         this.disabled = true;
         fetch('@Url.Action("Create","Announcements")', { method: 'POST', credentials: 'same-origin', body: fd })
             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -125,6 +135,7 @@
             }).then(function (res) {
                 if (!res.isConfirmed) return;
                 var fd = new FormData(); fd.append('id', b.getAttribute('data-id')); fd.append('active', b.getAttribute('data-active'));
+                fd.append('__RequestVerificationToken', cbAnnToken());
                 fetch('@Url.Action("Toggle","Announcements")', { method: 'POST', credentials: 'same-origin', body: fd })
                     .then(function () { if (window.toastr) toastr.success('@Localizer["Updated"]'); setTimeout(function () { location.reload(); }, 700); });
             });

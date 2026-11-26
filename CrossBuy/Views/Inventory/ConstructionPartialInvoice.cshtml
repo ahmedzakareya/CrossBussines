@@ -1,0 +1,58 @@
+@using System.Globalization
+@model CrossBuy.ViewModel.ConstructionPartialInvoicePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    string Label(string key) => SR["Construction.PartialInvoice." + key].Value;
+    string Exact(decimal amount) => amount.ToString("0.############################", CultureInfo.CurrentCulture);
+    var ready = Model.Source.Ok && Model.Source.Receipts is { Count: > 0 and <= 500 };
+    var confirmed = ready && Model.Preview?.Ok == true && Model.Error == null;
+}
+<div class="app-container container-fluid py-6">
+    <div class="d-flex flex-stack flex-wrap gap-3 mb-6">
+        <h1 class="fs-3 fw-bold">@Label("Title")</h1>
+        <a asp-controller="Inventory" asp-action="PurchaseOrders" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@Label("Back")</a>
+    </div>
+    <div class="alert alert-info">@Label("Explanation")</div>
+    @if (TempData["ConstructionPartialInvoiceIssued"] is int invoiceId)
+    { <div class="alert alert-success" role="status">@Label("Issued") <span dir="ltr">#@invoiceId</span></div> }
+    @if (Model.Error != null || !Model.Source.Ok)
+    { <div class="alert alert-danger" role="alert">@Label("Refused") @Label("Preserved")</div> }
+    <div class="card"><div class="card-body">
+        <div class="d-flex gap-6 mb-5"><span>@Label("Project"): @Model.ProjectId</span><span>@Label("Order"): @Model.Source.OrderNumber</span><span>@Label("Currency"): @Model.Source.CurrencyCode</span></div>
+        @if (ready)
+        {
+            <form method="post" asp-controller="ConstructionPartialInvoice" asp-action="@(confirmed ? "Issue" : "Preview")" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="RequestId" value="@Model.Input.RequestId" />
+                <input type="hidden" name="Version" value="@Model.Input.Version" />
+                <div class="row g-4 mb-6">
+                    <div class="col-md-4"><label for="partial-date" class="form-label">@Label("Date")</label><input id="partial-date" type="date" name="Date" value="@Model.Input.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control" required readonly="@confirmed" /></div>
+                    <div class="col-md-8"><label for="partial-reason" class="form-label">@Label("Reason")</label><input id="partial-reason" name="Reason" value="@Model.Input.Reason" class="form-control" maxlength="1000" required readonly="@confirmed" /></div>
+                </div>
+                <div class="table-responsive"><table class="table table-row-dashed align-middle">
+                    <thead><tr><th>@Label("Receipt")</th><th>@Label("Description")</th><th>@Label("Received")</th><th>@Label("Billed")</th><th>@Label("Available")</th><th>@Label("Quantity")</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Input.Rows.Count && i < 500; i++)
+                    {
+                        var row = Model.Input.Rows[i];
+                        var fact = Model.Source.Receipts!.SingleOrDefault(x => x.ReceiptLineId == row.ReceiptLineId);
+                        <tr>
+                            <td>@fact?.ReceiptId <input type="hidden" name="Rows[@i].ReceiptLineId" value="@row.ReceiptLineId" /></td>
+                            <td>@fact?.Description</td><td>@(fact == null ? "—" : Exact(fact.Received))</td><td>@(fact == null ? "—" : Exact(fact.PreviouslyBilled))</td><td>@(fact == null ? "—" : Exact(fact.Available))</td>
+                            <td><input name="Rows[@i].Quantity" value="@Exact(row.Quantity)" aria-label="@Label("Quantity")" class="form-control mw-150px" inputmode="decimal" required readonly="@confirmed" /></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+                @if (confirmed)
+                {
+                    <div class="alert alert-primary">@Label("Net"): @Exact(Model.Preview!.Net!.Value) · @Label("Tax"): @Exact(Model.Preview.Tax!.Value) · @Label("Total"): @Exact(Model.Preview.Net.Value + Model.Preview.Tax.Value)</div>
+                }
+                <div class="d-flex gap-3 mt-5"><button type="submit" class="btn btn-primary">@Label(confirmed ? "Confirm" : "Preview")</button>
+                    <a asp-controller="ConstructionPartialInvoice" asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@Label("Reload")</a>
+                </div>
+            </form>
+        }
+    </div></div>
+</div>

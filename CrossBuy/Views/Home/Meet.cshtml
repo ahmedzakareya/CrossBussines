@@ -1,0 +1,105 @@
+@model CrossBuy.BL.CrmIdentity.PublicBookingPage
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var ci = new System.Globalization.CultureInfo(isAr ? "ar-KW" : "en-GB");
+    var sfx = isAr ? ".rtl" : "";
+    var w = Model.RepName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var ini = ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant();
+    var days = Model.Days.Select(d => new { key = d.day.ToString("yyyy-MM-dd"), dow = d.day.ToString("ddd", ci), dom = d.day.Day, mon = d.day.ToString("MMM", ci),
+        slots = d.slots.Select(s => new { v = s.ToString("yyyy-MM-dd'T'HH:mm"), t = s.ToString("HH:mm") }) }).ToList();
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>@(Model.Link.Title ?? T["Book a meeting"].Value) — @Model.RepName</title>
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        html[lang="ar"] body { font-family: 'Cairo', sans-serif; }
+        body { background: var(--bs-gray-100); min-height: 100vh; }
+        .mt-card { max-width: 900px; margin: 3rem auto; }
+        .mt-side { background: var(--cb-brand, #3A5795); color: #fff; border-radius: 1rem 0 0 1rem; }
+        html[dir="rtl"] .mt-side { border-radius: 0 1rem 1rem 0; }
+        .mt-day { min-width: 66px; border: 1px solid var(--bs-gray-300); border-radius: .75rem; padding: .5rem; text-align: center; cursor: pointer; background: #fff; }
+        .mt-day.on { border-color: var(--cb-brand, #3A5795); background: var(--cb-brand-surface, #E7F0FF); color: var(--cb-brand, #3A5795); }
+        .mt-slot { border: 1px solid var(--cb-brand, #3A5795); color: var(--cb-brand, #3A5795); background: #fff; border-radius: .6rem; padding: .55rem 0; font-weight: 600; width: 100%; }
+        .mt-slot.on { background: var(--cb-brand, #3A5795); color: #fff; }
+        .num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+        @@media (max-width: 767px) { .mt-card { margin: 0; } .mt-side { border-radius: 0 !important; } }
+    </style>
+</head>
+<body>
+<div class="mt-card card shadow-sm"><div class="row g-0">
+    <div class="col-md-4 mt-side p-8 d-flex flex-column">
+        <div class="symbol symbol-70px symbol-circle mb-5"><span class="symbol-label fs-2 fw-bold" style="background:rgba(255,255,255,.18);color:#fff">@ini</span></div>
+        <div class="fs-8 opacity-75 mb-1">@Model.Company</div>
+        <div class="fw-bold fs-3 mb-1">@Model.RepName</div>
+        <div class="fs-6 opacity-90 mb-6">@(Model.Link.Title ?? T["Book a meeting"].Value)</div>
+        <div class="d-flex align-items-center gap-2 fs-7 opacity-90"><i class="ki-outline ki-time fs-4 text-white"></i><span class="num">@Model.Link.DurationMinutes</span> @T["minutes"]</div>
+        <div class="d-flex align-items-center gap-2 fs-7 opacity-90 mt-2"><i class="ki-outline ki-geolocation fs-4 text-white"></i>@T["Times are shown in"] <span class="num">GMT@(TimeZoneInfo.Local.BaseUtcOffset.TotalHours.ToString("+0.#;-0.#", System.Globalization.CultureInfo.InvariantCulture))</span></div>
+    </div>
+    <div class="col-md-8 p-8" id="pick">
+        @if (Model.Days.Count == 0)
+        {
+            <div class="text-center py-15"><i class="ki-outline ki-calendar-remove fs-3x text-gray-400 d-block mb-4"></i><div class="fw-bold fs-5">@T["No free time is left in the coming days."]</div><div class="text-muted fs-7 mt-2">@T["Please try again later."]</div></div>
+        }
+        else
+        {
+            <div class="fw-bold fs-5 mb-4">@T["Choose a day"]</div>
+            <div class="d-flex gap-2 overflow-auto pb-2 mb-6" id="days"></div>
+            <div class="fw-bold fs-6 mb-3">@T["Choose a time"]</div>
+            <div class="row g-2 mb-6" id="slots"></div>
+            <div class="d-none" id="form">
+                <div class="separator mb-6"></div>
+                <div class="row g-4">
+                    <div class="col-12"><input id="fName" class="form-control form-control-solid" maxlength="150" placeholder="@T["Your name"]" /></div>
+                    <div class="col-md-6"><input id="fPhone" class="form-control form-control-solid" maxlength="50" dir="ltr" placeholder="@T["Mobile"]" /></div>
+                    <div class="col-md-6"><input id="fEmail" class="form-control form-control-solid" maxlength="150" dir="ltr" placeholder="@T["Email"]" /></div>
+                    <div class="col-12"><textarea id="fNote" class="form-control form-control-solid" rows="2" maxlength="1000" placeholder="@T["What would you like to discuss? (optional)"]"></textarea></div>
+                    <div class="col-12"><div class="text-danger fs-7 fw-semibold mb-3 d-none" id="fErr"></div>
+                        <button type="button" class="btn btn-primary w-100" id="fGo"><i class="ki-outline ki-calendar-tick fs-3"></i><span id="fGoText">@T["Book"]</span></button></div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-md-8 p-8 d-none" id="done"><div class="text-center py-12">
+        <div class="symbol symbol-70px symbol-circle mb-5"><span class="symbol-label" style="background:#DCFCE7"><i class="ki-outline ki-check fs-2x" style="color:#15803D"></i></span></div>
+        <div class="fw-bold fs-3 mb-2">@T["Your meeting is booked"]</div>
+        <div class="fs-5 num" id="doneAt"></div>
+        <div class="text-muted fs-7 mt-3">@T["We will be in touch before the meeting."] — @Model.RepName</div>
+    </div></div>
+</div></div>
+<script>
+(function () {
+  var days = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(days));
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["book"] = T["Book"].Value, ["failed"] = T["meet:failed"].Value }));
+  if (!days.length) return;
+  var key = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Link.PublicKey)), day = 0, slot = null;
+  function drawDays() { document.getElementById('days').innerHTML = days.map(function (d, i) { return '<div class="mt-day' + (i === day ? ' on' : '') + '" data-i="' + i + '"><div class="fs-8">' + d.dow + '</div><div class="fw-bold fs-3 num">' + d.dom + '</div><div class="fs-8">' + d.mon + '</div></div>'; }).join(''); }
+  function drawSlots() { document.getElementById('slots').innerHTML = days[day].slots.map(function (s) { return '<div class="col-4 col-sm-3"><button type="button" class="mt-slot num' + (slot && slot.v === s.v ? ' on' : '') + '" data-v="' + s.v + '" data-t="' + s.t + '">' + s.t + '</button></div>'; }).join(''); }
+  document.getElementById('days').addEventListener('click', function (e) { var d = e.target.closest('[data-i]'); if (!d) return; day = +d.getAttribute('data-i'); slot = null; drawDays(); drawSlots(); document.getElementById('form').classList.add('d-none'); });
+  document.getElementById('slots').addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (!b) return; slot = { v: b.getAttribute('data-v'), t: b.getAttribute('data-t') }; drawSlots();
+    document.getElementById('form').classList.remove('d-none'); document.getElementById('fGoText').textContent = txt.book + ' ' + days[day].dow + ' ' + days[day].dom + ' ' + days[day].mon + ' — ' + slot.t; });
+  document.getElementById('fGo').addEventListener('click', async function () {
+    var fd = new FormData(); fd.append('start', slot.v);
+    [['name','fName'],['phone','fPhone'],['email','fEmail'],['note','fNote']].forEach(function (p) { fd.append(p[0], document.getElementById(p[1]).value); });
+    var r = await fetch('/store/meet/' + key + '/book' + location.search, { method: 'POST', body: fd }).then(function (x) { return x.json(); }).catch(function () { return { ok: false, message: txt.failed }; });
+    var err = document.getElementById('fErr');
+    if (!r.ok) {
+      err.textContent = r.message || txt.failed; err.classList.remove('d-none');
+      if (r.code === 'taken') { days[day].slots = days[day].slots.filter(function (s) { return s.v !== slot.v; }); slot = null; drawSlots(); }
+      return;
+    }
+    document.getElementById('pick').classList.add('d-none'); document.getElementById('done').classList.remove('d-none');
+    document.getElementById('doneAt').textContent = days[day].dow + ' ' + days[day].dom + ' ' + days[day].mon + ' · ' + slot.t;
+  });
+  drawDays(); drawSlots();
+})();
+</script>
+</body>
+</html>

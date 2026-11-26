@@ -149,6 +149,43 @@
             </div>
         </div>
         <!--end::Lines-->
+
+        @* THE ENTRY'S OWN HISTORY AND ITS CONVERSATION.
+           Both key off the same canonical registry code, the way every other document screen does.
+           The entry is where the posting actually lives, so a reversal and the argument about why it
+           happened belong here rather than only on the invoice that caused it. *@
+        @{
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.JournalEntry;
+            ViewBag.TimelineEntityId = Model.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
+
+        @{
+            ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.JournalEntry;
+            ViewBag.ConversationEntityId = Model.ID;
+            ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+            ViewBag.ConversationMentionUrl = Url.Action("InvoiceConversationMentions", "Accounting");
+            ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+            ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+
+            @* COMMUNICATION PHASE 3 - TASKS. Every endpoint below lives on the TASKS controller, not this
+               module: the conversation is this screen's, the work is Tasks'. Naming them here is the whole
+               of the opt-in - the shared partial resolves nothing on a caller's behalf, so a screen that
+               omits them keeps exactly its previous behaviour.
+
+               THE PANEL STILL DECIDES WHETHER TO SHOW ANYTHING. It reveals the link controls only when all
+               three link urls are present AND the service reports LinkingAvailable AND a thread exists, so a
+               deployment without the CommTaskLinks table shows nothing rather than a button that refuses.
+
+               JournalEntry is EligibleForTaskLink in the registry, so a task raised from a message here
+               keeps the entry as its business anchor. *@
+            ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+            ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+            ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+            ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+            ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
+        }
+        @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>
 

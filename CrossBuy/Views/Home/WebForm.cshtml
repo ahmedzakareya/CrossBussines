@@ -1,0 +1,113 @@
+@model CrossBuy.Models.Context.Crm.CrmWebForm
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var embed = ViewBag.Embed == true;
+    var sfx = isAr ? ".rtl" : "";
+    var needs = CrossBuy.BL.CrmIdentity.CrmAssignmentRules.Items(Model.NeedOptions);
+    var rawNeeds = (Model.NeedOptions ?? "").Split(new[] { ',', '،', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var rawAreas = (Model.AreaOptions ?? "").Split(new[] { ',', '،', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>@Model.Title</title>
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        html[lang="ar"] body { font-family: 'Cairo', sans-serif; }
+        body { background: @(embed ? "transparent" : "var(--bs-gray-100)"); }
+        .wf-card { max-width: 640px; margin: @(embed ? "0" : "40px auto"); }
+        .wf-band { background: var(--cb-brand, #3A5795); color: #fff; border-radius: .85rem .85rem 0 0; padding: 1.5rem 1.75rem; }
+        .wf-hp { position: absolute; left: -5000px; width: 1px; height: 1px; overflow: hidden; }
+        .wf-done { display: none; }
+        .wf-sent .wf-form { display: none; } .wf-sent .wf-done { display: block; }
+    </style>
+</head>
+<body>
+    <div class="wf-card card shadow-sm" id="wfRoot">
+        <div class="wf-band">
+            @if (!embed)
+            {
+                <div class="float-end"><a class="text-white opacity-75 fs-8 fw-semibold" href="?culture=@(isAr ? "en" : "ar")&ui-culture=@(isAr ? "en" : "ar")">@(isAr ? "English" : "العربية")</a></div>
+            }
+            <div class="fs-2 fw-bold">@Model.Title</div>
+            <div class="fs-7 opacity-75 mt-1">@T["Leave your details and we will contact you."]</div>
+        </div>
+        <div class="card-body p-7">
+            <form class="wf-form" id="wfForm" novalidate>
+                <div class="row g-5">
+                    <div class="col-md-6"><label class="required fw-semibold fs-6 mb-2" for="wfName">@T["Your name"]</label>
+                        <input id="wfName" name="name" class="form-control form-control-solid" maxlength="150" autocomplete="name" required /></div>
+                    @if (Model.AskCompany)
+                    {
+                        <div class="col-md-6"><label class="fw-semibold fs-6 mb-2" for="wfCompany">@T["Company"]</label>
+                            <input id="wfCompany" name="company" class="form-control form-control-solid" maxlength="150" autocomplete="organization" /></div>
+                    }
+                    <div class="col-md-6"><label class="fw-semibold fs-6 mb-2" for="wfPhone">@T["Mobile"]</label>
+                        <input id="wfPhone" name="phone" class="form-control form-control-solid" maxlength="40" inputmode="tel" autocomplete="tel" dir="ltr" /></div>
+                    @if (Model.AskEmail)
+                    {
+                        <div class="col-md-6"><label class="fw-semibold fs-6 mb-2" for="wfEmail">@T["Email"]</label>
+                            <input id="wfEmail" name="email" type="email" class="form-control form-control-solid" maxlength="150" autocomplete="email" dir="ltr" /></div>
+                    }
+                    @if (Model.AskArea && rawAreas.Length > 0)
+                    {
+                        <div class="col-md-6"><label class="fw-semibold fs-6 mb-2" for="wfArea">@T["Area"]</label>
+                            <select id="wfArea" name="area" class="form-select form-select-solid"><option value="">—</option>@foreach (var a in rawAreas) { <option>@a</option> }</select></div>
+                    }
+                    @if (rawNeeds.Length > 0)
+                    {
+                        <div class="col-md-6"><label class="fw-semibold fs-6 mb-2" for="wfNeed">@T["What do you need?"]</label>
+                            <select id="wfNeed" name="need" class="form-select form-select-solid">@foreach (var n in rawNeeds) { <option>@n</option> }</select></div>
+                    }
+                    <div class="col-12"><label class="fw-semibold fs-6 mb-2" for="wfMessage">@T["Message (optional)"]</label>
+                        <textarea id="wfMessage" name="message" class="form-control form-control-solid" rows="3" maxlength="1000"></textarea></div>
+                    <div class="wf-hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
+                    <div class="col-12"><label class="form-check form-check-custom form-check-solid align-items-start">
+                        <input class="form-check-input mt-1" type="checkbox" name="consent" value="true" id="wfConsent" />
+                        <span class="form-check-label fs-7 text-gray-700">@Model.ConsentText</span></label></div>
+                    <div class="col-12 d-none" id="wfError"><div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 fs-7 fw-semibold text-danger"></div></div>
+                    <div class="col-12"><button type="submit" class="btn btn-primary w-100" id="wfSend"><span class="indicator-label">@T["Send"]</span></button>
+                        <div class="text-muted fs-8 mt-3 text-center">@T["A mobile number or an email is enough."]</div></div>
+                </div>
+            </form>
+            <div class="wf-done text-center py-10">
+                <i class="ki-outline ki-check-circle fs-5x text-success mb-4 d-block"></i>
+                <div class="fs-3 fw-bold text-gray-900 mb-2">@T["Received"]</div>
+                <div class="fs-6 text-gray-700">@Model.ThankYou</div>
+            </div>
+        </div>
+    </div>
+<script>
+(function () {
+  var root = document.getElementById('wfRoot'), form = document.getElementById('wfForm'), err = document.getElementById('wfError'), btn = document.getElementById('wfSend');
+  var msgs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+      ["name"] = T["form:name"].Value, ["reach"] = T["form:reach"].Value, ["failed"] = T["form:failed"].Value }));
+  function height() { try { parent.postMessage({ cbFormHeight: document.documentElement.scrollHeight + 4 }, '*'); } catch (e) { } }
+  function show(text) { err.querySelector('div').textContent = text; err.classList.remove('d-none'); height(); }
+  var page = new URLSearchParams(location.search).get('page') || document.referrer || location.href;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault(); err.classList.add('d-none');
+    var fd = new FormData(form);
+    if ((fd.get('name') || '').trim().length < 2) { show(msgs.name); return; }
+    if (!(fd.get('phone') || '').trim() && !(fd.get('email') || '').trim()) { show(msgs.reach); return; }
+    if (!document.getElementById('wfConsent').checked) fd.delete('consent');
+    fd.append('page', page);
+    btn.disabled = true;
+    fetch(location.pathname + location.search, { method: 'POST', body: fd })   // keeps the chosen language for the replies
+      .then(function (r) { return r.json(); })
+      .then(function (r) { if (r.ok) { root.classList.add('wf-sent'); height(); } else { btn.disabled = false; show(r.message || msgs.failed); } })
+      .catch(function () { btn.disabled = false; show(msgs.failed); });
+  });
+  window.addEventListener('load', height); height();
+})();
+</script>
+</body>
+</html>

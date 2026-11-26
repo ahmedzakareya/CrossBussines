@@ -435,7 +435,12 @@ namespace CrossBuy.Tests
                 .Where(l => l.Contains("Task<AiProxyResult>", StringComparison.Ordinal))
                 .ToList();
 
-            Assert.Equal(3, signatures.Count);
+            // NOT A COUNT. This read Assert.Equal(3, ...) and went red when ComputeReorderPointsAsync was
+            // added - an INVENTORY model, which has nothing to do with this screen or with CRM. The literal
+            // was standing in for a property that the loop below already asserts directly and better: no AI
+            // signature names a CRM concept. Pinning the number instead made an unrelated module's work look
+            // like a CRM egress defect.
+            Assert.NotEmpty(signatures);   // positive control: the contract really was read
             foreach (var line in signatures)
                 foreach (var crmConcept in new[] { "Account", "Crm", "Opportunity", "Lead" })
                     Assert.DoesNotContain(crmConcept, line, StringComparison.Ordinal);
@@ -571,7 +576,17 @@ namespace CrossBuy.Tests
             Assert.Contains("GroupBy", code, StringComparison.Ordinal);
 
             // No query sits inside the per-account projection.
-            var projection = code[code.IndexOf("var signals = accounts.Select", StringComparison.Ordinal)..];
+            // BOUNDED TO THE LAMBDA, not to the end of the method. This used to slice from the projection to
+            // the end of the Action window, so the test read everything AFTER the loop as if it were inside
+            // it. A legitimate `ViewBag.CompanyName = await CompanyDisplay.NameAsync(...)` fourteen lines
+            // past the closing `});` was reported as a query inside the per-account projection - an N+1 that
+            // does not exist. The claim this test makes is about the LOOP, so the slice has to be the loop.
+            var projectionStart = code.IndexOf("var signals = accounts.Select", StringComparison.Ordinal);
+            Assert.True(projectionStart >= 0, "the per-account projection must exist");
+            var projectionEnd = code.IndexOf("});", projectionStart, StringComparison.Ordinal);
+            var projection = projectionEnd < 0
+                ? code[projectionStart..]
+                : code[projectionStart..(projectionEnd + 3)];
             foreach (var q in new[] { "await ", "ToListAsync", "FirstOrDefaultAsync", "CountAsync", "_context." })
                 Assert.DoesNotContain(q, projection, StringComparison.Ordinal);
         }

@@ -8,10 +8,15 @@
     var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
     var monthsEn = new[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
     string Money(decimal v) => v.ToString("N2");
-    string srcName(string? s) => s switch {
-        "Opening" => Localizer["Opening"].Value, "Receipt" => Localizer["Receipt"].Value, "Issue" => Localizer["Issue"].Value,
-        "Adjustment" => Localizer["Adjustment"].Value, "PurchaseInvoice" => Localizer["Purchase"].Value, "SalesInvoice" => Localizer["Sale"].Value,
-        "Assembly" => Localizer["Assembly"].Value, "Disassembly" => Localizer["Disassembly"].Value, _ => s ?? "—" };
+    // THE ONE MAP, as _MovementRows.cshtml says: "A copy here would drift the day a type is added
+    // to one of them." It did. This copy never gained TransferIn/TransferOut, so both fell through
+    // to the raw key and the ARABIC dashboard printed "TransferIn".
+    Func<string, string, string> Lz = (key, arFallback) =>
+    {
+        var v = Localizer[key].Value;
+        return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? arFallback : v;
+    };
+    string srcName(string? s) { var (k, ar) = CrossBuy.BL.MovementSourceLabels.For(s); return Lz(k, ar); }
 }
 <div class="d-flex flex-column flex-column-fluid">
     <!--begin::Toolbar-->
@@ -105,6 +110,11 @@
                         // dashboard is rendered from the database and has not run the model, and printing a
                         // count here would be a figure nothing produced. The card invites, the screen answers.
                         (Localizer["Risk Insights"].Value, "AI", "ki-abstract-26", "dark", Url.Action("RiskInsights","Inventory"), Localizer["local"].Value, "dark"),
+                        // Reorder advice, same reasoning as the card above: NO number. The count that
+                        // belongs here is "how many items we can advise on", which only the model knows,
+                        // and it is often far smaller than the catalogue — printing a catalogue count
+                        // would promise advice this screen may well decline to give.
+                        (Localizer["Reorder advice"].Value, "AI", "ki-handcart", "dark", Url.Action("ReorderAdvice","Inventory"), Localizer["local"].Value, "dark"),
                     };
                 }
                 @foreach (var s in stats)

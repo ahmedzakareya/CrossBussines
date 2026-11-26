@@ -189,6 +189,229 @@ body {{ font-family: {(family is null ? "sans-serif" : $"'{family}', sans-serif"
             Assert.Contains(Family, raw);
         }
 
+        // ---- pagination -------------------------------------------------------------------------
+
+        /// Content guaranteed to overflow one A4 page, and deliberately not a loop of identical text:
+        /// numbered lines make a truncation visible in the artifact if one ever creeps in.
+        private static string LongDocument(int lines) =>
+            Document(string.Join("</p><p>", Enumerable.Range(1, lines).Select(i => $"Line {i} of {lines}")));
+
+        /// Pages, counted off the artifact's own page objects. `/Type /Page` appears once per page and
+        /// `/Type /Pages` once for the tree, so the negative lookahead is what keeps the tree out of
+        /// the count. Read from the PDF rather than inferred from how much HTML went in.
+        private static int PageCount(byte[] pdf) => System.Text.RegularExpressions.Regex
+            .Matches(Encoding.Latin1.GetString(pdf), @"/Type\s*/Page(?![s])")
+            .Count;
+
+        /// Every FlateDecode stream in the document, inflated and concatenated.
+        ///
+        /// A PDF's drawn text is compressed, so it is invisible to a scan of the file's raw bytes.
+        /// This inflates each `stream`/`endstream` region — skipping the two-byte zlib header, since
+        /// DeflateStream expects raw deflate — and ignores any region that does not inflate, because
+        /// images and font programs are streams too and are not meant to be read as text.
+        private static string ContentText(byte[] pdf)
+        {
+            var raw = Encoding.Latin1.GetString(pdf);
+            var text = new System.Text.StringBuilder();
+
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex
+                .Matches(raw, @"stream\r?\n(.*?)\r?\nendstream",
+                    System.Text.RegularExpressions.RegexOptions.Singleline))
+            {
+                var bytes = Encoding.Latin1.GetBytes(m.Groups[1].Value);
+                if (bytes.Length < 3) continue;
+
+                try
+                {
+                    using var source = new MemoryStream(bytes, 2, bytes.Length - 2);   // skip zlib header
+                    using var inflate = new System.IO.Compression.DeflateStream(
+                        source, System.IO.Compression.CompressionMode.Decompress);
+                    using var decoded = new MemoryStream();
+                    inflate.CopyTo(decoded);
+                    text.Append(Encoding.Latin1.GetString(decoded.ToArray()));
+                }
+                catch
+                {
+                    // Not a deflate stream, or not one that decodes standalone. An image or a font
+                    // program lands here; neither is text and neither is what this method is for.
+                }
+            }
+
+            return text.ToString();
+        }
+
+        // A short document is one page. The control for the multi-page test below: without it, a
+        // page-count assertion of "> 1" could be satisfied by a renderer that always emits many.
+        [SkippableFact]
+        public async Task A_short_document_is_a_single_page()
+        {
+            var (pdf, unavailable) = await TryConvertAsync(Document("One line."));
+            Skip.If(pdf is null, $"No browser on this machine: {unavailable}");
+
+            _out.WriteLine($"EVIDENCE shortPages={PageCount(pdf!)} bytes={pdf!.Length}");
+
+            Assert.Equal(1, PageCount(pdf));
+        }
+
+        // THE PAGINATION PROPERTY. Content that overflows must actually break across pages rather than
+        // being clipped at the bottom of page one — a silent clip is the failure mode that loses the
+        // end of a register and looks like a shorter report.
+        [SkippableFact]
+        public async Task Overflowing_content_breaks_across_pages_instead_of_clipping()
+        {
+            var (pdf, unavailable) = await TryConvertAsync(LongDocument(300));
+            Skip.If(pdf is null, $"No browser on this machine: {unavailable}");
+
+            var pages = PageCount(pdf!);
+            _out.WriteLine($"EVIDENCE longPages={pages} bytes={pdf!.Length}");
+
+            Assert.True(pages > 1, $"300 lines produced {pages} page(s); content is being clipped, not paginated.");
+        }
+
+        // More content means more pages, monotonically. Catches a renderer that paginates once and
+        // then stops, which a single "> 1" assertion cannot see.
+        [SkippableFact]
+        public async Task More_content_produces_more_pages()
+        {
+            var (small, unavailable) = await TryConvertAsync(LongDocument(120));
+            Skip.If(small is null, $"No browser on this machine: {unavailable}");
+
+            var (large, _) = await TryConvertAsync(LongDocument(600));
+            Assert.NotNull(large);
+
+            var fewer = PageCount(small!);
+            var more = PageCount(large!);
+            _out.WriteLine($"EVIDENCE pages120={fewer} pages600={more}");
+
+            Assert.True(more > fewer, $"600 lines gave {more} pages, 120 gave {fewer}.");
+        }
+
+        // The running footer is the reporting platform's own decision — page numbers on paper — so it
+        // must survive into the artifact when a layout asks for one.
+        //
+        // ASSERTED AS A DIFFERENCE, NOT BY READING THE WORDS, and the two failures that led here are
+        // worth recording because each looked like a product defect and neither was:
+        //
+        //   1. Scanning the raw bytes for "CrossBuy" found nothing — drawn text lives in FlateDecode
+        //      streams, so a raw scan cannot see it. The /BaseFont check elsewhere in this file works
+        //      on raw bytes only because font names sit in an UNCOMPRESSED object dictionary, which is
+        //      an easy and wrong thing to generalise from.
+        //   2. Inflating those streams and searching again ALSO found nothing, with 116k characters
+        //      decoded. The text is set in a SUBSET font, so the content stream holds glyph indices,
+        //      not readable characters. The evidence line below prints whether ordinary body text is
+        //      findable, so this stays a measured fact rather than my explanation of one.
+        //
+        // What is both observable and meaningful is that asking for a footer CHANGES the document:
+        // identical content, one with DisplayHeaderFooter and one without, must not be the same
+        // artifact. That is the property — the option reaches Chromium and something more is drawn.
+        [SkippableFact]
+        public async Task A_requested_footer_changes_the_rendered_document()
+        {
+            var html = LongDocument(200);
+
+            var (plain, unavailable) = await TryConvertAsync(html, new ReportPdfOptions());
+            Skip.If(plain is null, $"No browser on this machine: {unavailable}");
+
+            var (footed, _) = await TryConvertAsync(html, new ReportPdfOptions
+            {
+                FooterTemplate = "<span style=\"font-size:8pt\">CrossBuy report footer</span>",
+            });
+            Assert.NotNull(footed);
+
+            var plainText = ContentText(plain!);
+            var footedText = ContentText(footed!);
+
+            _out.WriteLine($"EVIDENCE plainBytes={plain!.Length} footedBytes={footed!.Length} " +
+                           $"plainChars={plainText.Length} footedChars={footedText.Length} " +
+                           $"bodyTextReadable={plainText.Contains("Line 1 of", StringComparison.Ordinal)}");
+
+            // The footer draws on EVERY page, so it adds content wherever it is honoured.
+            Assert.True(footedText.Length > plainText.Length,
+                $"with a footer the drawn content was {footedText.Length} chars and without it " +
+                $"{plainText.Length}; the FooterTemplate did not reach the renderer.");
+        }
+
+        // ---- document security --------------------------------------------------------------------
+
+        // NOTHING EXECUTABLE REACHES THE ARTIFACT. A PDF can carry JavaScript, an auto-run OpenAction
+        // and embedded file attachments; a report is a document to be read, and a reader opening one
+        // from an email must not be running anything. Asserted on the artifact, not on the renderer's
+        // intentions, because the HTML is caller-influenced via the visual layout.
+        [SkippableFact]
+        public async Task The_artifact_carries_no_script_no_autorun_and_no_attachment()
+        {
+            const string Hostile =
+                "<script>window.x=1;</script>"
+                + "<a href=\"javascript:alert(1)\">x</a>"
+                + "<embed src=\"evil.pdf\">";
+
+            var (pdf, unavailable) = await TryConvertAsync(Document(Hostile));
+            Skip.If(pdf is null, $"No browser on this machine: {unavailable}");
+
+            var raw = Encoding.Latin1.GetString(pdf!);
+            var findings = new[] { "/JavaScript", "/JS", "/OpenAction", "/EmbeddedFile", "/Launch" }
+                .Where(marker => raw.Contains(marker, StringComparison.Ordinal))
+                .ToArray();
+
+            _out.WriteLine($"EVIDENCE bytes={pdf!.Length} activeMarkers=[{string.Join(", ", findings)}]");
+
+            Assert.Empty(findings);
+        }
+
+        // NO NETWORK, AND THE DOCUMENT STILL RENDERS. The converter uses SetContentAsync precisely so
+        // there is no server to reach; a reference to an unreachable host must therefore neither hang
+        // the export nor fail it. The host is a .invalid domain, which RFC 2606 guarantees never
+        // resolves — so if this returns a PDF at all, nothing was fetched.
+        [SkippableFact]
+        public async Task An_unreachable_external_reference_neither_hangs_nor_fails_the_export()
+        {
+            const string External =
+                "<img src=\"http://nothing.example.invalid/logo.png\" alt=\"logo\">"
+                + "<link rel=\"stylesheet\" href=\"http://nothing.example.invalid/x.css\">";
+
+            // THE BOUND WAS 30 SECONDS OF WALL CLOCK AND IT FAILED ON A BUSY MACHINE (2026-11-09) while
+            // passing alone in 15s - a 2x headroom that several tabs building at once erases. Worse, the
+            // message blamed the unreachable host for what was really contention: a false diagnosis wearing
+            // the clothes of a finding, which is the most expensive kind of failing test.
+            //
+            // A CONTROL RENDER FIXES IT. The same document WITHOUT the external references, rendered on the
+            // same machine moments apart, carries the same load. If nothing was fetched the two take
+            // comparable time; a real wait on an unresolvable host cannot hide, because a DNS timeout is
+            // seconds at minimum and shows up as the external render taking far longer than its control.
+            // The absolute token survives only as a HANG STOP, now generous enough never to fire on load.
+            using var bounded = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+            byte[]? pdf;
+            TimeSpan controlTime, externalTime;
+            try
+            {
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                var control = await _converter.ConvertAsync(Document(""), new ReportPdfOptions(), bounded.Token);
+                controlTime = clock.Elapsed;
+                Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(control, 0, 5));   // the control must itself be real
+
+                clock.Restart();
+                pdf = await _converter.ConvertAsync(Document(External), new ReportPdfOptions(), bounded.Token);
+                externalTime = clock.Elapsed;
+            }
+            catch (Exception ex) when (!_converter.IsAvailable)
+            {
+                Skip.If(true, $"No browser on this machine: {_converter.UnavailableReason ?? ex.Message}");
+                return;
+            }
+
+            _out.WriteLine($"EVIDENCE bytes={pdf.Length} control={controlTime.TotalSeconds:0.0}s external={externalTime.TotalSeconds:0.0}s cancelled={bounded.IsCancellationRequested}");
+
+            Assert.False(bounded.IsCancellationRequested, "the export hung: a render did not finish inside three minutes.");
+            Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(pdf, 0, 5));
+
+            // Deliberately loose. This discriminates a DNS timeout from render jitter; it is not a
+            // performance budget, and tightening it would rebuild the flakiness it was written to remove.
+            var budget = TimeSpan.FromSeconds(controlTime.TotalSeconds * 2 + 10);
+            Assert.True(externalTime <= budget,
+                $"the export appears to have waited on the unreachable host: {externalTime.TotalSeconds:0.0}s against a control render of {controlTime.TotalSeconds:0.0}s.");
+        }
+
         // ---- the availability flag tells the truth ----------------------------------------------
 
         // IsAvailable is optimistic BEFORE a launch, which is correct — a probe that launched a

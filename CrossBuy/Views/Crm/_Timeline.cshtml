@@ -6,8 +6,12 @@
     var entityType = ViewBag.EntityType as string ?? "";
     var entityId = (int)(ViewBag.EntityId ?? 0);
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
-    string tIcon(string t) => t switch { "Call" => "ki-phone", "Meeting" => "ki-people", "Email" => "ki-sms", _ => "ki-check-square" };
-    string tName(string t) => t switch { "Call" => Localizer["Call"].Value, "Meeting" => Localizer["Meeting"].Value, "Email" => SR["Email"].Value, _ => Localizer["Task"].Value };
+    @* "System" rows are what HAPPENED, not what someone planned: a routing, an escalation, a
+       first response. They share the timeline because the question they answer - what has this
+       record been through - is the same one, and a second history panel beside this one would
+       split the answer in two. *@
+    string tIcon(string t) => t switch { "Call" => "ki-phone", "Meeting" => "ki-people", "Email" => "ki-sms", "System" => "ki-route-square", _ => "ki-check-square" };
+    string tName(string t) => t switch { "Call" => Localizer["Call"].Value, "Meeting" => Localizer["Meeting"].Value, "Email" => SR["Email"].Value, "System" => Localizer["History"].Value, _ => Localizer["Task"].Value };
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     string subj(Activity a) => !isAr && !string.IsNullOrWhiteSpace(a.SubjectEn) ? a.SubjectEn! : a.Subject;
     var sid = $"tl_{entityType}_{entityId}";

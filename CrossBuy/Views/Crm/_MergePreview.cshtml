@@ -1,0 +1,47 @@
+@model CrossBuy.BL.CrmIdentity.MergePreview
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var total = Model.Moves.Values.Sum();
+}
+<div class="modal fade" id="mergeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Merge preview"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        @if (Model.Refusal != null)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-6">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["This merge cannot be done here"]</h4><div class="fs-6 text-gray-700">@T[Model.Refusal]</div></div>
+            </div>
+        }
+        <div class="d-flex flex-stack mb-4">
+            <div class="fs-7 text-gray-700">@T["Choose, for each field, the value the remaining record keeps. Empty fields are filled from the other record automatically."]</div>
+            <button type="button" class="btn btn-sm btn-light" data-merge-type="@Model.EntityType" data-survivor="@Model.MergedId" data-merged="@Model.SurvivorId"><i class="ki-outline ki-arrows-loop fs-5"></i>@T["Keep the other one instead"]</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table crm-merge-pick">
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Field"]</th>
+                <th><span class="badge badge-light-success">@T["Remains"]</span> <span class="text-gray-800 text-transform-none">@Model.SurvivorName</span></th>
+                <th><span class="badge badge-light-danger">@T["Merged away"]</span> <span class="text-gray-800 text-transform-none">@Model.MergedName</span></th></tr></thead>
+            <tbody class="fs-6">
+            @foreach (var f in Model.Fields)
+            {
+                var same = string.Equals(f.Survivor?.Trim(), f.Merged?.Trim(), StringComparison.OrdinalIgnoreCase);
+                <tr>
+                    <td class="ps-4 fw-semibold text-gray-700">@f.Label</td>
+                    <td><label class="d-flex align-items-center gap-2"><input type="radio" class="form-check-input" name="m_@f.Key" value="s" @(f.PickMergedByDefault ? "" : "checked") @(same ? "disabled" : "") /><span>@(string.IsNullOrWhiteSpace(f.Survivor) ? "—" : f.Survivor)</span></label></td>
+                    <td><label class="d-flex align-items-center gap-2"><input type="radio" class="form-check-input" name="m_@f.Key" value="m" data-key="@f.Key" @(f.PickMergedByDefault ? "checked" : "") @(same || string.IsNullOrWhiteSpace(f.Merged) ? "disabled" : "") /><span>@(string.IsNullOrWhiteSpace(f.Merged) ? "—" : f.Merged)</span></label></td>
+                </tr>
+            }
+            </tbody></table></div>
+        <div class="notice d-flex rounded border border-dashed p-6 mt-6" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-arrows-loop fs-2x text-white"></i></span></span>
+            <div class="fw-semibold flex-grow-1"><h4 class="text-gray-900 fw-bold mb-2">@T["What moves to the remaining record"] <span class="badge fs-8 ms-1" style="background:var(--cb-brand,#3A5795);color:#fff"><span class="num">@total</span></span></h4>
+                <div class="d-flex flex-wrap gap-2">@foreach (var kv in Model.Moves) { <span class="crm-reason">@T["move:" + kv.Key] <span class="num ms-1">@kv.Value</span></span> }</div>
+                <div class="fs-7 text-gray-600 mt-3">@(Model.EntityType == "Account" ? T["The merged account is closed (not deleted) and its address keeps working by opening the remaining one. Its financial customer link moves if the remaining account has none. Conversations on the merged record stay where they are."] : T["The merged contact is removed; its address keeps working by opening the remaining one. Its full consent history moves with the person."])</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer flex-center">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+        <button type="button" class="btn btn-danger" id="mergeGo" data-type="@Model.EntityType" data-survivor="@Model.SurvivorId" data-merged="@Model.MergedId" @(Model.Refusal != null ? "disabled" : "")><i class="ki-outline ki-arrows-loop fs-4"></i>@T["Merge"]</button>
+    </div>
+</div></div></div>

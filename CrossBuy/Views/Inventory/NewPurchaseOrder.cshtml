@@ -21,8 +21,8 @@
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
             <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Vendor"]</label><select name="vendorId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var v in vendors) { <option value="@v.ID">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Receiving WH"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @DisplayName.Of(w.Name, w.NameEn)</option> }</select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="orderDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
-            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Expected"]</label><input type="text" name="expectedDate" class="form-control form-control-solid" data-control="flatpickr" /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="orderDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Expected"]</label><input type="date" name="expectedDate" class="form-control form-control-solid" data-control="flatpickr" /></div>
         </div><div class="mt-4"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
         <div class="card-body"><div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
@@ -30,6 +30,7 @@
         </tr></thead><tbody id="rows"></tbody><tfoot><tr class="fw-bold"><td colspan="7" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr></tfoot></table></div></div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
@@ -54,7 +55,25 @@ document.getElementById('add').addEventListener('click',addRow);
 document.getElementById('rows').addEventListener('input',calc);
 document.getElementById('rows').addEventListener('change',function(e){if(e.target.classList.contains('it')){var tr=e.target.closest('tr'),o=e.target.options[e.target.selectedIndex];if(e.target.value){if(!tr.querySelector('.d').value)tr.querySelector('.d').value=o.getAttribute('data-name')||'';var c=parseFloat(o.getAttribute('data-cost'))||0;if((parseFloat(tr.querySelector('.p').value)||0)===0&&c>0)tr.querySelector('.p').value=c;var b=o.getAttribute('data-base');var u=tr.querySelector('.u');if(u&&b)u.value=b;calc();}}});
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
-document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;if((it||tr.querySelector('.d').value)&&q>0)lines.push({itemId:it?parseInt(it):null,itemDescription:tr.querySelector('.d').value,qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a line"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+document.getElementById('save').addEventListener('click',function(){
+var lines = CBLines.gather({
+  touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.d')
+      || CBLines.num(tr,'.q')!==1 || CBLines.num(tr,'.p')!==0 || CBLines.num(tr,'.disc')!==0); },
+  problem:function(tr){
+    // Either identifies the line - these documents legitimately carry a service or a one-off
+    // description with no catalogue item behind it.
+    if(!CBLines.str(tr,'.it') && !CBLines.str(tr,'.d')) return CBLines.T.item;
+    if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+    return null; },
+  build:function(tr){
+    var it=CBLines.str(tr,'.it'), u=CBLines.str(tr,'.u');
+    return {itemId:it?parseInt(it):null,itemDescription:tr.querySelector('.d').value,
+            qty:CBLines.num(tr,'.q'),uoMId:u?parseInt(u):null,
+            unitPrice:CBLines.num(tr,'.p'),discountAmount:CBLines.num(tr,'.disc'),
+            taxRate:CBLines.num(tr,'.tax')}; }
+});
+if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
 addRow();
 // Vendor "+", Warehouse "+", and "New item" are auto-wired by _QuickAdd (uses the global addRow/cbItemSelectSet/calc)
 window.onItemScanned=function(p){ addRow(); var tr=document.querySelector('#rows tr:last-child'); if(!tr)return;

@@ -26,8 +26,17 @@
         _ => "primary",
     };
 
-    string Ago(DateTime? at)
+    // NO PHOTO IS THE NORMAL CASE even for a row that HAS an actor, so initials on the brand
+    // tint - never a broken-image frame. Same two-letter rule the mentions screen uses.
+    string Initials(string? name)
     {
+        if (string.IsNullOrWhiteSpace(name)) { return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "؟" : "?"; }
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) { return parts[0].Substring(0, 1); }
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
+    string Ago(DateTime? at)    {
         if (at is null) return "";
         var span = CrossBuy.BL.Platform.ConformanceClock.Now - at.Value;
         if (span.TotalMinutes < 1) return arabic ? "الآن" : "now";
@@ -101,13 +110,36 @@
                             <tbody>
                                 @foreach (var n in Model.Items)
                                 {
+                                    @* WHO CAUSED IT, when anybody did.
+
+                                       MOST ROWS ON THIS SCREEN HAVE NOBODY BEHIND THEM and that is not a
+                                       gap to paper over: measured on this database, 66 of 1323 rows carry
+                                       an ActorEmployeeID. Integrity alerts, schedules and sweepers are the
+                                       system talking, and they keep the toned bell - attaching a face to
+                                       them would invent an author. The rows a colleague caused - an
+                                       escalation, an announcement - now show that colleague. *@
+                                    var actor = n.ActorName;
+                                    var actorPhoto = string.IsNullOrWhiteSpace(n.ActorAvatarUrl)
+                                        ? null
+                                        : Url.Content("~" + n.ActorAvatarUrl!.Replace("\\", "/"));
                                     <tr data-cbw-notification="@n.Id" class="@(n.IsRead ? "" : "fw-bold")">
                                         <td class="min-w-250px">
                                             <div class="d-flex align-items-center">
-                                                <div class="symbol symbol-35px me-3">
-                                                    <span class="symbol-label bg-light-@ToneColor(n.Tone)">
-                                                        <i class="ki-outline ki-notification-status fs-5 text-@ToneColor(n.Tone)"></i>
-                                                    </span>
+                                                <div class="symbol symbol-35px me-3 flex-shrink-0">
+                                                    @if (actorPhoto != null)
+                                                    {
+                                                        <img src="@actorPhoto" alt="@actor" class="rounded-circle" />
+                                                    }
+                                                    else if (n.ActorEmployeeId is > 0)
+                                                    {
+                                                        <span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@Initials(actor)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="symbol-label bg-light-@ToneColor(n.Tone)">
+                                                            <i class="ki-outline ki-notification-status fs-5 text-@ToneColor(n.Tone)"></i>
+                                                        </span>
+                                                    }
                                                 </div>
                                                 <div class="d-flex flex-column">
                                                     @if (!string.IsNullOrWhiteSpace(n.Url))
@@ -261,3 +293,10 @@
     </div>
 </div>
 <!--end::Content-->
+
+@if (ViewBag.CommunicationInbox is WorkspaceCommunicationInbox communicationInbox)
+{
+    <div class="app-container container-fluid mt-5">
+        @await Html.PartialAsync("_CommunicationInbox", communicationInbox)
+    </div>
+}

@@ -16,10 +16,36 @@
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">CRM</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Roles"]</li></ul></div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="alert alert-light-primary border border-primary border-dashed d-flex align-items-center p-4 mb-5">
-            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
-            <span class="fs-7 text-gray-700">@Localizer["Sales rep sees own records; manager sees the team; Marketing manages leads/campaigns; CRM viewer is read-only. (Open until the first role is assigned.)"]</span>
+        @* THE BANNER, in the shape /Accounting/VendorStatement and /Accounting/TrialBalance
+           both use. Copied, not approximated - including the two parts I had dropped:
+
+             · `d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap` around the content, and
+             · a BADGE at the far end carrying the state.
+
+           And the body is ONE SENTENCE. I had packed a four-column grid of role definitions in
+           here, which is not what this component does: it states one fact about the screen and
+           puts the number for that fact in the badge. The role definitions are reference the
+           reader needs while CHOOSING a role, so they moved beside the role picker.
+
+           Two branches, the way the vendor statement has settled/outstanding: permissions are
+           open until somebody is assigned, and enforced once they are. *@
+        @{
+            int assignedCount = assignments.Count();
+            bool enforced = assignedCount > 0;
+        }
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+            <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline @(enforced ? "ki-shield-tick" : "ki-information-5") fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@(enforced ? Localizer["Permissions are enforced"] : Localizer["Permissions are open"])</h4>
+                    <div class="fs-6 text-gray-700">@(enforced ? Localizer["Every user sees only what their role allows."] : Localizer["Until the first role is assigned, every user sees everything."])</div>
+                </div>
+                <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;">
+                    <i class="ki-outline @(enforced ? "ki-check" : "ki-information-5") fs-6 text-white me-1"></i>@(enforced ? assignedCount.ToString() : Localizer["Open"].Value)
+                </span>
+            </div>
         </div>
+
         <div class="row g-5">
             <div class="col-lg-5">
                 <div class="card card-flush"><div class="card-header"><div class="card-title"><h2>@Localizer["Assign role"]</h2></div></div>
@@ -29,7 +55,25 @@
                                 <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>
                                     @foreach (var e in employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select></div>
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Role"]</label>
-                                <select name="role" class="form-select form-select-solid">@foreach (var r in roles) { <option value="@r.v">@(isAr ? r.ar : r.en)</option> }</select></div>
+                                <select name="role" class="form-select form-select-solid">@foreach (var r in roles) { <option value="@r.v">@(isAr ? r.ar : r.en)</option> }</select>
+                                @* WHAT EACH ROLE SEES, beside the control that chooses one. It
+                                   used to be four definitions crammed into the banner above, which
+                                   states one fact and is the wrong place for a reference table. *@
+                                <div class="mt-3">
+                                    @foreach (var r in new (string name, string what)[]
+                                    {
+                                        (isAr ? "مندوب مبيعات" : "Sales rep",    @Localizer["own records only"].Value),
+                                        (isAr ? "مدير مبيعات" : "Sales manager", @Localizer["the whole team"].Value),
+                                        (isAr ? "تسويق" : "Marketing",           @Localizer["leads and campaigns"].Value),
+                                        (isAr ? "قارئ CRM" : "CRM viewer",       @Localizer["read-only"].Value),
+                                    })
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-gray-200">
+                                            <span class="fs-7 fw-bold text-gray-800">@r.name</span>
+                                            <span class="fs-7 text-gray-600 fw-semibold">@r.what</span>
+                                        </div>
+                                    }
+                                </div></div>
                             <button class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@Localizer["Assign"]</button>
                         </form>
                     </div>

@@ -199,7 +199,160 @@ namespace CrossBuy.Tests.Communication
             catch (Exception) { /* refused loudly — the caller still checks the store */ }
         }
 
+        // ---- READING A RECORD MUST NOT WRITE ONE ------------------------------------------------
+        //
+        // Both conversation GETs used to call Threads.GetOrCreateAsync, so merely OPENING a sales
+        // invoice, purchase invoice or quotation inserted a CommThreads row — and stamped a CreatedBy
+        // and CreatedAt naming somebody who had only looked at the record. These tests exercise the
+        // exact pair of calls the endpoints now make.
+        // ------------------------------------------------------------------------------------------
+
+        [Fact]
+        public async Task Reading_a_quotation_with_no_conversation_writes_nothing()
+        {
+            using var host = new CommunicationTestHost();
+            var ctx = CommunicationTestHost.Context();
+
+            var threads = await host.Threads().ListForEntityAsync(ctx, Quotation());
+            var canonical = Canonical(threads);
+
+            Assert.Null(canonical);                       // nothing to show
+            Assert.Empty(await Rows(host));               // and nothing was created to show it
+        }
+
+        [Fact]
+        public async Task Reading_the_same_quotation_repeatedly_stays_non_creating()
+        {
+            using var host = new CommunicationTestHost();
+            var ctx = CommunicationTestHost.Context();
+
+            for (int i = 0; i < 3; i++)
+                Assert.Null(Canonical(await host.Threads().ListForEntityAsync(ctx, Quotation())));
+
+            Assert.Empty(await Rows(host));
+        }
+
+        [Fact]
+        public async Task Reading_a_quotation_that_HAS_a_conversation_returns_it_and_its_comments()
+        {
+            using var host = new CommunicationTestHost();
+            var ctx = CommunicationTestHost.Context();
+
+            var added = await host.Comments().AddAsync(ctx, host.CommentOn(Quotation(), "ping"));
+
+            var canonical = Canonical(await host.Threads().ListForEntityAsync(ctx, Quotation()));
+            Assert.NotNull(canonical);
+
+            var page = await host.Comments().ListAsync(ctx, canonical!.ThreadId, null);
+            Assert.Contains(page.Items, c => c.CommentId == added.CommentId);
+            Assert.Single(await Rows(host));              // still exactly one thread
+        }
+
+        // THE FIRST COMMENT still creates the thread — which is why the read path does not need to.
+        [Fact]
+        public async Task The_first_comment_creates_the_canonical_thread()
+        {
+            using var host = new CommunicationTestHost();
+            var ctx = CommunicationTestHost.Context();
+
+            Assert.Empty(await Rows(host));
+
+            await host.Comments().AddAsync(ctx, host.CommentOn(Quotation(), "first"));
+
+            var created = Assert.Single(await Rows(host));
+            Assert.Equal(CommThreadKind.Discussion, created.Kind);
+            Assert.Equal("", created.ThreadKey);
+        }
+
+        // SELECTED BY IDENTITY, NOT RECENCY. ListForEntityAsync orders by LastActivityAt across ALL
+        // kinds, so a busier Notes or Review thread sorts first. Taking the first row back would show a
+        // different conversation under the same panel — these two are the reason the filter exists.
+        [Theory]
+        [InlineData("Notes")]
+        [InlineData("Review")]
+        public async Task A_newer_thread_of_another_kind_is_never_selected_instead_of_Discussion(string otherKind)
+        {
+            using var host = new CommunicationTestHost();
+            var ctx = CommunicationTestHost.Context();
+
+            var discussion = await host.Threads().GetOrCreateAsync(
+                ctx, new CommThreadRequest { Entity = Quotation() });
+
+            var other = await host.Threads().GetOrCreateAsync(
+                ctx, new CommThreadRequest { Entity = Quotation(), Kind = otherKind });
+
+            Assert.NotEqual(discussion.Id, other.Id);
+
+            var canonical = Canonical(await host.Threads().ListForEntityAsync(ctx, Quotation()));
+
+            Assert.NotNull(canonical);
+            Assert.Equal(discussion.Id, canonical!.ThreadId);
+            Assert.NotEqual(other.Id, canonical.ThreadId);
+        }
+
+        [Fact]
+        public async Task Another_companys_caller_reading_the_same_quotation_still_creates_nothing()
+        {
+            using var host = new CommunicationTestHost();
+
+            var theirs = CommunicationTestHost.Context(
+                employeeId: CommunicationTestHost.OtherCompanyEmployee,
+                companyId: CommunicationTestHost.OtherCompanyId);
+
+            Assert.Null(Canonical(await host.Threads().ListForEntityAsync(theirs, Quotation())));
+            Assert.Empty(await Rows(host));
+        }
+
+        // The canonical selection, written exactly as the two endpoints write it.
+        private static CommThreadDto? Canonical(IReadOnlyList<CommThreadDto> threads)
+            => threads.FirstOrDefault(t =>
+                string.Equals(t.Kind, CommThreadKind.Discussion, StringComparison.Ordinal)
+                && t.ThreadKey.Length == 0);
+
+        private static async Task<List<CommThread>> Rows(CommunicationTestHost host)
+        {
+            using var fresh = host.NewContext();
+            return await fresh.Set<CommThread>().AsNoTracking().ToListAsync();
+        }
+
         // ---- structural guards on the endpoints --------------------------------------------------
+
+        // The behavioural tests above prove the SELECTION is right; this proves the two endpoints
+        // actually use it. A 22-dependency MVC controller would assert that far more weakly than it
+        // appears to, so the wiring is checked on source — with comments stripped, so the prose
+        // explaining why GetOrCreateAsync was removed cannot itself satisfy or break the guard.
+        [Theory]
+        [InlineData("CrossBuy/Controllers/InventoryController.cs", "QuotationConversation(int id")]
+        [InlineData("CrossBuy/Controllers/AccountingController.cs", "InvoiceConversation(string? entity, int id")]
+        public void The_conversation_GET_never_creates_a_thread(string controller, string signature)
+        {
+            var read = Member(StripComments(Read(controller)), signature);
+
+            Assert.DoesNotContain("GetOrCreateAsync", read);
+            Assert.Contains("ListForEntityAsync", read);
+
+            // Selected by identity — both halves, or a busier Notes thread wins.
+            Assert.Contains("CommThreadKind.Discussion", read);
+            Assert.Contains("ThreadKey.Length == 0", read);
+
+            // And the field survives as a nullable, so the response shape is unchanged.
+            Assert.Contains("threadId = thread?.ThreadId", read);
+        }
+
+        // The POST path is deliberately untouched: it is what creates the thread.
+        [Theory]
+        [InlineData("CrossBuy/Controllers/InventoryController.cs", "QuotationConversationAdd(int id")]
+        [InlineData("CrossBuy/Controllers/AccountingController.cs", "InvoiceConversationAdd(string? entity, int id")]
+        public void The_conversation_POST_still_reaches_the_creating_path(string controller, string signature)
+        {
+            var add = Member(StripComments(Read(controller)), signature);
+
+            // It passes the ENTITY and no ThreadId, which is what makes CommCommentService.AddAsync
+            // resolve — and create — the canonical thread.
+            Assert.Contains("Comments.AddAsync", add);
+            Assert.DoesNotContain("ThreadId =", add);
+        }
+
         [Fact]
         public void The_quotation_endpoints_exist_on_Inventory_and_not_on_Accounting()
         {

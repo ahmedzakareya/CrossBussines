@@ -37,9 +37,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"رصيد النقدية والبنوك من دفتر الأستاذ",
-			"The cash and bank balance, from the ledger");
+			"The cash and bank balance, from the ledger",
+			"Le solde de trésorerie et des banques, d'après le grand livre");
 
-		public AskText Example => AskText.Of("كام رصيد النقدية؟", "What is our cash balance?");
+		public AskText Example => AskText.Of("كام رصيد النقدية؟", "What is our cash balance?", "Quel est notre solde de trésorerie ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{
@@ -63,7 +64,8 @@ namespace CrossBuy.BL.Platform.Ai
 			if (rows.Count == 0)
 				return AskAnswer.Refuse(AskRefusal.NoData, AskText.Of(
 					"لا توجد حركة مرحَّلة على حسابات النقدية.",
-					"There is no posted movement on the cash accounts."));
+					"There is no posted movement on the cash accounts.",
+					"Aucun mouvement validé n'existe sur les comptes de trésorerie."));
 
 			var ordered = rows.OrderByDescending(r => r.Balance).ToList();
 			var result = ordered
@@ -79,8 +81,12 @@ namespace CrossBuy.BL.Platform.Ai
 				.Append(new Dictionary<string, object?>
 				{
 					["code"] = "",
-					["name"] = "— " + (System.Globalization.CultureInfo.CurrentUICulture
-						.TwoLetterISOLanguageName == "ar" ? "الإجمالي" : "Total"),
+					["name"] = "— " + (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName switch
+					{
+						"ar" => "الإجمالي",
+						"fr" => "Total",
+						_ => "Total",
+					}),
 					["onHand"] = decimal.Round(ordered.Sum(r => r.Balance), 2),
 					["onHandText"] = ordered.Sum(r => r.Balance).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
 				})
@@ -115,9 +121,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"إجمالي المستحق على العملاء، من واقع الفواتير وما خُصّص لها فعلًا",
-			"Total owed by customers, from invoices and what was actually allocated against them");
+			"Total owed by customers, from invoices and what was actually allocated against them",
+			"Total dû par les clients, d'après les factures et les règlements qui leur ont été effectivement affectés");
 
-		public AskText Example => AskText.Of("كام المستحق على العملاء؟", "How much do customers owe us?");
+		public AskText Example => AskText.Of("كام المستحق على العملاء؟", "How much do customers owe us?", "Combien les clients nous doivent-ils ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{
@@ -155,15 +162,26 @@ namespace CrossBuy.BL.Platform.Ai
 
 			if (invoicesOpen == 0 && skippedNoBase == 0)
 				return AskAnswer.Refuse(AskRefusal.NoData, AskText.Of(
-					"لا توجد فواتير مبيعات مفتوحة.", "There are no open sales invoices."));
+					"لا توجد فواتير مبيعات مفتوحة.", "There are no open sales invoices.",
+					"Aucune facture de vente impayée n'a été trouvée."));
 
-			var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 			var rows = new List<IReadOnlyDictionary<string, object?>>
 			{
 				new Dictionary<string, object?>
 				{
-					["name"] = isAr ? "المستحق على العملاء" : "Owed by customers",
-					["code"] = isAr ? $"{invoicesOpen} فاتورة" : $"{invoicesOpen} invoice(s)",
+					["name"] = language switch
+					{
+						"ar" => "المستحق على العملاء",
+						"fr" => "Montant dû par les clients",
+						_ => "Owed by customers",
+					},
+					["code"] = language switch
+					{
+						"ar" => $"{invoicesOpen} فاتورة",
+						"fr" => $"{invoicesOpen} facture(s)",
+						_ => $"{invoicesOpen} invoice(s)",
+					},
 					["onHand"] = decimal.Round(open, 2),
 					["onHandText"] = open.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
 				},
@@ -184,7 +202,8 @@ namespace CrossBuy.BL.Platform.Ai
 					WithheldNote = skippedNoBase == 0 ? null : AskText.Of(
 						$"استُبعدت {skippedNoBase} فاتورة لعدم وجود مبلغ بالعملة الأساسية، فالإجمالي أعلاه جزئي.",
 						$"{skippedNoBase} invoice(s) were excluded for having no base-currency amount,"
-						+ " so the total above is partial."),
+						+ " so the total above is partial.",
+						$"{skippedNoBase} facture(s) exclue(s) : le montant en devise de base est absent. Le total est partiel."),
 				},
 			};
 		}

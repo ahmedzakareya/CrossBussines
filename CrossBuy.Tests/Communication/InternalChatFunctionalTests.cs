@@ -126,6 +126,22 @@ namespace CrossBuy.Tests.Communication
         }
 
         [Fact]
+        public async Task Library_attachment_route_is_bound_to_the_persisted_message_id()
+        {
+            using var h = new ChatHost();
+            var conv = h.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            h.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+
+            var dto = await h.Service().SendAsync(ChatHost.CompanyA, ChatHost.Alice, conv, null,
+                "/Chat/Attachment?messageId={messageId}&fileId=42", "quote.pdf", "file", null, null);
+
+            Assert.NotNull(dto);
+            var message = await h.Platform.Db.ChatMessages.AsNoTracking().SingleAsync(m => m.ID == dto!.Id);
+            Assert.Equal($"/Chat/Attachment?messageId={dto.Id}&fileId=42", message.AttachmentPath);
+            Assert.Equal(message.AttachmentPath, dto.AttachmentPath);
+        }
+
+        [Fact]
         public async Task An_absurd_page_size_is_clamped_rather_than_honoured()
         {
             using var h = new ChatHost();

@@ -43,7 +43,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"الأطباء المسجَّلون: العدد حسب القسم أو نوع التعاقد أو الحالة، أو البحث عن طبيب بالاسم",
-			"Registered practitioners: the count by department, engagement or status, or one doctor by name");
+			"Registered practitioners: the count by department, engagement or status, or one doctor by name",
+			"Praticiens enregistrés : effectifs par service, type de contrat ou statut, ou recherche d'un médecin par son nom");
 
 		public override AskText Rules => AskText.Of(
 			"الأطباء المسجَّلون في هذه الشركة · غير النشطين مشمولون وظاهرون بحالتهم، فالعدد هو السجل "
@@ -61,28 +62,28 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department"),
+			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department", "Service"),
 				// "عيادة" IS NOT A WORDING FOR "قسم". The owner asked «جيب قائمة العيادات» and was
 				// handed the list of doctors, because this column had claimed the word. A clinic is
 				// a room a doctor sits in; it is its own dimension, below.
 				Synonyms = new[] { "قسم", "اقسام", "الاقسام", "تخصص", "التخصص", "تخصصات",
 					"department", "departments", "specialty", "specialties", "unit" } },
-			new AskColumn { Name = "clinic", Kind = AskColumnKind.Dimension, Label = AskText.Of("العيادة", "Clinic"),
+			new AskColumn { Name = "clinic", Kind = AskColumnKind.Dimension, Label = AskText.Of("العيادة", "Clinic", "Clinique"),
 				Synonyms = new[] { "عيادة", "العيادة", "عيادات", "العيادات", "غرفة", "الغرفة",
 					"clinic", "clinics", "room", "rooms" } },
 			// ITS VALUES ARE NOT ITS SYNONYMS. "زائر" and "متفرغ" name a KIND of engagement, not the
 			// column, and listing them here made "الاطباء الزائرين" group by engagement and rank
 			// all three kinds — answering "which engagement has the most doctors" to a question
 			// about one of them. They belong in the row's search text, where they become a filter.
-			new AskColumn { Name = "engagement", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع التعاقد", "Engagement"),
+			new AskColumn { Name = "engagement", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع التعاقد", "Engagement", "Type de contrat"),
 				Synonyms = new[] { "تعاقد", "التعاقد", "نوع التعاقد",
 					"engagement", "contract type" } },
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status", "Statut"),
 				Synonyms = new[] { "حالة", "الحالة", "status" } },
-			new AskColumn { Name = "title", Kind = AskColumnKind.Dimension, Label = AskText.Of("الدرجة", "Title"),
+			new AskColumn { Name = "title", Kind = AskColumnKind.Dimension, Label = AskText.Of("الدرجة", "Title", "Titre"),
 				Synonyms = new[] { "درجة", "الدرجة", "لقب", "اللقب", "title", "grade" } },
 
-			new AskColumn { Name = "headcount", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأطباء", "Practitioners"),
+			new AskColumn { Name = "headcount", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأطباء", "Practitioners", "Praticiens"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "اطباء", "الاطباء", "طبيب", "الطبيب", "دكاترة",
 					"الدكاترة", "دكتور", "الدكتور", "practitioners", "doctors", "physicians", "count", "how many" } },
 		};

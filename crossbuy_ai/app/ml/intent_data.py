@@ -53,6 +53,7 @@ APPTS = "hospital.appointments"
 DX = "hospital.diagnoses"
 WARD = "hospital.ward"
 LAB = "hospital.lab"
+TASKS = "tasks.query"
 OUT_OF_SCOPE = "none"
 
 # sales.top-items, sales.top-customers and sales.item-margin were retired into sales.query:
@@ -60,7 +61,7 @@ OUT_OF_SCOPE = "none"
 # them could. Their vocabulary is kept below, under the one id.
 INTENT_IDS = (STOCK, VALUE, MOVES, WAREHOUSES, CASH, RECEIVABLES, ANOMALIES, DORMANT,
               COLLECTION, SALES_QUERY, CATEGORIES, PURCHASES, STOCKQ, POSQ, HRQ,
-              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX, WARD, LAB)
+              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX, WARD, LAB, TASKS)
 
 # Slot fillers. Real names from the catalogue plus shapes the catalogue contains — a name with a
 # number in it, a Latin name inside an Arabic sentence, a two-word name, a code.
@@ -112,6 +113,7 @@ TEMPLATES: dict[str, list[str]] = {
         "{i} عندنا كام", "عندنا كام {i}", "فيه كام {i}", "فيه {i} قد ايه",
         "عايز اعرف رصيد {i}", "محتاج اعرف كمية {i}", "قوللي رصيد {i}",
         "كمية {i} في المخزن", "كم الكمية المتاحة من {i}", "المتاح من {i}",
+        "اطلعلي الموجود من {i}", "ايه الموجود من {i}", "المتوفر من {i} قد ايه",
         "المخزون من {i}", "مخزون {i}", "رصيد الصنف {i}", "ارصدة {i}",
         "هو فاضل كام {i}", "باقي كام {i}", "لسه فيه {i}", "في {i} ولا خلص",
         "stock of {i}", "how much {i} do we have", "{i} stock level",
@@ -205,6 +207,8 @@ TEMPLATES: dict[str, list[str]] = {
         "open receivables", "what do customers owe us", "accounts receivable",
         "outstanding customer balances", "who owes us money", "AR balance",
         "customer debts", "unpaid customer invoices", "who has not paid", "receivables balance", "money owed by customers", "outstanding invoices", "total due from customers",
+        "مين ما سددش حسابه", "العملاء لسه عليهم فلوس قد ايه", "مين لسه ما دفعش",
+        "who still has an unpaid balance", "which customers have not paid yet",
     ],
     ANOMALIES: [
         "فيه قيود شاذة", "فيه قيود غريبة", "قيود شاذة", "القيود الشاذة",
@@ -691,7 +695,67 @@ TEMPLATES: dict[str, list[str]] = {
         "average collection period", "how fast do customers pay", "time to collect",
         "payment speed", "how quickly are invoices settled",
     ],
+    TASKS: [
+        "المهام", "قائمة المهام", "وريني المهام", "اعرض المهام المفتوحة", "ما المهام المتأخرة",
+        "المهام المستحقة", "مهامي الحالية", "مهامي المتأخرة", "المهام حسب الحالة",
+        "عدد المهام حسب الأولوية", "كم مهمة عاجلة عندنا", "المهام التي موعدها اليوم",
+        "tasks", "show my tasks", "list open tasks", "which tasks are overdue",
+        "tasks due today", "task count by status", "how many urgent tasks", "my current tasks",
+        "list tasks by priority", "show tasks by category", "what work items are due soon",
+        "الشغل المتأخر اللي لازم اخلصه", "المهام اللي قرب ميعادها", "الحاجات اللي لسه مخلصتهاش",
+        "هل في مهام مستحقة قريب", "ايه المهام اللي معادها قرب", "المهام اللي عليا ولسه مخلصتهاش",
+        "مهامي اللي لازم اخلصها", "ايه المهام المطلوبة مني الاسبوع ده", "في مهام قربت تستحق؟",
+        "ايه اللي لازم اخلصه قبل الجمعة", "ايه مهامي اللي ميعادها قبل الجمعة",
+        "what tasks should I finish before a date", "What work is still waiting on me?",
+        "what tasks are waiting for me", "what should I finish before Friday",
+        "which of my tasks are still open", "tasks assigned to me that are not done",
+        "my pending tasks", "tasks due this week", "tasks waiting for me",
+    ],
 }
+
+# French is a registered product culture. Character n-grams do not translate an English or Arabic
+# question, so French needs representative examples in the trained corpus itself. These remain
+# ordinary intent examples and use the same local model and refusal boundary; no runtime provider
+# or translation call is introduced.
+FRENCH_TEMPLATES: dict[str, list[str]] = {
+    STOCK: ["combien de {i} avons-nous en stock", "quel est le stock de {i}", "reste-t-il des {i}"],
+    VALUE: ["quelle est la valeur du stock de {i}", "combien vaut le stock de {i}", "quel est le coût moyen de {i}"],
+    MOVES: ["historique des mouvements de {i}", "dernières opérations sur {i}", "entrées et sorties de {i}"],
+    WAREHOUSES: ["quels entrepôts puis-je consulter", "liste des entrepôts accessibles", "quels sont mes entrepôts"],
+    CASH: ["quel est le solde de trésorerie", "combien avons-nous en banque", "quelle est la trésorerie disponible"],
+    RECEIVABLES: ["quelles factures clients sont impayées", "montant total des créances clients", "qui nous doit de l'argent"],
+    ANOMALIES: ["y a-t-il des écritures comptables inhabituelles", "détecte les écritures en double", "quelles écritures doivent être vérifiées"],
+    DORMANT: ["quels articles n'ont pas bougé récemment", "articles sans mouvement", "quels produits sont inactifs"],
+    COLLECTION: ["quel est le délai moyen de recouvrement", "combien de jours pour encaisser les créances", "délai de paiement des clients"],
+    SALES_QUERY: ["combien avons-nous vendu", "ventes par mois", "quels sont les chiffres de vente"],
+    CATEGORIES: ["quelles catégories d'articles avons-nous", "liste des catégories de produits", "combien de catégories d'articles"],
+    PURCHASES: ["combien avons-nous acheté à {v}", "achats auprès de {v}", "montant des achats par fournisseur"],
+    STOCKQ: ["résumé du stock", "quels articles sont disponibles", "état actuel des stocks"],
+    POSQ: ["résumé des ventes en caisse", "combien le point de vente a-t-il vendu", "ventes du magasin"],
+    HRQ: ["combien d'employés avons-nous", "effectif par service", "résumé des effectifs"],
+    EXPENSES: ["quelles sont nos dépenses", "total des dépenses par mois", "résumé des frais"],
+    DOCTORS: ["liste des praticiens", "combien de médecins avons-nous", "quels praticiens sont disponibles"],
+    MEDS: ["liste des médicaments", "quels médicaments sont disponibles", "rechercher un médicament"],
+    BILLING: ["résumé de la facturation", "montant facturé par mois", "quelles factures ont été émises"],
+    CLAIMS: ["état des demandes de remboursement", "quelles réclamations sont en attente", "montant des demandes approuvées"],
+    APPTS: ["rendez-vous d'aujourd'hui", "liste des prochains rendez-vous", "combien de rendez-vous sont prévus"],
+    DX: ["diagnostics les plus fréquents", "liste des diagnostics", "combien de diagnostics ont été enregistrés"],
+    WARD: ["quels lits sont libres", "occupation des services", "combien de patients sont hospitalisés"],
+    LAB: ["résultats de laboratoire en attente", "analyses à traiter", "état des demandes de laboratoire"],
+    TASKS: ["liste des tâches ouvertes", "quelles tâches sont en retard",
+            "quelles sont mes tâches", "tâches à échéance aujourd'hui",
+            "combien de tâches par statut", "montre les tâches urgentes"],
+}
+FRENCH_NEGATIVES: list[str] = [
+    "quelle est la météo aujourd'hui", "quel temps fera-t-il demain",
+    "raconte-moi une blague", "écris un poème", "quelle heure est-il",
+    "quel est le meilleur fournisseur", "quel fournisseur est le moins cher",
+    "qui est le meilleur client", "traduis cette phrase en anglais",
+    "explique-moi la physique quantique", "donne-moi une recette de cuisine",
+    "comment réparer mon ordinateur", "qui va gagner le match",
+]
+for _intent_id, _french_examples in FRENCH_TEMPLATES.items():
+    TEMPLATES[_intent_id].extend(_french_examples)
 
 # ---------------------------------------------------------------------------------------------
 # NEGATIVES. The third group is the one that earns its place: business questions that use our
@@ -704,6 +768,8 @@ NEGATIVES = [
     "اكتب لي قصيدة", "احكيلي نكتة", "كام الساعة", "فين اقرب مطعم",
     "hello", "how are you", "thanks", "who are you", "what is the weather",
     "write me a poem", "tell me a joke", "what time is it",
+    "bonjour", "comment ça va", "merci", "qui es-tu", "quelle est la météo",
+    "raconte-moi une blague", "écris un poème", "quelle heure est-il",
     "asdf", "...", "؟؟؟", "123456", "test", "تجربة",
     # other parts of the business, with no handler here.
     #
@@ -909,7 +975,40 @@ NEGATIVES = [
     "make me an annual sales report", "generate a stock report", "print the invoice",
     "export this to excel", "email me the report", "build a new report",
     "create a chart of sales", "download the statement",
+    # Task creation is a write request. Keep it distinct from read-only task lists.
+    "please add a new task for me", "create a task for the team", "assign a new task to me",
+    "make me a new task", "add task to my list", "اعمل مهمة جديدة لي", "انشئ مهمة للفريق",
+    "كلفني بمهمة جديدة", "ضيف مهمة جديدة لقائمة مهامي",
+    # Historical cash collected is not the current open-receivables balance or sales revenue.
+    "كم قبضنا من العملاء", "قبضنا من العملاء كام", "اجمالي التحصيل من العملاء",
+    "المبالغ المحصلة من العملاء", "مبالغ قبضناها من العملاء",
+    "how much cash have we collected from customers", "total collections from customers",
+    "how much did customers pay us", "money collected from our customers",
 ]
+
+# Keep the hand-written evaluation set genuinely unseen. A small number of regression phrases
+# intentionally overlap (the two inventory wordings that originally failed in production), but
+# the rest must measure generalisation rather than memorisation. Keep normalized variants here too
+# when Arabic spelling folds (e.g. ة/ه), so the evaluator's normalizer sees no accidental overlap.
+_BENCHMARK_HOLDOUTS = {
+    "ايه البضاعة اللي بتتباع اكتر من غيرها",
+    "ايه البضاعه اللي بتتباع اكتر من غيرها",
+    "which goods brought in the most money",
+    "مين اكبر زباين عندنا",
+    "which clients spend the most with us",
+    "كام قطعه راحت من كل صنف",
+    "وريني اخر ثلاث فواتير",
+    "الفئات",
+    "مين أحسن مورد عندنا",
+    "ما هو الطقس اليوم",
+    "ايه نسبة تلبية الطلبات عندنا",
+    "الموازنة مقابل الفعلي للشهر ده",
+    "ايه الاصناف اللي هتخلص الاسبوع الجاي",
+    "which supplier raised prices the most",
+}
+for _intent, _phrases in TEMPLATES.items():
+    TEMPLATES[_intent] = [phrase for phrase in _phrases if phrase not in _BENCHMARK_HOLDOUTS]
+NEGATIVES = [phrase for phrase in NEGATIVES if phrase not in _BENCHMARK_HOLDOUTS]
 
 # ---------------------------------------------------------------------------------------------
 # Noise. Applied at generation time so the model sees the same sentence worn several ways.

@@ -40,7 +40,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أوامر الأدوية للمرضى المنوَّمين: العدد حسب الدواء أو طريقة الإعطاء أو الحالة",
-			"Inpatient medication orders: the count by drug, route or status");
+			"Inpatient medication orders: the count by drug, route or status",
+			"Prescriptions des patients hospitalisés : nombre par médicament, voie d'administration ou statut");
 
 		public override AskText Rules => AskText.Of(
 			"أوامر الوصف فقط — لا الصرف من الصيدلية ولا تسجيل الإعطاء، وهي ثلاثة أرقام مختلفة · "
@@ -53,12 +54,12 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "drug", Kind = AskColumnKind.Dimension, Label = AskText.Of("الدواء", "Drug"),
+			new AskColumn { Name = "drug", Kind = AskColumnKind.Dimension, Label = AskText.Of("الدواء", "Drug", "Médicament"),
 				Synonyms = new[] { "دواء", "الدواء", "ادوية", "الادوية", "علاج", "العلاج", "عقار", "العقاقير",
 					"drug", "drugs", "medicine", "medicines", "medication", "medications" } },
-			new AskColumn { Name = "route", Kind = AskColumnKind.Dimension, Label = AskText.Of("طريقة الإعطاء", "Route"),
+			new AskColumn { Name = "route", Kind = AskColumnKind.Dimension, Label = AskText.Of("طريقة الإعطاء", "Route", "Voie d'administration"),
 				Synonyms = new[] { "طريقة", "الطريقة", "طريق الاعطاء", "route", "administration route" } },
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status", "Statut"),
 				Synonyms = new[] { "حالة", "الحالة", "status" } },
 			// THE COLUMN IS THE CLASSIFICATION; "مخدِّر" IS ONE OF ITS VALUES.
 			//
@@ -66,14 +67,14 @@ namespace CrossBuy.BL.Platform.Ai
 			// and listing "مخدرة" among its synonyms made "الأدوية المخدرة" a question ABOUT the
 			// column, so it grouped and ranked every drug instead of filtering to the controlled
 			// ones. The value words live in the row's search text, where they become a filter.
-			new AskColumn { Name = "controlled", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف الرقابي", "Controlled class"),
+			new AskColumn { Name = "controlled", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف الرقابي", "Controlled class", "Catégorie réglementée"),
 				Synonyms = new[] { "تصنيف رقابي", "التصنيف الرقابي", "رقابي", "controlled class", "classification" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
-			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأوامر", "Orders"),
+			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأوامر", "Orders", "Prescriptions"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "اوامر", "الاوامر", "وصفات", "الوصفات",
 					"orders", "prescriptions", "count", "how many" } },
 		};

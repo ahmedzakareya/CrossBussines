@@ -1,52 +1,205 @@
 principal_entity,dependent_entity,foreign_key_columns,required,ef_delete_behavior,sql_server_result,production_behavior,classification,recommended_action
+Account,ConstructionCostCode,DefaultAccountId,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+BoqItem,ConstructionDsrQuantityLine,BoqItemId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Branch,Employee,BranchID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Branch,RosterAssignment,BranchID,optional,ClientSetNull,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Branch,RosterPeriod,BranchID,optional,ClientSetNull,accepted,FK enforced by hand-written SQL where present,matches intent,none
 BusinessEvent,BusinessEventDispatch,EventId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 CommercialRevision,CommercialRevisionLine,CommercialRevisionId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Companies,Branch,CompanyID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Companies,Companies,ParentCompany,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Companies,Employee,EmpCompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 CompanyType,Companies,CompanyTypeId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionActualCostAllocation,ConstructionActualCostAllocationLine,AllocationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionActualCostAllocation,ConstructionMaterialConsumption,ActualAllocationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetExceptionRequest,ConstructionBudgetExceptionConsumption,ExceptionRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetExceptionRequest,ConstructionBudgetExceptionDecision,ExceptionRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetExceptionRequest,ConstructionPurchaseApprovalRequest,ExceptionId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetLine,ConstructionBudgetTransferRequest,FromLineId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetLine,ConstructionBudgetTransferRequest,ToLineId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetPolicy,ConstructionBudgetVersion,CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetTransferDecision,ConstructionBudgetTransferApplication,TransferDecisionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetTransferRequest,ConstructionBudgetTransferApplication,TransferRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetTransferRequest,ConstructionBudgetTransferDecision,TransferRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetExceptionRequest,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetLine,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetTransferApplication,OriginalBudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetTransferApplication,ResultBudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetTransferRequest,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionBudgetVersion,PreviousVersionId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionCommitmentReservation,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionCostForecastSnapshot,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionOrderAllocation,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionPurchaseDraft,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionPurchaseRebaseDecision,TargetBudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionReservationExposureRebase,TargetBudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionReservationRebaseRequest,TargetBudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionBudgetVersion,ConstructionWarehouseExceptionRequest,BudgetVersionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionBudgetExceptionConsumption,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionCommitmentRelease,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionMaterialConsumption,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionPurchaseAdmission,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionPurchaseRebaseDecision,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionReservationExposureRebase,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCommitmentReservation,ConstructionReservationRebaseRequest,ReservationId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCostCode,ConstructionActualCostAllocationLine,CostCodeId+CompanyID+CostCategory,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCostCode,ConstructionBudgetLine,CostCodeId+CompanyID+CostCategory,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCostCode,ConstructionCostCode,ParentId+CompanyID+Category,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCostCode,ConstructionOrderAllocationLine,CostCodeId+CompanyID+CostCategory,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionCostForecastSnapshot,ConstructionCostForecastSnapshot,PreviousSnapshotId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDailySiteReport,AmendsReportId+SiteId+ProjectId+CompanyID+ReportDate,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrAttachment,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrEquipmentLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrEventLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrInstructionLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrManpowerLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrMaterialLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrQuantityLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionDailySiteReport,ConstructionDsrVisitorLine,ReportId+SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionOrderAllocation,ConstructionBudgetExceptionRequest,AllocationId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionOrderAllocation,ConstructionCommitmentReservation,AllocationId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionOrderAllocation,ConstructionOrderAllocationLine,AllocationId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionOrderAllocation,ConstructionPurchaseApprovalRequest,AllocationId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPartialInvoice,ConstructionPartialInvoiceSlice,HeaderId+CompanyID+ProjectId+PurchaseOrderId+PurchaseInvoiceId+JournalEntryId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseAdmission,ConstructionRebasedWarehouseConsentApplication,AdmissionId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseAdmission,ConstructionWarehouseExceptionApplication,AdmissionId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseApprovalRequest,ConstructionPurchaseAdmission,ApprovalRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseApprovalRequest,ConstructionPurchaseRebaseRequest,ApprovalRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseApprovalRequest,ConstructionRebasedWarehouseConsentBinding,ApprovalRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseApprovalRequest,ConstructionWarehouseExceptionBinding,ApprovalRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseDraft,ConstructionPurchaseApprovalRequest,DraftId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseDraft,ConstructionWarehouseExceptionRequest,DraftId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseRebaseRequest,ConstructionPurchaseRebaseDecision,RebaseRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionPurchaseRebaseRequest,ConstructionRebasedWarehouseConsentBinding,RebaseRequestId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionRebasedWarehouseConsentBinding,ConstructionRebasedWarehouseConsentApplication,BindingId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionRebasedWarehouseConsentDecision,ConstructionRebasedWarehouseConsentBinding,ConsentDecisionRowId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionRebasedWarehouseConsentRequest,ConstructionRebasedWarehouseConsentBinding,ConsentRequestRowId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionRebasedWarehouseConsentRequest,ConstructionRebasedWarehouseConsentDecision,RequestRowId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionReservationExposureRebase,ConstructionPurchaseRebaseRequest,ExposureRebaseId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionReservationExposureRebase,ConstructionRebasedWarehouseConsentBinding,ExposureRebaseId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionReservationExposureRebase,ConstructionRebasedWarehouseConsentRequest,ExposureRebaseId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionReservationRebaseRequest,ConstructionReservationExposureRebase,RebaseRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionReservationRebaseRequest,ConstructionReservationRebaseDecision,RebaseRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionSite,ConstructionDailySiteReport,SiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionSite,ConstructionRebasedWarehouseConsentBinding,DestinationSiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionSite,ConstructionRebasedWarehouseConsentRequest,DestinationSiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionSite,ConstructionWarehouseExceptionRequest,DestinationSiteId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionStructureSettings,WbsNode,CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionWarehouseExceptionBinding,ConstructionWarehouseExceptionApplication,BindingId+PurchaseOrderId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionWarehouseExceptionDecision,ConstructionWarehouseExceptionBinding,DecisionId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ConstructionWarehouseExceptionRequest,ConstructionWarehouseExceptionDecision,ExceptionRequestId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 CountriesLookup,Branch,CountryID,required,Cascade,REJECTED SQL 1785 multiple cascade paths,FK enforced by hand-written SQL where present,EF DDL generation issue only,OnDelete(NoAction) to match the database
 CountriesLookup,Companies,CountryID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 CountriesLookup,Employee,CountryID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionActualCostAllocation,FunctionalCurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionBudgetExceptionRequest,CurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionBudgetVersion,CurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionCommitmentReservation,CurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionMaterialConsumption,FunctionalCurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,ConstructionPurchaseDraft,CurrencyId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Currency,JournalEntry,FunctionalCurrencyId,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 DeliveryNote,DeliveryNoteLine,DeliveryNoteId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 DepreciationRun,DepreciationLine,DepreciationRunId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Employee,EmployeeOnboarding,EmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Employee,LeaveApprovalStep,ApproverEmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Employee,LeaveRequest,EmployeeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Employee,Notification,RecipientEmployeeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Employee,PolicyAssignments,EmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Employee,RosterAssignment,EmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Employee,WbsNode,ResponsibleEmployeeId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+EmployeeOnboarding,EmployeeOnboardingItem,OnboardingID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 EmployeeRequest,EmployeeRequestStep,EmployeeRequestID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+GoodsReceipt,ConstructionMaterialConsumption,GoodsReceiptId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+GoodsReceipt,ConstructionPartialInvoiceSlice,GoodsReceiptId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 GoodsReceipt,GoodsReceiptLine,GoodsReceiptId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+GoodsReceiptLine,ConstructionDsrMaterialLine,GoodsReceiptLineId,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+GoodsReceiptLine,ConstructionMaterialConsumption,GoodsReceiptLineId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+GoodsReceiptLine,ConstructionPartialInvoiceSlice,GoodsReceiptLineId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Hierarchical,Hierarchical,H_Parent,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 HierarchicalType,Hierarchical,H_Type,optional,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+HospitalAdmission,HospitalBedStay,AdmissionId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalBill,HospitalBillLine,BillId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalBill,HospitalPayment,BillId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalCashierShift,HospitalPayment,ShiftId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalDispense,HospitalDispenseLine,DispenseId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalEncounter,HospitalEncounterDiagnosis,EncounterId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalEncounter,HospitalEncounterOrder,EncounterId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalEncounter,HospitalPrescriptionLine,EncounterId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalLabOrder,HospitalLabCriticalAlert,LabOrderId,optional,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalLabOrder,HospitalLabResult,LabOrderId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalPriceList,HospitalPriceListLine,PriceListId,required,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HospitalRadOrder,HospitalLabCriticalAlert,RadOrderId,optional,NoAction,accepted,FK enforced by hand-written SQL where present,matches intent,none
 IdentityRole,IdentityRoleClaim`1,RoleId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 IdentityRole,IdentityUserRole`1,RoleId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+InventoryApproval,ConstructionPurchaseApprovalRequest,ApprovalId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 JobApplication,ApplicationDocument,ApplicationID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 JobTitle,Employee,JobTitleID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+JournalEntry,ConstructionActualCostAllocation,JournalEntryId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntry,ConstructionMaterialConsumption,IssueJournalEntryId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntry,ConstructionPartialInvoice,JournalEntryId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 JournalEntry,JournalEntryLine,JournalEntryId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+JournalEntry,PurchaseOrderInvoiceLineLink,JournalEntryId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntryLine,ConstructionActualCostAllocation,JournalEntryLineId+JournalEntryId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntryLine,ConstructionMaterialConsumption,ExpenseJournalLineId+IssueJournalEntryId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntryLine,ConstructionPartialInvoiceSlice,JournalEntryLineId+JournalEntryId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+JournalEntryLine,PurchaseOrderInvoiceLineLink,JournalEntryLineId+JournalEntryId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 LandedCost,LandedCostCharge,LandedCostId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 LeaveRequest,LeaveApprovalStep,LeaveRequestID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 LeaveTypes,LeavePolicies,LeaveTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 LeaveTypes,LeaveRequest,LeaveTypeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+OnboardingTemplate,OnboardingTemplateItem,TemplateID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PlatformDocument,ClientDocumentPublication,PlatformDocumentId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 Policies,AttendancePolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Policies,LeavePolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Policies,PolicyAssignments,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Policies,SalaryPolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 PriceList,PriceListLine,PriceListId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 ProgressBilling,ProgressBillingLine,BillingId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Project,ConstructionActualCostAllocation,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ConstructionBudgetVersion,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ConstructionDailySiteReport,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ConstructionPartialInvoice,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ConstructionPurchaseDraft,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ConstructionSite,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ProjectDeliverable,ProjectId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,ProjectMilestone,ProjectId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Project,WbsNode,ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 ProjectMaterialIssue,ProjectMaterialIssueLine,IssueId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+ProjectMaterialIssueLine,ConstructionDsrMaterialLine,ProjectMaterialIssueLineId,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+ProjectMilestone,ProjectDeliverable,MilestoneId,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 ProjectProgress,ProjectProgressLine,ProgressId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseInvoice,ConstructionPartialInvoice,PurchaseInvoiceId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 PurchaseInvoice,PurchaseInvoiceLine,PurchaseInvoiceId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseInvoice,PurchaseOrderInvoiceLink,PurchaseInvoiceId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseInvoiceLine,ConstructionPartialInvoiceSlice,PurchaseInvoiceLineId+PurchaseInvoiceId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseInvoiceLine,PurchaseOrderInvoiceLineLink,PurchaseInvoiceLineId+PurchaseInvoiceId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionMaterialConsumption,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionOrderAllocation,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionPartialInvoice,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionPurchaseDraft,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionRebasedWarehouseConsentRequest,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,ConstructionWarehouseExceptionRequest,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrder,PurchaseOrderInvoiceLink,PurchaseOrderId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 PurchaseOrder,PurchaseOrderLine,PurchaseOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseOrderInvoiceLink,PurchaseOrderInvoiceLineLink,PurchaseOrderId+PurchaseInvoiceId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrderLine,ConstructionMaterialConsumption,PurchaseOrderLineId+PurchaseOrderId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrderLine,ConstructionOrderAllocationLine,SourceLineId+PurchaseOrderId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrderLine,ConstructionPartialInvoiceSlice,PurchaseOrderLineId+PurchaseOrderId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+PurchaseOrderLine,PurchaseOrderInvoiceLineLink,PurchaseOrderLineId+PurchaseOrderId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 PurchaseReturn,PurchaseReturnLine,PurchaseReturnId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Quotation,QuotationLine,QuotationId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+RosterAssignment,RosterAssignmentRevision,AssignmentID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+RosterPeriod,RosterAssignment,PeriodID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 SalaryPolicies,Employee,SalaryPoliciesID,optional,ClientSetNull,accepted,FK enforced by hand-written SQL where present,matches intent,none
 SalesInvoice,SalesInvoiceLine,SalesInvoiceId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 SalesOrder,SalesOrderLine,SalesOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 SalesReturn,SalesReturnLine,SalesReturnId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 StockCount,StockCountLine,StockCountId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+StockMovement,ConstructionMaterialConsumption,IssueMovementId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+StockMovement,ConstructionMaterialConsumption,ReceiptMovementId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 StockTransfer,StockTransferLine,StockTransferId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 StockWriteOff,StockWriteOffLine,StockWriteOffId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Tag,TagAssignment,TagId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
 TaskTemplate,TaskTemplateItem,TaskTemplateId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Users,Employee,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Users,IdentityUserClaim`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
@@ -54,3 +207,18 @@ Users,IdentityUserLogin`1,UserId,required,Cascade,accepted,FK enforced by hand-w
 Users,IdentityUserRole`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 Users,IdentityUserToken`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
 VariationOrder,VariationOrderLine,VariationOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Warehouse,ConstructionRebasedWarehouseConsentBinding,SourceWarehouseId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Warehouse,ConstructionRebasedWarehouseConsentRequest,SourceWarehouseId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Warehouse,ConstructionSite,WarehouseId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Warehouse,ConstructionWarehouseExceptionRequest,SourceWarehouseId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionActualCostAllocationLine,WbsNodeId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionBudgetLine,WbsNodeId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrAttachment,WbsNodeId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrEquipmentLine,WbsNodeId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrEventLine,WbsNodeId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrManpowerLine,WbsNodeId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrMaterialLine,WbsNodeId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionDsrQuantityLine,WbsNodeId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,ConstructionOrderAllocationLine,WbsNodeId+ProjectId+CompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WbsNode,WbsNode,ParentId+ProjectId+CompanyID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+WorkShift,RosterAssignment,ShiftID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none

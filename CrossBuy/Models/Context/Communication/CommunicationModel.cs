@@ -309,6 +309,8 @@ namespace CrossBuy.Models.Context.Communication
                 e.Property(x => x.EntityType).HasMaxLength(EntityCodeLength).IsRequired();
                 e.Property(x => x.TitleAr).HasMaxLength(TitleLength).IsRequired();
                 e.Property(x => x.TitleEn).HasMaxLength(TitleLength).IsRequired();
+                e.Property(x => x.TitleFr).HasMaxLength(TitleLength).IsRequired(false);
+                e.Property(x => x.BodyFr).IsRequired(false);
                 e.Property(x => x.Url).HasMaxLength(StorageKeyLength);
                 e.Property(x => x.DedupKey).HasMaxLength(DedupKeyLength).IsRequired();
 

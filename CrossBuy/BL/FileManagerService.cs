@@ -22,12 +22,15 @@ namespace CrossBuy.BL
     public interface IFileManagerService
     {
         Task<LibListDto> ListAsync(int companyId, int? folderId, string? q);
+        Task<List<LibItemDto>> ListChatAttachmentsAsync(int companyId, int empId, string? q);
         Task<int> CreateFolderAsync(int companyId, int empId, int? parentId, string name, string? nameEn);
         Task<bool> RenameAsync(int companyId, int empId, int id, string name, string? nameEn);
         Task<int> MoveAsync(int companyId, int empId, IEnumerable<int> ids, int? targetFolderId);
         Task<int> DeleteAsync(int companyId, int empId, IEnumerable<int> ids);
         Task<int> AddFileAsync(int companyId, int empId, int? parentId, string name, string? nameEn, string storedPath, string? contentType, long size);
         Task<LibraryItem?> GetFileAsync(int companyId, int id);
+        Task<LibraryItem?> GetChatAttachmentAsync(int companyId, int id);
+        Task<bool> DeleteChatAttachmentAsync(int companyId, int empId, int id);
         Task<List<LibraryItem>> GetFilesAsync(int companyId, IEnumerable<int> ids);
         Task<List<LibFolderDto>> FolderTreeAsync(int companyId);
         Task<bool> FolderExistsAsync(int companyId, int folderId);
@@ -41,12 +44,24 @@ namespace CrossBuy.BL
         private IQueryable<LibraryItem> Live(int companyId) =>
             _db.LibraryItems.AsNoTracking().Where(i => i.CompanyID == companyId && i.DeletedAt == null);
 
+        private static string ChatPrefix(int companyId) => $"/uploads/library/{companyId}/chat/";
+
+        // Older rows may contain Windows separators. Exclude either spelling in SQL so private
+        // chat files cannot appear in the company-wide library listing or bulk operations.
+        private IQueryable<LibraryItem> NotPrivateChatFiles(IQueryable<LibraryItem> query, int companyId)
+        {
+            var slashPrefix = ChatPrefix(companyId);
+            var backslashPrefix = slashPrefix.Replace('/', '\\');
+            return query.Where(i => i.IsFolder || i.StoredPath == null ||
+                (!i.StoredPath.StartsWith(slashPrefix) && !i.StoredPath.StartsWith(backslashPrefix)));
+        }
+
         public async Task<LibListDto> ListAsync(int companyId, int? folderId, string? q)
         {
             // validate the folder belongs to the company (else fall back to root)
             if (folderId.HasValue && !await FolderExistsAsync(companyId, folderId.Value)) folderId = null;
 
-            var query = Live(companyId).Where(i => i.ParentId == folderId);
+            var query = NotPrivateChatFiles(Live(companyId), companyId).Where(i => i.ParentId == folderId);
             var term = (q ?? "").Trim();
             if (term.Length > 0) query = query.Where(i => i.Name.Contains(term));
 
@@ -67,7 +82,9 @@ namespace CrossBuy.BL
                     r.Id, r.IsFolder, disp, r.Name, r.NameEn, r.Size, r.IsFolder ? "-" : SizeText(r.Size),
                     (r.UpdatedAt ?? r.CreatedAt)?.ToString("yyyy-MM-dd HH:mm") ?? "-",
                     r.IsFolder ? null : Ext(r.Name),
-                    r.IsFolder ? null : r.StoredPath,
+                    // Keep the physical library path server-side. The download action re-resolves the
+                    // caller's effective company and checks LibraryItems ownership before streaming.
+                    r.IsFolder ? null : $"/FileManager/Download?id={r.Id}",
                     ownerName, ownerEmployeeId: r.OwnerEmpId);
             }).ToList();
 
@@ -80,6 +97,70 @@ namespace CrossBuy.BL
                 : null;
 
             return new LibListDto(items, path, folderCount, fileCount, totalSize, SizeText(totalSize), currentParent);
+        }
+
+        public async Task<List<LibItemDto>> ListChatAttachmentsAsync(int companyId, int empId, string? q)
+        {
+            if (companyId <= 0 || empId <= 0) return new List<LibItemDto>();
+
+            // Membership is resolved in the same tenant before any attachment row is returned. A
+            // LibraryItem alone is not authority to see a chat file.
+            var conversationIds = await (
+                from member in _db.ConversationMembers.AsNoTracking()
+                join conversation in _db.Conversations.AsNoTracking() on member.ConversationId equals conversation.ID
+                where member.EmployeeId == empId && conversation.CompanyID == companyId
+                select conversation.ID).Distinct().ToListAsync();
+            if (conversationIds.Count == 0) return new List<LibItemDto>();
+
+            var messages = await _db.ChatMessages.AsNoTracking()
+                .Where(m => conversationIds.Contains(m.ConversationId) && m.DeletedAt == null && m.AttachmentPath != null)
+                .Select(m => new { m.ID, m.AttachmentPath, m.AttachmentName, m.CreatedAt })
+                .ToListAsync();
+            var references = messages
+                .Select(m => new { Message = m, FileId = ParseChatFileId(m.AttachmentPath) })
+                .Where(x => x.FileId.HasValue)
+                .GroupBy(x => x.FileId!.Value)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Message.CreatedAt).First());
+            if (references.Count == 0) return new List<LibItemDto>();
+
+            var fileIds = references.Keys.ToList();
+            var rows = await _db.LibraryItems.AsNoTracking()
+                .Where(i => fileIds.Contains(i.Id) && i.CompanyID == companyId && !i.IsFolder && i.DeletedAt == null)
+                .ToListAsync();
+            var term = (q ?? "").Trim();
+            var visible = rows
+                .Where(r => FileManagerPaths.IsPrivateChatLibraryPath(companyId, r.StoredPath))
+                .Where(r => term.Length == 0 || r.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase))
+                .ToList();
+            if (visible.Count == 0) return new List<LibItemDto>();
+
+            var isEn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+            var ownerIds = visible.Select(r => r.OwnerEmpId).Distinct().ToList();
+            var owners = await _db.Employee.AsNoTracking().Where(e => ownerIds.Contains(e.ID))
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync();
+
+            return visible
+                .OrderByDescending(r => references[r.Id].Message.CreatedAt)
+                .Select(r =>
+                {
+                    var reference = references[r.Id];
+                    var owner = owners.FirstOrDefault(x => x.ID == r.OwnerEmpId);
+                    var ownerName = owner == null ? "" : (isEn ? (string.IsNullOrWhiteSpace(owner.FullNameEn) ? owner.FullName : owner.FullNameEn) : owner.FullName);
+                    var name = string.IsNullOrWhiteSpace(reference.Message.AttachmentName) ? r.Name : reference.Message.AttachmentName!;
+                    var messageUrl = $"/Chat/Attachment?messageId={reference.Message.ID}&fileId={r.Id}";
+                    return new LibItemDto(r.Id, false, name, name, r.NameEn, r.Size, SizeText(r.Size),
+                        reference.Message.CreatedAt.ToString("yyyy-MM-dd HH:mm"), Ext(name), messageUrl, ownerName,
+                        isChatAttachment: true, ownerEmployeeId: r.OwnerEmpId);
+                }).ToList();
+        }
+
+        private static int? ParseChatFileId(string? attachmentPath)
+        {
+            const string marker = "&fileId=";
+            if (string.IsNullOrWhiteSpace(attachmentPath)) return null;
+            var index = attachmentPath.LastIndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (index < 0 || !int.TryParse(attachmentPath[(index + marker.Length)..], out var id) || id <= 0) return null;
+            return id;
         }
 
         private async Task<List<LibCrumbDto>> BreadcrumbAsync(int companyId, int? folderId)
@@ -135,7 +216,8 @@ namespace CrossBuy.BL
         {
             name = (name ?? "").Trim();
             if (name.Length == 0) return false;
-            var it = await _db.LibraryItems.FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId && i.DeletedAt == null);
+            var it = await NotPrivateChatFiles(_db.LibraryItems, companyId)
+                .FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId && i.DeletedAt == null);
             if (it == null) return false;
             it.Name = name; it.NameEn = Clean(nameEn); it.updatedBy = empId; it.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
@@ -146,7 +228,8 @@ namespace CrossBuy.BL
         {
             if (targetFolderId.HasValue && !await FolderExistsAsync(companyId, targetFolderId.Value)) return 0;
             var idSet = ids.Distinct().ToList();
-            var items = await _db.LibraryItems.Where(i => idSet.Contains(i.Id) && i.CompanyID == companyId && i.DeletedAt == null).ToListAsync();
+            var items = await NotPrivateChatFiles(_db.LibraryItems, companyId)
+                .Where(i => idSet.Contains(i.Id) && i.CompanyID == companyId && i.DeletedAt == null).ToListAsync();
             var moved = 0;
             foreach (var it in items)
             {
@@ -175,7 +258,8 @@ namespace CrossBuy.BL
 
         public async Task<int> DeleteAsync(int companyId, int empId, IEnumerable<int> ids)
         {
-            var roots = await _db.LibraryItems.Where(i => ids.Contains(i.Id) && i.CompanyID == companyId && i.DeletedAt == null).ToListAsync();
+            var roots = await NotPrivateChatFiles(_db.LibraryItems, companyId)
+                .Where(i => ids.Contains(i.Id) && i.CompanyID == companyId && i.DeletedAt == null).ToListAsync();
             if (roots.Count == 0) return 0;
 
             // expand folders to their whole subtree (BFS over ParentId)
@@ -184,7 +268,7 @@ namespace CrossBuy.BL
             var guard = 0;
             while (frontier.Count > 0 && guard++ < 200)
             {
-                var children = await _db.LibraryItems
+                var children = await NotPrivateChatFiles(_db.LibraryItems, companyId)
                     .Where(i => i.ParentId != null && frontier.Contains(i.ParentId.Value) && i.CompanyID == companyId && i.DeletedAt == null)
                     .ToListAsync();
                 if (children.Count == 0) break;
@@ -198,13 +282,34 @@ namespace CrossBuy.BL
             return roots.Count;
         }
 
-        public Task<LibraryItem?> GetFileAsync(int companyId, int id) =>
-            _db.LibraryItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId && !i.IsFolder && i.DeletedAt == null);
+        public async Task<LibraryItem?> GetFileAsync(int companyId, int id) =>
+            await NotPrivateChatFiles(_db.LibraryItems.AsNoTracking(), companyId)
+                .FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId && !i.IsFolder && i.DeletedAt == null);
+
+        public async Task<LibraryItem?> GetChatAttachmentAsync(int companyId, int id)
+        {
+            var item = await _db.LibraryItems.AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId && !i.IsFolder && i.DeletedAt == null);
+            return item != null && FileManagerPaths.IsPrivateChatLibraryPath(companyId, item.StoredPath) ? item : null;
+        }
+
+        public async Task<bool> DeleteChatAttachmentAsync(int companyId, int empId, int id)
+        {
+            var item = await _db.LibraryItems.FirstOrDefaultAsync(i => i.Id == id && i.CompanyID == companyId &&
+                !i.IsFolder && i.DeletedAt == null);
+            if (item == null || !FileManagerPaths.IsPrivateChatLibraryPath(companyId, item.StoredPath)) return false;
+            var now = DateTime.Now;
+            item.DeletedAt = now;
+            item.updatedBy = empId;
+            item.UpdatedAt = now;
+            await _db.SaveChangesAsync();
+            return true;
+        }
 
         public Task<List<LibraryItem>> GetFilesAsync(int companyId, IEnumerable<int> ids)
         {
             var set = ids.Distinct().ToList();
-            return _db.LibraryItems.AsNoTracking()
+            return NotPrivateChatFiles(_db.LibraryItems.AsNoTracking(), companyId)
                 .Where(i => set.Contains(i.Id) && i.CompanyID == companyId && !i.IsFolder && i.DeletedAt == null).ToListAsync();
         }
 

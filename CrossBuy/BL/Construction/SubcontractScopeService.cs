@@ -325,8 +325,8 @@ namespace CrossBuy.BL.Construction
 
 			int? revisionId = null;
 			if (scope.BoqItemId is > 0)
-				revisionId = await _db.BoqLineStates.AsNoTracking()
-					.Where(s => s.BoqItemId == scope.BoqItemId)
+				revisionId = await _db.BoqItems.AsNoTracking()
+					.Where(s => s.ID == scope.BoqItemId)
 					.Select(s => s.CurrentRevisionId).FirstOrDefaultAsync(ct);
 
 			var line = new SubcontractCertificateLine

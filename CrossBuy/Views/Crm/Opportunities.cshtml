@@ -25,8 +25,6 @@
         <button class="btn btn-sm btn-primary" onclick="oppNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New opportunity"]</button>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <!--begin::Pipeline summary (Statistics Widget 3 style)-->
         <div class="row g-3 g-xl-5 mb-5">

@@ -8,7 +8,6 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.clients.anthropic import LLMConfigError, complete
 from app.security import require_secret
 
 router = APIRouter(prefix="/diag", tags=["diag"], dependencies=[Depends(require_secret)])
@@ -28,6 +27,12 @@ class EchoResponse(BaseModel):
 
 @router.post("/echo", response_model=EchoResponse)
 async def echo(body: EchoRequest) -> EchoResponse:
+    # Keep the optional cloud diagnostic out of the local service's startup path. Importing the
+    # Anthropic SDK eagerly traverses a large generated type tree and delayed the whole on-device
+    # FastAPI service even when no provider was configured. Local analysis and intent resolution do
+    # not depend on this client; load it only if this explicitly requested diagnostic is called.
+    from app.clients.anthropic import LLMConfigError, complete
+
     try:
         result = complete(
             messages=[{"role": "user", "content": body.message}],

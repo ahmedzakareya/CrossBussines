@@ -24,7 +24,9 @@
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7183;http://localhost:5268",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__DefaultConnection": "Server=.;Database=CrossBuyDB2;Integrated Security=True;TrustServerCertificate=True",
+        "CommunicationPlatform__TaskLinksProvisioned": "true"
       }
     },
     "IIS Express": {

@@ -50,7 +50,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"طلبات المعمل: العدد وفين وصلت وزمن التنفيذ، والنتايج الحرجة واللي لسه محدش استلمها",
-			"Laboratory orders: how many, how far they have got, how long they take, and the critical results — including any nobody has acknowledged");
+			"Laboratory orders: how many, how far they have got, how long they take, and the critical results — including any nobody has acknowledged",
+			"Demandes du laboratoire : nombre, avancement, délai de traitement et résultats critiques, y compris ceux qui n'ont pas été consultés");
 
 		public override AskText Rules => AskText.Of(
 			"كل سطر هنا طلب تحليل واحد، مش نتيجة واحدة — الطلب الواحد فيه أكتر من تحليل، فالعدد ده "
@@ -78,7 +79,7 @@ namespace CrossBuy.BL.Platform.Ai
 			// its one-word pass and takes the FIRST dimension that matches. With criticality first,
 			// «في نتايج حرجة محدش استلمها» filtered to the criticals and silently dropped the half
 			// that was actually being asked — answering "2 critical" to "has anyone seen them".
-			new AskColumn { Name = "acknowledgement", Kind = AskColumnKind.Dimension, Label = AskText.Of("الاستلام", "Acknowledgement"),
+			new AskColumn { Name = "acknowledgement", Kind = AskColumnKind.Dimension, Label = AskText.Of("الاستلام", "Acknowledgement", "Prise en compte"),
 				Synonyms = new[] { "استلام", "الاستلام", "تبليغ", "التبليغ",
 					"acknowledgement", "acknowledgment", "sign off on result" } },
 			// NAMED "severity", NOT "criticality", AND THE NAME IS THE WHOLE POINT.
@@ -87,26 +88,26 @@ namespace CrossBuy.BL.Platform.Ai
 			// came back as the entire pipeline, 16 orders, with nothing on screen to say it had not
 			// filtered. The Arabic twin passed, because «حرجة» is not inside «تصنيف النتيجة».
 			// Same defect as "accepted" on the claims surface, in the other language.
-			new AskColumn { Name = "severity", Kind = AskColumnKind.Dimension, Label = AskText.Of("تصنيف النتيجة", "Result grade"),
+			new AskColumn { Name = "severity", Kind = AskColumnKind.Dimension, Label = AskText.Of("تصنيف النتيجة", "Result grade", "Niveau du résultat"),
 				Synonyms = new[] { "تصنيف", "التصنيف", "تصنيف النتيجة", "درجة النتيجة", "grade", "result grade" } },
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الطلب", "Order status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الطلب", "Order status", "Statut de la demande"),
 				Synonyms = new[] { "حالة", "الحالة", "حالة الطلب", "المرحلة", "status", "stage", "order status" } },
-			new AskColumn { Name = "priority", Kind = AskColumnKind.Dimension, Label = AskText.Of("الأولوية", "Priority"),
+			new AskColumn { Name = "priority", Kind = AskColumnKind.Dimension, Label = AskText.Of("الأولوية", "Priority", "Priorité"),
 				Synonyms = new[] { "اولوية", "الاولوية", "حسب الاولوية", "priority", "by priority" } },
-			new AskColumn { Name = "panel", Kind = AskColumnKind.Dimension, Label = AskText.Of("التحليل", "Test"),
+			new AskColumn { Name = "panel", Kind = AskColumnKind.Dimension, Label = AskText.Of("التحليل", "Test", "Analyse"),
 				Synonyms = new[] { "تحليل", "التحليل", "نوع التحليل", "اسم التحليل", "فحص", "الفحص",
 					"test", "tests", "panel", "assay", "by test" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
-			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الطلبات", "Orders"),
+			new AskColumn { Name = "orders", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الطلبات", "Orders", "Demandes"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "طلبات", "الطلبات", "عينات", "العينات",
 					"orders", "count", "how many", "requests", "samples" } },
 			// MINUTES, AND ABSENT WHERE THE CHAIN WAS NEVER FINISHED.
 			new AskColumn { Name = "turnaround", Kind = AskColumnKind.Measure, Nullable = true,
-				Label = AskText.Of("دقائق التنفيذ", "Turnaround minutes"),
+				Label = AskText.Of("دقائق التنفيذ", "Turnaround minutes", "Délai de traitement en minutes"),
 				Synonyms = new[] { "زمن", "الزمن", "مدة", "المدة", "زمن التنفيذ", "مدة التحليل", "بياخد قد ايه",
 					"turnaround", "turn around", "tat", "how long", "lead time" } },
 		};

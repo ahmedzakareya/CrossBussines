@@ -288,9 +288,10 @@ for p in sorted(PHASES, key=lambda x: (len(x["PhaseId"]), x["PhaseId"])):
 files.append(write("Roadmap-V2-07-Implementation-Roadmap.md", "\n".join(doc)))
 
 # ------------------------------------------------------------- 10 decision register
-open_count = len([d for d in DECISIONS if d["Status"].startswith("Open")])
+open_count = len([d for d in DECISIONS if d["Status"].upper().startswith("OPEN")])
+approved_count = len([d for d in DECISIONS if d["Status"].upper().startswith("APPROVED")])
 doc = ["# CrossBusiness Platform — Roadmap v2 — 10 Decision Register", "",
-       f"**{len(DECISIONS)} unresolved business decisions, {open_count} open.**", "",
+       f"**{len(DECISIONS)} business decisions; {open_count} open and {approved_count} approved.**", "",
        "Machine-readable: `roadmap-v2-decisions.csv`.", "", "---", "",
        "## 1. Rule", "",
        "**No decision here is silently chosen.** Each carries a recommendation because a recommendation",

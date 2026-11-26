@@ -26,10 +26,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن مواعيد العيادات: العدد أو الانتظار أو مدة الكشف حسب الحالة أو الطبيب أو اليوم",
-			"Any question about clinic appointments: the count, the wait or the consultation length by status, practitioner or day");
+			"Any question about clinic appointments: the count, the wait or the consultation length by status, practitioner or day",
+			"Questions sur les rendez-vous médicaux : nombre, attente ou durée de consultation, par statut, praticien ou jour");
 
 		public override AskText Example => AskText.Of(
-			"جيب مواعيد اليوم", "Show today's appointments");
+			"جيب مواعيد اليوم", "Show today's appointments", "Affiche les rendez-vous du jour");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

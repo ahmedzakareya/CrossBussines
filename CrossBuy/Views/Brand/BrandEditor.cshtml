@@ -21,7 +21,7 @@
                     <div class="col-md-3"><label class="required fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="Code" class="form-control form-control-solid" value="@Model.Code" required /></div>
                     <div class="col-md-5"><label class="required fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="Name" class="form-control form-control-solid" value="@Model.Name" required /></div>
                     <div class="col-md-4"><label class="fw-semibold fs-7 mb-1">@Localizer["Name (EN)"]</label><input name="NameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
-                    <div class="col-md-12"><label class="form-check form-switch form-check-custom"><input type="hidden" name="IsActive" value="false" /><input class="form-check-input" type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") /><span class="form-check-label fw-semibold ms-2">@SR["Active"]</span></label></div>
+                    <div class="col-md-12"><label class="form-check form-switch form-check-custom"><input class="form-check-input" type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") /><input type="hidden" name="IsActive" value="false" /><span class="form-check-label fw-semibold ms-2">@SR["Active"]</span></label></div>
                 </div></div>
             </div>
 

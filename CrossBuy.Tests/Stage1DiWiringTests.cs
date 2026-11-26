@@ -45,6 +45,7 @@ namespace CrossBuy.Tests
         {
             var services = new ServiceCollection();
             services.AddLogging();
+            services.AddLocalization();
             services.AddOptions<BusinessEventDispatchOptions>();
             services.AddSingleton<IWorkerGate, DeniedWorkerGate>();
             services.AddSingleton(new CertificationRuntimeState(true));
@@ -56,9 +57,16 @@ namespace CrossBuy.Tests
             services.AddHostedService<IntegrityCheckHostedService>();
             services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
             services.AddHostedService<CrossBuy.BL.Hospital.HospitalMllpListenerService>();   // H227
+            // H228 — it was registered in BuildContainer instead, where none of a worker's dependencies
+            // exist, so ValidateOnBuild failed four tests about the write guard and the company scope,
+            // none of which has anything to do with a DICOM worklist. This is the builder whose comment
+            // already claimed to cover it, and the only one that proves what the project rule asks:
+            // every hosted service constructs in the real graph.
+            services.AddHostedService<CrossBuy.BL.Hospital.HospitalDicomWorklistService>();
             services.AddHostedService<CrossBuy.BL.Hospital.HospitalOutboundSenderService>();   // H257
             services.AddHostedService<CrossBuy.BL.Hospital.HospitalMllpTestReceiverService>();   // H257
-            services.AddHostedService<CrossBuy.BL.Hospital.HospitalDicomWorklistService>();   // H228
+            services.AddOptions<CrossBuy.Models.Communication.CommunicationPlatformOptions>();
+            services.AddHostedService<CrossBuy.BL.Communication.CommNotificationHostedService>();
             services.AddHostedService<TaskGeneratorHostedService>();
             services.AddHostedService<TaskScheduleMatchHostedService>();
             services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHostedService>();
@@ -69,7 +77,7 @@ namespace CrossBuy.Tests
             });
             var first = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
             var second = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
-            Assert.Equal(13, first.Length);   // H227: + HospitalMllpListenerService; H228: + HospitalDicomWorklistService; H257: + outbound sender, test receiver; email phase 2: + CommInboundHostedService
+            Assert.Equal(14, first.Length);   // H227: + HospitalMllpListenerService; H228: + HospitalDicomWorklistService; H257: + outbound sender, test receiver; email phase 2: + CommInboundHostedService
             for (var i = 0; i < first.Length; i++) Assert.Same(first[i], second[i]);
             // Constructing the production workers proves DI lifetime safety without
             // starting timers, sending messages or resolving a live database.
@@ -87,6 +95,7 @@ namespace CrossBuy.Tests
         {
             var services = new ServiceCollection();
             services.AddLogging();
+            services.AddLocalization();
             services.AddScoped<ICompanyScopeHolder, CompanyScopeHolder>();
             services.AddSingleton<CompanyWriteGuardInterceptor>();
             services.AddDbContext<CrossDbContext>((sp, options) =>
@@ -136,6 +145,7 @@ namespace CrossBuy.Tests
         {
             var services = new ServiceCollection();
             services.AddLogging();
+            services.AddLocalization();
             services.AddScoped<ICompanyScopeHolder, CompanyScopeHolder>();
             services.AddSingleton<CompanyWriteGuardInterceptor>();
             services.AddDbContext<CrossDbContext>((sp, options) =>
@@ -196,7 +206,48 @@ namespace CrossBuy.Tests
             services.AddScoped<CrossBuy.BL.IJournalEntryService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IJournalEntryService, UnusedApprovalBoundary>());
             services.AddScoped<CrossBuy.BL.IProgressService, CrossBuy.BL.ProgressService>();
             services.AddScoped<CrossBuy.BL.IContractService, CrossBuy.BL.ContractService>();
+            services.AddScoped<CrossBuy.BL.Construction.ISubcontractScopeService, CrossBuy.BL.Construction.SubcontractScopeService>();
+            services.AddScoped<CrossBuy.BL.Construction.ICommercialRevisionService, CrossBuy.BL.Construction.CommercialRevisionService>();
             services.AddScoped<CrossBuy.BL.IProgressBillingService, CrossBuy.BL.ProgressBillingService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionAuditService, CrossBuy.BL.Construction.ConstructionAuditService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedReceiptService, CrossBuy.BL.Construction.ConstructionRebasedReceiptService>();
+            services.AddScoped<CrossBuy.BL.IBoqService, CrossBuy.BL.BoqService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetPolicyService, CrossBuy.BL.Construction.ConstructionBudgetPolicyService>();
+            services.AddScoped<CrossBuy.BL.ICurrencyService, CrossBuy.BL.CurrencyService>();
+            services.AddScoped<CrossBuy.BL.ICurrencyRounding, CrossBuy.BL.CurrencyRounding>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetVersionService, CrossBuy.BL.Construction.ConstructionBudgetVersionService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionFinancialSourceService, CrossBuy.BL.Construction.ConstructionFinancialSourceService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionOrderAllocationService, CrossBuy.BL.Construction.ConstructionOrderAllocationService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionCommitmentReservationService, CrossBuy.BL.Construction.ConstructionCommitmentReservationService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetExceptionService, CrossBuy.BL.Construction.ConstructionBudgetExceptionService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseDraftService, CrossBuy.BL.Construction.ConstructionPurchaseDraftService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService, CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>();
+            services.AddScoped<CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>(sp => (CrossBuy.BL.Construction.ConstructionPurchaseApprovalService)sp.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService>());
+services.AddScoped<CrossBuy.BL.Construction.ConstructionReservationRebaseRequestService>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionRebaseWorkspaceService, CrossBuy.BL.Construction.ConstructionRebaseWorkspaceService>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseEditorService, CrossBuy.BL.Construction.ConstructionPurchaseEditorService>();
+            services.AddScoped<CrossBuy.BL.IPayableService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IPayableService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionPartialInvoiceService>(sp => new CrossBuy.BL.Construction.ConstructionPartialInvoiceService(
+                sp.GetRequiredService<CrossDbContext>(), sp.GetRequiredService<CrossBuy.BL.IProjectsAccessService>(),
+                sp.GetRequiredService<CrossBuy.BL.InventoryAccessService>(), sp.GetRequiredService<CrossBuy.BL.Construction.IConstructionAuditService>(),
+                sp.GetRequiredService<CrossBuy.BL.ICurrencyRounding>(), sp.GetRequiredService<CrossBuy.BL.IPayableService>()));
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionActualCostWorkspace, CrossBuy.BL.Construction.ConstructionActualCostWorkspace>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionConsumptionWorkspace, CrossBuy.BL.Construction.ConstructionConsumptionWorkspace>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionCompanyPolicyWorkspace, CrossBuy.BL.Construction.ConstructionCompanyPolicyWorkspace>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferPreview, CrossBuy.BL.Construction.ConstructionBudgetTransferPreview>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferRequests, CrossBuy.BL.Construction.ConstructionBudgetTransferRequestService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferDecisions, CrossBuy.BL.Construction.ConstructionBudgetTransferDecisionService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferApplications, CrossBuy.BL.Construction.ConstructionBudgetTransferApplicationService>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionActualCostService, CrossBuy.BL.Construction.ConstructionActualCostService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionMaterialConsumptionService, CrossBuy.BL.Construction.ConstructionMaterialConsumptionService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetExposureService, CrossBuy.BL.Construction.ConstructionBudgetExposureService>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseAccess, CrossBuy.BL.Construction.ConstructionWarehouseAccess>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionRequests, CrossBuy.BL.Construction.ConstructionWarehouseExceptionRequests>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionDecisions, CrossBuy.BL.Construction.ConstructionWarehouseExceptionDecisions>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionWorkspace, CrossBuy.BL.Construction.ConstructionWarehouseExceptionWorkspace>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentService, CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentService>();
+services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentWorkspace, CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentWorkspace>();
+            services.AddScoped<CrossBuy.BL.Construction.IConstructionStructureService, CrossBuy.BL.Construction.ConstructionStructureService>();
             CrossBuy.BL.ProjectBillingApprovalWorkRegistration.AddProjectBillingApprovalWork(services);
             services.AddScoped<ITaskSourceVisibility, TaskSourceVisibility>();
             services.AddScoped<ITaskSourceReadEntrance, TaskSourceReadEntrance>();
@@ -229,12 +280,12 @@ namespace CrossBuy.Tests
             services.AddScoped<IModulePermissionAdapter, CalendarPermissionAdapter>();
             services.AddScoped<IModulePermissionAdapter, DefaultPermissionAdapter>();
 
-            // The singleton hosted service that broke the container. It must take IServiceScopeFactory.
             // Takes IEnumerable<IModuleAccessService> and is NOT one itself, so it cannot close the cycle
             // that broke this container once. Registered here because the project rule is that any service
             // injecting that enumeration is proved in the real graph, not by hand-construction.
             services.AddScoped<ISystemVisibility, SystemVisibility>();
 
+            // The singleton hosted service that broke the container. It must take IServiceScopeFactory.
             services.AddHostedService<PermissionScopeStartupValidator>();
 
             // ValidateOnBuild + ValidateScopes catches a singleton consuming a scoped service. It does NOT catch
@@ -281,6 +332,42 @@ namespace CrossBuy.Tests
             Assert.Contains(services.GetServices<ITaskSourceVisibilityProvider>(), p => p is CrossBuy.BL.ProjectBillingTaskVisibilityProvider);
             Assert.Contains(services.GetServices<ITaskSourceReadEntranceProvider>(), p => p is CrossBuy.BL.ProjectBillingTaskVisibilityProvider);
             Assert.Contains(services.GetServices<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule>(), p => p is CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule);
+        }
+
+        [Fact]
+        public void R7_structural_services_resolve_with_real_project_and_inventory_authorities()
+        {
+            using var provider = BuildBatchCContainer();
+            using var scope = provider.CreateScope();
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionStructureService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionStructureService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionWarehouseAccess>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionWarehouseAccess>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionWarehouseExceptionWorkspace>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionWarehouseExceptionWorkspace>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentWorkspace>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentWorkspace>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetPolicyService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetPolicyService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetVersionService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetVersionService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionFinancialSourceService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionFinancialSourceService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionOrderAllocationService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionOrderAllocationService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionCommitmentReservationService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionCommitmentReservationService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetExceptionService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetExceptionService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionPurchaseDraftService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseDraftService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService>());
+            Assert.Same(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService>(), scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionRebaseWorkspaceService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionRebaseWorkspaceService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionActualCostWorkspace>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionActualCostWorkspace>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionConsumptionWorkspace>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionConsumptionWorkspace>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionCompanyPolicyWorkspace>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionCompanyPolicyWorkspace>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetTransferPreview>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetTransferPreview>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetTransferRequestService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetTransferRequests>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetTransferDecisionService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetTransferDecisions>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetTransferApplicationService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetTransferApplications>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionRebasedReceiptService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionRebasedReceiptService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionPurchaseEditorService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseEditorService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionPartialInvoiceService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionPartialInvoiceService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionActualCostService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionActualCostService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionMaterialConsumptionService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionMaterialConsumptionService>());
+            Assert.IsType<CrossBuy.BL.Construction.ConstructionBudgetExposureService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Construction.IConstructionBudgetExposureService>());
+            Assert.IsType<CrossBuy.BL.BoqService>(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.IBoqService>());
         }
 
         //

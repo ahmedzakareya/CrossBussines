@@ -188,17 +188,62 @@ namespace CrossBuy.Models.Context
 				// HM-D28 (deferred): StoreOldPrice is a MONEY column at 2dp — in a 3-decimal currency it would lose the fil.
 				// Pinned to its real 2dp here so model==DB; widening it needs a manual idempotent SQL script (deploy/sql) IF the storefront ever prices in KWD.
 				["Items.StoreOldPrice"] = (10, 2),
+				// ---- HM-D27 sweep, 2026-11-25: forty-one properties whose declared precision did not match
+				// their column. Where the SCALE differed the stored value was silently rounded on the way in,
+				// so what was read back was not what was written - twenty-five payroll/promotion money columns
+				// among them. Each pair below was READ from the database, never assumed.
+				// money and quantities stored at 3 decimals - payroll, loans, desk cash, coverage shares, promotions and rep targets
+				["EmployeeLoanDeductions.Amount"] = (18, 3), ["EmployeeLoans.Installment"] = (18, 3),
+				["EmployeeLoans.Principal"] = (18, 3), ["EmployeeRequests.AdvanceAmount"] = (18, 3),
+				["EmployeeRequests.AdvanceInstallment"] = (18, 3), ["EmployeeSalaries.BasicSalary"] = (18, 3),
+				["EmployeeSalaries.HousingAllowance"] = (18, 3), ["EmployeeSalaries.OtherAllowances"] = (18, 3),
+				["EmployeeSalaries.TransportAllowance"] = (18, 3), ["HospitalDeskCheckouts.OwedAtClose"] = (18, 3),
+				["HospitalDeskHandovers.CashCounted"] = (18, 3), ["HospitalDeskHandovers.CashExpected"] = (18, 3),
+				["HospitalDeskHandovers.CashVariance"] = (18, 3), ["HospitalVisitCoverages.EstimatedShare"] = (18, 3),
+				["HospitalVisitCoverages.EstimatedTotal"] = (18, 3), ["Payslips.LoanDeduction"] = (18, 3),
+				["Payslips.SickLeaveDeduction"] = (18, 3), ["PosOrderLinePromotions.Amount"] = (18, 3),
+				["PosPromotions.DiscountAmount"] = (18, 3), ["PosPromotions.MinBasket"] = (18, 3),
+				["PosPromotions.RewardQty"] = (18, 3), ["PosPromotions.TriggerQty"] = (18, 3),
+				["SalesRepRoutes.DailyTarget"] = (18, 3), ["SalesRepVisits.Collected"] = (18, 3),
+				["SalesRepVisits.OrderTotal"] = (18, 3),
+				// hospital amounts at 4 decimals but precision 18, not the 19 default
+				["HospitalCharityGrants.Amount"] = (18, 4), ["HospitalDentalCorrections.Fee"] = (18, 4),
+				["HospitalDentalCorrections.Reversed"] = (18, 4), ["HospitalWorkOrders.Cost"] = (18, 4),
+				// percentages - narrower precision than money, same scale
+				["HospitalPayers.DiscountPct"] = (9, 4), ["PosPromotions.DiscountPct"] = (9, 4),
+				["PosPromotions.MaxDiscountPct"] = (9, 4),
+				// loyalty points per currency unit - a RATE, so six decimals
+				["BranchPosSettings.LoyaltyPointsPerCurrencyUnit"] = (18, 6),
+				["Companies.LoyaltyPointsPerCurrencyUnit"] = (18, 6),
+				// sterilisation pressure in kPa - one decimal, as the instrument reads
+				["HospitalSterilCycles.PressureKpa"] = (6, 1), ["HospitalSterilisationCycles.PressureKpa"] = (6, 1),
+				// sterilisation temperature - one decimal
+				["HospitalSterilCycles.TemperatureC"] = (5, 1), ["HospitalSterilisationCycles.TemperatureC"] = (5, 1),
+				// a quality target
+				["HospitalQualityTargets.Target"] = (10, 2),
+				// a survey average, 0.00-5.00
+				["HospitalSurveyResponses.Average"] = (4, 2),
+				// estimated hours on a task template - hours are 2dp here like every other hours column
+				["TaskTemplateItems.EstimatedHours"] = (9, 2),
 			};
-			foreach (var et in builder.Model.GetEntityTypes())
+			// THIS SWEEP MUST RUN LAST, and it used to run here - in the middle of OnModelCreating.
+			// Everything configured BELOW this point (the hospital, CRM and construction modules, which is
+			// most of the model) was not in builder.Model yet, so its decimal properties were never pinned
+			// and kept the (19,4) default whatever their column said. That is why seventeen hospital money
+			// columns still diverged after their pins were added: the pins were correct, the timing was not.
+			void ApplyDecimalPins()
 			{
-				var table = et.GetTableName();
-				if (table == null) continue;
-				var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
-				foreach (var p in et.GetProperties())
+				foreach (var et in builder.Model.GetEntityTypes())
 				{
-					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
-					var col = p.GetColumnName(soi) ?? p.Name;
-					if (pin.TryGetValue(table + "." + col, out var pr)) { p.SetPrecision(pr.p); p.SetScale(pr.s); }
+					var table = et.GetTableName();
+					if (table == null) continue;
+					var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
+					foreach (var p in et.GetProperties())
+					{
+						if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
+						var col = p.GetColumnName(soi) ?? p.Name;
+						if (pin.TryGetValue(table + "." + col, out var pr)) { p.SetPrecision(pr.p); p.SetScale(pr.s); }
+					}
 				}
 			}
 
@@ -493,6 +538,34 @@ namespace CrossBuy.Models.Context
 			// query-filter call above so it cannot displace a filter, and kept in its own class so this tab's
 			// footprint in this shared file stays at one line plus its DbSet declarations.
 			CrossBuy.Models.Context.Construction.ConstructionCommercialModel.Configure(builder);
+			CrossBuy.Models.Context.Construction.ConstructionLegacyConcurrencyModel.Configure(builder, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionBudgetPolicyModel.Configure(builder, this);
+			CrossBuy.Models.Context.Construction.ConstructionStructureModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionDailySiteReportModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionBudgetVersionModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Inventory.PurchaseOrderInvoiceLinkModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Inventory.PurchaseOrderInvoiceLineLinkModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionOrderAllocationModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionCommitmentReservationModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionBudgetExceptionModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionPurchaseDraftModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionPurchaseApprovalModel.Configure(builder, this, Database.IsSqlServer());
+			CrossBuy.Models.Context.Construction.ConstructionActualCostAllocationModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionPartialInvoiceModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionReservationRebaseRequestModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionReservationExposureRebaseModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionPurchaseRebaseRequestModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionPurchaseRebaseDecisionModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionMaterialConsumptionModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionCompanyPolicyModel.Configure(builder, this);
+            CrossBuy.Models.Context.Construction.ConstructionBudgetTransferRequestModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionBudgetTransferDecisionModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionBudgetTransferApplicationModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionCostForecastSnapshotModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionWarehouseExceptionRequestModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionWarehouseExceptionDecisionModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionWarehouseExceptionApplicationModel.Configure(builder, this, Database.IsSqlServer());
+            CrossBuy.Models.Context.Construction.ConstructionRebasedWarehouseConsentModel.Configure(builder, this, Database.IsSqlServer());
 
 			// Task ecosystem: checklist, dependency edges (unique per pair), templates.
 			CrossBuy.Models.Context.Tasks.TaskEcosystemModel.Configure(builder);
@@ -635,6 +708,18 @@ namespace CrossBuy.Models.Context
 			Hospital.HospitalImmunotherapyModel.Configure(builder);     // H97
 			Hospital.HospitalCanvasModel.Configure(builder);            // H99
 			// H57 (HospitalPatientMerge) is configured inside HospitalPatientsModel
+			Crm.CrmIdentityModel.Configure(builder);                     // CRM C1: consent, merges, dismissals
+			Crm.CrmCaptureModel.Configure(builder);                      // CRM C2: web forms, submissions, territories
+			Crm.CrmDealModel.Configure(builder);                         // CRM C3: stage requirements, committee, discount approval
+			Crm.CrmInboxModel.Configure(builder);                        // CRM C4: channels, conversations, messages
+			Crm.CrmForecastModel.Configure(builder);                     // CRM C5: quotas, deal categories, forecast submissions
+			Crm.CrmSequenceModel.Configure(builder);                     // CRM C6: sequences, enrolments, booking links
+			Crm.CrmJourneyModel.Configure(builder);                      // CRM C7: segments, journeys, members, events
+			Crm.CrmServiceModel.Configure(builder);                      // CRM C8: knowledge base, ticket thread, surveys
+			Crm.CrmAssistModel.Configure(builder);                       // CRM C9: behavioural lead scores
+
+			// Every entity is configured by now, so the decimal pins can finally see all of them.
+			ApplyDecimalPins();
 
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
@@ -879,6 +964,16 @@ namespace CrossBuy.Models.Context
         public DbSet<Accounting.AccountingUserRole> AccountingUserRoles { get; set; }
         public DbSet<Accounting.AccountingSettings> AccountingSettings { get; set; }
         public DbSet<Accounting.PayrollSettings> PayrollSettings { get; set; }
+        public DbSet<Admin.HrRulePack> HrRulePacks { get; set; }   // HR country rule packs (hr_rule_packs.sql)
+        public DbSet<Admin.EmployeeDependant> EmployeeDependants { get; set; }   // HR1 (hr1_employee_record.sql)
+        public DbSet<Admin.EmployeeSalary> EmployeeSalaries { get; set; }   // HR4 (hr4_employee_salary.sql): pay per employee, effective-dated
+        public DbSet<Admin.EmployeeLoan> EmployeeLoans { get; set; }                   // HR4 (hr4_employee_loans.sql)
+        public DbSet<Admin.EmployeeLoanDeduction> EmployeeLoanDeductions { get; set; } // HR4: one row per loan per posted payroll month
+        public DbSet<Admin.OvertimeApproval> OvertimeApprovals { get; set; }
+        public DbSet<Admin.HrBankFileFormat> HrBankFileFormats { get; set; }   // HR8 bank salary file (hr8_bank_file_formats.sql)
+        public DbSet<Admin.HrApprovalPath> HrApprovalPaths { get; set; }   // HR approval paths (hr10_approval_paths.sql)
+        public DbSet<Admin.ApprovalDelegation> ApprovalDelegations { get; set; }   // HR9 (hr9_approval_delegations.sql)           // HR5 (hr5_overtime_approvals.sql)
+        public DbSet<Admin.EmployeeHistory> EmployeeHistory { get; set; }         // HR1 effective-dated history
         public DbSet<Accounting.PayrollTaxBracket> PayrollTaxBrackets { get; set; }
         public DbSet<Accounting.Customer> Customers { get; set; }
         public DbSet<Accounting.Vendor> Vendors { get; set; }
@@ -932,6 +1027,11 @@ namespace CrossBuy.Models.Context
         public DbSet<Pos.PosOrder> PosOrders { get; set; }
         public DbSet<Pos.PosOrderLine> PosOrderLines { get; set; }
         public DbSet<Pos.PosPayment> PosPayments { get; set; }
+        public DbSet<Pos.PosCoupon> PosCoupons { get; set; }                               // HM-26
+        public DbSet<Pos.PosCouponRedemption> PosCouponRedemptions { get; set; }           // HM-26
+        public DbSet<Pos.PosPromotion> PosPromotions { get; set; }                       // HM-12: retail promotion rules
+        public DbSet<Pos.PosPromotionItem> PosPromotionItems { get; set; }               // HM-12: trigger/reward membership
+        public DbSet<Pos.PosOrderLinePromotion> PosOrderLinePromotions { get; set; }     // HM-12: what fired, per sold line
         public DbSet<Pos.CustomerAddress> CustomerAddresses { get; set; }
         public DbSet<Pos.DeliveryZone> DeliveryZones { get; set; }
         public DbSet<Pos.Driver> Drivers { get; set; }
@@ -945,16 +1045,6 @@ namespace CrossBuy.Models.Context
         public DbSet<Pos.PosSyncConflict> PosSyncConflicts { get; set; }
         public DbSet<Tasks.TaskItem> TaskItems { get; set; }   // TM-1: task management
         public DbSet<Tasks.TimesheetEntry> TimesheetEntries { get; set; }   // TM-3: timesheet
-        public DbSet<Admin.HrRulePack> HrRulePacks { get; set; }   // HR country rule packs (hr_rule_packs.sql)
-        public DbSet<Admin.EmployeeDependant> EmployeeDependants { get; set; }   // HR1 (hr1_employee_record.sql)
-        public DbSet<Admin.EmployeeSalary> EmployeeSalaries { get; set; }   // HR4 (hr4_employee_salary.sql): pay per employee, effective-dated
-        public DbSet<Admin.EmployeeLoan> EmployeeLoans { get; set; }                   // HR4 (hr4_employee_loans.sql)
-        public DbSet<Admin.EmployeeLoanDeduction> EmployeeLoanDeductions { get; set; } // HR4: one row per loan per posted payroll month
-        public DbSet<Admin.OvertimeApproval> OvertimeApprovals { get; set; }           // HR5 (hr5_overtime_approvals.sql)
-        public DbSet<Admin.HrBankFileFormat> HrBankFileFormats { get; set; }   // HR8 bank salary file (hr8_bank_file_formats.sql)
-        public DbSet<Admin.HrApprovalPath> HrApprovalPaths { get; set; }   // HR approval paths (hr10_approval_paths.sql)
-        public DbSet<Admin.ApprovalDelegation> ApprovalDelegations { get; set; }   // HR9 (hr9_approval_delegations.sql)
-        public DbSet<Admin.EmployeeHistory> EmployeeHistory { get; set; }         // HR1 effective-dated history
         public DbSet<Tasks.TaskAutoRule> TaskAutoRules { get; set; }        // TM-7: auto-task rules
         public DbSet<Tasks.TaskAutoLog> TaskAutoLogs { get; set; }          // TM-7: dedupe log
         public DbSet<Tasks.TaskMatchSuggestion> TaskMatchSuggestions { get; set; }   // TM-9-ب: scheduled-task match candidates
@@ -985,6 +1075,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Crm.CrmListMember> CrmListMembers { get; set; }
         public DbSet<Crm.CrmSlaPolicy> CrmSlaPolicies { get; set; }
         public DbSet<Crm.CrmTicket> CrmTickets { get; set; }
+        public DbSet<Crm.CrmCall> CrmCalls { get; set; }
         public DbSet<Crm.CrmScoringRule> CrmScoringRules { get; set; }
         public DbSet<Crm.CrmSettings> CrmSettings { get; set; }
         // ---- Inventory Phase I1: stock ledger, costing & GL ----

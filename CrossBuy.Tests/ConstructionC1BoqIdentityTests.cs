@@ -128,7 +128,7 @@ namespace CrossBuy.Tests
             // The row is STILL THERE.
             Assert.True(await verify.BoqItems.AnyAsync(x => x.ID == removedId));
             // …and it is out of the working BOQ.
-            var state = await verify.BoqLineStates.AsNoTracking().SingleAsync(x => x.BoqItemId == removedId);
+            var state = await verify.BoqItems.AsNoTracking().SingleAsync(x => x.ID == removedId);
             Assert.Equal(BoqLineStatus.Retired, state.Status);
             Assert.NotNull(state.RetiredAt);
             Assert.Equal("removed a mistyped line", state.RetiredReason);
@@ -164,7 +164,7 @@ namespace CrossBuy.Tests
             Assert.Contains("2", result.error!);   // the refusal names the offending line
 
             await using var verify = f.NewContext();
-            var state = await verify.BoqLineStates.AsNoTracking().SingleOrDefaultAsync(x => x.BoqItemId == ids["2"]);
+            var state = await verify.BoqItems.AsNoTracking().SingleOrDefaultAsync(x => x.ID == ids["2"]);
             Assert.Equal(BoqLineStatus.Active, state!.Status);      // not retired
             Assert.True(await verify.BoqItems.AnyAsync(x => x.ID == ids["2"]));   // not deleted
         }

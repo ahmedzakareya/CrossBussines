@@ -20,23 +20,68 @@
         <div class="d-flex gap-2"><a href="@Url.Action("Deliveries","Inventory")" class="btn btn-light">@SR["Cancel"]</a><button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@Localizer["Post delivery"]</button></div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (fromSo != null) { <div class="alert alert-light-primary d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@Localizer["Delivering against SO"] <strong class="mx-2">@fromSo.OrderNo</strong></div> }
+        @if (fromSo != null) { <div class="alert alert-light-primary d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@Localizer["Delivering against SO"] <strong class="mx-2">@fromSo.OrderNo</strong></div> }
+        else
+        {
+            @* WITHOUT AN ORDER THIS DELIVERY IS INVISIBLE TO ONE.
+               It still posts and still moves the goods - a delivery with no order behind it is a real
+               thing. But if the customer HAS an order for these goods, that order will not see this
+               shipment, and invoicing it later will issue the same stock a second time. So the choice
+               is offered here instead of being silently made. *@
+            var openSos = ViewBag.OpenSOs as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+            <div class="card mb-5 border border-dashed border-primary">
+                <div class="card-body py-4">
+                    <div class="d-flex flex-wrap align-items-end gap-4">
+                        <div class="flex-grow-1" style="min-width:280px">
+                            <label class="fw-semibold fs-6 mb-2">@(isAr ? "هل هذا التسليم على أمر بيع؟" : "Is this delivery against a sales order?")</label>
+                            <select class="form-select form-select-solid" id="pickSo" data-control="select2">
+                                <option value="">@(isAr ? "لا — تسليم مستقل" : "No — a standalone delivery")</option>
+                                @foreach (var o in openSos)
+                                {
+                                    <option value="@o.Value">@o.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="fs-8 text-gray-700" style="max-width:520px">
+                            @(isAr
+                                ? "اختيار الأمر يربط الشحنة به، فتُفوتر لاحقًا بما شُحن فعلًا. وبدونه لن يرى الأمر هذا التسليم، وستصرف فاتورته المخزون مرة ثانية."
+                                : "Choosing the order ties this shipment to it, so it is later billed for exactly what shipped. Without it the order never sees this delivery, and its invoice will issue the stock a second time.")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fromSo?.WarehouseId==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@SR["Customer"]</label><select name="customerId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var v in custs) { <option value="@v.ID" selected="@(fromSo?.CustomerId==v.ID)">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="deliveryDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="deliveryDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Issued items"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
-        <div class="card-body"><div class="alert alert-light-warning p-3 mb-4 fs-7"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["Cost (COGS) is computed automatically from stock on posting."]</div>
+        <div class="card-body"><div class="alert alert-light-primary p-3 mb-4 fs-7"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["Cost (COGS) is computed automatically from stock on posting."]</div>
         <div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
             <th style="min-width:240px">@SR["Item"]</th><th style="width:100px">@Localizer["Qty"]</th><th style="min-width:130px">@Localizer["Unit"]</th><th style="min-width:220px">@Localizer["Picked from (section/rack)"]</th><th style="min-width:120px">@Localizer["Batch"]</th><th style="min-width:120px">@Localizer["Serial"]</th><th style="width:40px"></th>
         </tr></thead><tbody id="rows"></tbody></table></div></div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
+<script>
+/* Choosing an order reloads this page as ?soId=N - the path the "Deliver goods" action already
+   uses and that has always worked. Nothing new posts; the selector only routes into it, so there
+   is one linked-delivery flow rather than two that can drift apart. */
+(function pickSoWire() {
+    var sel = document.getElementById('pickSo');
+    if (!sel) return;
+    var go = function () { if (sel.value) window.location.href = '?soId=' + encodeURIComponent(sel.value); };
+    sel.addEventListener('change', go);
+    /* select2 replaces the control, and its change never reaches addEventListener - bind through
+       jQuery as well or the dropdown looks dead. */
+    if (window.jQuery) { window.jQuery(sel).on('change', go); }
+})();
+</script>
 <script>
 var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
 var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:DisplayName.Or(u.NameEn, u.Name))})));
@@ -66,7 +111,25 @@ function addRow(d){d=d||{};var tr=document.createElement('tr');tr.innerHTML=
 document.getElementById('add').addEventListener('click',function(){addRow();});
 document.getElementById('rows').addEventListener('change',function(e){if(e.target.classList.contains('it')){var tr=e.target.closest('tr'),o=e.target.options[e.target.selectedIndex];var b=o.getAttribute('data-base');if(b)tr.querySelector('.u').value=b;applyItemDefault(tr,e.target.value);}else if(e.target.classList.contains('sec')){fillRacks(e.target.closest('tr'));}});
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();}});
-document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0;var rk=tr.querySelector('.rack').value,sc=tr.querySelector('.sec').value,bin=rk||sc;if(it&&q>0)lines.push({itemId:parseInt(it),qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,batchNo:tr.querySelector('.b').value||null,serialNo:tr.querySelector('.sn').value||null,salesOrderLineId:tr.querySelector('.sol').value?parseInt(tr.querySelector('.sol').value):null,binLocationId:bin?parseInt(bin):null});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add an item"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+document.getElementById('save').addEventListener('click',function(){
+var lines = CBLines.gather({
+  touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.num(tr,'.q')!==1
+      || CBLines.str(tr,'.b') || CBLines.str(tr,'.sn')); },
+  problem:function(tr){
+    if(!CBLines.str(tr,'.it')) return CBLines.T.item;
+    if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+    return null; },
+  build:function(tr){
+    var rk=CBLines.str(tr,'.rack'), sc=CBLines.str(tr,'.sec'), bin=rk||sc, u=CBLines.str(tr,'.u'),
+        sol=CBLines.str(tr,'.sol');
+    return {itemId:parseInt(CBLines.str(tr,'.it')),qty:CBLines.num(tr,'.q'),
+            uoMId:u?parseInt(u):null,
+            batchNo:CBLines.str(tr,'.b')||null,serialNo:CBLines.str(tr,'.sn')||null,
+            salesOrderLineId:sol?parseInt(sol):null,
+            binLocationId:bin?parseInt(bin):null}; }
+});
+if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
 if(PREFILL.length){PREFILL.forEach(function(d){addRow(d);});}else{addRow();}
 window.onItemScanned=function(p){ addRow({itemId:p.id, text:(p.code?p.code+' — ':'')+(p.name||''), qty:p.qty, uomId:p.uomId}); };
 </script>

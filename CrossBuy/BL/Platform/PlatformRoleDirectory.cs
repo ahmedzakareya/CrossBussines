@@ -30,6 +30,12 @@ namespace CrossBuy.BL.Platform
         Task<IReadOnlyList<RoleGrant>> RolesAsync(
             BusinessContext context, string scope, CancellationToken cancellationToken = default);
 
+        // Active employee principals holding one exact role in one exact scope for the company.
+        // This reverse read is used by Communication @role expansion; it deliberately shares the same
+        // company, principal-kind, active, and temporal rules as RolesAsync.
+        Task<IReadOnlyList<int>> EmployeeIdsForRoleAsync(
+            int companyId, string scope, string role, CancellationToken cancellationToken = default);
+
         // The bootstrap-open probe: has ANY assignment been configured for this company and scope?
         // Per company AND per scope, so configuring HR in company 1 does not close HR in company 2, and does
         // not close Projects in company 1 either.
@@ -105,6 +111,26 @@ namespace CrossBuy.BL.Platform
                             && r.IsActive
                             && (r.ValidFrom == null || r.ValidFrom <= now)
                             && (r.ValidTo == null || r.ValidTo >= now), cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<int>> EmployeeIdsForRoleAsync(
+            int companyId, string scope, string role, CancellationToken cancellationToken = default)
+        {
+            RequireKnownScope(scope);
+            if (companyId <= 0 || string.IsNullOrWhiteSpace(role)) return Array.Empty<int>();
+
+            var now = UtcNow();
+            return await _db.PlatformRoleAssignments.AsNoTracking()
+                .Where(r => r.CompanyID == companyId
+                         && r.Scope == scope
+                         && r.PrincipalType == PlatformPrincipalTypes.Employee
+                         && r.Role == role
+                         && r.IsActive
+                         && (r.ValidFrom == null || r.ValidFrom <= now)
+                         && (r.ValidTo == null || r.ValidTo >= now))
+                .Select(r => r.PrincipalId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
         }
 
         // An unknown scope is a PROGRAMMING error, not a permission outcome. Returning "no grants" would be

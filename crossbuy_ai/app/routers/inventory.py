@@ -10,4 +10,5 @@ router = APIRouter(prefix="/inventory", tags=["inventory"], dependencies=[Depend
 
 @router.post("/analyze")
 async def analyze(body: InventoryRequest) -> dict:
-    return analyze_inventory(body.asOf, body.slowDays, [i.model_dump() for i in body.items])
+    return analyze_inventory(body.asOf, body.slowDays, [i.model_dump() for i in body.items],
+                             body.windowActiveDays, body.windowMovements)

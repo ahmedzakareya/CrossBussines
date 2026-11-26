@@ -1,0 +1,38 @@
+@model List<CrossBuy.BL.CrmIdentity.EnrollmentRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var canEdit = ViewBag.CanEdit == true;
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+    var tone = new Dictionary<string, string> { ["Replied"] = "badge-light-success", ["Booked"] = "badge-light-success", ["Converted"] = "badge-light-success", ["OptOut"] = "badge-light-danger", ["Manual"] = "badge-light", ["Inactive"] = "badge-light" };
+}
+@foreach (var r in Model)
+{
+    var e = r.E;
+    <tr>
+        <td class="ps-4"><a href="@(e.SubjectType == "Contact" ? Url.Action("Contact","Crm", new { id = e.SubjectId }) : Url.Action("Leads","Crm", new { q = r.Name }))" class="fw-bold text-gray-900 text-hover-primary d-block">@r.Name</a><span class="text-muted fs-8 num">@r.Reach</span></td>
+        <td>@if (r.Owner != null)
+            {
+                var ini = Initials(r.Owner.Name);
+                <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (r.Owner.HasPhoto) { <img src="/People/Photo/@r.Owner.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-9&quot;>@ini</span>'" /> } else { <span class="symbol-label crm-initials fs-9">@ini</span> }</div><span class="fs-7">@r.Owner.Name</span></div>
+            }</td>
+        <td>
+            @if (e.Status == "Active")
+            {
+                <span class="badge badge-light-primary">@T["Running now"]</span>
+                @if (r.Next != null) { <div class="fs-8 text-muted mt-1">@T["Next"]: @T["step:" + r.Next.Kind] · <span class="num">@r.NextLocal?.ToString("MM-dd HH:mm")</span></div> }
+            }
+            else if (e.Status == "Completed") { <span class="badge badge-light">@T["Finished with no answer"]</span> }
+            else { <span class="badge @tone.GetValueOrDefault(e.StopReason ?? "", "badge-light")">@T["stop:" + e.StopReason]</span><div class="fs-8 text-muted mt-1 num">@e.StoppedAt?.ToLocalTime().ToString("MM-dd HH:mm")</div> }
+        </td>
+        <td>@if (r.Last != null)
+            {
+                <span class="fs-7">@T["ev:" + r.Last.Outcome]</span>@if (r.Last.StepNo != null) { <span class="text-muted fs-8"> · @T["step"] <span class="num">@r.Last.StepNo</span></span> }
+                @if (r.Last.Detail != null && r.Last.Outcome is "Skipped" or "Failed") { <div class="fs-8 text-danger">@T[r.Last.Detail]</div> }
+                <div class="fs-8 text-muted num">@r.Last.At.ToLocalTime().ToString("MM-dd HH:mm")</div>
+            }</td>
+        <td class="text-end pe-4 text-nowrap">
+            <button type="button" class="btn btn-sm btn-icon btn-light" data-events="@e.ID" data-name="@r.Name" title="@T["What happened"]"><i class="ki-outline ki-time fs-5"></i></button>
+            @if (canEdit && e.Status == "Active") { <button type="button" class="btn btn-sm btn-light-danger" data-stop="@e.ID">@T["Stop"]</button> }
+        </td>
+    </tr>
+}

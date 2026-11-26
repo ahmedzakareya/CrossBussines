@@ -25,6 +25,26 @@ namespace CrossBuy.BL
         public bool LastMine { get; set; }
         public bool LastSeen { get; set; }
     }
+    /// One message-search result, carrying enough conversation context for the Hub to show WHERE the hit
+    /// was and to open it. Deliberately not a ChatMsgDto: a search row is a pointer into a conversation,
+    /// not the message as the thread renders it, and reusing the message DTO would invite a caller to
+    /// treat a search hit as a loaded message.
+    public class ChatSearchHitDto
+    {
+        public int MessageId { get; set; }
+        public int ConversationId { get; set; }
+
+        /// The conversation as this caller sees it — a group's title, or the other person's name for a
+        /// direct conversation. Resolved the same way the conversation list resolves it.
+        public string ConversationTitle { get; set; } = "";
+        public bool IsGroup { get; set; }
+
+        public int SenderId { get; set; }
+        public string SenderName { get; set; } = "";
+        public string? Body { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class ChatMsgDto
     {
         public int Id { get; set; }
@@ -55,9 +75,8 @@ namespace CrossBuy.BL
     // missing entry in a block-list is a vulnerability.
     //
     // ACTIVE SAME-ORIGIN CONTENT IS ABSENT ON PURPOSE. .html, .htm, .svg, .xhtml, .js and friends are not
-    // listed. Chat attachments are served from /uploads/chat under the application's own origin, so an
-    // authenticated colleague who opened one would run its script with their session — stored XSS between
-    // employees. PrivateFileGate already stops anonymous access; it does not make active content inert.
+    // listed. Chat attachments are served through a membership-checked action from the company document
+    // library; active same-origin content would still be a stored-XSS risk for conversation members.
     public static class ChatAttachments
     {
         private static readonly HashSet<string> Images = new(StringComparer.OrdinalIgnoreCase)
@@ -79,6 +98,37 @@ namespace CrossBuy.BL
 
         public static bool IsImage(string? ext) => ext != null && Images.Contains(ext);
         public static bool IsAudio(string? ext) => ext != null && Audio.Contains(ext);
+
+        // Only passive, browser-previewable formats may be served inline from the same origin.
+        // In particular SVG, HTML/XML and unknown types stay downloads even if their names look safe.
+        public static bool IsSafeInlinePreview(string? fileName, string? contentType)
+        {
+            var ext = Path.GetExtension(fileName ?? string.Empty);
+            var type = (contentType ?? string.Empty).Split(';', 2)[0].Trim();
+            if (ext.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+                return type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+            if (ext.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                return type.Equals("text/plain", StringComparison.OrdinalIgnoreCase);
+            if (ext.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+                return type.Equals("text/csv", StringComparison.OrdinalIgnoreCase) ||
+                       type.Equals("application/csv", StringComparison.OrdinalIgnoreCase) ||
+                       type.Equals("text/plain", StringComparison.OrdinalIgnoreCase);
+
+            var expectedImageType = ext.ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" or ".jfif" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
+                ".webp" => "image/webp",
+                ".avif" => "image/avif",
+                ".tif" or ".tiff" => "image/tiff",
+                _ => null,
+            };
+            if (Audio.Contains(ext))   // a voice message plays in place: audio types only (a recorded .webm is audio/webm)
+                return type.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
+            return expectedImageType != null && type.Equals(expectedImageType, StringComparison.OrdinalIgnoreCase);
+        }
 
         // NAMED FOR WHAT IT IS. This was called IsAllowed, and CBA003 correctly flagged that: an
         // "IsAllowed" predicate inside a mutating endpoint reads as an authorization decision, and this is
@@ -108,6 +158,7 @@ namespace CrossBuy.BL
         // caller may write into this conversation BEFORE it saves a file, and it must ask the same rule
         // SendAsync will apply — otherwise the two could disagree and the file would outlive the refusal.
         Task<bool> CanSendToAsync(int conversationId);
+        Task<bool> CanReadAsync(int conversationId);
 
         Task<int> GetOrCreateDirectAsync(int companyId, int meId, int otherId);
         Task<int> CreateGroupAsync(int companyId, int meId, string title, IEnumerable<int> memberIds);
@@ -120,6 +171,12 @@ namespace CrossBuy.BL
         Task ToggleReactionAsync(int meId, int messageId, string emoji);
         Task MarkReadAsync(int meId, int conversationId);
         Task<List<ChatDirectoryDto>> DirectoryAsync(int companyId, int meId, string? q);
+
+        /// Messages matching `q` across the conversations this caller is a member of. Read-only, and it
+        /// opens no conversation the caller could not already open: the candidate set is their own
+        /// membership, intersected with the RESOLVED company. Empty for an unresolved scope, a caller
+        /// without the Communication read authority, or a query too short to be a search.
+        Task<List<ChatSearchHitDto>> SearchMessagesAsync(string? q, int take = 30);
         Task<bool> AddMemberAsync(int companyId, int meId, int conversationId, int newMemberId);
         Task<bool> RemoveMemberAsync(int companyId, int meId, int conversationId, int memberId);
     }
@@ -189,6 +246,12 @@ namespace CrossBuy.BL
         {
             var ctx = await ScopeAsync();
             return ctx != null && await MayAsync(ctx, CommunicationActions.Send, conversationId);
+        }
+
+        public async Task<bool> CanReadAsync(int conversationId)
+        {
+            var ctx = await ScopeAsync();
+            return ctx != null && await MayAsync(ctx, CommunicationActions.Read, conversationId);
         }
 
         private static bool IsAr => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
@@ -510,6 +573,14 @@ namespace CrossBuy.BL
             _db.ChatMessages.Add(msg);
             await _db.SaveChangesAsync();
 
+            // The controller stores a library-backed route template. Resolve it only after the message
+            // ID exists, before either the response or the realtime event can expose the attachment URL.
+            if (msg.AttachmentPath?.Contains("{messageId}", StringComparison.Ordinal) == true)
+            {
+                msg.AttachmentPath = msg.AttachmentPath.Replace("{messageId}", msg.ID.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+                await _db.SaveChangesAsync();
+            }
+
             var preview = !string.IsNullOrEmpty(msg.Body) ? (msg.Body!.Length > 120 ? msg.Body!.Substring(0, 120) : msg.Body!)
                         : (attType == "image" ? "📷" : "📎 " + (attName ?? ""));
             var conv = await _db.Conversations.FirstAsync(c => c.ID == conversationId);
@@ -642,6 +713,117 @@ namespace CrossBuy.BL
             await _db.SaveChangesAsync();
             // tell the other party(s) in the room how far I've read → drives their "Seen" indicator
             await _hub.Clients.Group(ChatHub.ConvGroup(conversationId)).SendAsync("read", new { conversationId, employeeId = meId, lastReadId = mem.LastReadMessageId });
+        }
+
+        // =========================================================================================
+        // MESSAGE SEARCH.
+        //
+        // IT OPENS NOTHING NEW. The candidate set is the caller's OWN membership rows intersected with
+        // the resolved company, which is the same set MyConversationsAsync builds — so a search can only
+        // ever return messages from conversations this person can already open. It is a filter over
+        // their own reach, not a second query path into the store.
+        //
+        // THE COMPANY COMES FROM THE SCOPE, NEVER FROM A MEMBERSHIP ROW. ConversationMembers carries no
+        // CompanyID, so a stale or crafted member row pointing at another company's conversation would
+        // otherwise surface it. The conversation rows are re-filtered on CompanyID for exactly that
+        // reason — the same reasoning MyConversationsAsync states.
+        // =========================================================================================
+        public async Task<List<ChatSearchHitDto>> SearchMessagesAsync(string? q, int take = 30)
+        {
+            var term = (q ?? "").Trim();
+
+            // A one-character search is a scan of every message the caller can reach, and it returns so
+            // much that it answers nothing. Refused as empty rather than served expensively.
+            if (term.Length < 2) return new();
+
+            var ctx = await ScopeAsync();
+            if (ctx == null) return new();
+
+            bool mayRead;
+            try { mayRead = await _access.CanAsync(ctx, CommunicationActions.Read, null); }
+            catch (Exception) { mayRead = false; }
+            if (!mayRead) return new();
+
+            int companyId = ctx.CompanyId;
+            int meId = ctx.EmployeeId!.Value;
+
+            var myConvIds = await _db.ConversationMembers.AsNoTracking()
+                .Where(m => m.EmployeeId == meId)
+                .Select(m => m.ConversationId)
+                .ToListAsync();
+            if (myConvIds.Count == 0) return new();
+
+            // The company predicate on the conversation ROW — the barrier a membership row cannot pass.
+            var convs = await _db.Conversations.AsNoTracking()
+                .Where(c => myConvIds.Contains(c.ID) && c.CompanyID == companyId)
+                .Select(c => new { c.ID, c.Kind, c.Title })
+                .ToListAsync();
+            if (convs.Count == 0) return new();
+
+            var allowedIds = convs.Select(c => c.ID).ToList();
+
+            var hits = await _db.ChatMessages.AsNoTracking()
+                .Where(m => allowedIds.Contains(m.ConversationId)
+                            && m.DeletedAt == null
+                            && m.Body != null
+                            && m.Body.Contains(term))
+                .OrderByDescending(m => m.ID)
+                .Take(Math.Clamp(take, 1, 100))
+                .Select(m => new { m.ID, m.ConversationId, m.SenderEmployeeId, m.Body, m.CreatedAt })
+                .ToListAsync();
+            if (hits.Count == 0) return new();
+
+            // Names resolved once for the page, inside the company — an author from outside it simply
+            // has no row here, so a hit cannot be used to read a foreign employee's name.
+            var senderIds = hits.Select(h => h.SenderEmployeeId).Distinct().ToList();
+            var people = await _db.Employee.AsNoTracking()
+                .Where(e => senderIds.Contains(e.ID) && e.EmpCompanyID == companyId)
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                .ToListAsync();
+            var nameById = people.ToDictionary(p => p.ID, p => Nm(p.FullName, p.FullNameEn));
+
+            // A direct conversation has no stored title; it is named for the other member, exactly as
+            // the conversation list names it.
+            var directIds = convs.Where(c => c.Kind != "Group").Select(c => c.ID).ToList();
+            var otherNameByConv = new Dictionary<int, string>();
+            if (directIds.Count > 0)
+            {
+                var others = await _db.ConversationMembers.AsNoTracking()
+                    .Where(m => directIds.Contains(m.ConversationId) && m.EmployeeId != meId)
+                    .Select(m => new { m.ConversationId, m.EmployeeId })
+                    .ToListAsync();
+                var otherIds = others.Select(o => o.EmployeeId).Distinct().ToList();
+                var otherPeople = await _db.Employee.AsNoTracking()
+                    .Where(e => otherIds.Contains(e.ID) && e.EmpCompanyID == companyId)
+                    .Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                    .ToListAsync();
+                var otherNameById = otherPeople.ToDictionary(p => p.ID, p => Nm(p.FullName, p.FullNameEn));
+                foreach (var o in others)
+                    if (!otherNameByConv.ContainsKey(o.ConversationId)
+                        && otherNameById.TryGetValue(o.EmployeeId, out var nm))
+                        otherNameByConv[o.ConversationId] = nm;
+            }
+
+            var convById = convs.ToDictionary(c => c.ID);
+
+            return hits.Select(h =>
+            {
+                var c = convById[h.ConversationId];
+                bool isGroup = c.Kind == "Group";
+                return new ChatSearchHitDto
+                {
+                    MessageId = h.ID,
+                    ConversationId = h.ConversationId,
+                    IsGroup = isGroup,
+                    ConversationTitle = isGroup
+                        ? (c.Title ?? "")
+                        : (otherNameByConv.TryGetValue(h.ConversationId, out var on) ? on : ""),
+                    SenderId = h.SenderEmployeeId,
+                    SenderName = nameById.TryGetValue(h.SenderEmployeeId, out var sn) ? sn : "",
+                    Body = h.Body,
+                    CreatedAt = h.CreatedAt,
+                };
+            }).ToList();
         }
 
         public async Task<List<ChatDirectoryDto>> DirectoryAsync(int companyId, int meId, string? q)

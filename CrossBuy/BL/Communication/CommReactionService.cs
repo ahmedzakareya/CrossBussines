@@ -42,6 +42,7 @@ namespace CrossBuy.BL.Communication
         private readonly ICommAccessPolicy _access;
         private readonly ICommEventPublisher _events;
         private readonly ICommActorDirectory _actors;
+        private readonly Platform.IEntityRegistry _registry;
         private readonly ICommNotificationService _notifications;
 
         public CommReactionService(
@@ -50,6 +51,7 @@ namespace CrossBuy.BL.Communication
             ICommAccessPolicy access,
             ICommEventPublisher events,
             ICommActorDirectory actors,
+            Platform.IEntityRegistry registry,
             ICommNotificationService notifications)
         {
             _db = new CommDb(db);
@@ -57,6 +59,7 @@ namespace CrossBuy.BL.Communication
             _access = access;
             _events = events;
             _actors = actors;
+            _registry = registry;
             _notifications = notifications;
         }
 
@@ -257,10 +260,18 @@ namespace CrossBuy.BL.Communication
             BusinessContext context, CommThread thread, string reactionKey, CancellationToken cancellationToken)
         {
             var actors = await _actors.ResolveAsync(new[] { context.EmployeeId ?? 0 }, cancellationToken);
+
+            // ONE resolution, shared with the comment service, so one kind of record reads the same whoever
+            // announced it — including the thread-subject rule, which calling EntityWords here used to skip.
+            // It was also being computed TWICE for one notification, once per language.
+            var entityLabel = await CommCommentService.EntityLabelAsync(
+                _registry, context, thread, cancellationToken);
+
             return new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [CommTemplateTokens.ActorName] = _actors.Get(actors, context.EmployeeId).Display(arabic: false),
-                [CommTemplateTokens.EntityLabel] = thread.EntityType + "#" + thread.EntityId,
+                [CommTemplateTokens.EntityLabel] = entityLabel.Ar,
+                [CommTemplateTokens.EntityLabelEn] = entityLabel.En,
                 [CommTemplateTokens.EntityKind] = thread.EntityType,
                 [CommTemplateTokens.ReactionKey] = reactionKey,
             };

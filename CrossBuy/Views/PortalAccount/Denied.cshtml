@@ -27,16 +27,22 @@ License: For each use you must have a valid license purchased only from above li
 -->
 <html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
 	<head>
-		<title>@(isAr ? "غير مسموح" : "Not permitted") — CrossBuy</title>
+		<title>@(isAr ? "غير مسموح" : "Not permitted") — @CrossBuy.BL.Platform.ProductIdentity.Name</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.Icon)" asp-append-version="true" />
 		<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
 		@if (isAr)
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
 			<style>
 				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
@@ -47,13 +53,19 @@ License: For each use you must have a valid license purchased only from above li
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		}
 	</head>
 	<body class="app-blank">
 		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
 		<div class="d-flex flex-column flex-root">
 			<div class="d-flex flex-column flex-center flex-column-fluid p-10">
-				<img alt="CrossBuy" class="h-50px mb-10" src="/Backend-assets/media/brand/crossbuy-logo-lockup.png" asp-append-version="true" />
+				<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" class="h-50px mb-10" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight)" asp-append-version="true" />
 				<h1 class="fw-bolder fs-2hx text-gray-900 mb-4">@(isAr ? "غير مسموح" : "Not permitted")</h1>
 				<div class="fw-semibold fs-6 text-gray-500 mb-10 text-center" style="max-width: 32rem;">
 					@(isAr

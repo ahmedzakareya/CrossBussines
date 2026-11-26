@@ -11,6 +11,15 @@
     ViewData["Title"] = Localizer["Delivery board"].Value;
 }
 
+<style>
+    /* Delivery brand status (prototype): teal = ready/done, slate = preparing — no green, no amber */
+    #delivGrid .card{border:0;border-radius:16px;box-shadow:0 1px 2px rgba(31,45,77,.05),0 10px 28px -14px rgba(31,45,77,.18)}
+    #delivGrid .badge-light-success,#delivGrid .btn-light-success{color:#0E7490!important;background:#D4F3F8!important}
+    #delivGrid .btn-light-success:hover{color:#fff!important;background:#0891B2!important}
+    #delivGrid .badge-light-warning,#delivGrid .btn-light-warning{color:#475569!important;background:#EEF1F6!important}
+    #delivGrid .text-success{color:#0891B2!important}#delivGrid .text-warning{color:#64748B!important}
+    #delivGrid .bg-light-success{background:#D4F3F8!important}#delivGrid .bg-light-warning{background:#EEF1F6!important}
+</style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">

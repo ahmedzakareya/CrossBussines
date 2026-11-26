@@ -77,7 +77,7 @@ namespace CrossBuy.Tests.Communication
         // editing EntityRegistry — which is the whole point of ADR-031 and is therefore what the tests exercise.
         // SalesInvoice/PurchaseInvoice/Quotation already carry SupportsComments in the registry; PosOrder does
         // NOT, so it is the case that proves the allow-list works.
-        public static CommunicationPlatformOptions DefaultOptions() => new()
+        public static CommunicationPlatformOptions DefaultOptions() => new CommunicationPlatformOptions()
         {
             EnabledEntityCodes = new List<string>
             {
@@ -87,12 +87,20 @@ namespace CrossBuy.Tests.Communication
                 EntityRegistry.PosOrder,
                 EntityRegistry.Customer,
             },
+            EntityPrivacyPolicies = new(StringComparer.Ordinal)
+            {
+                [EntityRegistry.SalesInvoice] = new()
+                {
+                    MaximumVisibility = CommVisibility.Public,
+                    ExternalPolicyReference = "synthetic-invoice-portal-test-policy"
+                },
+            },
             EnabledChannels = new List<string> { CommChannel.InApp, CommChannel.Email },
 
             // The window is left at its default so the edit-window test can drive it explicitly rather than
             // depending on a fixture value.
             AuthorEditWindowMinutes = 60 * 24,
-        };
+        }.RegisterExternalPolicy(EntityRegistry.SalesInvoice, "synthetic-invoice-portal-test-policy");
 
         public CrossDbContext NewContext(ICompanyScopeHolder? scope = null)
         {
@@ -140,6 +148,7 @@ namespace CrossBuy.Tests.Communication
                 new EmployeeCommPrincipalSource(ctx),
                 new TeamCommPrincipalSource(org, ctx),
                 new DepartmentCommPrincipalSource(ctx),
+                new RoleCommPrincipalSource(new PlatformRoleDirectory(ctx, NullLogger<PlatformRoleDirectory>.Instance)),
             };
             return new CommPrincipalResolver(sources, ctx, Opt, NullLogger<CommPrincipalResolver>.Instance);
         }
@@ -159,10 +168,24 @@ namespace CrossBuy.Tests.Communication
         // requires BusinessEvents to exist and an ambient transaction to be open.
         public RecordingBusinessEventBridge Bridge { get; } = new();
 
+        // When set, every publisher this host builds uses THIS bridge instead of the recording one. Added
+        // rather than making Bridge settable, so the existing host.Bridge.Forwarded assertions still compile.
+        public ICommBusinessEventBridge? BridgeOverride { get; set; }
+
         public ICommEventPublisher Events(CrossDbContext? db = null, ICommBusinessEventBridge? bridge = null)
         {
             var ctx = db ?? Db;
-            return new CommEventPublisher(ctx, Audit(ctx), bridge ?? Bridge, Opt, NullLogger<CommEventPublisher>.Instance);
+            return new CommEventPublisher(
+                ctx, Audit(ctx), bridge ?? BridgeOverride ?? Bridge, Opt, NullLogger<CommEventPublisher>.Instance);
+        }
+
+        public ICommEventBridgeReplayService BridgeReplay(
+            CrossDbContext? db = null, ICommBusinessEventBridge? bridge = null)
+        {
+            var ctx = db ?? Db;
+            return new CommEventBridgeReplayService(
+                ctx, bridge ?? BridgeOverride ?? Bridge, Opt,
+                NullLogger<CommEventBridgeReplayService>.Instance);
         }
 
         public ICommTemplateCatalog Catalog() => new CommTemplateCatalog();
@@ -179,11 +202,17 @@ namespace CrossBuy.Tests.Communication
                 ctx, Catalog(), Renderer(), Preferences(ctx), Access(ctx, permissions), Actors(ctx), Registry(ctx), Opt);
         }
 
-        public ICommAttachmentService Attachments(CrossDbContext? db = null)
+        // `permissions` is optional and defaults to the host's own provider, so every existing caller is
+        // unchanged. It exists because the attachment service AUTHORIZES its reads: ListForCommentAsync asks
+        // the access policy whether this caller may read the comment, and a test cannot prove that refusal
+        // without being able to hand it a caller who may not.
+        public ICommAttachmentService Attachments(
+            CrossDbContext? db = null, IPlatformPermissionProvider? permissions = null)
         {
             var ctx = db ?? Db;
             return new CommAttachmentService(
-                ctx, new DefaultCommFilePreviewProvider(), Events(ctx), Actors(ctx), Surface(ctx), Access(ctx), Opt);
+                ctx, new DefaultCommFilePreviewProvider(), Events(ctx), Actors(ctx), Surface(ctx),
+                Access(ctx, permissions), Opt);
         }
 
         public ICommThreadService Threads(CrossDbContext? db = null, IPlatformPermissionProvider? permissions = null)
@@ -220,6 +249,9 @@ namespace CrossBuy.Tests.Communication
                 Attachments(ctx),
                 Events(ctx),
                 Actors(ctx),
+                // CommCommentService now names the record in words rather than keying it
+                // ("JournalEntry#16172"), which it reads from the registry’s frozen table.
+                Registry(ctx),
                 Surface(ctx),
                 Opt);
         }
@@ -229,6 +261,7 @@ namespace CrossBuy.Tests.Communication
             var ctx = db ?? Db;
             return new CommReactionService(
                 ctx, Threads(ctx, permissions), Access(ctx, permissions), Events(ctx), Actors(ctx),
+                Registry(ctx),      // same reason as Comments: a reaction names the record too
                 Notifications(ctx, permissions));
         }
 
@@ -374,6 +407,60 @@ namespace CrossBuy.Tests.Communication
         public Task<long?> ForwardAsync(CommEvent commEvent, CancellationToken cancellationToken = default)
         {
             if (!CommEventTypes.IsBridgeable(commEvent.EventType)) return Task.FromResult<long?>(null);
+            Forwarded.Add(commEvent);
+            return Task.FromResult<long?>(_next++);
+        }
+    }
+
+    // The kernel as it ACTUALLY failed. HM-D44 was a missing BusinessEvents table surfacing as SQL-208 in the
+    // middle of an operation; the message is kept recognisable so an assertion about the recorded failure is
+    // about that fault and not about any exception at all.
+    public sealed class ThrowingBusinessEventBridge : ICommBusinessEventBridge
+    {
+        private readonly Func<Exception> _fault;
+
+        public ThrowingBusinessEventBridge(Func<Exception> fault) => _fault = fault;
+
+        public static ThrowingBusinessEventBridge MissingBusinessEventsTable() =>
+            new(() => new InvalidOperationException("SQLite Error 1: 'no such table: BusinessEvents'."));
+
+        public int Attempts { get; private set; }
+
+        public Task<long?> ForwardAsync(CommEvent commEvent, CancellationToken cancellationToken = default)
+        {
+            Attempts++;
+            throw _fault();
+        }
+    }
+
+    // Stands in for the kernel's own idempotency — BusinessEventService.RecordAsync: "a duplicate key returns
+    // the original id and writes nothing". Without it a replay test could not tell a STABLE dedup key from a
+    // freshly generated one, which is the only thing standing between a window scan and duplicate events.
+    public sealed class DedupAwareBusinessEventBridge : ICommBusinessEventBridge
+    {
+        private readonly Dictionary<string, long> _byKey = new(StringComparer.Ordinal);
+        private long _next = 1;
+
+        public int Accepted { get; private set; }
+        public int Duplicates { get; private set; }
+        public int DistinctKeys => _byKey.Count;
+        public List<CommEvent> Forwarded { get; } = new();
+
+        public Task<long?> ForwardAsync(CommEvent commEvent, CancellationToken cancellationToken = default)
+        {
+            if (!CommEventTypes.IsBridgeable(commEvent.EventType)) return Task.FromResult<long?>(null);
+
+            // The real bridge namespaces the key; mirrored here so the test exercises the same string.
+            string key = "comm:" + (commEvent.DedupKey ?? Guid.NewGuid().ToString());
+
+            if (_byKey.TryGetValue(key, out var existing))
+            {
+                Duplicates++;
+                return Task.FromResult<long?>(existing);
+            }
+
+            _byKey[key] = _next;
+            Accepted++;
             Forwarded.Add(commEvent);
             return Task.FromResult<long?>(_next++);
         }

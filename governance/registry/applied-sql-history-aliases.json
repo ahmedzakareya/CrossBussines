@@ -1,0 +1,42 @@
+{
+  "$comment": "Historical applied SQL identities retained as non-deployable evidence. These paths are preserved in governance/evidence/sql-history and must never become deployment inputs.",
+  "schema": 1,
+  "entries": [
+    {
+      "scriptName": "external/r1/reporting-schema-alignment/report-dataset-specs.sql",
+      "evidencePath": "governance/evidence/sql-history/report-dataset-specs.sql.evidence.txt",
+      "sha256": "0f98576109dae82de92a7a17f6126041ff884e5b822f770bd433505bc236b0fe",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    },
+    {
+      "scriptName": "external/r1/revision-02/hr_document_attachments_reconciled_001.sql",
+      "evidencePath": "governance/evidence/sql-history/hr_document_attachments_reconciled_001.sql.evidence.txt",
+      "sha256": "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    },
+    {
+      "scriptName": "external/r1/revision-02/pos_hold_recall_reconciled_001.sql",
+      "evidencePath": "governance/evidence/sql-history/pos_hold_recall_reconciled_001.sql.evidence.txt",
+      "sha256": "6325f8184cef2fba0ffb061f25c97952860547446a3765d1a9b8768d24eb9705",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    },
+    {
+      "scriptName": "external/r1/revision-02/pos_order_guests_reconciled_001.sql",
+      "evidencePath": "governance/evidence/sql-history/pos_order_guests_reconciled_001.sql.evidence.txt",
+      "sha256": "80e7ed065f3c52c8f0193f60d22c65bb2e1422423d5888900d50fcbcbcd04ebe",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    },
+    {
+      "scriptName": "external/r1/revision-02/pos_quickmenu_reconciled_001.sql",
+      "evidencePath": "governance/evidence/sql-history/pos_quickmenu_reconciled_001.sql.evidence.txt",
+      "sha256": "064701a88cfa852d894588de13358cf056a9dc05ff8e65ba9be1075f7a1a477b",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    },
+    {
+      "scriptName": "external/r1/revision-02/pos_setup_reconciled_001.sql",
+      "evidencePath": "governance/evidence/sql-history/pos_setup_reconciled_001.sql.evidence.txt",
+      "sha256": "f7c83ad682854b1593aaf0e00ce7cb42b16eba755ec16cc296a8fb8868bc9311",
+      "reason": "Applied to CrossBuyDB2 on 2026-10-12; preserved as exact historical evidence, not a deployment slice."
+    }
+  ]
+}

@@ -46,6 +46,30 @@ namespace CrossBuy.BL
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static DateTime MonthEnd(DateTime d) => new DateTime(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month));
 
+		// GRNI and the inventory account are CLEARING accounts: the purchase cycle and the stock writer
+		// own every movement on them, and two integrity checks reconcile their balances against the
+		// documents behind them. Anything posted there from outside can never be cleared and never
+		// matched, so the reconciliation stays broken for good. The refusal names the account rather
+		// than saying "invalid", because the person picked it on purpose and needs to know why not.
+		private async Task<string?> SystemClearingRefusal(int companyId, int accountId)
+		{
+			var grni = await _context.ItemCategories.AsNoTracking()
+				.Where(c => c.CompanyID == companyId && c.GrniAccountId != null)
+				.Select(c => c.GrniAccountId!.Value).Distinct().ToListAsync();
+			var inv = await _context.ItemCategories.AsNoTracking()
+				.Where(c => c.CompanyID == companyId)
+				.Select(c => c.InventoryAccountId).Distinct().ToListAsync();
+
+			string? code = await _context.Accounts.AsNoTracking()
+				.Where(a => a.ID == accountId && a.CompanyID == companyId).Select(a => a.Code).FirstOrDefaultAsync();
+
+			if (grni.Contains(accountId))
+				return $"Account {code} is the goods-received-not-invoiced clearing account. Only a goods receipt may credit it and only a purchase invoice may clear it, so an asset funded from it could never be matched. Choose the cash, bank or supplier account the asset was actually bought against.";
+			if (inv.Contains(accountId))
+				return $"Account {code} is the inventory control account, moved only by stock movements. Choose the cash, bank or supplier account the asset was actually bought against.";
+			return null;
+		}
+
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
 			await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 
@@ -118,6 +142,10 @@ namespace CrossBuy.BL
 			var expAcc = input.DepExpenseAccountId ?? cat?.DepExpenseAccountId ?? await AccIdAsync(companyId, "520103") ?? 0;
 			if (costAcc == 0 || accumAcc == 0 || expAcc == 0) return (false, "The fixed-asset accounts are not configured in the chart of accounts", null);
 			if (input.FundingAccountId <= 0) return (false, "Choose the funding account (cash/bank/supplier)", null);
+			{
+				var __clearingErr = await SystemClearingRefusal(companyId, input.FundingAccountId);
+				if (__clearingErr != null) return (false, __clearingErr, null);
+			}
 
 			var asset = new FixedAsset
 			{

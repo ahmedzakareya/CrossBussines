@@ -1,0 +1,124 @@
+@model CrossBuy.BL.CrmIdentity.SequenceFile
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var s = Model.Seq; var name = !isAr && !string.IsNullOrWhiteSpace(s.NameEn) ? s.NameEn : s.Name;
+    var canEdit = ViewBag.CanEdit == true; var canManage = ViewBag.CanManage == true;
+    int C(string k) => Model.Counts.GetValueOrDefault(k);
+    var icon = new Dictionary<string, (string i, string c)> { ["Email"] = ("ki-sms", "#3A5795"), ["WhatsApp"] = ("ki-whatsapp", "#25D366"), ["Call"] = ("ki-phone", "#0F766E"), ["Task"] = ("ki-check-square", "#7239EA") };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@name @if (!s.IsActive) { <span class="badge badge-light ms-2 fs-8">@T["Paused"]</span> }</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Sequences","Crm")" class="text-muted text-hover-primary">@T["Follow-up sequences"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@name</li></ul></div>
+        <div class="d-flex gap-2">
+            @if (canManage) { <a href="@Url.Action("SequenceEditor","Crm", new { id = s.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</a> }
+            @if (canEdit && s.IsActive) { <button type="button" class="btn btn-sm btn-primary" id="btnEnroll"><i class="ki-outline ki-user-tick fs-4"></i>@T["Enroll people"]</button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-4 mb-5">
+            @foreach (var (k, label, ic, fg) in new[] { ("Active", T["Running now"].Value, "ki-time", "#3A5795"), ("Replied", T["stop:Replied"].Value, "ki-message-text-2", "#15803D"), ("Booked", T["stop:Booked"].Value, "ki-calendar-tick", "#15803D"), ("Converted", T["stop:Converted"].Value, "ki-briefcase", "#0F766E"), ("Completed", T["Finished with no answer"].Value, "ki-flag", "#6B7280"), ("OptOut", T["stop:OptOut"].Value, "ki-shield-cross", "#DC2626") })
+            {
+                <div class="col-6 col-md-4 col-xl-2"><div class="card h-100"><div class="card-body p-5"><div class="d-flex align-items-center gap-2 mb-2"><i class="ki-outline @ic fs-2" style="color:@fg"></i><span class="text-muted fw-semibold fs-8">@label</span></div><div class="fw-bold fs-2x num lh-1">@C(k)</div></div></div></div>
+            }
+        </div>
+        <div class="row g-5">
+            <div class="col-xl-4"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Steps"]</span><span class="text-muted fs-7 mt-1">@T["aud:" + s.Target]@if (s.SkipNonWorkDays) { <span> · @T["off days skipped"]</span> }</span></div></div>
+                <div class="card-body pt-2">
+                @for (var i = 0; i < Model.Steps.Count; i++)
+                {
+                    var st = Model.Steps[i]; var (ic, c) = icon[st.Kind];
+                    if (i > 0) { <div class="crm-step-gap"><span>@T["wait"] <b class="num">@(st.DayOffset - Model.Steps[i - 1].DayOffset)</b> @T["days"]</span></div> }
+                    <div class="crm-step"><div class="crm-step-ico" style="--c:@c"><i class="ki-outline @ic fs-3"></i></div>
+                        <div class="min-w-0 flex-grow-1"><div class="d-flex flex-stack"><span class="fw-bold fs-7">@(i + 1). @T["step:" + st.Kind]</span><span class="text-muted fs-8">@T["Day"] <span class="num">@st.DayOffset</span></span></div>
+                            <div class="fs-7 text-gray-700 text-truncate">@(st.Kind == "WhatsApp" ? st.Template : st.Subject)</div>
+                            <div class="fs-8 text-muted mt-1"><span class="num">@Model.RanByStep.GetValueOrDefault(st.StepNo)</span> @T["times so far"]</div></div></div>
+                }
+                </div></div></div>
+            <div class="col-xl-8"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["People on this sequence"]</span><span class="text-muted fs-7 mt-1" id="resultCount">—</span></div>
+                    <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+                <div class="card-body pt-2">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name, mobile or email"]" /></div>
+                        <div class="col-md-4"><select id="f_status" class="form-select form-select-solid form-select-sm cb-filter" data-control="select2" data-hide-search="true">
+                            <option value="">@T["Everyone"]</option><option value="Active">@T["Running now"]</option>
+                            @foreach (var r in new[] { "Replied", "Booked", "Converted", "OptOut", "Manual", "Inactive" }) { <option value="@r">@T["stop:" + r]</option> }
+                            <option value="Completed">@T["Finished with no answer"]</option></select></div>
+                        <div class="col-md-1"><button type="button" id="f_reset" class="btn btn-sm btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3 p-0"></i></button></div>
+                    </div>
+                    <div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:180px">@T["Person"]</th><th>@T["Owner"]</th><th>@T["Where they are"]</th><th>@T["Last thing that happened"]</th><th class="text-end pe-4"></th></tr></thead>
+                        <tbody id="rows" class="fs-6"></tbody></table></div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["Nobody is on this sequence yet."]</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div></div></div>
+        </div>
+    </div></div>
+</div>
+<div class="modal fade" id="enrollModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Enroll people"] — @T["aud:" + s.Target]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i><input id="candQ" class="form-control form-control-solid ps-12" placeholder="@T["Search by name, mobile or email"]" autocomplete="off" /></div>
+        <div id="cands" class="mh-350px overflow-auto"></div>
+        <div class="fs-8 text-muted mt-3">@T["Each person's owner runs their steps; people already on this sequence are greyed out."]</div>
+        <div class="text-danger fs-8 fw-semibold mt-2 d-none" id="enrollErr"></div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="enrollGo" disabled>@T["Enroll"] <span class="num" id="enrollN"></span></button></div>
+</div></div></div>
+<div class="modal fade" id="eventsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="eventsTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10" id="eventsBody"></div></div></div></div>
+@section Scripts {
+<script>
+(function(){
+  var seqId = @s.ID;
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+    ["stopQ"] = T["Stop this person's sequence? No more steps will run for them."].Value, ["enrolled"] = T["Enrolled"].Value, ["skipped"] = T["skipped"].Value, ["none"] = T["Nobody matches"].Value, ["on"] = T["already on it"].Value }));
+  function token(){ return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+  function post(url, data){ var fd = new FormData(); Object.keys(data).forEach(function(k){ [].concat(data[k]).forEach(function(v){ fd.append(k, v); }); }); fd.append('__RequestVerificationToken', token());
+    return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  function toast(m, k){ if (window.CB && CB.toast) CB.toast(m, k || 'success'); }
+  var list = cbServerList({ url:'@Url.Action("SequenceEnrollmentsData","Crm")', isAr:@(isAr ? "true" : "false"), addParams:function(p){ p.set('id', seqId); var st = document.getElementById('f_status').value; if (st) p.set('status', st); } });
+  document.getElementById('rows').addEventListener('click', async function(e){
+    var stop = e.target.closest('[data-stop]'), ev = e.target.closest('[data-events]');
+    if (stop) {
+      if (window.cbConfirm && !(await window.cbConfirm(txt.stopQ, { kind:'danger', title:'' }))) return;
+      var r = await post('@Url.Action("SequenceStop","Crm")', { id: stop.getAttribute('data-stop') });
+      if (r.ok) list.reload(); else toast(r.error || txt.failed, 'error');
+    } else if (ev) {
+      document.getElementById('eventsTitle').textContent = ev.getAttribute('data-name');
+      document.getElementById('eventsBody').innerHTML = await fetch('@Url.Action("SequenceEvents","Crm")?id=' + ev.getAttribute('data-events'), { credentials:'same-origin' }).then(function(r){ return r.text(); });
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('eventsModal')).show();
+    }
+  });
+  var btn = document.getElementById('btnEnroll'); if (!btn) return;
+  var modal = document.getElementById('enrollModal'), picked = {};
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function count(){ var n = Object.keys(picked).length; document.getElementById('enrollN').textContent = n ? '(' + n + ')' : ''; document.getElementById('enrollGo').disabled = n === 0; }
+  async function search(){
+    var q = document.getElementById('candQ').value;
+    var rows = await fetch('@Url.Action("SequenceCandidates","Crm")?id=' + seqId + '&q=' + encodeURIComponent(q), { credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return []; });
+    document.getElementById('cands').innerHTML = rows.length ? rows.map(function(c){
+      return '<label class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200' + (c.already ? ' opacity-50' : '') + '"><input type="checkbox" class="form-check-input m-0" value="' + c.id + '"' + (c.already ? ' disabled' : '') + (picked[c.id] ? ' checked' : '') + ' />'
+        + '<span class="min-w-0"><span class="fw-bold text-gray-900 d-block">' + esc(c.name) + '</span><span class="text-muted fs-8">' + esc(c.sub || '') + (c.already ? ' · ' + txt.on : '') + '</span></span></label>'; }).join('')
+      : '<div class="text-muted text-center py-8">' + txt.none + '</div>';
+  }
+  var t; document.getElementById('candQ').addEventListener('input', function(){ clearTimeout(t); t = setTimeout(search, 300); });
+  document.getElementById('cands').addEventListener('change', function(e){ if (e.target.type !== 'checkbox') return; if (e.target.checked) picked[e.target.value] = 1; else delete picked[e.target.value]; count(); });
+  btn.addEventListener('click', function(){ picked = {}; count(); document.getElementById('candQ').value = ''; document.getElementById('enrollErr').classList.add('d-none'); search(); bootstrap.Modal.getOrCreateInstance(modal).show(); });
+  document.getElementById('enrollGo').addEventListener('click', async function(){
+    var r = await post('@Url.Action("SequenceEnroll","Crm")', { id: seqId, ids: Object.keys(picked) });
+    if (!r.ok) { var e = document.getElementById('enrollErr'); e.textContent = r.error || txt.failed; e.classList.remove('d-none'); return; }
+    bootstrap.Modal.getOrCreateInstance(modal).hide();
+    toast(txt.enrolled + ': ' + r.extra.enrolled + (r.extra.skipped ? ' · ' + txt.skipped + ': ' + r.extra.skipped : ''));
+    setTimeout(function(){ location.reload(); }, 700);
+  });
+})();
+</script>
+}

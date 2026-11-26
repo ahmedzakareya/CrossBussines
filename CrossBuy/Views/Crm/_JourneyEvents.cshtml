@@ -1,0 +1,16 @@
+@model List<CrossBuy.Models.Context.Crm.CrmJourneyEvent>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var dot = new Dictionary<string, string> { ["Entered"] = "#3A5795", ["Queued"] = "#3A5795", ["Sent"] = "#15803D", ["Task"] = "#0F766E", ["Skipped"] = "#6B7280", ["Failed"] = "#DC2626",
+        ["Waiting"] = "#6B7280", ["Yes"] = "#15803D", ["No"] = "#7239EA", ["Finished"] = "#15803D", ["Exited"] = "#DC2626" };
+}
+@if (Model.Count == 0) { <div class="text-muted">—</div> }
+@foreach (var ev in Model)
+{
+    <div class="d-flex gap-4 mb-5">
+        <div class="num fs-8 text-muted text-nowrap pt-1" style="width:86px">@ev.At.ToLocalTime().ToString("MM-dd HH:mm")</div>
+        <span class="crm-fc-dot mt-2 flex-shrink-0" style="--c:@dot.GetValueOrDefault(ev.Outcome, "#6B7280")"></span>
+        <div class="min-w-0"><div class="fw-bold fs-7">@T["jev:" + ev.Outcome]</div>
+            @if (ev.Detail != null) { <div class="fs-8 text-gray-700 text-break">@(ev.Outcome == "Exited" ? T["jexit:" + ev.Detail].Value : ev.Outcome == "Waiting" ? ev.Detail + " " + T["days"].Value : T[ev.Detail].Value)</div> }</div>
+    </div>
+}

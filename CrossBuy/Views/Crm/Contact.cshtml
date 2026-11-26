@@ -1,0 +1,201 @@
+@model CrossBuy.BL.CrmIdentity.ContactFile
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    var c = Model.Contact;
+    var canEdit = ViewBag.CanEdit == true;
+    var canManage = ViewBag.CanManage == true;
+    var channels = new[] { ("WhatsApp", "ki-whatsapp", "#25D366", "WhatsApp"), ("Email", "ki-sms", "#3A5795", T["ch:Email"].Value), ("Sms", "ki-message-text-2", "#7239EA", "SMS"), ("Call", "ki-phone", "#0F766E", T["ch:Call"].Value) };
+    var actIcon = new Dictionary<string, (string, string)> { ["Call"] = ("ki-phone", "#7239EA"), ["Meeting"] = ("ki-calendar", "#DC2626"), ["Email"] = ("ki-sms", "#3A5795"), ["Task"] = ("ki-check-square", "#0F766E") };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+@functions {
+    static string Fmt(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm") + "Z";
+}
+@{
+    // a person always shows as a photo, falling back to initials on the brand tint
+    Microsoft.AspNetCore.Html.IHtmlContent Person(int? id, string size = "30")
+    {
+        if (id is not int e || !Model.People.TryGetValue(e, out var p)) return new Microsoft.AspNetCore.Html.HtmlString("<span class=\"text-muted\">—</span>");
+        var ini = System.Net.WebUtility.HtmlEncode(Initials(p.Name));
+        var img = p.HasPhoto
+            ? $"<img src=\"/People/Photo/{e}\" alt=\"\" onerror=\"this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>{ini}</span>'\" />"
+            : $"<span class=\"symbol-label crm-initials fs-8\">{ini}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString($"<span class=\"d-inline-flex align-items-center gap-2\"><span class=\"symbol symbol-{size}px symbol-circle\">{img}</span><span class=\"fw-semibold text-gray-800 fs-7\">{System.Net.WebUtility.HtmlEncode(p.Name)}</span></span>");
+    }
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@N(c.Name, c.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Contacts","Crm")" class="text-muted text-hover-primary">@T["Contacts"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Account360","Crm", new { id = c.AccountId })" class="text-muted text-hover-primary">@N(c.AccountName, c.AccountNameEn)</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@N(c.Name, c.NameEn)</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("AccountEditor","Crm", new { id = c.AccountId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit details"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-xl-4">
+                <div class="card mb-5"><div class="card-body text-center pt-10">
+                    <div class="d-flex justify-content-center mb-4"><div class="symbol symbol-100px symbol-circle"><span class="symbol-label crm-initials fs-1">@Initials(c.NameEn ?? c.Name)</span></div></div>
+                    <div class="fs-3 fw-bold text-gray-900">@N(c.Name, c.NameEn)</div>
+                    <div class="text-muted mb-3">@N(c.Title ?? "", c.TitleEn)@if (c.IsPrimary) { <span class="badge badge-light-primary fs-8 ms-1">@T["Primary contact"]</span> }</div>
+                    <a href="@Url.Action("Account360","Crm", new { id = c.AccountId })" class="d-inline-flex align-items-center gap-2 text-gray-800 text-hover-primary fw-bold">
+                        <span class="symbol symbol-30px"><span class="symbol-label crm-initials fs-8">@Initials(c.AccountNameEn ?? c.AccountName)</span></span>@N(c.AccountName, c.AccountNameEn)</a>
+                    <div class="separator my-5"></div>
+                    <div class="text-start">
+                        <div class="crm-line"><span class="text-muted">@T["Mobile"]</span><span class="num fw-semibold">@(string.IsNullOrWhiteSpace(c.Phone) ? "—" : c.Phone)</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Email"]</span><span class="num fw-semibold">@(string.IsNullOrWhiteSpace(c.Email) ? "—" : c.Email)</span></div>
+                    </div>
+                </div></div>
+                @if (Model.PossibleDuplicates.Count > 0)
+                {
+                    <div class="card mb-5" style="border:1px dashed var(--cb-danger-strong,#DC2626)"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-danger fs-5"><i class="ki-outline ki-copy fs-3 text-danger me-1"></i>@T["Possibly the same person"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Same mobile or email on another contact"]</span></div></div>
+                        <div class="card-body pt-2">
+                        @foreach (var d in Model.PossibleDuplicates)
+                        {
+                            <div class="d-flex flex-stack py-3 crm-row-sep">
+                                <div class="min-w-0"><a href="@d.Url" class="fw-bold text-gray-900 text-hover-primary">@d.Name</a>
+                                    <div>@foreach (var r in d.Reasons) { <span class="crm-reason">@T["dup:" + r]</span> }</div></div>
+                                @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary" data-merge-type="Contact" data-survivor="@c.Id" data-merged="@d.Id">@T["Merge"]</button> }
+                            </div>
+                        }
+                        </div></div>
+                }
+            </div>
+            <div class="col-xl-8">
+                <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Communication consent"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Every message checks it before sending — and the record shows when and how it was given"]</span></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Channel"]</th><th>@T["State"]</th><th>@T["Source"]</th><th>@T["Recorded"]</th><th>@T["By"]</th><th class="text-end pe-4"></th></tr></thead>
+                        <tbody class="fs-6">
+                        @foreach (var (k, icon, color, label) in channels)
+                        {
+                            var s = c.Consent.TryGetValue(k, out var st) ? st : null;
+                            <tr data-channel="@k">
+                                <td class="ps-4"><div class="d-flex align-items-center gap-3"><span class="crm-ch" style="--ch:@color"><i class="ki-outline @icon fs-4"></i></span><span class="fw-bold">@label</span></div></td>
+                                <td data-col="state">@if (s == null) { <span class="crm-consent none">@T["Never asked"]</span> } else if (s.State == "OptIn") { <span class="crm-consent in">✓ @T["consent:OptIn"]</span> } else { <span class="crm-consent out">✕ @T["consent:OptOut"]</span> }</td>
+                                <td data-col="source" class="fs-7">@(s == null ? "—" : T["src:" + s.Source].Value)</td>
+                                <td data-col="at" class="fs-7 text-nowrap">@if (s != null) { <span class="num" data-utc="@Fmt(s.At)">@s.At.ToLocalTime().ToString("yyyy-MM-dd")</span> } else { <span>—</span> }</td>
+                                <td data-col="by">@(s == null ? new Microsoft.AspNetCore.Html.HtmlString("—") : Person(s.ByEmployeeId))</td>
+                                <td class="text-end pe-4">@if (canEdit) { <button type="button" class="btn btn-sm btn-light-primary" data-consent="@k" data-label="@label" data-state="@(s?.State ?? "")">@T["Record a decision"]</button> }</td>
+                            </tr>
+                        }
+                        </tbody></table></div></div></div>
+
+                <div class="row g-5">
+                    <div class="col-xl-6"><div class="card mb-5 h-100"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-5">@T["Consent history"]</span><span class="text-muted mt-1 fw-semibold fs-7">@T["Never edited — every decision is a new line"]</span></div></div>
+                        <div class="card-body pt-2" id="consentHistory">
+                        @if (Model.History.Count == 0) { <div class="text-muted fs-7 py-4" data-empty>@T["No decision recorded yet. Until one is, this person may not receive marketing messages."]</div> }
+                        @foreach (var h in Model.History)
+                        {
+                            <div class="py-3 crm-row-sep">
+                                <div class="d-flex flex-stack"><span class="fw-bold fs-7">@(channels.First(x => x.Item1 == h.Channel).Item4) · <span class="@(h.State == "OptIn" ? "text-success" : "text-danger")">@T["consent:" + h.State]</span></span>
+                                    <span class="text-muted fs-8 num" data-utc="@Fmt(h.At)">@h.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div>
+                                <div class="text-muted fs-8">@T["src:" + h.Source] · @(h.ByName ?? "—")</div>
+                                @if (!string.IsNullOrWhiteSpace(h.Note)) { <div class="fs-7 text-gray-700 mt-1">@h.Note</div> }
+                            </div>
+                        }
+                        </div></div></div>
+                    <div class="col-xl-6"><div class="card mb-5 h-100"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-5">@T["Recent interactions"]</span></div></div>
+                        <div class="card-body pt-4">
+                        @if (Model.Timeline.Count == 0) { <div class="text-muted fs-7">@T["No activity recorded against this person yet."]</div> }
+                        @foreach (var a in Model.Timeline)
+                        {
+                            var (ic, col) = actIcon.TryGetValue(a.Type, out var v) ? v : ("ki-check-square", "#0F766E");
+                            <div class="crm-tl-item"><span class="crm-ch" style="--ch:@col"><i class="ki-outline @ic fs-4"></i></span>
+                                <div><div class="fw-semibold text-gray-900">@a.Subject</div>
+                                    <div class="text-muted fs-8">@T["act:" + a.Type] · @(a.CreatedAt?.ToString("yyyy-MM-dd") ?? "")@(a.Done ? "" : " · " + T["(state) open"].Value)</div></div></div>
+                        }
+                        </div></div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="consentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="consentTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        @Html.AntiForgeryToken()
+        <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Decision"]</div>
+        <div class="d-flex gap-4 mb-6">
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cState" value="OptIn" /><span class="form-check-label fw-bold text-success">@T["consent:OptIn"]</span></label>
+            <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cState" value="OptOut" /><span class="form-check-label fw-bold text-danger">@T["consent:OptOut"]</span></label>
+        </div>
+        <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["How was it given?"]</div>
+        <select id="cSource" class="form-select form-select-solid mb-6" data-control="select2" data-hide-search="true" data-dropdown-parent="#consentModal">
+            @foreach (var src in CrossBuy.Models.Context.Crm.CrmConsentVocabulary.StaffSources) { <option value="@src">@T["src:" + src]</option> }
+        </select>
+        <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note (optional)"]</div>
+        <textarea id="cNote" class="form-control form-control-solid" rows="2" maxlength="300" placeholder="@T["e.g. agreed by phone on the call of 10 November"]"></textarea>
+        <div class="notice d-none rounded border border-dashed border-danger bg-light-danger p-4 mt-5 fs-7 fw-semibold text-danger" id="cError"></div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="cSave">@T["Save the decision"]</button></div>
+</div></div></div>
+<div id="mergeHost"></div>
+
+@section Scripts {
+<script>
+(function(){
+  var isAr = @(isAr ? "true" : "false");
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["in"] = "✓ " + T["consent:OptIn"].Value, ["out"] = "✕ " + T["consent:OptOut"].Value, ["you"] = T["You"].Value, ["now"] = T["just now"].Value,
+    ["confirm"] = T["Record this decision? It is kept permanently in the consent history."].Value, ["title"] = T["Communication consent"].Value,
+    ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["done"] = T["Decision recorded"].Value }));
+  var src = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(CrossBuy.Models.Context.Crm.CrmConsentVocabulary.StaffSources.ToDictionary(s => s, s => T["src:" + s].Value)));
+  var modal = document.getElementById('consentModal'), current = null;
+  function token(){ var t=document.querySelector('#consentModal input[name="__RequestVerificationToken"]'); return t?t.value:''; }
+  document.querySelectorAll('[data-consent]').forEach(function(b){
+    b.addEventListener('click', function(){
+      current = b.getAttribute('data-consent');
+      document.getElementById('consentTitle').textContent = b.getAttribute('data-label');
+      var st = b.getAttribute('data-state');
+      modal.querySelectorAll('input[name="cState"]').forEach(function(r){ r.checked = (st ? r.value !== st : r.value === 'OptIn'); });
+      document.getElementById('cNote').value=''; document.getElementById('cError').classList.add('d-none');
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+  document.getElementById('cSave').addEventListener('click', async function(){
+    var state = (modal.querySelector('input[name="cState"]:checked')||{}).value, source = document.getElementById('cSource').value, note = document.getElementById('cNote').value;
+    if (!state) return;
+    var ok = window.cbConfirm ? await window.cbConfirm(txt.confirm, { kind: state === 'OptOut' ? 'danger' : 'primary', title: txt.title }) : true;
+    if (!ok) return;
+    var fd = new FormData(); fd.append('id','@c.Id'); fd.append('channel',current); fd.append('state',state); fd.append('source',source); fd.append('note',note); fd.append('__RequestVerificationToken',token());
+    var r = await fetch('@Url.Action("ContactConsent","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json().catch(function(){ return { ok:false, error: txt.failed }; }); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    var err = document.getElementById('cError');
+    if (!r.ok) { err.textContent = r.error || txt.failed; err.classList.remove('d-none'); return; }
+    bootstrap.Modal.getInstance(modal).hide();
+    // repaint this channel's row and the history, nothing else
+    var row = document.querySelector('tr[data-channel="'+current+'"]');
+    row.querySelector('[data-col="state"]').innerHTML = '<span class="crm-consent '+(state==='OptIn'?'in':'out')+'">'+(state==='OptIn'?txt.in:txt.out)+'</span>';
+    row.querySelector('[data-col="source"]').textContent = src[source] || source;
+    row.querySelector('[data-col="at"]').textContent = txt.now;
+    row.querySelector('[data-col="by"]').textContent = txt.you;
+    row.querySelector('[data-consent]').setAttribute('data-state', state);
+    var hist = document.getElementById('consentHistory'), empty = hist.querySelector('[data-empty]'); if (empty) empty.remove();
+    var label = row.querySelector('.fw-bold').textContent;
+    var div = document.createElement('div'); div.className='py-3 crm-row-sep';
+    div.innerHTML = '<div class="d-flex flex-stack"><span class="fw-bold fs-7"></span><span class="text-muted fs-8">'+txt.now+'</span></div><div class="text-muted fs-8"></div>';
+    div.querySelector('.fw-bold').innerHTML = label + ' · <span class="'+(state==='OptIn'?'text-success':'text-danger')+'">'+(state==='OptIn'?txt.in.slice(2):txt.out.slice(2))+'</span>';
+    div.querySelector('.text-muted.fs-8:last-child').textContent = (src[source]||source) + ' · ' + txt.you;
+    if (note) { var n=document.createElement('div'); n.className='fs-7 text-gray-700 mt-1'; n.textContent=note; div.appendChild(n); }
+    hist.prepend(div);
+    if (window.CB && CB.toast) CB.toast(txt.done, 'success');
+  });
+})();
+</script>
+<partial name="_MergeScript" />
+}

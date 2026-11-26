@@ -1,4 +1,4 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Accounting;
@@ -250,6 +250,57 @@ namespace CrossBuy.Controllers.Api
 			await _um.UpdateAsync(user);
 
 			return Ok(new { email, companyId, message = "password reset; IsActive and IsEndUser ensured" });
+		}
+
+		// THE PORTAL COUNTERPART OF THE ENDPOINT ABOVE, AND ITS GUARD IS THE EXACT INVERSE.
+		//
+		// reset-user-password refuses any login that is NOT an Employee of the company, which is correct for
+		// staff and makes it structurally unable to touch a client-portal account: a portal identity has no
+		// Employee row ON PURPOSE - that absence is what stops a customer reaching the back office. So the
+		// one endpoint that exists cannot reset the one kind of account this is for.
+		//
+		// This one refuses the opposite way: no ACTIVE PortalUsers link, no reset. A staff login therefore
+		// cannot be reset through here any more than a portal login can be reset through the other, and
+		// neither endpoint is a general-purpose password tool. Both are [DevOnly] (404 outside Development)
+		// and both go through UserManager, so no password hash is ever written by hand.
+		[HttpGet("reset-portal-password")]
+		public async Task<IActionResult> ResetPortalPassword(
+			[FromQuery] string key, [FromQuery] string userName, [FromQuery] string password)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+				return BadRequest(new { message = "userName and password are both required" });
+
+			var user = await _um.FindByNameAsync(userName);
+			if (user == null) return NotFound(new { message = "no such login" });
+
+			// PortalUsers has no named DbSet; it is reached through the model the same way the portal reads it.
+			var link = await _db.Set<CrossBuy.Models.Context.Portal.PortalUser>().AsNoTracking()
+				.Where(p => p.UserId == user.Id && p.IsActive)
+				.Select(p => new { p.Id, p.CompanyID, p.CustomerId })
+				.FirstOrDefaultAsync();
+
+			if (link == null)
+				return BadRequest(new { message = "refused: that login has no active client-portal identity" });
+
+			var token = await _um.GeneratePasswordResetTokenAsync(user);
+			var res = await _um.ResetPasswordAsync(user, token, password);
+			if (!res.Succeeded)
+				return StatusCode(500, new { message = "reset failed", errors = res.Errors.Select(e => e.Description) });
+
+			// The portal's own login checks these two before it checks the password, so a reset that left them
+			// false would hand back a working password that still refuses - the failure this endpoint exists to end.
+			user.IsActive = true; user.IsEndUser = true;
+			await _um.UpdateAsync(user);
+
+			return Ok(new
+			{
+				userName,
+				portalUserId = link.Id,
+				companyId = link.CompanyID,
+				customerId = link.CustomerId,
+				message = "portal password reset; IsActive and IsEndUser ensured"
+			});
 		}
 
 		[HttpGet("backfill-module-roles")]
@@ -4804,10 +4855,14 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			const int company = 1;
-			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			// NOT expiry-tracked. A receipt for a tracked item is refused without a batch number, so with a
+			// tracked item the receipt leg failed, the endpoint still answered 200 with convert.ok = true, and
+			// the "stock UNCHANGED" expectation printed below was never exercised - the convert silently took
+			// the NO-receipt path instead. A test that cannot reach its own scenario must not report success.
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable" && !i.TrackExpiry);
 			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
 			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
-			if (item == null || wh == null || vendor == null) return BadRequest(new { message = "need item, warehouse, vendor" });
+			if (item == null || wh == null || vendor == null) return BadRequest(new { message = "need a warehouse, a vendor, and a Stockable item that is NOT expiry-tracked" });
 			var (q0, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
 
 			var (pok, perr, po) = await _proc.CreatePurchaseOrderAsync(company, vendor.ID, wh.ID, DateTime.Today, null, "I3 test",
@@ -5953,6 +6008,60 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/inv-test-integrity?key=seed123 — runs all integrity checks and prints a summary
 		// HM-2 (Batch 5 item 2a): count decimal properties whose EF model (precision,scale) != their DB column's. 0 = model matches DB.
+		// GET /api/dev/precision-divergence-list?key=seed123 — the same comparison as the counter below,
+		// but it NAMES the columns. A count of 55 tells you there is drift; it does not tell you which
+		// property rounds money differently from the column it is stored in, which is the only thing that
+		// can be fixed.
+		// GET /api/dev/ddl-for-tables?key=seed123&names=A,B,C — the DDL EF ITSELF would create for those
+		// tables, pulled out of GenerateCreateScript(). Hand-writing a slice for an entity with composite
+		// alternate keys and composite foreign keys is how a column ends up one decimal narrower than the
+		// model and nobody notices for months; this comes from the model, so it cannot disagree with it.
+		// READ-ONLY: it returns text and creates nothing.
+		[HttpGet("ddl-for-tables")]
+		public IActionResult DdlForTables(string key, string names)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var want = (names ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+			if (want.Count == 0) return BadRequest(new { message = "names is required" });
+			var full = _db.Database.GenerateCreateScript();
+			// GenerateCreateScript emits one statement per GO-less block separated by blank lines;
+			// a statement is kept when it names one of the requested tables.
+			var parts = full.Split(new[] { ";" + Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+			var kept = parts.Where(p => want.Any(w =>
+					p.Contains("[" + w + "]", StringComparison.OrdinalIgnoreCase)))
+				.Select(p => p.Trim() + ";").ToList();
+			return Content(string.Join(Environment.NewLine + Environment.NewLine, kept), "text/plain");
+		}
+
+		[HttpGet("precision-divergence-list")]
+		public async Task<IActionResult> PrecisionDivergenceList(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var db = await _db.Database.SqlQueryRaw<DecColRow>(
+				"SELECT t.name AS TableName, c.name AS ColumnName, CAST(c.precision AS int) AS Prec, CAST(c.scale AS int) AS Scale " +
+				"FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id " +
+				"WHERE ty.name IN ('decimal','numeric')").ToListAsync();
+			var dbMap = new Dictionary<string, (int P, int S)>(StringComparer.OrdinalIgnoreCase);
+			foreach (var r in db) dbMap[r.TableName + "." + r.ColumnName] = (r.Prec, r.Scale);
+			var rows = new List<object>();
+			foreach (var et in _db.Model.GetEntityTypes())
+			{
+				var table = et.GetTableName(); if (table == null) continue;
+				var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
+				foreach (var p in et.GetProperties())
+				{
+					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
+					var col = p.GetColumnName(soi) ?? p.Name;
+					bool known = dbMap.TryGetValue(table + "." + col, out var dbv);
+					int mp = p.GetPrecision() ?? 0, ms = p.GetScale() ?? 0;
+					if (!known || mp != dbv.P || ms != dbv.S)
+						rows.Add(new { table, column = col, model = mp + "," + ms, db = known ? dbv.P + "," + dbv.S : "MISSING" });
+				}
+			}
+			return Ok(new { count = rows.Count, rows });
+		}
+
 		private async Task<int> PrecisionDivergenceCountAsync()
 		{
 			var db = await _db.Database.SqlQueryRaw<DecColRow>(
@@ -6468,6 +6577,124 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 						}
 						if (rackId > 0) { var r = await _db.BinLocations.FindAsync(rackId); if (r != null) _db.BinLocations.Remove(r); }
 						if (secId > 0) { var s = await _db.BinLocations.FindAsync(secId); if (s != null) _db.BinLocations.Remove(s); }
+						await _db.SaveChangesAsync();
+						var w = await _db.Warehouses.FindAsync(whId); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); }
+					}
+				}
+			}
+
+			// GET /api/dev/purchase-default-location-test?key=seed123
+			//
+			// THE TWO CLAIMS THE PURCHASE-LOCATION WORK RESTS ON, posted for real and then removed:
+			//   1. a purchase invoice line that names NO location still stamps the movement with the
+			//      item’s own default (ItemWarehouseSetting.DefaultBinLocationId, else DefaultSectionId);
+			//   2. a line that DOES name one keeps it - the default fills a blank, it never overrides.
+			//
+			// Both lines go on ONE invoice in a throwaway warehouse, so the two paths are compared under
+			// identical conditions. Self-cleaning, and integrity is run before and after: a stamping rule
+			// that quietly broke an invariant would be a worse bug than the one it fixes.
+			[HttpGet("purchase-default-location-test")]
+			public async Task<IActionResult> PurchaseDefaultLocationTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ,
+				[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+
+				// PUBLISH THE COMPANY FIRST. Without this every filtered read in this request compares
+				// CompanyID against an unresolved 0 and comes back empty, so the warehouse this endpoint
+				// just created reads as not existing. It is the FACTORY, not IBusinessContextAccessor,
+				// because the accessor has already cached its negative answer for this scope - the same
+				// reasoning written out at length on SalesHistorySeed. The neighbouring location tests
+				// predate that discovery and still fail on it; see the note on the warehouse read below.
+				if (ctx != null) await ctx.ForHttpAsync();
+				int whId = 0, secId = 0, rackId = 0, invId = 0, iwsId = 0; var jeIds = new List<int>();
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "TSTDEF", Name = "اختبار الافتراضي", NameEn = "Default loc test" }, null);
+					whId = (await _whSvc.GetWarehousesAsync(company)).First(w => w.Code == "TSTDEF").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "SEC-DEF", "قسم", "Section", null, true);
+					secId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "SEC-DEF").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "RCK-DEF", "رف", "Rack", secId, true);
+					rackId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "RCK-DEF").ID;
+
+					var item = await (from i in _db.Items.AsNoTracking()
+						  join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+						  where i.CompanyID == company && i.ItemType == "Stockable" && !i.TrackBatch && !i.TrackSerial && !i.TrackExpiry && c.InventoryAccountId != null
+						  select i).FirstOrDefaultAsync();
+					if (item == null) return Ok(new { ok = false, message = "لا يوجد صنف مخزني بسيط بحساب مخزون" });
+
+					// the item’s default location IN THIS THROWAWAY WAREHOUSE only - the live warehouses keep theirs
+					var iws = new CrossBuy.Models.Context.Inventory.ItemWarehouseSetting { ItemId = item.ID, WarehouseId = whId, DefaultSectionId = secId, DefaultBinLocationId = rackId };
+					_db.ItemWarehouseSettings.Add(iws); await _db.SaveChangesAsync(); iwsId = iws.ID;
+
+					var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+					if (vendor == null) return Ok(new { ok = false, message = "لا يوجد مورد" });
+					int expense = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company).OrderBy(a => a.ID).Select(a => a.ID).FirstAsync();
+
+					var lines = new List<CrossBuy.BL.PurchaseLineInput>
+					{
+						// line 1: NO location named - the default must fill it
+						new CrossBuy.BL.PurchaseLineInput { ItemDescription = "default-path", Qty = 2, UnitPrice = 10, ExpenseAccountId = expense, ItemId = item.ID, WarehouseId = whId, BinLocationId = null },
+						// line 2: the SECTION named explicitly - it must survive, not be replaced by the default rack
+						new CrossBuy.BL.PurchaseLineInput { ItemDescription = "explicit-path", Qty = 3, UnitPrice = 10, ExpenseAccountId = expense, ItemId = item.ID, WarehouseId = whId, BinLocationId = secId },
+					};
+
+					var (pok, perr, inv) = await _ap.CreatePurchaseInvoiceAsync(company, vendor.ID, new DateTime(2026, 7, 1), lines, "purchase-default-location-test", null);
+					if (!pok || inv == null) return Ok(new { ok = false, message = "تعذّر إنشاء الفاتورة: " + perr });
+					invId = inv.ID;
+
+					var mvs = await _db.StockMovements.AsNoTracking()
+						.Where(m => m.WarehouseId == whId && m.SourceId == invId)
+						.OrderBy(m => m.QtyBase).ToListAsync();
+					jeIds = mvs.Where(m => m.JournalEntryId != null).Select(m => m.JournalEntryId!.Value).Distinct().ToList();
+
+					// the two lines are the same item, so they net into movements distinguished by quantity
+					var byDefault = mvs.FirstOrDefault(m => m.QtyBase == 2m);
+					var byExplicit = mvs.FirstOrDefault(m => m.QtyBase == 3m);
+
+					bool defaultApplied = byDefault != null && byDefault.BinLocationId == rackId;
+					bool explicitKept = byExplicit != null && byExplicit.BinLocationId == secId;
+
+					// the rack balance must have moved too, not just the movement stamp
+					var rackQty = await _db.BinStocks.AsNoTracking()
+						.Where(b => b.WarehouseId == whId && b.BinLocationId == rackId && b.ItemId == item.ID)
+						.Select(b => (decimal?)b.QtyOnHand).FirstOrDefaultAsync() ?? 0m;
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					bool integrityGreen = runA.FailedCount <= failedBefore;
+
+					return Ok(new
+					{
+						allPass = defaultApplied && explicitKept && rackQty == 2m && integrityGreen,
+						defaultApplied, explicitKept,
+						defaultMovementBin = byDefault?.BinLocationId, expectedDefaultRack = rackId,
+						explicitMovementBin = byExplicit?.BinLocationId, expectedExplicitSection = secId,
+						rackQty, movementsFound = mvs.Count,
+						failedBefore, failedAfter = runA.FailedCount, integrityGreen, note = "self-cleaning"
+					});
+				}
+				finally
+				{
+					foreach (var je in jeIds) { try { await _je.ReverseAsync(je, null, "purchase-default-location-test cleanup"); } catch { } }
+					if (whId > 0)
+					{
+						_db.StockMovements.RemoveRange(_db.StockMovements.Where(m => m.WarehouseId == whId));
+						_db.StockCostLayers.RemoveRange(_db.StockCostLayers.Where(l => l.WarehouseId == whId));
+						_db.StockBalances.RemoveRange(_db.StockBalances.Where(b => b.WarehouseId == whId));
+						_db.BinStocks.RemoveRange(_db.BinStocks.Where(b => b.WarehouseId == whId));
+						await _db.SaveChangesAsync();
+						if (invId > 0)
+						{
+							_db.PurchaseInvoiceLines.RemoveRange(_db.PurchaseInvoiceLines.Where(l => l.PurchaseInvoiceId == invId));
+							var pi = await _db.PurchaseInvoices.FindAsync(invId); if (pi != null) _db.PurchaseInvoices.Remove(pi);
+							await _db.SaveChangesAsync();
+						}
+						if (iwsId > 0) { var w0 = await _db.ItemWarehouseSettings.FindAsync(iwsId); if (w0 != null) _db.ItemWarehouseSettings.Remove(w0); }
+						if (rackId > 0) { var r = await _db.BinLocations.FindAsync(rackId); if (r != null) _db.BinLocations.Remove(r); }
+						if (secId > 0) { var s2 = await _db.BinLocations.FindAsync(secId); if (s2 != null) _db.BinLocations.Remove(s2); }
 						await _db.SaveChangesAsync();
 						var w = await _db.Warehouses.FindAsync(whId); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); }
 					}
@@ -8560,6 +8787,87 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			});
 		}
 
+		// =============================================================================================
+		// PUT THE BOOKS BACK.
+		//
+		// The mc-test endpoints post real invoices and receipts, because that is the only way to
+		// assert that posting a foreign-currency document converts correctly. Having asserted it,
+		// they must not leave the document behind: 35 of them accumulated to 1,754,000 of posted
+		// revenue and made every sales figure in the product read roughly fifteen times too high.
+		//
+		// REVERSED, NEVER DELETED. A reversal is auditable and a delete is not, and the entry stays
+		// visible with its mirror. Same reasoning as the ZZ-B3 teardown above.
+		//
+		// AND THE DOCUMENT IS MARKED TOO. Reversing the journal entry alone is not enough: nothing
+		// in the product moves a non-POS sales invoice off "Posted", and every report filters on
+		// exactly that. A reversal without the status change corrects the ledger and leaves every
+		// sales report wrong for the original period, permanently.
+		//
+		// It finds its own work by the "[mc-test]" stamp these endpoints write into Notes — not by
+		// matching the word "test" in a line description. A description match is a reporting rule
+		// that outlives its reason and will one day swallow a real row.
+		// =============================================================================================
+		private const string McTestMark = "[mc-test]";
+
+		private async Task<object> McTestTeardownAsync(int companyId)
+		{
+			var log = new List<string>();
+
+			var sis = await _db.SalesInvoices
+				.Where(s => s.CompanyID == companyId && s.Status == "Posted"
+					&& s.Notes != null && s.Notes.Contains(McTestMark))
+				.ToListAsync();
+			foreach (var s in sis)
+			{
+				if (s.JournalEntryId != null)
+				{
+					var (ok, err, _) = await _je.ReverseAsync(s.JournalEntryId.Value, null, "mc-test teardown");
+					log.Add($"SI {s.InvoiceNo} je {s.JournalEntryId}: {(ok ? "reversed" : err)}");
+				}
+				s.Status = "Reversed";
+			}
+
+			var rcs = await _db.Receipts
+				.Where(r => r.CompanyID == companyId && r.Status == "Posted"
+					&& r.Notes != null && r.Notes.Contains(McTestMark))
+				.ToListAsync();
+			foreach (var r in rcs)
+			{
+				if (r.JournalEntryId != null)
+				{
+					var (ok, err, _) = await _je.ReverseAsync(r.JournalEntryId.Value, null, "mc-test teardown");
+					log.Add($"RC {r.ReceiptNo} je {r.JournalEntryId}: {(ok ? "reversed" : err)}");
+				}
+				r.Status = "Reversed";
+			}
+
+			var pis = await _db.PurchaseInvoices
+				.Where(p => p.CompanyID == companyId && p.Status == "Posted"
+					&& p.Notes != null && p.Notes.Contains(McTestMark))
+				.ToListAsync();
+			foreach (var p in pis)
+			{
+				if (p.JournalEntryId != null)
+				{
+					var (ok, err, _) = await _je.ReverseAsync(p.JournalEntryId.Value, null, "mc-test teardown");
+					log.Add($"PI {p.InvoiceNo} je {p.JournalEntryId}: {(ok ? "reversed" : err)}");
+				}
+				p.Status = "Reversed";
+			}
+
+			await _db.SaveChangesAsync();
+			return new { salesInvoices = sis.Count, receipts = rcs.Count, purchaseInvoices = pis.Count, log };
+		}
+
+		// GET /api/dev/mc-test-teardown?key=seed123&companyId=1
+		// Clears residue left by earlier runs, from before the endpoints tore down after themselves.
+		[HttpGet("mc-test-teardown")]
+		public async Task<IActionResult> McTestTeardown(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			return Ok(new { success = true, teardown = await McTestTeardownAsync(companyId) });
+		}
+
 		// GET /api/dev/mc-test-p2p?key=seed123&companyId=1
 		// Multi-Currency 1-3 smoke: posts a USD purchase invoice (item line) + a USD goods receipt through
 		// the real services → verifies foreign cost is converted to the functional currency before GL/stock.
@@ -8585,15 +8893,16 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var piLines = new List<CrossBuy.BL.PurchaseLineInput> {
 				new() { ItemDescription = "MC test (USD)", Qty = 10, UnitPrice = 100, TaxRate = 14, ItemId = item.ID, WarehouseId = wh, ExpenseAccountId = 0 }
 			};
-			var (piok, pierr, pi) = await _ap.CreatePurchaseInvoiceAsync(companyId, vendor.ID, DateTime.UtcNow, piLines, "MC 1-3 test PI (USD)", null, usd, null);
+			var (piok, pierr, pi) = await _ap.CreatePurchaseInvoiceAsync(companyId, vendor.ID, DateTime.UtcNow, piLines, "[mc-test] MC 1-3 test PI (USD)", null, usd, null);
 
 			// 2) USD goods receipt, one item line (Qty 5 @ $80). Rate looked up from Buy.
 			var grLines = new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 5, UnitCost = 80 } };
-			var (grok, grerr, gr) = await _proc.CreateReceiptAsync(companyId, vendor.ID, wh.Value, null, DateTime.UtcNow, "MC 1-3 test GR (USD)", grLines, null, usd, null);
+			var (grok, grerr, gr) = await _proc.CreateReceiptAsync(companyId, vendor.ID, wh.Value, null, DateTime.UtcNow, "[mc-test] MC 1-3 test GR (USD)", grLines, null, usd, null);
 
 			return Ok(new
 			{
 				success = piok && grok,
+				teardown = await McTestTeardownAsync(companyId),
 				purchaseInvoice = pi == null ? null : new { pi.InvoiceNo, pi.CurrencyId, rate = pi.ExchangeRate, foreignGrand = pi.GrandTotal, baseGrand = pi.GrandTotalBase },
 				piError = pierr,
 				goodsReceipt = gr == null ? null : new { gr.ReceiptNo, gr.CurrencyId, rate = gr.ExchangeRate, baseTotal = gr.TotalCost },
@@ -8622,14 +8931,15 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var siLines = new List<CrossBuy.BL.SalesLineInput> {
 				new() { ItemDescription = "MC test (USD)", Qty = 10, UnitPrice = 100, TaxRate = 14, RevenueAccountId = revAcc }
 			};
-			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, customer.ID, DateTime.UtcNow, siLines, "MC 1-4 test SV (USD)", null, usd, null);
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, customer.ID, DateTime.UtcNow, siLines, "[mc-test] MC 1-4 test SV (USD)", null, usd, null);
 
 			// 2) USD receipt ($500) against the customer
-			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, customer.ID, DateTime.UtcNow, 500m, "Bank", cashAcc, "MC 1-4 test RC (USD)", null, usd, null);
+			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, customer.ID, DateTime.UtcNow, 500m, "Bank", cashAcc, "[mc-test] MC 1-4 test RC (USD)", null, usd, null);
 
 			return Ok(new
 			{
 				success = siok && rcok,
+				teardown = await McTestTeardownAsync(companyId),
 				salesInvoice = si == null ? null : new { si.InvoiceNo, si.CurrencyId, rate = si.ExchangeRate, foreignGrand = si.GrandTotal, baseGrand = si.GrandTotalBase },
 				siError = sierr,
 				receiptPosted = rcok,
@@ -8660,11 +8970,11 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 			// USD sales invoice @ 50.00, $1000 (no VAT) → AR base 50,000
 			var siLines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "FX test", Qty = 10, UnitPrice = 100, TaxRate = 0, RevenueAccountId = revAcc } };
-			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.UtcNow, siLines, "MC 1-5 FX invoice @50", null, usd, 50.00m);
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.UtcNow, siLines, "[mc-test] MC 1-5 FX invoice @50", null, usd, 50.00m);
 			if (!siok) return BadRequest(new { step = "invoice", error = sierr });
 
 			// USD receipt of $1000 @ 51.00 → cash 51,000 / AR 50,000 / FX gain 1,000
-			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, cust.ID, DateTime.UtcNow, 1000m, "Bank", cashAcc, "MC 1-5 FX receipt @51", null, usd, 51.00m);
+			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, cust.ID, DateTime.UtcNow, 1000m, "Bank", cashAcc, "[mc-test] MC 1-5 FX receipt @51", null, usd, 51.00m);
 			if (!rcok) return BadRequest(new { step = "receipt", error = rcerr });
 
 			decimal fxAfter = await _db.JournalEntryLines.AsNoTracking()
@@ -8675,6 +8985,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			return Ok(new
 			{
 				success = true,
+				teardown = await McTestTeardownAsync(companyId),
 				invoice = new { si!.InvoiceNo, foreignGrand = si.GrandTotal, baseGrand = si.GrandTotalBase, rate = si.ExchangeRate },
 				realizedFxGain_4902_delta = fxAfter - fxBefore,   // expect 1000.00
 				expected = 1000.00m,
@@ -8705,7 +9016,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			// open USD invoice @ 50, $1000 (unsettled)
 			var cust = await _ar.CreateCustomerAsync(companyId, "عميل اختبار إعادة التقييم", "MC Reval Test", null, null);
 			var siLines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "Reval test", Qty = 10, UnitPrice = 100, TaxRate = 0, RevenueAccountId = revAcc } };
-			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, asOf, siLines, "MC 1-6 open invoice @50", null, usd, 50.00m);
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, asOf, siLines, "[mc-test] MC 1-6 open invoice @50", null, usd, 50.00m);
 			if (!siok) return BadRequest(new { step = "invoice", error = sierr });
 
 			decimal fxBefore = await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == gainAcc || l.AccountId == lossAcc).SumAsync(l => (decimal?)(l.Credit - l.Debit)) ?? 0m;
@@ -8718,6 +9029,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			return Ok(new
 			{
 				success = true,
+				teardown = await McTestTeardownAsync(companyId),
 				thisInvoice = new { si!.InvoiceNo, foreignGrand = si.GrandTotal, bookBase = si.GrandTotalBase, rate = si.ExchangeRate },
 				previewArDiff = preview.TotalArDiff,
 				previewApDiff = preview.TotalApDiff,
@@ -13847,6 +14159,1094 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/pos-c1-test?key=seed123 — POS-C1 Delivery data + fee. Frozen delivery fee is added to the order
 		// total, stays OPERATIONAL (no GL) while open, and enters the invoice at pay via the existing path (no new GL writer).
+		// ============================================================================================
+		// HM-26 SELF-TEST — COUPONS. Exercises IPosCouponService for real: a live basket, the real
+		// recompute, the real atomic claim. Written because the screens were only ever proven to RENDER,
+		// and a coupon that renders but mis-distributes its discount is worse than no coupon.
+		//
+		// THE TAX ASSERTION IS THE POINT. A basket discount that does not reduce the tax base is one the
+		// shop pays the tax on, and nothing about the screen would reveal it.
+		// ============================================================================================
+		// HM-25 SELF-TEST — LOYALTY EARN, THE IFRS 15 DEFERRAL, AND REDEMPTION.
+		//
+		// This is the ACCOUNTING path, so it is the one that most needed proving. The hole it guards
+		// against: redemption debits the loyalty liability, and before HM-25 nothing ever credited it —
+		// every redemption would have driven a liability into a debit balance while the sale showed full
+		// revenue. The assertions below are the two halves of that obligation meeting.
+		//
+		// IT CHANGES BRANCH CONFIGURATION AND PUTS IT BACK. The Loyalty capability and the «Points»
+		// payment method must exist for any of this to run, and both ship absent. Prior state is captured
+		// first and restored in every exit path, because a test that leaves loyalty switched on would have
+		// a real till awarding points nobody decided to award.
+		// ============================================================================================
+		// HM-20 SELF-TEST — MID-SHIFT CASH MOVEMENTS AND EXPECTED CASH.
+		//
+		// The defect this guards: ExpectedCash was opening float + cash takings + cash tips and nothing
+		// else, so cash physically removed during a shift — a safe drop, a supplier paid from the till —
+		// was invisible to it. The drawer then counted SHORT by exactly the amount that had been safely
+		// banked, and the close posted that difference to 520111 as a cash LOSS. A shop dropping twice a
+		// day manufactured an expense out of its own prudence, and a real theft of the same size was
+		// indistinguishable from it.
+		//
+		// The assertions below are that arithmetic, and the reversal case, which is how a mistaken
+		// movement is undone — it must stop affecting the expectation without being deleted.
+		// ============================================================================================
+		// HM-21 SELF-TEST — BULK PRICE CHANGE.
+		//
+		// The most destructive routine action in the module: prices are written over the old ones and
+		// nothing keeps the previous value. So the things worth proving are not that it changes a price,
+		// but that it changes ONLY what was previewed, refuses a row somebody else moved underneath the
+		// operator, and that the margin floor refuses the WRITE rather than merely painting a row red.
+		//
+		// It restores every price it touches, and the margin setting it changes, in a finally.
+		[HttpGet("hm21-bulkprice-test")]
+		public async Task<IActionResult> Hm21BulkPriceTest(string key,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			// Two probe items of our own. Using real catalogue items would mean writing real prices and
+			// restoring them from memory, and a restore that fails leaves a shop mispriced.
+			// Pin the company scope before any filtered read. Item, Customer and Warehouse all carry a
+			// global company filter that compares against a scope holder nothing in this request has
+			// resolved, so it compares against 0 and matches no row. Proven, not assumed: this endpoint
+			// reported itemsVisible = 0 while the unfiltered PriceListLines read beside it returned 21.
+			// The factory, not the accessor - the accessor caches its negative answer for the DI scope.
+			if (ctx != null) await ctx.ForHttpAsync();
+
+			var anyCat = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company).Select(i => i.ItemCategoryId).FirstOrDefaultAsync();
+			var anyUom = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company).Select(i => i.BaseUoMId).FirstOrDefaultAsync();
+			if (anyCat == 0 || anyUom == 0) return BadRequest(new { message = "no category/uom to model a probe item on" });
+
+			async Task<CrossBuy.Models.Context.Inventory.Item> Probe(string code, decimal price)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null)
+				{
+					it = new CrossBuy.Models.Context.Inventory.Item
+					{
+						CompanyID = company, ItemCode = code, Barcode = code, Name = code,
+						ItemCategoryId = anyCat, ItemType = "Stockable", BaseUoMId = anyUom,
+						CostingMethod = "Average", CreatedAt = DateTime.UtcNow
+					};
+					_db.Items.Add(it);
+				}
+				it.IsActive = true; it.SalesPrice = price; it.DefaultTaxCodeId = null;
+				await _db.SaveChangesAsync();
+				return it;
+			}
+
+			var settings = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == company);
+			string? modeWas = settings?.MinMarginMode;
+
+			try
+			{
+				var a = await Probe("HM21-A", 100m);
+				var b = await Probe("HM21-B", 200m);
+				log.Add($"probes: {a.ItemCode}=100 {b.ItemCode}=200");
+
+				// ---------- preview writes NOTHING ----------
+				var prev = await _posSetup.PreviewBulkPriceChangeAsync(company, null, "HM21-", "Percent", 10m, null);
+				var mine = prev.Where(r => r.Code != null && r.Code.StartsWith("HM21-")).ToList();
+				Chk($"preview found both probes ({mine.Count})", mine.Count == 2);
+				Chk("preview computed +10% correctly", mine.Any(r => r.Code == "HM21-A" && r.NewPrice == 110m) && mine.Any(r => r.Code == "HM21-B" && r.NewPrice == 220m));
+				var aNow = await _db.Items.AsNoTracking().FirstAsync(i => i.ID == a.ID);
+				Chk($"and PREVIEW WROTE NOTHING (still {aNow.SalesPrice})", aNow.SalesPrice == 100m);
+
+				// ---------- apply writes exactly what was shown ----------
+				var seen = mine.ToDictionary(r => r.ItemId, r => r.OldPrice ?? 0m);
+				var (ch, bl, un, st, err) = await _posSetup.ApplyBulkPriceChangeAsync(company, null, "HM21-", "Percent", 10m, null, seen);
+				Chk($"apply: changed={ch} blocked={bl} unchanged={un} stale={st} err={err ?? "none"}", err == null && ch == 2 && st == 0);
+				var a1 = await _db.Items.AsNoTracking().FirstAsync(i => i.ID == a.ID);
+				var b1 = await _db.Items.AsNoTracking().FirstAsync(i => i.ID == b.ID);
+				Chk($"prices written ({a1.SalesPrice}, {b1.SalesPrice})", a1.SalesPrice == 110m && b1.SalesPrice == 220m);
+
+				// ---------- a row that moved since the preview is REFUSED ----------
+				var prev2 = await _posSetup.PreviewBulkPriceChangeAsync(company, null, "HM21-", "Percent", 10m, null);
+				var mine2 = prev2.Where(r => r.Code != null && r.Code.StartsWith("HM21-")).ToList();
+				var seen2 = mine2.ToDictionary(r => r.ItemId, r => r.OldPrice ?? 0m);
+				// somebody else re-prices A behind the operator's back
+				var aLive = await _db.Items.FirstAsync(i => i.ID == a.ID);
+				aLive.SalesPrice = 999m; await _db.SaveChangesAsync();
+				var (ch2, bl2, un2, st2, err2) = await _posSetup.ApplyBulkPriceChangeAsync(company, null, "HM21-", "Percent", 10m, null, seen2);
+				Chk($"the moved row is refused as STALE and the other still applies (changed={ch2} stale={st2})", st2 == 1 && ch2 == 1);
+				var a2 = await _db.Items.AsNoTracking().FirstAsync(i => i.ID == a.ID);
+				Chk($"the stale row kept the interloper's price, not the operator's ({a2.SalesPrice})", a2.SalesPrice == 999m);
+
+				// ---------- illegal changes are refused by ONE shared rule ----------
+				Chk("a -100% change is refused", CrossBuy.BL.PosSetupService.ValidateBulkChange("Percent", -100m) != null);
+				Chk("an unknown mode is refused", CrossBuy.BL.PosSetupService.ValidateBulkChange("Sideways", 5m) != null);
+				Chk("a negative Set price is refused", CrossBuy.BL.PosSetupService.ValidateBulkChange("Set", -1m) != null);
+				Chk("a legal change passes", CrossBuy.BL.PosSetupService.ValidateBulkChange("Percent", -10m) == null);
+
+				// ---------- Set mode ----------
+				var prev3 = await _posSetup.PreviewBulkPriceChangeAsync(company, null, "HM21-B", "Set", 55m, null);
+				var seen3 = prev3.Where(r => r.Code == "HM21-B").ToDictionary(r => r.ItemId, r => r.OldPrice ?? 0m);
+				await _posSetup.ApplyBulkPriceChangeAsync(company, null, "HM21-B", "Set", 55m, null, seen3);
+				var b3 = await _db.Items.AsNoTracking().FirstAsync(i => i.ID == b.ID);
+				Chk($"Set wrote the flat price ({b3.SalesPrice})", b3.SalesPrice == 55m);
+			}
+			finally
+			{
+				// Deactivate rather than delete: price-list lines or order lines may point at these.
+				foreach (var code in new[] { "HM21-A", "HM21-B" })
+				{
+					var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+					if (it != null) it.IsActive = false;
+				}
+				var st2 = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == company);
+				if (st2 != null) st2.MinMarginMode = modeWas;
+				await _db.SaveChangesAsync();
+				log.Add("cleanup: probe items deactivated, margin mode restored");
+			}
+
+			return Ok(new { allPass, log });
+		}
+
+		[HttpGet("hm20-drawer-test")]
+		public async Task<IActionResult> Hm20DrawerTest(string key, [FromServices] CrossBuy.BL.IJournalEntryService journals)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var branch = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company && b.ActivityPresetCode == "Hyper");
+			if (branch == null) return BadRequest(new { message = "no hyper branch" });
+			var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.BranchId == branch.ID);
+			if (term == null) return BadRequest(new { message = "no terminal" });
+
+			// A shift of our own to measure against — but ONLY close one we actually opened. The loyalty
+			// self-test opens a shift and leaves it open, and a cashier may have one open for real. Adopting
+			// somebody else's shift and then closing it at the end is the kind of cleanup that does the damage,
+			// because a closed shift is a settled one: its expectation and variance are stored and signed off.
+			var preexisting = await _posSetup.GetOpenShiftAsync(term.ID);
+			bool weOpenedIt = preexisting == null;
+			if (weOpenedIt) await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 100m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+			if (!weOpenedIt) log.Add($"NOTE a shift was already open on this terminal; measuring against it and leaving it open");
+			if (shift == null) return BadRequest(new { message = "could not open a shift" });
+			log.Add($"shift {shift.ID} on terminal {term.Code}, opening float {shift.OpeningFloat}");
+
+			// The account the cash moves TO. Any postable account that is not the drawer will do; the test
+			// is about the arithmetic, not about which safe it went into.
+			int counter = await _db.Accounts.Where(a => a.CompanyID == company && a.IsPostable && a.IsActive && a.Code.StartsWith("11"))
+				.OrderByDescending(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			if (counter == 0) return BadRequest(new { message = "no postable cash account for the other side" });
+
+			// COUNT WHAT IS ALREADY THERE. This test may be measuring against a shift it did not open, and
+			// repeated runs leave their own movements behind, so every assertion below is a DELTA. Asserting
+			// an absolute count passed on the first run and failed on every one after it — a test that only
+			// works once is worse than no test, because its failure reads like a regression in the product.
+			int movesBefore = (await _posSetup.GetShiftCashMovementsAsync(company, shift.ID)).Count;
+			log.Add($"movements already on this shift: {movesBefore}");
+			decimal expected0 = await _posSetup.ExpectedCashAsync(company, shift);
+			log.Add($"expected cash before any movement = {expected0}");
+
+			// ---------- a safe drop: 40 OUT of the drawer ----------
+			var (mok, merr, _) = await _posSetup.RecordShiftCashMovementAsync(company, term.ID, shift.ID, "Out", 40m, counter, "self-test drop", DateTime.Today, null);
+			Chk("drop recorded: " + (merr ?? "ok"), mok);
+			if (!mok) return Ok(new { allPass = false, log });
+
+			decimal expected1 = await _posSetup.ExpectedCashAsync(company, shift);
+			Chk($"THE FIX: expected cash FELL by exactly the drop ({expected0} -> {expected1})", expected1 == expected0 - 40m);
+
+			var moves = await _posSetup.GetShiftCashMovementsAsync(company, shift.ID);
+			Chk($"exactly one movement was added ({movesBefore} -> {moves.Count})", moves.Count == movesBefore + 1);
+			// Find OUR row by what we wrote, not by position: the list is ordered by entry id and older
+			// runs sit in front of it.
+			var mine = moves.FirstOrDefault(m => m.Kind == "Out" && m.Amount == 40m);
+			Chk("it is listed as a 40 Out", mine != null);
+			Chk("its counter account resolved to a name", mine != null && !mine.CounterAccountMissing);
+
+			// the ledger entry behind it
+			var je = await _db.JournalEntries.AsNoTracking()
+				.Where(j => j.CompanyID == company && j.SourceType == "PosShiftCashMovement" && j.SourceId == shift.ID)
+				.OrderByDescending(j => j.ID).FirstOrDefaultAsync();
+			Chk("it posted a journal entry (the money really moved)", je != null);
+			if (je != null)
+			{
+				var lines = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == je.ID).ToListAsync();
+				Chk("and it balances", lines.Sum(l => l.Debit) == lines.Sum(l => l.Credit));
+				Chk("the drawer is the CREDITED side (it gave the money up)", lines.Any(l => l.Credit == 40m));
+			}
+
+			// ---------- a float top-up: 15 IN ----------
+			var (iok, ierr, _) = await _posSetup.RecordShiftCashMovementAsync(company, term.ID, shift.ID, "In", 15m, counter, "self-test top-up", DateTime.Today, null);
+			Chk("top-up recorded: " + (ierr ?? "ok"), iok);
+			decimal expected2 = await _posSetup.ExpectedCashAsync(company, shift);
+			Chk($"expected cash ROSE by the top-up ({expected1} -> {expected2})", expected2 == expected1 + 15m);
+
+			// ---------- reversing a mistaken movement must remove it from the expectation ----------
+			if (je != null)
+			{
+				var (rok, rerr, _rid) = await journals.ReverseAsync(je.ID, null, "self-test reversal");
+				Chk("the drop entry was reversed: " + (rerr ?? "ok"), rok);
+				if (rok)
+				{
+					decimal expected3 = await _posSetup.ExpectedCashAsync(company, shift);
+					// The drop is gone, the top-up remains: back to the baseline plus 15.
+					Chk($"a REVERSED movement stops counting ({expected2} -> {expected3}, baseline {expected0} + 15)", expected3 == expected0 + 15m);
+					var after = await _posSetup.GetShiftCashMovementsAsync(company, shift.ID);
+					// One net addition survives the reversal: the top-up. The drop went in and came back out.
+					Chk($"the reversed drop drops off, leaving the top-up ({movesBefore} -> {after.Count})",
+						after.Count == movesBefore + 1 && after.Any(m => m.Kind == "In" && m.Amount == 15m)
+						&& !after.Any(m => m.Kind == "Out" && m.Amount == 40m));
+				}
+			}
+
+			// ---------- refusals ----------
+			var (z1, z1e, _) = await _posSetup.RecordShiftCashMovementAsync(company, term.ID, shift.ID, "Out", 0m, counter, null, DateTime.Today, null);
+			Chk("a zero movement is refused: " + (z1e ?? "<none>"), !z1);
+			var (z2, z2e, _) = await _posSetup.RecordShiftCashMovementAsync(company, term.ID, shift.ID, "Sideways", 10m, counter, null, DateTime.Today, null);
+			Chk("an unknown direction is refused: " + (z2e ?? "<none>"), !z2);
+
+			// ---------- leave the shift as we found it ----------
+			if (weOpenedIt)
+			{
+				decimal finalExpected = await _posSetup.ExpectedCashAsync(company, shift);
+				await _posSetup.CloseShiftAsync(company, term.ID, shift.ID, finalExpected, null, DateTime.Today, null);
+				var closed = await _db.PosShifts.AsNoTracking().FirstAsync(x => x.ID == shift.ID);
+				// Closing at exactly the expectation must produce NO variance and therefore no over/short entry.
+				// This is the whole point restated: a drawer that was dropped from and counted honestly now
+				// reconciles, where before the drop itself created the shortage.
+				Chk($"closing at the expected figure leaves zero variance ({closed.CashVariance})", closed.CashVariance == 0m);
+				Chk("and posts no over/short entry", closed.VarianceJournalEntryId == null);
+				log.Add("cleanup: our shift closed at its expected figure, movements left in the ledger as history");
+			}
+			else log.Add("cleanup: left the pre-existing shift open and untouched; close assertions skipped");
+
+			return Ok(new { allPass, log });
+		}
+
+		[HttpGet("hm25-loyalty-test")]
+		public async Task<IActionResult> Hm25LoyaltyTest(string key, [FromServices] Microsoft.Extensions.Options.IOptions<CrossBuy.Models.Platform.PosCompanyOptions> posOpts,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			// BIND THE COMPANY, do not merely resolve it. Two different things were broken here and only
+			// one of them was the query filters.
+			//
+			// 1. READS. Customer and Item carry global filters comparing CompanyID against the scope holder,
+			//    which nothing in this request had resolved - so they compared against 0, matched no row, and
+			//    this endpoint reported "no identified customer" while 32 existed in company 1.
+			//
+			// 2. WRITES. ForHttpAsync fixes (1) because it PUBLISHES to the holder, but it does not BIND.
+			//    IBusinessContextAccessor consults the bound context BEFORE its own cache - deliberately, so
+			//    a later binding beats an earlier negative - and with nothing bound it kept answering from
+			//    the negative CompanyScopeMiddleware cached at the top of the request. The first service to
+			//    ask, BusinessEventService inside CreateSalesInvoiceAsync, then threw
+			//    BusinessContextUnresolvedException and the whole sale died mid-test.
+			//
+			// ForWorker publishes AND binds, and it describes this honestly: an explicitly named company
+			// with no session and no HTTP identity, which is exactly what a self-test invocation is.
+			ctx?.ForWorker(company);
+
+			decimal pointValue = posOpts.Value.LoyaltyPointValue;
+			if (pointValue <= 0m) return BadRequest(new { message = "Pos:LoyaltyPointValue is 0 — redemption is switched off, nothing to test" });
+			log.Add($"point value = {pointValue}");
+
+			var branch = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company && b.ActivityPresetCode == "Hyper");
+			if (branch == null) return BadRequest(new { message = "no hyper branch" });
+			var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.BranchId == branch.ID);
+			if (term == null) return BadRequest(new { message = "no terminal" });
+
+			// ---------- capture prior state BEFORE touching anything ----------
+			var capRow = await _db.BranchCapabilities.FirstOrDefaultAsync(c => c.BranchId == branch.ID && c.CapabilityKey == "Loyalty");
+			bool hadCapRow = capRow != null; bool capWas = capRow?.Enabled ?? false;
+			var payRow = await _db.BranchPaymentMethods.FirstOrDefaultAsync(m => m.BranchId == branch.ID && m.PaymentMethod == "Points");
+			bool hadPayRow = payRow != null;
+			decimal? rateWas = await _db.Companies.Where(c => c.CompanyID == company).Select(c => c.LoyaltyPointsPerCurrencyUnit).FirstOrDefaultAsync();
+
+			async Task Restore()
+			{
+				var c2 = await _db.BranchCapabilities.FirstOrDefaultAsync(c => c.BranchId == branch.ID && c.CapabilityKey == "Loyalty");
+				if (c2 != null) { if (!hadCapRow) _db.BranchCapabilities.Remove(c2); else c2.Enabled = capWas; }
+				var p2 = await _db.BranchPaymentMethods.FirstOrDefaultAsync(m => m.BranchId == branch.ID && m.PaymentMethod == "Points");
+				if (p2 != null && !hadPayRow) _db.BranchPaymentMethods.Remove(p2);
+				var co = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyID == company);
+				if (co != null) co.LoyaltyPointsPerCurrencyUnit = rateWas;
+				await _db.SaveChangesAsync();
+			}
+
+			try
+			{
+				// ---------- arrange ----------
+				if (capRow == null) { capRow = new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = branch.ID, CapabilityKey = "Loyalty" }; _db.BranchCapabilities.Add(capRow); }
+				capRow.Enabled = true;
+
+				// The loyalty CONTRACT LIABILITY account, BY CODE. One account: credited on earn, debited on
+				// redemption.
+				//
+				// This used to take the lowest-coded postable account starting with "2", which in this chart is
+				// 210201 - VAT Output Payable - because "210201" sorts before "2107" as text. The assertions
+				// passed anyway, since they only checked that the account THE TEST CHOSE was credited and
+				// balanced: the test proved its own arbitrary pick, not the product's rule. Worse, it wrote that
+				// pick into the branch's live Points tender, so a redemption would have debited a tax account.
+				//
+				// A missing account is now a REFUSAL, not a fallback. "Whichever liability sorts first" is never
+				// the right answer to "which account holds the loyalty obligation".
+				const string LoyaltyLiabilityCode = "2107";
+				int liab = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == LoyaltyLiabilityCode && a.IsPostable && a.IsActive)
+					.Select(a => a.ID).FirstOrDefaultAsync();
+				if (liab == 0) { await Restore(); return BadRequest(new { message = $"the loyalty contract-liability account {LoyaltyLiabilityCode} is missing, inactive or not postable in company {company} - refusing to substitute another liability account" }); }
+				if (payRow == null) { payRow = new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = branch.ID, PaymentMethod = "Points" }; _db.BranchPaymentMethods.Add(payRow); }
+				payRow.IsActive = true; payRow.TargetAccountId = liab;
+
+				var co = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyID == company);
+				if (co != null) co.LoyaltyPointsPerCurrencyUnit = 1m;   // 1 point per unit of currency
+				await _db.SaveChangesAsync();
+
+				var cust = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn != "POS Walk-in");
+				if (cust == null) { await Restore(); return BadRequest(new { message = "no identified customer" }); }
+
+				int? plId = await _db.BranchPosSettings.AsNoTracking().Where(x => x.BranchId == branch.ID).Select(x => x.DefaultPriceListId).FirstOrDefaultAsync();
+				var item = await (from i in _db.Items.AsNoTracking()
+								  join pl in _db.PriceListLines.AsNoTracking() on i.ID equals pl.ItemId
+								  where i.CompanyID == company && i.IsActive && i.SalesPrice > 0 && pl.PriceListId == plId
+								  select i).FirstOrDefaultAsync();
+				if (item == null) { await Restore(); return BadRequest(new { message = "no sellable item" }); }
+
+				await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+				var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+
+				async Task<decimal> LiabBalance() =>
+					await _db.JournalEntryLines.Where(l => l.AccountId == liab).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+				long ptsBefore = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, cust.ID);
+				decimal liabBefore = await LiabBalance();
+				log.Add($"before: points={ptsBefore} liability(Dr-Cr)={liabBefore}");
+
+				// ---------- EARN: a paid sale must accrue points AND defer revenue ----------
+				var (ok1, e1, oid1) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift?.ID);
+				if (!ok1) { await Restore(); return Ok(new { allPass = false, error = e1, log }); }
+				await _posOrders.SetOrderCustomerAsync(company, oid1, cust.ID);
+				await _posOrders.AddLineAsync(company, oid1, item.ID, 5m, null, null);
+				var (pok, perr, inv1) = await _posOrders.PayTendersAsync(company, oid1,
+					new List<CrossBuy.BL.PosTenderInput>(), null);
+				// an empty tender list is refused by design; settle it properly instead
+				if (!pok)
+				{
+					var ord = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == oid1);
+					(pok, perr, inv1) = await _posOrders.PayTendersAsync(company, oid1,
+						new List<CrossBuy.BL.PosTenderInput> { new CrossBuy.BL.PosTenderInput { Method = "Cash", Amount = ord.GrandTotal } }, null);
+				}
+				Chk("sale settled: " + (perr ?? "ok"), pok && inv1 != null);
+
+				long ptsAfterEarn = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, cust.ID);
+				Chk($"points accrued ({ptsBefore} -> {ptsAfterEarn})", ptsAfterEarn > ptsBefore);
+
+				var defJe = await _db.JournalEntries.AsNoTracking()
+					.Where(j => j.CompanyID == company && j.SourceType == "PosLoyaltyDeferral" && j.SourceId == inv1)
+					.OrderByDescending(j => j.ID).FirstOrDefaultAsync();
+				Chk("an IFRS 15 deferral entry was posted for this sale", defJe != null);
+				if (defJe != null)
+				{
+					var lines = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == defJe.ID).ToListAsync();
+					decimal crToLiab = lines.Where(l => l.AccountId == liab).Sum(l => l.Credit - l.Debit);
+					decimal expected = Math.Round((ptsAfterEarn - ptsBefore) * pointValue, 2, MidpointRounding.AwayFromZero);
+					Chk($"it CREDITS the loyalty liability by points x value ({crToLiab} == {expected})", crToLiab == expected);
+					Chk("and it balances", lines.Sum(l => l.Debit) == lines.Sum(l => l.Credit));
+					Chk("revenue is the debited side (deferred, not given away)", lines.Any(l => l.AccountId != liab && l.Debit > 0));
+				}
+
+				// ---------- REDEEM: points settle part of a second sale ----------
+				long toSpend = Math.Min(50L, ptsAfterEarn);
+				var (ok2, e2, oid2) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift?.ID);
+				if (ok2 && toSpend > 0)
+				{
+					await _posOrders.SetOrderCustomerAsync(company, oid2, cust.ID);
+					await _posOrders.AddLineAsync(company, oid2, item.ID, 5m, null, null);
+					var ord2 = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == oid2);
+					decimal ptsValue = Math.Round(toSpend * pointValue, 2, MidpointRounding.AwayFromZero);
+					decimal due = ord2.GrandTotal - ptsValue;
+					var tenders = new List<CrossBuy.BL.PosTenderInput>
+					{
+						new CrossBuy.BL.PosTenderInput { Method = "Points", Amount = ptsValue },
+						new CrossBuy.BL.PosTenderInput { Method = "Cash", Amount = due },
+					};
+					var (rok, rerr, inv2) = await _posOrders.PayTendersAsync(company, oid2, tenders, null, 0, null, toSpend);
+					Chk($"settled with {toSpend} points as a TENDER: " + (rerr ?? "ok"), rok);
+					if (rok)
+					{
+						long ptsAfterSpend = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, cust.ID);
+						// ASSERT THE MOVEMENT, NOT THE NET BALANCE. The redeeming sale EARNS points of its own, so a
+						// net that does not move is the correct outcome of spending 3 and earning 3 — the first
+						// version of this test read that as a failure to spend. A net is the sum of several facts
+						// and cannot evidence any one of them.
+						// SCOPED TO THIS INVOICE. Summing the customer's whole history counts every previous run
+						// of this test too, so it can never equal one run's spend — the same mistake as reading a
+						// net balance, one level up: a total over all history cannot evidence a single event.
+						long spentRows = -(await _db.PointsMovements.Where(m => m.SourceInvoiceId == inv2 && m.Kind == "Redeem")
+							.SumAsync(m => (long?)m.Points) ?? 0L);
+						Chk($"a Redeem movement of exactly {toSpend} was written (net balance {ptsAfterEarn} -> {ptsAfterSpend} moves for other reasons)", spentRows == toSpend);
+						long redeemed = await CrossBuy.BL.LoyaltyPointsHelper.RedeemedOnInvoiceAsync(_db, inv2 ?? 0);
+						Chk($"the redemption is recorded against the invoice ({redeemed})", redeemed == toSpend);
+
+						// ---------- CANCEL: the customer must get the points back ----------
+						var (vok, verr) = await _posOrders.VoidPaidOrderAsync(company, oid2, null);
+						Chk("paid sale cancelled: " + (verr ?? "ok"), vok);
+						if (vok)
+						{
+							// Same correction: the cancel also REVERSES that sale's earn, so the net is unchanged
+							// again. What must exist is the RedeemReversal giving the spent points back.
+							long givenBack = await _db.PointsMovements.Where(m => m.SourceInvoiceId == inv2 && m.Kind == "RedeemReversal")
+								.SumAsync(m => (long?)m.Points) ?? 0L;
+							Chk($"a RedeemReversal returned exactly {toSpend} on cancel", givenBack == toSpend);
+						}
+					}
+					else await _posOrders.VoidOrderAsync(company, oid2);
+				}
+
+				// ---------- undo the earning sale too ----------
+				await _posOrders.VoidPaidOrderAsync(company, oid1, null);
+				log.Add("cleanup: both sales reversed");
+
+				// THE ASSERTION THAT WAS MISSING, and the reason this test could report allPass over a real
+				// accounting defect. Every check above follows the POINTS; none of them looked at the GL. The
+				// deferral entry was never reversed on cancellation, so the customer's points came back while
+				// the shop kept the liability - and the books drifted by the deferred amount on every single
+				// cancelled sale. It was found by diffing this very balance by hand after a green run.
+				//
+				// A test that reverses everything it created must assert that the LEDGER came back, not merely
+				// that its own memo counters did. The opening balance was already captured; comparing against
+				// it costs one query.
+				decimal liabAfter = await LiabBalance();
+				Chk($"the loyalty liability is back to its opening balance after both cancellations ({liabAfter} == {liabBefore})", liabAfter == liabBefore);
+			}
+			finally { await Restore(); log.Add("config restored: capability, Points method and company rate back as they were"); }
+
+			return Ok(new { allPass, log });
+		}
+
+		// HM-27 correction — remove stock invented by voiding a part-returned sale.
+		[HttpGet("hm27-phantom-stock-fix")]
+		public async Task<IActionResult> Hm27PhantomStockFix(string key, bool apply = false,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			ctx?.ForWorker(company);
+
+			// A return movement counts twice ONLY when the invoice it belongs to was itself reversed - the
+			// void brought the whole invoice back without knowing part of it already had.
+			var reversedInvoiceReturns = from r in _db.SalesReturns.AsNoTracking()
+										 join inv in _db.SalesInvoices.AsNoTracking() on r.OriginalInvoiceId equals inv.ID
+										 where r.CompanyID == company && inv.Status == "Reversed"
+										 select r.ID;
+			var phantom = await _db.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == company && m.SourceType == "SalesReturn" && m.Direction == 1
+					&& reversedInvoiceReturns.Contains(m.SourceId!.Value))
+				.Select(m => new { m.ID, m.ItemId, m.WarehouseId, m.QtyBase, m.UnitCost, m.SourceId })
+				.OrderBy(m => m.ID).ToListAsync();
+
+			// Already corrected ones must not be corrected again: each fix carries the movement id it undoes.
+			var already = await _db.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == company && m.SourceType == "PosVoidAfterReturnFix")
+				.Select(m => m.SourceId).ToListAsync();
+			var todo = phantom.Where(m => !already.Contains(m.ID)).ToList();
+
+			if (!apply)
+				return Ok(new
+				{
+					dryRun = true,
+					message = "nothing was written; call again with apply=true",
+					phantomMovements = phantom.Count, alreadyCorrected = already.Count, toCorrect = todo.Count,
+					units = todo.Sum(x => x.QtyBase), detail = todo
+				});
+
+			var done = new List<object>(); int failed = 0;
+			foreach (var m in todo)
+			{
+				var (ok, err, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{
+					Date = DateTime.Today, ItemId = m.ItemId, WarehouseId = m.WarehouseId,
+					Direction = -1, Qty = m.QtyBase,
+					OutCostOverride = m.UnitCost,   // leave at the cost it arrived at, so VALUE reverses exactly
+					SourceType = "PosVoidAfterReturnFix", SourceId = m.ID, PostToGl = true,
+					Notes = $"Correction: stock double-counted when a part-returned sale was voided (return movement {m.ID}, return {m.SourceId})"
+				}, null);
+				if (!ok) failed++;
+				done.Add(new { movement = m.ID, item = m.ItemId, wh = m.WarehouseId, qty = m.QtyBase, ok, error = err });
+			}
+
+			int remaining = phantom.Count - (await _db.StockMovements.AsNoTracking()
+				.CountAsync(m => m.CompanyID == company && m.SourceType == "PosVoidAfterReturnFix"));
+			return Ok(new { dryRun = false, corrected = done.Count - failed, failed, remainingUncorrected = remaining, done });
+		}
+
+		// Drives sell -> PARTIAL RETURN -> void, and measures what each step did to stock and the ledger.
+		[HttpGet("hm27-void-after-return-test")]
+		public async Task<IActionResult> Hm27VoidAfterReturnTest(string key,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			ctx?.ForWorker(company);
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var branch = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company && b.ActivityPresetCode == "Hyper");
+			if (branch == null) return BadRequest(new { message = "no hyper branch" });
+			var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.BranchId == branch.ID);
+			if (term == null) return BadRequest(new { message = "no terminal" });
+			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(x => x.BranchId == branch.ID);
+			int? whId = setting?.DefaultSalesWarehouseId;
+			if (whId == null) return BadRequest(new { message = "branch has no default sales warehouse" });
+			var item = await (from i in _db.Items.AsNoTracking()
+							  join pl in _db.PriceListLines.AsNoTracking() on i.ID equals pl.ItemId
+							  where i.CompanyID == company && i.IsActive && i.SalesPrice > 0 && pl.PriceListId == setting!.DefaultPriceListId
+							  select i).FirstOrDefaultAsync();
+			if (item == null) return BadRequest(new { message = "no item on the branch price list" });
+
+			// Stock on hand measured from MOVEMENTS, which are the truth here, not a cached balance column.
+			async Task<decimal> OnHand() => await _db.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == whId!.Value)
+				.SumAsync(m => (decimal?)(m.QtyBase * m.Direction)) ?? 0m;
+			var cust = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.ControlAccountId > 0);
+			async Task<decimal> ArBalance() => cust == null ? 0m : await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.AccountId == cust.ControlAccountId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			decimal stock0 = await OnHand(), ar0 = await ArBalance();
+			log.Add($"item {item.ItemCode} in wh {whId}: onHand={stock0}  AR={ar0}");
+
+			await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+			var (cok, cerr, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift?.ID);
+			if (!cok) return Ok(new { allPass = false, error = cerr, log });
+			var (aok, aerr) = await _posOrders.AddLineAsync(company, oid, item.ID, 2m);
+			if (!aok) return Ok(new { allPass = false, error = aerr, log });
+
+			var ord = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == oid);
+			var (pok, perr, invId) = await _posOrders.PayTendersAsync(company, oid,
+				new List<CrossBuy.BL.PosTenderInput> { new CrossBuy.BL.PosTenderInput { Method = "Cash", Amount = ord.GrandTotal } }, null);
+			Chk("a 2-unit sale was paid", pok);
+			if (!pok) { log.Add("  err=" + perr); return Ok(new { allPass = false, log }); }
+			decimal stockSold = await OnHand();
+			log.Add($"after sale: onHand={stockSold} (delta {stockSold - stock0}), AR={await ArBalance()}");
+
+			// return ONE of the two
+			var line = await _db.PosOrderLines.AsNoTracking().FirstAsync(l => l.OrderId == oid);
+			var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, oid,
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = line.ID, Qty = 1m } }, null);
+			Chk("one of the two units was returned", rok);
+			if (!rok) log.Add("  err=" + rerr);
+			decimal stockReturned = await OnHand();
+			log.Add($"after partial return: onHand={stockReturned} (delta {stockReturned - stockSold}), AR={await ArBalance()}");
+
+			var after = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == oid);
+			log.Add($"order status after the partial return = '{after.Status}'  (a 'Paid' order can still be voided)");
+
+			// ---- the sequence under test ----
+			var (vok, verr) = await _posOrders.VoidPaidOrderAsync(company, oid, null);
+			decimal stockVoided = await OnHand(); decimal arEnd = await ArBalance();
+			log.Add($"void returned ok={vok} err='{verr}'");
+			log.Add($"after void: onHand={stockVoided} (delta {stockVoided - stockReturned}), AR={arEnd}");
+
+			// THE GUARD. A part-returned sale must not be voidable: voiding returns every original outbound
+			// movement, so the unit already brought back would come back twice and the warehouse would gain
+			// stock nobody bought. Measured before the guard existed: 149 -> 147 -> 148 -> 150.
+			Chk("voiding a part-returned sale is REFUSED", !vok);
+			Chk($"and the refusal changed nothing ({stockVoided} == {stockReturned})", stockVoided == stockReturned);
+			log.Add($"  refusal said: '{verr}'");
+
+			// THE REMEDY THE REFUSAL NAMES, actually exercised. A guard that redirects the user to another
+			// path is only as good as that path, and asserting the refusal alone would never test it.
+			// It doubles as the cleanup: returning the remaining unit unwinds the fixture completely.
+			var (r2ok, r2err, ret2) = await _posOrders.ReturnOrderLinesAsync(company, oid,
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = line.ID, Qty = 1m } }, null);
+			Chk("returning the REMAINING unit is accepted", r2ok);
+			if (!r2ok) log.Add("  err=" + r2err);
+			decimal stockFinal = await OnHand(); decimal arFinal = await ArBalance();
+			log.Add($"after returning the rest: onHand={stockFinal} (delta {stockFinal - stockVoided}), AR={arFinal}");
+
+			// NOW the full-unwind invariant is the right one to demand: both units went out and both came
+			// back, so the shop must hold exactly what it held before and the customer must owe exactly what
+			// they owed. This is also what leaves the database as the test found it.
+			Chk($"stock is back to where it started ({stockFinal} == {stock0})", stockFinal == stock0);
+			Chk($"the customer control account is back to where it started ({arFinal} == {ar0})", arFinal == ar0);
+
+			return Ok(new { allPass, orderId = oid, invoiceId = invId, firstReturn = retId, secondReturn = ret2, voidAccepted = vok, log });
+		}
+
+		// Cancel a posted purchase invoice: reverse its journal entry, stamp it Cancelled.
+		[HttpGet("cancel-purchase-invoice")]
+		public async Task<IActionResult> CancelPurchaseInvoice(string key, int id, bool apply = false,
+			[FromServices] CrossBuy.BL.IJournalEntryService journals = null!,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			ctx?.ForWorker(company);   // publishes AND binds: ReverseAsync records a business event
+
+			var inv = await _db.PurchaseInvoices.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == company);
+			if (inv == null) return NotFound(new { message = $"purchase invoice {id} not found in company {company}" });
+			if (inv.Status != "Posted") return BadRequest(new { message = $"invoice {inv.InvoiceNo} is {inv.Status}, not Posted - nothing to cancel" });
+			if (inv.JournalEntryId is not > 0) return BadRequest(new { message = $"invoice {inv.InvoiceNo} has no journal entry" });
+
+			// Stock movements make this the wrong tool - say so instead of half-undoing the purchase.
+			int moves = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.SourceType == "PurchaseInvoice" && m.SourceId == inv.ID);
+			if (moves > 0) return BadRequest(new { message = $"invoice {inv.InvoiceNo} moved {moves} stock movement(s); cancelling it needs the reverse-and-repost path, not this one" });
+
+			var before = await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.JournalEntryId == inv.JournalEntryId!.Value)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit })
+				.ToListAsync();
+
+			if (!apply)
+				return Ok(new { dryRun = true, message = "nothing written; call again with apply=true",
+					invoice = inv.InvoiceNo, inv.Status, journalEntry = inv.JournalEntryId, stockMovements = moves, lines = before });
+
+			var (rok, rerr, reversalId) = await journals.ReverseAsync(inv.JournalEntryId!.Value, null,
+				$"Cancellation of purchase invoice {inv.InvoiceNo}");
+			if (!rok) return BadRequest(new { message = "could not reverse the entry: " + rerr });
+
+			inv.Status = "Cancelled";
+			await _db.SaveChangesAsync();
+
+			// Prove it from the database rather than from the values just written.
+			var after = await _db.PurchaseInvoices.AsNoTracking().Where(x => x.ID == id).Select(x => x.Status).FirstOrDefaultAsync();
+			var je = await _db.JournalEntries.AsNoTracking().Where(x => x.ID == inv.JournalEntryId!.Value).Select(x => x.ReversedByEntryId).FirstOrDefaultAsync();
+			return Ok(new { dryRun = false, invoice = inv.InvoiceNo, statusNow = after, reversalEntry = reversalId, reversedByEntryId = je, reversedLines = before });
+		}
+
+		// HM-25 backfill — reverse loyalty deferrals left stranded by the void path before it was fixed.
+		[HttpGet("hm25-deferral-backfill")]
+		public async Task<IActionResult> Hm25DeferralBackfill(string key, bool apply = false,
+			[FromServices] CrossBuy.BL.IJournalEntryService journals = null!,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			ctx?.ForWorker(company);   // publishes AND binds: ReverseAsync records a business event
+
+			// A deferral is STRANDED when its own entry was never reversed but the invoice it belongs to was.
+			// One on a live invoice is a real obligation and is deliberately left alone.
+			var stranded = await (from je in _db.JournalEntries
+								  join inv in _db.SalesInvoices on je.SourceId equals inv.ID
+								  where je.CompanyID == company && je.SourceType == "PosLoyaltyDeferral"
+									&& je.ReversedByEntryId == null && je.Status == "Posted"
+									&& inv.Status == "Reversed"
+								  orderby je.ID
+								  select new { je.ID, Invoice = inv.ID, inv.InvoiceNo }).ToListAsync();
+
+			var ids = stranded.Select(x => x.ID).ToList();
+			var amounts = await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => ids.Contains(l.JournalEntryId) && l.Credit > 0)
+				.GroupBy(l => l.AccountId)
+				.Select(g => new { account = g.Key, credited = g.Sum(x => x.Credit), lines = g.Count() })
+				.ToListAsync();
+
+			if (!apply)
+				return Ok(new
+				{
+					dryRun = true,
+					message = "nothing was written; call again with apply=true to reverse these",
+					count = stranded.Count,
+					creditedByAccount = amounts,
+					entries = stranded
+				});
+
+			var done = new List<object>(); int failed = 0;
+			foreach (var e in stranded)
+			{
+				var (ok, err, rid) = await journals.ReverseAsync(e.ID, null,
+					$"Backfill: loyalty deferral stranded by cancelled invoice {e.InvoiceNo}");
+				if (!ok) failed++;
+				done.Add(new { entry = e.ID, invoice = e.InvoiceNo, ok, error = err, reversalId = rid });
+			}
+
+			// Prove it landed rather than trusting the return values.
+			int remaining = await (from je in _db.JournalEntries
+								   join inv in _db.SalesInvoices on je.SourceId equals inv.ID
+								   where je.CompanyID == company && je.SourceType == "PosLoyaltyDeferral"
+									 && je.ReversedByEntryId == null && je.Status == "Posted" && inv.Status == "Reversed"
+								   select je.ID).CountAsync();
+
+			return Ok(new { dryRun = false, reversed = done.Count - failed, failed, remainingStranded = remaining, done });
+		}
+
+		// Drives the refusals in PosSetupService.SavePaymentMethodAsync's account guard.
+		[HttpGet("hm25-tender-guard-test")]
+		public async Task<IActionResult> Hm25TenderGuardTest(string key, int branchId,
+			[FromServices] CrossBuy.BL.IPosSetupService setup,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (ctx != null) await ctx.ForHttpAsync();
+			if (branchId <= 0) return BadRequest(new { message = "branchId is required" });
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			const string probe = "GuardProbe";
+			async Task<bool> ProbeRowExistsAsync() => await _db.BranchPaymentMethods.AsNoTracking().AnyAsync(m => m.BranchId == branchId && m.PaymentMethod == probe);
+			async Task CleanupAsync()
+			{
+				var junk = await _db.BranchPaymentMethods.Where(m => m.BranchId == branchId && m.PaymentMethod == probe).ToListAsync();
+				if (junk.Count > 0) { _db.BranchPaymentMethods.RemoveRange(junk); await _db.SaveChangesAsync(); }
+			}
+			await CleanupAsync();   // a previous failed run must not decide this one
+
+			// ---- arm 1: a HEADER account. This is the one that was wrong in the data. ----
+			var header = await _db.Accounts.AsNoTracking().Where(a => !a.IsPostable).OrderBy(a => a.Code).Select(a => new { a.ID, a.Code }).FirstOrDefaultAsync();
+			if (header == null) log.Add("SKIP  no header account exists to probe with");
+			else
+			{
+				var r = await setup.SavePaymentMethodAsync(branchId, 0, probe, null, null, header.ID, true, 99);
+				Chk($"a header account ({header.Code}) is REFUSED", !r.ok);
+				Chk("...and nothing was written", !await ProbeRowExistsAsync());
+				log.Add($"  error = '{r.error}'");
+			}
+			await CleanupAsync();
+
+			// ---- arm 2: an account id that does not exist ----
+			var r2 = await setup.SavePaymentMethodAsync(branchId, 0, probe, null, null, int.MaxValue, true, 99);
+			Chk("a non-existent account id is REFUSED", !r2.ok);
+			Chk("...and nothing was written", !await ProbeRowExistsAsync());
+			log.Add($"  error = '{r2.error}'");
+			await CleanupAsync();
+
+			// ---- the control: a GOOD account must still be accepted ----
+			// Without this the test would pass just as happily if the guard refused everything, which is the
+			// failure mode a negatives-only test cannot see.
+			var good = await _db.Accounts.AsNoTracking().Where(a => a.IsPostable && a.IsActive).OrderBy(a => a.Code).Select(a => new { a.ID, a.Code }).FirstOrDefaultAsync();
+			if (good == null) log.Add("SKIP  no postable account exists for the control");
+			else
+			{
+				var r3 = await setup.SavePaymentMethodAsync(branchId, 0, probe, null, null, good.ID, true, 99);
+				Chk($"a postable account ({good.Code}) is ACCEPTED - the guard is not refusing everything", r3.ok);
+				Chk("...and the row WAS written", await ProbeRowExistsAsync());
+				log.Add($"  error = '{r3.error}'");
+			}
+			await CleanupAsync();
+			Chk("the probe row is gone after cleanup", !await ProbeRowExistsAsync());
+
+			// ---- stated, not silently skipped ----
+			int otherCo = await _db.Accounts.AsNoTracking().CountAsync(a => a.CompanyID != 1);
+			int inactive = await _db.Accounts.AsNoTracking().CountAsync(a => !a.IsActive);
+			log.Add($"NOTE  cross-company arm NOT exercised: {otherCo} accounts exist outside company 1");
+			log.Add($"NOTE  inactive arm NOT exercised: {inactive} inactive accounts exist");
+
+			return Ok(new { ok = allPass, branchId, assertions = log.Count(x => x.StartsWith("PASS") || x.StartsWith("FAIL")), log });
+		}
+
+		// HM-25 — turn loyalty ON at a branch, through the setup service rather than SQL.
+		//
+		// IDEMPOTENT by construction: every step is a save of a desired state, not an increment, so running
+		// it twice leaves the same configuration. It reports BEFORE and AFTER because a configuration change
+		// that only prints "ok" cannot be reviewed by the person who asked for it.
+		[HttpGet("hm25-loyalty-activate")]
+		public async Task<IActionResult> Hm25LoyaltyActivate(string key, int branchId, [FromServices] CrossBuy.BL.IPosSetupService setup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (branchId <= 0) return BadRequest(new { message = "branchId is required" });
+			var steps = new List<object>(); bool allOk = true;
+			void Step(string what, (bool ok, string? error) r) { steps.Add(new { step = what, ok = r.ok, error = r.error }); if (!r.ok) allOk = false; }
+
+			var br = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.ID == branchId);
+			if (br == null) return BadRequest(new { message = $"branch {branchId} not found" });
+			int co = br.CompanyID;
+
+			async Task<object> SnapshotAsync() => new
+			{
+				companyRate = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == co).Select(c => c.LoyaltyPointsPerCurrencyUnit).FirstOrDefaultAsync(),
+				branchRate = await _db.BranchPosSettings.AsNoTracking().Where(x => x.BranchId == branchId).Select(x => x.LoyaltyPointsPerCurrencyUnit).FirstOrDefaultAsync(),
+				loyaltyCapability = await _db.BranchCapabilities.AsNoTracking().Where(c => c.BranchId == branchId && c.CapabilityKey == "Loyalty").Select(c => (bool?)c.Enabled).FirstOrDefaultAsync(),
+				tenders = await (from m in _db.BranchPaymentMethods.AsNoTracking()
+								 join a in _db.Accounts.AsNoTracking() on m.TargetAccountId equals a.ID into ga
+								 from a in ga.DefaultIfEmpty()
+								 where m.BranchId == branchId
+								 orderby m.Sort
+								 select new { m.ID, m.PaymentMethod, m.IsActive, account = a == null ? null : a.Code, postable = a == null ? (bool?)null : a.IsPostable }).ToListAsync()
+			};
+			var before = await SnapshotAsync();
+
+			// 1. The broken Cash tender, if this branch has one. Branch 17 pointed at a HEADER account
+			//    (1101, IsPostable = 0). It had never posted, so this is a latent fix, not a correction of
+			//    history - and the service now refuses the bad value, so this re-save is what proves it.
+			var cash = await _db.BranchPaymentMethods.AsNoTracking().FirstOrDefaultAsync(m => m.BranchId == branchId && m.PaymentMethod == "Cash");
+			if (cash != null)
+			{
+				var bad = await _db.Accounts.AsNoTracking().AnyAsync(a => a.ID == cash.TargetAccountId && !a.IsPostable);
+				if (bad)
+				{
+					// The leaf this file's own comment names as the end of the cash chain, under the SAME parent.
+					var leaf = await _db.Accounts.AsNoTracking()
+						.Where(a => a.ParentId == cash.TargetAccountId && a.IsPostable && a.IsActive)
+						.OrderBy(a => a.Code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+					if (leaf == null) Step("cash tender -> postable leaf", (false, "the header has no postable child to move it to"));
+					else Step("cash tender -> postable leaf", await setup.SavePaymentMethodAsync(branchId, cash.ID, "Cash", cash.DisplayName, cash.DisplayNameEn, leaf.Value, cash.IsActive, cash.Sort));
+				}
+				else steps.Add(new { step = "cash tender -> postable leaf", ok = true, error = (string?)"already postable, nothing to do" });
+			}
+
+			// 2. Clear the branch override so the branch inherits the company rate. NULL, not zero: zero would
+			//    mean "this branch deliberately awards nothing", which is a different statement entirely.
+			//    The company rate is passed back UNCHANGED - the method writes both, so omitting it would
+			//    silently wipe the company default while "only" clearing a branch.
+			decimal? companyRate = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == co).Select(c => c.LoyaltyPointsPerCurrencyUnit).FirstOrDefaultAsync();
+			Step("clear branch earn-rate override (inherit the company rate)", await setup.SaveLoyaltyRateAsync(co, branchId, null, companyRate));
+
+			// 3. The capability. Sent alone so no other capability is disturbed.
+			Step("enable the Loyalty capability", await setup.SaveCapabilitiesAsync(branchId, new Dictionary<string, bool> { ["Loyalty"] = true }));
+
+			// 4. The Points tender, on the loyalty liability account. Redemption debits this account, which is
+			//    the other half of the IFRS 15 deferral - without it a redemption has nowhere to land.
+			var points = await _db.BranchPaymentMethods.AsNoTracking().FirstOrDefaultAsync(m => m.BranchId == branchId && m.PaymentMethod == "Points");
+			int? liability = await _db.Accounts.AsNoTracking().Where(a => a.Code == "2107" && a.CompanyID == co).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (liability == null) Step("add the Points tender", (false, "the loyalty liability account 2107 was not found for this company"));
+			else
+			{
+				int sort = await _db.BranchPaymentMethods.AsNoTracking().Where(m => m.BranchId == branchId).Select(m => (int?)m.Sort).MaxAsync() ?? 0;
+				Step("add the Points tender on 2107", await setup.SavePaymentMethodAsync(
+					branchId, points?.ID ?? 0, "Points", "نقاط", "Points", liability.Value, true, points?.Sort ?? (sort + 1)));
+			}
+
+			var after = await SnapshotAsync();
+			decimal? effective = await _db.BranchPosSettings.AsNoTracking().Where(x => x.BranchId == branchId).Select(x => x.LoyaltyPointsPerCurrencyUnit).FirstOrDefaultAsync() ?? companyRate;
+			return Ok(new { ok = allOk, branchId, company = co, steps, before, after, effectivePointsPerCurrencyUnit = effective });
+		}
+
+		// Proves the estate administration tier added to PosAccessService.CanAsync. Reads the real user
+		// ids so the test cannot drift from the accounts it claims to be about.
+		//
+		// BOUNDARY, stated honestly: this calls CanAsync with a context built here, so it proves the
+		// DECISION, not the plumbing that fills BusinessContext.Roles. That half is verified separately -
+		// BusinessContextFactory sets Roles from ClaimTypes.Role, and the estate roles are held in
+		// AspNetUserRoles - but this endpoint does not sign anyone in and does not claim to.
+		[HttpGet("estate-tier-test")]
+		public async Task<IActionResult> EstateTierTest(string key, [FromServices] CrossBuy.BL.PosAccessService access)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			// The estate roles, and who actually holds them. If nobody does, the tier is inert and that is
+			// the single most important thing this endpoint can report.
+			string[] estateRoles = { "SuperAdmin", "Administrator", "PlatformOps" };
+			var holder = await (from u in _db.Users.AsNoTracking()
+								join ur in _db.UserRoles.AsNoTracking() on u.Id equals ur.UserId
+								join r in _db.Roles.AsNoTracking() on ur.RoleId equals r.Id
+								where estateRoles.Contains(r.Name!)
+								select new { u.Id, u.UserName, Role = r.Name }).ToListAsync();
+			if (holder.Count == 0) return Ok(new { ok = false, message = "no user holds any estate role - the tier is inert", log });
+			var admin = holder[0];
+			var heldRoles = holder.Where(h => h.Id == admin.Id).Select(h => h.Role!).Distinct().ToList();
+
+			// An employee row is required before any of this matters: BusinessContextFactory produces no
+			// context at all for an inactive employee or one with no company, so the tier would never run.
+			var emp = await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == admin.Id);
+			Chk($"estate holder {admin.UserName} has an active employee row with a company", emp != null && emp.IsActive && emp.EmpCompanyID > 0);
+			if (emp == null) return Ok(new { ok = false, log });
+			int co = emp.EmpCompanyID;
+
+			// THE POINT OF THE TIER: this account is based at NO branch, so POS identity resolution refuses
+			// it outright. Before the tier, the only holder of the estate roles could configure zero branches.
+			var posIdentity = await access.ResolveByUserIdAsync(admin.Id);
+			Chk("estate holder has no POS identity (based at no till) - so only the tier can admit them",
+				emp.BranchID == null && posIdentity == null);
+
+			var mine = await _db.Branches.AsNoTracking().Where(b => b.CompanyID == co).Select(b => b.ID).ToListAsync();
+			var foreignB = await _db.Branches.AsNoTracking().Where(b => b.CompanyID != co).Select(b => new { b.ID, b.CompanyID }).FirstOrDefaultAsync();
+			Chk("the company has at least one branch to administer", mine.Count > 0);
+			if (mine.Count == 0) return Ok(new { ok = false, log });
+			int myBranch = mine[0];
+
+			CrossBuy.Models.Platform.BusinessContext Ctx(string userId, params string[] roles) => new CrossBuy.Models.Platform.BusinessContext
+			{ CompanyId = co, BranchId = null, EmployeeId = emp.ID, UserId = userId, Roles = roles };
+			var ctx = Ctx(admin.Id, heldRoles.ToArray());
+			CrossBuy.Models.Platform.PermissionTarget At(int b) => new CrossBuy.Models.Platform.PermissionTarget { BranchId = b };
+
+			// ---- what the tier GRANTS ----
+			Chk($"manage is granted on own-company branch {myBranch}", await access.CanAsync(ctx, "manage", At(myBranch)));
+			Chk($"view is granted on own-company branch {myBranch}", await access.CanAsync(ctx, "view", At(myBranch)));
+			Chk("manage with no branch target is granted (company-wide screens)", await access.CanAsync(ctx, "manage", null));
+			foreach (var b in mine.Take(8))
+				Chk($"manage reaches every own-company branch (id {b})", await access.CanAsync(ctx, "manage", At(b)));
+
+			// ---- what the tier REFUSES: configure, not transact ----
+			Chk("sell is REFUSED - head office configures, the store transacts", !await access.CanAsync(ctx, "sell", At(myBranch)));
+			Chk("order is REFUSED", !await access.CanAsync(ctx, "order", At(myBranch)));
+			Chk("kitchen is REFUSED", !await access.CanAsync(ctx, "kitchen", At(myBranch)));
+
+			// ---- what the tier REFUSES: company-bounded ----
+			if (foreignB != null)
+				Chk($"manage is REFUSED on branch {foreignB.ID} of another company ({foreignB.CompanyID})",
+					!await access.CanAsync(ctx, "manage", At(foreignB.ID)));
+			else log.Add("SKIP  no branch outside the company exists to test the company bound against");
+			Chk("manage is REFUSED on a branch id that does not exist", !await access.CanAsync(ctx, "manage", At(2147483647)));
+
+			// ---- what the tier REFUSES: it is not a skeleton key for everyone ----
+			Chk("an unknown role gets nothing", !await access.CanAsync(Ctx(admin.Id, "HrManager"), "manage", At(myBranch)));
+			Chk("no roles at all gets nothing", !await access.CanAsync(Ctx(admin.Id), "manage", At(myBranch)));
+			Chk("an estate role with NO identity still gets nothing", !await access.CanAsync(Ctx("", heldRoles.ToArray()), "manage", At(myBranch)));
+			Chk("an action outside the vocabulary gets nothing", !await access.CanAsync(ctx, "delete", At(myBranch)));
+
+			return Ok(new
+			{
+				ok = allPass,
+				estateHolder = admin.UserName,
+				rolesHeld = heldRoles,
+				company = co,
+				ownCompanyBranches = mine,
+				assertions = log.Count,
+				log
+			});
+		}
+
+		[HttpGet("hm26-coupon-test")]
+		public async Task<IActionResult> Hm26CouponTest(string key, [FromServices] CrossBuy.BL.IPosCouponService coupons,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var branch = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company && b.ActivityPresetCode == "Hyper");
+			if (branch == null) return BadRequest(new { message = "no hyper branch" });
+			var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.BranchId == branch.ID);
+			if (term == null) return BadRequest(new { message = "no terminal" });
+			// Pin the company scope before any filtered read. Item, Customer and Warehouse all carry a
+			// global company filter that compares against a scope holder nothing in this request has
+			// resolved, so it compares against 0 and matches no row. Proven, not assumed: this endpoint
+			// reported itemsVisible = 0 while the unfiltered PriceListLines read beside it returned 21.
+			// The factory, not the accessor - the accessor caches its negative answer for the DI scope.
+			if (ctx != null) await ctx.ForHttpAsync();
+
+			// The item must be ON THE BRANCH PRICE LIST, not merely priced: the sell path refuses anything
+			// that is not, which is correct and is what the first run of this test walked into.
+			int? plId = await _db.BranchPosSettings.AsNoTracking().Where(x => x.BranchId == branch.ID).Select(x => x.DefaultPriceListId).FirstOrDefaultAsync();
+			var item = await (from i in _db.Items.AsNoTracking()
+							  join pl in _db.PriceListLines.AsNoTracking() on i.ID equals pl.ItemId
+							  where i.CompanyID == company && i.IsActive && i.SalesPrice > 0 && pl.PriceListId == plId
+							  select i).FirstOrDefaultAsync();
+			if (item == null)
+			{
+				// Report what the SERVER sees rather than the bare refusal: a direct SQL count says 11 rows
+				// qualify, so if EF sees none the difference is the interesting part (a global query filter,
+				// a company scope, or a null price-list id) and guessing at it wastes a restart each time.
+				return BadRequest(new
+				{
+					message = "no item on the branch price list",
+					branchId = branch.ID, priceListId = plId,
+					itemsVisible = await _db.Items.CountAsync(i => i.CompanyID == company && i.IsActive && i.SalesPrice > 0),
+					priceListLinesVisible = await _db.PriceListLines.CountAsync(),
+					linesOnThisList = plId == null ? -1 : await _db.PriceListLines.CountAsync(l => l.PriceListId == plId.Value)
+				});
+			}
+
+			// A TAXED item of our own, because the branch is pinned to VATEX and every item it sells is at
+			// 0% — which silently skipped the one assertion that matters most. A discount that does not
+			// reduce the tax base is one the shop pays tax on, and only a taxed line can prove it does.
+			int vatCode = await _db.TaxCodes.Where(t => t.CompanyID == company && t.Kind == "VAT" && t.IsActive && t.Rate > 0)
+				.OrderBy(t => t.ID).Select(t => t.ID).FirstOrDefaultAsync();
+			if (vatCode != 0 && plId != null)
+			{
+				var taxed = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM26-TAXED");
+				if (taxed == null)
+				{
+					taxed = new CrossBuy.Models.Context.Inventory.Item
+					{
+						CompanyID = company, ItemCode = "HM26-TAXED", Barcode = "HM26TAXED", Name = "HM26 taxed probe",
+						ItemCategoryId = item.ItemCategoryId, ItemType = "Stockable", BaseUoMId = item.BaseUoMId,
+						IsActive = true, CostingMethod = "Average", SalesPrice = 10m, CreatedAt = DateTime.UtcNow
+					};
+					_db.Items.Add(taxed);
+				}
+				taxed.DefaultTaxCodeId = vatCode; taxed.SalesPrice = 10m; taxed.IsActive = true;
+				await _db.SaveChangesAsync();
+				if (!await _db.PriceListLines.AnyAsync(l => l.PriceListId == plId.Value && l.ItemId == taxed.ID))
+				{ _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = plId.Value, ItemId = taxed.ID, MinQty = 1, UnitPrice = 10m, DiscountPercent = 0m, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); }
+				item = taxed;
+			}
+			log.Add($"using item {item.ItemCode} (taxCode={item.DefaultTaxCodeId?.ToString() ?? "branch"}) on price list {plId}");
+
+			// A coupon of our own, so the test never depends on what somebody authored in the UI.
+			const string code = "SELFTEST20";
+			var c = await _db.PosCoupons.FirstOrDefaultAsync(x => x.CompanyID == company && x.Code == code);
+			if (c == null) { c = new CrossBuy.Models.Context.Pos.PosCoupon { CompanyID = company, Code = code, Name = "Self test 20%", DiscountType = "Percent", Value = 20m, CreatedAt = DateTime.UtcNow }; _db.PosCoupons.Add(c); }
+			c.IsActive = true; c.Value = 20m; c.DiscountType = "Percent"; c.UsageLimit = 1; c.UsageCount = 0;
+			c.PerCustomerLimit = null; c.RequiresCustomer = false; c.MinBasket = null; c.MaxDiscount = null;
+			c.ValidFrom = null; c.ValidTo = null;
+			await _db.SaveChangesAsync();
+
+			// ---- a live basket through the real order service ----
+			await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+			var (ook, oerr, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift?.ID);
+			if (!ook) return BadRequest(new { message = "open order failed: " + oerr });
+			var (lok, lerr) = await _posOrders.AddLineAsync(company, orderId, item.ID, 2m, null, null);
+			Chk("line added to basket", lok);
+			if (!lok) return Ok(new { allPass = false, error = lerr, log });
+
+			var before = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == orderId);
+			decimal subBefore = before.SubTotal, taxBefore = before.TaxTotal, grandBefore = before.GrandTotal;
+			Chk("basket has value before the coupon", subBefore > 0);
+
+			// ---- apply ----
+			var (aok, aerr, prev) = await coupons.ApplyAsync(company, orderId, code, null);
+			Chk("coupon applied: " + (aerr ?? "ok"), aok && prev != null);
+			await _posOrders.RecalcOrderAsync(company, orderId);
+			var after = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == orderId);
+
+			decimal lineShare = await _db.PosOrderLines.Where(l => l.OrderId == orderId).SumAsync(l => (decimal?)l.CouponDiscount) ?? 0m;
+			Chk($"discount landed on the LINES ({lineShare}) and equals the coupon ({prev?.Discount})", prev != null && lineShare == prev.Discount);
+			Chk($"subtotal fell {subBefore}->{after.SubTotal}", after.SubTotal < subBefore);
+			// THE ONE THAT MATTERS: a basket discount must reduce the TAX BASE, or the shop pays tax on
+			// money it never received. Only asserted when the item is actually taxed.
+			if (taxBefore > 0) Chk($"tax base fell with it {taxBefore}->{after.TaxTotal}", after.TaxTotal < taxBefore);
+			else log.Add("SKIP tax assertion - this item carries a 0% rate");
+			Chk($"grand total fell {grandBefore}->{after.GrandTotal}", after.GrandTotal < grandBefore);
+			Chk("order records which coupon", after.CouponId == c.ID);
+
+			var red = await _db.PosCouponRedemptions.AsNoTracking().FirstOrDefaultAsync(r => r.OrderId == orderId);
+			Chk("a redemption row exists, invoice still null (basket is open)", red != null && red.InvoiceId == null);
+			var c1 = await _db.PosCoupons.AsNoTracking().FirstAsync(x => x.ID == c.ID);
+			Chk($"usage claimed atomically (0->{c1.UsageCount})", c1.UsageCount == 1);
+
+			// ---- the claim must now be exhausted for a SECOND basket ----
+			var (o2ok, _o2e, orderId2) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift?.ID);
+			if (o2ok)
+			{
+				await _posOrders.AddLineAsync(company, orderId2, item.ID, 1m, null, null);
+				var (bok, berr, _bp) = await coupons.ApplyAsync(company, orderId2, code, null);
+				Chk("a second basket is REFUSED once the limit is spent: " + (berr ?? "<no error>"), !bok);
+				await _posOrders.VoidOrderAsync(company, orderId2);
+			}
+
+			// ---- remove: the line share clears and the use goes back to the pool ----
+			var (rok, rerr) = await coupons.RemoveAsync(company, orderId);
+			Chk("coupon removed: " + (rerr ?? "ok"), rok);
+			await _posOrders.RecalcOrderAsync(company, orderId);
+			var back = await _db.PosOrders.AsNoTracking().FirstAsync(x => x.ID == orderId);
+			decimal shareAfter = await _db.PosOrderLines.Where(l => l.OrderId == orderId).SumAsync(l => (decimal?)l.CouponDiscount) ?? 0m;
+			Chk("line share cleared to zero", shareAfter == 0m);
+			Chk($"totals restored exactly ({back.GrandTotal} == {grandBefore})", back.GrandTotal == grandBefore);
+			Chk("order no longer names a coupon", back.CouponId == null);
+			var c2 = await _db.PosCoupons.AsNoTracking().FirstAsync(x => x.ID == c.ID);
+			Chk($"the use was RETURNED to the pool ({c2.UsageCount} == 0)", c2.UsageCount == 0);
+			Chk("redemption row removed with it", !await _db.PosCouponRedemptions.AnyAsync(r => r.OrderId == orderId));
+
+			// ---- leave nothing behind ----
+			await _posOrders.VoidOrderAsync(company, orderId);
+			var self = await _db.PosCoupons.FirstOrDefaultAsync(x => x.ID == c.ID);
+			if (self != null) { _db.PosCoupons.Remove(self); await _db.SaveChangesAsync(); }
+			var probe = await _db.Items.FirstOrDefaultAsync(x => x.CompanyID == company && x.ItemCode == "HM26-TAXED");
+			if (probe != null)
+			{
+				// Deactivated rather than deleted: it now has order lines pointing at it, and deleting a row
+				// something references is how a report starts showing a blank where an item name should be.
+				probe.IsActive = false; await _db.SaveChangesAsync();
+			}
+			log.Add("cleanup: test basket voided, SELFTEST20 removed, HM26-TAXED deactivated");
+
+			return Ok(new { allPass, log });
+		}
+
 		[HttpGet("pos-c1-test")]
 		public async Task<IActionResult> PosC1Test(string key)
 		{

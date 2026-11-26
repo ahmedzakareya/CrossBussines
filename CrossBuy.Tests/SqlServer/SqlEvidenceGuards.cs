@@ -29,8 +29,14 @@ namespace CrossBuy.Tests.SqlServer
         /// Catalogs the evidence suite may never be pointed at. `CrossBuy` is included as a bare name because a
         /// developer instance may host it, and the cost of a false refusal (a skipped run with a clear reason) is
         /// nothing next to the cost of a false acceptance.
+        ///
+        /// `CrossBuyDev` is here for the same reason and was missing: it is the catalog appsettings.json actually
+        /// names as DefaultConnection, so it is the one a developer is most likely to paste into
+        /// CROSSBUY_TEST_SQL by reflex. The suite would still have created and used its own scratch catalog, so
+        /// no WRITE could have landed in Dev - but it would have OPENED a connection to a real application
+        /// database, and "it could not have written anything" is a worse guarantee than "it was never reached".
         /// </summary>
-        public static readonly string[] ProductionCatalogs = { "CrossBuyDB", "CrossBuyDB2", "CrossBuy" };
+        public static readonly string[] ProductionCatalogs = { "CrossBuyDB", "CrossBuyDB2", "CrossBuy", "CrossBuyDev" };
 
         public sealed class CatalogVerdict
         {
@@ -141,19 +147,36 @@ namespace CrossBuy.Tests.SqlServer
             await connection.OpenAsync();
 
             await using var command = connection.CreateCommand();
+            // LITERAL UNDERSCORES. Every owned prefix ends in '_', and '_' is a SINGLE-CHARACTER WILDCARD
+            // in T-SQL - parameterising the pattern does not change that, because LIKE interprets the pattern
+            // whatever its source. 'CrossBuyProbe_%' therefore also matched CrossBuyProbeXrogue: a name this
+            // suite never creates, reported as one of its own. ESCAPE makes the underscore mean itself.
+            //
+            // The parameters stay parameters; only the pattern is escaped.
             command.CommandText =
                 "SELECT name FROM sys.databases WHERE " +
-                string.Join(" OR ", OwnedScratchPrefixes.Select((_, i) => $"name LIKE @p{i} + '%'")) +
+                string.Join(" OR ", OwnedScratchPrefixes.Select((_, i) => $"name LIKE @p{i} + '%' ESCAPE '\\'")) +
                 " ORDER BY name;";
 
             for (var i = 0; i < OwnedScratchPrefixes.Length; i++)
-                command.Parameters.AddWithValue("@p" + i, OwnedScratchPrefixes[i]);
+                command.Parameters.AddWithValue("@p" + i, EscapeLikePattern(OwnedScratchPrefixes[i]));
 
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync()) names.Add(reader.GetString(0));
 
             return names;
         }
+
+        /// <summary>
+        /// Makes a literal string safe to use as the leading part of a LIKE pattern. The backslash is escaped
+        /// FIRST, or escaping the others would then escape the backslashes this method just added.
+        /// Paired with ESCAPE '\' at the call site.
+        /// </summary>
+        internal static string EscapeLikePattern(string value) =>
+            value.Replace("\\", "\\\\")
+                 .Replace("[", "\\[")
+                 .Replace("%", "\\%")
+                 .Replace("_", "\\_");
 
         // -------------------------------------------------------------------------------------------------
         // Guard 4 — mandatory SQL execution verification

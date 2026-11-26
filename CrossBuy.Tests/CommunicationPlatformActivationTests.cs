@@ -37,16 +37,18 @@ namespace CrossBuy.Tests
             services.AddDbContext<CrossDbContext>(o => o.UseSqlite("DataSource=:memory:"));
             services.AddScoped<IEntityRegistry, EntityRegistry>();
 
-            // The three platform services the Communication graph reaches into. They are NOT optional:
+            // The shared platform services the Communication graph reaches into. They are NOT optional:
             // CommAccessPolicy needs IPlatformPermissionProvider, TeamCommPrincipalSource needs
-            // IOrgHierarchy, and PlatformEventTimelineSource needs ITimelineProjectionService. All three
-            // are already registered in Program.cs; omitting them here is what made the first version of
+            // IOrgHierarchy, PlatformEventTimelineSource needs ITimelineProjectionService, and the opt-in
+            // @Role source needs IPlatformRoleDirectory. All are registered in Program.cs; omitting them here
+            // is what made the first version of
             // this test fail, and that failure was the TEST being under-specified, not the application
             // graph being broken. Listing them explicitly is the point: it records what activating
             // Communication actually depends on, so a future removal of any of them fails here.
             services.AddScoped<IOrgHierarchy, OrgHierarchy>();
             services.AddScoped<IPlatformPermissionProvider, PlatformPermissionProvider>();
             services.AddScoped<ITimelineProjectionService, TimelineProjectionService>();
+            services.AddScoped<IPlatformRoleDirectory, PlatformRoleDirectory>();
 
             return services;
         }

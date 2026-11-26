@@ -1,0 +1,389 @@
+@using CrossBuy.ViewModel.Ai
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model InventoryReorderVm
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    ViewData["Title"] = Localizer["Reorder advice"].Value;
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string R(AiReason? r) => r == null ? "" : (isAr ? r.Ar : r.En);
+    string N(decimal? v, int d = 2) => v.HasValue ? v.Value.ToString("N" + d) : "—";
+    string D(double v, int d = 2) => v.ToString("N" + d);
+
+    // A..D says whether the HISTORY can carry a number. Deliberately NOT the same scale as the
+    // demand shape below: one is about evidence, the other about whether the formula fits.
+    string GradeBadge(string? g) => g switch
+    {
+        "A" => "success", "B" => "primary", "C" => "secondary", _ => "light"
+    };
+    // Shape is about the MODEL's fit, so an intermittent row is marked danger even when its grade
+    // is good — a confident number computed with the wrong formula is the more dangerous of the two.
+    string ShapeBadge(string? s) => s switch
+    {
+        "stable" => "success", "lumpy" => "secondary", "intermittent" => "danger", _ => "light"
+    };
+    string ShapeLabel(string? s) => s switch
+    {
+        "stable" => "Stable", "lumpy" => "Lumpy", "intermittent" => "Intermittent", _ => s ?? ""
+    };
+    string StateLabel(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "Up to date",
+        AiInsightState.InsufficientData => "Not enough data to analyse",
+        AiInsightState.Unavailable => "Analysis service unavailable",
+        AiInsightState.Failed => "Analysis could not be completed",
+        _ => "Unknown"
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Reorder advice"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Reorder advice"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-light-secondary fs-8">
+                    <i class="ki-outline ki-abstract-26 fs-6 me-1"></i>@Localizer["Suggestions for review only"]
+                </span>
+                <a href="@Url.Action("RiskInsights","Inventory")" class="btn btn-sm btn-light">@Localizer["Risk Insights"]</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @await Html.PartialAsync("_InsightsProvenance", new CrossBuy.Models.InsightsProvenance
+            {
+                CompanyName = ViewBag.CompanyName as string,
+                CompanyId = Model.CompanyId,
+                Method = Localizer["On-premises model"].Value + " (" + Model.Panel.Source + ")",
+                Facts = new List<(string, string, bool)>
+                {
+                    (Localizer["Window"].Value, Model.WindowDays + " " + Localizer["days"].Value, false),
+                    (Localizer["Service level"].Value, (Model.ServiceLevel * 100).ToString("N1") + "%", false),
+                },
+                GeneratedAtUtc = Model.Panel.GeneratedAtUtc,
+            })
+
+            @* WHAT THE NUMBER MEANS, stated before any number is shown. A reorder point is a standing
+               instruction to spend money; a reader who cannot see the formula cannot challenge it. *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1">
+                    <div class="fw-semibold">
+                        <div class="fs-7 text-gray-700">
+                            @Localizer["The reorder point is the demand expected during the lead time, plus a safety stock sized from how much that demand varies and how late the supplier can be. Where the history cannot support a figure, none is proposed and the reason is shown instead. Nothing on this screen is written until you accept it."]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.Panel.HasResult)
+            {
+                <div class="card card-flush">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-information-5 fs-3x text-gray-400 mb-4"></i>
+                        <h3 class="text-gray-800">@Localizer[StateLabel(Model.Panel.State)]</h3>
+                        @if (Model.Panel.State == AiInsightState.InsufficientData)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">@Localizer["No outbound movements were found in the window, so there is no demand to measure."]</div>
+                        }
+                        else if (Model.Panel.State == AiInsightState.Unavailable)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">@Localizer["The on-premises analysis service did not respond. Every other inventory screen is unaffected."]</div>
+                        }
+                        else
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">@Localizer["The analysis service replied with a result that could not be read. Nothing has been changed."]</div>
+                        }
+                        <div class="mt-6">
+                            <a href="@Url.Action("StockBalances","Inventory")" class="btn btn-sm btn-light">@SR["Stock balances"]</a>
+                            <a href="@Url.Action("StockMovements","Inventory")" class="btn btn-sm btn-light ms-2">@Localizer["All movements"]</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var s = Model.Result!.Summary;
+                var order = Model.ToOrder.ToList();
+                var advised = Model.Advised.ToList();
+                var refusalBreakdown = Model.RefusalBreakdown.ToList();
+
+                <!--begin::summary-->
+                <div class="row g-5 g-xl-10 mb-5">
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100"><div class="card-body p-5">
+                            <span class="fw-bold fs-2x text-gray-900 lh-1"><bdi>@order.Count</bdi></span>
+                            <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Below the computed point — order now"]</span></div>
+                        </div></div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100"><div class="card-body p-5">
+                            <span class="fw-bold fs-2x text-gray-900 lh-1"><bdi>@s.Advised</bdi></span>
+                            <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Figures proposed"]</span></div>
+                        </div></div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100"><div class="card-body p-5">
+                            <span class="fw-bold fs-2x text-gray-900 lh-1"><bdi>@s.RefusedInsufficientHistory</bdi></span>
+                            <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Declined — history too thin"]</span></div>
+                        </div></div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100"><div class="card-body p-5">
+                            <span class="fw-bold fs-2x text-gray-900 lh-1"><bdi>@Model.Result.PairsAnalyzed</bdi></span>
+                            <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Item / warehouse pairs examined"]</span></div>
+                        </div></div>
+                    </div>
+                </div>
+                <!--end::summary-->
+
+                @* THE MOST USEFUL BLOCK ON THIS INSTALLATION. Seventy-two individual refusals are
+                   noise; grouped by cause they become one statement about the DATA, which is the
+                   thing that can actually be fixed. *@
+                @if (refusalBreakdown.Count > 0)
+                {
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title text-gray-900">@Localizer["Why no figure was proposed"]</h3>
+                            <div class="card-toolbar"><span class="badge badge-light-secondary"><bdi>@Model.Refused.Count()</bdi> @Localizer["pairs"]</span></div>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="text-gray-600 fs-7 mb-4">
+                                @Localizer["These are not item faults. They describe the movement history this company has recorded so far — once an item is issued on more separate days, it becomes advisable without any change here."]
+                            </div>
+                            @foreach (var (reason, count) in refusalBreakdown)
+                            {
+                                var pct = Model.Refused.Count() == 0 ? 0 : (count * 100.0 / Model.Refused.Count());
+                                <div class="d-flex align-items-center mb-4">
+                                    <span class="badge badge-light-secondary me-3 fs-7" style="min-width:3.5rem"><bdi>@count</bdi></span>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fs-7 text-gray-800">@reason</div>
+                                        <div class="progress h-5px mt-2 bg-light">
+                                            <div class="progress-bar bg-secondary" role="progressbar" style="width:@(pct.ToString("N0"))%" aria-valuenow="@pct.ToString("N0")" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (advised.Count == 0)
+                {
+                    <div class="notice d-flex bg-light-secondary rounded border-secondary border border-dashed p-6">
+                        <i class="ki-outline ki-information-5 fs-2x text-gray-600 me-4"></i>
+                        <div>
+                            <h4 class="text-gray-900 mb-1">@Localizer["No reorder point can be proposed yet"]</h4>
+                            <div class="fs-7 text-gray-700">@Localizer["Every pair examined fell short of the minimum history. The breakdown above says what is missing."]</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @Html.AntiForgeryToken()
+                    <div class="card card-flush">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title text-gray-900">@Localizer["Proposed reorder points"]</h3>
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-secondary"><bdi>@advised.Count</bdi></span>
+                            </div>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-3">
+                                    <thead>
+                                        <tr class="fw-bold text-gray-500 fs-8 text-uppercase">
+                                            <th class="min-w-200px">@SR["Item"]</th>
+                                            <th class="text-end">@Localizer["On hand"]</th>
+                                            <th class="text-end">@Localizer["Demand / day"]</th>
+                                            <th class="text-end">@Localizer["Proposed point"]</th>
+                                            <th class="text-end">@Localizer["Safety stock"]</th>
+                                            <th class="text-center">@Localizer["Evidence"]</th>
+                                            <th class="text-end"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var r in advised)
+                                    {
+                                        var rid = $"rp-{r.ItemId}-{r.WarehouseId}";
+                                        var display = isAr ? (r.Name ?? r.Code) : (r.NameEn ?? r.Name ?? r.Code);
+                                        <tr id="@rid">
+                                            <td>
+                                                <div class="fw-bold text-gray-900">@display</div>
+                                                <div class="fs-8 text-gray-500">
+                                                    <bdi>@r.Code</bdi> · @r.WarehouseName
+                                                    @if (string.Equals(r.Action, "order", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        <span class="badge badge-light-danger fs-9 ms-2">@Localizer["Order now"]</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="text-end text-gray-700"><bdi>@N(r.OnHand)</bdi></td>
+                                            <td class="text-end text-gray-700"><bdi>@D(r.AvgDailyDemand, 3)</bdi></td>
+                                            <td class="text-end fw-bold text-gray-900" data-cb-rop><bdi>@N(r.ReorderPoint)</bdi></td>
+                                            <td class="text-end text-gray-700" data-cb-ss><bdi>@N(r.SafetyStock)</bdi></td>
+                                            <td class="text-center">
+                                                <span class="badge badge-light-@GradeBadge(r.Grade) fs-8" title="@Localizer["How much history supports this"]">@r.Grade</span>
+                                                <span class="badge badge-light-@ShapeBadge(r.DemandShape) fs-8 ms-1" title="@Localizer["Whether the formula fits this demand"]">@Localizer[ShapeLabel(r.DemandShape)]</span>
+                                            </td>
+                                            <td class="text-end text-nowrap">
+                                                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#why-@rid" aria-expanded="false">
+                                                    @Localizer["Why?"]
+                                                </button>
+                                                <button class="btn btn-sm btn-light-primary ms-1 cb-apply-rp"
+                                                        type="button"
+                                                        data-item="@r.ItemId" data-wh="@r.WarehouseId"
+                                                        data-rop="@(r.ReorderPoint?.ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                                        data-ss="@(r.SafetyStock?.ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                                        data-lt="@(string.Equals(r.LeadTimeSource, "setting", StringComparison.OrdinalIgnoreCase) ? ((int)r.LeadTimeDays).ToString() : "0")"
+                                                        data-row="@rid">
+                                                    @Localizer["Accept"]
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr class="collapse" id="why-@rid">
+                                            <td colspan="7" class="bg-light rounded">
+                                                <div class="p-4">
+                                                    <div class="fw-bold text-gray-800 mb-3">@R(r.ActionText)</div>
+
+                                                    <div class="row g-3 mb-3">
+                                                        @foreach (var t in r.Terms)
+                                                        {
+                                                            <div class="col-12 col-md-6 col-xl-3">
+                                                                <div class="border border-dashed border-gray-300 rounded p-3 h-100">
+                                                                    <div class="fs-8 text-gray-500">@R(t.Label)</div>
+                                                                    <div class="fw-bold fs-5 text-gray-900"><bdi>@D(t.Value, 2)</bdi></div>
+                                                                    <div class="fs-8 text-gray-500"><bdi>@R(t.Detail)</bdi></div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+
+                                                    <div class="fs-8 text-gray-600 mb-2">
+                                                        @Localizer["Measured over"] <bdi>@r.EffectiveWindowDays</bdi> @Localizer["days"],
+                                                        <bdi>@r.ActiveDays</bdi> @Localizer["of them with an issue"] ·
+                                                        @Localizer["standard deviation"] <bdi>@D(r.SdDailyDemand, 3)</bdi> /@Localizer["day"] ·
+                                                        @Localizer["safety stock is"] <bdi>@((r.SafetyShare * 100).ToString("N0"))%</bdi> @Localizer["of the point"]
+                                                    </div>
+
+                                                    @if (r.CurrentReorderPoint == null)
+                                                    {
+                                                        <div class="fs-8 text-gray-500 mb-2">@Localizer["No reorder point is recorded for this pair today."]</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="fs-8 text-gray-500 mb-2">@Localizer["Recorded today:"] <bdi>@N(r.CurrentReorderPoint)</bdi></div>
+                                                    }
+
+                                                    <ul class="mb-0 ps-4">
+                                                        @foreach (var rsn in r.Reasons)
+                                                        {
+                                                            <li class="fs-8 text-gray-700">@R(rsn)</li>
+                                                        }
+                                                    </ul>
+
+                                                    <div class="cb-rp-msg mt-3"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if (Model.Result.Note != null)
+                            {
+                                <div class="text-gray-500 fs-8 mt-3 border-top border-gray-200 pt-3">@R(Model.Result.Note)</div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var url = '@Url.Action("ApplyReorderPoint", "Inventory")';
+
+    function tokenValue() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    // A refusal is shown INLINE, next to the control that caused it — a toast scrolls away from
+    // the thing the reader has to deal with. Toasts stay for a request that never completed.
+    function say(rowId, tone, text) {
+        var box = document.querySelector('#why-' + rowId + ' .cb-rp-msg');
+        if (!box) return;
+        var open = document.getElementById('why-' + rowId);
+        if (open && !open.classList.contains('show') && window.bootstrap) {
+            bootstrap.Collapse.getOrCreateInstance(open).show();
+        }
+        box.innerHTML = '<div class="notice d-flex bg-light-' + tone + ' rounded border-' + tone +
+            ' border border-dashed p-3"><div class="fs-8 text-gray-800"></div></div>';
+        box.querySelector('div > div').textContent = text;
+    }
+
+    document.querySelectorAll('.cb-apply-rp').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var rowId = btn.getAttribute('data-row');
+            var body = new FormData();
+            body.append('itemId', btn.getAttribute('data-item'));
+            body.append('warehouseId', btn.getAttribute('data-wh'));
+            body.append('reorderPoint', btn.getAttribute('data-rop') || '0');
+            body.append('safetyStock', btn.getAttribute('data-ss') || '0');
+            body.append('leadTimeDays', btn.getAttribute('data-lt') || '0');
+            body.append('__RequestVerificationToken', tokenValue());
+
+            btn.disabled = true;
+            fetch(url, { method: 'POST', body: body, headers: { 'RequestVerificationToken': tokenValue() } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || d.ok !== true) {
+                        // The KIND comes from `code`, never from the message text: matching a
+                        // localised string works in Arabic and silently stops working in English.
+                        var tone = (d && d.code === 'forbidden') ? 'danger' : 'warning';
+                        say(rowId, tone, (d && d.message) || '');
+                        btn.disabled = false;
+                        return;
+                    }
+                    // Repaint THIS row only. No page reload: the table exists to be compared
+                    // across rows, and a reload throws away where the reader was.
+                    var tr = document.getElementById(rowId);
+                    if (tr) {
+                        var rop = tr.querySelector('[data-cb-rop] bdi');
+                        var ss = tr.querySelector('[data-cb-ss] bdi');
+                        // 'en-US', NOT the browser default. The server renders every other cell with
+                        // ToString("N2") under the app culture, which gives Latin digits and a dot.
+                        // The browser default under an Arabic UI gives Arabic-Indic digits and a
+                        // comma, so a repainted row stopped matching the rows either side of it.
+                        if (rop && d.reorderPoint != null) rop.textContent = Number(d.reorderPoint).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        if (ss && d.safetyStock != null) ss.textContent = Number(d.safetyStock).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                    btn.classList.remove('btn-light-primary');
+                    btn.classList.add('btn-light-success');
+                    btn.textContent = d.message || '';
+                    say(rowId, 'success', d.message || '');
+                })
+                .catch(function () {
+                    // The request never completed — that is the toast case, not a server decision.
+                    if (window.CB && CB.toast) { CB.toast('@Localizer["The request could not be sent."]'); }
+                    btn.disabled = false;
+                });
+        });
+    });
+})();
+</script>
+}

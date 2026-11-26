@@ -1,0 +1,63 @@
+@using System.Text.Json
+@model CrossBuy.BL.Platform.PlatformAdministrationSnapshot
+@{
+    Layout="~/Views/Shared/_LayoutInventory.cshtml";
+    var ar=System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar";
+    string T(string a,string e)=>ar?a:e;
+    ViewData["Title"]=T("إدارة الصلاحيات","Security Console");
+}
+<div class="d-flex flex-column gap-6" data-r6-screen="security-console">
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+  <div><h1 class="fs-2 fw-bold">@ViewData["Title"]</h1><p class="text-muted">@T("الأدوار والمنح وسياسات التهيئة للشركة الحالية","Roles, grants and bootstrap policies for the current company")</p></div>
+  <div class="d-flex gap-2"><a class="btn btn-light-primary" href="/MasterData?culture=@(ar?"ar":"en")">@T("البيانات الأساسية","Master data")</a><a class="btn btn-light" href="/SupportWorkspace?culture=@(ar?"ar":"en")">@T("مساحة الدعم","Support workspace")</a></div>
+ </div>
+ <div class="row g-5">
+  <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted">@T("المنح المباشرة","Direct grants")</div><div class="fs-2 fw-bold">@Model.Grants.Count</div></div></div></div>
+  <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted">@T("سياسات التهيئة","Bootstrap policies")</div><div class="fs-2 fw-bold">@Model.Policies.Count</div></div></div></div>
+  <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body"><div class="text-muted">@T("حالات الصلاحيات المتبقية","Remaining authorization gaps")</div><div class="fs-2 fw-bold">@(Model.DebtReconciled?Model.AuthorizationDebt?.ToString():T("غير مثبت","Not proven"))</div></div></div></div>
+ </div>
+ <div class="card"><div class="card-header"><h2 class="card-title">@T("منح دور","Grant a role")</h2></div><div class="card-body">
+  <form id="r6-grant" class="row g-4">@Html.AntiForgeryToken()
+   <div class="col-md-4"><label class="form-label" for="r6-principal">@T("الموظف","Employee")</label><select id="r6-principal" class="form-select" required><option value="">@T("اختر موظفًا","Choose an employee")</option>@foreach(var e in Model.Employees){<option value="@e.Key">@e.Value</option>}</select><div class="form-text">@T("القائمة تعرض حتى 200 موظف نشط في الشركة","The list shows up to 200 active company employees")</div></div>
+   <div class="col-md-4"><label class="form-label" for="r6-scope">@T("الوحدة","Module")</label><select id="r6-scope" class="form-select" required>@foreach(var scope in Model.Roles.Keys){<option value="@scope">@scope</option>}</select></div>
+   <div class="col-md-4"><label class="form-label" for="r6-role">@T("الدور","Role")</label><select id="r6-role" class="form-select" required></select></div>
+   <div class="col-md-4"><label class="form-label" for="r6-until">@T("ينتهي في — بالتوقيت المحلي","Expires at — local time")</label><input id="r6-until" type="datetime-local" class="form-control" /></div>
+   <div class="col-md-8"><label class="form-label" for="r6-reason">@T("سبب المنح","Reason")</label><input id="r6-reason" class="form-control" maxlength="500" required /></div>
+   <div class="col-12"><button type="submit" class="btn btn-primary">@T("منح الدور","Grant role")</button></div>
+  </form><div id="r6-result" class="mt-4" role="status" aria-live="polite"></div>
+ </div></div>
+ <div class="card"><div class="card-header"><h2 class="card-title">@T("المنح المباشرة","Direct grants")</h2></div><div class="card-body table-responsive">
+  <table class="table table-row-dashed align-middle"><thead><tr><th>@T("الموظف","Employee")</th><th>@T("الوحدة","Module")</th><th>@T("الدور","Role")</th><th>@T("الحالة","Status")</th><th>@T("الانتهاء","Expiry")</th><th>@T("الإجراء","Action")</th></tr></thead><tbody>
+  @foreach(var g in Model.Grants.Take(200)) {<tr><td>@(Model.Employees.GetValueOrDefault(g.PrincipalId)??g.PrincipalId.ToString())</td><td>@g.Scope</td><td>@g.Role</td><td><span class="badge @(g.IsEffective?"badge-light-success":"badge-light-secondary")">@(g.IsEffective?T("فعالة","Effective"):T("غير فعالة","Inactive"))</span></td><td>@g.ValidTo?.ToString("yyyy-MM-dd HH:mm") UTC</td><td>@if(g.IsActive){<button type="button" class="btn btn-sm btn-light-danger" data-r6-revoke="@g.Id">@T("إلغاء المنح","Revoke")</button>}</td></tr>}
+  @if(Model.Grants.Count==0){<tr><td colspan="6" class="text-muted text-center">@T("لا منح مباشرة","No direct grants")</td></tr>}
+  </tbody></table>@if(Model.Grants.Count>200){<p class="text-muted">@T("يُعرض أول 200 منح من القائمة","Showing the first 200 grants")</p>}
+ </div></div>
+ <div class="card"><div class="card-header"><h2 class="card-title">@T("سياسات التهيئة — للقراءة","Bootstrap policies — read only")</h2></div><div class="card-body table-responsive"><table class="table table-row-dashed"><thead><tr><th>@T("الوحدة","Module")</th><th>@T("الإجراء","Action")</th><th>@T("حالة السياسة","Policy decision")</th><th>@T("السبب","Reason")</th><th>@T("الانتهاء","Expiry")</th></tr></thead><tbody>
+ @foreach(var p in Model.Policies){var decision=Model.PolicyDecisions.GetValueOrDefault(p.ID);var allowed=p.IsEffective(DateTime.UtcNow) && decision?.IsAllowed==true && decision.BootstrapPolicyId==p.ID;<tr><td>@p.Scope</td><td>@p.ActionCode</td><td><span class="badge @(allowed?"badge-light-warning":"badge-light-secondary")">@(allowed?T("مسموح بالتهيئة","Bootstrap allowed"):T("مرفوض","Denied"))</span></td><td>@p.Reason</td><td>@p.ExpiresAt?.ToString("yyyy-MM-dd HH:mm") UTC</td></tr>}
+ @if(Model.Policies.Count==0){<tr><td colspan="5" class="text-center text-muted">@T("لا سياسات تهيئة مسجلة","No bootstrap policies recorded")</td></tr>}
+ </tbody></table><p class="text-muted mb-0">@T("قرارات سياسة التهيئة لا تستبدل الأدوار المهيأة للوحدة","Bootstrap decisions do not replace configured module roles")</p></div></div>
+</div>
+<script>
+(function(){
+ var roles=@Html.Raw(JsonSerializer.Serialize(Model.Roles));
+ var form=document.getElementById('r6-grant'), scope=document.getElementById('r6-scope'), role=document.getElementById('r6-role'), result=document.getElementById('r6-result');
+ var messages=@Html.Raw(JsonSerializer.Serialize(new {refused=T("رُفض الطلب؛ تحقق من الصلاحية والدور وصلاحية الجلسة","Request refused; check authority, role and session validity"),failed=T("تعذّر الاتصال","Connection failed"),confirm=T("هل تريد إلغاء هذا المنح؟","Revoke this grant?"),reason=T("إلغاء من شاشة الصلاحيات","Revoked through Security Console")}));
+ var key='@Guid.NewGuid().ToString("N")';
+ function updateRoles(){role.replaceChildren();(roles[scope.value]||[]).forEach(function(r){role.add(new Option(r,r));});}
+ scope.addEventListener('change',updateRoles);updateRoles();
+ function token(){return form.querySelector('input[name="__RequestVerificationToken"]').value;}
+ async function write(url,body){
+  var response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','RequestVerificationToken':token(),'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(body)});
+  if(!response.ok){result.textContent=messages.refused;return;}
+  location.reload();
+ }
+ form.addEventListener('submit',function(e){e.preventDefault();if(!form.reportValidity())return;
+  var expires=document.getElementById('r6-until').value;
+  write('/api/platform/grants',{companyId:@Model.CompanyId,scope:scope.value,principalType:'Employee',principalId:Number(document.getElementById('r6-principal').value),role:role.value,validTo:expires?new Date(expires).toISOString():null,reason:document.getElementById('r6-reason').value,idempotencyKey:key}).catch(function(){result.textContent=messages.failed;});
+ });
+ document.querySelectorAll('[data-r6-revoke]').forEach(function(button){button.addEventListener('click',function(){
+  if(!confirm(messages.confirm))return;
+  write('/api/platform/grants/'+button.dataset.r6Revoke+'/revoke',{companyId:@Model.CompanyId,reason:messages.reason}).catch(function(){result.textContent=messages.failed;});
+ });});
+})();
+</script>

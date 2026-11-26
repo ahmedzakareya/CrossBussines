@@ -40,6 +40,18 @@ namespace CrossBuy.Tests.Communication
             "communication_platform_slice_001.sql",
             "communication_external_actor_3bb1.sql",
 
+            // Phase 3: the task-link relationship ships as its own slice. Added here so the parity
+            // check covers it too — a table mapped in CommunicationModel and absent from every
+            // script this test reads would otherwise fail with no way to satisfy it.
+            "comm_task_links.sql",
+
+            // ...AND ITS MIGRATION. Without this line the parity check reads only the CREATE script,
+            // so the model stayed pinned to the pre-migration UX_CommTaskLinks_Live — an index the
+            // migration DROPS — and the test went on passing while the model described a schema that
+            // no longer exists anywhere. A migration that changes an index the model declares has to
+            // be readable here, or this guard silently stops guarding.
+            "comm_task_links_m2m.sql",
+
             // Module 21 / G3. Authored and NOT APPLIED to any database — which this guard does not
             // care about and must not start caring about: it reads the script as TEXT, so it asserts
             // that the model and the DDL describe the same schema, never that somebody ran it. The
@@ -176,6 +188,50 @@ namespace CrossBuy.Tests.Communication
 
             foreach (var name in uniqueNames)
                 Assert.Contains($"CREATE UNIQUE INDEX {name}", script, StringComparison.Ordinal);
+        }
+
+        // THE GAP THE TEST ABOVE CANNOT CLOSE, pinned for the one table where a migration has already
+        // changed the rule.
+        //
+        // The check above is one-directional: it asks whether every index the model declares appears in
+        // the DDL. It cannot notice an index that the model still declares, that a migration has since
+        // DROPPED, and whose name survives in the older CREATE script — which is exactly what happened
+        // here. CommunicationModel went on declaring UX_CommTaskLinks_Live long after
+        // comm_task_links_m2m.sql dropped it, every parity test passed, and the EF-backed store tests
+        // missed it too because their test context redefines the mapping locally instead of using this
+        // one.
+        //
+        // That is not cosmetic. This model is what EnsureCreated builds, so the stale declaration
+        // recreated the single-link constraint the migration exists to remove: message-level linking
+        // would fail against any model-built database while working in production.
+        //
+        // Asserted as an EXACT set, not with Contains. A subset check would pass with the superseded
+        // index still present, which is the only failure this test is here to catch.
+        [Fact]
+        public void The_task_link_table_declares_exactly_the_two_post_migration_unique_indexes()
+        {
+            var entity = _host.Db.Model.GetEntityTypes()
+                .Single(e => e.GetTableName() == "CommTaskLinks");
+
+            var unique = entity.GetIndexes()
+                .Where(i => i.IsUnique)
+                .ToDictionary(i => i.GetDatabaseName()!, i => i.GetFilter(), StringComparer.Ordinal);
+
+            Assert.Equal(
+                new[] { "UX_CommTaskLinks_LiveConversation", "UX_CommTaskLinks_LiveMessage" },
+                unique.Keys.OrderBy(n => n, StringComparer.Ordinal).ToArray());
+
+            // The filters are what partition the table; without them the two indexes would overlap and
+            // the conversation-level link would block every message-level one.
+            Assert.Equal("[RemovedAt] IS NULL AND [CommentId] IS NULL",
+                unique["UX_CommTaskLinks_LiveConversation"]);
+            Assert.Equal("[RemovedAt] IS NULL AND [CommentId] IS NOT NULL",
+                unique["UX_CommTaskLinks_LiveMessage"]);
+
+            // And the migration's own retirement of the old rule is readable from the script, so this
+            // test fails loudly if someone reinstates it rather than silently describing two schemas.
+            Assert.Contains("DROP INDEX UX_CommTaskLinks_Live ON dbo.CommTaskLinks",
+                ScriptText(), StringComparison.Ordinal);
         }
 
         // A filtered index in the model must be filtered in the script. An unfiltered UX_CommParticipants_Live

@@ -33,7 +33,6 @@
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
         <div class="text-muted fs-7 mb-3"><i class="ki-outline ki-information-5 fs-5 me-1"></i>@Localizer["Drag a deal between columns to change its stage"]</div>
 
         <div id="board" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5">
@@ -69,7 +68,7 @@
                                         <div class="d-flex align-items-center mb-3">
                                             <span class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-light-@cls k-tint"><span class="fs-4 fw-bold text-@cls k-color">@init</span></span></span>
                                             <div class="d-flex flex-column flex-grow-1 mx-3">
-                                                <span class="fw-bold text-gray-900 fs-5 lh-1">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)</span>
+                                                <a href="@Url.Action("Deal","Crm", new { id = o.Id })" draggable="false" class="fw-bold text-gray-900 text-hover-primary fs-5 lh-1">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)</a>
                                                 <span class="text-muted fw-semibold fs-8 mt-1">@(o.CustomerName ?? Localizer["No account"].Value)</span>
                                             </div>
                                             <div class="border-start border-gray-300 h-40px mx-2"></div>
@@ -106,12 +105,26 @@
     </div></div>
 </div>
 @Html.AntiForgeryToken()
+@* CRM C9: each card's next action and risk, from the assistant *@
+<div id="crmAssistCfg" hidden data-pipeline-hints="@Url.Action("PipelineHints","Crm")"></div>
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
 @section Scripts {
+<script src="~/js/crm-assist.js" asp-append-version="true"></script>
 <script>
 (function(){
   var moveUrl='@Url.Action("MoveOpportunity","Crm")';
   var token=document.querySelector('input[name="__RequestVerificationToken"]').value;
   var dragged=null, fromCol=null;
+  // CRM C3: a stage can require things first. Say WHAT is missing and offer the deal page, in the house dialog.
+  function refused(d){
+    var msg = d.error || '@Localizer["Move failed"]';
+    if (!window.Swal) { if (window.CB && CB.toast) CB.toast(msg, 'error'); return; }
+    var list = (d.missing || []).map(function(m){ return '<li class="mb-1">' + String(m).replace(/[<>&]/g, '') + '</li>'; }).join('');
+    Swal.fire({ html: list ? '<div class="fw-bold mb-3">' + msg.split(':')[0] + '</div><ul class="text-start fw-semibold">' + list + '</ul>' : msg,
+      icon: 'error', iconColor: '#DC2626', buttonsStyling: false, showCancelButton: !!d.url,
+      confirmButtonText: d.url ? '@(isEn ? "Open the deal" : "افتح الصفقة")' : 'OK', cancelButtonText: '@(isEn ? "Close" : "إغلاق")',
+      customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } }).then(function(r){ if (r.isConfirmed && d.url) location.href = d.url; });
+  }
   function recount(col){ var cards=col.querySelectorAll('.kanban-card'); var sum=0; cards.forEach(function(c){sum+=parseFloat(c.getAttribute('data-amount'))||0;});
     var wrap=col.closest('.card'); var cc=wrap.querySelector('.col-count'); if(cc)cc.textContent=cards.length; var cs=wrap.querySelector('.col-sum'); if(cs)cs.textContent=sum.toLocaleString(undefined,{maximumFractionDigits:0}); }
   var COLORS=['info','primary','warning','success','danger','secondary'];
@@ -129,7 +142,7 @@
       var body=new URLSearchParams(); body.set('id',id); body.set('stage',stage); body.set('__RequestVerificationToken',token);
       fetch(moveUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()})
         .then(function(r){return r.json();})
-        .then(function(d){ if(!d.ok){ src.appendChild(dragged); recount(col); recount(src); alert(d.error||'@Localizer["Move failed"]'); } })
+        .then(function(d){ if(!d.ok){ src.appendChild(dragged); recount(col); recount(src); refused(d); } })
         .catch(function(){ src.appendChild(dragged); recount(col); recount(src); });
     });
   });

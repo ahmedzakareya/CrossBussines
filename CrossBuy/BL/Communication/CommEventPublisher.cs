@@ -51,6 +51,11 @@ namespace CrossBuy.BL.Communication
         // Why the bridge did not run. Always populated when Bridged is false, so "the timeline is missing my
         // comment" has an answer that does not require reading this file.
         public string? BridgeSkipReason { get; init; }
+
+        // True when the bridge THREW and the isolated mode absorbed it. Distinct from a skip on purpose:
+        // a skip is a decision nothing should retry, a failure is a fault that replay must retry.
+        public bool BridgeFailed { get; init; }
+        public string? BridgeError { get; init; }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -177,7 +182,39 @@ namespace CrossBuy.BL.Communication
                     BridgeSkipReason = skipReason,
                 };
 
-            long? kernelEventId = await _bridge.ForwardAsync(commEvent, cancellationToken);
+            long? kernelEventId;
+            try
+            {
+                kernelEventId = await _bridge.ForwardAsync(commEvent, cancellationToken);
+            }
+            catch (Exception ex) when (!CommBridgeFailureMode.FailOperation.Equals(
+                                           _options.BridgeFailureMode, StringComparison.Ordinal))
+            {
+                // ISOLATION. The audit row above is already in this transaction and the comment is about to
+                // commit with it; only the kernel forward is abandoned. HM-D44 made the opposite choice and
+                // a missing BusinessEvents table rolled back a whole sale.
+                //
+                // The event is NOT lost. The audit row carries the payload, the DedupKey and the correlation
+                // id verbatim, so CommEventBridgeReplayService can re-offer it once the kernel is back —
+                // which is why isolation here does not trade a failed comment for a silently dropped event.
+                TryRecordBridgeFailure(commEvent, ex);
+
+                _log.LogError(ex,
+                    "Communication event {EventType} could not be bridged for {Code}#{Id}; the comment stands " +
+                    "and the event remains in the audit log for replay.",
+                    commEvent.EventType, commEvent.Entity.EntityCode, commEvent.Entity.EntityId);
+
+                return new CommPublishResult
+                {
+                    EventType = commEvent.EventType,
+                    Audited = true,
+                    Bridged = false,
+                    BridgeFailed = true,
+                    BridgeError = ex.Message,
+                    BridgeSkipReason = "the kernel bridge failed and the isolated mode absorbed it; " +
+                                       "the event stays in the audit log for replay.",
+                };
+            }
 
             if (kernelEventId == null)
                 return new CommPublishResult
@@ -222,6 +259,52 @@ namespace CrossBuy.BL.Communication
                     "Publish from inside a CommTransaction.");
 
             return (true, null);
+        }
+
+        // NOTHING HERE MAY THROW. CommAuditWriter.Append refuses an unknown action, a detail over its
+        // 8 KB budget, or one containing a key such as "body": — and a refusal raised from inside the
+        // isolation path would re-couple the very operation this exists to protect. Losing the breadcrumb
+        // is bad; losing the user's comment to a fault in the code meant to save it is worse.
+        private void TryRecordBridgeFailure(CommEvent commEvent, Exception failure)
+        {
+            try
+            {
+                _audit.Append(new CommAuditRequest
+                {
+                    Action = CommAuditActions.BridgeFailed,
+                    EventType = commEvent.EventType,
+                    Entity = commEvent.Entity,
+                    CompanyId = commEvent.CompanyId,
+                    BranchId = commEvent.BranchId,
+                    ThreadId = commEvent.ThreadId,
+                    CommentId = commEvent.CommentId,
+                    MentionId = commEvent.MentionId,
+                    ActorEmployeeId = commEvent.ActorEmployeeId,
+                    Visibility = commEvent.Visibility,
+                    Detail = new { error = failure.GetType().Name, message = SafeMessage(failure.Message) },
+                    CorrelationId = commEvent.CorrelationId,
+
+                    // No DedupKey: the event's own key already belongs to the row written above it, and
+                    // reusing it here would collide on the audit table's per-company uniqueness.
+                    OccurredAt = commEvent.OccurredAt,
+                });
+            }
+            catch (Exception recordFailure)
+            {
+                _log.LogError(recordFailure,
+                    "Could not even record the bridge failure for {EventType}; the comment still stands.",
+                    commEvent.EventType);
+            }
+        }
+
+        // A provider message is arbitrary text. Quotes are flattened before it goes anywhere near the audit
+        // writer's forbidden-key check, so a kernel error that happens to quote a payload cannot spell
+        // "body": and take the whole operation down with it.
+        private static string SafeMessage(string? message)
+        {
+            if (string.IsNullOrEmpty(message)) return "";
+            var safe = message.Replace('"', '\'');
+            return safe.Length <= 512 ? safe : safe[..512] + "…";
         }
     }
 

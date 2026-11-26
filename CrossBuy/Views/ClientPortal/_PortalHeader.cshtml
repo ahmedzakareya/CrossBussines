@@ -24,6 +24,8 @@
     // Updates entry. Without this the menu goes blank the moment a customer opens a thread, which
     // reads as "you have navigated out of the portal" rather than "you are one level deeper".
     if (string.Equals(section, "Conversation", StringComparison.OrdinalIgnoreCase)) section = "Updates";
+    // CRM C8: one request and one help article are pages within Support
+    if (section is "SupportRequest" or "HelpArticle" or "OpenRequest") section = "Support";
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
 
     // The portal identity, resolved from the signed-in principal alone — the same accessor every
@@ -74,8 +76,8 @@
 							   On a phone only the mark is shown — the wordmark is 4.9:1 wide and would eat
 							   the header — which is the same two-slot pattern the theme uses. *@
 							<a href="@Url.Action("Index", "ClientPortal")">
-								<img alt="CrossBuy" src="/Backend-assets/media/brand/crossbuy-mark.png" class="h-30px d-lg-none" asp-append-version="true" />
-								<img alt="CrossBuy" src="/Backend-assets/media/brand/crossbuy-logo-lockup.png" class="h-30px d-none d-lg-inline" asp-append-version="true" />
+								<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.Icon)" class="h-30px d-lg-none" asp-append-version="true" />
+								<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight)" class="h-30px d-none d-lg-inline" asp-append-version="true" />
 							</a>
 						</div>
 						<!--end::Logo-->
@@ -99,6 +101,7 @@
         ("Invoices",   "الفواتير والمدفوعات",  "Invoices & Payments"),
         ("Updates",    "المستجدات",            "Updates"),
         ("Documents",  "مستنداتي",             "My Documents"),
+        ("Support",    "الدعم",                "Support"),
     };
 }
 @foreach (var s in sections)

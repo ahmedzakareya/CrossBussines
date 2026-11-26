@@ -76,7 +76,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"سطور فواتير الشراء المرحَّلة: المبلغ والكمية، حسب الصنف أو المورد أو الشهر",
-			"Posted purchase invoice lines: amount and quantity, by item, vendor or month");
+			"Posted purchase invoice lines: amount and quantity, by item, vendor or month",
+			"Lignes de factures d'achat validées : montant et quantité, par article, fournisseur ou mois");
 
 		public override AskText Rules => AskText.Of(
 			"فواتير شراء مرحَّلة فقط (المسودات غير مشمولة) · كل المبالغ محوَّلة إلى العملة الأساسية "
@@ -85,15 +86,22 @@ namespace CrossBuy.BL.Platform.Ai
 			"Posted purchase invoices only (drafts excluded) · every amount converted to the base "
 			+ "currency at its own invoice's rate · a line with no catalogue item is shown under the "
 			+ "description written on it, marked as such, and is never dropped · a purchase has no "
-			+ "profit margin.");
+			+ "profit margin.",
+			"Factures d'achat validées uniquement (brouillons exclus) · montants convertis dans la devise de "
+			+ "base au taux propre à chaque facture · toute ligne sans article du catalogue est conservée, "
+			+ "affichée avec sa description et identifiée comme telle · les achats n'ont pas de marge bénéficiaire.");
 
 		/// Marks a label that came from the line's own text rather than from the item catalogue.
 		/// Shown so a reader can tell a real item from a typed description at a glance.
 		public static string Described(string text, bool arabic) =>
-			arabic ? text + " (وصف سطر)" : text + " (line text)";
+			arabic ? text + " (وصف سطر)"
+				: CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr"
+					? text + " (texte de ligne)"
+					: text + " (line text)";
 
 		public static readonly string NoDescriptionAr = "(سطر بلا وصف)";
 		public static readonly string NoDescriptionEn = "(line with no description)";
+		public static readonly string NoDescriptionFr = "(ligne sans description)";
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
@@ -105,13 +113,13 @@ namespace CrossBuy.BL.Platform.Ai
 			// runs, the buying verb has already done its job — it is what routed the question to this
 			// surface at all — so leaving it attached to a column lets it vote twice, and the second
 			// vote is always noise.
-			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item"),
+			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item", "Article"),
 				Synonyms = new[] { "صنف", "اصناف", "الاصناف", "بضاعة", "البضاعة",
 					"منتج", "منتجات", "المنتجات",
 					"item", "items", "product", "products", "sku", "goods" } },
-			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code"),
+			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code", "Code article"),
 				Synonyms = new[] { "كود", "الكود", "code", "item code" } },
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category", "Catégorie"),
 				Synonyms = new[] { "فئة", "فئات", "الفئات", "تصنيف", "التصنيف", "تصنيفات", "التصنيفات",
 					"مجموعة", "المجموعات", "قسم", "الاقسام",
 					"category", "categories", "item category", "group", "groups", "classification" } },
@@ -125,26 +133,26 @@ namespace CrossBuy.BL.Platform.Ai
 			// no other person a question can be about — there is no customer here — so "مين" resolves
 			// to the vendor without ambiguity. The same word on the sales surface would be a coin
 			// toss, and it is deliberately not claimed there.
-			new AskColumn { Name = "vendor", Kind = AskColumnKind.Dimension, Label = AskText.Of("المورد", "Vendor"),
+			new AskColumn { Name = "vendor", Kind = AskColumnKind.Dimension, Label = AskText.Of("المورد", "Vendor", "Fournisseur"),
 				Synonyms = new[] { "مورد", "موردين", "الموردين", "المورد", "موردينا", "تاجر", "بياع",
 					"من مين", "مين", "ممن", "من انهي", "جابنا", "بناخد من",
 					"vendor", "vendors", "supplier", "suppliers", "from whom", "who from", "who do we buy from" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "شهريا", "بالشهر",
 					"month", "monthly", "months", "per month", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
-			new AskColumn { Name = "invoice", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفاتورة", "Invoice"),
+			new AskColumn { Name = "invoice", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفاتورة", "Invoice", "Facture"),
 				Synonyms = new[] { "فاتورة", "فواتير", "الفواتير", "invoice", "invoices", "bill", "bills" } },
 
-			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount"),
+			new AskColumn { Name = "amount", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("المبلغ", "Amount", "Montant"),
 				// Same reasoning as the item column: the bare buying verbs are surface words, not
 				// measure words, and are left out so they cannot outbid a dimension. "صرفنا" and
 				// "دفعنا" stay because they name money specifically rather than the act of buying.
 				Synonyms = new[] { "مبلغ", "المبلغ", "قيمة", "القيمة", "تكلفة", "التكلفة", "كلفة", "تكاليف",
 					"صرفنا", "دفعنا",
 					"amount", "spend", "spent", "cost", "purchase value", "paid" } },
-			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity"),
+			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity", "Quantité"),
 				Synonyms = new[] { "كمية", "الكمية", "كميات", "كميه", "عدد", "العدد", "قطع",
 					"quantity", "qty", "units", "volume", "count", "how many" } },
 		};
@@ -153,6 +161,7 @@ namespace CrossBuy.BL.Platform.Ai
 			AskScope scope, CancellationToken ct = default)
 		{
 			var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var french = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
 
 			var lines = await (
 				from l in _db.PurchaseInvoiceLines.AsNoTracking()
@@ -226,10 +235,10 @@ namespace CrossBuy.BL.Platform.Ai
 						arabic ? l.ItemDescription : l.ItemDescriptionEn,
 						arabic ? l.ItemDescriptionEn : l.ItemDescription);
 					itemLabel = string.IsNullOrWhiteSpace(text)
-						? (arabic ? NoDescriptionAr : NoDescriptionEn)
+						? (arabic ? NoDescriptionAr : french ? NoDescriptionFr : NoDescriptionEn)
 						: Described(text!, arabic);
 					itemCode = null;
-					categoryLabel = arabic ? "(ليس صنفًا من الكتالوج)" : "(not a catalogue item)";
+					categoryLabel = arabic ? "(ليس صنفًا من الكتالوج)" : french ? "(article hors catalogue)" : "(not a catalogue item)";
 				}
 
 				vendors.TryGetValue(l.VendorId, out var ven);

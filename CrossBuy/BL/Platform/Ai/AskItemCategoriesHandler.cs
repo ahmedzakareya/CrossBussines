@@ -41,9 +41,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"فئات الأصناف المسجَّلة وعدد الأصناف في كل فئة",
-			"The registered item categories and how many items are in each");
+			"The registered item categories and how many items are in each",
+			"Les catégories d'articles enregistrées et le nombre d'articles dans chacune");
 
-		public AskText Example => AskText.Of("إيه فئات الأصناف اللي عندنا؟", "What item categories do we have?");
+		public AskText Example => AskText.Of("إيه فئات الأصناف اللي عندنا؟", "What item categories do we have?", "Quelles catégories d'articles avons-nous ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

@@ -286,6 +286,36 @@ namespace CrossBuy.Tests
 
         // A non-pilot entity is untouched. The guard and the read filter cover exactly the same twelve, so nothing
         // is half-isolated — a write guard without a read filter would be the most confusing possible state.
+        // PROOF THAT THE WIDENED GUARD ACTUALLY BITES, not merely that the derivation agrees with
+        // itself. ConstructionCompanyPolicy declares HasQueryFilter beside its own entity and was
+        // never in the hand-written PilotEntities array, so until 2026-11-10 the write guard SKIPPED
+        // it: a caller scoped to company 1 could not READ another company's policy but nothing
+        // stopped them WRITING one. That is the half-isolated state the pilot comment calls the most
+        // confusing possible, and it was true for 27 entities.
+        //
+        // A company policy is the right subject for the proof: it is the row that decides what the
+        // company is allowed to do, so writing one across a tenant boundary is the worst version of
+        // the defect rather than a harmless one.
+        [Fact]
+        public async Task A_model_filtered_entity_outside_the_old_pilot_list_is_guarded_on_write()
+        {
+            using var host = new PlatformTestHost(companyId: 1);
+
+            host.Db.Set<CrossBuy.Models.Context.Construction.ConstructionCompanyPolicy>().Add(
+                new CrossBuy.Models.Context.Construction.ConstructionCompanyPolicy
+                {
+                    CompanyID = 2, PolicyKey = "cross-tenant-probe", Mode = "Strict",
+                    Reason = "written by a caller scoped to company 1", UpdatedBy = 1,
+                    UpdatedAt = DateTime.UtcNow,
+                });
+
+            var denied = await Assert.ThrowsAsync<CompanyWriteDeniedException>(
+                () => host.Db.SaveChangesAsync());
+
+            // The refusal must NAME the company it refused for, or an operator reading the log cannot
+            // tell a tenancy refusal from any other failed save.
+            Assert.Contains("2", denied.Message, StringComparison.Ordinal);
+        }
         [Fact]
         public async Task A_non_pilot_entity_is_not_guarded()
         {
@@ -311,8 +341,24 @@ namespace CrossBuy.Tests
                 .Where(t => t.GetQueryFilter() != null)
                 .Select(t => t.ClrType.Name);
 
-            Assert.All(filtered, name => Assert.True(CompanyQueryFilters.IsPilotEntity(name)));
-            Assert.All(CompanyQueryFilters.PilotEntities, name => Assert.True(CompanyQueryFilters.IsPilotEntity(name)));
+            // FILTERED MINUS EXCLUDED == GUARDED, and it is not a tautology in either direction: an exclusion
+            // has to be added on purpose, and the second assertion refuses to let the guard claim an entity the
+            // model does not filter - a write guard with no read filter behind it is the same half-isolated
+            // state as the reverse, which is what this test caught on 2026-11-10 for 30 Construction entities.
+            var all = host.Db.Model.GetEntityTypes().ToList();
+            var filteredTypes = all.Where(t => t.GetQueryFilter() != null).ToList();
+            Assert.NotEmpty(filteredTypes);   // positive control
+
+            foreach (var t in filteredTypes)
+            {
+                var isExcluded = CompanyQueryFilters.GuardExclusions.Any(x => x.Entity == t.ClrType.Name);
+                Assert.True(CompanyQueryFilters.IsGuarded(t) == !isExcluded,
+                    $"{t.ClrType.Name} is read-filtered; guarded={CompanyQueryFilters.IsGuarded(t)}, excluded={isExcluded}.");
+            }
+
+            foreach (var t in all.Where(t => t.GetQueryFilter() == null))
+                Assert.False(CompanyQueryFilters.IsGuarded(t),
+                    $"{t.ClrType.Name} is write-guarded with no read filter behind it.");
         }
 
         // ---- helpers --------------------------------------------------------------------------------------

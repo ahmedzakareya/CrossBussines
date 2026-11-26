@@ -23,10 +23,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن طلبات المعمل: العدد وفين وصلت وزمن التنفيذ، والنتايج الحرجة واللي لسه محدش استلمها",
-			"Any question about laboratory orders: the count, the stage, the turnaround, and the critical results including any not yet acknowledged");
+			"Any question about laboratory orders: the count, the stage, the turnaround, and the critical results including any not yet acknowledged",
+			"Questions sur les demandes du laboratoire : nombre, avancement, délai de traitement et résultats critiques non encore consultés");
 
 		public override AskText Example => AskText.Of(
-			"في نتايج تحاليل حرجة محدش استلمها", "Are there critical lab results nobody has acknowledged");
+			"في نتايج تحاليل حرجة محدش استلمها", "Are there critical lab results nobody has acknowledged", "Existe-t-il des résultats d'analyse critiques qui n'ont pas encore été consultés ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

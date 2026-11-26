@@ -22,18 +22,48 @@
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Settings"]</div></div>
             <div class="card-body">
-                <form asp-action="SaveCrmSettings" method="post" class="row g-4 align-items-end" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save settings?"]">@Html.AntiForgeryToken()
-                    <div class="col-md-4"><div class="form-check form-switch"><input type="hidden" name="autoRouteLeads" value="false" /><input class="form-check-input" type="checkbox" name="autoRouteLeads" value="true" id="route" @(st.AutoRouteLeads ? "checked" : "")><label class="form-check-label fw-semibold ms-1 fs-7" for="route">@Localizer["Auto-route leads (round-robin to reps)"]</label></div></div>
-                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Hot threshold"]</label><input type="number" name="hotScore" class="form-control form-control-solid" value="@st.HotScore" /></div>
-                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Warm threshold"]</label><input type="number" name="warmScore" class="form-control form-control-solid" value="@st.WarmScore" /></div>
-                    <div class="col-md-2 d-flex"><button class="btn btn-primary w-100"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+                @* THE SETTINGS ROW.
+
+                   Three faults, none of them about colour:
+
+                     1. THE SAVE BUTTON WAS STRETCHED. Its column carried `d-flex` and the button
+                        `w-100`; a flex child with no `align-items` stretches to the full height of
+                        the row, so the button grew to the height of label+input beside it. Removing
+                        `d-flex` lets `align-items-end` do what it was already there to do.
+                     2. THE SWITCH HAD NO LABEL LINE, so under `align-items-end` it aligned its own
+                        bottom against inputs that sit one label lower, and its long caption wrapped
+                        at a different height again. It gets the same label-over-control shape as
+                        its neighbours, and the caption shortens to the setting's name.
+                     3. THE HELP LINE SAT OUTSIDE THE GRID, after the form, where it had nothing to
+                        align to and was clipped by the card edge. It is a full-width row item now,
+                        so it cannot escape the layout. *@
+                <form asp-action="SaveCrmSettings" method="post" class="row g-5 align-items-end" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save settings?"]">@Html.AntiForgeryToken()
+                    <div class="col-md-4">
+                        <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Lead routing"]</label>
+                        <div class="form-check form-switch form-check-custom form-check-solid h-40px d-flex align-items-center">
+                            
+                            <input class="form-check-input" type="checkbox" name="autoRouteLeads" value="true" id="route" @(st.AutoRouteLeads ? "checked" : "")><input type="hidden" name="autoRouteLeads" value="false" />
+                            <label class="form-check-label fw-semibold fs-7 ms-3" for="route">@Localizer["Auto-route leads (round-robin to reps)"]</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Hot threshold"]</label>
+                        <input type="number" name="hotScore" class="form-control form-control-solid" value="@st.HotScore" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Warm threshold"]</label>
+                        <input type="number" name="warmScore" class="form-control form-control-solid" value="@st.WarmScore" />
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted fs-8">@Localizer["Score ≥ Hot = hot, ≥ Warm = warm, otherwise cold."]</div>
+                    </div>
                 </form>
-                <div class="text-muted fs-8 mt-2">@Localizer["Score ≥ Hot = hot, ≥ Warm = warm, otherwise cold."]</div>
             </div>
         </div>
 
@@ -54,7 +84,7 @@
                                 <select name="operator" id="r_op" class="form-select form-select-solid">@foreach (var o in ops) { <option value="@o.Item1">@o.Item2</option> }</select></div>
                             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Value"]</label><input name="value" id="r_value" class="form-control form-control-solid" /></div>
                             <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Points"]</label><input type="number" name="points" id="r_points" class="form-control form-control-solid" value="10" /></div>
-                            <div class="col-md-6 d-flex align-items-center"><div class="form-check form-switch mt-6"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" id="r_active" value="true" checked><label class="form-check-label fw-semibold ms-1 fs-7" for="r_active">@SR["Active"]</label></div></div>
+                            <div class="col-md-6 d-flex align-items-center"><div class="form-check form-switch mt-6"><input class="form-check-input" type="checkbox" name="isActive" id="r_active" value="true" checked><input type="hidden" name="isActive" value="false" /><label class="form-check-label fw-semibold ms-1 fs-7" for="r_active">@SR["Active"]</label></div></div>
                             <div class="col-12 d-flex justify-content-end gap-2"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button></div>
                         </form>
                     </div>

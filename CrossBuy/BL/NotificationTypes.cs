@@ -26,6 +26,7 @@ namespace CrossBuy.BL
         public const string CrmReminder = "crm_reminder";
         public const string CrmAssigned = "crm_assigned";
         public const string CrmTicket = "crm_ticket";
+        public const string CrmCallRouted = "crm_call_routed";
         // ----- Chat (P3) -----
         public const string ChatMessage = "chat_message";
         public const string ChatMention = "chat_mention";
@@ -59,6 +60,9 @@ namespace CrossBuy.BL
             "inventory_approval" or "InventoryApproval" => ("Inventory", "ki-check-square", nameof(Prio.High)),
             "integrity" or "Integrity" => ("Governance", "ki-shield-tick", nameof(Prio.Critical)),
             "opportunity_won" or "crm_reminder" or "crm-reminder" or "crm_automation" or "crm_assigned" or "crm_ticket" => ("CRM", "ki-notification-status", nameof(Prio.Normal)),
+            // A call handed to a department is someone waiting on the other end of a phone,
+            // which is why it carries a phone icon and High rather than the CRM default.
+            "crm_call_routed" => ("CRM", "ki-phone", nameof(Prio.High)),
             "chat_message" or "chat_mention" => ("Chat", "ki-message-text-2", nameof(Prio.Normal)),
             "chat_added" or "chat_removed" => ("Chat", "ki-people", nameof(Prio.Normal)),
             "announcement" => ("Announcement", "ki-notification-bing", nameof(Prio.High)),
@@ -69,6 +73,47 @@ namespace CrossBuy.BL
             "work_order_completed" => ("Manufacturing", "ki-check-circle", nameof(Prio.Normal)),
             _ => ("General", "ki-notification-status", nameof(Prio.Normal)),
         };
+
+        // A CATEGORY KEY IS STORAGE, NOT DISPLAY. The bell printed the key itself, so an Arabic
+        // dashboard showed "Governance" and "Hospital". The key is also what NotificationCategories
+        // colours off, so this returns a SEPARATE label: translating the key in place would make
+        // every badge fall through to the default colour.
+        // Three languages on purpose - the payload beside this already carries bodyEn and bodyFr.
+        private static readonly System.Collections.Generic.Dictionary<string, (string Ar, string En, string Fr)> CategoryNames
+            = new(System.StringComparer.OrdinalIgnoreCase)
+        {
+            ["Tasks"] = ("المهام", "Tasks", "Tâches"),
+            ["Calendar"] = ("التقويم", "Calendar", "Calendrier"),
+            ["Mail"] = ("البريد", "Mail", "Courrier"),
+            ["HR"] = ("الموارد البشرية", "HR", "RH"),
+            ["CRM"] = ("إدارة العلاقات", "CRM", "CRM"),
+            ["Sales"] = ("المبيعات", "Sales", "Ventes"),
+            ["Accounting"] = ("المحاسبة", "Accounting", "Comptabilité"),
+            ["Inventory"] = ("المخزون", "Inventory", "Stock"),
+            ["Purchasing"] = ("المشتريات", "Purchasing", "Achats"),
+            ["Announcement"] = ("الإعلانات", "Announcement", "Annonces"),
+            ["Governance"] = ("الحوكمة", "Governance", "Gouvernance"),
+            ["Chat"] = ("المحادثات", "Chat", "Messagerie"),
+            ["Comments"] = ("التعليقات", "Comments", "Commentaires"),
+            ["Manufacturing"] = ("التصنيع", "Manufacturing", "Fabrication"),
+            ["Hospital"] = ("المستشفى", "Hospital", "Hôpital"),
+            ["General"] = ("عام", "General", "Général"),
+        };
+
+        // An unrecognised key returns ITSELF rather than "" - a category nobody has named yet must
+        // look wrong on the screen, not vanish from it.
+        public static string CategoryLabel(string? category)
+        {
+            var key = (category ?? "").Trim();
+            if (key.Length == 0) { return ""; }
+            if (!CategoryNames.TryGetValue(key, out var n)) { return key; }
+            return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName switch
+            {
+                "ar" => n.Ar,
+                "fr" => n.Fr,
+                _ => n.En,
+            };
+        }
 
         // Central click-through target. refId meaning is per-type (doc id / customer id / conversation id …).
         // Returns null when there is no sensible destination (caller-supplied url wins over this anyway).
@@ -87,7 +132,11 @@ namespace CrossBuy.BL
             "credit_block" => "/Accounting/Customers",
             "opportunity_won" => "/Crm/Opportunities",
             "crm_reminder" or "crm-reminder" or "crm_automation" => "/Crm/Index",
-            "crm_ticket" => "/Crm/Tickets",
+            // THE RECORD, NOT THE LIST. The id is right there in refId, and landing someone on a
+            // list to hunt for the thing they were just told about is the notification failing at
+            // the last step - the one the reader actually experiences.
+            "crm_ticket" => refId.HasValue ? $"/Crm/TicketEditor/{refId.Value}" : "/Crm/Tickets",
+            "crm_call_routed" => "/Crm/Calls",
             "integrity" or "Integrity" => "/Inventory/IntegrityReconciliation",
             "inventory_approval" or "InventoryApproval" => "/Inventory/Approvals",
             "chat_message" or "chat_mention" or "chat_added" => refId.HasValue ? $"/Chat?c={refId.Value}" : "/Chat",

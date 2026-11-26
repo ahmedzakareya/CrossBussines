@@ -1,0 +1,280 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Construction
+@using System.Globalization
+@using System.Text.Json
+@model ConstructionForecastPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    string L(string key) => SR["Construction.ForecastUi." + key].Value;
+    string A(decimal amount) => amount.ToString("0.########", CultureInfo.CurrentCulture);
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var culture = CultureInfo.CurrentCulture.Name;
+    var uiCulture = CultureInfo.CurrentUICulture.Name;
+}
+
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("Title")</h1>
+        <span class="text-muted fs-7"><bdi dir="ltr">@Model.Code</bdi> — @DisplayName.Of(Model.Name, Model.NameEn)</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Project" asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" class="btn btn-light-primary">@L("Budgets")</a>
+        <a href="@Url.Action("Projects", "Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@SR["Projects"]</a>
+    </div>
+</div></div>
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+        <i class="ki-outline ki-information-5 fs-2x text-primary me-4"></i>
+        <span class="fs-8 text-gray-700">@L("Explanation")</span>
+    </div>
+
+    @if (Model.Saved)
+    {
+        <div class="notice d-flex align-items-center bg-light-success rounded border-success border border-dashed p-4 mb-5" role="status">
+            <i class="ki-outline ki-information-5 fs-2 text-success me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L("Saved")</span>
+        </div>
+    }
+
+    @if (Model.Error != null)
+    {
+        var error = SR["Construction.ForecastUi.Error." + Model.Error];
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5" role="alert">
+            <i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@(error.IsResourceNotFound ? L("Error.General") : error.Value)</span>
+        </div>
+    }
+
+    @* A policy state, a read-only state and a missing baseline are instructions, not cautions.
+       The owner rejects amber for notices as well as controls, so they carry the primary kind. *@
+    @if (Model.PolicyMode != "ManualAuthorOwned")
+    {
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L(Model.PolicyMode == "Disabled" ? "Disabled" : "Unconfigured")</span>
+        </div>
+    }
+
+    @if (!Model.CanAuthor)
+    {
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L("ReadOnly")</span>
+        </div>
+    }
+
+    @if (Model.BaselineId == null)
+    {
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L("NoBaseline")</span>
+        </div>
+    }
+
+    @if (Model.Choices.Count > 1000)
+    {
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@L("DimensionLimit")</span>
+        </div>
+    }
+
+    @if (Model.CanAuthor && Model.PolicyMode == "ManualAuthorOwned" && Model.BaselineId != null && Model.Choices.Count is > 0 and <= 1000)
+    {
+        <section class="card mb-5" aria-labelledby="forecast-input-title">
+            <div class="card-header align-items-center">
+                <h2 class="card-title fs-5 m-0" id="forecast-input-title">@L("ManualInput")</h2>
+                <div class="card-toolbar"><span class="badge badge-light-primary fs-8" dir="ltr">@Model.CurrencyCode</span></div>
+            </div>
+            <div class="card-body">
+                <form asp-action="Preview" asp-route-projectId="@Model.ProjectId" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="requestId" value="@Model.RequestId" />
+                    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                        <span class="fw-semibold fs-7 text-gray-800">@L("InputNotice")</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                                <th>@L("Dimension")</th><th class="text-end">@L("Budget")</th><th style="width:220px">@L("Remaining")</th>
+                            </tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Model.Choices.Count; i++)
+                            {
+                                var row = Model.Choices[i];
+                                var estimate = Model.Estimates.FirstOrDefault(x => x.WbsNodeId == row.WbsNodeId && x.CostCodeId == row.CostCodeId);
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold"><bdi dir="ltr">@row.WbsCode</bdi> — @DisplayName.Of(row.WbsName, row.WbsNameEn)</div>
+                                        <div class="text-muted fs-8"><bdi dir="ltr">@row.CostCode</bdi> — @DisplayName.Of(row.CostName, row.CostNameEn)</div>
+                                    </td>
+                                    <td class="text-end" dir="ltr">@A(row.Budget)</td>
+                                    <td>
+                                        <input type="hidden" name="estimates[@i].WbsNodeId" value="@row.WbsNodeId" />
+                                        <input type="hidden" name="estimates[@i].CostCodeId" value="@row.CostCodeId" />
+                                        <label class="visually-hidden" for="forecast-@i">@L("Remaining") @row.WbsCode @row.CostCode</label>
+                                        <input id="forecast-@i" name="estimates[@i].RemainingCostIncludingCommitments" value="@(estimate == null ? "" : A(estimate.RemainingCostIncludingCommitments))" inputmode="decimal" dir="ltr" class="form-control form-control-solid text-end" required />
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-end mt-5"><button class="btn btn-primary" type="submit">@L("Preview")</button></div>
+                </form>
+            </div>
+        </section>
+    }
+
+    @if (Model.Preview is { Ok: true, Calculation: { } calculation } quote)
+    {
+        <section class="card mb-5" aria-labelledby="forecast-preview-title">
+            <div class="card-header align-items-center">
+                <h2 class="card-title fs-5 m-0" id="forecast-preview-title">@L("Preview")</h2>
+                <div class="card-toolbar"><span class="badge badge-light-primary fs-8" dir="ltr">@Model.CurrencyCode</span></div>
+            </div>
+            <div class="card-body">
+                @if (calculation.HasCommitmentWarning)
+                {
+                    <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5" role="status">
+                        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                        <span class="fw-semibold fs-7 text-gray-800">@L("CommitmentWarning")</span>
+                    </div>
+                }
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle">
+                        <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                            <th>@L("Dimension")</th><th class="text-end">@L("Actual")</th><th class="text-end">@L("Commitment")</th>
+                            <th class="text-end">@L("Remaining")</th><th class="text-end">@L("Eac")</th><th class="text-end">@L("Variance")</th>
+                        </tr></thead>
+                        <tbody>
+                        @foreach (var row in calculation.Lines!)
+                        {
+                            <tr>
+                                <td dir="ltr">@row.WbsNodeId / @row.CostCodeId</td>
+                                <td class="text-end" dir="ltr">@A(row.Actual)</td>
+                                <td class="text-end" dir="ltr">@A(row.Commitment)</td>
+                                <td class="text-end" dir="ltr">@A(row.RemainingCostIncludingCommitments)</td>
+                                <td class="text-end" dir="ltr">@A(row.EstimateAtCompletion)</td>
+                                <td class="text-end" dir="ltr">@A(row.BudgetVariance)</td>
+                            </tr>
+                        }
+                        </tbody>
+                        <tfoot><tr class="fw-bold">
+                            <th colspan="4">@L("Total")</th>
+                            <td class="text-end" dir="ltr">@A(calculation.EstimateAtCompletion!.Value)</td>
+                            <td class="text-end" dir="ltr">@A(calculation.BudgetVariance!.Value)</td>
+                        </tr></tfoot>
+                    </table>
+                </div>
+                <div class="separator separator-dashed my-5"></div>
+                <form asp-action="Save" asp-route-projectId="@Model.ProjectId" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="requestId" value="@Model.RequestId" />
+                    <input type="hidden" name="witness" value="@quote.Witness" />
+                    <input type="hidden" name="previousSnapshotId" value="@Model.PreviousSnapshotId" />
+                    @for (var i = 0; i < Model.Estimates.Count; i++)
+                    {
+                        var row = Model.Estimates[i];
+                        <input type="hidden" name="estimates[@i].WbsNodeId" value="@row.WbsNodeId" />
+                        <input type="hidden" name="estimates[@i].CostCodeId" value="@row.CostCodeId" />
+                        <input type="hidden" name="estimates[@i].RemainingCostIncludingCommitments" value="@A(row.RemainingCostIncludingCommitments)" />
+                    }
+                    <label class="form-label fw-semibold fs-7" for="forecast-reason">@L("Reason")</label>
+                    <textarea id="forecast-reason" name="reason" maxlength="1000" rows="2" required class="form-control form-control-solid mb-3"></textarea>
+                    <span class="text-muted fs-8 d-block mb-4">@L("SaveNotice")</span>
+                    <div class="d-flex justify-content-end"><button class="btn btn-primary" type="submit">@L("Save")</button></div>
+                </form>
+            </div>
+        </section>
+    }
+
+    <section class="card" aria-labelledby="forecast-history-title">
+        <div class="card-header align-items-center">
+            <h2 class="card-title fs-5 m-0" id="forecast-history-title">@L("History")</h2>
+            <div class="card-toolbar"><span class="badge badge-light-primary fs-8">@Model.History.Count</span></div>
+        </div>
+        <div class="card-body">
+            <span class="text-muted fs-8 d-block mb-4">@L("HistoryNotice")</span>
+            @if (Model.History.Count == 0)
+            {
+                <div class="text-center text-muted py-10">@L("NoHistory")</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle">
+                        <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                            <th>@L("Number")</th><th>@L("Author")</th><th>@L("Baseline")</th>
+                            <th class="text-end">@L("Eac")</th><th class="text-end">@L("Variance")</th><th>@L("Reason")</th><th>@L("Details")</th>
+                        </tr></thead>
+                        <tbody>
+                        @foreach (var snapshot in Model.History)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold" dir="ltr">@snapshot.ID</div>
+                                    <time class="text-muted fs-8" dir="ltr" datetime="@DateTime.SpecifyKind(snapshot.CreatedAt, DateTimeKind.Utc).ToString("o")">@snapshot.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.CurrentCulture) UTC</time>
+                                </td>
+                                <td dir="ltr">@snapshot.CreatedBy</td>
+                                <td>
+                                    <div dir="ltr">@snapshot.BudgetVersionId</div>
+                                    <div class="text-muted fs-8">@L("Previous"): <bdi dir="ltr">@(snapshot.PreviousSnapshotId?.ToString() ?? "—")</bdi></div>
+                                </td>
+                                <td class="text-end" dir="ltr">@A(snapshot.EstimateAtCompletion)</td>
+                                <td class="text-end" dir="ltr">@A(snapshot.BudgetVariance)</td>
+                                <td class="text-break">@snapshot.Reason</td>
+                                <td>
+                                    <details>
+                                        <summary class="text-primary">@L("Details")</summary>
+                                        <div class="text-muted fs-8 mt-2">@L("Method")<br />@L("CurrencyId"): <bdi dir="ltr">@snapshot.CurrencyId</bdi></div>
+                                        @if (snapshot.HasCommitmentWarning)
+                                        {
+                                            <div class="text-primary fs-8 mt-2">@L("CommitmentWarning")</div>
+                                        }
+                                        @{
+                                            IReadOnlyList<ConstructionForecastLine>? lines = null;
+                                            try { lines = JsonSerializer.Deserialize<List<ConstructionForecastLine>>(snapshot.SnapshotJson); }
+                                            catch (JsonException) { }
+                                        }
+                                        @if (lines == null)
+                                        {
+                                            <div class="text-muted fs-8 mt-2">@L("Error.General")</div>
+                                        }
+                                        else
+                                        {
+                                            <table class="table table-sm table-row-dashed align-middle mt-3">
+                                                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+                                                    <th>@L("Dimension")</th><th class="text-end">@L("Budget")</th><th class="text-end">@L("Actual")</th>
+                                                    <th class="text-end">@L("Commitment")</th><th class="text-end">@L("Remaining")</th>
+                                                </tr></thead>
+                                                <tbody>
+                                                @foreach (var line in lines)
+                                                {
+                                                    <tr>
+                                                        <td dir="ltr">@line.WbsNodeId / @line.CostCodeId</td>
+                                                        <td class="text-end" dir="ltr">@A(line.Budget)</td>
+                                                        <td class="text-end" dir="ltr">@A(line.Actual)</td>
+                                                        <td class="text-end" dir="ltr">@A(line.Commitment)</td>
+                                                        <td class="text-end" dir="ltr">@A(line.RemainingCostIncludingCommitments)</td>
+                                                    </tr>
+                                                }
+                                                </tbody>
+                                            </table>
+                                        }
+                                    </details>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+
+</div></div>

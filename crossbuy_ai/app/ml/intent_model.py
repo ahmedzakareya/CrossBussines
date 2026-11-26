@@ -144,20 +144,26 @@ class IntentModel:
         known = set(self.intents)
         return bool(requested) and all(r in known for r in requested)
 
-    def predict(self, question: str) -> Prediction:
+    def predict(self, question: str, allowed_intents: list[str] | tuple[str, ...] | None = None) -> Prediction:
         q = normalise(question)
         if not q:
             return Prediction(None, 0.0, ())
 
+        allowed = set(self.intents if allowed_intents is None else allowed_intents)
         row = self.pipeline.predict_proba([q])[0]
         pairs = sorted(zip(self._classes, (float(p) for p in row)),
                        key=lambda kv: (-kv[1], kv[0]))
-        ranked = tuple((k, round(v, 4)) for k, v in pairs if k != OUT_OF_SCOPE)
+        # The caller may have sent only its permission-filtered catalogue. Never expose hidden
+        # capabilities in the ranking, and never redirect a hidden top prediction to a weaker
+        # visible intent: that would turn authorization filtering into a wrong-answer generator.
+        ranked = tuple((k, round(v, 4)) for k, v in pairs
+                       if k != OUT_OF_SCOPE and k in allowed)
 
         top_class, top_p = pairs[0]
         runner_up = pairs[1][1] if len(pairs) > 1 else 0.0
 
-        if top_class == OUT_OF_SCOPE or top_p < self.floor or (top_p - runner_up) < self.margin:
+        if (top_class == OUT_OF_SCOPE or top_class not in allowed
+                or top_p < self.floor or (top_p - runner_up) < self.margin):
             # The confidence reported on a refusal is the best REAL intent's score, because that
             # is the number a caller can act on: it decides whether to offer the near misses.
             return Prediction(None, ranked[0][1] if ranked else 0.0, ranked)
@@ -165,9 +171,20 @@ class IntentModel:
 
 
 def save(model: Pipeline, floor: float, path: str = ARTIFACT) -> str:
+    """Publish a complete artifact atomically so serving never reads a partial retrain."""
     import joblib
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    joblib.dump({"pipeline": model, "floor": floor, "intents": INTENT_IDS}, path)
+    import tempfile
+
+    target_dir = os.path.dirname(os.path.abspath(path))
+    os.makedirs(target_dir, exist_ok=True)
+    fd, candidate = tempfile.mkstemp(prefix="intent-", suffix=".joblib.tmp", dir=target_dir)
+    os.close(fd)
+    try:
+        joblib.dump({"pipeline": model, "floor": floor, "intents": INTENT_IDS}, candidate)
+        os.replace(candidate, path)
+    finally:
+        if os.path.exists(candidate):
+            os.unlink(candidate)
     return path
 
 

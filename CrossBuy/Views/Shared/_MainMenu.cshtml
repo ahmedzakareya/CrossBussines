@@ -33,6 +33,25 @@
     // accounting management tier. Hiding a link the user could open is as wrong as showing one they cannot,
     // and a nav predicate that drifts from the filter produces both over time.
     bool canPlatformOps = CrossBuy.Models.PlatformOpsAttribute.IsAdmin(Context) || canAccManage;
+    // "chat" - the Communication Hub. ChatController carries NO module permission: its gate is
+    // [SessionValidation] plus MeAsync(), which refuses unless the RESOLVED business context names
+    // both a company and an employee. So this asks that same question rather than inventing a
+    // permission key that nothing enforces - the rule this file already states about platform-ops:
+    // a nav predicate that drifts from the filter produces both a hidden link the user could open
+    // and a visible one they cannot.
+    //
+    // FAIL CLOSED, unlike the module hooks above. Those hide a screen the user could still reach
+    // another way, so they default open; chat has no other way in and ChatController itself fails
+    // closed on an unresolved context. An external portal visitor has no EmployeeId and is refused
+    // here for the same reason the controller refuses them.
+    bool canChat = false;
+    try
+    {
+        var chatContexts = Context.RequestServices.GetService<CrossBuy.BL.Platform.IBusinessContextAccessor>();
+        var chatActor = chatContexts == null ? null : await chatContexts.TryGetCurrentAsync(Context.RequestAborted);
+        canChat = chatActor != null && chatActor.CompanyId > 0 && chatActor.EmployeeId is > 0;
+    }
+    catch { canChat = false; }
     // "report" — a row that opens ONE named report. The Reports Center lists every report in the catalogue,
     // but opening one is a separate, fail-closed decision: a report whose permission key is unmapped is
     // refused with 404 to avoid handing out a catalogue oracle (ReportsController.Viewer). So a menu row for
@@ -62,7 +81,27 @@
         && o.RouteValues is not null && i.RouteValues is not null
         && o.RouteValues.TryGetValue("id", out var a) && i.RouteValues.TryGetValue("id", out var b) && a == b);
 
-    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "platform-ops" => canPlatformOps, "report" => ReportVisible(i), _ => true };
+    bool canProjectBudgetView = false, canProjectBudgetManage = false, canConstructionPurchase = false, canProjectSiteReportRead = false;
+    if ((Model ?? new List<MenuCategory>()).SelectMany(c => c.Items).Any(i => i.Perm is "projects-budget-view" or "projects-budget-manage" or "construction-purchase" or "projects-sitereport-read"))
+    {
+        var projectAccess = Context.RequestServices.GetService<IProjectsAccessService>();
+        var contexts = Context.RequestServices.GetService<CrossBuy.BL.Platform.IBusinessContextAccessor>();
+        try
+        {
+            var actor = contexts == null ? null : await contexts.TryGetCurrentAsync(Context.RequestAborted);
+            if (actor != null && actor.IsAuthenticated && !actor.IsExternalPortal && projectAccess != null)
+            {
+                canProjectBudgetView = await projectAccess.CanAsync(actor, ProjectsActions.BudgetView, cancellationToken: Context.RequestAborted);
+                canProjectBudgetManage = await projectAccess.CanAsync(actor, ProjectsActions.BudgetManage, cancellationToken: Context.RequestAborted);
+                canProjectSiteReportRead = await projectAccess.CanAsync(actor, ProjectsActions.SiteReportRead, cancellationToken: Context.RequestAborted);
+                var inventory = InvAccess as CrossBuy.BL.Platform.IModuleAccessService;
+                canConstructionPurchase = canProjectBudgetManage && inventory != null && await inventory.CanAsync(actor, "purchase",
+                    new CrossBuy.Models.Platform.PermissionTarget { CompanyId = actor.CompanyId }, Context.RequestAborted);
+            }
+        }
+        catch { /* Navigation fails closed; destination services retain their independent authorization. */ }
+    }
+    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "platform-ops" => canPlatformOps, "report" => ReportVisible(i), "projects-budget-view" => canProjectBudgetView, "projects-budget-manage" => canProjectBudgetManage, "projects-sitereport-read" => canProjectSiteReportRead, "construction-purchase" => canConstructionPurchase, _ => true };
 
     // The URL a menu row points at. Route values go through Url.Action so the ROUTE decides whether each one
     // lands in the path (Reports/Viewer/{id}) or the query (Reports?favorites=true) - a URL assembled by hand
@@ -174,24 +213,18 @@
 @{
     // manufacturing screens live under /Inventory but are their own system — match all of their actions
     string[] manufSegs = { "/workorder", "/manufdashboard", "/workcenter", "/routing", "/productionplanning", "/plandetails", "/manufreports", "/newworkorder" };
-    bool isManufPath = manufSegs.Any(seg => path.Contains(seg));
-    var sysItems = new (string ar, string en, string url, string color, string key)[] {
-        ("Inventory", "Inventory", Url.Action("Index","Inventory") ?? "#", "#FBBF24", "inv"),
-        ("Manufacturing", "Manufacturing", Url.Action("ManufDashboard","Inventory") ?? "#", "#FDBA74", "manuf"),
-        ("Accounting", "Accounting", Url.Action("Index","Accounting") ?? "#", "#38BDF8", "acc"),
-        ("Administration", "Back-office", Url.Action("Index","Admin") ?? "#", "#22D3EE", "svc"),
-        ("Employees", "People", Url.Action("Dashboard","People") ?? "#", "#A8C5FF", "ppl"),
-        ("CRM", "CRM", Url.Action("Index","Crm") ?? "#", "#D8B4FE", "crm"),
-        ("Restaurant", "Restaurant", Url.Action("Dashboard","Pos") ?? "#", "#FDA4AF", "rest"),
-        ("Hypermarket", "Hypermarket", Url.Action("Dashboard","Hyper") ?? "#", "#F9A8D4", "hyper"),
-        ("Tasks", "Tasks", Url.Action("Index","Tasks") ?? "#", "#C4B5FD", "tasks"),
-        // Calendar is a system in its own right - three screens and its own sidebar (MainMenu.Calendar()) -
-        // but its ONLY way in was a single row buried in Back-office > General, so its Timeline and Resource
-        // View could not be found by anyone who did not already know they existed. Same array, same styling,
-        // same active rule as its neighbours: this is the switcher listing a system it had omitted.
-        ("التقويم", "Calendar", Url.Action("Index","Calendar") ?? "#", "#F0ABFC", "cal"),
-        ("المشاريع والمقاولات", "Projects & Contracting", Url.Action("Dashboard","Project") ?? "#", "#2DD4BF", "proj"),
-    };
+    // THE CONTROLLER SEGMENT HAS TO AGREE FIRST. These are matched with Contains so that the whole
+    // work-order family lights the system (workorders, workorderdetails, newworkorder, ...), but Contains
+    // matches ANYWHERE in the path: "/hospital/workorders" contains "/workorder", so the hospital work-order
+    // screen lit Manufacturing AND Hospital at once. Every manufacturing screen lives under /Inventory
+    // (SystemCatalog points the system at Inventory/ManufDashboard and there is no Manufacturing controller),
+    // so requiring that prefix removes the collision without narrowing the family.
+    bool inInventory = path == "/inventory" || path.StartsWith("/inventory/");
+    bool isManufPath = inInventory && manufSegs.Any(seg => path.Contains(seg));
+    // The systems come from ONE list, Models/Menu/SystemCatalog.cs, which the opening screen (/Portal/Choose)
+    // reads too. Order, labels, colours and keys are the ones this switcher always had.
+    var sysItems = CrossBuy.Models.Menu.SystemCatalog.Sidebar
+        .Select(s => (ar: s.NameAr, en: s.SidebarKey, url: Url.Action(s.Action, s.Controller) ?? "#", color: s.Dot, key: s.Key)).ToArray();
     string SysActive(string url, string key)
     {
         if (key == "manuf") return isManufPath ? "active" : "";
@@ -202,6 +235,7 @@
         if (key == "cal") return path.StartsWith("/calendar") ? "active" : "";
         if (key == "proj") return path.StartsWith("/project") ? "active" : "";   // Projects & Contracting system
         if (key == "hosp") return path.StartsWith("/hospital") ? "active" : "";
+        if (key == "chat") return path.StartsWith("/chat") ? "active" : "";   // Communication Hub
         var u = url.TrimEnd('/').ToLowerInvariant(); var seg = u.Replace("/index","").Replace("/dashboard","");
         if (key == "inv") return (!isManufPath && (path == u || path.StartsWith("/inventory"))) ? "active" : "";   // inventory ≠ manufacturing
         return (path == u || (seg.Length > 1 && path.StartsWith(seg))) ? "active" : "";
@@ -219,6 +253,10 @@
 </div>
 @foreach (var s in sysItems)
 {
+    @* The only gated row in the switcher. Every other system here is reachable by anyone who can see
+       the sidebar; chat refuses a caller it cannot resolve to an employee, so the row goes with it. *@
+    if (s.key == "chat" && !canChat) { continue; }
+
     var act = SysActive(s.url, s.key);
     <div class="menu-item px-3">
         <a class="menu-link cb-sys @act" href="@s.url">

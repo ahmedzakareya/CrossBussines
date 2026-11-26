@@ -83,7 +83,7 @@ namespace CrossBuy.BL.Platform
                 if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted)) continue;
 
                 var entityName = entry.Metadata.ClrType.Name;
-                if (!CompanyQueryFilters.IsPilotEntity(entityName)) continue;
+                if (!CompanyQueryFilters.IsGuarded(entry.Metadata)) continue;
 
                 var property = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "CompanyID");
                 if (property == null) continue;   // a pilot entity always has one; defensive, not expected
@@ -167,7 +167,7 @@ namespace CrossBuy.BL.Platform
         private static bool HasPilotWrite(CrossBuy.Models.Context.CrossDbContext db)
             => db.ChangeTracker.Entries().Any(e =>
                    e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
-                && CompanyQueryFilters.IsPilotEntity(e.Metadata.ClrType.Name));
+                && CompanyQueryFilters.IsGuarded(e.Metadata));
 
         private static int? ToCompanyId(object? value) => value switch
         {

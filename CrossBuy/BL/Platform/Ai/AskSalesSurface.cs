@@ -69,7 +69,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"سطور فواتير المبيعات المرحَّلة: الإيراد والتكلفة والهامش والكمية، حسب الصنف أو العميل أو الشهر",
-			"Posted sales invoice lines: revenue, cost, margin and quantity, by item, customer or month");
+			"Posted sales invoice lines: revenue, cost, margin and quantity, by item, customer or month",
+			"Lignes de factures de vente validées : chiffre d'affaires, coût, marge et quantité, par article, client ou mois");
 
 		public override AskText Rules => AskText.Of(
 			"فواتير مرحَّلة فقط (المسودات والفواتير الملغاة غير مشمولة) · كل المبالغ محوَّلة إلى العملة "
@@ -78,38 +79,43 @@ namespace CrossBuy.BL.Platform.Ai
 			"Posted invoices only (drafts and reversals excluded) · every amount converted to the base "
 			+ "currency at its own invoice's rate · lines with no item link are included and shown under "
 			+ "their own label · cost is the one recorded at the time of sale, and is unknown rather than "
-			+ "zero where none was recorded.");
+			+ "zero where none was recorded.",
+			"Factures validées uniquement (brouillons et extournes exclus) · montants convertis dans la devise "
+			+ "de base au taux propre à chaque facture · les lignes sans article associé sont conservées et "
+			+ "identifiées par leur libellé · le coût est celui enregistré lors de la vente et reste inconnu, "
+			+ "plutôt que nul, s'il n'a pas été saisi.");
 
 		public static readonly string NotLinkedAr = "(سطر غير مرتبط بصنف)";
 		public static readonly string NotLinkedEn = "(line with no item)";
+		public static readonly string NotLinkedFr = "(ligne sans article)";
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item"),
+			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item", "Article"),
 				Synonyms = new[] { "صنف", "اصناف", "الاصناف", "بضاعة", "البضاعة", "منتج", "منتجات", "المنتجات",
 					"item", "items", "product", "products", "sku", "goods" } },
-			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code"),
+			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code", "Code article"),
 				Synonyms = new[] { "كود", "الكود", "code", "item code" } },
 			// CATEGORY IS THE BEST-COVERED DIMENSION IN THE SYSTEM: 49 of them, every one of the 237
 			// active items carries one, and no corrupted names. It was also completely unreachable
 			// until now, so "المبيعات حسب الفئة" could not be asked at all.
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category", "Catégorie"),
 				Synonyms = new[] { "فئة", "فئات", "الفئات", "تصنيف", "التصنيف", "تصنيفات", "التصنيفات",
 					"مجموعة", "المجموعات", "قسم", "الاقسام",
 					"category", "categories", "product category", "item category", "group", "groups",
 					"classification" } },
-			new AskColumn { Name = "customer", Kind = AskColumnKind.Dimension, Label = AskText.Of("العميل", "Customer"),
+			new AskColumn { Name = "customer", Kind = AskColumnKind.Dimension, Label = AskText.Of("العميل", "Customer", "Client"),
 				Synonyms = new[] { "عميل", "عملاء", "العملاء", "زبون", "زباين", "الزباين", "زبائن",
 					"customer", "customers", "client", "clients", "account", "accounts", "buyer", "buyers" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "شهريا", "بالشهر",
 					"month", "monthly", "months", "per month", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
-			new AskColumn { Name = "invoice", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفاتورة", "Invoice"),
+			new AskColumn { Name = "invoice", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفاتورة", "Invoice", "Facture"),
 				Synonyms = new[] { "فاتورة", "فواتير", "الفواتير", "invoice", "invoices", "bill", "bills" } },
 
-			new AskColumn { Name = "revenue", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("الإيراد", "Revenue"),
+			new AskColumn { Name = "revenue", Kind = AskColumnKind.Measure, IsMoney = true, Label = AskText.Of("الإيراد", "Revenue", "Chiffre d'affaires"),
 				Synonyms = new[] { "ايراد", "الايراد", "ايرادات", "ايرادا", "ايراداً", "ايرادًا", "مبيعات", "المبيعات", "مبيعا", "مبيعاً", "مبيعًا", "بعنا", "بيعنا",
 					"مبيعاتنا", "دخل", "الدخل", "حصيلة", "فلوس", "revenue", "sales", "turnover", "income",
 					"sold", "money", "takings" } },
@@ -118,7 +124,7 @@ namespace CrossBuy.BL.Platform.Ai
 			// computes the third in their head, and the surface would have protected a name rather
 			// than a fact.
 			new AskColumn { Name = "cost", Kind = AskColumnKind.Measure, IsMoney = true, Nullable = true,
-				Action = CrossBuy.BL.AccountingActions.ProfitabilityReportRead, Label = AskText.Of("التكلفة", "Cost"),
+				Action = CrossBuy.BL.AccountingActions.ProfitabilityReportRead, Label = AskText.Of("التكلفة", "Cost", "Coût"),
 				Synonyms = new[] { "تكلفة", "التكلفة", "تكلفه", "كلفة", "تكاليف", "تكلفه", "تكلفةً", "كلفه", "اشترينا",
 					"cost", "costs", "cogs", "cost of goods", "purchase cost" } },
 			// WHAT THE COMPANY EARNED, NOT WHAT IT BILLED — the confidential tier, and accounting
@@ -126,10 +132,10 @@ namespace CrossBuy.BL.Platform.Ai
 			// that and neither holds this. The assistant was handing the margin on every invoice to
 			// anyone who could open a screen.
 			new AskColumn { Name = "margin", Kind = AskColumnKind.Measure, IsMoney = true, Nullable = true,
-				Action = CrossBuy.BL.AccountingActions.ProfitabilityReportRead, Label = AskText.Of("الهامش", "Margin"),
+				Action = CrossBuy.BL.AccountingActions.ProfitabilityReportRead, Label = AskText.Of("الهامش", "Margin", "Marge"),
 				Synonyms = new[] { "هامش", "الهامش", "ربح", "الربح", "ارباح", "مكسب", "بنكسب", "كسب",
 					"ربحية", "ربحا", "ربحًا", "مكسبا", "margin", "profit", "profitability", "gross margin", "markup", "earn" } },
-			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity"),
+			new AskColumn { Name = "qty", Kind = AskColumnKind.Measure, Label = AskText.Of("الكمية", "Quantity", "Quantité"),
 				Synonyms = new[] { "كمية", "الكمية", "كميات", "كميه", "عددا", "عدد", "العدد", "اتباع", "اتباعت", "قطع",
 					"quantity", "qty", "units", "volume", "count", "how many" } },
 		};
@@ -138,6 +144,7 @@ namespace CrossBuy.BL.Platform.Ai
 			AskScope scope, CancellationToken ct = default)
 		{
 			var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var french = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
 
 			var lines = await (
 				from l in _db.SalesInvoiceLines.AsNoTracking()
@@ -206,7 +213,7 @@ namespace CrossBuy.BL.Platform.Ai
 				// A LINE WITH NO ITEM HAS NO CATEGORY EITHER, and is labelled as such rather than
 				// swept into a blank group — 93.5% of revenue sits on these lines, so a category
 				// total that hid them would be describing six per cent of the money.
-				var categoryLabel = arabic ? NotLinkedAr : NotLinkedEn;
+				var categoryLabel = arabic ? NotLinkedAr : french ? NotLinkedFr : NotLinkedEn;
 				if (l.ItemId != null && items.TryGetValue(l.ItemId.Value, out var it))
 				{
 					itemLabel = AskItems.Readable(arabic ? it.Name : it.NameEn, arabic ? it.NameEn : it.Name)
@@ -217,7 +224,7 @@ namespace CrossBuy.BL.Platform.Ai
 						&& categories.TryGetValue(it.ItemCategoryId, out var cat)
 							? (AskItems.Readable(arabic ? cat.Name : cat.NameEn, arabic ? cat.NameEn : cat.Name)
 								?? ("#" + cat.ID))
-							: (arabic ? "(بلا فئة)" : "(no category)");
+							: (arabic ? "(بلا فئة)" : french ? "(sans catégorie)" : "(no category)");
 				}
 				else
 				{
@@ -237,8 +244,8 @@ namespace CrossBuy.BL.Platform.Ai
 						arabic ? l.ItemDescription : l.ItemDescriptionEn,
 						arabic ? l.ItemDescriptionEn : l.ItemDescription);
 					itemLabel = string.IsNullOrWhiteSpace(text)
-						? (arabic ? NotLinkedAr : NotLinkedEn)
-						: (arabic ? text + " (وصف سطر)" : text + " (line text)");
+						? (arabic ? NotLinkedAr : french ? NotLinkedFr : NotLinkedEn)
+						: (arabic ? text + " (وصف سطر)" : french ? text + " (texte de ligne)" : text + " (line text)");
 					itemCode = null;
 				}
 

@@ -29,6 +29,59 @@ namespace CrossBuy.Models.Communication
         // (e.g. an entity whose screen was found to leak a confidential note in a printed document).
         public List<string> BlockedEntityCodes { get; set; } = new();
 
+        // D-05: missing entity policy permits staff-only authoring, never public disclosure.
+        public Dictionary<string, CommEntityPrivacyPolicy> EntityPrivacyPolicies { get; set; }
+            = new(StringComparer.Ordinal)
+            {
+                // Existing Wave 3B-C external authority explicitly supports Quotation only.
+                ["Quotation"] = new()
+                {
+                    MaximumVisibility = CommVisibility.Public,
+                    ExternalPolicyReference = "CommExternalAccessPolicy.Quotation"
+                }
+            };
+
+        // Null durations retain history until an explicit policy is approved; no erasure runs here.
+        public Dictionary<string, CommEntityGovernancePolicy> EntityGovernancePolicies { get; set; }
+            = new(StringComparer.Ordinal);
+
+        public CommEntityGovernancePolicy GovernanceFor(string entityCode)
+        {
+            EntityGovernancePolicies.TryGetValue(entityCode, out var policy);
+            policy ??= new CommEntityGovernancePolicy();
+            policy.Validate();
+            return policy;
+        }
+
+        // Backend registrations, not configuration: a string in appsettings cannot invent an external authority.
+        private readonly Dictionary<string, string> _externalPolicyReferences = new(StringComparer.Ordinal)
+        { ["Quotation"] = "CommExternalAccessPolicy.Quotation" };
+
+        public CommunicationPlatformOptions RegisterExternalPolicy(string entityCode, string reference)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(entityCode);
+            ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+            _externalPolicyReferences[entityCode] = reference;
+            return this;
+        }
+
+        public bool MayAuthorVisibility(string entityCode, string visibility)
+        {
+            if (!CommVisibility.IsValid(visibility)) return false;
+            EntityPrivacyPolicies.TryGetValue(entityCode, out var policy);
+            string ceiling = policy?.MaximumVisibility ?? CommVisibility.Internal;
+            if (!CommVisibility.IsValid(ceiling)) return false;
+            if (ceiling == CommVisibility.Public)
+            {
+                // These records remain internal even when a deployment declares an external policy.
+                if (entityCode is "Employee" or "JournalEntry") return visibility != CommVisibility.Public;
+                if (string.IsNullOrWhiteSpace(policy?.ExternalPolicyReference) ||
+                    !_externalPolicyReferences.TryGetValue(entityCode, out var registeredReference) ||
+                    !string.Equals(registeredReference, policy.ExternalPolicyReference, StringComparison.Ordinal)) return false;
+            }
+            return CommVisibility.Rank(visibility) >= CommVisibility.Rank(ceiling);
+        }
+
         // ---- authoring limits (ADR-030 §9) ---------------------------------------------------------
 
         // Bytes of UTF-8, not characters — the storage limit is bytes and an Arabic body is ~2 bytes per
@@ -80,6 +133,12 @@ namespace CrossBuy.Models.Communication
 
         public int DispatchBatchSize { get; set; } = 50;
 
+        public bool RetireLegacyDocumentCommentWrites { get; set; } = false;
+
+        public bool NotificationWorkerEnabled { get; set; } = false;
+        public List<int> NotificationWorkerCompanyIds { get; set; } = new();
+        public int NotificationPollSeconds { get; set; } = 30;
+
         // Never notify the actor about their own action. Overridable because a "your comment was posted"
         // confirmation is a legitimate product choice on a slow connection.
         public bool ExcludeActorFromOwnNotifications { get; set; } = true;
@@ -101,6 +160,24 @@ namespace CrossBuy.Models.Communication
         // removed" is almost certainly not, and the kernel event log is destined to be the largest table
         // in the database (BusinessEventService's own payload comment).
         public List<string> BridgedEventTypes { get; set; } = new();
+
+        // What a bridge failure does to the user's operation. See CommBridgeFailureMode.
+        //
+        // Isolate is the DEFAULT, deliberately. The bridge itself is off by default, so no existing
+        // deployment changes behaviour — but the first deployment to switch it on gets the safe shape
+        // instead of the HM-D44 one, which is the opposite of how that coupling reached production.
+        public string BridgeFailureMode { get; set; } = CommBridgeFailureMode.Isolate;
+
+        // Re-offer bridgeable events the inline bridge could not deliver. OFF by default and, like the
+        // notification worker, refuses to start without an explicit positive company allow-list.
+        public bool BridgeReplayEnabled { get; set; } = false;
+        public List<int> BridgeReplayCompanyIds { get; set; } = new();
+
+        // How far back one replay pass looks. Bounded because this is a WINDOW SCAN, not a queue: the
+        // precise form is a nullable BridgedAt column on CommAuditEntries, which is a migration and is
+        // therefore recorded for the owner rather than taken here.
+        public int BridgeReplayLookbackHours { get; set; } = 24;
+        public int BridgeReplayPollSeconds { get; set; } = 60;
 
         // ---- read paths -----------------------------------------------------------------------------
 

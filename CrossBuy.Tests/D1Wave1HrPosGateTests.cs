@@ -58,7 +58,12 @@ namespace CrossBuy.Tests
                 B6TestWiring.Policies(host.Db),
                 NullLogger<HrAccessService>.Instance);
 
-        private static PosAccessService Pos(PlatformTestHost host) => new(host.Db);
+        // OPS-01 — follows the production change that retired `PosCompanyPolicy.CatalogCompanyId` and moved the
+        // catalogue company into configuration. The constant is NOT restored: the test now supplies the same
+        // options object the host binds from `Pos:CatalogCompanyId`, so it exercises the real code path rather
+        // than a compatibility shim. `PosCompanyOptions` carries the product default, so behaviour is unchanged.
+        private static PosAccessService Pos(PlatformTestHost host) =>
+            new(host.Db, Microsoft.Extensions.Options.Options.Create(new CrossBuy.Models.Platform.PosCompanyOptions()));
 
         private static AccountingAccessService Accounting(PlatformTestHost host, BusinessContext? ctx) =>
             new(host.Db, new HttpContextAccessor(),

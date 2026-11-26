@@ -37,6 +37,7 @@
     var taskId = root.getAttribute('data-task');
     var photos = {};          // employeeId -> photo, filled per load
     var loaded = false;
+    var loading = false;
 
     function esc(s) {
         var d = document.createElement('div');
@@ -130,41 +131,46 @@
     // Named cbLoadActivity because the detail screen's tab already calls it by that name. Idempotent:
     // a second call after a successful load does nothing, so a tab reopened five times fetches once.
     window.cbLoadActivity = function (force) {
-        if (loaded && !force) return;
-        fetch('/PlatformTimeline/List?entityType=Task&entityId=' + encodeURIComponent(taskId) + '&take=100')
+        if (loading || (loaded && !force)) return;
+        loading = true;
+        var url = '/Tasks/TaskActivity?taskId=' + encodeURIComponent(taskId) + '&take=100';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) {
-                // 403 is "not authorised to see this record's history" - saying that is not the same
-                // as showing an empty timeline, which reads as "nothing happened".
-                if (r.status === 403) return null;
-                return r.ok ? r.json() : [];
+                if (r.status === 403) return { denied: true };
+                if (r.status === 503) return { unavailable: true };
+                if (!r.ok) throw new Error('activity_request_failed');
+                return r.json();
             })
-            .then(function (rows) {
-                // Resolve the actors' photos FIRST, so the rows render once, already complete.
-                if (!rows || !rows.length) return rows;
-                var ids = [...new Set(rows.map(function (r) { return r.actorEmployeeId; })
-                                          .filter(Boolean))].join(',');
-                if (!ids) return rows;
+            .then(function (page) {
+                if (page.denied || page.unavailable) return page;
+                var rows = page.items || [];
+                var ids = [...new Set(rows.map(function (r) { return r.actorEmployeeId; }).filter(Boolean))].join(',');
+                if (!ids) return page;
                 return fetch('/Tasks/ActorAvatars?ids=' + encodeURIComponent(ids))
                     .then(function (r) { return r.ok ? r.json() : {}; })
-                    .then(function (map) { photos = map || {}; return rows; })
-                    .catch(function () { return rows; });
+                    .then(function (map) { Object.assign(photos, map || {}); return page; })
+                    .catch(function () { return page; });
             })
-            .then(function (rows) {
-                if (rows === null) {
-                    root.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("غير مصرّح بعرض سجل هذه المهمة", "You are not authorised to view this activity")</div>';
+            .then(function (page) {
+                if (page.denied || page.unavailable) {
+                    root.textContent = page.denied
+                        ? '@T("غير مصرّح بعرض سجل هذه المهمة", "You are not authorised to view this activity")'
+                        : '@T("سجل التواصل غير متاح في هذه البيئة", "Communication activity is unavailable in this environment")';
                     loaded = true; return;
                 }
-                if (!rows.length) {
-                    root.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا سجل بعد", "No activity yet")</div>';
-                    loaded = true; return;
-                }
-                root.innerHTML = rows.map(row).join('');
-                wireMore(root);          // decide the toggles once the rows are laid out
+                var rows = page.items || [];
+                root.innerHTML = '';
+                if (!rows.length) root.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا سجل بعد", "No activity yet")</div>';
+                root.insertAdjacentHTML('beforeend', rows.map(row).join(''));
+                if (page.degraded) root.insertAdjacentHTML('beforeend', '<div data-cbtl-degraded class="text-warning fs-7 py-3">@T("تعذّر تحميل بعض مصادر النشاط؛ السجل المعروض غير مكتمل", "Some activity sources could not be loaded; this history is incomplete")</div>');
+                if (page.nextBefore) root.insertAdjacentHTML('beforeend', '<div class="text-muted fs-7 py-3">@T("يُعرض أحدث 100 نشاط؛ توجد أنشطة أقدم غير معروضة", "Showing the latest 100 activities; older activity is not shown")</div>');
+                wireMore(root);
                 loaded = true;
             })
             .catch(function () {
                 root.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل السجل", "Could not load the activity")</div>';
-            });
+            })
+            .finally(function () { loading = false; });
     };
 
     // A pane that is already on screen loads itself; a hidden one waits for its tab. offsetParent

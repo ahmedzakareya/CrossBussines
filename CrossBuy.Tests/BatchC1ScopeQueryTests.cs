@@ -72,6 +72,10 @@ namespace CrossBuy.Tests
                 Interlocked.Increment(ref ConfiguredQueries);
                 return _inner.AnyConfiguredAsync(companyId, scope, cancellationToken);
             }
+
+            public Task<IReadOnlyList<int>> EmployeeIdsForRoleAsync(
+                int companyId, string scope, string role, CancellationToken cancellationToken = default)
+                => _inner.EmployeeIdsForRoleAsync(companyId, scope, role, cancellationToken);
         }
 
         // Counts hierarchy resolutions too: a per-row implementation would re-walk the org tree for every row,

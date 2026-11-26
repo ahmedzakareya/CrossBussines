@@ -24,7 +24,12 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveAsync(OfficialHoliday h)
 		{
 			if (string.IsNullOrWhiteSpace(h.NameAr)) return (false, "اسم العطلة مطلوب");
-			if (h.CompanyID <= 0) h.CompanyID = 1;
+			// A HOLIDAY WITH NO COMPANY IS A BUG IN THE CALLER, NOT A ROW TO BE ADOPTED.
+			// This used to read `if (h.CompanyID <= 0) h.CompanyID = 1;`, which silently wrote the
+			// row into company 1 - a tenant the caller never named and may not be able to see.
+			// OfficialHoliday sits outside CompanyQueryFilters, so nothing downstream would have
+			// caught it. Refusing is the only answer that cannot put a row in the wrong books.
+			if (h.CompanyID <= 0) return (false, "لم يتم تحديد الشركة");
 			if (h.ID == 0)
 			{
 				// prevent duplicate same-date holiday for the company

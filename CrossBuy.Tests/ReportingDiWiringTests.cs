@@ -3,6 +3,7 @@ using CrossBuy.BL.Reporting;
 using CrossBuy.Models.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using Xunit;
 
 namespace CrossBuy.Tests
@@ -329,5 +330,72 @@ namespace CrossBuy.Tests
                 CancellationToken cancellationToken = default) =>
                 Task.FromResult(ReportArtifact.FromText("x.pdf", ReportOutputFormat.Pdf, "x"));
         }
-    }
+    
+        // Walks up from the test assembly to the solution, the same way the other source-scanning
+        // guards in this suite do.
+        private static string RepoRoot()
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "CrossBuy.sln"))) dir = dir.Parent;
+            Assert.NotNull(dir);
+            return dir!.FullName;
+        }
+        // ==========================================================================================
+        // A ROLE-MAP ENTRY INSIDE A CLAIMED NAMESPACE IS DEAD POLICY
+        // ==========================================================================================
+
+        // ReportModulePermissionAdapter asks the module that claims the key's prefix and returns
+        // `decided ?? false` - it NEVER falls back to the role map inside a claimed namespace, and
+        // says so: "an unrecognised key inside a claimed namespace is a REFUSAL, not a fall-through".
+        //
+        // So a MapPermission line for a key whose prefix an authority claims can never be consulted.
+        // Found 2026-11-10: accounting.reports.view and accounting.reports.profitability are BOTH
+        // mapped in Program.cs and claimed by AccountingReportModuleAuthority. The roles listed there
+        // have no effect whatever, while the comment directly above them reads "Narrow these further,
+        // or widen them, by editing THESE lines" - so an operator tightening accounting report access
+        // by removing a role from that list would believe they had done it.
+        //
+        // Dead policy that LOOKS live is worse than no policy: nobody re-checks a line they have
+        // already edited. This fails until each such key is either unmapped or unclaimed.
+        [Fact]
+        public void No_mapped_permission_sits_inside_a_namespace_an_authority_already_claims()
+        {
+            var program = File.ReadAllText(Path.Combine(RepoRoot(), "CrossBuy", "Program.cs"));
+
+            // The prefixes really claimed, taken from the authorities themselves rather than a list.
+            var prefixes = typeof(IReportModuleAuthority).Assembly.GetTypes()
+                .Where(x => !x.IsAbstract && !x.IsInterface && typeof(IReportModuleAuthority).IsAssignableFrom(x))
+                .Select(x => x.GetProperty(nameof(IReportModuleAuthority.KeyPrefix)))
+                .Where(pi => pi != null)
+                .Select(pi => pi!.GetValue(System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(pi.DeclaringType!)) as string)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .Distinct()
+                .ToList();
+
+            Assert.NotEmpty(prefixes);   // positive control: the discovery itself works
+
+            // Every reporting permission constant in the platform, by value.
+            var keys = typeof(IReportModuleAuthority).Assembly.GetTypes()
+                .Where(x => x.IsAbstract && x.IsSealed && x.Name.Contains("ReportPermissions", StringComparison.Ordinal))
+                .SelectMany(x => x.GetFields(BindingFlags.Public | BindingFlags.Static))
+                .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+                .Select(f => new { Owner = f.DeclaringType!.Name, f.Name, Value = (string)f.GetRawConstantValue()! })
+                .Where(k => k.Value.Contains(".reports.", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.NotEmpty(keys);       // positive control
+
+            var dead = keys
+                .Where(k => prefixes.Any(pre => k.Value.StartsWith(pre!, StringComparison.Ordinal)))
+                .Where(k => program.Contains($"{k.Owner}.{k.Name}", StringComparison.Ordinal))
+                .Select(k => $"{k.Value} (mapped as {k.Owner}.{k.Name}, but its namespace is claimed)")
+                .ToList();
+
+            Assert.True(dead.Count == 0,
+                "These MapPermission entries can never be consulted - the module that claims the " +
+                "namespace decides first and the adapter never falls back. Either remove the mapping " +
+                "or stop claiming the namespace:" + Environment.NewLine + "  " +
+                string.Join(Environment.NewLine + "  ", dead));
+        }
+}
 }

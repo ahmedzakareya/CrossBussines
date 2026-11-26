@@ -1,4 +1,5 @@
 @using CrossBuy.Models.Context.Inventory
+@using CrossBuy.BL.Construction
 @model List<InventoryApproval>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
@@ -6,6 +7,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     int myEmp = ViewBag.MyEmpId ?? 0;
+    var constructionMoney = ViewBag.ConstructionApprovalMoney as IReadOnlyDictionary<int, ConstructionApprovalMoney> ?? new Dictionary<int, ConstructionApprovalMoney>();
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 
     // ---------------------------------------------------------------------------------------------
@@ -32,7 +34,9 @@
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
         var s = raw.Replace("\\", "/").Trim();
-        if (!s.Contains('.')) return null;
+        // A photo is either a file ("uploads/x.jpg") or the photo route ("/People/Photo/5?d=8&v=9" - what
+        // Employee.ProfileImage holds today, with no '.'). A bare placeholder like "-" is neither.
+        if (!s.Contains('.') && !s.Contains('/')) return null;
         if (!s.StartsWith("/")) s = "/" + s;
         return Url.Content("~" + s);
     }
@@ -79,7 +83,7 @@
         b.AppendHtml("</span></span>");
         return b;
     }
-    string docName(string d) => d switch { "PurchaseOrder" => Localizer["Purchase order"].Value, "StockTransfer" => Localizer["Inter-branch transfer"].Value, "StockCount" => Localizer["Stock count"].Value, _ => d };
+    string docName(string d) => d switch { "ConstructionPurchaseOrder" => SR["Construction purchase order"].Value, "PurchaseOrder" => Localizer["Purchase order"].Value, "StockTransfer" => Localizer["Inter-branch transfer"].Value, "StockCount" => Localizer["Stock count"].Value, _ => d };
     // brand-safe status styling (green approved / red rejected / amber-caution pending — no mint/yellow)
     string stStyle(string s) => s switch { "Approved" => "background:#E7F0FF;color:#0E4A9E;", "Rejected" => "background:#fdeaea;color:#d92d20;", _ => "background:#fef3e2;color:#b96a00;" };
     string stName(string s) => s switch { "Approved" => Localizer["Approved"].Value, "Rejected" => Localizer["Rejected"].Value, _ => Localizer["Pending"].Value };
@@ -105,7 +109,13 @@
                     {
                         <tr style="border-bottom:1px dashed #eef1f6;">
                             <td class="ps-4"><span class="fw-bold text-gray-900">@docName(a.DocType)</span>@if (a.ResultDocNo != null) { <span class="text-muted fs-7"> · @a.ResultDocNo</span> }</td>
-                            <td class="text-end fw-bold text-gray-800">@a.Amount.ToString("N2")</td>
+                            <td class="text-end fw-bold text-gray-800">
+                                @if (constructionMoney.TryGetValue(a.ID, out var money))
+                                { <span dir="ltr">@a.Amount.ToString("N" + money.Decimals) @money.CurrencyCode</span> }
+                                else if (a.DocType == ConstructionPurchaseApprovalService.DocumentType)
+                                { <span dir="ltr">@a.Amount.ToString("0.########")</span><span class="text-muted"> @SR["Currency information unavailable"]</span> }
+                                else { @a.Amount.ToString("N2") }
+                            </td>
                             <td>@person(a.RequestedByEmployeeId)</td>
                             <td class="text-muted">@(a.RequestedAt?.ToString("yyyy-MM-dd HH:mm"))</td>
                             <td class="text-center"><span class="badge fw-bold" style="@stStyle(a.Status)">@stName(a.Status)</span></td>

@@ -85,6 +85,7 @@
   <data name="Lines" xml:space="preserve">
     <value>بنود الفاتورة</value>
   </data>
+  <data name="Invoice lines" xml:space="preserve"><value>الأصناف والكميات والأسعار</value></data>
   <data name="Scan barcode + Enter" xml:space="preserve">
     <value>امسح الباركود ثم Enter</value>
   </data>
@@ -117,5 +118,29 @@
   </data>
   <data name="Add at least one line" xml:space="preserve">
     <value>أضف بندًا واحدًا على الأقل</value>
+  </data>
+  <data name="Incomplete lines" xml:space="preserve">
+    <value>بنود غير مكتملة</value>
+  </data>
+  <data name="Line {0}" xml:space="preserve">
+    <value>البند {0}</value>
+  </data>
+  <data name="Nothing was saved." xml:space="preserve">
+    <value>لم يُحفظ شيء.</value>
+  </data>
+  <data name="choose a revenue account" xml:space="preserve">
+    <value>اختر حساب إيراد</value>
+  </data>
+  <data name="choose an item or an expense account" xml:space="preserve">
+    <value>اختر صنفًا أو حساب مصروف</value>
+  </data>
+  <data name="enter a price" xml:space="preserve">
+    <value>أدخل السعر</value>
+  </data>
+  <data name="enter a quantity" xml:space="preserve">
+    <value>أدخل الكمية</value>
+  </data>
+  <data name="Copy from invoice" xml:space="preserve">
+    <value>نسخ من فاتورة</value>
   </data>
 </root>

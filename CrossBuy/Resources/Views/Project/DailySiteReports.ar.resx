@@ -1,0 +1,176 @@
+<root>
+  <data name="Daily site reports" xml:space="preserve"><value>تقارير الموقع اليومية</value></data>
+  <data name="Projects" xml:space="preserve"><value>المشاريع</value></data>
+  <data name="This report records site evidence. It does not post inventory or accounting entries." xml:space="preserve"><value>يسجل التقرير بيانات الموقع ولا ينشئ قيودًا مخزنية أو محاسبية.</value></data>
+  <data name="Create daily report" xml:space="preserve"><value>إنشاء تقرير يومي</value></data>
+  <data name="Create an active construction site before recording a report." xml:space="preserve"><value>أنشئ موقعًا إنشائيًا فعالًا قبل تسجيل التقرير.</value></data>
+  <data name="Site" xml:space="preserve"><value>الموقع</value></data>
+  <data name="Choose a site" xml:space="preserve"><value>اختر الموقع</value></data>
+  <data name="Report date" xml:space="preserve"><value>تاريخ التقرير</value></data>
+  <data name="Weather" xml:space="preserve"><value>الطقس</value></data>
+  <data name="Temperature °C" xml:space="preserve"><value>درجة الحرارة °م</value></data>
+  <data name="Work start" xml:space="preserve"><value>بداية العمل</value></data>
+  <data name="Work end" xml:space="preserve"><value>نهاية العمل</value></data>
+  <data name="Total working hours" xml:space="preserve"><value>إجمالي ساعات العمل</value></data>
+  <data name="Shifts" xml:space="preserve"><value>الورديات</value></data>
+  <data name="Rain stopped work" xml:space="preserve"><value>توقف العمل بسبب المطر</value></data>
+  <data name="Plan for next day" xml:space="preserve"><value>خطة اليوم التالي</value></data>
+  <data name="General remarks" xml:space="preserve"><value>ملاحظات عامة</value></data>
+  <data name="Save draft" xml:space="preserve"><value>حفظ كمسودة</value></data>
+  <data name="Reports" xml:space="preserve"><value>التقارير</value></data>
+  <data name="Status" xml:space="preserve"><value>الحالة</value></data>
+  <data name="Work hours" xml:space="preserve"><value>ساعات العمل</value></data>
+  <data name="Actions" xml:space="preserve"><value>الإجراءات</value></data>
+  <data name="No daily site reports yet." xml:space="preserve"><value>لا توجد تقارير يومية للموقع حتى الآن.</value></data>
+  <data name="Submitted for review" xml:space="preserve"><value>مرسل للمراجعة</value></data>
+  <data name="Submit" xml:space="preserve"><value>إرسال</value></data>
+  <data name="Review" xml:space="preserve"><value>مراجعة</value></data>
+  <data name="Approve" xml:space="preserve"><value>اعتماد</value></data>
+  <data name="Draft" xml:space="preserve"><value>مسودة</value></data>
+  <data name="Submitted" xml:space="preserve"><value>مرسل</value></data>
+  <data name="Reviewed" xml:space="preserve"><value>تمت المراجعة</value></data>
+  <data name="Approved" xml:space="preserve"><value>معتمد</value></data>
+  <data name="Saved" xml:space="preserve"><value>تم الحفظ</value></data>
+  <data name="InvalidReport" xml:space="preserve"><value>بيانات التقرير غير صحيحة.</value></data>
+  <data name="SiteNotAvailable" xml:space="preserve"><value>الموقع المحدد غير متاح.</value></data>
+  <data name="ReportAlreadyExists" xml:space="preserve"><value>يوجد تقرير لهذا الموقع والتاريخ بالفعل.</value></data>
+  <data name="InvalidTransition" xml:space="preserve"><value>إجراء سير العمل غير صالح.</value></data>
+  <data name="NotFound" xml:space="preserve"><value>لم يتم العثور على التقرير.</value></data>
+  <data name="ConcurrencyConflict" xml:space="preserve"><value>تغير التقرير. حدّث الصفحة ثم أعد المحاولة.</value></data>
+  <data name="SeparateReviewerRequired" xml:space="preserve"><value>لا يمكن لمنشئ التقرير مراجعة تقريره.</value></data>
+  <data name="SeparateApproverRequired" xml:space="preserve"><value>لا يمكن للمراجع اعتماد التقرير نفسه.</value></data>
+  <data name="ApprovedReportIsImmutable" xml:space="preserve"><value>لا يمكن تغيير التقرير بعد اعتماده.</value></data>
+  <data name="OnlyCreatorCanSubmit" xml:space="preserve"><value>يمكن لمنشئ التقرير فقط إرسال هذه المسودة.</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>ليست لديك صلاحية لتنفيذ هذا الإجراء.</value></data>
+  <data name="Site resources" xml:space="preserve"><value>موارد الموقع</value></data>
+  <data name="Manpower" xml:space="preserve"><value>العمالة</value></data>
+  <data name="Regular" xml:space="preserve"><value>عادي</value></data>
+  <data name="Overtime" xml:space="preserve"><value>إضافي</value></data>
+  <data name="Source" xml:space="preserve"><value>المصدر</value></data>
+  <data name="Own employee" xml:space="preserve"><value>موظف بالشركة</value></data>
+  <data name="Subcontractor" xml:space="preserve"><value>مقاول باطن</value></data>
+  <data name="Trade" xml:space="preserve"><value>المهنة</value></data>
+  <data name="Employee" xml:space="preserve"><value>الموظف</value></data>
+  <data name="Subcontract" xml:space="preserve"><value>عقد المقاولة</value></data>
+  <data name="Headcount" xml:space="preserve"><value>عدد الأفراد</value></data>
+  <data name="WBS" xml:space="preserve"><value>هيكل تقسيم العمل</value></data>
+  <data name="Regular hours" xml:space="preserve"><value>الساعات العادية</value></data>
+  <data name="Overtime hours" xml:space="preserve"><value>الساعات الإضافية</value></data>
+  <data name="Add manpower" xml:space="preserve"><value>إضافة العمالة</value></data>
+  <data name="Equipment" xml:space="preserve"><value>المعدات</value></data>
+  <data name="Owned asset" xml:space="preserve"><value>أصل مملوك</value></data>
+  <data name="Rental subcontract" xml:space="preserve"><value>عقد إيجار معدات</value></data>
+  <data name="Rental equipment description" xml:space="preserve"><value>وصف المعدة المؤجرة</value></data>
+  <data name="Operator" xml:space="preserve"><value>المشغّل</value></data>
+  <data name="Working hours" xml:space="preserve"><value>ساعات التشغيل</value></data>
+  <data name="Idle hours" xml:space="preserve"><value>ساعات التوقف</value></data>
+  <data name="Downtime hours" xml:space="preserve"><value>ساعات التعطل</value></data>
+  <data name="Downtime reason" xml:space="preserve"><value>سبب التعطل</value></data>
+  <data name="Meter start" xml:space="preserve"><value>قراءة العداد عند البداية</value></data>
+  <data name="Meter end" xml:space="preserve"><value>قراءة العداد عند النهاية</value></data>
+  <data name="Fuel quantity" xml:space="preserve"><value>كمية الوقود</value></data>
+  <data name="Add equipment" xml:space="preserve"><value>إضافة المعدة</value></data>
+  <data name="InvalidManpowerLine" xml:space="preserve"><value>بيانات العمالة غير صحيحة.</value></data>
+  <data name="InvalidEquipmentLine" xml:space="preserve"><value>بيانات المعدات غير صحيحة.</value></data>
+  <data name="DraftOwnerRequired" xml:space="preserve"><value>يمكن لمنشئ المسودة فقط إضافة موارد الموقع.</value></data>
+  <data name="EmployeeNotAvailable" xml:space="preserve"><value>الموظف المحدد غير متاح.</value></data>
+  <data name="SubcontractNotAvailable" xml:space="preserve"><value>عقد المقاولة المحدد غير متاح.</value></data>
+  <data name="WbsNodeNotAvailable" xml:space="preserve"><value>عنصر هيكل تقسيم العمل غير متاح.</value></data>
+  <data name="AssetNotAvailable" xml:space="preserve"><value>الأصل المحدد غير متاح.</value></data>
+  <data name="Executed quantities" xml:space="preserve"><value>الكميات المنفذة</value></data>
+  <data name="BOQ item" xml:space="preserve"><value>بند جدول الكميات</value></data>
+  <data name="Quantity executed" xml:space="preserve"><value>الكمية المنفذة</value></data>
+  <data name="Location / level" xml:space="preserve"><value>الموقع أو المستوى</value></data>
+  <data name="Remarks" xml:space="preserve"><value>ملاحظات</value></data>
+  <data name="Add quantity" xml:space="preserve"><value>إضافة الكمية</value></data>
+  <data name="BoqItemNotAvailable" xml:space="preserve"><value>بند جدول الكميات المحدد غير متاح.</value></data>
+  <data name="InvalidQuantityLine" xml:space="preserve"><value>بيانات الكمية غير صحيحة.</value></data>
+  <data name="Materials received / consumed" xml:space="preserve"><value>المواد المستلمة والمستهلكة</value></data>
+  <data name="Received" xml:space="preserve"><value>مستلم</value></data>
+  <data name="Consumed" xml:space="preserve"><value>مستهلك</value></data>
+  <data name="Posted receipt line" xml:space="preserve"><value>سطر استلام مرحّل</value></data>
+  <data name="Quantity" xml:space="preserve"><value>الكمية</value></data>
+  <data name="Delivery note" xml:space="preserve"><value>إشعار التسليم</value></data>
+  <data name="Record receipt evidence" xml:space="preserve"><value>تسجيل إثبات الاستلام</value></data>
+  <data name="Posted project issue line" xml:space="preserve"><value>سطر صرف مشروع مرحّل</value></data>
+  <data name="Record consumption evidence" xml:space="preserve"><value>تسجيل إثبات الاستهلاك</value></data>
+  <data name="MaterialSourceNotAvailable" xml:space="preserve"><value>سطر حركة المخزون غير متاح لهذا المشروع.</value></data>
+  <data name="MaterialQuantityExceedsSource" xml:space="preserve"><value>الكمية المسجلة تتجاوز الكمية المتاحة في المرجع.</value></data>
+  <data name="InvalidMaterialLine" xml:space="preserve"><value>بيانات إثبات المواد غير صحيحة.</value></data>
+  <data name="Delays, blockers and incidents" xml:space="preserve"><value>التأخيرات والمعوقات والحوادث</value></data>
+  <data name="Event type" xml:space="preserve"><value>نوع الواقعة</value></data>
+  <data name="Delay" xml:space="preserve"><value>تأخير</value></data>
+  <data name="Blocker" xml:space="preserve"><value>معوق</value></data>
+  <data name="Incident" xml:space="preserve"><value>حادث</value></data>
+  <data name="Severity" xml:space="preserve"><value>الخطورة</value></data>
+  <data name="Low" xml:space="preserve"><value>منخفض</value></data>
+  <data name="Medium" xml:space="preserve"><value>متوسط</value></data>
+  <data name="High" xml:space="preserve"><value>مرتفع</value></data>
+  <data name="Critical" xml:space="preserve"><value>حرج</value></data>
+  <data name="Description" xml:space="preserve"><value>الوصف</value></data>
+  <data name="Responsible party" xml:space="preserve"><value>الجهة المسؤولة</value></data>
+  <data name="Started at" xml:space="preserve"><value>وقت البداية</value></data>
+  <data name="Ended at" xml:space="preserve"><value>وقت النهاية</value></data>
+  <data name="Needed by" xml:space="preserve"><value>مطلوب قبل</value></data>
+  <data name="Requires follow-up" xml:space="preserve"><value>يتطلب متابعة</value></data>
+  <data name="Add event" xml:space="preserve"><value>إضافة واقعة</value></data>
+  <data name="InvalidEvent" xml:space="preserve"><value>بيانات الواقعة غير صحيحة.</value></data>
+  <data name="Photos and attachments" xml:space="preserve"><value>الصور والمرفقات</value></data>
+  <data name="Company library file" xml:space="preserve"><value>ملف من مكتبة الشركة</value></data>
+  <data name="Choose a file" xml:space="preserve"><value>اختر ملفًا</value></data>
+  <data name="Caption" xml:space="preserve"><value>وصف المرفق</value></data>
+  <data name="Attach file" xml:space="preserve"><value>إرفاق الملف</value></data>
+  <data name="InvalidAttachment" xml:space="preserve"><value>بيانات المرفق غير صحيحة.</value></data>
+  <data name="AttachmentNotAvailable" xml:space="preserve"><value>الملف غير متاح ضمن مكتبة شركتك.</value></data>
+  <data name="AttachmentAlreadyAdded" xml:space="preserve"><value>هذا الملف مرفق بالفعل بالتقرير.</value></data>
+  <data name="UnsupportedAttachmentType" xml:space="preserve"><value>نوع الملف غير مدعوم. استخدم صورة JPG أو PNG أو WebP أو ملف PDF.</value></data>
+  <data name="AttachmentUploadFailed" xml:space="preserve"><value>تعذر رفع المرفق وإضافته إلى التقرير.</value></data>
+  <data name="Upload site photo or PDF" xml:space="preserve"><value>رفع صورة للموقع أو ملف PDF</value></data>
+  <data name="Upload and attach" xml:space="preserve"><value>رفع وإرفاق</value></data>
+  <data name="Accepted files: JPG, PNG, WebP, PDF. Maximum 20 MB." xml:space="preserve"><value>الأنواع المقبولة: JPG وPNG وWebP وPDF. الحد الأقصى 20 ميجابايت.</value></data>
+  <data name="Visitors" xml:space="preserve"><value>الزوار</value></data>
+  <data name="Visitor name" xml:space="preserve"><value>اسم الزائر</value></data>
+  <data name="Organisation" xml:space="preserve"><value>الجهة</value></data>
+  <data name="Visit purpose" xml:space="preserve"><value>غرض الزيارة</value></data>
+  <data name="Time in" xml:space="preserve"><value>وقت الدخول</value></data>
+  <data name="Time out" xml:space="preserve"><value>وقت الخروج</value></data>
+  <data name="Add visitor" xml:space="preserve"><value>إضافة زائر</value></data>
+  <data name="Site instructions" xml:space="preserve"><value>تعليمات الموقع</value></data>
+  <data name="Instruction source" xml:space="preserve"><value>مصدر التعليمات</value></data>
+  <data name="Instruction reference" xml:space="preserve"><value>مرجع التعليمات</value></data>
+  <data name="Instruction description" xml:space="preserve"><value>نص التعليمات</value></data>
+  <data name="Consultant" xml:space="preserve"><value>الاستشاري</value></data>
+  <data name="Client" xml:space="preserve"><value>العميل</value></data>
+  <data name="Internal" xml:space="preserve"><value>داخلي</value></data>
+  <data name="Recording an instruction here does not create an RFI or variation." xml:space="preserve"><value>تسجيل التعليمات هنا لا ينشئ طلب استفسار أو أمر تغيير.</value></data>
+  <data name="InvalidVisitor" xml:space="preserve"><value>بيانات الزائر غير صحيحة.</value></data>
+  <data name="InvalidInstruction" xml:space="preserve"><value>بيانات التعليمات غير صحيحة.</value></data>
+  <data name="Kind" xml:space="preserve"><value>النوع</value></data>
+  <data name="Document" xml:space="preserve"><value>مستند</value></data>
+  <data name="Photo" xml:space="preserve"><value>صورة</value></data>
+  <data name="Photo taken at" xml:space="preserve"><value>وقت التقاط الصورة</value></data>
+  <data name="Latitude" xml:space="preserve"><value>خط العرض</value></data>
+  <data name="Longitude" xml:space="preserve"><value>خط الطول</value></data>
+  <data name="Photo metadata only applies to image uploads." xml:space="preserve"><value>بيانات الصورة الإضافية تستخدم مع الصور فقط.</value></data>
+  <data name="Amendment revision" xml:space="preserve"><value>مراجعة تعديل</value></data>
+  <data name="Amendment reason" xml:space="preserve"><value>سبب التعديل</value></data>
+  <data name="Create amendment" xml:space="preserve"><value>إنشاء تعديل</value></data>
+  <data name="Amends report" xml:space="preserve"><value>يعدّل التقرير</value></data>
+  <data name="InvalidAmendment" xml:space="preserve"><value>سبب التعديل مطلوب وبحد أقصى 1000 حرف.</value></data>
+  <data name="AmendmentRequiresApprovedReport" xml:space="preserve"><value>يمكن إنشاء تعديل من تقرير معتمد فقط.</value></data>
+  <data name="AmendmentAlreadyExists" xml:space="preserve"><value>يوجد تعديل أحدث لهذا التقرير بالفعل.</value></data>
+  <data name="AmendmentDraftOnly" xml:space="preserve"><value>يمكن لمنشئ مسودة التعديل فقط تغيير تفاصيلها أو بنودها.</value></data>
+  <data name="AmendmentLineNotFound" xml:space="preserve"><value>لم يتم العثور على البند المحدد في هذا التعديل.</value></data>
+  <data name="Update amendment details" xml:space="preserve"><value>تحديث تفاصيل التعديل</value></data>
+  <data name="Save amendment details" xml:space="preserve"><value>حفظ تفاصيل التعديل</value></data>
+  <data name="Change reason" xml:space="preserve"><value>سبب هذا التغيير</value></data>
+  <data name="Replace a copied line" xml:space="preserve"><value>استبدال بند منسوخ</value></data>
+  <data name="Choose copied line" xml:space="preserve"><value>اختر البند المنسوخ</value></data>
+  <data name="Choose a line" xml:space="preserve"><value>اختر بندًا</value></data>
+  <data name="Remove from amendment" xml:space="preserve"><value>إزالة من التعديل</value></data>
+</root>
+
+
+
+
+

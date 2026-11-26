@@ -1,0 +1,17 @@
+@model List<CrossBuy.Models.Context.Crm.CrmSequenceEvent>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var dot = new Dictionary<string, string> { ["Queued"] = "#3A5795", ["Sent"] = "#15803D", ["Task"] = "#0F766E", ["Skipped"] = "#6B7280", ["Failed"] = "#DC2626", ["Stopped"] = "#7239EA", ["Enrolled"] = "#3A5795", ["Completed"] = "#6B7280" };
+}
+@if (Model.Count == 0) { <div class="text-muted">—</div> }
+<div class="timeline-label">
+@foreach (var ev in Model)
+{
+    <div class="d-flex gap-4 mb-5">
+        <div class="num fs-8 text-muted text-nowrap pt-1" style="width:86px">@ev.At.ToLocalTime().ToString("MM-dd HH:mm")</div>
+        <span class="crm-fc-dot mt-2 flex-shrink-0" style="--c:@dot.GetValueOrDefault(ev.Outcome, "#6B7280")"></span>
+        <div class="min-w-0"><div class="fw-bold fs-7">@T["ev:" + ev.Outcome]@if (ev.StepNo != null) { <span class="text-muted fw-semibold"> · @T["step"] <span class="num">@ev.StepNo</span></span> }</div>
+            @if (ev.Detail != null) { <div class="fs-8 text-gray-700 text-break">@(ev.Outcome is "Stopped" ? T["stop:" + ev.Detail.Split(' ')[0]].Value : T[ev.Detail].Value)</div> }</div>
+    </div>
+}
+</div>

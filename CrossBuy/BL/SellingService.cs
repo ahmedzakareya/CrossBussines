@@ -315,31 +315,97 @@ namespace CrossBuy.BL
 			if (so.Status == "Cancelled") return (false, "The sales order is cancelled", null);
 
 			var deliveries = await _context.DeliveryNotes.Where(d => d.CompanyID == companyId && d.SalesOrderId == soId && d.Status == "Posted").ToListAsync();
-			bool delivered = deliveries.Any();
+			bool anyDelivery = deliveries.Any();
 			int revenue = await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
 			if (revenue == 0) revenue = await _context.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith("4")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
 			if (revenue == 0) return (false, "No revenue account is defined", null);
 
 			var lines = new List<SalesLineInput>();
-			foreach (var l in so.Lines.OrderBy(x => x.LineNo))
+			var billedNow = new List<Models.Context.Inventory.DeliveryNote>();
+
+			if (anyDelivery)
 			{
-				if (l.Qty <= 0) continue;
-				lines.Add(new SalesLineInput
+				// DELIVERY-RELATED BILLING. Once anything has shipped, the DELIVERY is what the invoice
+				// bills - never the order. Billing the ordered quantity is what charged a customer for
+				// three units when two had left the warehouse, closed the order so the third never could,
+				// and booked revenue against stock still sitting on the shelf.
+				//
+				// Only deliveries that have not been billed yet: DeliveryNote.InvoiceId is the lineage,
+				// and it already existed. So "deliver 2, invoice, deliver 1, invoice" produces two
+				// invoices of exactly what each shipment contained, and nothing is billed twice.
+				billedNow = deliveries.Where(d => d.InvoiceId == null).ToList();
+				if (billedNow.Count == 0)
+					return (false, "Every delivery on this order has already been invoiced. Deliver the remaining quantity first, then invoice it.", null);
+
+				var dnIds = billedNow.Select(d => d.ID).ToList();
+				var dlines = await _context.DeliveryNoteLines.AsNoTracking()
+					.Where(x => dnIds.Contains(x.DeliveryNoteId)).ToListAsync();
+
+				// Priced from the ORDER line the shipment belongs to, so the agreed price, discount and
+				// tax rate are the ones invoiced - a delivery note carries cost, not the selling price.
+				foreach (var g in dlines.GroupBy(x => x.SalesOrderLineId))
 				{
-					ItemDescription = l.ItemDescription ?? "",
-					Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate,
-					RevenueAccountId = revenue,
-					ItemId = delivered ? (int?)null : l.ItemId,         // delivered → no stock/COGS (done at delivery); else direct issue
-					WarehouseId = delivered ? (int?)null : so.WarehouseId,
-				});
+					decimal qty = g.Sum(x => x.Qty);
+					if (qty <= 0) continue;
+					var sol = g.Key != null
+						? so.Lines.FirstOrDefault(x => x.ID == g.Key.Value)
+						: so.Lines.FirstOrDefault(x => x.ItemId == g.First().ItemId);
+					if (sol == null) return (false, "A delivered line does not belong to this order", null);
+
+					lines.Add(new SalesLineInput
+					{
+						ItemDescription = sol.ItemDescription ?? "",
+						Qty = qty,
+						UnitPrice = sol.UnitPrice,
+						// The order's discount belongs to the whole ordered quantity, so only the shipped
+						// share of it is given back here. Carrying it whole would discount two units by
+						// what was agreed for three.
+						DiscountAmount = sol.Qty > 0 ? Math.Round(sol.DiscountAmount * (qty / sol.Qty), 4, MidpointRounding.AwayFromZero) : 0m,
+						TaxRate = sol.TaxRate,
+						RevenueAccountId = revenue,
+						// Stock and COGS were posted by the delivery. Repeating them here would issue the
+						// same goods twice.
+						ItemId = null,
+						WarehouseId = null,
+					});
+				}
+			}
+			else
+			{
+				// Nothing shipped against this order, so the invoice IS the shipment: it issues the stock
+				// and posts COGS itself. This is the direct-sale path and it is unchanged.
+				foreach (var l in so.Lines.OrderBy(x => x.LineNo))
+				{
+					if (l.Qty <= 0) continue;
+					lines.Add(new SalesLineInput
+					{
+						ItemDescription = l.ItemDescription ?? "",
+						Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate,
+						RevenueAccountId = revenue,
+						ItemId = l.ItemId,
+						WarehouseId = so.WarehouseId,
+					});
+				}
 			}
 			if (lines.Count == 0) return (false, "There are no invoiceable lines", null);
 
 			var (ok, err, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, so.CustomerId, DateTime.Today, lines, $"From sales order {so.OrderNo}", null, so.CurrencyId, so.ExchangeRate, so.ProjectId);
 			if (!ok) return (false, err, null);
 
-			so.Status = "Closed";
-			foreach (var d in deliveries) d.InvoiceId = inv!.ID;
+			foreach (var d in billedNow) d.InvoiceId = inv!.ID;
+
+			// CLOSED MEANS FINISHED, NOT "AN INVOICE EXISTS". An order with a unit still to ship stays
+			// open so the rest can be delivered and billed; closing it was what stranded the remainder.
+			if (anyDelivery)
+			{
+				decimal ordered = so.Lines.Sum(x => x.Qty);
+				var allDnIds = deliveries.Select(d => d.ID).ToList();
+				decimal shipped = await _context.DeliveryNoteLines.AsNoTracking()
+					.Where(x => allDnIds.Contains(x.DeliveryNoteId)).SumAsync(x => (decimal?)x.Qty) ?? 0m;
+				so.Status = shipped >= ordered ? "Closed" : "Approved";
+			}
+			else so.Status = "Closed";
+
 			await _context.SaveChangesAsync();
 			return (true, null, inv!.ID);
 		}

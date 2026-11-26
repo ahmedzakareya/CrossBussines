@@ -9,6 +9,7 @@
     string Money(decimal v) => v.ToString("N2");
     string Qty(decimal v) => v.ToString("N2");
     string R(AiReason r) => isAr ? r.Ar : r.En;
+    string R2(AiReason? r) => r == null ? "" : (isAr ? r.Ar : r.En);
 
     string ClassBadge(string? c) => c switch { "stockout" => "danger", "reorder" => "warning", "slow" => "secondary", _ => "light" };
     string ClassLabel(string? c) => c switch { "stockout" => "Out of stock", "reorder" => "Reorder", "slow" => "Slow / dead", _ => c ?? "" };
@@ -55,40 +56,25 @@
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
 
-            @* PROVENANCE. Every value is a fact the system already holds. No model wrote this text. *@
-            <div class="card card-flush mb-5">
-                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
-                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Analysis source"]</div>
-                        <div class="fw-bold text-gray-800">
-                            @Localizer["On-premises model"] <span class="text-gray-400 fs-8">(@Model.Panel.Source)</span>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
-                        <div class="fw-bold text-gray-800">
-                            @(Model.Panel.GeneratedAtUtc.HasValue
-                                ? Model.Panel.GeneratedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
-                                : Localizer["Not generated"].Value)
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Items analysed"]</div>
-                        <div class="fw-bold text-gray-800">@(Model.Panel.RecordsConsidered ?? 0)</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Demand window"]</div>
-                        <div class="fw-bold text-gray-800">@Model.WindowDays @Localizer["days"]</div>
-                    </div>
-                    <div class="ms-auto text-gray-500 fs-8">
-                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
-                    </div>
-                </div>
-            </div>
+            @* PROVENANCE, in ONE partial. These four screens each carried their own copy of this
+               strip, which is how all four came to print the raw company id as "Company 1". *@
+            @await Html.PartialAsync("_InsightsProvenance", new CrossBuy.Models.InsightsProvenance
+            {
+                CompanyName = ViewBag.CompanyName as string,
+                CompanyId = Model.CompanyId,
+                Method = Localizer["On-premises model"].Value + " (" + Model.Panel.Source + ")",
+                // THE WINDOW THE CLASSIFICATION WAS MADE OVER. The notice below tells the reader the items were
+                // judged "over the window above" - and this is that window. It had been emptied to an empty Facts
+                // list, so the page went on promising a disclosure it no longer made, and a classification whose
+                // window nobody can see is one nobody can judge. It matters more here than it looks: this data
+                // holds 28 active days in 312, which is why the screen also carries a WindowTooQuiet path.
+                Facts = new List<(string, string, bool)>
+                {
+                    (Localizer["Demand window"].Value,
+                     Model.WindowDays + " " + Localizer["days"].Value, false),
+                },
+                GeneratedAtUtc = Model.Panel.GeneratedAtUtc,
+            })
 
             @* HOW THE CLASSIFICATION IS MADE, stated plainly so the reader can judge it rather than
                trust it. The model is rules plus statistics; it forecasts nothing. *@
@@ -197,10 +183,25 @@
                         </div>
                     </div>
                     <div class="card-body pt-2">
-                        @if (Model.Flagged.Count == 0)
+                        @if (Model.Result?.WindowTooQuiet == true)
                         {
-                            @* A REAL clean result: the model examined items and flagged none. The count is
-                               shown so the reassurance is attributable rather than bare. *@
+                            @* NOT the green all-clear. An empty result here means the WINDOW held no
+                               business, not that the shelves are healthy, and the two must never share
+                               a screen state. Before this split, 60 items came back as 218,498.16 of
+                               dead capital from a window with four active days in it. *@
+                            <div class="notice d-flex bg-light-secondary rounded border-secondary border border-dashed p-6">
+                                <i class="ki-outline ki-information-5 fs-2x text-gray-600 me-4"></i>
+                                <div>
+                                    <h4 class="text-gray-900 mb-1">@Localizer["Nothing can be concluded from this period"]</h4>
+                                    <div class="fs-7 text-gray-700">@R2(Model.Result.WindowNote)</div>
+                                    <div class="fs-8 text-gray-500 mt-2">@Localizer["Items analysed"]: <bdi>@(Model.Panel.RecordsConsidered ?? 0)</bdi></div>
+                                </div>
+                            </div>
+                        }
+                        else if (Model.Flagged.Count == 0)
+                        {
+                            @* A REAL clean result: the model examined items over a window that had
+                               business in it, and flagged none. *@
                             <div class="text-gray-500 py-8 text-center">
                                 <i class="ki-outline ki-shield-tick fs-3x text-success mb-3 d-block"></i>
                                 @Localizer["No inventory risks were flagged"]

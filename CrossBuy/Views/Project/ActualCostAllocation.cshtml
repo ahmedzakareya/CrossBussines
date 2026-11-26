@@ -1,0 +1,55 @@
+@using System.Globalization
+@using CrossBuy.BL
+@model CrossBuy.ViewModel.ConstructionActualCostPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    string L(string key) => SR["Construction.ActualUi." + key].Value;
+    string Amount(decimal value) => value.ToString("0.############################", CultureInfo.CurrentCulture);
+    var ready = Model.Source?.Ok == true && !Model.AlreadyAllocated && Model.LineId.HasValue;
+    string Message(string code) { var value = SR["Construction.ActualUi.Error." + code]; return value.IsResourceNotFound ? L("Error.General") : value.Value; }
+}
+<div class="app-container container-fluid py-6">
+    <div class="d-flex flex-stack flex-wrap gap-3 mb-6"><div><h1 class="fs-3 fw-bold">@L("Title")</h1><div class="text-muted">@Model.ProjectCode — @DisplayName.Of(Model.ProjectName, Model.ProjectNameEn)</div></div>
+        <a asp-controller="Project" asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@L("Budgets")</a></div>
+    <div class="alert alert-info">@L("Explanation")</div>
+    @if (TempData["ConstructionActualAllocated"] != null) { <div class="alert alert-success" role="status">@L("Saved")</div> }
+    @if (Model.Error != null) { <div class="alert alert-danger" role="alert">@Message(Model.Error)</div> }
+    <section class="card mb-6"><div class="card-header"><h2 class="card-title fs-5">@L("Sources")</h2></div><div class="card-body table-responsive">
+        <form asp-action="Index" method="get" class="d-flex gap-3 mb-4"><input type="hidden" name="projectId" value="@Model.ProjectId" /><input type="hidden" name="culture" value="@CultureInfo.CurrentCulture.Name" /><input type="hidden" name="ui-culture" value="@CultureInfo.CurrentUICulture.Name" /><label class="form-label" for="source-line">@L("Line")</label><input id="source-line" name="lineId" type="number" min="1" class="form-control w-auto" required /><button class="btn btn-light-primary" type="submit">@L("Open")</button></form>
+        @if (Model.Truncated) { <div class="alert alert-warning">@L("Truncated")</div> }
+        @if (Model.Sources.Count == 0) { <p class="text-muted">@L("Empty")</p> }
+        <table class="table table-row-dashed align-middle"><thead><tr><th>@L("Entry")</th><th>@L("Line")</th><th>@L("Date")</th><th>@L("Net")</th><th>@L("Status")</th><th>@L("Open")</th></tr></thead><tbody>
+        @foreach (var row in Model.Sources) { <tr><td>@row.EntryId</td><td>@row.LineId</td><td>@row.Date.ToString("d", CultureInfo.CurrentCulture)</td><td><span dir="ltr">@Amount(row.Net) @(row.Currency ?? L("UnknownCurrency"))</span></td><td>@L(row.Allocated ? "Allocated" : "Unallocated")</td><td><a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-lineId="@row.LineId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-light-primary">@L("Open")</a></td></tr> }
+        </tbody></table>
+    </div></section>
+    @if (Model.LineId.HasValue)
+    {
+        <section class="card"><div class="card-header"><h2 class="card-title fs-5">@L("Line") @Model.LineId</h2></div><div class="card-body">
+            @if (Model.AlreadyAllocated) { <div class="alert alert-success">@L("AlreadyAllocated")</div> }
+            @if (Model.Source is { Ok: false } source) { <div class="alert alert-warning">@Message(source.Code)</div> }
+            @if (ready)
+            {
+                <p>@L("Net"): <strong dir="ltr">@Amount(Model.Source!.NetBaseAmount!.Value) @Model.SourceCurrency</strong></p>
+                <p class="text-muted">@L("SplitNotice")</p>
+                <form asp-action="@(Model.Confirmed ? "Allocate" : "Preview")" asp-route-projectId="@Model.ProjectId" asp-route-lineId="@Model.LineId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="RequestId" value="@Model.Input.RequestId" /><input type="hidden" name="Version" value="@Model.Input.Version" />
+                    <div class="table-responsive"><table class="table"><thead><tr><th>@L("Wbs")</th><th>@L("CostCode")</th><th>@L("Amount")</th></tr></thead><tbody>
+                    @for (var i = 0; i < Model.Input.Rows.Count && i < 500; i++)
+                    { var row = Model.Input.Rows[i];
+                        <tr><td><select name="Rows[@i].WbsNodeId" class="form-select" aria-label="@L("Wbs")"><option value="0">@L("Choose")</option>@foreach (var node in Model.Nodes) { <option value="@node.Id" selected="@(row.WbsNodeId == node.Id)">@node.Code — @DisplayName.Of(node.Name, node.NameEn)</option> }</select></td>
+                        <td><select name="Rows[@i].CostCodeId" class="form-select" aria-label="@L("CostCode")"><option value="0">@L("Choose")</option>@foreach (var code in Model.CostCodes) { <option value="@code.Id" selected="@(row.CostCodeId == code.Id)">@code.Code — @DisplayName.Of(code.Name, code.NameEn)</option> }</select></td>
+                        <td><input name="Rows[@i].Amount" value="@(row.Amount.GetValueOrDefault() == 0 ? "" : Amount(row.Amount!.Value))" inputmode="decimal" class="form-control" aria-label="@L("Amount")" /></td></tr>
+                    }
+                    </tbody></table></div>
+                    <label class="form-label" for="actual-reason">@L("Reason")</label><textarea id="actual-reason" name="Reason" class="form-control mb-4" maxlength="1000" rows="2" required>@Model.Input.Reason</textarea>
+                    @if (Model.Confirmed) { <div class="alert alert-info">@L("ConfirmNotice")</div> }
+                    <button type="submit" class="btn btn-primary">@L(Model.Confirmed ? "Confirm" : "Preview")</button>
+                    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-lineId="@Model.LineId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@L("Reload")</a>
+                </form>
+            }
+            @if (!ready && Model.Error != null) { <p>@Model.Input.Reason</p> }
+        </div></section>
+    }
+</div>

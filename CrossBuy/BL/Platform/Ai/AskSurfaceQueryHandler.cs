@@ -90,7 +90,9 @@ namespace CrossBuy.BL.Platform.Ai
 						"مفيش حد بالاسم ده — دوَّرت في "
 						+ rows.Count.ToString(CultureInfo.InvariantCulture) + " سجل ومحصلش تطابق على «" + named + "».",
 						"Nobody by that name — I searched "
-						+ rows.Count.ToString(CultureInfo.InvariantCulture) + " records and none matches \"" + named + "\"."),
+						+ rows.Count.ToString(CultureInfo.InvariantCulture) + " records and none matches \"" + named + "\".",
+						"Aucun résultat pour ce nom : j'ai recherché parmi "
+						+ rows.Count.ToString(CultureInfo.InvariantCulture) + " fiches sans trouver « " + named + " »."),
 					Understood = _surface.Rules,
 					Provenance = Provenance(scope, rows.Count),
 				};
@@ -117,7 +119,7 @@ namespace CrossBuy.BL.Platform.Ai
 					.Where(c => c.Kind == AskColumnKind.Dimension)
 					.Select(c => new
 					{
-						label = arabic ? c.Label.Ar : c.Label.En,
+						label = c.Label.ForCulture(CultureInfo.CurrentUICulture),
 						value = r.TryGetValue(c.Name, out var dv) ? Convert.ToString(dv) : null,
 					})
 					.Where(x => !string.IsNullOrWhiteSpace(x.value))
@@ -141,7 +143,7 @@ namespace CrossBuy.BL.Platform.Ai
 							+ " من " + hits.Count.ToString(CultureInfo.InvariantCulture) + "."
 						  : " Showing " + shaped.Count.ToString(CultureInfo.InvariantCulture)
 							+ " of " + hits.Count.ToString(CultureInfo.InvariantCulture) + ".")
-				: "";
+					: "";
 
 			// SAID WHEN THE MATCH IS LOOSER THAN THE QUESTION. Falling back to any-word matching is
 			// what makes a surname work, and it is also how "احمد زكريا" could return a different
@@ -171,12 +173,16 @@ namespace CrossBuy.BL.Platform.Ai
 						"ده كل اللي مسجَّل عنه هنا: " + string.Join("، ", shaped.Take(3).Select(x => Convert.ToString(x["name"])))
 							+ ". افتح ملفه من الاسم للتفاصيل الكاملة.",
 						"This is everything recorded here: " + string.Join(", ", shaped.Take(3).Select(x => Convert.ToString(x["name"])))
-							+ ". Open the file from the name for the rest.")
+							+ ". Open the file from the name for the rest.",
+						"Voici tout ce qui est enregistré ici : " + string.Join(", ", shaped.Take(3).Select(x => Convert.ToString(x["name"])))
+							+ ". Ouvrez la fiche en cliquant sur son nom pour plus de détails.")
 					: AskText.Of(
 					(hits.Count == 1 ? "آه، فيه واحد بالاسم ده: " : "لقيت " + hits.Count.ToString(CultureInfo.InvariantCulture) + " بالاسم ده: ")
 						+ string.Join("، ", shaped.Take(3).Select(x => Convert.ToString(x["name"]))) + "." + more + loose,
-					(hits.Count == 1 ? "Yes, one match: " : "Found " + hits.Count.ToString(CultureInfo.InvariantCulture) + ": ")
-						+ string.Join(", ", shaped.Take(3).Select(x => Convert.ToString(x["name"]))) + "." + more + loose),
+						(hits.Count == 1 ? "Yes, one match: " : "Found " + hits.Count.ToString(CultureInfo.InvariantCulture) + ": ")
+							+ string.Join(", ", shaped.Take(3).Select(x => Convert.ToString(x["name"]))) + "." + more + loose,
+						(hits.Count == 1 ? "Oui, une correspondance : " : "" + hits.Count.ToString(CultureInfo.InvariantCulture) + " correspondances : ")
+							+ string.Join(", ", shaped.Take(3).Select(x => Convert.ToString(x["name"]))) + "." + more + loose),
 				Understood = _surface.Rules,
 				Provenance = Provenance(scope, rows.Count),
 			};
@@ -225,7 +231,7 @@ namespace CrossBuy.BL.Platform.Ai
 			public IReadOnlyList<string> Words { get; init; } = System.Array.Empty<string>();
 			public AskText Label { get; init; } = AskText.Of("", "");
 			public AskText Note(bool arabic) => AskText.Of(
-				"عن " + Label.Ar, "For " + Label.En);
+				"عن " + Label.Ar, "For " + Label.En, "Pour " + Label.Fr);
 		}
 
 		private Window? RelativeWindow(string? question)
@@ -307,7 +313,8 @@ namespace CrossBuy.BL.Platform.Ai
 		/// answer alone, so a surface with nothing to add costs nothing.
 		private static AskText Prefixed(AskText said, AskText? before) =>
 			before == null ? said
-				: AskText.Of(before.Ar + " " + said.Ar, before.En + " " + said.En);
+				: AskText.Of(before.Ar + " " + said.Ar, before.En + " " + said.En,
+					before.Fr + " " + said.Fr);
 
 		/// The kind of subject a surface leaves behind: the WORDS that narrowed it, not a
 		/// parameter value. Named apart from the item handlers' kinds so a doctor is never
@@ -359,7 +366,8 @@ namespace CrossBuy.BL.Platform.Ai
 			public bool Exact { get; init; }
 			public AskText Note(bool arabic) => AskText.Of(
 				(Exact ? "مصفّى على " : "مصفّى على ما يحتوي ") + Label.Ar + " = «" + Filter.Value + "»",
-				(Exact ? "Filtered to " : "Filtered to values containing ") + Label.En + " = \"" + Filter.Value + "\"");
+				(Exact ? "Filtered to " : "Filtered to values containing ") + Label.En + " = \"" + Filter.Value + "\"",
+				(Exact ? "Filtré sur " : "Filtré sur les valeurs contenant ") + Label.Fr + " = «" + Filter.Value + "»");
 		}
 
 		private async Task<NamedValue?> NamedValueAsync(
@@ -740,13 +748,15 @@ namespace CrossBuy.BL.Platform.Ai
 					{
 					var dims = string.Join("، ", _surface.Columns
 						.Where(c => c.Kind == AskColumnKind.Dimension)
-						.Select(c => arabic ? c.Label.Ar : c.Label.En));
+					.Select(c => c.Label.ForCulture(CultureInfo.CurrentUICulture)));
 					return AskAnswer.Refuse(AskRefusal.NotUnderstood, AskText.Of(
 						"سؤالك فيه «" + string.Join("، ", unknown) + "» وده مش حاجة أقدر أبحث بيها هنا. "
 						+ "أنا بتعامل مع " + _surface.Description.Ar + "، وبقدر أجمّع حسب: " + dims + ".",
 						"Your question mentions \"" + string.Join(", ", unknown) + "\", which is not "
 						+ "something I can look up here. I work with " + _surface.Description.En
-						+ ", and I can group by: " + dims + "."));
+						+ ", and I can group by: " + dims + ".",
+						"Votre question mentionne « " + string.Join(", ", unknown) + " », un élément que je ne peux pas rechercher ici. "
+						+ "Je traite " + _surface.Description.Fr + " et peux regrouper par : " + dims + "."));
 					}
 				}
 			}
@@ -827,7 +837,7 @@ namespace CrossBuy.BL.Platform.Ai
 				.Concat(query.GroupBy)
 				.Select(n => _surface.Column(n))
 				.Where(c => c != null && !scope.Holds(c!.Action))
-				.Select(c => arabic ? c!.Label.Ar : c!.Label.En)
+				.Select(c => c!.Label.ForCulture(CultureInfo.CurrentUICulture))
 				.Distinct()
 				.ToList();
 
@@ -836,7 +846,9 @@ namespace CrossBuy.BL.Platform.Ai
 					"مش من صلاحيتك تشوف " + string.Join("، ", barred) + " هنا. "
 					+ "تقدر تسأل عن باقي أعمدة هذا السطح عادي.",
 					"You are not permitted to see " + string.Join(", ", barred) + " here. "
-					+ "The rest of this surface's columns are open to you."));
+					+ "The rest of this surface's columns are open to you.",
+					"Vous n'êtes pas autorisé à consulter " + string.Join(", ", barred) + " ici. "
+					+ "Vous pouvez demander les autres colonnes de cette vue."));
 
 			var validation = AskQueryValidator.Validate(query, _surface);
 
@@ -887,7 +899,12 @@ namespace CrossBuy.BL.Platform.Ai
 							? "There is no data on this surface in this company."
 							: namedFilter != null
 								? "Nothing is recorded for \"" + namedFilter.Value + "\" here."
-								: "No row matches those conditions. Rows exist, but the filter left none."),
+								: "No row matches those conditions. Rows exist, but the filter left none.",
+						rows.Count == 0
+							? "Aucune donnée n'est disponible dans cette vue pour cette entreprise."
+							: namedFilter != null
+								? "Aucune donnée n'est enregistrée ici pour « " + namedFilter.Value + " »."
+								: "Aucune ligne ne correspond à ces critères. Des lignes existent, mais les filtres n'en ont retenu aucune."),
 					Understood = _surface.Rules,
 				};
 
@@ -912,7 +929,8 @@ namespace CrossBuy.BL.Platform.Ai
 				Understood = namedNote == null
 					? Explain(result, clean, arabic, composedBy)
 					: AskText.Of(namedNote.Ar + " · " + Explain(result, clean, arabic, composedBy).Ar,
-								 namedNote.En + " · " + Explain(result, clean, arabic, composedBy).En),
+								 namedNote.En + " · " + Explain(result, clean, arabic, composedBy).En,
+								 namedNote.Fr + " · " + Explain(result, clean, arabic, composedBy).Fr),
 				Notes = _surface.Rules,
 				Provenance = new AskProvenance
 				{
@@ -1016,26 +1034,30 @@ namespace CrossBuy.BL.Platform.Ai
 			if (query.Measures.Count == 0)
 			{
 				var byCol = _surface.Column(query.OrderBy ?? "");
-				var byName = byCol == null ? null : (arabic ? byCol.Label.Ar : byCol.Label.En);
+				var byName = byCol?.Label.ForCulture(CultureInfo.CurrentUICulture);
 				var byTime = query.OrderBy is "date" or "month" && query.Descending;
 
 				if (shaped.Count == 1)
 					return byTime
 						? AskText.Of("آخر سجل: " + shaped[0]["name"] + ".",
-									 "Most recent: " + shaped[0]["name"] + ".")
+									 "Most recent: " + shaped[0]["name"] + ".",
+									 "Le plus récent : " + shaped[0]["name"] + ".")
 						: AskText.Of("سجل واحد: " + shaped[0]["name"] + ".",
-									 "One record: " + shaped[0]["name"] + ".");
+									 "One record: " + shaped[0]["name"] + ".",
+									 "Un seul résultat : " + shaped[0]["name"] + ".");
 
 				return byTime
 					? AskText.Of($"آخر {shaped.Count} سجلات، الأحدث أولًا.",
-								 $"The {shaped.Count} most recent records, newest first.")
+								 $"The {shaped.Count} most recent records, newest first.",
+								 $"Les {shaped.Count} résultats les plus récents, du plus récent au plus ancien.")
 					: AskText.Of(
 						$"{shaped.Count} سجلات" + (byName == null ? "." : $"، مرتَّبة حسب {byName}."),
-						$"{shaped.Count} records" + (byName == null ? "." : $", ordered by {byName}."));
+						$"{shaped.Count} records" + (byName == null ? "." : $", ordered by {byName}."),
+						$"{shaped.Count} résultats" + (byName == null ? "." : $", triés par {byName}."));
 			}
 
 			var measureCol = _surface.Column(query.Measures[0].Column);
-			var measureName = arabic ? (measureCol?.Label.Ar ?? "") : (measureCol?.Label.En ?? "");
+			var measureName = measureCol?.Label.ForCulture(CultureInfo.CurrentUICulture) ?? "";
 			var top = shaped[0];
 			var value = top.TryGetValue("onHandText", out var v) ? Convert.ToString(v) : null;
 			var label = top.TryGetValue("name", out var n) ? Convert.ToString(n) : null;
@@ -1058,15 +1080,16 @@ namespace CrossBuy.BL.Platform.Ai
 				// and the row can never disagree about the same numbers.
 				return AskText.Of(
 					$"{measureName} في {result.Period}: {value}{who} — مقارنة بـ{result.PriorPeriod}: {prior}.",
-					$"{measureName} in {result.Period}: {value}{who} — against {result.PriorPeriod}: {prior}.");
+					$"{measureName} in {result.Period}: {value}{who} — against {result.PriorPeriod}: {prior}.",
+					$"{measureName} en {result.Period} : {value}{who} — comparé à {result.PriorPeriod} : {prior}.");
 			}
 
 			// Ungrouped: there is one number and it is the answer.
 			if (query.GroupBy.Count == 0)
-				return AskText.Of($"{measureName}: {value}.", $"{measureName}: {value}.");
+				return AskText.Of($"{measureName}: {value}.", $"{measureName}: {value}.", $"{measureName} : {value}.");
 
 			var groupCol = _surface.Column(query.GroupBy[0]);
-			var groupName = arabic ? (groupCol?.Label.Ar ?? "") : (groupCol?.Label.En ?? "");
+			var groupName = groupCol?.Label.ForCulture(CultureInfo.CurrentUICulture) ?? "";
 			// ARABIC DEFINITENESS, WITHOUT GUESSING AT MORPHOLOGY.
 			//
 			// "أعلى الصنف" is not Arabic — that construction wants an indefinite noun, while the
@@ -1081,7 +1104,10 @@ namespace CrossBuy.BL.Platform.Ai
 			// So the sentence is built to take the label AS IT IS. "الأعلى في X حسب Y" needs no
 			// agreement from Y at all, and reads naturally for every label this surface can have.
 			var more = result.GroupsFound > shaped.Count
-				? (arabic ? $" ومعروض {shaped.Count} من {result.GroupsFound}." : $" Showing {shaped.Count} of {result.GroupsFound}.")
+				? (arabic ? $" ومعروض {shaped.Count} من {result.GroupsFound}."
+					: CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr"
+						? $" Affichage de {shaped.Count} sur {result.GroupsFound}."
+						: $" Showing {shaped.Count} of {result.GroupsFound}.")
 				: "";
 
 			// NOTHING IS "THE HIGHEST" WHEN THERE IS ONE OF IT.
@@ -1092,15 +1118,18 @@ namespace CrossBuy.BL.Platform.Ai
 			// having something to rank.
 			if (result.GroupsFound == 1 && shaped.Count == 1)
 				return AskText.Of($"{label}: {value} ({measureName}).",
-								  $"{label}: {value} ({measureName}).");
+								  $"{label}: {value} ({measureName}).",
+								  $"{label} : {value} ({measureName}).");
 
 			return query.Descending
 				? AskText.Of(
 					$"الأعلى في {measureName} حسب {groupName}: {label} بـ{value}.{more}",
-					$"Highest {groupName} by {measureName}: {label} at {value}.{more}")
+					$"Highest {groupName} by {measureName}: {label} at {value}.{more}",
+					$"Valeur la plus élevée pour {groupName}, selon {measureName} : {label}, avec {value}.{more}")
 				: AskText.Of(
 					$"الأقل في {measureName} حسب {groupName}: {label} بـ{value}.{more}",
-					$"Lowest {groupName} by {measureName}: {label} at {value}.{more}");
+					$"Lowest {groupName} by {measureName}: {label} at {value}.{more}",
+					$"Valeur la plus faible pour {groupName}, selon {measureName} : {label}, avec {value}.{more}");
 		}
 
 		/// Rows in the shape the widget already renders, so no screen change is needed.
@@ -1163,7 +1192,7 @@ namespace CrossBuy.BL.Platform.Ai
 				{
 					var mv = r.TryGetValue(m.Column, out var x) ? x as decimal? : null;
 					var col = _surface.Column(m.Column);
-					var name = arabic ? (col?.Label.Ar ?? m.Column) : (col?.Label.En ?? m.Column);
+					var name = col?.Label.ForCulture(CultureInfo.CurrentUICulture) ?? m.Column;
 					// UNKNOWN IS SAID, NOT SHOWN AS A DASH THAT READS AS ZERO.
 					return mv == null
 						? $"{name}: " + (arabic ? "غير معروف" : "unknown")
@@ -1198,22 +1227,25 @@ namespace CrossBuy.BL.Platform.Ai
 		{
 			_ = engine;   // recorded by the caller's provenance; never shown to the reader
 
-			string Names(IEnumerable<string> cols, bool ar) => string.Join(" + ", cols.Select(c =>
+		string Names(IEnumerable<string> cols) => string.Join(" + ", cols.Select(c =>
 			{
 				var col = _surface.Column(c);
-				return ar ? (col?.Label.Ar ?? c) : (col?.Label.En ?? c);
+				return col?.Label.ForCulture(CultureInfo.CurrentUICulture) ?? c;
 			}));
 
-			var measures = Names(query.Measures.Select(m => m.Column), arabic);
+			var french = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+			var measures = Names(query.Measures.Select(m => m.Column));
 			var groups = query.GroupBy.Count == 0
-				? (arabic ? "الإجمالي" : "the total")
-				: Names(query.GroupBy, arabic);
+				? (arabic ? "الإجمالي" : french ? "le total" : "the total")
+				: Names(query.GroupBy);
 
 			var span = result.FromDate == null
 				? ""
 				: (arabic
 					? $" · الفترة المغطاة فعليًا: {result.FromDate} إلى {result.ToDate}"
-					: $" · actual period covered: {result.FromDate} to {result.ToDate}");
+					: french
+						? $" · période réellement couverte : {result.FromDate} à {result.ToDate}"
+						: $" · actual period covered: {result.FromDate} to {result.ToDate}");
 
 			// THE ENGINE THAT COMPOSED THIS IS NOT NEWS TO THE READER. "[rules]" was printing into
 			// the answer as if it meant something; it is the name of the composer and belongs in
@@ -1222,7 +1254,8 @@ namespace CrossBuy.BL.Platform.Ai
 			// how much, and when.
 			var ar = $"{measures} حسب {groups} · {result.GroupsFound} مجموعة من {result.RowsRead} سطر{span}";
 			var en = $"{measures} by {groups} · {result.GroupsFound} group(s) from {result.RowsRead} line(s){span}";
-			return AskText.Of(ar, en);
+			var fr = $"{measures} par {groups} · {result.GroupsFound} groupe(s) sur {result.RowsRead} ligne(s){span}";
+			return AskText.Of(ar, en, fr);
 		}
 
 		/// Tolerant of shape, strict about content: anything it cannot read becomes null and the

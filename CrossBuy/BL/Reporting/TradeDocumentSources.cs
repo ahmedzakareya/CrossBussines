@@ -209,9 +209,23 @@ namespace CrossBuy.BL.Reporting
                 .FirstOrDefaultAsync(cancellationToken);
 
             int cap = query.MaxRows > 0 ? query.MaxRows : TradeDocumentDatasets.MaxRows;
-            var lines = await _db.PurchaseInvoiceLines.AsNoTracking()
-                .Where(l => l.PurchaseInvoiceId == id.Value)
-                .OrderBy(l => l.LineNo)
+            // THE ITEM IS JOINED. These lines carry an item id, a description and no code, and the
+            // description is frequently left blank - so without this an invoice prints a line with no
+            // indication of WHAT was bought. The item's own name is the sensible fallback.
+            var lines = await (
+                from l in _db.PurchaseInvoiceLines.AsNoTracking()
+                where l.PurchaseInvoiceId == id.Value
+                join it in _db.Items.AsNoTracking() on l.ItemId equals it.ID into ij
+                from it in ij.DefaultIfEmpty()
+                orderby l.LineNo
+                select new
+                {
+                    l.LineNo, l.ItemDescription, l.ItemDescriptionEn, l.Qty, l.UnitPrice,
+                    l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    ItemCode = it != null ? it.ItemCode : null,
+                    ItemNameAr = it != null ? it.Name : null,
+                    ItemNameEn = it != null ? it.NameEn : null,
+                })
                 .Take(cap + 1)
                 .ToListAsync(cancellationToken);
 
@@ -220,8 +234,11 @@ namespace CrossBuy.BL.Reporting
 
             foreach (var l in lines)
                 builder.AddRow(TradeDocumentRows.Row(
-                    l.LineNo, null,
-                    AccountingSourceHelpers.Pick(arabic, l.ItemDescription, l.ItemDescriptionEn),
+                    l.LineNo, l.ItemCode,
+                    AccountingSourceHelpers.Pick(arabic, l.ItemDescription, l.ItemDescriptionEn)
+                        is { Length: > 0 } __d && !string.IsNullOrWhiteSpace(__d)
+                        ? __d
+                        : AccountingSourceHelpers.Pick(arabic, l.ItemNameAr, l.ItemNameEn),
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.InvoiceNo, header.InvoiceDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
@@ -283,6 +300,10 @@ namespace CrossBuy.BL.Reporting
                     l.LineNo, l.ItemDescription, l.Qty, l.UnitPrice,
                     l.DiscountAmount, l.TaxRate, l.LineTotal,
                     ItemCode = it != null ? it.ItemCode : null,
+                    // Both halves, picked after materialisation: the line description is often
+                    // blank and the item's own name is the sensible thing to print instead.
+                    ItemNameAr = it != null ? it.Name : null,
+                    ItemNameEn = it != null ? it.NameEn : null,
                 })
                 .Take(cap + 1)
                 .ToListAsync(cancellationToken);
@@ -292,7 +313,10 @@ namespace CrossBuy.BL.Reporting
 
             foreach (var l in lines)
                 builder.AddRow(TradeDocumentRows.Row(
-                    l.LineNo, l.ItemCode, l.ItemDescription,
+                    l.LineNo, l.ItemCode,
+                    string.IsNullOrWhiteSpace(l.ItemDescription)
+                        ? AccountingSourceHelpers.Pick(arabic, l.ItemNameAr, l.ItemNameEn)
+                        : l.ItemDescription,
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.QuoteNo, header.QuoteDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
@@ -353,6 +377,10 @@ namespace CrossBuy.BL.Reporting
                     l.LineNo, l.ItemDescription, l.Qty, l.UnitPrice,
                     l.DiscountAmount, l.TaxRate, l.LineTotal,
                     ItemCode = it != null ? it.ItemCode : null,
+                    // Both halves, picked after materialisation: the line description is often
+                    // blank and the item's own name is the sensible thing to print instead.
+                    ItemNameAr = it != null ? it.Name : null,
+                    ItemNameEn = it != null ? it.NameEn : null,
                 })
                 .Take(cap + 1)
                 .ToListAsync(cancellationToken);
@@ -362,7 +390,10 @@ namespace CrossBuy.BL.Reporting
 
             foreach (var l in lines)
                 builder.AddRow(TradeDocumentRows.Row(
-                    l.LineNo, l.ItemCode, l.ItemDescription,
+                    l.LineNo, l.ItemCode,
+                    string.IsNullOrWhiteSpace(l.ItemDescription)
+                        ? AccountingSourceHelpers.Pick(arabic, l.ItemNameAr, l.ItemNameEn)
+                        : l.ItemDescription,
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.OrderNo, header.OrderDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
@@ -543,6 +574,10 @@ namespace CrossBuy.BL.Reporting
                     l.LineNo, l.ItemDescription, l.Qty, l.UnitPrice,
                     l.DiscountAmount, l.TaxRate, l.LineTotal,
                     ItemCode = it != null ? it.ItemCode : null,
+                    // Both halves, picked after materialisation: the line description is often
+                    // blank and the item's own name is the sensible thing to print instead.
+                    ItemNameAr = it != null ? it.Name : null,
+                    ItemNameEn = it != null ? it.NameEn : null,
                 })
                 .Take(cap + 1)
                 .ToListAsync(cancellationToken);
@@ -552,7 +587,10 @@ namespace CrossBuy.BL.Reporting
 
             foreach (var l in lines)
                 builder.AddRow(TradeDocumentRows.Row(
-                    l.LineNo, l.ItemCode, l.ItemDescription,
+                    l.LineNo, l.ItemCode,
+                    string.IsNullOrWhiteSpace(l.ItemDescription)
+                        ? AccountingSourceHelpers.Pick(arabic, l.ItemNameAr, l.ItemNameEn)
+                        : l.ItemDescription,
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.OrderNo, header.OrderDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,

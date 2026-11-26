@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tags" xml:space="preserve">
+    <value>Étiquettes</value>
+  </data>
+  <data name="One word, shared by every record that carries it." xml:space="preserve">
+    <value>Un mot, partagé par chaque enregistrement qui le porte.</value>
+  </data>
+  <data name="Tags created here are the ones offered on leads, opportunities, accounts and activities. A tag belongs to this company only." xml:space="preserve">
+    <value>Les étiquettes créées ici sont celles proposées sur les prospects, opportunités, comptes et activités. Une étiquette appartient à cette société seule.</value>
+  </data>
+  <data name="A tag that has never been used is deleted outright; one that records history is archived instead, so every record keeps its answer." xml:space="preserve">
+    <value>Une étiquette jamais utilisée est supprimée; celle qui porte un historique est archivée, afin que chaque enregistrement garde sa réponse.</value>
+  </data>
+  <data name="New tag" xml:space="preserve">
+    <value>Nouvelle étiquette</value>
+  </data>
+  <data name="e.g. Key account" xml:space="preserve">
+    <value>ex. Compte clé</value>
+  </data>
+  <data name="Case and spacing do not make a new tag: “Urgent” and “ urgent ” are the same one." xml:space="preserve">
+    <value>La casse et les espaces ne créent pas une nouvelle étiquette : « Urgent » et «  urgent  » sont la même.</value>
+  </data>
+  <data name="Records" xml:space="preserve">
+    <value>Enregistrements</value>
+  </data>
+  <data name="No tags yet" xml:space="preserve">
+    <value>Aucune étiquette pour l'instant</value>
+  </data>
+  <data name="Never used" xml:space="preserve">
+    <value>Jamais utilisée</value>
+  </data>
+  <data name="Archived" xml:space="preserve">
+    <value>Archivée</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Archiver</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="Archive “{0}”? It stays on {1} record(s) and leaves the pickers." xml:space="preserve">
+    <value>Archiver « {0} » ? Elle reste sur {1} enregistrement(s) et quitte les sélecteurs.</value>
+  </data>
+  <data name="Delete “{0}”? It has never been used." xml:space="preserve">
+    <value>Supprimer « {0} » ? Elle n’a jamais été utilisée.</value>
+  </data>
+</root>

@@ -1,0 +1,81 @@
+@using System.Globalization
+@using CrossBuy.BL
+@using CrossBuy.ViewModel
+@model ConstructionBudgetExceptionPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    string Exact(decimal? amount) => amount?.ToString("0.############################", CultureInfo.CurrentCulture) ?? "—";
+    string Message(string code) { var text = SR["Construction.Exception.Error." + code]; return text.IsResourceNotFound ? SR["Construction.Exception.Error.General"].Value : text.Value; }
+    var input = Model.RejectedAction == "RequestBudgetException" ? Model.RejectedForm! : new ConstructionExceptionForm {
+        AllocationId = Model.AllocationId ?? 0, SourceVersion = Model.SourceVersion,
+        AdmissionVersion = Model.Preview?.Version, RequestId = Guid.NewGuid() };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@SR["Construction.Exception.Title"]</h1><div class="text-muted">@Model.ProjectCode — @DisplayName.Of(Model.ProjectName, Model.ProjectNameEn)</div></div>
+        <a asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@SR["Construction.Exception.Back"]</a>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid d-grid gap-5">
+        @if (TempData["PrjMsg"] is string success) { <div class="alert alert-success" role="status">@success</div> }
+        <div class="alert alert-info">@SR["Construction.Exception.Explanation"]</div>
+        @if (Model.Refusal != null)
+        {
+            <div class="alert alert-danger" role="alert">@Message(Model.Refusal) @SR["Construction.Exception.Preserved"]
+                <a asp-action="BudgetExceptions" asp-route-id="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">@SR["Construction.Exception.Reload"]</a>
+            </div>
+            @if (Model.RejectedForm != null) { <div class="card"><div class="card-body"><label for="rejected-reason" class="form-label">@SR["Construction.Exception.Reason"]</label><textarea id="rejected-reason" class="form-control" readonly>@Model.RejectedForm.Reason</textarea></div></div> }
+        }
+        <section class="card"><div class="card-body">
+            <form asp-action="BudgetExceptions" method="get" class="d-flex flex-wrap gap-3 align-items-end">
+                <input type="hidden" name="id" value="@Model.ProjectId" /><input type="hidden" name="culture" value="@CultureInfo.CurrentCulture.Name" /><input type="hidden" name="ui-culture" value="@CultureInfo.CurrentUICulture.Name" />
+                <div><label for="exception-order" class="form-label">@SR["Construction.Exception.Order"]</label><select id="exception-order" name="orderId" class="form-select">
+                    <option value="">@SR["Construction.Exception.AllOrders"]</option>
+                    @foreach (var order in Model.Orders) { <option value="@order.Id" selected="@(Model.OrderId == order.Id)">@(string.IsNullOrWhiteSpace(order.Number) ? "#" + order.Id : order.Number)</option> }
+                </select></div><button class="btn btn-light-primary" type="submit">@SR["Construction.Exception.Show"]</button>
+            </form>
+        </div></section>
+        @if (Model.OrderId.HasValue)
+        {
+            <section class="card"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Exception.NewRequest"]</h2></div><div class="card-body">
+                @if (Model.Preview?.Ok == true)
+                {
+                    <div class="row mb-5"><div class="col-md-6">@SR["Construction.Exception.Amount"]: <strong dir="ltr">@Exact(Model.Preview.ProposedAmount) @Model.Currency</strong></div><div class="col-md-6">@SR["Construction.Exception.Overrun"]: <strong dir="ltr">@Exact(Model.Preview.Overrun) @Model.Currency</strong></div></div>
+                    <form asp-action="RequestBudgetException" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@Model.ProjectId" /><input type="hidden" name="orderId" value="@Model.OrderId" />
+                        <input type="hidden" name="AllocationId" value="@input.AllocationId" /><input type="hidden" name="SourceVersion" value="@input.SourceVersion" /><input type="hidden" name="AdmissionVersion" value="@input.AdmissionVersion" /><input type="hidden" name="RequestId" value="@input.RequestId" />
+                        <label for="exception-reason" class="form-label">@SR["Construction.Exception.Reason"]</label><textarea id="exception-reason" name="Reason" class="form-control mb-4" required maxlength="1000">@input.Reason</textarea>
+                        <button type="submit" class="btn btn-primary" disabled="@(Model.Refusal != null)">@SR["Construction.Exception.Submit"]</button>
+                    </form>
+                }
+                else { <div class="alert alert-warning mb-0">@Message(Model.Preview?.Code ?? "AllocationRequired")</div> }
+            </div></section>
+        }
+        <section class="card"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Exception.History"]</h2></div><div class="card-body">
+            @if (Model.History.Count == 0) { <p class="text-muted">@SR["Construction.Exception.Empty"]</p> }
+            @foreach (var row in Model.History)
+            {
+                <article class="border rounded p-5 mb-4">
+                    <div class="d-flex flex-stack flex-wrap gap-3"><h3 class="fs-6">@SR["Construction.Exception.Order"]: @(string.IsNullOrWhiteSpace(row.OrderNumber) ? "#" + row.OrderId : row.OrderNumber) · #@row.Id</h3><span class="badge badge-light-primary">@SR["Construction.Exception.State." + row.State]</span></div>
+                    <p>@SR["Construction.Exception.Amount"]: <strong dir="ltr">@Exact(row.Amount) @row.Currency</strong> · @SR["Construction.Exception.Overrun"]: <strong dir="ltr">@Exact(row.Overrun) @row.Currency</strong></p>
+                    <p class="text-muted">@row.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.CurrentCulture) UTC · @SR["Construction.Exception.Requester"] #@row.RequesterId</p>
+                    <p class="text-break">@row.Reason</p>
+                    @if (row.DecisionReason != null) { <p class="text-break">@SR["Construction.Exception.DecisionReason"]: @row.DecisionReason</p> }
+                    @if (!Model.OrderId.HasValue) { <a asp-action="BudgetExceptions" asp-route-id="@Model.ProjectId" asp-route-orderId="@row.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name">@SR["Construction.Exception.Review"]</a> }
+                    @foreach (var action in new[] { "ApproveBudgetException", "RejectBudgetException" })
+                    {
+                        var approve = action == "ApproveBudgetException";
+                        if (!(approve ? row.CanApprove : row.CanReject)) { continue; }
+                        var posted = Model.RejectedAction == action && Model.RejectedForm?.ExceptionId == row.Id ? Model.RejectedForm : new ConstructionExceptionForm { ExceptionId = row.Id, AdmissionVersion = row.AdmissionVersion, RequestId = Guid.NewGuid() };
+                        <form asp-action="@action" method="post" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="mt-4">
+                            @Html.AntiForgeryToken()<input type="hidden" name="projectId" value="@Model.ProjectId" /><input type="hidden" name="orderId" value="@Model.OrderId" /><input type="hidden" name="ExceptionId" value="@posted.ExceptionId" /><input type="hidden" name="AdmissionVersion" value="@posted.AdmissionVersion" /><input type="hidden" name="RequestId" value="@posted.RequestId" />
+                            <label class="form-label" for="reason-@action-@row.Id">@SR["Construction.Exception.DecisionReason"]</label><textarea id="reason-@action-@row.Id" name="Reason" class="form-control mb-3" required maxlength="1000">@posted.Reason</textarea>
+                            <button class="btn @(approve ? "btn-success" : "btn-light-danger")" type="submit" disabled="@(Model.Refusal != null)">@SR[approve ? "Construction.Exception.Approve" : "Construction.Exception.Reject"]</button>
+                        </form>
+                    }
+                </article>
+            }
+        </div></section>
+    </div></div>
+</div>

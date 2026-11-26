@@ -6643,6 +6643,26 @@
   <data name="Nobody here" xml:space="preserve"><value>لا أحد هنا</value></data>
   <data name="The case is closed; its kit leaves the store once the store holds every component." xml:space="preserve"><value>أُغلقت الحالة، وتُصرف مستلزماتها حين يتوفر في المخزن كل مكوّن.</value></data>
   <data name="{0} d {1} h" xml:space="preserve"><value>⁦{0}⁩ يوم ⁦{1}⁩ س</value></data>
+  <data name="Over an hour since the last look" xml:space="preserve"><value>مرّت أكثر من ساعة على آخر فحص</value></data>
+  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>اختر خدمتي فحص OCT والمجال البصري من إعدادات عيادة العيون لتُطلبا من هنا.</value></data>
+  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>الخدمة التي تطلبها زيارة العيون لهذا الفحص.</value></data>
+  <data name="unitset:EyeOct" xml:space="preserve"><value>خدمة فحص OCT</value></data>
+  <data name="unitset:EyeVf" xml:space="preserve"><value>خدمة فحص المجال البصري</value></data>
+  <data name="Test service" xml:space="preserve"><value>خدمة الفحص</value></data>
+  <data name="Choose the store..." xml:space="preserve"><value>اختر المخزن...</value></data>
+  <data name="Choose the unit's store first" xml:space="preserve"><value>اختر مخزن الوحدة أولًا</value></data>
+  <data name="From the unit's store" xml:space="preserve"><value>من مخزن الوحدة</value></data>
+  <data name="In the unit's store" xml:space="preserve"><value>في مخزن الوحدة</value></data>
+  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>صرف مستلزمات هذه الجلسة من مخزن الوحدة الآن؟</value></data>
+  <data name="Kit issued" xml:space="preserve"><value>صُرفت المستلزمات</value></data>
+  <data name="Kit waiting" xml:space="preserve"><value>المستلزمات منتظرة</value></data>
+  <data name="The unit has no kit set" xml:space="preserve"><value>لم تُحدَّد مستلزمات الوحدة بعد</value></data>
+  <data name="kitcard:Chemo" xml:space="preserve"><value>مستلزمات كل دورة علاج كيماوي</value></data>
+  <data name="kitcard:Dialysis" xml:space="preserve"><value>مستلزمات كل جلسة غسيل</value></data>
+  <data name="kitcard:Physio" xml:space="preserve"><value>مستلزمات كل جلسة علاج طبيعي</value></data>
+  <data name="kitwhen:Chemo" xml:space="preserve"><value>تخرج من المخزن عند إعطاء الدورة</value></data>
+  <data name="kitwhen:Dialysis" xml:space="preserve"><value>تخرج من المخزن عند إنهاء الجلسة</value></data>
+  <data name="kitwhen:Physio" xml:space="preserve"><value>تخرج من المخزن عند حضور الجلسة</value></data>
   <data name="Cancel and return the dose to the pharmacy store" xml:space="preserve"><value>إلغاء وإرجاع الجرعة إلى مخزن الصيدلية</value></data>
   <data name="Cancelled — the dose is back in the store" xml:space="preserve"><value>أُلغي — والجرعة عادت إلى المخزن</value></data>
   <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>أُعطيت الجرعة للمريض: لا يمكن إلغاؤها</value></data>
@@ -8442,6 +8462,20 @@
   <data name="The teeth it shows" xml:space="preserve"><value>الأسنان الظاهرة فيها</value></data>
   <data name="The teeth this image shows (FDI numbers, e.g. 16, 17)" xml:space="preserve"><value>الأسنان التي تظهر في هذه الصورة (بترقيم FDI، مثل 16، 17)</value></data>
   <data name="Write the teeth as FDI numbers, e.g. 16, 17" xml:space="preserve"><value>اكتب الأسنان بترقيم FDI، مثل 16، 17</value></data>
+  <data name="A prepared cycle awaits its independent check: check it or take it back first" xml:space="preserve"><value>هناك دورة محضّرة بانتظار التحقق المستقل: تحقق منها أو اسحبها أولًا</value></data>
+  <data name="Awaiting the independent check" xml:space="preserve"><value>بانتظار التحقق المستقل</value></data>
+  <data name="By a second clinician, not the one who prepared it." xml:space="preserve"><value>يتحقق منها ممارس ثانٍ غير الذي حضّرها.</value></data>
+  <data name="Checked: give it" xml:space="preserve"><value>تم التحقق: إعطاء الجرعة</value></data>
+  <data name="Double-checked" xml:space="preserve"><value>تم التحقق المزدوج</value></data>
+  <data name="Only a prepared cycle is checked" xml:space="preserve"><value>لا يُتحقق إلا من دورة محضّرة</value></data>
+  <data name="Only a prepared cycle is taken back" xml:space="preserve"><value>لا يُسحب إلا تحضير دورة لم تُعطَ</value></data>
+  <data name="Prepare cycle {0} for the check" xml:space="preserve"><value>تحضير الدورة {0} للتحقق</value></data>
+  <data name="Record this cycle with these doses? A second clinician checks it before it is given." xml:space="preserve"><value>هل تسجّل هذه الدورة بهذه الجرعات؟ يتحقق منها ممارس ثانٍ قبل إعطائها.</value></data>
+  <data name="Take it back" xml:space="preserve"><value>سحب التحضير</value></data>
+  <data name="The independent check is by a second clinician, not the one who prepared it" xml:space="preserve"><value>التحقق المستقل يجريه ممارس ثانٍ، لا من حضّر الدورة</value></data>
+  <data name="What did the check find?" xml:space="preserve"><value>ماذا وجد التحقق؟</value></data>
+  <data name="Write what the check found" xml:space="preserve"><value>اكتب ما وجده التحقق</value></data>
+  <data name="You checked the drugs, doses and patient independently: give this cycle?" xml:space="preserve"><value>تحققت بنفسك من الأدوية والجرعات وهوية المريض: هل تُعطى هذه الدورة؟</value></data>
   <data name="A frequency is 1 to 120 months" xml:space="preserve"><value>المدة من 1 إلى 120 شهرًا</value></data>
   <data name="A waiting period is 0 to 60 months" xml:space="preserve"><value>فترة الانتظار من 0 إلى 60 شهرًا</value></data>
   <data name="A yearly count is 1 to 52" xml:space="preserve"><value>العدد السنوي من 1 إلى 52</value></data>
@@ -8527,20 +8561,6 @@
   <data name="The recording is not in a supported format" xml:space="preserve"><value>صيغة التسجيل غير مدعومة</value></data>
   <data name="Call recording is not installed yet (hospital_h176_call_recording.sql)." xml:space="preserve"><value>تسجيل المكالمات غير مُثبّت بعد (hospital_h176_call_recording.sql).</value></data>
   <data name="Recording asked by {0}" xml:space="preserve"><value>طلبه {0}</value></data>
-  <data name="A prepared cycle awaits its independent check: check it or take it back first" xml:space="preserve"><value>هناك دورة محضّرة بانتظار التحقق المستقل: تحقق منها أو اسحبها أولًا</value></data>
-  <data name="Awaiting the independent check" xml:space="preserve"><value>بانتظار التحقق المستقل</value></data>
-  <data name="By a second clinician, not the one who prepared it." xml:space="preserve"><value>يتحقق منها ممارس ثانٍ غير الذي حضّرها.</value></data>
-  <data name="Checked: give it" xml:space="preserve"><value>تم التحقق: إعطاء الجرعة</value></data>
-  <data name="Double-checked" xml:space="preserve"><value>تم التحقق المزدوج</value></data>
-  <data name="Only a prepared cycle is checked" xml:space="preserve"><value>لا يُتحقق إلا من دورة محضّرة</value></data>
-  <data name="Only a prepared cycle is taken back" xml:space="preserve"><value>لا يُسحب إلا تحضير دورة لم تُعطَ</value></data>
-  <data name="Prepare cycle {0} for the check" xml:space="preserve"><value>تحضير الدورة {0} للتحقق</value></data>
-  <data name="Record this cycle with these doses? A second clinician checks it before it is given." xml:space="preserve"><value>هل تسجّل هذه الدورة بهذه الجرعات؟ يتحقق منها ممارس ثانٍ قبل إعطائها.</value></data>
-  <data name="Take it back" xml:space="preserve"><value>سحب التحضير</value></data>
-  <data name="The independent check is by a second clinician, not the one who prepared it" xml:space="preserve"><value>التحقق المستقل يجريه ممارس ثانٍ، لا من حضّر الدورة</value></data>
-  <data name="What did the check find?" xml:space="preserve"><value>ماذا وجد التحقق؟</value></data>
-  <data name="Write what the check found" xml:space="preserve"><value>اكتب ما وجده التحقق</value></data>
-  <data name="You checked the drugs, doses and patient independently: give this cycle?" xml:space="preserve"><value>تحققت بنفسك من الأدوية والجرعات وهوية المريض: هل تُعطى هذه الدورة؟</value></data>
   <data name="A live vaccine is not given in immunosuppression or pregnancy" xml:space="preserve"><value>لا يُعطى لقاح حيّ في حالة نقص المناعة أو الحمل</value></data>
   <data name="A severe reaction to a previous dose or a component: this vaccine is not given" xml:space="preserve"><value>تفاعل شديد مع جرعة سابقة أو أحد المكونات: لا يُعطى هذا اللقاح</value></data>
   <data name="Answer the screening questions" xml:space="preserve"><value>أجب عن أسئلة الفحص المسبق</value></data>
@@ -8678,6 +8698,20 @@
   <data name="ret:Essix" xml:space="preserve"><value>مثبّت شفاف (إيسكس)</value></data>
   <data name="ret:Hawley" xml:space="preserve"><value>مثبّت هاولي</value></data>
   <data name="ret:None" xml:space="preserve"><value>بلا مثبّت</value></data>
+  <data name="Open in the File Manager" xml:space="preserve"><value>فتح في مدير الملفات</value></data>
+  <data name="The internal media server" xml:space="preserve"><value>خادم الوسائط الداخلي</value></data>
+  <data name="LiveKit on a server inside the hospital: group calls of more than four go through it" xml:space="preserve"><value>LiveKit على خادم داخل المستشفى: المكالمات الجماعية لأكثر من أربعة أشخاص تمر عبره</value></data>
+  <data name="Media server address" xml:space="preserve"><value>عنوان خادم الوسائط</value></data>
+  <data name="API key" xml:space="preserve"><value>مفتاح الواجهة (API key)</value></data>
+  <data name="API secret" xml:space="preserve"><value>سر الواجهة (API secret)</value></data>
+  <data name="Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call." xml:space="preserve"><value>إن تُرك فارغًا تبقى المكالمات الجماعية حتى أربعة أشخاص، كل جهاز متصل بالآخرين مباشرة. ولا يصل السر إلى أي متصفح: يحصل كل شخص على رمز غرفة لمكالمة واحدة.</value></data>
+  <data name="Who reviews every recording" xml:space="preserve"><value>من يراجع كل التسجيلات</value></data>
+  <data name="Nobody — only the people in each call" xml:space="preserve"><value>لا أحد — فقط من كان في كل مكالمة</value></data>
+  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve"><value>أشخاص بأسمائهم فقط. وغيرهم لا يفتح التسجيل إلا من كان في تلك المكالمة، ويُسجَّل كل فتح.</value></data>
+  <data name="Write the media server address as wss://host:port" xml:space="preserve"><value>اكتب عنوان خادم الوسائط بالشكل wss://host:port</value></data>
+  <data name="Through the internal media server, up to twelve people" xml:space="preserve"><value>عبر خادم الوسائط الداخلي، حتى اثني عشر شخصًا</value></data>
+  <data name="Internal media server (group calls above four)" xml:space="preserve"><value>خادم الوسائط الداخلي (المكالمات الجماعية لأكثر من أربعة)</value></data>
+  <data name="Each person sends their picture once and it passes it to the others — inside the hospital only" xml:space="preserve"><value>يرسل كل شخص صورته مرة واحدة ويوزعها الخادم على الباقين — داخل المستشفى فقط</value></data>
   <data name="A graft is recorded with its lot" xml:space="preserve"><value>يُسجَّل الطُّعم العظمي مع رقم تشغيلته</value></data>
   <data name="A peri-implant review is of a restored implant" xml:space="preserve"><value>مراجعة ما حول الغرسة تكون لغرسة رُكّبت عليها التعويضة</value></data>
   <data name="A review cannot be before the restoration was fitted" xml:space="preserve"><value>لا تسبق المراجعة تركيب التعويضة</value></data>
@@ -8714,6 +8748,7 @@
   <data name="peri:Mucositis" xml:space="preserve"><value>التهاب الغشاء المخاطي حول الغرسة</value></data>
   <data name="peri:Periimplantitis" xml:space="preserve"><value>التهاب ما حول الغرسة</value></data>
   <data name="Bleeds on probing" xml:space="preserve"><value>نزف عند السبر</value></data>
+  <data name="{0} days (retention)" xml:space="preserve"><value>{0} يومًا</value></data>
   <data name="A conventional impression leaves for the lab only disinfected; the disinfectant is recorded when it is sent." xml:space="preserve"><value>لا تُرسل الطبعة التقليدية إلى المعمل إلا بعد تطهيرها، ويُسجَّل المطهّر عند الإرسال.</value></data>
   <data name="Check the work" xml:space="preserve"><value>فحص العمل</value></data>
   <data name="Checked on receipt" xml:space="preserve"><value>فُحص عند الاستلام</value></data>
@@ -8736,21 +8771,6 @@
   <data name="qc:Margins" xml:space="preserve"><value>الحواف</value></data>
   <data name="qc:Occlusion" xml:space="preserve"><value>الإطباق</value></data>
   <data name="qc:Shade" xml:space="preserve"><value>اللون</value></data>
-  <data name="Open in the File Manager" xml:space="preserve"><value>فتح في مدير الملفات</value></data>
-  <data name="The internal media server" xml:space="preserve"><value>خادم الوسائط الداخلي</value></data>
-  <data name="LiveKit on a server inside the hospital: group calls of more than four go through it" xml:space="preserve"><value>LiveKit على خادم داخل المستشفى: المكالمات الجماعية لأكثر من أربعة أشخاص تمر عبره</value></data>
-  <data name="Media server address" xml:space="preserve"><value>عنوان خادم الوسائط</value></data>
-  <data name="API key" xml:space="preserve"><value>مفتاح الواجهة (API key)</value></data>
-  <data name="API secret" xml:space="preserve"><value>سر الواجهة (API secret)</value></data>
-  <data name="Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call." xml:space="preserve"><value>إن تُرك فارغًا تبقى المكالمات الجماعية حتى أربعة أشخاص، كل جهاز متصل بالآخرين مباشرة. ولا يصل السر إلى أي متصفح: يحصل كل شخص على رمز غرفة لمكالمة واحدة.</value></data>
-  <data name="Who reviews every recording" xml:space="preserve"><value>من يراجع كل التسجيلات</value></data>
-  <data name="Nobody — only the people in each call" xml:space="preserve"><value>لا أحد — فقط من كان في كل مكالمة</value></data>
-  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve"><value>أشخاص بأسمائهم فقط. وغيرهم لا يفتح التسجيل إلا من كان في تلك المكالمة، ويُسجَّل كل فتح.</value></data>
-  <data name="Write the media server address as wss://host:port" xml:space="preserve"><value>اكتب عنوان خادم الوسائط بالشكل wss://host:port</value></data>
-  <data name="Through the internal media server, up to twelve people" xml:space="preserve"><value>عبر خادم الوسائط الداخلي، حتى اثني عشر شخصًا</value></data>
-  <data name="Internal media server (group calls above four)" xml:space="preserve"><value>خادم الوسائط الداخلي (المكالمات الجماعية لأكثر من أربعة)</value></data>
-  <data name="Each person sends their picture once and it passes it to the others — inside the hospital only" xml:space="preserve"><value>يرسل كل شخص صورته مرة واحدة ويوزعها الخادم على الباقين — داخل المستشفى فقط</value></data>
-  <data name="{0} days (retention)" xml:space="preserve"><value>{0} يومًا</value></data>
   <data name="This calculator reads one code" xml:space="preserve"><value>تقرأ هذه الحاسبة رمزًا واحدًا</value></data>
   <data name="This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling" xml:space="preserve"><value>تقرأ هذه الحاسبة ستة عشر رمزًا بالترتيب: المناطق الأربع، ولكل منها المساحة والاحمرار والتسمّك والتقشّر</value></data>
   <data name="This calculator reads two codes, in order" xml:space="preserve"><value>تقرأ هذه الحاسبة رمزين بالترتيب</value></data>
@@ -8870,26 +8890,6 @@
   <data name="The viewer address names an unknown placeholder" xml:space="preserve"><value>يحتوي عنوان العارض على متغير غير معروف</value></data>
   <data name="Viewer address" xml:space="preserve"><value>عنوان العارض</value></data>
   <data name="Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect." xml:space="preserve"><value>اكتب {0} في موضع رقم الدراسة، و{1} لرقم ملف المريض. اتركه فارغًا لفصل الربط.</value></data>
-  <data name="Over an hour since the last look" xml:space="preserve"><value>مرّت أكثر من ساعة على آخر فحص</value></data>
-  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>اختر خدمتي فحص OCT والمجال البصري من إعدادات عيادة العيون لتُطلبا من هنا.</value></data>
-  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>الخدمة التي تطلبها زيارة العيون لهذا الفحص.</value></data>
-  <data name="unitset:EyeOct" xml:space="preserve"><value>خدمة فحص OCT</value></data>
-  <data name="unitset:EyeVf" xml:space="preserve"><value>خدمة فحص المجال البصري</value></data>
-  <data name="Test service" xml:space="preserve"><value>خدمة الفحص</value></data>
-  <data name="Choose the store..." xml:space="preserve"><value>اختر المخزن...</value></data>
-  <data name="Choose the unit's store first" xml:space="preserve"><value>اختر مخزن الوحدة أولًا</value></data>
-  <data name="From the unit's store" xml:space="preserve"><value>من مخزن الوحدة</value></data>
-  <data name="In the unit's store" xml:space="preserve"><value>في مخزن الوحدة</value></data>
-  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>صرف مستلزمات هذه الجلسة من مخزن الوحدة الآن؟</value></data>
-  <data name="Kit issued" xml:space="preserve"><value>صُرفت المستلزمات</value></data>
-  <data name="Kit waiting" xml:space="preserve"><value>المستلزمات منتظرة</value></data>
-  <data name="The unit has no kit set" xml:space="preserve"><value>لم تُحدَّد مستلزمات الوحدة بعد</value></data>
-  <data name="kitcard:Chemo" xml:space="preserve"><value>مستلزمات كل دورة علاج كيماوي</value></data>
-  <data name="kitcard:Dialysis" xml:space="preserve"><value>مستلزمات كل جلسة غسيل</value></data>
-  <data name="kitcard:Physio" xml:space="preserve"><value>مستلزمات كل جلسة علاج طبيعي</value></data>
-  <data name="kitwhen:Chemo" xml:space="preserve"><value>تخرج من المخزن عند إعطاء الدورة</value></data>
-  <data name="kitwhen:Dialysis" xml:space="preserve"><value>تخرج من المخزن عند إنهاء الجلسة</value></data>
-  <data name="kitwhen:Physio" xml:space="preserve"><value>تخرج من المخزن عند حضور الجلسة</value></data>
   <data name="Claims file (FHIR)" xml:space="preserve"><value>ملف المطالبات (FHIR)</value></data>
   <data name="Detail" xml:space="preserve"><value>التفاصيل</value></data>
   <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
@@ -8917,33 +8917,87 @@
   <data name="the payer could not process it" xml:space="preserve"><value>تعذّر على الجهة الضامنة معالجتها</value></data>
   <data name="{0} lines" xml:space="preserve"><value>{0} بند</value></data>
   <data name="{0} lines recorded, {1} left as they were" xml:space="preserve"><value>سُجّل {0} بند، وبقي {1} بند دون تغيير</value></data>
-  <data name="s, then a missed call is written into the chat" xml:space="preserve"><value>ثانية ثم تُكتب مكالمة فائتة في المحادثة</value></data>
-  <data name="Incoming video call" xml:space="preserve"><value>مكالمة فيديو واردة</value></data>
-  <data name="Incoming voice call" xml:space="preserve"><value>مكالمة صوتية واردة</value></data>
-  <data name="Your last message" xml:space="preserve"><value>آخر رسالة بينكما</value></data>
-  <data name="I will call you shortly" xml:space="preserve"><value>سأتصل بك بعد قليل</value></data>
-  <data name="In a meeting now" xml:space="preserve"><value>في اجتماع الآن</value></data>
-  <data name="Write to me" xml:space="preserve"><value>اكتب لي</value></data>
-  <data name="By voice" xml:space="preserve"><value>بالصوت</value></data>
-  <data name="Inside the company network · encrypted" xml:space="preserve"><value>داخل شبكة الشركة · مشفّرة</value></data>
-  <data name="The chat" xml:space="preserve"><value>المحادثة</value></data>
-  <data name="What you write here stays in the chat after the call" xml:space="preserve"><value>ما تكتبه هنا يبقى في المحادثة بعد المكالمة</value></data>
-  <data name="Hide" xml:space="preserve"><value>إخفاء</value></data>
-  <data name="Attach" xml:space="preserve"><value>إرفاق</value></data>
-  <data name="Emoji" xml:space="preserve"><value>رمز تعبيري</value></data>
-  <data name="Message deleted" xml:space="preserve"><value>حُذفت الرسالة</value></data>
-  <data name="The message could not be sent" xml:space="preserve"><value>تعذّر إرسال الرسالة</value></data>
-  <data name="e.g. we agreed to send the report on Thursday" xml:space="preserve"><value>مثال: اتفقنا على إرسال التقرير يوم الخميس</value></data>
-  <data name="Kept in the call log" xml:space="preserve"><value>يُحفظ في سجل المكالمات</value></data>
-  <data name="Share the screen" xml:space="preserve"><value>مشاركة الشاشة</value></data>
-  <data name="Chats" xml:space="preserve"><value>المحادثات</value></data>
-  <data name="New chat" xml:space="preserve"><value>محادثة جديدة</value></data>
-  <data name="Open all" xml:space="preserve"><value>فتح الكل</value></data>
-  <data name="Voice message" xml:space="preserve"><value>رسالة صوتية</value></data>
-  <data name="Picture" xml:space="preserve"><value>صورة</value></data>
-  <data name="No results" xml:space="preserve"><value>لا توجد نتائج</value></data>
-  <data name="No conversations yet" xml:space="preserve"><value>لا توجد محادثات بعد</value></data>
-  <data name="Answer (call)" xml:space="preserve"><value>رد</value></data>
+  <data name="s, then a missed call is written into the chat" xml:space="preserve">
+    <value>ثانية ثم تُكتب مكالمة فائتة في المحادثة</value>
+  </data>
+  <data name="Incoming video call" xml:space="preserve">
+    <value>مكالمة فيديو واردة</value>
+  </data>
+  <data name="Incoming voice call" xml:space="preserve">
+    <value>مكالمة صوتية واردة</value>
+  </data>
+  <data name="Your last message" xml:space="preserve">
+    <value>آخر رسالة بينكما</value>
+  </data>
+  <data name="I will call you shortly" xml:space="preserve">
+    <value>سأتصل بك بعد قليل</value>
+  </data>
+  <data name="In a meeting now" xml:space="preserve">
+    <value>في اجتماع الآن</value>
+  </data>
+  <data name="Write to me" xml:space="preserve">
+    <value>اكتب لي</value>
+  </data>
+  <data name="By voice" xml:space="preserve">
+    <value>بالصوت</value>
+  </data>
+  <data name="Inside the company network · encrypted" xml:space="preserve">
+    <value>داخل شبكة الشركة · مشفّرة</value>
+  </data>
+  <data name="The chat" xml:space="preserve">
+    <value>المحادثة</value>
+  </data>
+  <data name="What you write here stays in the chat after the call" xml:space="preserve">
+    <value>ما تكتبه هنا يبقى في المحادثة بعد المكالمة</value>
+  </data>
+  <data name="Hide" xml:space="preserve">
+    <value>إخفاء</value>
+  </data>
+  <data name="Attach" xml:space="preserve">
+    <value>إرفاق</value>
+  </data>
+  <data name="Emoji" xml:space="preserve">
+    <value>رمز تعبيري</value>
+  </data>
+  <data name="Message deleted" xml:space="preserve">
+    <value>حُذفت الرسالة</value>
+  </data>
+  <data name="The message could not be sent" xml:space="preserve">
+    <value>تعذّر إرسال الرسالة</value>
+  </data>
+  <data name="e.g. we agreed to send the report on Thursday" xml:space="preserve">
+    <value>مثال: اتفقنا على إرسال التقرير يوم الخميس</value>
+  </data>
+  <data name="Kept in the call log" xml:space="preserve">
+    <value>يُحفظ في سجل المكالمات</value>
+  </data>
+  <data name="Share the screen" xml:space="preserve">
+    <value>مشاركة الشاشة</value>
+  </data>
+  <data name="Chats" xml:space="preserve">
+    <value>المحادثات</value>
+  </data>
+  <data name="New chat" xml:space="preserve">
+    <value>محادثة جديدة</value>
+  </data>
+  <data name="Open all" xml:space="preserve">
+    <value>فتح الكل</value>
+  </data>
+  <data name="Voice message" xml:space="preserve">
+    <value>رسالة صوتية</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="No results" xml:space="preserve">
+    <value>لا توجد نتائج</value>
+  </data>
+  <data name="No conversations yet" xml:space="preserve">
+    <value>لا توجد محادثات بعد</value>
+  </data>
+  <data name="Answer (call)" xml:space="preserve">
+    <value>رد</value>
+  </data>
   <data name="A monitor's numbers reach the chart only when a nurse accepts them" xml:space="preserve"><value>لا تدخل قراءات جهاز المراقبة ملف المريض إلا بعد أن تعتمدها الممرضة</value></data>
   <data name="A reading older than 12 hours is not charted: take a new set" xml:space="preserve"><value>لا تُعتمد قراءة مضى عليها أكثر من 12 ساعة: خذ قياسًا جديدًا</value></data>
   <data name="An urgent task went on the ward board" xml:space="preserve"><value>أُضيفت مهمة عاجلة إلى لوحة القسم</value></data>
@@ -8984,6 +9038,23 @@
   <data name="{0} readings waiting" xml:space="preserve"><value>{0} قراءة بانتظار المراجعة</value></data>
   <data name="{0}: in {1}" xml:space="preserve"><value>{0}: بوحدة {1}</value></data>
   <data name="{0}: {1} is out of range" xml:space="preserve"><value>{0}: القيمة {1} خارج النطاق</value></data>
+  <data name="A call is waiting" xml:space="preserve"><value>مكالمة في الانتظار</value></data>
+  <data name="End and answer" xml:space="preserve"><value>إنهاء والرد</value></data>
+  <data name="More" xml:space="preserve"><value>المزيد</value></data>
+  <data name="Raise your hand" xml:space="preserve"><value>رفع اليد</value></data>
+  <data name="Lower your hand" xml:space="preserve"><value>خفض اليد</value></data>
+  <data name="Hold" xml:space="preserve"><value>تعليق المكالمة</value></data>
+  <data name="Transfer to someone" xml:space="preserve"><value>تحويل إلى شخص آخر</value></data>
+  <data name="Noise suppression" xml:space="preserve"><value>عزل الضوضاء</value></data>
+  <data name="On" xml:space="preserve"><value>مفعّل</value></data>
+  <data name="Off" xml:space="preserve"><value>متوقف</value></data>
+  <data name="Noise suppression is on" xml:space="preserve"><value>فُعّل عزل الضوضاء</value></data>
+  <data name="Noise suppression is off" xml:space="preserve"><value>أُوقف عزل الضوضاء</value></data>
+  <data name="You put the call on hold" xml:space="preserve"><value>علّقت المكالمة</value></data>
+  <data name="Transferring — the call is yours until they answer" xml:space="preserve"><value>جارٍ التحويل — تبقى المكالمة معك حتى يرد</value></data>
+  <data name="The call is transferred" xml:space="preserve"><value>حُوّلت المكالمة</value></data>
+  <data name="{0} asked not to be disturbed — it is recorded as a missed call so they call you back" xml:space="preserve"><value>{0} في وضع عدم الإزعاج — سُجّلت مكالمة فائتة ليعاود الاتصال بك</value></data>
+  <data name="Turn on desktop notices" xml:space="preserve"><value>تفعيل إشعارات سطح المكتب</value></data>
   <data name="A fasting time cannot be in the future" xml:space="preserve"><value>لا يمكن أن يكون وقت الصيام في المستقبل</value></data>
   <data name="ASA class" xml:space="preserve"><value>تصنيف ASA</value></data>
   <data name="Aldrete {0}: 9 or more is needed to leave recovery" xml:space="preserve"><value>درجة Aldrete ‏{0}: المطلوب 9 أو أكثر لمغادرة الإفاقة</value></data>
@@ -9146,23 +9217,11 @@
   <data name="{0} overdue" xml:space="preserve"><value>{0} متأخرة</value></data>
   <data name="{0} referrals" xml:space="preserve"><value>{0} تحويل</value></data>
   <data name="Answer due by" xml:space="preserve"><value>موعد الرد</value></data>
-  <data name="A call is waiting" xml:space="preserve"><value>مكالمة في الانتظار</value></data>
-  <data name="End and answer" xml:space="preserve"><value>إنهاء والرد</value></data>
-  <data name="More" xml:space="preserve"><value>المزيد</value></data>
-  <data name="Raise your hand" xml:space="preserve"><value>رفع اليد</value></data>
-  <data name="Lower your hand" xml:space="preserve"><value>خفض اليد</value></data>
-  <data name="Hold" xml:space="preserve"><value>تعليق المكالمة</value></data>
-  <data name="Transfer to someone" xml:space="preserve"><value>تحويل إلى شخص آخر</value></data>
-  <data name="Noise suppression" xml:space="preserve"><value>عزل الضوضاء</value></data>
-  <data name="On" xml:space="preserve"><value>مفعّل</value></data>
-  <data name="Off" xml:space="preserve"><value>متوقف</value></data>
-  <data name="Noise suppression is on" xml:space="preserve"><value>فُعّل عزل الضوضاء</value></data>
-  <data name="Noise suppression is off" xml:space="preserve"><value>أُوقف عزل الضوضاء</value></data>
-  <data name="You put the call on hold" xml:space="preserve"><value>علّقت المكالمة</value></data>
-  <data name="Transferring — the call is yours until they answer" xml:space="preserve"><value>جارٍ التحويل — تبقى المكالمة معك حتى يرد</value></data>
-  <data name="The call is transferred" xml:space="preserve"><value>حُوّلت المكالمة</value></data>
-  <data name="{0} asked not to be disturbed — it is recorded as a missed call so they call you back" xml:space="preserve"><value>{0} في وضع عدم الإزعاج — سُجّلت مكالمة فائتة ليعاود الاتصال بك</value></data>
-  <data name="Turn on desktop notices" xml:space="preserve"><value>تفعيل إشعارات سطح المكتب</value></data>
+  <data name="Blur the background" xml:space="preserve"><value>تمويه الخلفية</value></data>
+  <data name="The background is blurred" xml:space="preserve"><value>الخلفية مموّهة</value></data>
+  <data name="The background is no longer blurred" xml:space="preserve"><value>أُلغي تمويه الخلفية</value></data>
+  <data name="Preparing the blur…" xml:space="preserve"><value>جارٍ تجهيز التمويه…</value></data>
+  <data name="The blur could not start on this device" xml:space="preserve"><value>تعذّر تشغيل التمويه على هذا الجهاز</value></data>
   <data name="A dose given without the scan counts against the ward's scanning." xml:space="preserve"><value>الجرعة المعطاة دون مسح تُحسب على نسبة المسح في القسم.</value></data>
   <data name="A wrong patient, a wrong medicine, an expired or recalled pack stops the dose and is kept here. A dose given without the scan needs its reason and counts against the ward. The target is 95%." xml:space="preserve"><value>يُوقف الجرعةَ مريضٌ خطأ أو دواءٌ خطأ أو عبوةٌ منتهية الصلاحية أو مسحوبة، ويُحفظ ذلك هنا. والجرعة المعطاة دون مسح تحتاج إلى سبب وتُحسب على القسم. المستهدف 95%.</value></data>
   <data name="All wards" xml:space="preserve"><value>كل الأقسام</value></data>
@@ -9196,11 +9255,6 @@
   <data name="{0} scans" xml:space="preserve"><value>{0} عملية مسح</value></data>
   <data name="{0} stopped" xml:space="preserve"><value>{0} أُوقفت</value></data>
   <data name="Scan log" xml:space="preserve"><value>سجل المسح</value></data>
-  <data name="Blur the background" xml:space="preserve"><value>تمويه الخلفية</value></data>
-  <data name="The background is blurred" xml:space="preserve"><value>الخلفية مموّهة</value></data>
-  <data name="The background is no longer blurred" xml:space="preserve"><value>أُلغي تمويه الخلفية</value></data>
-  <data name="Preparing the blur…" xml:space="preserve"><value>جارٍ تجهيز التمويه…</value></data>
-  <data name="The blur could not start on this device" xml:space="preserve"><value>تعذّر تشغيل التمويه على هذا الجهاز</value></data>
   <data name="A step done without the scan counts against the ward's scanning." xml:space="preserve"><value>الخطوة المنفّذة دون مسح تُحسب على نسبة المسح في القسم.</value></data>
   <data name="Collect the specimen" xml:space="preserve"><value>سحب العينة</value></data>
   <data name="Scan the patient's wristband and the tube's label, or write why they cannot be scanned" xml:space="preserve"><value>امسح سوار المريض وملصق الأنبوب، أو اكتب سبب تعذّر المسح</value></data>
@@ -9660,6 +9714,12 @@
   <data name="pam:Involved" xml:space="preserve"><value>مصابة</value></data>
   <data name="Copy this payer's sheet" xml:space="preserve"><value>نسخ كشف هذه الجهة</value></data>
   <data name="That payer has no sheet of its own to copy" xml:space="preserve"><value>لا يوجد لهذه الجهة كشف خاص بها لنسخه</value></data>
+  <data name="Speaker" xml:space="preserve"><value>السماعة</value></data>
+  <data name="Test the sound" xml:space="preserve"><value>اختبار الصوت</value></data>
+  <data name="Devices" xml:space="preserve"><value>الأجهزة</value></data>
+  <data name="Use these" xml:space="preserve"><value>استخدام هذه الأجهزة</value></data>
+  <data name="The devices are saved for your calls" xml:space="preserve"><value>حُفظت الأجهزة لمكالماتك</value></data>
+  <data name="Speak: the bar moves when your microphone hears you. The choice is kept on this device for every call." xml:space="preserve"><value>تكلّم: يتحرك الشريط حين يسمعك الميكروفون. يُحفظ اختيارك على هذا الجهاز لكل مكالمة.</value></data>
   <data name="A time is not hh:mm" xml:space="preserve"><value>أحد الأوقات ليس بصيغة hh:mm</value></data>
   <data name="An address is not a valid e-mail" xml:space="preserve"><value>أحد العناوين ليس بريدًا إلكترونيًا صحيحًا</value></data>
   <data name="At most five addresses" xml:space="preserve"><value>خمسة عناوين على الأكثر</value></data>
@@ -9685,31 +9745,13 @@
   <data name="The Ministry's system refused the record" xml:space="preserve"><value>رفض نظام الوزارة السجل</value></data>
   <data name="The hospital is not connected to the Ministry's system yet: cases are reported as before and the Ministry's reference is recorded by hand. Once the administrator sets the connection, each case is sent from here." xml:space="preserve"><value>المستشفى غير متصل بنظام الوزارة بعد: تُبلَّغ الحالات كما في السابق ويُسجَّل مرجع الوزارة يدويًا. وعندما يضبط المسؤول الاتصال تُرسَل كل حالة من هنا.</value></data>
   <data name="The hospital is not connected to the Ministry's system: record the reference by hand" xml:space="preserve"><value>المستشفى غير متصل بنظام الوزارة: سجّل المرجع يدويًا</value></data>
-  <data name="Speaker" xml:space="preserve">
-    <value>السماعة</value>
-  </data>
-  <data name="Test the sound" xml:space="preserve">
-    <value>اختبار الصوت</value>
-  </data>
-  <data name="Devices" xml:space="preserve">
-    <value>الأجهزة</value>
-  </data>
-  <data name="Use these" xml:space="preserve">
-    <value>استخدام هذه الأجهزة</value>
-  </data>
-  <data name="The devices are saved for your calls" xml:space="preserve">
-    <value>حُفظت الأجهزة لمكالماتك</value>
-  </data>
-  <data name="Speak: the bar moves when your microphone hears you. The choice is kept on this device for every call." xml:space="preserve">
-    <value>تكلّم: يتحرك الشريط حين يسمعك الميكروفون. يُحفظ اختيارك على هذا الجهاز لكل مكالمة.</value>
+  <data name="On their phone" xml:space="preserve">
+    <value>متاح على الهاتف</value>
   </data>
   <data name="E-mail is not connected yet, so the copy was not sent. It was saved and is downloading now: print it or keep it on the ward's computer." xml:space="preserve"><value>البريد الإلكتروني غير موصول بعد، فلم تُرسل النسخة. حُفظت ويجري تنزيلها الآن: اطبعها أو احفظها على حاسوب القسم.</value></data>
   <data name="Last copy" xml:space="preserve"><value>آخر نسخة</value></data>
   <data name="made" xml:space="preserve"><value>أُنشئت</value></data>
   <data name="not made" xml:space="preserve"><value>لم تُنشأ</value></data>
-  <data name="On their phone" xml:space="preserve">
-    <value>متاح على الهاتف</value>
-  </data>
   <data name="A fixed column has the same value on every row - the hospital's code at the payer, for example - or stays empty." xml:space="preserve"><value>للعمود الثابت القيمة نفسها في كل صف - رمز المستشفى لدى الجهة الدافعة مثلًا - أو يبقى فارغًا.</value></data>
   <data name="A fixed value is 100 characters at most" xml:space="preserve"><value>القيمة الثابتة 100 حرف على الأكثر</value></data>
   <data name="A key is saved: leave empty to keep it" xml:space="preserve"><value>يوجد مفتاح محفوظ: اتركه فارغًا للإبقاء عليه</value></data>
@@ -9827,6 +9869,16 @@
   <data name="Live captions are off" xml:space="preserve">
     <value>أُوقف النص المباشر</value>
   </data>
+  <data name="Comment" xml:space="preserve"><value>تعليق</value></data>
+  <data name="Antibiogram" xml:space="preserve"><value>خريطة الحساسية للمضادات الحيوية</value></data>
+  <data name="Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution." xml:space="preserve"><value>تُحسب أول عزلة لكل كائن حي لكل مريض في الفترة مرة واحدة (معيار CLSI M39). الرقم هو نسبة العزلات الحساسة؛ وإذا قلّت العزلات عن 30 يظهر باهتًا: اقرأه بحذر.</value></data>
+  <data name="No verified cultures with susceptibility in this period." xml:space="preserve"><value>لا توجد مزارع معتمدة بنتائج حساسية في هذه الفترة.</value></data>
+  <data name="Search an organism" xml:space="preserve"><value>ابحث عن كائن حي</value></data>
+  <data name="Susceptibility by organism" xml:space="preserve"><value>الحساسية حسب الكائن الحي</value></data>
+  <data name="fewer than 30 isolates" xml:space="preserve"><value>أقل من 30 عزلة</value></data>
+  <data name="mostly susceptible" xml:space="preserve"><value>حساس غالبًا</value></data>
+  <data name="often resistant" xml:space="preserve"><value>مقاوم كثيرًا</value></data>
+  <data name="variable" xml:space="preserve"><value>متفاوت</value></data>
   <data name="Encrypted between the devices" xml:space="preserve">
     <value>مشفّرة بين الأجهزة</value>
   </data>
@@ -9842,16 +9894,6 @@
   <data name="This group call goes through the company's own media server, which mixes the streams: it is encrypted on the way, inside the company network." xml:space="preserve">
     <value>تمر هذه المكالمة الجماعية عبر خادم الوسائط الخاص بالشركة الذي يجمع البث: وهي مشفّرة في الطريق، داخل شبكة الشركة.</value>
   </data>
-  <data name="Comment" xml:space="preserve"><value>تعليق</value></data>
-  <data name="Antibiogram" xml:space="preserve"><value>خريطة الحساسية للمضادات الحيوية</value></data>
-  <data name="Each patient's first isolate of each organism in the period counts once (CLSI M39). The figure is the percentage reported susceptible; under 30 isolates it is shown muted: read it with caution." xml:space="preserve"><value>تُحسب أول عزلة لكل كائن حي لكل مريض في الفترة مرة واحدة (معيار CLSI M39). الرقم هو نسبة العزلات الحساسة؛ وإذا قلّت العزلات عن 30 يظهر باهتًا: اقرأه بحذر.</value></data>
-  <data name="No verified cultures with susceptibility in this period." xml:space="preserve"><value>لا توجد مزارع معتمدة بنتائج حساسية في هذه الفترة.</value></data>
-  <data name="Search an organism" xml:space="preserve"><value>ابحث عن كائن حي</value></data>
-  <data name="Susceptibility by organism" xml:space="preserve"><value>الحساسية حسب الكائن الحي</value></data>
-  <data name="fewer than 30 isolates" xml:space="preserve"><value>أقل من 30 عزلة</value></data>
-  <data name="mostly susceptible" xml:space="preserve"><value>حساس غالبًا</value></data>
-  <data name="often resistant" xml:space="preserve"><value>مقاوم كثيرًا</value></data>
-  <data name="variable" xml:space="preserve"><value>متفاوت</value></data>
   <data name="Add a control material" xml:space="preserve"><value>إضافة مادة ضبط</value></data>
   <data name="Choose the analyte" xml:space="preserve"><value>اختر المكوّن</value></data>
   <data name="Control materials" xml:space="preserve"><value>مواد الضبط</value></data>
@@ -10223,12 +10265,6 @@
   <data name="fxo:NotInForce" xml:space="preserve"><value>التغطية غير سارية</value></data>
   <data name="fxo:Pending" xml:space="preserve"><value>قيد المراجعة لدى الجهة</value></data>
   <data name="fxo:Rejected" xml:space="preserve"><value>مرفوضة</value></data>
-  <data name="Guest from outside the company" xml:space="preserve">
-    <value>ضيف من خارج الشركة</value>
-  </data>
-  <data name="A guest from outside the company is in this call: it is not recorded" xml:space="preserve">
-    <value>في هذه المكالمة ضيف من خارج الشركة، فلا تُسجَّل</value>
-  </data>
   <data name="A CT dose needs its DLP" xml:space="preserve"><value>جرعة الأشعة المقطعية تحتاج قيمة DLP</value></data>
   <data name="Above the diagnostic reference level" xml:space="preserve"><value>أعلى من المستوى المرجعي التشخيصي</value></data>
   <data name="Answered" xml:space="preserve"><value>تمت الإجابة</value></data>
@@ -10370,6 +10406,12 @@
   <data name="lvl:3" xml:space="preserve"><value>المستوى 3 — رعاية عالية</value></data>
   <data name="lvl:4" xml:space="preserve"><value>المستوى 4 — رعاية مكثفة</value></data>
   <data name="{0} classified" xml:space="preserve"><value>{0} مصنَّف</value></data>
+  <data name="Guest from outside the company" xml:space="preserve">
+    <value>ضيف من خارج الشركة</value>
+  </data>
+  <data name="A guest from outside the company is in this call: it is not recorded" xml:space="preserve">
+    <value>في هذه المكالمة ضيف من خارج الشركة، فلا تُسجَّل</value>
+  </data>
   <data name="A feed sends nothing until it is enabled with its host and port; switching it on starts from that moment (history is not replayed). Messages are collected when this page opens; sending is by the button." xml:space="preserve"><value>لا ترسل القناة شيئًا حتى تُفعَّل بعنوانها ومنفذها؛ ويبدأ التفعيل من لحظته (لا يُعاد إرسال السجل السابق). تُجمع الرسائل عند فتح هذه الصفحة، ويتم الإرسال بالزر.</value></data>
   <data name="An enabled feed needs its host and port" xml:space="preserve"><value>القناة المفعّلة تحتاج عنوانها ومنفذها</value></data>
   <data name="Another feed uses this code" xml:space="preserve"><value>قناة أخرى تستخدم هذا الرمز</value></data>

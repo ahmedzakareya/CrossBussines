@@ -1,0 +1,59 @@
+-- PROPOSAL ONLY: NOT APPLIED / NOT RELEASE ACCEPTED.
+-- SliceId: R1-HR-DOCUMENT-ATTACHMENTS-001
+-- Supersedes both inputs after review; originals remain intact.
+-- Input: CrossBuy/deploy/sql/hr_document_attachments.sql SHA256 767719f35a202f3a9ad21c97fc932aea861409e1658cb7f6cd8ce7119e480bcc
+-- Input: deploy/sql/hr_document_attachments.sql SHA256 6bc5c6262061b7c2f3d9537ded909ba99d68a394d1b14279013210571da8b6f7
+/* ============================================================================================================
+   HR — attachments for HR contracts and employee documents (legacy; a Central Documents convergence input).
+
+   CANONICAL AUTHORED SLICE (D-38), migrated from deploy/sql/hr_document_attachments.sql.
+
+   WHY IT MOVED. CrossBuy/deploy/sql is the authored root apply-sql-slices.ps1 treats as canonical; the
+   repository-level deploy/sql is the deployment PACKAGE root. The HR scripts were authored only in the package
+   root, so they were outside the canonical mechanism — deployable by hand, invisible to the authored-slice
+   governance. This file is the canonical version. The package copy stays where it is: removing it is a
+   packaging decision for the Integration Owner, not something an HR batch should do silently.
+
+   IDEMPOTENT AND ADDITIVE, unchanged from the original: every object is created only when absent, and the
+   ALTER guards below add a missing column only if it is not already there.
+   ============================================================================================================ */
+
+IF OBJECT_ID('HrDocumentAttachments', 'U') IS NULL
+BEGIN
+    CREATE TABLE HrDocumentAttachments (
+        ID          INT IDENTITY(1,1) PRIMARY KEY,
+        CompanyID   INT           NOT NULL,
+        OwnerKind   NVARCHAR(20)  NOT NULL,   -- Contract | Document
+        OwnerID     INT           NOT NULL,
+        FilePath    NVARCHAR(400) NOT NULL,
+        FileName    NVARCHAR(260) NULL,
+        UploadedAt  DATETIME2     NULL
+    );
+    CREATE INDEX IX_HrDocAtt_Owner ON HrDocumentAttachments (CompanyID, OwnerKind, OwnerID);
+END
+GO
+
+-- One-time migration: fold any existing single FilePath on contracts/documents into the new table
+-- so records that already had a file keep it as their first attachment. Guarded against double-run.
+IF OBJECT_ID('HrDocumentAttachments', 'U') IS NOT NULL
+BEGIN
+    INSERT INTO HrDocumentAttachments (CompanyID, OwnerKind, OwnerID, FilePath, FileName, UploadedAt)
+    SELECT c.CompanyID, 'Contract', c.ID, c.FilePath, NULL, c.CreatedAt
+    FROM EmploymentContracts c
+    WHERE c.FilePath IS NOT NULL AND LTRIM(RTRIM(c.FilePath)) <> ''
+      AND NOT EXISTS (SELECT 1 FROM HrDocumentAttachments a
+                      WHERE a.CompanyID = c.CompanyID AND a.OwnerKind = 'Contract' AND a.OwnerID = c.ID AND a.FilePath = c.FilePath);
+
+    INSERT INTO HrDocumentAttachments (CompanyID, OwnerKind, OwnerID, FilePath, FileName, UploadedAt)
+    SELECT d.CompanyID, 'Document', d.ID, d.FilePath, NULL, d.CreatedAt
+    FROM EmployeeDocuments d
+    WHERE d.FilePath IS NOT NULL AND LTRIM(RTRIM(d.FilePath)) <> ''
+      AND NOT EXISTS (SELECT 1 FROM HrDocumentAttachments a
+                      WHERE a.CompanyID = d.CompanyID AND a.OwnerKind = 'Document' AND a.OwnerID = d.ID AND a.FilePath = d.FilePath);
+END
+GO
+
+-- Revision 02: repair an existing attachment table with a missing owner lookup index.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.HrDocumentAttachments') AND name='IX_HrDocAtt_Owner')
+    CREATE INDEX IX_HrDocAtt_Owner ON dbo.HrDocumentAttachments (CompanyID, OwnerKind, OwnerID);
+GO

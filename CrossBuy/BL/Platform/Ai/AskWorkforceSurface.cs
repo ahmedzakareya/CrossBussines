@@ -49,7 +49,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"قائمة الموظفين: العدد حسب المسمى الوظيفي أو الفرع أو نوع التوظيف أو سنة الالتحاق",
-			"The employee roster: headcount by job title, branch, employment type or year of joining");
+			"The employee roster: headcount by job title, branch, employment type or year of joining",
+			"Effectifs du personnel par intitulé de poste, succursale, type d'emploi ou année d'embauche");
 
 		public override AskText Rules => AskText.Of(
 			"العدد فقط — لا يوجد في هذا المصدر أي بيان عن الرواتب · الموظفون غير النشطين مشمولون "
@@ -70,30 +71,30 @@ namespace CrossBuy.BL.Platform.Ai
 		{
 			// JOB TITLE IS THE ONE DIMENSION AT FULL COVERAGE — all 21 employees carry one — which
 			// makes it the only grouping here whose answer describes the whole company.
-			new AskColumn { Name = "jobtitle", Kind = AskColumnKind.Dimension, Label = AskText.Of("المسمى الوظيفي", "Job title"),
+			new AskColumn { Name = "jobtitle", Kind = AskColumnKind.Dimension, Label = AskText.Of("المسمى الوظيفي", "Job title", "Intitulé du poste"),
 				Synonyms = new[] { "وظيفة", "الوظيفة", "وظائف", "الوظائف", "مسمى", "المسمى", "المسميات",
 					"مسمى وظيفي", "منصب", "المناصب", "دور", "الادوار",
 					"job title", "job titles", "title", "titles", "role", "roles", "position", "positions" } },
-			new AskColumn { Name = "branch", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفرع", "Branch"),
+			new AskColumn { Name = "branch", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفرع", "Branch", "Succursale"),
 				Synonyms = new[] { "فرع", "فروع", "الفروع", "الفرع", "موقع", "المواقع",
 					"branch", "branches", "site", "location" } },
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("الحالة", "Status", "Statut"),
 				Synonyms = new[] { "حالة", "الحالة", "نشط", "النشطين", "غير نشط", "على رأس العمل", "مستقيل",
 					"status", "active", "inactive", "employment status", "still employed" } },
-			new AskColumn { Name = "employmenttype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع التوظيف", "Employment type"),
+			new AskColumn { Name = "employmenttype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع التوظيف", "Employment type", "Type d'emploi"),
 				Synonyms = new[] { "نوع التوظيف", "دوام", "دوام كامل", "دوام جزئي", "تعاقد", "نوع التعاقد",
 					"employment type", "full time", "part time", "contract type", "contract" } },
-			new AskColumn { Name = "gender", Kind = AskColumnKind.Dimension, Label = AskText.Of("النوع", "Gender"),
+			new AskColumn { Name = "gender", Kind = AskColumnKind.Dimension, Label = AskText.Of("النوع", "Gender", "Genre"),
 				Synonyms = new[] { "نوع", "النوع", "ذكور", "اناث", "رجال", "ستات",
 					"gender", "male", "female", "men", "women" } },
 			// THE YEAR, NOT THE DATE. A roster of 21 grouped by exact joining date is 21 groups of
 			// one, which is a list pretending to be an analysis.
-			new AskColumn { Name = "joinedyear", Kind = AskColumnKind.Dimension, Label = AskText.Of("سنة الالتحاق", "Year joined"),
+			new AskColumn { Name = "joinedyear", Kind = AskColumnKind.Dimension, Label = AskText.Of("سنة الالتحاق", "Year joined", "Année d'embauche"),
 				Synonyms = new[] { "سنة الالتحاق", "سنة التعيين", "التحقوا", "اتعينوا", "سنة",
 					"year joined", "joining year", "hired", "year of hire", "tenure" } },
 
 			// ONE MEASURE. Headcount. Deliberately no salary, no hours, no cost — see the header.
-			new AskColumn { Name = "headcount", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الموظفين", "Headcount"),
+			new AskColumn { Name = "headcount", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الموظفين", "Headcount", "Effectif"),
 				Synonyms = new[] { "عدد الموظفين", "كام موظف", "عدد", "العدد", "كام واحد", "حجم الفريق",
 					"headcount", "how many employees", "staff count", "number of staff", "team size",
 					"how many people", "employees" } },

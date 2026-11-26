@@ -1,6 +1,6 @@
 # CrossBusiness Platform — Roadmap v2 — 10 Decision Register
 
-**37 unresolved business decisions, 0 open.**
+**37 business decisions; 18 open and 18 approved.**
 
 Machine-readable: `roadmap-v2-decisions.csv`.
 
@@ -34,11 +34,11 @@ decision blocks work, the blocked phase is named.
 | D-17 | Reporting | Report Studio sequence | A - consumption before authoring. R4 delivers the Center; Studio follows. | R4 | R4 entry | OPEN |
 | D-19 | Construction | DDL rollout environment | A - an approved non-production environment. The measurement must not run against shifting data. | R2, R7 | R2 entry | OPEN |
 | D-20 | Construction | M3 and M9 measurement result | Run the script in the D-19 environment. Stop automatically if M3 > 0, per the existing rule. | R7 | R7 entry | OPEN |
-| D-21 | Construction | D-08 default mode per company | B - ApprovalRequired for unconfigured companies: safer than Warning, less operationally disruptive than HardBlock, and it requires explicit authority for overspend. | R7 | R7 entry | OPEN - recommendation recorded |
+| D-21 | Construction | D-08 default mode per company | D - explicit policy per company with NO DEFAULT; owner confirmed 2026-10-14. | R7 | R7 entry | APPROVED - owner 2026-10-14 |
 | D-23 | Security | Inventory.purchase action split | B eventually - the single code cannot express three impacts. Kept closed whole for now, with the VOCABULARY DEFECT reason pinned by test so the decision cannot be reversed silently. | R6, R9 | R6 entry | OPEN - closed whole for now |
-| D-24 | Construction | Satellite-table consolidation timing | A - consolidating after features are built on the current shape is far more expensive. | R7 | R7 entry | OPEN |
-| D-25 | Construction | C6 approval and C7 variation reroute | A - as already assessed. | R7 | R7 entry | OPEN |
-| D-26 | Construction | Legacy concurrency strategy | A - the C1 work already proved the pattern. | R7 | R7 entry | OPEN |
+| D-24 | Construction | Satellite-table consolidation timing | A - consolidate before C2; owner confirmed 2026-10-14. | R7 | R7 entry | APPROVED - owner 2026-10-14 |
+| D-25 | Construction | C6 approval and C7 variation reroute | A - certificate approval integration in C6 and variation reroute in C7; owner confirmed 2026-10-14. | R7 | R7 entry | APPROVED - owner 2026-10-14 |
+| D-26 | Construction | Legacy concurrency strategy | A - native SQL Server ROWVERSION on the five legacy base tables; owner confirmed 2026-10-14. C1 rotated varbinary tokens are not proof of native ROWVERSION. | R7 | R7 entry | APPROVED - owner 2026-10-14 |
 | D-27 | Platform | AI governance | A - AI reads the reporting dataset layer, never raw tables. | R12 | R12 entry | OPEN |
 | D-28 | Platform | Search ownership | A - one index that honours per-module authorization AT QUERY TIME, not by filtering after retrieval. | R12 | R12 entry | OPEN |
 | D-29 | Platform | Client portal isolation | B - an external user is not an employee with fewer rights. Aligns with D-13. | R11 | R11 entry | OPEN |
@@ -238,13 +238,13 @@ decision blocks work, the blocked phase is named.
 
 ### D-21 — D-08 default mode per company (Construction)
 
-**Evidence.** The default commercial policy mode per company is unconfirmed. Modes: Warning, ApprovalRequired, HardBlock.
+**Evidence.** The default commercial policy mode per company is unconfirmed. Modes: Warning, ApprovalRequired, HardBlock. Owner decision recorded in coordinator chat on 2026-10-14; implementation remains separately gated.
 
 **Options.** A) Warning; B) ApprovalRequired; C) HardBlock; D) per-company explicit with no default
 
-**Recommendation.** B - ApprovalRequired for unconfigured companies: safer than Warning, less operationally disruptive than HardBlock, and it requires explicit authority for overspend.
+**Recommendation.** D - explicit policy per company with NO DEFAULT; owner confirmed 2026-10-14.
 
-**Impact.** RECOMMENDATION ONLY - not approved. A silent default is how bootstrap-open happened. · **Blocks:** R7 · **Due:** R7 entry · **Status:** OPEN - recommendation recorded
+**Impact.** Owner approved explicit per-company policy with no default; an unconfigured company must not silently inherit Warning, ApprovalRequired or HardBlock. · **Blocks:** R7 · **Due:** R7 entry · **Status:** APPROVED - owner 2026-10-14
 
 ### D-23 — Inventory.purchase action split (Security)
 
@@ -258,33 +258,33 @@ decision blocks work, the blocked phase is named.
 
 ### D-24 — Satellite-table consolidation timing (Construction)
 
-**Evidence.** When to consolidate construction satellite tables.
+**Evidence.** When to consolidate construction satellite tables. Owner decision recorded in coordinator chat on 2026-10-14; implementation remains separately gated.
 
 **Options.** A) before C2; B) during C4; C) never
 
-**Recommendation.** A - consolidating after features are built on the current shape is far more expensive.
+**Recommendation.** A - consolidate before C2; owner confirmed 2026-10-14.
 
-**Impact.** Schema shape. · **Blocks:** R7 · **Due:** R7 entry · **Status:** OPEN
+**Impact.** Schema shape. · **Blocks:** R7 · **Due:** R7 entry · **Status:** APPROVED - owner 2026-10-14
 
 ### D-25 — C6 approval and C7 variation reroute (Construction)
 
-**Evidence.** Header-only subcontract approval enforcement and the live VariationOrderService approval reroute are deferred.
+**Evidence.** Header-only subcontract approval enforcement and the live VariationOrderService approval reroute are deferred. Owner decision recorded in coordinator chat on 2026-10-14; implementation remains separately gated.
 
 **Options.** A) as assessed - C6 and C7; B) earlier; C) later
 
-**Recommendation.** A - as already assessed.
+**Recommendation.** A - certificate approval integration in C6 and variation reroute in C7; owner confirmed 2026-10-14.
 
-**Impact.** Sequencing. · **Blocks:** R7 · **Due:** R7 entry · **Status:** OPEN
+**Impact.** Sequencing. · **Blocks:** R7 · **Due:** R7 entry · **Status:** APPROVED - owner 2026-10-14
 
 ### D-26 — Legacy concurrency strategy (Construction)
 
-**Evidence.** Five legacy base tables lack concurrency control.
+**Evidence.** Five legacy base tables lack concurrency control. Owner decision recorded in coordinator chat on 2026-10-14; implementation remains separately gated.
 
 **Options.** A) rowversion on all five; B) optimistic checks in services; C) accept the risk
 
-**Recommendation.** A - the C1 work already proved the pattern.
+**Recommendation.** A - native SQL Server ROWVERSION on the five legacy base tables; owner confirmed 2026-10-14. C1 rotated varbinary tokens are not proof of native ROWVERSION.
 
-**Impact.** Data integrity under concurrent commercial edits. · **Blocks:** R7 · **Due:** R7 entry · **Status:** OPEN
+**Impact.** Data integrity under concurrent commercial edits. · **Blocks:** R7 · **Due:** R7 entry · **Status:** APPROVED - owner 2026-10-14
 
 ### D-27 — AI governance (Platform)
 

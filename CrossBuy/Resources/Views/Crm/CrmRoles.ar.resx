@@ -91,4 +91,37 @@
   <data name="No roles assigned — CRM open to all" xml:space="preserve">
     <value>لا توجد أدوار معيّنة — CRM مفتوح للجميع</value>
   </data>
+  <data name="What each role can see" xml:space="preserve">
+    <value>ماذا يرى كل دور</value>
+  </data>
+  <data name="own records only" xml:space="preserve">
+    <value>سجلاته فقط</value>
+  </data>
+  <data name="the whole team" xml:space="preserve">
+    <value>سجلات الفريق كاملًا</value>
+  </data>
+  <data name="leads and campaigns" xml:space="preserve">
+    <value>العملاء المحتملون والحملات</value>
+  </data>
+  <data name="read-only" xml:space="preserve">
+    <value>للعرض فقط</value>
+  </data>
+  <data name="Permissions stay open until the first role is assigned." xml:space="preserve">
+    <value>الصلاحيات تبقى مفتوحة حتى يُسند أول دور.</value>
+  </data>
+  <data name="Permissions are enforced" xml:space="preserve">
+    <value>الصلاحيات مُفعّلة</value>
+  </data>
+  <data name="Permissions are open" xml:space="preserve">
+    <value>الصلاحيات مفتوحة</value>
+  </data>
+  <data name="Every user sees only what their role allows." xml:space="preserve">
+    <value>كل مستخدم يرى ما يسمح به دوره فقط.</value>
+  </data>
+  <data name="Until the first role is assigned, every user sees everything." xml:space="preserve">
+    <value>حتى يُسند أول دور، كل مستخدم يرى كل شيء.</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>مفتوحة</value>
+  </data>
 </root>

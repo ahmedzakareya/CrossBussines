@@ -126,20 +126,22 @@ SELECT 'M5_referenced_boq_items' AS Measurement,
        b.CompanyID,
        b.ProjectId,
        COUNT(DISTINCT b.ID) AS BoqItems,
-       SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.ProgressBillingLines l
-                             JOIN dbo.ProgressBillings h ON h.ID = l.BillingId
-                             WHERE l.BoqItemId = b.ID AND h.Status = 'Posted') THEN 1 ELSE 0 END)
-            AS ReferencedByPostedCertificate,
-       SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.ProjectProgressLines l
-                             WHERE l.BoqItemId = b.ID) THEN 1 ELSE 0 END)
-            AS ReferencedByMeasurement,
-       SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.ProjectMaterialIssueLines l
-                             JOIN dbo.ProjectMaterialIssues h ON h.ID = l.IssueId
-                             WHERE l.BoqItemId = b.ID AND h.Status = 'Posted') THEN 1 ELSE 0 END)
-            AS ReferencedByPostedIssue,
-       SUM(CASE WHEN b.VariationOrderId IS NOT NULL THEN 1 ELSE 0 END)
-            AS CreatedByVariation
+       SUM(footprint.PostedCertificate) AS ReferencedByPostedCertificate,
+       SUM(footprint.Measurement) AS ReferencedByMeasurement,
+       SUM(footprint.PostedIssue) AS ReferencedByPostedIssue,
+       SUM(CASE WHEN b.VariationOrderId IS NOT NULL THEN 1 ELSE 0 END) AS CreatedByVariation
 FROM dbo.BoqItems b
+CROSS APPLY (
+    SELECT
+      CASE WHEN EXISTS (SELECT 1 FROM dbo.ProgressBillingLines l
+                         JOIN dbo.ProgressBillings h ON h.ID = l.BillingId
+                        WHERE l.BoqItemId = b.ID AND h.Status = 'Posted') THEN 1 ELSE 0 END AS PostedCertificate,
+      CASE WHEN EXISTS (SELECT 1 FROM dbo.ProjectProgressLines l
+                        WHERE l.BoqItemId = b.ID) THEN 1 ELSE 0 END AS Measurement,
+      CASE WHEN EXISTS (SELECT 1 FROM dbo.ProjectMaterialIssueLines l
+                         JOIN dbo.ProjectMaterialIssues h ON h.ID = l.IssueId
+                        WHERE l.BoqItemId = b.ID AND h.Status = 'Posted') THEN 1 ELSE 0 END AS PostedIssue
+) footprint
 GROUP BY b.CompanyID, b.ProjectId
 ORDER BY b.CompanyID, b.ProjectId;
 

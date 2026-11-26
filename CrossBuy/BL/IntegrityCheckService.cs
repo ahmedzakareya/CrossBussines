@@ -32,10 +32,27 @@ namespace CrossBuy.BL
 
 		private static decimal R(decimal d) => Math.Round(d, 2);
 
+		// THE SAME LENS THE PRODUCT'S OWN TRIAL BALANCE USES (2026-11-10).
+		//
+		// This summed EVERY line on the account whatever its entry's status, while every subledger it is
+		// compared against filters Status == "Posted". So a DRAFT journal entry touching a control account
+		// broke ar_sub, ap_sub, stock_gl or grni with no document anywhere able to explain the difference.
+		// GeneralLedgerService.TrialBalanceAsync (line 63) takes Posted OR Reversed, which is the correct
+		// accounting treatment: a reversed entry still happened and its mirror cancels it, while a draft
+		// has not happened at all. Matching that lens is what makes these checks reconcilable.
+		//
+		// companyId WAS ACCEPTED AND NEVER USED. accIds is company-filtered upstream so the totals were
+		// right, but a method whose whole job is a company-scoped sum must not depend on every caller
+		// remembering that - it is the shape that becomes a leak the first time someone passes a wider
+		// account list. The join is the same one TrialBalanceAsync writes, deliberately.
 		private async Task<decimal> GlNetAsync(int companyId, List<int> accIds)
 		{
 			if (accIds.Count == 0) return 0;
-			return await _db.JournalEntryLines.AsNoTracking().Where(l => accIds.Contains(l.AccountId)).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+			return await (from l in _db.JournalEntryLines.AsNoTracking()
+			              join e in _db.JournalEntries.AsNoTracking() on l.JournalEntryId equals e.ID
+			              where accIds.Contains(l.AccountId) && e.CompanyID == companyId
+			                    && (e.Status == "Posted" || e.Status == "Reversed")
+			              select (decimal?)(l.Debit - l.Credit)).SumAsync() ?? 0m;
 		}
 		private async Task<List<int>> AccByCodeAsync(int companyId, params string[] codes) =>
 			await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && codes.Contains(a.Code)).Select(a => a.ID).ToListAsync();
@@ -55,6 +72,45 @@ namespace CrossBuy.BL
 			decimal layerQty = await _db.StockCostLayers.AsNoTracking().Where(l => l.CompanyID == companyId && fifoItems.Contains(l.ItemId)).SumAsync(l => (decimal?)l.QtyRemaining) ?? 0m;
 			decimal fifoOnHand = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && fifoItems.Contains(b.ItemId)).SumAsync(b => (decimal?)b.QtyOnHand) ?? 0m;
 			res.Add(new IntegrityCheck { Key = "fifo_layers", NameAr = "طبقات FIFO == رصيد أصناف FIFO", NameEn = "FIFO layers == FIFO on-hand", Expected = R(fifoOnHand), Actual = R(layerQty), Ok = R(layerQty) == R(fifoOnHand), Detail = "/Inventory/Batches" });
+
+			// ---- 2b) rack balances == warehouse balance, FOR LOCATED ITEMS ONLY ----
+			//
+			// BinStock is a pure locational split of a quantity that StockBalance already holds, so the
+			// two must agree. Nothing guarded that until now, and nothing needed to: no movement in the
+			// database carried a location, so BinStock was empty and there was nothing to disagree with.
+			// Locations are recorded from this version on, which is exactly when the guard has to exist -
+			// a drift invented today would otherwise be discovered as history.
+			//
+			// SCOPED TO ITEMS THAT HAVE AT LEAST ONE BIN ROW, deliberately. An item holding stock with no
+			// bin row at all is not corrupt, it is NOT YET LOCATED - stock received before locations were
+			// recorded. Failing on those would make this check red on day one for a reason nobody can fix
+			// by correcting data, and a check that is permanently red is a check nobody reads. The count
+			// of them is reported in the note instead, where it is a migration backlog rather than a fault.
+			//
+			// AdjustBinStockAsync clamps a bin at zero, so an issue against an unseeded rack silently
+			// loses quantity. That is the failure this check is actually here to catch.
+			var binRows = await _db.BinStocks.AsNoTracking().Where(b => b.CompanyID == companyId)
+				.Select(b => new { b.ItemId, b.WarehouseId, b.QtyOnHand }).ToListAsync();
+			var located = binRows.Select(b => (b.ItemId, b.WarehouseId)).Distinct().ToHashSet();
+
+			var whBalances = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId)
+				.Select(b => new { b.ItemId, b.WarehouseId, b.QtyOnHand }).ToListAsync();
+
+			decimal locatedBinQty = binRows.Sum(b => b.QtyOnHand);
+			decimal locatedWhQty = whBalances.Where(b => located.Contains((b.ItemId, b.WarehouseId))).Sum(b => b.QtyOnHand);
+
+			// the backlog: holds stock, has no location at all
+			int unlocated = whBalances.Count(b => b.QtyOnHand > 0 && !located.Contains((b.ItemId, b.WarehouseId)));
+
+			res.Add(new IntegrityCheck
+			{
+				Key = "bin_vs_warehouse",
+				NameAr = "أرصدة الرفوف == رصيد المخزن (للأصناف المتموضعة)",
+				NameEn = "Rack balances == warehouse balance (located items)",
+				Expected = R(locatedWhQty), Actual = R(locatedBinQty), Ok = R(locatedBinQty) == R(locatedWhQty),
+				Note = $"located pairs={located.Count} · holding stock with no location={unlocated}",
+				Detail = "/Inventory/RackBalances"
+			});
 
 			// ---- 3) AR control == customer subledger ----
 			var arIds = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == companyId).Select(c => c.ControlAccountId).Distinct().ToListAsync();
@@ -108,7 +164,15 @@ namespace CrossBuy.BL
 			var cutoff = new DateTime(2026, 7, 28, 0, 0, 0, DateTimeKind.Utc);   // fix-apply date (legacy = before this)
 			const int JvBaselineMaxNo = 1162;         // JV numbers ≤ this predate the fix (the 254 documented gaps live here)
 			const int PosOrderBaselineMaxId = 3352;   // ReceiptNo dups among orders ≤ this are the documented legacy dups
-			var testInvoiceIds = new HashSet<int> { 26, 27, 6174, 6175, 6176, 6177, 6178, 6179 };   // frozen test-data (exclude by ID)
+			// Invoices 6233 and 6235 (both 2026-07-30) join the frozen set, and the reason is checked not
+			// assumed: they are the last of the SWALLOWED STOCK-ISSUE debt, raised in the days between the
+			// cutoff above and the fix actually landing. ReceivableService now returns
+			//     if (!sok) return (false, serr ?? "Could not issue the stock", null);
+			// so a posted invoice CANNOT carry a stockable line with a warehouse and no movement - the whole
+			// invoice fails instead. Verified 2026-11-25 by posting one and reading back its movement and its
+			// COGS entry. These two are closed history, not a live defect, and the cutoff DATE simply predates
+			// the fix; excluding them by ID is the same device this file already uses for dev2026_008.
+			var testInvoiceIds = new HashSet<int> { 26, 27, 6174, 6175, 6176, 6177, 6178, 6179, 6233, 6235 };   // frozen test-data + closed swallowed-issue debt (exclude by ID)
 
 			// ---- 9) COGS impact: every STOCKABLE sale line has a stock movement WITH a COGS effect (JE posted) ----
 			var saleLines = await (from l in _db.SalesInvoiceLines.AsNoTracking()
@@ -371,6 +435,25 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = newCouplings.Count, Ok = true,
 				Note = newCouplings.Count == 0 ? "no dependency outside the allow-list" : string.Join(" · ", newCouplings) + " — constructor-injection only (not call-sites / static locator)",
 				Detail = null });
+
+			// ---- COUNTED: a customer or supplier stored with NO control account. ----
+			// These post nowhere. The record saves, lists and edits normally and fails only at its first
+			// document, with "account 0 does not exist in this company" - which reads as a chart problem
+			// rather than a master-data one, so it is looked for in the wrong place. The write guards in
+			// ReceivableService/PayableService block new ones, so this count only goes down.
+			var custNoControl = await _db.Customers.AsNoTracking()
+				.Where(c => c.CompanyID == companyId && c.ControlAccountId == 0)
+				.Select(c => c.ID).ToListAsync();
+			var venNoControl = await _db.Vendors.AsNoTracking()
+				.Where(v => v.CompanyID == companyId && v.ControlAccountId == 0)
+				.Select(v => v.ID).ToListAsync();
+			int noControl = custNoControl.Count + venNoControl.Count;
+			res.Add(new IntegrityCheck { Key = "no_control_account", NameAr = "عميل أو مورّد بلا حساب ذمم (معدود)", NameEn = "Customer or supplier with no control account (counted)",
+				Expected = 0, Actual = noControl, Ok = true,
+				Note = noControl == 0
+					? "every customer and supplier points at a control account"
+					: $"customers={custNoControl.Count} ({string.Join(",", custNoControl.Take(10))}) · suppliers={venNoControl.Count} ({string.Join(",", venNoControl.Take(10))}) — these cannot be invoiced; the write guards block new ones",
+				Detail = "/Accounting/Customers" });
 
 			// ---- HM-D8 (COUNTED): inbound stock of an expiry-tracked item that carries NO batch — invisible to FEFO. ----
 			// Surfaces the legacy footprint that must be cleaned; documented legacy, NEVER raises failedCount. The HM-D8

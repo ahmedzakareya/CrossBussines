@@ -144,6 +144,9 @@ namespace CrossBuy.Models.Context.Accounting
 
 	public class PurchaseInvoice
 	{
+		// A receipt from this invocation of the real writer, never reconstructed for historical invoices.
+		[System.ComponentModel.DataAnnotations.Schema.NotMapped]
+		internal List<PurchaseInvoiceCreatedNetLine> CreatedNetLineage { get; } = new();
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
 		public string? InvoiceNo { get; set; }
@@ -182,8 +185,14 @@ namespace CrossBuy.Models.Context.Accounting
 		public decimal LineTotal { get; set; }
 		public int? ItemId { get; set; }          // inventory link → stock-in (cost tracking) on post
 		public int? WarehouseId { get; set; }
+		// WHERE IN THAT WAREHOUSE. Section or Rack (BinLocations), locational only — never valued,
+		// never in a GL posting. NULL is not an error: StockService falls back to the item’s own
+		// default location at posting time, and an explicit choice here always wins over it.
+		public int? BinLocationId { get; set; }
 		[ForeignKey(nameof(PurchaseInvoiceId))] public PurchaseInvoice? Invoice { get; set; }
 	}
+
+	internal sealed record PurchaseInvoiceCreatedNetLine(int InputOrdinal, int InvoiceLineId, int JournalLineId);
 
 	// P3-3b: Purchase return / debit note (valued at item AVG cost to preserve the 1103=stock invariant).
 	public class PurchaseReturn

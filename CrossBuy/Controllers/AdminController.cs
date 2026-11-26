@@ -709,7 +709,10 @@ namespace CrossBuy.Controllers
 			var model = await this.jobTitles.GetByID(ID);
 			return View(model);
 		}
+		// SEC-01 — "job titles" is named verbatim in the HrActions.OrganizationManage comment.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Hr, CrossBuy.BL.HrActions.OrganizationManage)]
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> JobTitle(JobTitleDto model)
 		{
 			if (ModelState.IsValid)
@@ -747,7 +750,12 @@ namespace CrossBuy.Controllers
 			return View(model);
 		}
 
+		// SEC-01 — same defect, same vocabulary. An administrative body is an org unit, which is precisely
+		// what `organization-manage` covers. Unauthorized callers are refused by the filter before the action
+		// body runs, so no write occurs on a denied request.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Hr, CrossBuy.BL.HrActions.OrganizationManage)]
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> AdministrativeBodiesCompany(AdministrativeBodiesCompanyDto model)
 		{
 			if (ModelState.IsValid)
@@ -805,7 +813,26 @@ namespace CrossBuy.Controllers
 		}
 
 
+		// SEC-01 — THE CONFIRMED P0, CLOSED AT THE ENDPOINT.
+		//
+		// WHAT WAS WRONG. `[HttpPost]` and nothing else: no permission, no antiforgery token, and a service
+		// that read the actor from Session. Any authenticated user could write a node into the organisational
+		// tree, and because `Hierarchical` carries no company column that tree is shared by every tenant.
+		//
+		// WHY `organization-manage` AND NOT A NEW ACTION. HrActions already declares it, and its own comment
+		// names this endpoint's subject matter exactly: "hierarchicals, job titles, org units". It resolves to
+		// HrManager alone — not HrOfficer, not any authenticated employee. The vocabulary was designed for
+		// these three endpoints and was simply never wired to them; inventing a fourth action would have
+		// created a second answer to a question the model already answers.
+		//
+		// WHY ApiPerm AND NOT HrPerm. This action returns JsonResult to an $.ajax caller. The MVC attributes
+		// deny with a 302 to the access-denied page, so a fetch/ajax caller receives 200 and an HTML login
+		// page — a refusal the client reads as success. ApiPerm answers 401/403 with the project's own JSON
+		// shape, and it resolves the BusinessContext itself for the Hr module, which is the session-free
+		// identity path this fix requires.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Hr, CrossBuy.BL.HrActions.OrganizationManage)]
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<JsonResult> AddHierarchicalItem(int parentId, string nameAr, string nameEn, string notes)
 		{
 			try

@@ -17,15 +17,13 @@
         <a href="@Url.Action("MarketingLists","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <div class="card mb-5"><div class="card-body">
             <form asp-action="SaveList" method="post" class="row g-4" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save list?"]">@Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.ID" />
                 <div class="col-md-4"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" value="@Model.Name" required /></div>
                 <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
-                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" id="act" @(Model.IsActive ? "checked" : "")><label class="form-check-label fw-semibold ms-1 fs-7" for="act">@SR["Active"]</label></div></div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="act" @(Model.IsActive ? "checked" : "")><input type="hidden" name="isActive" value="false" /><label class="form-check-label fw-semibold ms-1 fs-7" for="act">@SR["Active"]</label></div></div>
                 <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Description"]</label><textarea name="description" class="form-control form-control-solid" rows="2">@Model.Description</textarea></div>
                 <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Description (EN)"]</label><textarea name="descriptionEn" class="form-control form-control-solid" rows="2" placeholder="@Localizer["Optional English description"]">@Model.DescriptionEn</textarea></div>
                 <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
@@ -36,16 +34,44 @@
         {
             <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["List members"] (@Model.Members.Count)</div></div>
                 <div class="card-body">
-                    <form asp-action="AddListMember" method="post" class="row g-3 align-items-end mb-5 bg-light-primary rounded p-4" id="addForm">@Html.AntiForgeryToken()
+                    @* ADD A MEMBER.
+
+                       Three faults, the same three the campaign screen had:
+
+                         1. THREE CONTROL SIZES in one row - `form-select-sm`, a full-size select2
+                            and a `btn-sm`. `align-items-end` lines up the bottoms of boxes that are
+                            not the same height, so nothing sat on one line and the button looked
+                            oversized beside the fields it belonged to.
+                         2. A BARE `bg-light-primary rounded p-4` STRIP with no heading, floating at
+                            the top of a card body. The campaign screen does the same job with a
+                            heading and a plain section; two screens doing one job should not look
+                            like two different products.
+                         3. `g-3` inside a card whose rhythm is `g-5`.
+
+                       The table below is deliberately NOT touched: its hand-written header rule
+                       appears in 219 views and its dashed row rule in 60, which makes it the house
+                       table style, not a local accident. Changing it here alone would make this
+                       screen the odd one out - the exact mistake this comment exists to avoid. *@
+                    <div class="fw-bold fs-6 mb-4">@Localizer["Add member"]</div>
+                    <form asp-action="AddListMember" method="post" class="row g-5 align-items-end mb-5" id="addForm">@Html.AntiForgeryToken()
                         <input type="hidden" name="listId" value="@Model.ID" /><input type="hidden" name="memberName" id="m_name" />
-                        <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Type"]</label>
-                            <select id="m_type" name="entityType" class="form-select form-select-solid form-select-sm">
+                        <div class="col-md-4">
+                            <label class="form-label fs-7 fw-semibold text-muted mb-1">@SR["Type"]</label>
+                            <select id="m_type" name="entityType" class="form-select form-select-solid">
                                 <option value="Account">@SR["Account"]</option><option value="Lead">@Localizer["Lead"]</option><option value="Contact">@Localizer["Contact"]</option>
-                            </select></div>
-                        <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Member"]</label>
-                            <select id="m_entity" name="entityId" class="form-select form-select-solid" style="width:100%"></select></div>
-                        <div class="col-md-3"><button class="btn btn-primary btn-sm w-100"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button></div>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fs-7 fw-semibold text-muted mb-1">@Localizer["Member"]</label>
+                            @* select2 renders its own container; at the DEFAULT size the theme
+                               styles it to the same height as its plain siblings. *@
+                            <select id="m_entity" name="entityId" class="form-select form-select-solid" style="width:100%"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button>
+                        </div>
                     </form>
+                    <div class="separator separator-dashed my-5"></div>
                     <div class="table-responsive"><table class="table align-middle gy-2" style="font-variant-numeric:tabular-nums;">
                         <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Member"]</th><th>@SR["Type"]</th><th class="text-end pe-4" style="width:60px"></th></tr></thead>
                         <tbody>

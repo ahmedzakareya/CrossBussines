@@ -59,7 +59,7 @@ namespace CrossBuy.Models.Context.Chat
         public int ConversationId { get; set; }
         public int SenderEmployeeId { get; set; }
         public string? Body { get; set; }                    // null when attachment-only
-        public string? AttachmentPath { get; set; }          // /uploads/chat/...
+        public string? AttachmentPath { get; set; }          // authorized /Chat/Attachment route backed by a LibraryItem
         public string? AttachmentName { get; set; }
         public string? AttachmentType { get; set; }          // image | file
         public int? ReplyToId { get; set; }

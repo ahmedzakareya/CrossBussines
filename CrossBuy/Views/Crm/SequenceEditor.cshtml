@@ -1,0 +1,102 @@
+@model CrossBuy.BL.CrmIdentity.SequenceFile?
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var s = Model?.Seq; var templates = (List<string>)ViewBag.Templates;
+    var steps = Model?.Steps.Select(x => new { day = x.DayOffset, kind = x.Kind, subject = x.Subject, body = x.Body, template = x.Template }).ToList<object>() ?? new List<object> {
+        new { day = 0, kind = "Email", subject = T["seqdef:subject1"].Value, body = T["seqdef:body1"].Value, template = (string?)null },
+        new { day = 2, kind = "Call", subject = T["seqdef:call"].Value, body = (string?)null, template = (string?)null },
+        new { day = 5, kind = "Email", subject = T["seqdef:subject2"].Value, body = T["seqdef:body2"].Value, template = (string?)null } };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(s == null ? T["New sequence"] : T["Edit sequence"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Sequences","Crm")" class="text-muted text-hover-primary">@T["Follow-up sequences"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(s?.Name ?? T["New sequence"].Value)</li></ul></div>
+        <div class="d-flex gap-2"><a href="@(s == null ? Url.Action("Sequences","Crm") : Url.Action("Sequence","Crm", new { id = s.ID }))" class="btn btn-sm btn-light">@T["Cancel"]</a>
+            <button type="button" class="btn btn-sm btn-primary" id="btnSave"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-5">
+            <div class="col-xl-4"><div class="card"><div class="card-body">
+                <div class="mb-5"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input id="sName" class="form-control form-control-solid" maxlength="150" value="@s?.Name" /></div>
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name in English"]</label><input id="sNameEn" class="form-control form-control-solid" maxlength="150" dir="ltr" value="@s?.NameEn" /></div>
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Who walks it"]</label>
+                    <select id="sTarget" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                        <option value="Lead" selected="@(s?.Target != "Contact")">@T["aud:Lead"]</option><option value="Contact" selected="@(s?.Target == "Contact")">@T["aud:Contact"]</option></select></div>
+                <label class="form-check form-switch form-check-custom form-check-solid mb-4"><input class="form-check-input" type="checkbox" id="sActive" @(s == null || s.IsActive ? "checked" : "") /><span class="form-check-label fw-semibold">@T["Active — new people can be enrolled"]</span></label>
+                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="sSkip" @(s == null || s.SkipNonWorkDays ? "checked" : "") /><span class="form-check-label fw-semibold">@T["Move steps off days off and public holidays"]</span></label>
+                <div class="separator my-6"></div>
+                <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Words that fill themselves"]</div>
+                <div class="d-flex flex-wrap gap-2 fs-8">@foreach (var tk in new[] { "first", "name", "company", "rep", "booking" }) { <code class="crm-token" data-token="{@tk}" title="@T["tok:" + tk]">{@tk}</code> }</div>
+                <div class="fs-8 text-muted mt-2">@T["Click one to put it where you are typing. {booking} is the owner's booking link."].Value</div>
+                <div class="notice d-flex bg-light rounded p-4 mt-6 fs-8 text-gray-700"><i class="ki-outline ki-shield-tick fs-3 me-3" style="color:#3A5795"></i>@T["E-mail goes out only if the person has not withdrawn consent. WhatsApp goes out only with recorded WhatsApp consent, and only as an approved template. Anything else is skipped and written down."]</div>
+            </div></div></div>
+            <div class="col-xl-8"><div class="card"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Steps"]</span><span class="text-muted fs-7 mt-1">@T["Day 0 runs when the person is enrolled; later days run at the start of the owner's working day."]</span></div></div>
+                <div class="card-body pt-2">
+                    <div id="steps"></div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="button" class="btn btn-sm btn-light-primary" data-add="Email"><i class="ki-outline ki-sms fs-5"></i>@T["step:Email"]</button>
+                        <button type="button" class="btn btn-sm btn-light-primary" data-add="WhatsApp" @(templates.Count == 0 ? "disabled title=\"" + T["Connect WhatsApp with approved templates first"].Value + "\"" : "")><i class="ki-outline ki-whatsapp fs-5"></i>@T["step:WhatsApp"]</button>
+                        <button type="button" class="btn btn-sm btn-light-primary" data-add="Call"><i class="ki-outline ki-phone fs-5"></i>@T["step:Call"]</button>
+                        <button type="button" class="btn btn-sm btn-light-primary" data-add="Task"><i class="ki-outline ki-check-square fs-5"></i>@T["step:Task"]</button>
+                    </div>
+                    <div class="text-danger fs-7 fw-semibold mt-4 d-none" id="err"></div>
+                </div></div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var steps = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(steps));
+  var templates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(templates));
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["Email"] = T["step:Email"].Value, ["WhatsApp"] = T["step:WhatsApp"].Value, ["Call"] = T["step:Call"].Value, ["Task"] = T["step:Task"].Value,
+    ["day"] = T["Day"].Value, ["subject"] = T["Subject"].Value, ["title"] = T["Title"].Value, ["body"] = T["Message"].Value, ["notes"] = T["Notes for the owner"].Value,
+    ["template"] = T["Approved template"].Value, ["remove"] = T["Remove"].Value, ["wait"] = T["wait"].Value, ["days"] = T["days"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value }));
+  var icon = { Email:'ki-sms', WhatsApp:'ki-whatsapp', Call:'ki-phone', Task:'ki-check-square' }, col = { Email:'#3A5795', WhatsApp:'#25D366', Call:'#0F766E', Task:'#7239EA' };
+  var box = document.getElementById('steps'), lastFocus = null;
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function read(){ return Array.prototype.map.call(box.querySelectorAll('.crm-step'), function(el){ return { day: +el.querySelector('[data-f=day]').value || 0, kind: el.getAttribute('data-kind'),
+    subject: (el.querySelector('[data-f=subject]') || {}).value || null, body: (el.querySelector('[data-f=body]') || {}).value || null, template: (el.querySelector('[data-f=template]') || {}).value || null }; }); }
+  function draw(){
+    box.innerHTML = steps.map(function(s, i){
+      var gap = i ? '<div class="crm-step-gap"><span>' + txt.wait + ' <b class="num">' + Math.max(0, s.day - steps[i-1].day) + '</b> ' + txt.days + '</span></div>' : '';
+      var fields = s.kind === 'WhatsApp'
+        ? '<select class="form-select form-select-sm form-select-solid" data-f="template">' + templates.map(function(t){ return '<option' + (t === s.template ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>'
+        : '<input class="form-control form-control-sm form-control-solid mb-2" data-f="subject" maxlength="200" placeholder="' + (s.kind === 'Email' ? txt.subject : txt.title) + '" value="' + esc(s.subject) + '" />'
+          + '<textarea class="form-control form-control-sm form-control-solid" data-f="body" rows="' + (s.kind === 'Email' ? 4 : 2) + '" maxlength="2000" placeholder="' + (s.kind === 'Email' ? txt.body : txt.notes) + '">' + esc(s.body) + '</textarea>';
+      return gap + '<div class="crm-step" data-kind="' + s.kind + '"><div class="crm-step-ico" style="--c:' + col[s.kind] + '"><i class="ki-outline ' + icon[s.kind] + ' fs-3"></i></div>'
+        + '<div class="flex-grow-1 min-w-0"><div class="d-flex flex-stack mb-2 gap-3"><div class="fw-bold fs-7">' + (i + 1) + '. ' + txt[s.kind] + '</div>'
+        + '<div class="d-flex align-items-center gap-2"><span class="fs-8 text-muted">' + txt.day + '</span><input type="number" min="0" max="365" class="form-control form-control-sm form-control-solid w-75px num" data-f="day" value="' + s.day + '" />'
+        + '<button type="button" class="btn btn-icon btn-sm btn-light-danger" data-rm="' + i + '" title="' + txt.remove + '"><i class="ki-outline ki-trash fs-5"></i></button></div></div>' + fields + '</div></div>';
+    }).join('');
+  }
+  box.addEventListener('input', function(){ steps = read(); });
+  box.addEventListener('change', function(e){ if (e.target.getAttribute('data-f') === 'day') { steps = read(); draw(); } });
+  box.addEventListener('focusin', function(e){ if (e.target.matches('[data-f=subject],[data-f=body]')) lastFocus = e.target; });
+  box.addEventListener('click', function(e){ var b = e.target.closest('[data-rm]'); if (!b) return; steps = read(); steps.splice(+b.getAttribute('data-rm'), 1); draw(); });
+  document.querySelectorAll('[data-add]').forEach(function(b){ b.addEventListener('click', function(){
+    steps = read(); var last = steps.length ? steps[steps.length - 1].day : -2;
+    var k = b.getAttribute('data-add'); steps.push({ day: last + 2 < 0 ? 0 : last + 2, kind: k, subject: '', body: '', template: k === 'WhatsApp' ? templates[0] : null }); draw();
+  }); });
+  document.querySelectorAll('[data-token]').forEach(function(c){ c.addEventListener('mousedown', function(e){ e.preventDefault(); if (!lastFocus) return;
+    var t = c.getAttribute('data-token'), a = lastFocus.selectionStart || 0, z = lastFocus.selectionEnd || 0;
+    lastFocus.value = lastFocus.value.slice(0, a) + t + lastFocus.value.slice(z); lastFocus.selectionStart = lastFocus.selectionEnd = a + t.length; steps = read(); }); });
+  document.getElementById('btnSave').addEventListener('click', async function(){
+    var fd = new FormData();
+    fd.append('id', '@(s?.ID ?? 0)'); fd.append('name', document.getElementById('sName').value); fd.append('nameEn', document.getElementById('sNameEn').value);
+    fd.append('target', document.getElementById('sTarget').value); fd.append('isActive', document.getElementById('sActive').checked ? 'true' : 'false');
+    fd.append('skipNonWorkDays', document.getElementById('sSkip').checked ? 'true' : 'false'); fd.append('stepsJson', JSON.stringify(read()));
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveSequence","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    var err = document.getElementById('err');
+    if (!r.ok) { err.textContent = r.error || txt.failed; err.classList.remove('d-none'); return; }
+    location.href = '@Url.Action("Sequence","Crm")/' + r.extra;
+  });
+  draw();
+})();
+</script>
+}

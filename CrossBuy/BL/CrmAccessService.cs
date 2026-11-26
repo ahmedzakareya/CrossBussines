@@ -146,8 +146,12 @@ namespace CrossBuy.BL
 			// NOT null. null means "unrestricted", and an unconfigured company is precisely the case where
 			// this service cannot establish whose records the caller may see. Own records only; a caller
 			// with no resolved employee sees nothing.
-			if (!await AnyRoleConfiguredAsync(context.CompanyId, cancellationToken))
-				return context.EmployeeId is > 0 ? new HashSet<int> { context.EmployeeId.Value } : new HashSet<int>();
+            if (context.IsExternalPortal || context.CompanyId <= 0 || context.EmployeeId is not > 0) return new HashSet<int>();
+            if (!await AnyRoleConfiguredAsync(context.CompanyId, cancellationToken))
+            {
+                var read = await _policies.ResolveDecisionAsync(context, Scope, "read", cancellationToken);
+                return read.IsAllowed ? new HashSet<int> { context.EmployeeId.Value } : new HashSet<int>();
+            }
 
 			var roles = await RolesAsync(context, cancellationToken);
 

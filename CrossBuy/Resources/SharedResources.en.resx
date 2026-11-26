@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -738,6 +738,7 @@
   <data name="Branch" xml:space="preserve"><value>Branch</value></data>
   <data name="Warehouse" xml:space="preserve"><value>Warehouse</value></data>
   <data name="Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Item name" xml:space="preserve"><value>Item name</value></data>
   <data name="Items" xml:space="preserve"><value>Items</value></data>
   <data name="Price" xml:space="preserve"><value>Price</value></data>
   <data name="Discount" xml:space="preserve"><value>Discount</value></data>
@@ -1897,6 +1898,842 @@
   <data name="AdministratorFullNameEn" xml:space="preserve"><value>Administrator name (English)</value></data>
   <data name="TemporaryPassword" xml:space="preserve"><value>Temporary password</value></data>
   <data name="AdministratorCredentialsOnce" xml:space="preserve"><value>Hand these to the administrator now. The password is shown once and cannot be recovered afterwards — only reset.</value></data>
+  <data name="Incomplete lines" xml:space="preserve">
+    <value>Incomplete lines</value>
+  </data>
+  <data name="Line {0}" xml:space="preserve">
+    <value>Line {0}</value>
+  </data>
+  <data name="Nothing was saved." xml:space="preserve">
+    <value>Nothing was saved.</value>
+  </data>
+  <data name="choose a warehouse" xml:space="preserve">
+    <value>choose a warehouse</value>
+  </data>
+  <data name="choose an account" xml:space="preserve">
+    <value>choose an account</value>
+  </data>
+  <data name="choose an item" xml:space="preserve">
+    <value>choose an item</value>
+  </data>
+  <data name="choose an item or an account" xml:space="preserve">
+    <value>choose an item or an account</value>
+  </data>
+  <data name="enter a price" xml:space="preserve">
+    <value>enter a price</value>
+  </data>
+  <data name="enter a quantity" xml:space="preserve">
+    <value>enter a quantity</value>
+  </data>
+  <data name="enter a debit or a credit" xml:space="preserve">
+    <value>enter a debit or a credit</value>
+  </data>
+  <data name="Call centre" xml:space="preserve">
+    <value>Call centre</value>
+  </data>
+  <data name="Call logged" xml:space="preserve">
+    <value>Call logged</value>
+  </data>
+  <data name="Escalated {0} breached ticket(s); {1} have no owner" xml:space="preserve">
+    <value>Escalated {0} breached ticket(s); {1} have no owner</value>
+  </data>
+  <data name="A quotation has already been created for this opportunity" xml:space="preserve">
+    <value>A quotation has already been created for this opportunity</value>
+  </data>
+  <data name="Account is required" xml:space="preserve">
+    <value>Account is required</value>
+  </data>
+  <data name="Account name is required" xml:space="preserve">
+    <value>Account name is required</value>
+  </data>
+  <data name="Activity subject is required" xml:space="preserve">
+    <value>Activity subject is required</value>
+  </data>
+  <data name="Add lines to the opportunity before converting it to a quotation" xml:space="preserve">
+    <value>Add lines to the opportunity before converting it to a quotation</value>
+  </data>
+  <data name="Campaign name is required" xml:space="preserve">
+    <value>Campaign name is required</value>
+  </data>
+  <data name="Contact name is required" xml:space="preserve">
+    <value>Contact name is required</value>
+  </data>
+  <data name="Could not link the account to a financial customer" xml:space="preserve">
+    <value>Could not link the account to a financial customer</value>
+  </data>
+  <data name="It has already been converted" xml:space="preserve">
+    <value>It has already been converted</value>
+  </data>
+  <data name="It has already been converted to an account" xml:space="preserve">
+    <value>It has already been converted to an account</value>
+  </data>
+  <data name="Lead name is required" xml:space="preserve">
+    <value>Lead name is required</value>
+  </data>
+  <data name="Lead not found" xml:space="preserve">
+    <value>Lead not found</value>
+  </data>
+  <data name="Link the opportunity to an account first" xml:space="preserve">
+    <value>Link the opportunity to an account first</value>
+  </data>
+  <data name="List name is required" xml:space="preserve">
+    <value>List name is required</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>Not found</value>
+  </data>
+  <data name="Opportunity not found" xml:space="preserve">
+    <value>Opportunity not found</value>
+  </data>
+  <data name="Opportunity title is required" xml:space="preserve">
+    <value>Opportunity title is required</value>
+  </data>
+  <data name="Pipeline name is required" xml:space="preserve">
+    <value>Pipeline name is required</value>
+  </data>
+  <data name="Policy name is required" xml:space="preserve">
+    <value>Policy name is required</value>
+  </data>
+  <data name="Rule name is required" xml:space="preserve">
+    <value>Rule name is required</value>
+  </data>
+  <data name="The durations must be greater than zero" xml:space="preserve">
+    <value>The durations must be greater than zero</value>
+  </data>
+  <data name="Ticket not found" xml:space="preserve">
+    <value>Ticket not found</value>
+  </data>
+  <data name="Ticket title is required" xml:space="preserve">
+    <value>Ticket title is required</value>
+  </data>
+  <data name="Operation failed" xml:space="preserve">
+    <value>Operation failed</value>
+  </data>
+  <data name="Department not found" xml:space="preserve">
+    <value>Department not found</value>
+  </data>
+  <data name="Call logged and routed to {0}; {1} notified" xml:space="preserve">
+    <value>Call logged and routed to {0}; {1} notified</value>
+  </data>
+  <data name="Call logged and routed to {0}, but no employee is assigned to that department yet" xml:space="preserve">
+    <value>Call logged and routed to {0}, but no employee is assigned to that department yet</value>
+  </data>
+  <data name="Ticket #{0} opened" xml:space="preserve">
+    <value>Ticket #{0} opened</value>
+  </data>
+  <data name="Escalated to {0}; {1} notified" xml:space="preserve">
+    <value>Escalated to {0}; {1} notified</value>
+  </data>
+  <data name="Escalated to {0}, but no employee is assigned to that unit yet" xml:space="preserve">
+    <value>Escalated to {0}, but no employee is assigned to that unit yet</value>
+  </data>
+  <data name="Route it to a unit before escalating it" xml:space="preserve">
+    <value>Route it to a unit before escalating it</value>
+  </data>
+  <data name="It is already with the highest unit" xml:space="preserve">
+    <value>It is already with the highest unit</value>
+  </data>
+  <data name="Tag saved" xml:space="preserve">
+    <value>Tag saved</value>
+  </data>
+  <data name="Tag archived" xml:space="preserve">
+    <value>Tag archived</value>
+  </data>
+  <data name="Tag deleted" xml:space="preserve">
+    <value>Tag deleted</value>
+  </data>
+  <data name="Tag restored" xml:space="preserve">
+    <value>Tag restored</value>
+  </data>
+  <data name="Construction.Structure.Title" xml:space="preserve"><value>Project structure</value></data>
+  <data name="Construction.Structure.Saved" xml:space="preserve"><value>Project structure saved.</value></data>
+  <data name="Construction.Structure.SaveFailed" xml:space="preserve"><value>Could not save. Review the values and try again.</value></data>
+  <data name="Construction.Structure.Error.AccessDenied" xml:space="preserve"><value>You do not have permission to change these records.</value></data>
+  <data name="Construction.Structure.Error.ReasonRequired" xml:space="preserve"><value>Enter a reason for the change, up to 1000 characters.</value></data>
+  <data name="Construction.Structure.Error.CleanUnitOfWorkRequired" xml:space="preserve"><value>Reopen the page and try saving again.</value></data>
+  <data name="Construction.Structure.Error.ConcurrencyConflict" xml:space="preserve"><value>The data changed since you opened this page. Review the current values before trying again.</value></data>
+  <data name="Construction.Structure.Error.DuplicateCode" xml:space="preserve"><value>This code is already used in the same company or project.</value></data>
+  <data name="Construction.Structure.Error.InvalidReference" xml:space="preserve"><value>A selected record is no longer available. Refresh the page.</value></data>
+  <data name="Construction.Structure.Error.DepthBelowExistingNodes" xml:space="preserve"><value>This depth would exclude an existing WBS node.</value></data>
+  <data name="Construction.Structure.Error.DepthLimitExceeded" xml:space="preserve"><value>The node exceeds the company maximum depth.</value></data>
+  <data name="Construction.Structure.Error.InvalidHierarchy" xml:space="preserve"><value>Review the parent and child levels.</value></data>
+  <data name="Construction.Structure.Error.RestructureWorkflowRequired" xml:space="preserve"><value>Moving a node requires a separate impact review.</value></data>
+  <data name="Construction.Structure.Error.InvalidStatusTransition" xml:space="preserve"><value>This status change is not available.</value></data>
+  <data name="Construction.Structure.Error.InvalidDefaultAccount" xml:space="preserve"><value>Choose an active posting account in this company.</value></data>
+  <data name="Construction.Structure.Error.InvalidDepthSetting" xml:space="preserve"><value>Choose a whole number from 1 to 32.</value></data>
+  <data name="Construction.Structure.Error.InvalidNode" xml:space="preserve"><value>Enter a code, an Arabic name and a progress method.</value></data>
+  <data name="Construction.Structure.Error.InvalidNodeDatesOrOrder" xml:space="preserve"><value>Review the date range and display order.</value></data>
+  <data name="Construction.Structure.Error.StructureNotConfigured" xml:space="preserve"><value>Set the company maximum depth before adding WBS nodes.</value></data>
+  <data name="Construction.Structure.Error.InvalidParent" xml:space="preserve"><value>The selected parent is unavailable for this operation.</value></data>
+  <data name="Construction.Structure.Error.InvalidResponsibleEmployee" xml:space="preserve"><value>Choose a responsible employee in this company.</value></data>
+  <data name="Construction.Structure.Error.InvalidName" xml:space="preserve"><value>Enter an Arabic name of at most 200 characters.</value></data>
+  <data name="Construction.Structure.Error.NodeNotEditable" xml:space="preserve"><value>This node is unavailable for editing.</value></data>
+  <data name="Construction.Structure.Error.NodeNotFound" xml:space="preserve"><value>The requested node is unavailable.</value></data>
+  <data name="Construction.Structure.Error.OpenChildNodes" xml:space="preserve"><value>Complete or archive the child nodes first.</value></data>
+  <data name="Construction.Structure.Error.InvalidCostCode" xml:space="preserve"><value>Enter a code, an Arabic name and a cost category.</value></data>
+  <data name="Construction.Structure.Error.InvalidSite" xml:space="preserve"><value>Enter a site code and an Arabic name.</value></data>
+  <data name="Construction.Structure.Error.WarehouseAccessDenied" xml:space="preserve"><value>Choose a permitted warehouse or leave the site unbound.</value></data>
+  <data name="Construction.Structure.Error.InvalidForm" xml:space="preserve"><value>Review the entered values.</value></data>
+  <data name="Construction.Boq.UnitChangeNeedsRevision" xml:space="preserve"><value>Changing the unit of a committed line requires an impact review and an approved commercial revision.</value></data>
+  <data name="Construction.Budget.Title" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Construction.Budget.Saved" xml:space="preserve"><value>The budget operation was saved.</value></data>
+  <data name="Construction.Budget.SaveFailed" xml:space="preserve"><value>The budget operation could not be completed.</value></data>
+  <data name="Construction.Budget.Error.AccessDenied" xml:space="preserve"><value>You do not have permission to manage this project budget.</value></data>
+  <data name="Construction.Budget.Error.ReasonRequired" xml:space="preserve"><value>Enter a reason of up to 1000 characters.</value></data>
+  <data name="Construction.Budget.Error.CleanUnitOfWorkRequired" xml:space="preserve"><value>The operation could not be started. Reload the page and try again.</value></data>
+  <data name="Construction.Budget.Error.PolicyNotConfigured" xml:space="preserve"><value>Choose the company budget policy explicitly before continuing.</value></data>
+  <data name="Construction.Budget.Error.ConcurrencyConflict" xml:space="preserve"><value>Another user changed these values. Review the current version before saving again.</value></data>
+  <data name="Construction.Budget.Error.InvalidReference" xml:space="preserve"><value>One of the selected references is invalid for this project or company.</value></data>
+  <data name="Construction.Budget.Error.ImmutableBudget" xml:space="preserve"><value>This version is locked. Create a new version to change approved history.</value></data>
+  <data name="Construction.Budget.Error.InvalidBudgetTransition" xml:space="preserve"><value>This action is not available for the current version status.</value></data>
+  <data name="Construction.Budget.Error.InvalidBudgetKind" xml:space="preserve"><value>Choose an original, revised or scenario budget.</value></data>
+  <data name="Construction.Budget.Error.CompanyCurrencyNotConfigured" xml:space="preserve"><value>A supported company currency is required. Review the settings with the company administrator.</value></data>
+  <data name="Construction.Budget.Error.InvalidPreviousBudget" xml:space="preserve"><value>Choose an approved historical version from this project.</value></data>
+  <data name="Construction.Budget.Error.BudgetCurrencyChanged" xml:space="preserve"><value>The company currency differs from the previous version. A currency review is required before copying it.</value></data>
+  <data name="Construction.Budget.Error.OriginalBudgetAlreadyExists" xml:space="preserve"><value>This project already has an original budget. Create a revised version instead.</value></data>
+  <data name="Construction.Budget.Error.BudgetNotFound" xml:space="preserve"><value>The budget version was not found.</value></data>
+  <data name="Construction.Budget.Error.InvalidBudgetLines" xml:space="preserve"><value>Review amounts, quantities and change reasons. Do not repeat the same WBS and cost-code pair.</value></data>
+  <data name="Construction.Budget.Error.InvalidBudgetDimension" xml:space="preserve"><value>Choose a budget-owning work item in this project and an active company cost code.</value></data>
+  <data name="Construction.Budget.Error.InvalidCurrencyPrecision" xml:space="preserve"><value>Enter amounts using the precision of the selected currency.</value></data>
+  <data name="Construction.Budget.Error.BudgetAmountTooLarge" xml:space="preserve"><value>The budget total exceeds the supported amount. Review the entries.</value></data>
+  <data name="Construction.Budget.Error.BudgetAmountMismatch" xml:space="preserve"><value>The amount must equal quantity multiplied by rate after currency rounding.</value></data>
+  <data name="Construction.Budget.Error.BudgetHasNoLines" xml:space="preserve"><value>Save at least one budget line before submitting this version.</value></data>
+  <data name="Construction.Budget.Error.SeparateApproverRequired" xml:space="preserve"><value>Approval requires someone other than the creator and submitter.</value></data>
+  <data name="Construction.Budget.Error.BaselineChanged" xml:space="preserve"><value>The baseline changed. Create a revision from the current baseline before approval.</value></data>
+  <data name="Construction.Budget.Error.InvalidForm" xml:space="preserve"><value>Review the form values and try again.</value></data>
+  <data name="Construction.Budget.Error.SaveFailed" xml:space="preserve"><value>The budget operation could not be completed.</value></data>
+  <data name="The purchase order must be approved before receiving goods" xml:space="preserve"><value>The purchase order must be approved before receiving goods</value></data>
+  <data name="The purchase order must be approved before invoicing" xml:space="preserve"><value>The purchase order must be approved before invoicing</value></data>
+  <data name="Construction purchase order" xml:space="preserve"><value>Construction purchase order</value></data>
+  <data name="Construction.Purchase.Error.AccessDenied" xml:space="preserve"><value>You do not have permission to decide this construction purchase request.</value></data>
+  <data name="Construction.Purchase.Error.AllocationSourceChanged" xml:space="preserve"><value>The allocation or budget baseline changed. Review a new request.</value></data>
+  <data name="Construction.Purchase.Error.ApprovalAlreadyDecided" xml:space="preserve"><value>This request has already been decided.</value></data>
+  <data name="Construction.Purchase.Error.ApprovalSnapshotChanged" xml:space="preserve"><value>The approval request no longer matches its original snapshot.</value></data>
+  <data name="Construction.Purchase.Error.ApprovedBaselineRequired" xml:space="preserve"><value>A current approved project budget baseline is required.</value></data>
+  <data name="Construction.Purchase.Error.ApprovedExceptionRequired" xml:space="preserve"><value>An independently approved budget exception is required.</value></data>
+  <data name="Construction.Purchase.Error.BudgetHardBlock" xml:space="preserve"><value>This purchase exceeds the configured budget limit.</value></data>
+  <data name="Construction.Purchase.Error.ConcurrencyConflict" xml:space="preserve"><value>Another change occurred. Refresh the request before deciding.</value></data>
+  <data name="Construction.Purchase.Error.DraftCurrencyChanged" xml:space="preserve"><value>The currency configuration changed. Review the purchase proposal again.</value></data>
+  <data name="Construction.Purchase.Error.DraftSourceChanged" xml:space="preserve"><value>The purchase proposal changed. Review a new request before approving.</value></data>
+  <data name="Construction.Purchase.Error.ExceptionSourceChanged" xml:space="preserve"><value>The approved budget exception is no longer current. Request a new review.</value></data>
+  <data name="Construction.Purchase.Error.FreshBudgetAdmissionRequired" xml:space="preserve"><value>An earlier reservation acknowledgement cannot authorize this purchase.</value></data>
+  <data name="Construction.Purchase.Error.General" xml:space="preserve"><value>The construction purchase decision could not be completed. Refresh the request and try again.</value></data>
+  <data name="Construction.Purchase.Error.IndependentApproverRequired" xml:space="preserve"><value>The purchase creator and requester cannot approve or reject their own request.</value></data>
+  <data name="Construction.Purchase.Error.PolicyNotConfigured" xml:space="preserve"><value>An explicit company budget policy must be configured first.</value></data>
+  <data name="Construction.Purchase.Error.ServiceUnavailable" xml:space="preserve"><value>The construction purchase approval service is unavailable.</value></data>
+  <data name="Currency information unavailable" xml:space="preserve"><value>Currency information unavailable</value></data>
+  <data name="Construction.Purchase.Request.Title" xml:space="preserve"><value>Construction purchase approval</value></data>
+  <data name="Construction.Purchase.Request.Back" xml:space="preserve"><value>Purchase orders</value></data>
+  <data name="Construction.Purchase.Request.Explanation" xml:space="preserve"><value>Submit the saved purchase proposal for an independent review. Submission alone does not approve the purchase or reserve budget.</value></data>
+  <data name="Construction.Purchase.Request.Preserved" xml:space="preserve"><value>Your reason has been preserved below. Reload and review the current proposal before submitting again.</value></data>
+  <data name="Construction.Purchase.Request.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Construction.Purchase.Request.Net" xml:space="preserve"><value>Net amount</value></data>
+  <data name="Construction.Purchase.Request.Tax" xml:space="preserve"><value>Tax amount</value></data>
+  <data name="Construction.Purchase.Request.Total" xml:space="preserve"><value>Total amount</value></data>
+  <data name="Construction.Purchase.Request.Lines" xml:space="preserve"><value>Saved purchase lines</value></data>
+  <data name="Construction.Purchase.Request.Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Construction.Purchase.Request.Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Construction.Purchase.Request.Allocation" xml:space="preserve"><value>Budget allocation</value></data>
+  <data name="Construction.Purchase.Request.NoAllocation" xml:space="preserve"><value>No current validated allocation is available to display.</value></data>
+  <data name="Construction.Purchase.Request.Work" xml:space="preserve"><value>Project work</value></data>
+  <data name="Construction.Purchase.Request.Cost" xml:space="preserve"><value>Cost code</value></data>
+  <data name="Construction.Purchase.Request.SubmitTitle" xml:space="preserve"><value>Request independent approval</value></data>
+  <data name="Construction.Purchase.Request.Exception" xml:space="preserve"><value>Approved budget exception</value></data>
+  <data name="Construction.Purchase.Request.SelectException" xml:space="preserve"><value>Select the approved exception</value></data>
+  <data name="Construction.Purchase.Request.Overrun" xml:space="preserve"><value>Budget overrun</value></data>
+  <data name="Construction.Purchase.Request.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.Purchase.Request.Submit" xml:space="preserve"><value>Submit for approval</value></data>
+  <data name="Construction.Purchase.Request.Reload" xml:space="preserve"><value>Reload current proposal</value></data>
+  <data name="Construction.Purchase.Request.History" xml:space="preserve"><value>Approval history</value></data>
+  <data name="Construction.Purchase.Request.NoHistory" xml:space="preserve"><value>No approval request has been submitted for this purchase.</value></data>
+  <data name="Construction.Purchase.Request.Date" xml:space="preserve"><value>Requested at (UTC)</value></data>
+  <data name="Construction.Purchase.Request.Decision" xml:space="preserve"><value>Decision note</value></data>
+  <data name="Construction.Purchase.Request.Submitted" xml:space="preserve"><value>The purchase approval request has been submitted for independent review.</value></data>
+  <data name="Construction.Purchase.Request.State.Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Construction.Purchase.Request.State.Pending" xml:space="preserve"><value>Pending independent review</value></data>
+  <data name="Construction.Purchase.Request.State.Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="Construction.Purchase.Request.State.Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Construction.Purchase.Request.State.Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Construction.Purchase.Request.State.Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="Construction.Purchase.Request.State.Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Construction.Purchase.Request.State.Unknown" xml:space="preserve"><value>Status unavailable</value></data>
+  <data name="Construction.Purchase.Error.AllocationNotFound" xml:space="preserve"><value>Save a complete budget allocation for this draft before requesting approval.</value></data>
+  <data name="Construction.Purchase.Error.SourceAlreadyProcessed" xml:space="preserve"><value>This purchase is no longer an unapproved draft. Its existing approval history is shown below.</value></data>
+  <data name="Construction.Purchase.Error.MatchingBudgetExceptionRequired" xml:space="preserve"><value>This proposal requires an independent budget exception approved against the current allocation. No eligible approved exception is available.</value></data>
+  <data name="Construction.Purchase.Error.ApprovalAlreadyPending" xml:space="preserve"><value>An approval request is already pending for this purchase. Review its history below.</value></data>
+  <data name="Construction.Purchase.Error.BudgetWarning" xml:space="preserve"><value>This purchase exceeds the budget under the company’s explicit warning policy. Review the allocation carefully before submission.</value></data>
+  <data name="Construction.Purchase.Error.InvalidApprovalRequest" xml:space="preserve"><value>Enter a reason of up to 1,000 characters and review a current saved proposal before submitting.</value></data>
+  <data name="Construction.Purchase.Error.IdempotencyConflict" xml:space="preserve"><value>This submission identifier was already used for different details. Reload the proposal before making a new request.</value></data>
+  <data name="Construction.Purchase.Error.PersistedDraftRequired" xml:space="preserve"><value>A saved construction purchase draft is required before requesting approval.</value></data>
+  <data name="Construction.Purchase.Error.BudgetExceptionNotRequired" xml:space="preserve"><value>The current proposal does not require this budget exception. Reload and review it before submitting.</value></data>
+  <data name="Construction.Editor.DraftTitle" xml:space="preserve"><value>New construction purchase draft</value></data>
+  <data name="Construction.Editor.AllocationTitle" xml:space="preserve"><value>Purchase budget allocation</value></data>
+  <data name="Construction.Editor.Budget" xml:space="preserve"><value>Project budget</value></data>
+  <data name="Construction.Editor.DraftNotice" xml:space="preserve"><value>Save an unapproved purchase proposal in the approved budget currency. No budget is reserved and no stock or journal posting is created.</value></data>
+  <data name="Construction.Editor.AllocationNotice" xml:space="preserve"><value>Explicitly allocate the full net amount of every saved purchase line to eligible work and cost codes. Saving this allocation does not approve the purchase or reserve budget.</value></data>
+  <data name="Construction.Editor.Preserved" xml:space="preserve"><value>Your original entries and reason are preserved below. Changed source data must be reloaded explicitly.</value></data>
+  <data name="Construction.Editor.RejectedInput" xml:space="preserve"><value>Original submitted lines</value></data>
+  <data name="Construction.Editor.SourceLine" xml:space="preserve"><value>Purchase line</value></data>
+  <data name="Construction.Editor.Supplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="Construction.Editor.Warehouse" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="Construction.Editor.Choose" xml:space="preserve"><value>Choose explicitly</value></data>
+  <data name="Construction.Editor.NoWarehouse" xml:space="preserve"><value>No warehouse specified</value></data>
+  <data name="Construction.Editor.OrderDate" xml:space="preserve"><value>Purchase date</value></data>
+  <data name="Construction.Editor.ExpectedDate" xml:space="preserve"><value>Expected delivery date</value></data>
+  <data name="Construction.Editor.Currency" xml:space="preserve"><value>Approved budget currency</value></data>
+  <data name="Construction.Editor.Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Construction.Editor.DecimalHint" xml:space="preserve"><value>Enter numbers using digits 0–9 and a decimal point, without grouping separators. Amounts are calculated and verified on saving.</value></data>
+  <data name="Construction.Editor.Dimension" xml:space="preserve"><value>Budgeted work and cost code</value></data>
+  <data name="Construction.Editor.Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Construction.Editor.Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="Construction.Editor.UnitPrice" xml:space="preserve"><value>Unit price</value></data>
+  <data name="Construction.Editor.Discount" xml:space="preserve"><value>Line discount amount</value></data>
+  <data name="Construction.Editor.TaxRate" xml:space="preserve"><value>Tax rate (%)</value></data>
+  <data name="Construction.Editor.Remove" xml:space="preserve"><value>Remove unsaved line</value></data>
+  <data name="Construction.Editor.Add" xml:space="preserve"><value>Add line</value></data>
+  <data name="Construction.Editor.SaveAllocation" xml:space="preserve"><value>Save allocation and review request</value></data>
+  <data name="Construction.Editor.SaveDraft" xml:space="preserve"><value>Save draft and allocate</value></data>
+  <data name="Construction.Editor.FreeText" xml:space="preserve"><value>Free-text service line</value></data>
+  <data name="Construction.Editor.BaseUnit" xml:space="preserve"><value>Item base unit, or none for a service</value></data>
+  <data name="Construction.Editor.DraftSaved" xml:space="preserve"><value>The unapproved purchase draft has been saved. Allocate its lines before requesting approval.</value></data>
+  <data name="Construction.Editor.AllocationSaved" xml:space="preserve"><value>The full line allocation has been saved. Review the proposal before submitting it for approval.</value></data>
+  <data name="Construction.Editor.InvalidNumbers" xml:space="preserve"><value>Check the required fields and decimal numbers. Use a point, with no grouping separators; each row must be complete.</value></data>
+  <data name="Construction.Editor.Limit" xml:space="preserve"><value>The maximum number of lines has been reached.</value></data>
+  <data name="Construction.Purchase.Error.InvalidDraftRequest" xml:space="preserve"><value>Check the draft fields, dates, baseline version and complete line values.</value></data>
+  <data name="Construction.Purchase.Error.InvalidDraftLines" xml:space="preserve"><value>Every line needs a valid item or description, a positive quantity and valid nonnegative prices, discounts and tax rates.</value></data>
+  <data name="Construction.Purchase.Error.InvalidAllocation" xml:space="preserve"><value>Choose a saved purchase line and an eligible budget dimension, then enter an exact net amount for each split.</value></data>
+  <data name="Construction.Purchase.Error.AllocationPrecisionInvalid" xml:space="preserve"><value>The split amount exceeds the supported precision. Do not round it automatically.</value></data>
+  <data name="Construction.Purchase.Error.DuplicateAllocation" xml:space="preserve"><value>The same purchase line and budget dimension were repeated. Consolidate those split rows explicitly.</value></data>
+  <data name="Construction.Purchase.Error.ForeignSourceLine" xml:space="preserve"><value>A selected purchase line does not belong to this saved proposal. Reload it.</value></data>
+  <data name="Construction.Purchase.Error.DimensionNotEligible" xml:space="preserve"><value>The selected work and cost code must be active, own budget and cost, and occur together in the approved baseline.</value></data>
+  <data name="Construction.Purchase.Error.LineAllocationIncomplete" xml:space="preserve"><value>The splits for every purchase line must equal its full saved net amount exactly.</value></data>
+  <data name="Construction.Purchase.Error.AllocationOverflow" xml:space="preserve"><value>The allocation amounts exceed the supported limits.</value></data>
+  <data name="Construction.Purchase.Error.SourceAlreadyAdmitted" xml:space="preserve"><value>This purchase has already been admitted. Financial amendments require their own workflow.</value></data>
+  <data name="Construction.Purchase.Error.FunctionalCurrencyNotProven" xml:space="preserve"><value>Set the company’s explicit functional currency before preparing this purchase.</value></data>
+  <data name="Construction.Purchase.Error.BudgetCurrencyMismatch" xml:space="preserve"><value>The approved budget currency must match the company’s functional currency for this workflow.</value></data>
+  <data name="Construction.Purchase.Error.DocumentCurrencyNotProven" xml:space="preserve"><value>A valid saved document currency is required.</value></data>
+  <data name="Construction.Purchase.Error.DocumentPrecisionNotSupported" xml:space="preserve"><value>The currency precision is not supported by the purchase document storage.</value></data>
+  <data name="Construction.Purchase.Error.SupplierNotFound" xml:space="preserve"><value>Choose an active supplier belonging to this company.</value></data>
+  <data name="Construction.Purchase.Error.WarehouseNotFound" xml:space="preserve"><value>Choose an active warehouse belonging to this company.</value></data>
+  <data name="Construction.Purchase.Error.ItemNotFound" xml:space="preserve"><value>Choose an active item belonging to this company.</value></data>
+  <data name="Construction.Purchase.Error.UnitNotFound" xml:space="preserve"><value>Choose an active unit belonging to this company.</value></data>
+  <data name="Construction.Exception.Title" xml:space="preserve"><value>Budget exceptions</value></data>
+  <data name="Construction.Exception.Back" xml:space="preserve"><value>Back to project budget</value></data>
+  <data name="Construction.Exception.Explanation" xml:space="preserve"><value>An independent reviewer must approve the exact financial basis. Approval alone does not reserve budget or approve a purchase.</value></data>
+  <data name="Construction.Exception.Preserved" xml:space="preserve"><value>Your submitted reason has been retained. Reload and review the current amounts before submitting again.</value></data>
+  <data name="Construction.Exception.Reload" xml:space="preserve"><value>Reload current position</value></data>
+  <data name="Construction.Exception.Reason" xml:space="preserve"><value>Request reason</value></data>
+  <data name="Construction.Exception.Order" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="Construction.Exception.AllOrders" xml:space="preserve"><value>All allocated orders and exception history</value></data>
+  <data name="Construction.Exception.Show" xml:space="preserve"><value>Show</value></data>
+  <data name="Construction.Exception.NewRequest" xml:space="preserve"><value>Request an exception</value></data>
+  <data name="Construction.Exception.Amount" xml:space="preserve"><value>Allocated net amount</value></data>
+  <data name="Construction.Exception.Overrun" xml:space="preserve"><value>Budget overrun</value></data>
+  <data name="Construction.Exception.Submit" xml:space="preserve"><value>Submit exception request</value></data>
+  <data name="Construction.Exception.History" xml:space="preserve"><value>Request and decision history</value></data>
+  <data name="Construction.Exception.Empty" xml:space="preserve"><value>No exception requests recorded.</value></data>
+  <data name="Construction.Exception.Requester" xml:space="preserve"><value>Requester employee</value></data>
+  <data name="Construction.Exception.DecisionReason" xml:space="preserve"><value>Decision reason</value></data>
+  <data name="Construction.Exception.Review" xml:space="preserve"><value>Review this order</value></data>
+  <data name="Construction.Exception.Approve" xml:space="preserve"><value>Approve independently</value></data>
+  <data name="Construction.Exception.Reject" xml:space="preserve"><value>Reject exception</value></data>
+  <data name="Construction.Exception.Saved" xml:space="preserve"><value>The exception workflow action was recorded.</value></data>
+  <data name="Construction.Exception.State.Pending" xml:space="preserve"><value>Awaiting independent review</value></data>
+  <data name="Construction.Exception.State.Approved" xml:space="preserve"><value>Approved — subject to current financial validation</value></data>
+  <data name="Construction.Exception.State.Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Construction.Exception.State.Consumed" xml:space="preserve"><value>Used once for purchase approval</value></data>
+  <data name="Construction.Exception.State.Stale" xml:space="preserve"><value>Financial basis changed</value></data>
+  <data name="Construction.Exception.Error.General" xml:space="preserve"><value>The action is unavailable. Reload and verify policy, allocation and financial coverage.</value></data>
+  <data name="Construction.Exception.Error.ExceptionSourceChanged" xml:space="preserve"><value>The financial basis has changed. Review it again.</value></data>
+  <data name="Construction.Exception.Error.IndependentApproverRequired" xml:space="preserve"><value>The requester cannot decide their own exception.</value></data>
+  <data name="Construction.Exception.Error.InvalidExceptionRequest" xml:space="preserve"><value>Enter a reason and reload a valid financial preview.</value></data>
+  <data name="Construction.Exception.Error.InvalidExceptionDecision" xml:space="preserve"><value>Enter a decision reason and reload the request.</value></data>
+  <data name="Construction.Exception.Error.ExceptionNotRequired" xml:space="preserve"><value>The current policy and financial position do not require this exception.</value></data>
+  <data name="Construction.Exception.Error.AllocationRequired" xml:space="preserve"><value>A saved allocation is required before requesting an exception.</value></data>
+  <data name="Construction.Exception.Error.AlreadyDecided" xml:space="preserve"><value>An immutable decision already exists for this request.</value></data>
+  <data name="Construction.Exception.Error.IdempotencyConflict" xml:space="preserve"><value>This submission identifier was already used for different details.</value></data>
+  <data name="Construction.Exception.Error.ConcurrencyConflict" xml:space="preserve"><value>Another operation changed this request. Reload it.</value></data>
+  <data name="Construction.Purchase.Error.ReceiptCoverageRequired" xml:space="preserve"><value>Receipt quantities or posting evidence do not match the approved purchase. Review receipt reconciliation before continuing.</value></data>
+  <data name="Construction.Navigation.ChooseProject" xml:space="preserve"><value>Choose a project below to open {0}.</value></data>
+  <data name="Construction.Navigation.ChooseOrder" xml:space="preserve"><value>Open the Actions menu on a project purchase order to use {0}. Allocation is available for drafts.</value></data>
+  <data name="Construction &amp; project budgets" xml:space="preserve"><value>Construction &amp; project budgets</value></data>
+  <data name="Project purchasing" xml:space="preserve"><value>Project purchasing</value></data>
+  <data name="Project structure" xml:space="preserve"><value>Project structure</value></data>
+  <data name="Budget versions" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Workspace" xml:space="preserve"><value>Workspace</value></data>
+  <data name="Agenda" xml:space="preserve"><value>Agenda</value></data>
+  <data name="Mentions" xml:space="preserve"><value>Mentions</value></data>
+  <data name="My reports" xml:space="preserve"><value>My reports</value></data>
+  <data name="Business event monitor" xml:space="preserve"><value>Business event monitor</value></data>
+  <data name="Report Studio" xml:space="preserve"><value>Report Studio</value></data>
+  <data name="Partial project purchase invoices" xml:space="preserve"><value>Partial project purchase invoices</value></data>
+  <data name="Restaurant dashboard" xml:space="preserve"><value>Restaurant dashboard</value></data>
+  <data name="Item sourcing" xml:space="preserve"><value>Item sourcing</value></data>
+  <data name="Sourcing overview" xml:space="preserve"><value>Sourcing overview</value></data>
+  <data name="Sync conflict review" xml:space="preserve"><value>Sync conflict review</value></data>
+  <data name="Hyper sales" xml:space="preserve"><value>Hyper sales</value></data>
+  <data name="Item margin" xml:space="preserve"><value>Item margin</value></data>
+  <data name="Opportunity Insights" xml:space="preserve"><value>Opportunity Insights</value></data>
+  <data name="Account Insights" xml:space="preserve"><value>Account Insights</value></data>
+  <data name="All tasks" xml:space="preserve"><value>All tasks</value></data>
+  <data name="Reports dashboard" xml:space="preserve"><value>Reports dashboard</value></data>
+  <data name="Hours report" xml:space="preserve"><value>Hours report</value></data>
+  <data name="Auto-task rules" xml:space="preserve"><value>Auto-task rules</value></data>
+  <data name="Match suggestions" xml:space="preserve"><value>Match suggestions</value></data>
+  <data name="Task templates" xml:space="preserve"><value>Task templates</value></data>
+  <data name="Calendar" xml:space="preserve"><value>Calendar</value></data>
+  <data name="Timeline" xml:space="preserve"><value>Timeline</value></data>
+  <data name="Resource view" xml:space="preserve"><value>Resource view</value></data>
+  <data name="Projects dashboard" xml:space="preserve"><value>Projects dashboard</value></data>
+  <data name="Receive advance" xml:space="preserve"><value>Receive advance</value></data>
+  <data name="Release retention" xml:space="preserve"><value>Release retention</value></data>
+  <data name="Release subcontractor retention" xml:space="preserve"><value>Release subcontractor retention</value></data>
+  <data name="Project activity types" xml:space="preserve"><value>Project activity types</value></data>
+  <data name="Purchase budget readmission" xml:space="preserve"><value>Purchase budget readmission</value></data>
+  <data name="Allocate actual costs" xml:space="preserve"><value>Allocate actual costs</value></data>
+  <data name="Material consumption linkage" xml:space="preserve"><value>Material consumption linkage</value></data>
+  <data name="Budget transfer feasibility" xml:space="preserve"><value>Budget transfer feasibility</value></data>
+  <data name="HR Dashboard" xml:space="preserve"><value>HR Dashboard</value></data>
+  <data name="Chat" xml:space="preserve"><value>Chat</value></data>
+  <data name="My approvals" xml:space="preserve"><value>My approvals</value></data>
+  <data name="File Manager" xml:space="preserve"><value>File Manager</value></data>
+  <data name="Announcements" xml:space="preserve"><value>Announcements</value></data>
+  <data name="Project cost forecast" xml:space="preserve"><value>Project cost forecast</value></data>
+  <data name="Company construction policies" xml:space="preserve"><value>Company construction policies</value></data>
+  <data name="Budget exceptions" xml:space="preserve"><value>Budget exceptions</value></data>
+  <data name="New project purchase draft" xml:space="preserve"><value>New project purchase draft</value></data>
+  <data name="Project purchase allocation" xml:space="preserve"><value>Project purchase allocation</value></data>
+  <data name="Project purchase approval" xml:space="preserve"><value>Project purchase approval</value></data>
+  <data name="Construction.PartialInvoice.Available" xml:space="preserve"><value>Available to invoice</value></data>
+  <data name="Construction.PartialInvoice.Back" xml:space="preserve"><value>Purchase orders</value></data>
+  <data name="Construction.PartialInvoice.Billed" xml:space="preserve"><value>Previously invoiced</value></data>
+  <data name="Construction.PartialInvoice.Confirm" xml:space="preserve"><value>Confirm issue</value></data>
+  <data name="Construction.PartialInvoice.Currency" xml:space="preserve"><value>Currency</value></data>
+  <data name="Construction.PartialInvoice.Date" xml:space="preserve"><value>Invoice date</value></data>
+  <data name="Construction.PartialInvoice.Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Construction.PartialInvoice.Explanation" xml:space="preserve"><value>Invoice only received quantities. Preview amounts before confirming; issuing an invoice does not receive stock again.</value></data>
+  <data name="Construction.PartialInvoice.Issued" xml:space="preserve"><value>Invoice issued:</value></data>
+  <data name="Construction.PartialInvoice.Net" xml:space="preserve"><value>Net</value></data>
+  <data name="Construction.PartialInvoice.Order" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="Construction.PartialInvoice.Preserved" xml:space="preserve"><value>The request identity is retained; do not create a new request to retry an uncertain issue.</value></data>
+  <data name="Construction.PartialInvoice.Preview" xml:space="preserve"><value>Preview amounts</value></data>
+  <data name="Construction.PartialInvoice.Project" xml:space="preserve"><value>Project</value></data>
+  <data name="Construction.PartialInvoice.Quantity" xml:space="preserve"><value>Quantity to invoice</value></data>
+  <data name="Construction.PartialInvoice.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.PartialInvoice.Receipt" xml:space="preserve"><value>Receipt</value></data>
+  <data name="Construction.PartialInvoice.Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Construction.PartialInvoice.Refused" xml:space="preserve"><value>The request could not be completed. Check permissions, received quantities and source documents, then preview again.</value></data>
+  <data name="Construction.PartialInvoice.Reload" xml:space="preserve"><value>Reload current source</value></data>
+  <data name="Construction.PartialInvoice.Tax" xml:space="preserve"><value>Tax</value></data>
+  <data name="Construction.PartialInvoice.Title" xml:space="preserve"><value>Partial project purchase invoice</value></data>
+  <data name="Construction.PartialInvoice.Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Construction.PartialInvoice.FullConversionRefused" xml:space="preserve"><value>This purchase order has partial invoice history. Use partial invoicing for the remaining quantities.</value></data>
+  <data name="Construction.Rebase.Title" xml:space="preserve"><value>Purchase budget readmission</value></data>
+  <data name="Construction.Rebase.Budgets" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Construction.Rebase.Explanation" xml:space="preserve"><value>Review unchanged reserved purchases against the current approved budget. Activating an exposure mapping does not approve purchasing.</value></data>
+  <data name="Construction.Rebase.Saved" xml:space="preserve"><value>The operation was recorded. Review the current workflow state below.</value></data>
+  <data name="Construction.Rebase.Preserved" xml:space="preserve"><value>Your request identity and explanation have been preserved. Reload to review changed source data before starting a new request.</value></data>
+  <data name="Construction.Rebase.Orders" xml:space="preserve"><value>Reserved purchases from previous budgets</value></data>
+  <data name="Construction.Rebase.Truncated" xml:space="preserve"><value>Showing the latest 100 orders. Older orders remain accessible from their purchase approval page.</value></data>
+  <data name="Construction.Rebase.Empty" xml:space="preserve"><value>No reserved purchases from previous budgets were found.</value></data>
+  <data name="Construction.Rebase.Order" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="Construction.Rebase.State" xml:space="preserve"><value>Status</value></data>
+  <data name="Construction.Rebase.Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Construction.Rebase.Workflow" xml:space="preserve"><value>Readmission workflow</value></data>
+  <data name="Construction.Rebase.ReviewState" xml:space="preserve"><value>Budget mapping review</value></data>
+  <data name="Construction.Rebase.ExposureState" xml:space="preserve"><value>Commitment mapping</value></data>
+  <data name="Construction.Rebase.Activated" xml:space="preserve"><value>Activated</value></data>
+  <data name="Construction.Rebase.NotActivated" xml:space="preserve"><value>Not activated</value></data>
+  <data name="Construction.Rebase.Independent" xml:space="preserve"><value>The requester cannot decide their own budget mapping proposal. Purchase approval also requires an independent reviewer.</value></data>
+  <data name="Construction.Rebase.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.Rebase.Request" xml:space="preserve"><value>Request budget mapping review</value></data>
+  <data name="Construction.Rebase.Approve" xml:space="preserve"><value>Approve budget mapping proposal</value></data>
+  <data name="Construction.Rebase.Reject" xml:space="preserve"><value>Reject proposal</value></data>
+  <data name="Construction.Rebase.Activate" xml:space="preserve"><value>Activate commitment mapping</value></data>
+  <data name="Construction.Rebase.PurchaseRequest" xml:space="preserve"><value>Request purchase approval</value></data>
+  <data name="Construction.Rebase.Reload" xml:space="preserve"><value>Reload current data</value></data>
+  <data name="Construction.Rebase.PurchaseState" xml:space="preserve"><value>Purchase approval</value></data>
+  <data name="Construction.Rebase.ApprovalNumber" xml:space="preserve"><value>Approval no.</value></data>
+  <data name="Construction.Rebase.PurchaseNotice" xml:space="preserve"><value>Purchase approval is decided in the existing Approvals screen. Receipt and invoice access still requires its own permissions and fresh validation.</value></data>
+  <data name="Construction.Rebase.Approvals" xml:space="preserve"><value>Open approvals</value></data>
+  <data name="Construction.Rebase.History" xml:space="preserve"><value>Request history</value></data>
+  <data name="Construction.Rebase.RequestNumber" xml:space="preserve"><value>Request no.</value></data>
+  <data name="Construction.Rebase.Date" xml:space="preserve"><value>Requested at (UTC)</value></data>
+  <data name="Construction.Rebase.State.None" xml:space="preserve"><value>Not requested</value></data>
+  <data name="Construction.Rebase.State.Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Construction.Rebase.State.Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="Construction.Rebase.State.Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Construction.Rebase.State.Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Construction.Rebase.State.Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Construction.Rebase.State.Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="Construction.Rebase.State.Unknown" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Construction.Rebase.Error.General" xml:space="preserve"><value>The source cannot be verified for this operation. Review its budget, approvals and receipt history, then reload.</value></data>
+  <data name="Construction.Rebase.Error.AccessDenied" xml:space="preserve"><value>You do not have permission for this operation.</value></data>
+  <data name="Construction.Rebase.Error.ConcurrencyConflict" xml:space="preserve"><value>The source changed. Reload and review before submitting again.</value></data>
+  <data name="Construction.Rebase.Error.SeparateApproverRequired" xml:space="preserve"><value>A different reviewer must decide this proposal.</value></data>
+  <data name="Construction.Rebase.Error.PolicyNotConfigured" xml:space="preserve"><value>Configure an explicit company budget policy first.</value></data>
+  <data name="Construction.Rebase.Error.RebaseBaselineLineageRequired" xml:space="preserve"><value>Only the directly succeeding approved budget is supported.</value></data>
+  <data name="Construction.Rebase.Error.RebaseOverrunRequiresReview" xml:space="preserve"><value>The mapping would exceed the approved budget and cannot be activated by this workflow.</value></data>
+  <data name="Construction.Rebase.Error.InvalidRebaseRequest" xml:space="preserve"><value>Complete the reason and reload the request before submitting.</value></data>
+  <data name="Construction.Rebase.Error.IdempotencyConflict" xml:space="preserve"><value>This request identity was used with different content. Reload to start a separate request.</value></data>
+  <data name="Construction.Rebase.OriginalBudget" xml:space="preserve"><value>Original budget version</value></data>
+  <data name="Construction.Rebase.TargetBudget" xml:space="preserve"><value>Current approved budget version</value></data>
+  <data name="Construction.Rebase.Commitment" xml:space="preserve"><value>Unchanged net commitment</value></data>
+  <data name="Construction.ActualUi.Title" xml:space="preserve"><value>Allocate actual project costs</value></data>
+  <data name="Construction.ActualUi.Budgets" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Construction.ActualUi.Explanation" xml:space="preserve"><value>Attribute existing expense journal lines to project WBS and cost codes. This operation does not create or change a financial journal or a stock movement.</value></data>
+  <data name="Construction.ActualUi.Saved" xml:space="preserve"><value>The analytical allocation was recorded.</value></data>
+  <data name="Construction.ActualUi.Sources" xml:space="preserve"><value>Existing expense sources</value></data>
+  <data name="Construction.ActualUi.Truncated" xml:space="preserve"><value>Showing the latest 100 expense lines. Open an older line by entering its journal line number.</value></data>
+  <data name="Construction.ActualUi.Empty" xml:space="preserve"><value>No project expense lines were found.</value></data>
+  <data name="Construction.ActualUi.Entry" xml:space="preserve"><value>Journal entry</value></data>
+  <data name="Construction.ActualUi.Line" xml:space="preserve"><value>Journal line</value></data>
+  <data name="Construction.ActualUi.Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Construction.ActualUi.Net" xml:space="preserve"><value>Net functional-currency cost</value></data>
+  <data name="Construction.ActualUi.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Construction.ActualUi.Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Construction.ActualUi.UnknownCurrency" xml:space="preserve"><value>Currency not proven</value></data>
+  <data name="Construction.ActualUi.Allocated" xml:space="preserve"><value>Allocated</value></data>
+  <data name="Construction.ActualUi.Unallocated" xml:space="preserve"><value>Not allocated</value></data>
+  <data name="Construction.ActualUi.AlreadyAllocated" xml:space="preserve"><value>This source already has an allocation. Posted allocation history cannot be overwritten here.</value></data>
+  <data name="Construction.ActualUi.SplitNotice" xml:space="preserve"><value>Enter up to eight splits, leave unused rows empty, and match the exact signed net cost. No distribution is inferred automatically.</value></data>
+  <data name="Construction.ActualUi.Wbs" xml:space="preserve"><value>WBS cost node</value></data>
+  <data name="Construction.ActualUi.CostCode" xml:space="preserve"><value>Cost code</value></data>
+  <data name="Construction.ActualUi.Amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Construction.ActualUi.Choose" xml:space="preserve"><value>Choose</value></data>
+  <data name="Construction.ActualUi.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.ActualUi.Preview" xml:space="preserve"><value>Review source and totals</value></data>
+  <data name="Construction.ActualUi.Confirm" xml:space="preserve"><value>Confirm analytical allocation</value></data>
+  <data name="Construction.ActualUi.ConfirmNotice" xml:space="preserve"><value>The source and totals were reviewed. Dimension validity and source freshness will be checked again when you confirm.</value></data>
+  <data name="Construction.ActualUi.Reload" xml:space="preserve"><value>Reload current source</value></data>
+  <data name="Construction.ActualUi.Error.General" xml:space="preserve"><value>This source cannot be allocated. Check its posted status, currency evidence and project dimensions.</value></data>
+  <data name="Construction.ActualUi.Error.ActualAllocationDoesNotReconcile" xml:space="preserve"><value>Splits must exactly match the signed net cost without repeated dimensions.</value></data>
+  <data name="Construction.ActualUi.Error.InvalidAllocationRequest" xml:space="preserve"><value>Complete the reason and at least one valid split.</value></data>
+  <data name="Construction.ActualUi.Error.ConcurrencyConflict" xml:space="preserve"><value>The source changed. Reload and review it again.</value></data>
+  <data name="Construction.ActualUi.Error.InvalidActualCostDimension" xml:space="preserve"><value>A selected dimension is not valid for this source.</value></data>
+  <data name="Construction.ActualUi.Error.HistoricalBaseCurrencyIdentityNotProven" xml:space="preserve"><value>The original functional-currency evidence is missing. The current company currency cannot replace it.</value></data>
+  <data name="Construction.ConsumptionUi.Title" xml:space="preserve"><value>Material consumption linkage</value></data>
+  <data name="Construction.ConsumptionUi.Actuals" xml:space="preserve"><value>Allocate actual costs</value></data>
+  <data name="Construction.ConsumptionUi.Explanation" xml:space="preserve"><value>Enter the existing receipt line and posted issue movement explicitly. The system verifies company, project, stock, accounting, actual allocation and remaining receipt coverage. This records analytical provenance only; it does not post stock or journals.</value></data>
+  <data name="Construction.ConsumptionUi.Saved" xml:space="preserve"><value>Consumption link recorded or previously acknowledged.</value></data>
+  <data name="Construction.ConsumptionUi.Receipt" xml:space="preserve"><value>Receipt line ID</value></data>
+  <data name="Construction.ConsumptionUi.Issue" xml:space="preserve"><value>Issue movement ID</value></data>
+  <data name="Construction.ConsumptionUi.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.ConsumptionUi.Confirmed" xml:space="preserve"><value>Source checks passed. Confirm the analytical link. Validated functional amount:</value></data>
+  <data name="Construction.ConsumptionUi.Confirm" xml:space="preserve"><value>Confirm linkage</value></data>
+  <data name="Construction.ConsumptionUi.Preview" xml:space="preserve"><value>Check sources</value></data>
+  <data name="Construction.ConsumptionUi.Reload" xml:space="preserve"><value>Start again</value></data>
+  <data name="Construction.ConsumptionUi.History" xml:space="preserve"><value>Registered consumption</value></data>
+  <data name="Construction.ConsumptionUi.HistoryNotice" xml:space="preserve"><value>Latest 100 immutable records. Listing records is not a fresh financial coverage certification.</value></data>
+  <data name="Construction.ConsumptionUi.Empty" xml:space="preserve"><value>No consumption links recorded for this project.</value></data>
+  <data name="Construction.ConsumptionUi.Quantity" xml:space="preserve"><value>Base quantity</value></data>
+  <data name="Construction.ConsumptionUi.Cost" xml:space="preserve"><value>Functional cost</value></data>
+  <data name="Construction.ConsumptionUi.Date" xml:space="preserve"><value>Recorded at (UTC)</value></data>
+  <data name="Construction.ConsumptionUi.UnknownCurrency" xml:space="preserve"><value>Currency not proven</value></data>
+  <data name="Construction.ConsumptionUi.Error.General" xml:space="preserve"><value>Source evidence is incomplete or no longer valid. Refresh the sources and retry; no analytical link was recorded.</value></data>
+  <data name="Construction.ConsumptionUi.Error.InvalidConsumptionRequest" xml:space="preserve"><value>Provide valid source IDs and a reason, then check the sources.</value></data>
+  <data name="Construction.ConsumptionUi.Error.ConcurrencyConflict" xml:space="preserve"><value>The sources changed after preview. Review them and check again.</value></data>
+  <data name="Construction.ConsumptionUi.Error.IssueAlreadyAttributed" xml:space="preserve"><value>This issue is already linked. Review the registered history.</value></data>
+  <data name="Construction.ConsumptionUi.Error.ActualCoverageRequired" xml:space="preserve"><value>Complete the actual-cost allocation before linking consumption.</value></data>
+  <data name="Construction.ConsumptionUi.Error.IssueOrActualSourceNotProven" xml:space="preserve"><value>The issue or its actual-cost evidence could not be verified for this receipt.</value></data>
+  <data name="Construction.ConsumptionUi.CandidateNotice" xml:space="preserve"><value>Choose a source ID from the suggestions or the tables below. Lists are candidates only; Check sources validates the selected pair. Older IDs can still be entered explicitly.</value></data>
+  <data name="Construction.ConsumptionUi.ReceiptSources" xml:space="preserve"><value>Project receipt candidates</value></data>
+  <data name="Construction.ConsumptionUi.IssueSources" xml:space="preserve"><value>Unlinked issue candidates with actual allocation</value></data>
+  <data name="Construction.ConsumptionUi.SourcesTruncated" xml:space="preserve"><value>Latest 100 candidates shown. Enter an older source ID explicitly if needed.</value></data>
+  <data name="Construction.ConsumptionUi.SourcesEmpty" xml:space="preserve"><value>No candidates found. Check the project, posted sources and actual-cost allocation.</value></data>
+  <data name="Construction.ConsumptionUi.SourceId" xml:space="preserve"><value>Source ID</value></data>
+  <data name="Construction.ConsumptionUi.SourceDocument" xml:space="preserve"><value>Receipt / journal ID</value></data>
+  <data name="Construction.ConsumptionUi.Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Construction.ConsumptionUi.Warehouse" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="Construction.PolicyUi.Title" xml:space="preserve"><value>Company construction policies</value></data>
+  <data name="Construction.PolicyUi.Explanation" xml:space="preserve"><value>Each choice applies only to the current company. Nothing is selected or saved automatically. A reason and company project-administration permission are required.</value></data>
+  <data name="Construction.PolicyUi.Foundation" xml:space="preserve"><value>Configuration foundation: saving a choice does not execute a transfer, authorize warehouse borrowing or create a forecast. Their operational workflows require separate implementation and qualification.</value></data>
+  <data name="Construction.PolicyUi.Saved" xml:space="preserve"><value>Company choice saved with an audit record.</value></data>
+  <data name="Construction.PolicyUi.Conflict" xml:space="preserve"><value>The configuration changed. Review the current choice and submit again.</value></data>
+  <data name="Construction.PolicyUi.Invalid" xml:space="preserve"><value>Select an allowed choice and provide a reason. Nothing was saved.</value></data>
+  <data name="Construction.PolicyUi.BudgetTransfer" xml:space="preserve"><value>D-09: Budget transfers</value></data>
+  <data name="Construction.PolicyUi.CrossSiteWarehouse" xml:space="preserve"><value>D-10: Cross-site warehouse access</value></data>
+  <data name="Construction.PolicyUi.CostForecast" xml:space="preserve"><value>D-12: Cost forecasts</value></data>
+  <data name="Construction.PolicyUi.Current" xml:space="preserve"><value>Current choice</value></data>
+  <data name="Construction.PolicyUi.Unconfigured" xml:space="preserve"><value>Not configured — no assumed policy</value></data>
+  <data name="Construction.PolicyUi.Mode" xml:space="preserve"><value>Policy</value></data>
+  <data name="Construction.PolicyUi.Choose" xml:space="preserve"><value>Choose explicitly</value></data>
+  <data name="Construction.PolicyUi.Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Construction.PolicyUi.Save" xml:space="preserve"><value>Save company choice</value></data>
+  <data name="Construction.PolicyUi.Changed" xml:space="preserve"><value>Changed at / by employee</value></data>
+  <data name="Construction.PolicyUi.Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Construction.PolicyUi.IndependentApproval" xml:space="preserve"><value>Independent approval and reason required</value></data>
+  <data name="Construction.PolicyUi.Restricted" xml:space="preserve"><value>Only the site’s authorized warehouse</value></data>
+  <data name="Construction.PolicyUi.ApprovedException" xml:space="preserve"><value>Another site requires an approved exception</value></data>
+  <data name="Construction.PolicyUi.ManualAuthorOwned" xml:space="preserve"><value>Manual forecast with recorded author and method</value></data>
+  <data name="Construction.TransferUi.Title" xml:space="preserve"><value>Budget transfer feasibility</value></data>
+  <data name="Construction.TransferUi.Budgets" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Construction.TransferUi.Explanation" xml:space="preserve"><value>A transfer requires an independent decision and execution by another authorized employee. Execution rechecks policy and exposure and creates a linked budget version; it posts no accounting or stock movement.</value></data>
+  <data name="Construction.TransferUi.Disabled" xml:space="preserve"><value>Budget transfers are disabled by this company’s explicit choice.</value></data>
+  <data name="Construction.TransferUi.Unconfigured" xml:space="preserve"><value>A company administrator must explicitly configure the budget transfer policy. No choice is assumed.</value></data>
+  <data name="Construction.TransferUi.From" xml:space="preserve"><value>From budget line</value></data>
+  <data name="Construction.TransferUi.To" xml:space="preserve"><value>To budget line</value></data>
+  <data name="Construction.TransferUi.Choose" xml:space="preserve"><value>Choose a budget line</value></data>
+  <data name="Construction.TransferUi.Amount" xml:space="preserve"><value>Transfer amount</value></data>
+  <data name="Construction.TransferUi.Preview" xml:space="preserve"><value>Check feasibility</value></data>
+  <data name="Construction.TransferUi.NoBaseline" xml:space="preserve"><value>An approved baseline budget is required.</value></data>
+  <data name="Construction.TransferUi.Result" xml:space="preserve"><value>Feasibility result</value></data>
+  <data name="Construction.TransferUi.Available" xml:space="preserve"><value>Source line available after actuals and commitments</value></data>
+  <data name="Construction.TransferUi.Before" xml:space="preserve"><value>Before proposal</value></data>
+  <data name="Construction.TransferUi.After" xml:space="preserve"><value>After proposal (not applied)</value></data>
+  <data name="Construction.TransferUi.Unchanged" xml:space="preserve"><value>The total of the two lines is unchanged. Figures are a source-bound read snapshot, not an approval.</value></data>
+  <data name="Construction.TransferUi.Error.General" xml:space="preserve"><value>Complete source coverage could not be verified. No proposal figures are shown and no changes were made.</value></data>
+  <data name="Construction.TransferUi.Error.InvalidTransfer" xml:space="preserve"><value>Select two different current budget lines and a positive amount.</value></data>
+  <data name="Construction.TransferUi.Error.InsufficientUncommittedBudget" xml:space="preserve"><value>The proposed amount exceeds the source budget available after actuals and commitments.</value></data>
+  <data name="Construction.TransferUi.Error.InvalidCurrencyPrecision" xml:space="preserve"><value>Use the approved budget currency’s exact precision.</value></data>
+  <data name="Construction.TransferUi.Error.QuantifiedTransferNotSupported" xml:space="preserve"><value>Transfers involving quantity/rate estimates need a separate qualified workflow.</value></data>
+  <data name="Construction.TransferUi.Error.ConcurrencyConflict" xml:space="preserve"><value>The baseline or company policy changed. Reload and check again.</value></data>
+  <data name="Construction.TransferUi.RequestSaved" xml:space="preserve"><value>Transfer request recorded; no budget was moved.</value></data>
+  <data name="Construction.TransferUi.Reason" xml:space="preserve"><value>Transfer reason</value></data>
+  <data name="Construction.TransferUi.Request" xml:space="preserve"><value>Record transfer request</value></data>
+  <data name="Construction.TransferUi.RequestNotice" xml:space="preserve"><value>Recording intent does not change balances. A different authorized employee must decide; execution is a separate action that rechecks the current basis.</value></data>
+  <data name="Construction.TransferUi.Requests" xml:space="preserve"><value>Transfer requests</value></data>
+  <data name="Construction.TransferUi.HistoryNotice" xml:space="preserve"><value>Latest 50 requests in their recorded budget currency. Decisions are immutable and never execute a transfer.</value></data>
+  <data name="Construction.TransferUi.NoRequests" xml:space="preserve"><value>No transfer requests recorded.</value></data>
+  <data name="Construction.TransferUi.RequestNumber" xml:space="preserve"><value>Request</value></data>
+  <data name="Construction.TransferUi.Baseline" xml:space="preserve"><value>Budget version</value></data>
+  <data name="Construction.TransferUi.RequestedBy" xml:space="preserve"><value>Employee / date (UTC)</value></data>
+  <data name="Construction.TransferUi.State" xml:space="preserve"><value>Status</value></data>
+  <data name="Construction.TransferUi.AwaitingWorkflow" xml:space="preserve"><value>Awaiting independent decision; not executed</value></data>
+  <data name="Construction.TransferUi.Error.InvalidTransferRequest" xml:space="preserve"><value>Recheck the transfer and enter a reason of up to 1000 characters.</value></data>
+  <data name="Construction.TransferUi.Error.RequestIdConflict" xml:space="preserve"><value>This request identifier was already used for different details. Recheck before submitting again.</value></data>
+  <data name="Construction.TransferUi.DecisionSaved" xml:space="preserve"><value>Independent decision recorded; no budget was moved.</value></data>
+  <data name="Construction.TransferUi.IndependentDecision" xml:space="preserve"><value>Independent decision</value></data>
+  <data name="Construction.TransferUi.ApprovedPendingExecution" xml:space="preserve"><value>Independent consent recorded; not executed</value></data>
+  <data name="Construction.TransferUi.Rejected" xml:space="preserve"><value>Request rejected</value></data>
+  <data name="Construction.TransferUi.DecisionBy" xml:space="preserve"><value>Decision employee</value></data>
+  <data name="Construction.TransferUi.ReviewDetails" xml:space="preserve"><value>Review requested budget changes</value></data>
+  <data name="Construction.TransferUi.DecisionReason" xml:space="preserve"><value>Decision reason</value></data>
+  <data name="Construction.TransferUi.DecisionNotice" xml:space="preserve"><value>Consent rechecks current policy and complete exposure. It does not execute or grant spending authority.</value></data>
+  <data name="Construction.TransferUi.ApproveDecision" xml:space="preserve"><value>Record independent consent</value></data>
+  <data name="Construction.TransferUi.RejectDecision" xml:space="preserve"><value>Reject request</value></data>
+  <data name="Construction.TransferUi.OwnRequest" xml:space="preserve"><value>Another authorized employee must decide on your request.</value></data>
+  <data name="Construction.TransferUi.Error.InvalidTransferDecision" xml:space="preserve"><value>Choose consent or refusal and enter a reason of up to 1000 characters.</value></data>
+  <data name="Construction.TransferUi.Error.SeparateApproverRequired" xml:space="preserve"><value>You cannot decide on your own request.</value></data>
+  <data name="Construction.TransferUi.Error.TransferRequestNotFound" xml:space="preserve"><value>Transfer request not available in this project.</value></data>
+  <data name="Construction.TransferUi.Error.TransferAlreadyDecided" xml:space="preserve"><value>A decision is already recorded. It cannot be overwritten.</value></data>
+  <data name="Construction.TransferUi.Error.DecisionIdConflict" xml:space="preserve"><value>This decision key was used with different details. Reload before deciding.</value></data>
+  <data name="Construction.Budget.Error.BudgetTransferWorkflowRequired" xml:space="preserve"><value>This revision moves budget between allocations. Use the dedicated budget-transfer workflow; ordinary revision approval cannot execute a transfer.</value></data>
+
+
+  <data name="Construction.TransferUi.Application" xml:space="preserve"><value>Execution</value></data>
+  <data name="Construction.TransferUi.Applied" xml:space="preserve"><value>Applied</value></data>
+  <data name="Construction.TransferUi.ApplicationSaved" xml:space="preserve"><value>The transfer was applied once and its resulting budget version was recorded.</value></data>
+  <data name="Construction.TransferUi.Apply" xml:space="preserve"><value>Apply approved transfer</value></data>
+  <data name="Construction.TransferUi.ApplicationReason" xml:space="preserve"><value>Execution reason</value></data>
+  <data name="Construction.TransferUi.ApplicationNotice" xml:space="preserve"><value>Rechecks the live basis. Creates a new baseline; existing commitments are not automatically re-admitted.</value></data>
+  <data name="Construction.TransferUi.ResultVersion" xml:space="preserve"><value>Resulting budget version</value></data>
+  <data name="Construction.TransferUi.AppliedBy" xml:space="preserve"><value>Executed by</value></data>
+  <data name="Construction.TransferUi.SeparateExecutorNotice" xml:space="preserve"><value>Another authorized employee must create the resulting version; its independent approver cannot also be its creator.</value></data>
+  <data name="Construction.TransferUi.StaleApplication" xml:space="preserve"><value>The current policy or baseline differs. Review the transfer basis before requesting a new approval.</value></data>
+  <data name="Construction.TransferUi.Error.InvalidTransferApplication" xml:space="preserve"><value>The execution request is invalid.</value></data>
+  <data name="Construction.TransferUi.Error.ApprovedTransferDecisionRequired" xml:space="preserve"><value>A matching independent approved decision is required.</value></data>
+  <data name="Construction.TransferUi.Error.SeparateExecutorRequired" xml:space="preserve"><value>The resulting version must be created by an authorized employee other than its independent approver.</value></data>
+  <data name="Construction.TransferUi.Error.ApplicationIdConflict" xml:space="preserve"><value>This execution key was already used for a different command.</value></data>
+  <data name="Construction.TransferUi.Error.TransferAlreadyApplied" xml:space="preserve"><value>This approved transfer has already been applied.</value></data>
+  <data name="Construction.TransferUi.Error.InvalidBudgetDimension" xml:space="preserve"><value>A budget allocation is no longer eligible for approval. Review all current budget dimensions.</value></data>
+  <data name="Construction.TransferUi.Error.BudgetCurrencyChanged" xml:space="preserve"><value>Company currency changed. Review the budget basis before execution.</value></data>
+  <data name="Construction.ForecastUi.Title" xml:space="preserve"><value>Project cost forecast</value></data>
+  <data name="Construction.ForecastUi.Explanation" xml:space="preserve"><value>Manual analytical forecast only. It does not approve spending or change budgets, accounting or stock.</value></data>
+  <data name="Construction.ForecastUi.Budgets" xml:space="preserve"><value>Budget versions</value></data>
+  <data name="Construction.ForecastUi.Saved" xml:space="preserve"><value>Forecast saved as a new authored record.</value></data>
+  <data name="Construction.ForecastUi.Disabled" xml:space="preserve"><value>Cost forecasting is disabled by the company policy. Existing history remains available.</value></data>
+  <data name="Construction.ForecastUi.Unconfigured" xml:space="preserve"><value>Configure an explicit company cost forecasting policy before authoring a forecast.</value></data>
+  <data name="Construction.ForecastUi.ReadOnly" xml:space="preserve"><value>You have read access. Authoring requires project budget management permission.</value></data>
+  <data name="Construction.ForecastUi.NoBaseline" xml:space="preserve"><value>An approved baseline is required to author a forecast.</value></data>
+  <data name="Construction.ForecastUi.DimensionLimit" xml:space="preserve"><value>This form supports up to 1,000 budget dimensions. No partial forecast can be saved.</value></data>
+  <data name="Construction.ForecastUi.ManualInput" xml:space="preserve"><value>Enter your remaining cost estimate</value></data>
+  <data name="Construction.ForecastUi.InputNotice" xml:space="preserve"><value>Enter every dimension explicitly. Remaining cost INCLUDES outstanding commitments; do not add them again. No estimate is filled automatically.</value></data>
+  <data name="Construction.ForecastUi.Dimension" xml:space="preserve"><value>Budget dimension</value></data>
+  <data name="Construction.ForecastUi.Budget" xml:space="preserve"><value>Budget</value></data>
+  <data name="Construction.ForecastUi.Remaining" xml:space="preserve"><value>Remaining cost INCLUDING commitments</value></data>
+  <data name="Construction.ForecastUi.Preview" xml:space="preserve"><value>Review forecast</value></data>
+  <data name="Construction.ForecastUi.CommitmentWarning" xml:space="preserve"><value>The estimate is below outstanding commitments in at least one dimension. Review your estimate; this warning is not an approval policy.</value></data>
+  <data name="Construction.ForecastUi.Actual" xml:space="preserve"><value>Net actual cost</value></data>
+  <data name="Construction.ForecastUi.Commitment" xml:space="preserve"><value>Outstanding commitments</value></data>
+  <data name="Construction.ForecastUi.Eac" xml:space="preserve"><value>Estimated final cost</value></data>
+  <data name="Construction.ForecastUi.Variance" xml:space="preserve"><value>Budget minus forecast</value></data>
+  <data name="Construction.ForecastUi.Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Construction.ForecastUi.Reason" xml:space="preserve"><value>Reason and basis of estimate</value></data>
+  <data name="Construction.ForecastUi.SaveNotice" xml:space="preserve"><value>Saving appends a new record with your identity, time and source baseline. Previous records are preserved. Sources are checked again when saving.</value></data>
+  <data name="Construction.ForecastUi.Save" xml:space="preserve"><value>Save forecast</value></data>
+  <data name="Construction.ForecastUi.History" xml:space="preserve"><value>Forecast history</value></data>
+  <data name="Construction.ForecastUi.HistoryNotice" xml:space="preserve"><value>Latest 50 authored records. Historical values are displayed as saved and are not recalculated against the current baseline.</value></data>
+  <data name="Construction.ForecastUi.NoHistory" xml:space="preserve"><value>No forecasts have been recorded for this project.</value></data>
+  <data name="Construction.ForecastUi.Number" xml:space="preserve"><value>Record / UTC time</value></data>
+  <data name="Construction.ForecastUi.Author" xml:space="preserve"><value>Author employee ID</value></data>
+  <data name="Construction.ForecastUi.Baseline" xml:space="preserve"><value>Source budget version</value></data>
+  <data name="Construction.ForecastUi.Details" xml:space="preserve"><value>Saved details</value></data>
+  <data name="Construction.ForecastUi.Previous" xml:space="preserve"><value>Previous record</value></data>
+  <data name="Construction.ForecastUi.Method" xml:space="preserve"><value>Method: manual remaining cost including commitments</value></data>
+  <data name="Construction.ForecastUi.CurrencyId" xml:space="preserve"><value>Recorded currency ID</value></data>
+  <data name="Construction.ForecastUi.Error.General" xml:space="preserve"><value>The forecast could not be prepared or saved. Check company policy and complete cost coverage, then refresh and review again.</value></data>
+  <data name="Construction.ForecastUi.Error.ConcurrencyConflict" xml:space="preserve"><value>The baseline, policy, source data or history changed. Refresh the page and review a new forecast.</value></data>
+  <data name="Construction.ForecastUi.Error.InvalidCurrencyPrecision" xml:space="preserve"><value>Use exactly representable amounts at the recorded currency precision. Values are not rounded automatically.</value></data>
+  <data name="Construction.ForecastUi.Error.ForecastDimensionsRequired" xml:space="preserve"><value>A complete, unique estimate is required for every budget dimension.</value></data>
+  <data name="Construction.ForecastUi.Error.InvalidForecastRequest" xml:space="preserve"><value>Check the entered values and review the forecast again.</value></data>
+  <data name="Construction.ForecastUi.Error.ForecastRequestIdConflict" xml:space="preserve"><value>This request identity was already used for different content. Refresh and review again.</value></data>
+  <data name="Construction.ForecastUi.Error.AmountOverflow" xml:space="preserve"><value>The forecast exceeds the supported amount range.</value></data>
+  <data name="Construction.ForecastUi.Error.InvalidForecastAmount" xml:space="preserve"><value>Budget, commitment and remaining cost amounts must not be negative.</value></data>
+<data name="Construction.Warehouse.Title" xml:space="preserve"><value>Cross-site warehouse exception</value></data>
+<data name="Construction.Warehouse.Explanation" xml:space="preserve"><value>Select the requested destination site and obtain independent consent. Consent creates no purchase or stock movement and is checked again at purchase approval.</value></data>
+<data name="Construction.Warehouse.Refused" xml:space="preserve"><value>The action was not saved. Your input was retained. Reload and review the source, policy and permissions before trying again.</value></data>
+<data name="Construction.Warehouse.PolicyRequired" xml:space="preserve"><value>Exception requests require an explicit company policy allowing approved exceptions. This section does not change company policy.</value></data>
+<data name="Construction.Warehouse.Destination" xml:space="preserve"><value>Requested destination site</value></data>
+<data name="Construction.Warehouse.ChooseSite" xml:space="preserve"><value>Choose an available site</value></data>
+<data name="Construction.Warehouse.ReviewSite" xml:space="preserve"><value>Review site and source</value></data>
+<data name="Construction.Warehouse.Reason" xml:space="preserve"><value>Exception request reason</value></data>
+<data name="Construction.Warehouse.Request" xml:space="preserve"><value>Request independent consent</value></data>
+<data name="Construction.Warehouse.NotReady" xml:space="preserve"><value>A new request is not currently available for these facts. An equivalent request may exist or the source needs review.</value></data>
+<data name="Construction.Warehouse.History" xml:space="preserve"><value>Latest 50 exception requests</value></data>
+<data name="Construction.Warehouse.NoHistory" xml:space="preserve"><value>No exception requests are available to display.</value></data>
+<data name="Construction.Warehouse.Date" xml:space="preserve"><value>Date (UTC)</value></data>
+<data name="Construction.Warehouse.Status" xml:space="preserve"><value>Status</value></data>
+<data name="Construction.Warehouse.Decision" xml:space="preserve"><value>Independent decision</value></data>
+<data name="Construction.Warehouse.DecisionReason" xml:space="preserve"><value>Decision reason</value></data>
+<data name="Construction.Warehouse.Approve" xml:space="preserve"><value>Approve</value></data>
+<data name="Construction.Warehouse.Reject" xml:space="preserve"><value>Reject</value></data>
+<data name="Construction.Warehouse.State.Pending" xml:space="preserve"><value>Pending decision</value></data>
+<data name="Construction.Warehouse.State.Approved" xml:space="preserve"><value>Approved</value></data>
+<data name="Construction.Warehouse.State.Rejected" xml:space="preserve"><value>Rejected</value></data>
+<data name="Construction.Warehouse.SelectDecision" xml:space="preserve"><value>Warehouse exception consent for this purchase</value></data>
+<data name="Construction.Warehouse.ChooseDecision" xml:space="preserve"><value>Choose current consent</value></data>
+<data name="Construction.Warehouse.RequestSaved" xml:space="preserve"><value>Warehouse exception request recorded without executing a purchase or stock movement.</value></data>
+<data name="Construction.Warehouse.DecisionSaved" xml:space="preserve"><value>Independent decision recorded. Execution still requires purchase approval and fresh validation.</value></data>
+<data name="Construction.Purchase.Error.WarehouseExceptionBindingRequired" xml:space="preserve"><value>Bind current warehouse exception consent to this purchase before submitting or approving it.</value></data>
+<data name="Construction.Rebase.Error.WarehouseExceptionContinuationUnavailable" xml:space="preserve"><value>This order requires a warehouse exception. Reapproval does not yet support that exception, so this workflow cannot create a new approval request.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Title" xml:space="preserve"><value>Independent warehouse site approval after rebasing</value></data>
+<data name="Construction.RebasedWarehouseConsent.Explanation" xml:space="preserve"><value>Request approval for a named destination site after commitment rebasing. A different user must review the request.</value></data>
+<data name="Construction.RebasedWarehouseConsent.NoOperationalGrant" xml:space="preserve"><value>This is review evidence only. It does not grant warehouse access or create a purchase admission or stock movement.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Destination" xml:space="preserve"><value>Destination site</value></data>
+<data name="Construction.RebasedWarehouseConsent.Review" xml:space="preserve"><value>Review site</value></data>
+<data name="Construction.RebasedWarehouseConsent.Reason" xml:space="preserve"><value>Request reason</value></data>
+<data name="Construction.RebasedWarehouseConsent.Submit" xml:space="preserve"><value>Submit for independent review</value></data>
+<data name="Construction.RebasedWarehouseConsent.History" xml:space="preserve"><value>Site requests and decisions</value></data>
+<data name="Construction.RebasedWarehouseConsent.NoHistory" xml:space="preserve"><value>No earlier requests exist for this purchase.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Date" xml:space="preserve"><value>Requested</value></data>
+<data name="Construction.RebasedWarehouseConsent.Status" xml:space="preserve"><value>Status</value></data>
+<data name="Construction.RebasedWarehouseConsent.Decision" xml:space="preserve"><value>Decision</value></data>
+<data name="Construction.RebasedWarehouseConsent.DecisionReason" xml:space="preserve"><value>Decision reason</value></data>
+<data name="Construction.RebasedWarehouseConsent.Approve" xml:space="preserve"><value>Approve</value></data>
+<data name="Construction.RebasedWarehouseConsent.Reject" xml:space="preserve"><value>Reject</value></data>
+<data name="Construction.RebasedWarehouseConsent.State.Pending" xml:space="preserve"><value>Pending review</value></data>
+<data name="Construction.RebasedWarehouseConsent.State.Approved" xml:space="preserve"><value>Approved</value></data>
+<data name="Construction.RebasedWarehouseConsent.State.Rejected" xml:space="preserve"><value>Rejected</value></data>
+<data name="Construction.RebasedWarehouseConsent.RequestSaved" xml:space="preserve"><value>Independent approval request submitted.</value></data>
+<data name="Construction.RebasedWarehouseConsent.DecisionSaved" xml:space="preserve"><value>Independent decision recorded.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Unavailable" xml:space="preserve"><value>This site cannot be prepared for approval. Check the commitment rebase, your access, and the document status.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.AccessDenied" xml:space="preserve"><value>You are not authorized to perform this action.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.InvalidWarehouseExceptionRequest" xml:space="preserve"><value>The approval request is incomplete or invalid.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.InvalidWarehouseExceptionDecision" xml:space="preserve"><value>The decision is incomplete or invalid.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.ConcurrencyConflict" xml:space="preserve"><value>The source data or company policy changed. Review the request again.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionAlreadyRequested" xml:space="preserve"><value>A request already exists for this source and destination.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.SeparateApproverRequired" xml:space="preserve"><value>A different user must make this decision.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionAlreadyDecided" xml:space="preserve"><value>This request already has a decision.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionRequestNotFound" xml:space="preserve"><value>The approval request could not be found.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.ApprovedWarehouseConsentRequired" xml:space="preserve"><value>The required approval is missing or was not approved.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.WarehouseConsentLineageChanged" xml:space="preserve"><value>The approval no longer matches this purchase source.</value></data>
+<data name="Construction.RebasedWarehouseConsent.Error.DecisionIdConflict" xml:space="preserve"><value>The decision identifier conflicts with an earlier operation.</value></data>
+  <data name="Construction.Dsr.Title" xml:space="preserve"><value>Daily site reports</value></data>
+  <data name="Comm.Notification.MentionedInComment.TitleEn" xml:space="preserve"><value>{actor} mentioned you</value></data>
+  <data name="Comm.Notification.MentionedInComment.BodyEn" xml:space="preserve"><value>{actor} mentioned you in a comment on {entityEn}: {excerpt}</value></data>
+  <data name="Comm.Notification.CommentOnFollowedThread.TitleEn" xml:space="preserve"><value>New comment on {entityEn}</value></data>
+  <data name="Comm.Notification.CommentOnFollowedThread.BodyEn" xml:space="preserve"><value>{actor} commented: {excerpt}</value></data>
+  <data name="Comm.Notification.ReplyToMyComment.TitleEn" xml:space="preserve"><value>{actor} replied to your comment</value></data>
+  <data name="Comm.Notification.ReplyToMyComment.BodyEn" xml:space="preserve"><value>{actor} replied to your comment on {entityEn}: {excerpt}</value></data>
+  <data name="Comm.Notification.ReactionOnMyComment.TitleEn" xml:space="preserve"><value>{actor} reacted to your comment</value></data>
+  <data name="Comm.Notification.ReactionOnMyComment.BodyEn" xml:space="preserve"><value>{actor} reacted "{reaction}" to your comment</value></data>
+  <data name="Comm.Notification.AddedAsParticipant.TitleEn" xml:space="preserve"><value>{actor} added you to a conversation</value></data>
+  <data name="Comm.Notification.AddedAsParticipant.BodyEn" xml:space="preserve"><value>{actor} added you to the conversation on {entityEn}</value></data>
+  <data name="Comm.Notification.ThreadLocked.TitleEn" xml:space="preserve"><value>Conversation locked</value></data>
+  <data name="Comm.Notification.ThreadLocked.BodyEn" xml:space="preserve"><value>{actor} locked the conversation on {entityEn}. {reason}</value></data>
+  <data name="Comm.Notification.MyCommentDeleted.TitleEn" xml:space="preserve"><value>Your comment was removed</value></data>
+  <data name="Comm.Notification.MyCommentDeleted.BodyEn" xml:space="preserve"><value>{actor} removed your comment on {entityEn}. {reason}</value></data>
+  <data name="Hospital" xml:space="preserve"><value>Hospital</value></data>
+  <data name="Beds &amp; rooms" xml:space="preserve"><value>Beds &amp; rooms</value></data>
+  <data name="Room types" xml:space="preserve"><value>Room types</value></data>
+  <data name="Floor &amp; room designer" xml:space="preserve"><value>Floor &amp; room designer</value></data>
+  <data name="Patients &amp; front desk" xml:space="preserve"><value>Patients &amp; reception</value></data>
+  <data name="Patient registry" xml:space="preserve"><value>Patient registry</value></data>
+  <data name="Register patient" xml:space="preserve"><value>Register patient</value></data>
+  <data name="Inpatient" xml:space="preserve"><value>Inpatient</value></data>
+  <data name="Appointments" xml:space="preserve"><value>Appointments</value></data>
+  <data name="Clinics" xml:space="preserve"><value>Clinics</value></data>
+  <data name="Clinics board" xml:space="preserve"><value>Clinics board</value></data>
+  <data name="Doctors &amp; staff" xml:space="preserve"><value>Doctors &amp; staff</value></data>
+  <data name="Practitioners" xml:space="preserve"><value>Practitioners</value></data>
+  <data name="Doctor worklist" xml:space="preserve"><value>Doctor worklist</value></data>
+  <data name="Finance &amp; insurance" xml:space="preserve"><value>Finance &amp; insurance</value></data>
+  <data name="Billing &amp; cashier" xml:space="preserve"><value>Billing &amp; cashier</value></data>
+  <data name="Cashier closing" xml:space="preserve"><value>Cashier closing</value></data>
+  <data name="Service catalogue" xml:space="preserve"><value>Service catalogue</value></data>
+  <data name="Billing settings" xml:space="preserve"><value>Billing settings</value></data>
+  <data name="Services &amp; items" xml:space="preserve"><value>Services &amp; items</value></data>
+  <data name="Hospital dashboard" xml:space="preserve"><value>Hospital dashboard</value></data>
+  <data name="Hospital map" xml:space="preserve"><value>Hospital map</value></data>
+  <data name="Communication Hub" xml:space="preserve"><value>Communication Hub</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Laboratory" xml:space="preserve"><value>Laboratory</value></data>
+  <data name="Lab tests &amp; analytes" xml:space="preserve"><value>Lab tests &amp; analytes</value></data>
+  <data name="Radiology" xml:space="preserve"><value>Radiology</value></data>
+  <data name="Exams &amp; rooms" xml:space="preserve"><value>Exams &amp; rooms</value></data>
+  <data name="Pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
+  <data name="Dispensing queue" xml:space="preserve"><value>Dispensing queue</value></data>
+  <data name="Pharmacy stock" xml:space="preserve"><value>Pharmacy stock</value></data>
+  <data name="Pharmacy indicators" xml:space="preserve"><value>Pharmacy indicators</value></data>
+  <data name="Drug formulary" xml:space="preserve"><value>Drug formulary</value></data>
+  <data name="Formulary requests" xml:space="preserve"><value>Formulary requests</value></data>
+  <data name="Batch recalls" xml:space="preserve"><value>Batch recalls</value></data>
+  <data name="Expiry and disposal" xml:space="preserve"><value>Expiry and disposal</value></data>
+  <data name="Controlled-drug register" xml:space="preserve"><value>Controlled-drug register</value></data>
+  <data name="Compounding" xml:space="preserve"><value>Compounding</value></data>
+  <data name="Incoming from reception" xml:space="preserve"><value>Incoming from reception</value></data>
+  <data name="Check-in gaps" xml:space="preserve"><value>Check-in gaps</value></data>
+  <data name="Clinic disruptions" xml:space="preserve"><value>Clinic disruptions</value></data>
+  <data name="Cart fill" xml:space="preserve"><value>Cart fill</value></data>
+  <data name="Front desk" xml:space="preserve"><value>Reception</value></data>
+  <data name="Emergency" xml:space="preserve"><value>Emergency</value></data>
+  <data name="Emergency board" xml:space="preserve"><value>Emergency board</value></data>
+  <data name="Nursing station" xml:space="preserve"><value>Nursing station</value></data>
+  <data name="Estimates &amp; deposits" xml:space="preserve"><value>Estimates &amp; deposits</value></data>
+  <data name="Approvals &amp; claims" xml:space="preserve"><value>Approvals &amp; claims</value></data>
+  <data name="Payers &amp; contracts" xml:space="preserve"><value>Payers &amp; contracts</value></data>
+  <data name="Dentistry" xml:space="preserve"><value>Dentistry</value></data>
+  <data name="Dental &amp; perio chart" xml:space="preserve"><value>Dental &amp; perio chart</value></data>
+  <data name="Treatment plans" xml:space="preserve"><value>Treatment plans</value></data>
+  <data name="Chair schedule" xml:space="preserve"><value>Chair schedule</value></data>
+  <data name="Dental lab cases" xml:space="preserve"><value>Dental lab cases</value></data>
+  <data name="Recall &amp; sterilisation" xml:space="preserve"><value>Recall &amp; sterilisation</value></data>
+  <data name="Orthodontics" xml:space="preserve"><value>Orthodontics</value></data>
+  <data name="Dental implants" xml:space="preserve"><value>Dental implants</value></data>
+  <data name="Fee statements" xml:space="preserve"><value>Fee statements</value></data>
+  <data name="Medication routing" xml:space="preserve"><value>Medication routing</value></data>
+  <data name="Patient portal" xml:space="preserve"><value>Patient portal</value></data>
+  <data name="Portal requests" xml:space="preserve"><value>Portal requests</value></data>
+  <data name="Theatre schedule" xml:space="preserve"><value>Theatre schedule</value></data>
+  <data name="Refill requests" xml:space="preserve"><value>Refill requests</value></data>
+  <data name="Supply &amp; quality" xml:space="preserve"><value>Supply &amp; quality</value></data>
+  <data name="Ward requisitions" xml:space="preserve"><value>Ward requisitions</value></data>
+  <data name="Units &amp; who asks" xml:space="preserve"><value>Units &amp; who asks</value></data>
+  <data name="Intensive care" xml:space="preserve"><value>Intensive care</value></data>
+  <data name="Blood bank" xml:space="preserve"><value>Blood bank</value></data>
+  <data name="Support services" xml:space="preserve"><value>Support services</value></data>
+  <data name="Sterile supply" xml:space="preserve"><value>Sterile supply</value></data>
+  <data name="Clinical dietary" xml:space="preserve"><value>Clinical dietary</value></data>
+  <data name="Kitchen &amp; cafeteria" xml:space="preserve"><value>Kitchen &amp; cafeteria</value></data>
+  <data name="Incident reports" xml:space="preserve"><value>Incident reports</value></data>
+  <data name="Patient portal accounts" xml:space="preserve"><value>Patient portal accounts</value></data>
+  <data name="Earlier-slot waitlist" xml:space="preserve"><value>Earlier-slot waitlist</value></data>
+  <data name="Hospital reports" xml:space="preserve"><value>Hospital reports</value></data>
+  <data name="Hospital overview" xml:space="preserve"><value>Hospital overview</value></data>
+  <data name="Duplicate files" xml:space="preserve"><value>Duplicate files</value></data>
+  <data name="Births &amp; deaths" xml:space="preserve"><value>Births &amp; deaths</value></data>
+  <data name="Consent forms" xml:space="preserve"><value>Consent forms</value></data>
   <data name="Country rule pack" xml:space="preserve">
     <value>Country rule pack</value>
   </data>
@@ -1912,82 +2749,151 @@
   <data name="Social insurance file" xml:space="preserve">
     <value>Social insurance file</value>
   </data>
-  <data name="Every resignation tier needs a paid percentage between 0 and 100" xml:space="preserve">
-    <value>Every resignation tier needs a paid percentage between 0 and 100</value>
-  </data>
-  <data name="Follow-up tasks created: {0} (already tracked: {1})" xml:space="preserve">
-    <value>Follow-up tasks created: {0} (already tracked: {1})</value>
-  </data>
-  <data name="Leave days must be between 0 and 400" xml:space="preserve">
-    <value>Leave days must be between 0 and 400</value>
-  </data>
-  <data name="Loans &amp; advances" xml:space="preserve">
-    <value>Loans &amp; advances</value>
+  <data name="Rules saved" xml:space="preserve">
+    <value>Rules saved</value>
   </data>
   <data name="No country rule pack is installed. Apply hr_rule_packs.sql." xml:space="preserve">
     <value>No country rule pack is installed. Apply hr_rule_packs.sql.</value>
   </data>
-  <data name="Overtime approval" xml:space="preserve">
-    <value>Overtime approval</value>
+  <data name="Every resignation tier needs a paid percentage between 0 and 100" xml:space="preserve">
+    <value>Every resignation tier needs a paid percentage between 0 and 100</value>
+  </data>
+  <data name="Leave days must be between 0 and 400" xml:space="preserve">
+    <value>Leave days must be between 0 and 400</value>
   </data>
   <data name="Overtime figures are out of range" xml:space="preserve">
     <value>Overtime figures are out of range</value>
   </data>
-  <data name="Rules saved" xml:space="preserve">
-    <value>Rules saved</value>
-  </data>
   <data name="The loan cap must be between 0 and 100" xml:space="preserve">
     <value>The loan cap must be between 0 and 100</value>
   </data>
-  <data name="Social insurance statement" xml:space="preserve">
-    <value>Social insurance statement</value>
+  <data name="Follow-up tasks created: {0} (already tracked: {1})" xml:space="preserve">
+    <value>Follow-up tasks created: {0} (already tracked: {1})</value>
   </data>
-  <data name="Gratuity provision" xml:space="preserve">
-    <value>Gratuity provision</value>
-  </data>
-  <data name="Working-hours schedule" xml:space="preserve">
-    <value>Working-hours schedule</value>
-  </data>
-  <data name="Hospital" xml:space="preserve"><value>Hospital</value></data>
-  <data name="Inpatient" xml:space="preserve"><value>Inpatient</value></data>
-  <data name="Hospital dashboard" xml:space="preserve"><value>Hospital dashboard</value></data>
-  <data name="Hospital map" xml:space="preserve"><value>Hospital map</value></data>
-  <data name="Emergency" xml:space="preserve"><value>Emergency</value></data>
-  <data name="Emergency board" xml:space="preserve"><value>Emergency board</value></data>
-  <data name="Nursing station" xml:space="preserve"><value>Nursing station</value></data>
-  <data name="Dentistry" xml:space="preserve"><value>Dentistry</value></data>
-  <data name="Treatment plans" xml:space="preserve"><value>Treatment plans</value></data>
-  <data name="Chair schedule" xml:space="preserve"><value>Chair schedule</value></data>
-  <data name="Dental lab cases" xml:space="preserve"><value>Dental lab cases</value></data>
-  <data name="Orthodontics" xml:space="preserve"><value>Orthodontics</value></data>
-  <data name="Dental implants" xml:space="preserve"><value>Dental implants</value></data>
-  <data name="Fee statements" xml:space="preserve"><value>Fee statements</value></data>
-  <data name="Medication routing" xml:space="preserve"><value>Medication routing</value></data>
-  <data name="Patient portal" xml:space="preserve"><value>Patient portal</value></data>
-  <data name="Portal requests" xml:space="preserve"><value>Portal requests</value></data>
-  <data name="Theatre schedule" xml:space="preserve"><value>Theatre schedule</value></data>
-  <data name="Refill requests" xml:space="preserve"><value>Refill requests</value></data>
-  <data name="Ward requisitions" xml:space="preserve"><value>Ward requisitions</value></data>
-  <data name="Intensive care" xml:space="preserve"><value>Intensive care</value></data>
-  <data name="Blood bank" xml:space="preserve"><value>Blood bank</value></data>
-  <data name="Support services" xml:space="preserve"><value>Support services</value></data>
-  <data name="Sterile supply" xml:space="preserve"><value>Sterile supply</value></data>
-  <data name="Clinical dietary" xml:space="preserve"><value>Clinical dietary</value></data>
-  <data name="Incident reports" xml:space="preserve"><value>Incident reports</value></data>
-  <data name="Patient portal accounts" xml:space="preserve"><value>Patient portal accounts</value></data>
-  <data name="Earlier-slot waitlist" xml:space="preserve"><value>Earlier-slot waitlist</value></data>
-  <data name="Hospital reports" xml:space="preserve"><value>Hospital reports</value></data>
-  <data name="Hospital overview" xml:space="preserve"><value>Hospital overview</value></data>
-  <data name="Duplicate files" xml:space="preserve"><value>Duplicate files</value></data>
-  <data name="Consent forms" xml:space="preserve"><value>Consent forms</value></data>
   <data name="Charity cases" xml:space="preserve"><value>Charity cases</value></data>
   <data name="Emergency file access" xml:space="preserve"><value>Emergency file access</value></data>
+  <data name="Loans &amp; advances" xml:space="preserve">
+    <value>Loans &amp; advances</value>
+  </data>
+  <data name="Overtime approval" xml:space="preserve">
+    <value>Overtime approval</value>
+  </data>
   <data name="Satisfaction surveys" xml:space="preserve"><value>Satisfaction surveys</value></data>
   <data name="Clinical rules" xml:space="preserve"><value>Clinical rules</value></data>
   <data name="Result follow-up" xml:space="preserve"><value>Result follow-up</value></data>
   <data name="Equipment work orders" xml:space="preserve"><value>Equipment work orders</value></data>
+  <data name="Social insurance statement" xml:space="preserve">
+    <value>Social insurance statement</value>
+  </data>
+  <data name="Housekeeping, porters &amp; laundry" xml:space="preserve"><value>Housekeeping, porters &amp; laundry</value></data>
+  <data name="Gratuity provision" xml:space="preserve">
+    <value>Gratuity provision</value>
+  </data>
   <data name="On-call" xml:space="preserve"><value>On-call</value></data>
+  <data name="Working-hours schedule" xml:space="preserve">
+    <value>Working-hours schedule</value>
+  </data>
   <data name="Patient SMS" xml:space="preserve"><value>Patient SMS</value></data>
+  <data name="Build plan" xml:space="preserve">
+    <value>Build plan</value>
+  </data>
+  <data name="Checkout" xml:space="preserve">
+    <value>Checkout</value>
+  </data>
+  <data name="Cashier lane" xml:space="preserve">
+    <value>Cashier lane</value>
+  </data>
+  <data name="Open a shift" xml:space="preserve">
+    <value>Open a shift</value>
+  </data>
+  <data name="Cash drawer" xml:space="preserve">
+    <value>Cash drawer</value>
+  </data>
+  <data name="Item lookup / PLU" xml:space="preserve">
+    <value>Item lookup / PLU</value>
+  </data>
+  <data name="Promotions &amp; loyalty" xml:space="preserve">
+    <value>Promotions &amp; loyalty</value>
+  </data>
+  <data name="Coupons" xml:space="preserve">
+    <value>Coupons</value>
+  </data>
+  <data name="Loyalty programme" xml:space="preserve">
+    <value>Loyalty programme</value>
+  </data>
+  <data name="Points redemption" xml:space="preserve">
+    <value>Points redemption</value>
+  </data>
+  <data name="Items &amp; pricing" xml:space="preserve">
+    <value>Items &amp; pricing</value>
+  </data>
+  <data name="Item margins" xml:space="preserve">
+    <value>Item margins</value>
+  </data>
+  <data name="Weighed items" xml:space="preserve">
+    <value>Weighed items</value>
+  </data>
+  <data name="Barcodes" xml:space="preserve">
+    <value>Barcodes</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="Branch stock" xml:space="preserve">
+    <value>Branch stock</value>
+  </data>
+  <data name="Branch transfers" xml:space="preserve">
+    <value>Branch transfers</value>
+  </data>
+  <data name="Waste &amp; write-off" xml:space="preserve">
+    <value>Waste &amp; write-off</value>
+  </data>
+  <data name="Expiry control" xml:space="preserve">
+    <value>Expiry control</value>
+  </data>
+  <data name="Purchasing &amp; suppliers" xml:space="preserve">
+    <value>Purchasing &amp; suppliers</value>
+  </data>
+  <data name="Goods receipt" xml:space="preserve">
+    <value>Goods receipt</value>
+  </data>
+  <data name="Suppliers" xml:space="preserve">
+    <value>Suppliers</value>
+  </data>
+  <data name="Supplier returns" xml:space="preserve">
+    <value>Supplier returns</value>
+  </data>
+  <data name="Till customer" xml:space="preserve">
+    <value>Till customer</value>
+  </data>
+  <data name="Customer registry" xml:space="preserve">
+    <value>Customer registry</value>
+  </data>
+  <data name="Z report" xml:space="preserve">
+    <value>Z report</value>
+  </data>
+  <data name="Top sellers" xml:space="preserve">
+    <value>Top sellers</value>
+  </data>
+  <data name="Basket analysis" xml:space="preserve">
+    <value>Basket analysis</value>
+  </data>
+  <data name="Shrinkage" xml:space="preserve">
+    <value>Shrinkage</value>
+  </data>
+  <data name="Branches &amp; terminals" xml:space="preserve">
+    <value>Branches &amp; terminals</value>
+  </data>
+  <data name="Branch capabilities" xml:space="preserve">
+    <value>Branch capabilities</value>
+  </data>
+  <data name="Scale setup" xml:space="preserve">
+    <value>Scale setup</value>
+  </data>
+  <data name="Tax &amp; invoicing" xml:space="preserve">
+    <value>Tax &amp; invoicing</value>
+  </data>
+  <data name="Drug interactions &amp; doses" xml:space="preserve"><value>Drug interactions &amp; doses</value></data>
   <data name="Order sets" xml:space="preserve"><value>Order sets</value></data>
   <data name="Infection control" xml:space="preserve"><value>Infection control</value></data>
   <data name="Consultations" xml:space="preserve"><value>Consultations</value></data>
@@ -2020,59 +2926,11 @@
   <data name="Audiogram" xml:space="preserve"><value>Audiogram</value></data>
   <data name="DAS28 joints" xml:space="preserve"><value>DAS28 joints</value></data>
   <data name="Pedigree" xml:space="preserve"><value>Pedigree</value></data>
-  <data name="Pharmacy stock" xml:space="preserve"><value>Pharmacy stock</value></data>
-  <data name="Pharmacy indicators" xml:space="preserve"><value>Pharmacy indicators</value></data>
-  <data name="Drug formulary" xml:space="preserve"><value>Drug formulary</value></data>
-  <data name="Formulary requests" xml:space="preserve"><value>Formulary requests</value></data>
-  <data name="Batch recalls" xml:space="preserve"><value>Batch recalls</value></data>
-  <data name="Expiry and disposal" xml:space="preserve"><value>Expiry and disposal</value></data>
-  <data name="Controlled-drug register" xml:space="preserve"><value>Controlled-drug register</value></data>
-  <data name="Compounding" xml:space="preserve"><value>Compounding</value></data>
-  <data name="Incoming from reception" xml:space="preserve"><value>Incoming from reception</value></data>
-  <data name="Check-in gaps" xml:space="preserve"><value>Check-in gaps</value></data>
-  <data name="Clinic disruptions" xml:space="preserve"><value>Clinic disruptions</value></data>
-  <data name="Cart fill" xml:space="preserve"><value>Cart fill</value></data>
-  <data name="Front desk" xml:space="preserve"><value>Reception</value></data>
   <data name="Internal calls" xml:space="preserve"><value>Internal calls</value></data>
   <data name="Communication" xml:space="preserve"><value>Communication</value></data>
   <data name="Call settings" xml:space="preserve"><value>Call settings</value></data>
   <data name="Staff roles" xml:space="preserve"><value>Staff roles</value></data>
   <data name="Analyser results" xml:space="preserve"><value>Analyser results</value></data>
-  <data name="Beds &amp; rooms" xml:space="preserve"><value>Beds &amp; rooms</value></data>
-  <data name="Room types" xml:space="preserve"><value>Room types</value></data>
-  <data name="Floor &amp; room designer" xml:space="preserve"><value>Floor &amp; room designer</value></data>
-  <data name="Patients &amp; front desk" xml:space="preserve"><value>Patients &amp; reception</value></data>
-  <data name="Patient registry" xml:space="preserve"><value>Patient registry</value></data>
-  <data name="Register patient" xml:space="preserve"><value>Register patient</value></data>
-  <data name="Appointments" xml:space="preserve"><value>Appointments</value></data>
-  <data name="Clinics" xml:space="preserve"><value>Clinics</value></data>
-  <data name="Clinics board" xml:space="preserve"><value>Clinics board</value></data>
-  <data name="Doctors &amp; staff" xml:space="preserve"><value>Doctors &amp; staff</value></data>
-  <data name="Practitioners" xml:space="preserve"><value>Practitioners</value></data>
-  <data name="Doctor worklist" xml:space="preserve"><value>Doctor worklist</value></data>
-  <data name="Finance &amp; insurance" xml:space="preserve"><value>Finance &amp; insurance</value></data>
-  <data name="Billing &amp; cashier" xml:space="preserve"><value>Billing &amp; cashier</value></data>
-  <data name="Cashier closing" xml:space="preserve"><value>Cashier closing</value></data>
-  <data name="Billing settings" xml:space="preserve"><value>Billing settings</value></data>
-  <data name="Services &amp; items" xml:space="preserve"><value>Services &amp; items</value></data>
-  <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
-  <data name="Laboratory" xml:space="preserve"><value>Laboratory</value></data>
-  <data name="Lab tests &amp; analytes" xml:space="preserve"><value>Lab tests &amp; analytes</value></data>
-  <data name="Radiology" xml:space="preserve"><value>Radiology</value></data>
-  <data name="Exams &amp; rooms" xml:space="preserve"><value>Exams &amp; rooms</value></data>
-  <data name="Pharmacy" xml:space="preserve"><value>Pharmacy</value></data>
-  <data name="Dispensing queue" xml:space="preserve"><value>Dispensing queue</value></data>
-  <data name="Estimates &amp; deposits" xml:space="preserve"><value>Estimates &amp; deposits</value></data>
-  <data name="Approvals &amp; claims" xml:space="preserve"><value>Approvals &amp; claims</value></data>
-  <data name="Payers &amp; contracts" xml:space="preserve"><value>Payers &amp; contracts</value></data>
-  <data name="Dental &amp; perio chart" xml:space="preserve"><value>Dental &amp; perio chart</value></data>
-  <data name="Recall &amp; sterilisation" xml:space="preserve"><value>Recall &amp; sterilisation</value></data>
-  <data name="Supply &amp; quality" xml:space="preserve"><value>Supply &amp; quality</value></data>
-  <data name="Units &amp; who asks" xml:space="preserve"><value>Units &amp; who asks</value></data>
-  <data name="Kitchen &amp; cafeteria" xml:space="preserve"><value>Kitchen &amp; cafeteria</value></data>
-  <data name="Births &amp; deaths" xml:space="preserve"><value>Births &amp; deaths</value></data>
-  <data name="Housekeeping, porters &amp; laundry" xml:space="preserve"><value>Housekeeping, porters &amp; laundry</value></data>
-  <data name="Drug interactions &amp; doses" xml:space="preserve"><value>Drug interactions &amp; doses</value></data>
   <data name="Bedside monitors" xml:space="preserve"><value>Bedside monitors</value></data>
   <data name="Referrals" xml:space="preserve"><value>Referrals</value></data>
   <data name="Bedside scanning" xml:space="preserve"><value>Bedside scanning</value></data>
@@ -2090,4 +2948,50 @@
   <data name="LoginGreetEvening" xml:space="preserve">
     <value>Good evening</value>
   </data>
+  <data name="This basket holds an item restricted to customers aged {0} and over. Check the customer's ID, then confirm the age before taking payment." xml:space="preserve">
+    <value>This basket holds an item restricted to customers aged {0} and over. Check the customer's ID, then confirm the age before taking payment.</value>
+  </data>
+  <data name="Sales restriction" xml:space="preserve">
+    <value>Sales restriction</value>
+  </data>
+  <data name="Minimum buyer age" xml:space="preserve">
+    <value>Minimum buyer age</value>
+  </data>
+  <data name="Leave empty if unrestricted" xml:space="preserve">
+    <value>Leave empty if unrestricted</value>
+  </data>
+  <data name="The cashier lane will refuse payment for a basket holding this item until the age is confirmed." xml:space="preserve">
+    <value>The cashier lane will refuse payment for a basket holding this item until the age is confirmed.</value>
+  </data>
+  <data name="Open a shift before taking a return." xml:space="preserve">
+    <value>Open a shift before taking a return.</value>
+  </data>
+  <data name="Choose at least one line and a quantity to return." xml:space="preserve">
+    <value>Choose at least one line and a quantity to return.</value>
+  </data>
+  <data name="Only {0} of {1} is still returnable." xml:space="preserve">
+    <value>Only {0} of {1} is still returnable.</value>
+  </data>
+  <data name="That sale has no invoice, so nothing can be returned against it." xml:space="preserve">
+    <value>That sale has no invoice, so nothing can be returned against it.</value>
+  </data>
+  <data name="That sale has no customer, so a return cannot be credited." xml:space="preserve">
+    <value>That sale has no customer, so a return cannot be credited.</value>
+  </data>
+  <data name="That invoice has no lines." xml:space="preserve">
+    <value>That invoice has no lines.</value>
+  </data>
+  <data name="The customer has no receivables account, so the refund cannot be paid out." xml:space="preserve">
+    <value>The customer has no receivables account, so the refund cannot be paid out.</value>
+  </data>
+  <data name="Return {0} was posted, but the cash could not be taken out of the drawer: {1}" xml:space="preserve">
+    <value>Return {0} was posted, but the cash could not be taken out of the drawer: {1}</value>
+  </data>
+  <data name="Return {0} posted - refund {1}." xml:space="preserve">
+    <value>Return {0} posted - refund {1}.</value>
+  </data>
+  <data name="This item cannot be sold {0}" xml:space="preserve">
+    <value>This item cannot be sold {0}</value>
+  </data>
 </root>
+

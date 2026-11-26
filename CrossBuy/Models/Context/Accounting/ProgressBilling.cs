@@ -143,6 +143,18 @@ namespace CrossBuy.Models.Context.Accounting
 		public decimal PreviouslyBilledValue { get; set; }     // Σ prior posted billings for this item
 		public decimal PeriodValue { get; set; }               // cumulative − previously billed (this billing's work)
 
+		// R7 / D-24: immutable commercial basis on the certificate line itself.
+		// Null capture date means no historical snapshot is proven; never infer one from today's BOQ.
+		public int? SnapshotClientContractId { get; set; }
+		public int? SnapshotCommercialRevisionId { get; set; }
+		public int? SnapshotVariationOrderId { get; set; }
+		public decimal? SnapshotContractedQuantity { get; set; }
+		public decimal? SnapshotContractedRate { get; set; }
+		public decimal? SnapshotCertifiedQuantity { get; set; }
+		public decimal? SnapshotCertifiedValue { get; set; }
+		public DateTime? SnapshotCapturedAt { get; set; }
+		public int? SnapshotCapturedBy { get; set; }
+
 		[ForeignKey(nameof(BillingId))]
 		public ProgressBilling? Billing { get; set; }
 	}

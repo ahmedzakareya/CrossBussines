@@ -145,16 +145,30 @@ namespace CrossBuy.Tests
         {
             var view = File.ReadAllText(Path.Combine(RepoRoot(), "CrossBuy", "Views", "Accounting", "AiInsights.cshtml"));
 
+            // The state that must not be silent still belongs to the view itself.
+            Assert.Contains("AiInsightState.InsufficientData", view, StringComparison.Ordinal);
+
+            // PROVENANCE MOVED INTO ONE PARTIAL, and that was a FIX rather than drift: each of the five
+            // insight screens carried its own copy of the strip, which is how all of them came to print the
+            // raw company id as "Company 1". Asserting the inline copies here would force that duplication
+            // back. So the claim splits in two: the VIEW must hand the partial its provenance, and the
+            // PARTIAL must carry the disclosures.
+            Assert.Contains("_InsightsProvenance", view, StringComparison.Ordinal);
+            Assert.Contains("CompanyName = ViewBag.CompanyName", view, StringComparison.Ordinal);
+            Assert.Contains("Model.AnomalyPanel.Source", view, StringComparison.Ordinal);
+
+            var strip = File.ReadAllText(Path.Combine(
+                RepoRoot(), "CrossBuy", "Views", "Shared", "_InsightsProvenance.cshtml"));
+
             foreach (var required in new[]
                      {
-                         "AiInsightState.InsufficientData",   // the state that must not be silent
                          "Data scope",                        // which company
-                         "Analysis source",                   // which engine
+                         "Method",                            // which engine (was labelled "Analysis source")
                          "Generated",                         // when
                          "No data leaves this installation",  // local-only, stated to the reader
                      })
             {
-                Assert.Contains(required, view, StringComparison.Ordinal);
+                Assert.Contains(required, strip, StringComparison.Ordinal);
             }
 
             // The leaking render is gone.

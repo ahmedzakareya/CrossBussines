@@ -36,6 +36,7 @@ namespace CrossBuy.BL.Platform
 
                 // ---- Purchase invoice. Replaces the legacy call in PayableService.CreatePurchaseInvoiceAsync.
                 PurchaseInvoiceEvents.Created => One(envelope, PurchaseInvoice(envelope)),
+                GoodsReceiptEvents.Posted => One(envelope, GoodsReceipt(envelope)),
 
                 // ---- Work order. No legacy notification existed for manufacturing at all, so these are new
                 // and go to the inventory audience, which is the RBAC that governs the work-order screens.
@@ -97,6 +98,22 @@ namespace CrossBuy.BL.Platform
                 EntityType = EntityRegistry.PurchaseInvoice, EntityId = envelope.Entity.Id,
                 ActorEmployeeId = envelope.Actor.EmployeeId,
                 DedupKeyPrefix = DedupPrefix(envelope),
+            };
+        }
+
+        private static NotificationCommand GoodsReceipt(BusinessEventEnvelope envelope)
+        {
+            var p = Payload<GoodsReceiptEventPayload>(envelope);
+            var reference = p?.ReceiptNumber ?? ("#" + envelope.Entity.Id);
+            return new NotificationCommand
+            {
+                RecipientScope = ScopeAccounting, RecipientRoles = new[] { "Accountant", "ChiefAccountant" },
+                CompanyId = envelope.Context.CompanyId, BranchId = envelope.Context.BranchId,
+                TitleAr = "تم استلام بضاعة من مورد", TitleEn = "Goods received",
+                MessageAr = $"إذن الاستلام {reference} جاهز للمطابقة مع فاتورة المورد",
+                MessageEn = $"Goods receipt {reference} is ready for supplier-invoice matching",
+                Type = NotificationTypes.GoodsReceipt, EntityType = EntityRegistry.GoodsReceipt, EntityId = envelope.Entity.Id,
+                ActorEmployeeId = envelope.Actor.EmployeeId, DedupKeyPrefix = DedupPrefix(envelope),
             };
         }
 

@@ -1,0 +1,152 @@
+@using CrossBuy.Controllers
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var branches = ViewBag.HyperBranches as List<HyperController.HyperBranchItem> ?? new();
+    var caps = ViewBag.Caps as List<HyperController.HyperCapRow> ?? new();
+    var notBuilt = ViewBag.NotBuilt as string[] ?? Array.Empty<string>();
+    var branch = ViewBag.Branch as CrossBuy.Models.Context.Admin.Branch;
+    var hasCfg = ViewBag.HasCapConfig as bool? ?? false;
+    ViewData["Title"] = isAr ? "قدرات الفرع" : "Branch capabilities";
+
+    // The controller has no localizer, so it hands over a code and the text is chosen here.
+    var msgMap = new Dictionary<string, string> {
+        ["caps-saved"] = isAr ? "حُفظت قدرات الفرع." : "Branch capabilities saved.",
+        ["not-hyper-branch"] = isAr ? "هذا الفرع ليس فرع هايبر ماركت." : "This branch is not a hypermarket branch.",
+        ["no-permission"] = isAr ? "لا تملك صلاحية تعديل قدرات هذا الفرع." : "You may not change this branch’s capabilities."
+    };
+    Func<object, string> say = c => { var k = c as string ?? ""; return msgMap.TryGetValue(k, out var v) ? v : k; };
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (TempData["HyperMsg"] != null)
+        {
+            <div class="alert alert-success d-flex align-items-center mb-6"><i class="ki-outline ki-check-circle fs-2 me-3"></i>@say(TempData["HyperMsg"])</div>
+        }
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-danger d-flex align-items-center mb-6"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@say(TempData["HyperErr"])</div>
+        }
+
+        @if (ViewBag.NoBranch == true)
+        {
+            <div class="card"><div class="card-body p-10 text-center">
+                <i class="ki-outline ki-shop fs-3tx text-muted mb-4 d-block"></i>
+                <div class="fs-5 fw-bold text-gray-800">@(isAr ? "لا يوجد فرع هايبر ماركت بعد" : "No hypermarket branch yet")</div>
+                <div class="fs-7 text-muted mt-2">@(isAr ? "يظهر هنا كل فرع نشاطه Hyper." : "Every branch whose activity preset is Hyper appears here.")</div>
+            </div></div>
+            return;
+        }
+
+        @if (branches.Count > 1)
+        {
+            <div class="d-flex flex-wrap gap-2 mb-5">
+                @foreach (var b in branches)
+                {
+                    var on = branch != null && b.Id == branch.ID;
+                    <a href="/hyper/setup/capabilities?branchId=@b.Id" class="btn btn-sm @(on ? "btn-primary" : "btn-light")">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</a>
+                }
+            </div>
+        }
+
+        @* THE REASON THIS SCREEN EXISTS, said once and plainly. Until now a branch capability could only
+           be changed with an UPDATE statement, which put a shop-floor decision behind database access. *@
+        <div class="alert alert-primary d-flex align-items-start mb-6">
+            <i class="ki-outline ki-information-5 fs-2tx me-4 mt-1"></i>
+            <div>
+                <div class="fw-bold fs-6 mb-1">@(isAr ? "لماذا بعض القدرات «محجوزة»" : "Why some capabilities are reserved")</div>
+                <div class="fs-7 text-gray-700" style="line-height:1.9">
+                    @(isAr
+                        ? "القدرة المحجوزة معلَنة في النظام ولا يقرؤها أي كود. لو عُرضت قابلة للتشغيل لشغّلها مدير الفرع ثم بحث عن أثرها فلم يجده — وعندها يفقد الثقة في بقية الشاشة لا في ذلك السطر وحده. تُعرض هنا ولا تُشغَّل، ويوم يصل تنفيذها تصير قابلة للتشغيل في نفس التغيير."
+                        : "A reserved capability is declared and read by no code. Shown as switchable, a manager would turn it on, look for its effect and find none — and then distrust the rest of the panel, not just that row. It is listed and not switchable, and the day its consumer ships it becomes switchable in the same change.")
+                </div>
+            </div>
+        </div>
+
+        @if (!hasCfg)
+        {
+            <div class="alert alert-warning d-flex align-items-center mb-6">
+                <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                @(isAr ? "لم يُطبَّق أي إعداد مبدئي على هذا الفرع بعد — كل القدرات متوقفة حتى تُحفظ من هنا." : "No preset has been applied to this branch yet — every capability is off until saved here.")
+            </div>
+        }
+
+        @{ var canManage = ViewBag.CanManageCaps as bool? ?? false; }
+        @if (!canManage)
+        {
+            @* The house refusal notice: say what is missing and who to ask, rather than letting
+               someone discover it by pressing a button that throws them back to the dashboard. *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+                <div class="fs-7 text-gray-700">@(isAr
+                    ? "يمكنك الاطّلاع على القدرات دون تعديلها — تغييرها يحتاج صلاحية إدارة نقاط البيع لهذا الفرع."
+                    : "You can see these capabilities but not change them — editing needs the POS management permission for this branch.")</div>
+            </div>
+        }
+        <form method="post" action="/hyper/setup/capabilities">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="branchId" value="@(branch?.ID ?? 0)" />
+            <div class="card">
+                <div class="card-header min-h-50px align-items-center">
+                    <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "قدرات" : "Capabilities for") @(isAr ? (branch?.NameAr ?? branch?.Name) : (branch?.Name ?? branch?.NameAr))</h3>
+                    <div class="card-toolbar">
+        @if (canManage)
+        {
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-5"></i>@(isAr ? "حفظ" : "Save")</button>
+        }
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-uppercase text-muted">
+                                    <th class="ps-4">@(isAr ? "القدرة" : "Capability")</th>
+                                    <th style="width:150px">@(isAr ? "الحالة" : "State")</th>
+                                    <th class="pe-4" style="width:280px">@(isAr ? "خلفها تنفيذ؟" : "Has a consumer?")</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-6">
+                                @foreach (var c in caps)
+                                {
+                                    var reserved = notBuilt.Contains(c.Key);
+                                    <tr>
+                                        <td class="ps-4">
+                                            <span class="fw-bold text-gray-800">@(isAr ? c.Ar : c.En)</span>
+                                            <div class="fs-8 text-muted"><span style="font-variant-numeric:tabular-nums">@c.Key</span></div>
+                                        </td>
+                                        <td>
+                                            @if (reserved)
+                                            {
+                                                <span class="badge badge-light-warning fw-bold">@(isAr ? "محجوزة" : "Reserved")</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" name="on" value="@c.Key" id="cap_@c.Key" @(c.On ? "checked" : "") @(canManage ? "" : "disabled") />
+                                                    <label class="form-check-label fs-7 fw-semibold" for="cap_@c.Key">@(c.On ? (isAr ? "مفعّلة" : "On") : (isAr ? "متوقفة" : "Off"))</label>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="pe-4 fs-7">
+                                            @if (reserved)
+                                            {
+                                                <span class="text-danger fw-semibold">@(isAr ? "لا — معلَنة فقط، لا يقرؤها شيء" : "No — declared only, read by nothing")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-700">@(isAr ? "نعم" : "Yes")</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

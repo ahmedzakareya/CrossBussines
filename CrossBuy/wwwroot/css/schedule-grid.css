@@ -1,0 +1,327 @@
+/* ==============================================================================================
+   THE PLATFORM SCHEDULE GRID — the Hospital outpatient grid, on the platform calendar.
+
+   This is deliberately the SAME DESIGN as `.hp-sched` in hospital.css, not a cousin of it: the
+   owner's instruction was the hospital grid itself, so every tint, border, radius and metric below
+   is copied from it rather than re-chosen. The two screens answer the same question — who is taken
+   and when — and they were answering it in two visual languages.
+
+   WHY A SECOND RULESET AND NOT A SHARED ONE. Only the selector names differ, and that is on purpose
+   for a mechanical reason: every Calendar screen is policed against Views/Inventory/Items.cshtml by
+   TasksCalendarVisualConformanceTests, which rejects a hex the Inventory authority does not use. It
+   scans the VIEW, not the stylesheet — so the tints are legal here and would not be legal inline,
+   and a Calendar screen must never be able to pull in a hospital class by accident. If the two ever
+   need to move together, move them together on purpose.
+
+   THE ONE RULE THAT IS NOT OBVIOUS. `position: sticky` resolves against the nearest SCROLLING
+   ancestor, and an ancestor with `overflow: hidden` becomes that ancestor while being unable to
+   scroll — so the header silently never sticks. That is why the border and the radius live on the
+   wrapper and the grid itself carries no overflow. `getComputedStyle` still reports "sticky" when it
+   is broken, so this can only be verified by measuring a scroll.
+   ============================================================================================== */
+
+/* The day scrolls inside this box, not with the page, so the header row can stay put. */
+.cb-sched-wrap {
+    overflow: auto;
+    max-height: calc(100vh - 240px);
+    min-height: 380px;
+    border: 1px solid var(--bs-gray-200);
+    border-radius: .75rem;
+}
+
+.cb-sched { display: grid; }
+
+.cb-sched > div {
+    border-bottom: 1px dashed #eef1f6;
+    border-inline-start: 1px solid #eff2f5;
+    min-height: 46px;
+    padding: .25rem .35rem;
+    position: relative;
+}
+
+/* The header row: one cell per person or resource, on the brand rule. */
+.cb-sched .hd {
+    background: #F7FAFF;
+    border-bottom: 2px solid var(--cb-brand, #3A5795);
+    font-weight: 700;
+    padding: .6rem;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+/* The clock column. Sticky on the inline-start edge as well as the hospital's sticky top: a company
+   grid is far wider than a clinic's five doctors, so without this the clock scrolls out of sight
+   exactly when it is needed. `inset-inline-start` and not `left`, so it holds the correct edge in
+   Arabic.
+   DO NOT PUT `.cb-num` (or any `direction`) ON THIS BOX. `inset-inline-start` resolves against the
+   ELEMENT'S OWN direction, so an ltr clock cell inside an rtl grid pins itself to the left edge and
+   scrolls away to the right — which is exactly what it did, while the corner cell beside it held.
+   The time goes in a span inside, which is what isolating a run of digits actually means. */
+.cb-sched .tm {
+    color: var(--bs-gray-600);
+    font-size: .8rem;
+    text-align: center;
+    padding-top: .7rem;
+    background: #fff;
+    font-variant-numeric: tabular-nums;
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 2;
+}
+
+/* The corner cell sits in both the sticky row and the sticky column, so it outranks both. */
+.cb-sched .hd.corner {
+    inset-inline-start: 0;
+    z-index: 4;
+}
+
+/* An open slot. The hospital tints this on hover and draws a '+', because a click there books an
+   appointment; neither calendar screen books anything, so the cell stays plain rather than offering
+   an affordance that does nothing. */
+.cb-sched .free { background: #fff; }
+
+/* A taken slot, on the prototype's filled-slot metrics (design-output/hospital-prototype,
+   app/hms.css `.hms-slot`). */
+.cb-sched .cb-slot {
+    display: block;
+    height: 100%;
+    border-radius: .5rem;
+    padding: .3rem .5rem;
+    font-size: .8rem;
+    line-height: 1.25;
+    overflow: hidden;
+}
+
+/* THE STATES, and why there are four of them. A grid where every filled cell is the same colour is
+   a grid you have to read word by word — which is what made the first attempt at this flat. The
+   prototype gets its life from five appointment states; a calendar booking has no status column, so
+   these are the distinctions the data really carries:
+
+     own   — this person OWNS the event. They organised it; it does not move without them.
+     att   — they are an attendee. Same hour, different weight.
+     past  — it has already finished (only ever applied when the grid is showing today).
+     conflict — one resource, two bookings, in one slot.
+
+   Tints are the prototype's own: #E7F0FF on #0E4A9E for the light state, the same #0E4A9E filled for
+   the heavy one. Those two are already the Calendar screens' colours, so nothing new is introduced. */
+.cb-sched .cb-slot.own { background: #0E4A9E; color: #fff; }
+.cb-sched .cb-slot.att { background: #E7F0FF; color: #0E4A9E; }
+.cb-sched .cb-slot.past { background: var(--bs-gray-100); color: var(--bs-gray-600); }
+.cb-sched .cb-slot.conflict { background: #FADDE1; color: #9B1C2E; }
+
+.cb-sched a.cb-slot:hover { outline: 2px solid #0E4A9E; outline-offset: -2px; }
+.cb-sched a.cb-slot.conflict:hover { outline-color: #9B1C2E; }
+
+/* The legend dot, the same colour as the slot it names — a key whose swatch is a shade off the thing
+   it describes is a key you have to decode twice. */
+.cb-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.cb-swatch.own { background: #0E4A9E; }
+.cb-swatch.att { background: #E7F0FF; border: 1px solid #0E4A9E; }
+.cb-swatch.past { background: var(--bs-gray-300); }
+.cb-swatch.conflict { background: #FADDE1; border: 1px solid #9B1C2E; }
+.cb-swatch.open { background: #fff; border: 1px solid var(--bs-gray-300); }
+
+/* Initials for somebody with no photograph on file — the brand tint, never a blank disc.
+   SET THROUGH METRONIC'S OWN HOOK, not as background/color. `.symbol .symbol-label` in
+   style.bundle reads `var(--bs-symbol-label-bg)` / `var(--bs-symbol-label-color)`, nothing in this
+   product ever defines them, and that rule's specificity (0,2,0) beats a plain class — so a
+   `background:` here lost silently and the circle computed to rgba(0,0,0,0). Defining the two
+   variables on the element the rule matches needs no specificity at all. */
+.cb-initials {
+    --bs-symbol-label-bg: var(--cb-blue-50, #E7F0FF);
+    --bs-symbol-label-color: var(--cb-brand, #3A5795);
+}
+
+/* Clock faces and counts read left-to-right in both languages, and isolated so a time never flips
+   against the Arabic text beside it. */
+.cb-num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+/* ==============================================================================================
+   THE SAME SKIN ON FULLCALENDAR (/Calendar).
+
+   That screen keeps FullCalendar — the rule for it has always been "Calendar keeps FullCalendar
+   functionality" — so this does not replace it, it dresses it in the grid above: the same header
+   band, the same dashed rules, the same tile metrics, the same frame. Month, week, day and list all
+   pick it up, and week/day end up reading almost exactly like the hospital's doctor schedule,
+   because underneath they are the same object: a time axis crossed with columns.
+
+   WHAT IS DELIBERATELY NOT TOUCHED: the two event fills. `--cb-violet-strong` (company) and
+   `--cb-brand-fill` (personal) are set in crossbuy-brand.css with a measured contrast argument —
+   white at 5.70 and 4.73, separated by 115 in RGB after a rebrand had collapsed them into two
+   neighbouring blues. Restyling them to this file's tints would throw away a measurement to win a
+   resemblance. Shape is this file's business; those two colours are not.
+   ============================================================================================== */
+
+/* The frame, as on `.cb-sched-wrap`. No `overflow: hidden` here: FullCalendar's own scroller lives
+   inside and its sticky day header resolves against that, but there is no reason to risk it. */
+.fc .fc-view-harness {
+    border: 1px solid var(--bs-gray-200);
+    border-radius: .75rem;
+}
+
+/* The day-name band — `.hd`, applied to FullCalendar's column headers. This is the single most
+   recognisable cue of the hospital grid, and it is one rule. */
+.fc .fc-col-header-cell {
+    background: #F7FAFF;
+    border-bottom: 2px solid #0E4A9E;
+    font-weight: 700;
+    padding: .55rem 0;
+}
+
+.fc .fc-col-header-cell-cushion { color: var(--bs-gray-800); text-decoration: none; }
+
+/* The rules: dashed across, solid down, exactly as the schedule grid draws them. */
+.fc-theme-standard td, .fc-theme-standard th { border-color: #eff2f5; }
+.fc .fc-daygrid-day, .fc .fc-timegrid-slot { border-bottom-style: dashed; border-bottom-color: #eef1f6; }
+.fc .fc-timegrid-slot-minor { border-top-style: dotted; border-top-color: #eef1f6; }
+
+/* Today, on the grid's own tint rather than FullCalendar's stock wash. */
+.fc .fc-day-today { background: #F7FAFF !important; }
+
+/* The event tile: the prototype's metrics (`.hms-slot`), on whichever fill the brand file chose. */
+.fc .fc-event, .fc .fc-daygrid-event {
+    border-radius: .5rem;
+    padding: .2rem .45rem;
+    font-size: .8rem;
+    line-height: 1.25;
+    border: none;
+}
+
+/* ----------------------------------------------------------------------------------------------
+   ROOM IN A MONTH CELL, AND AIR BETWEEN THE CHIPS.
+
+   FullCalendar packs a day's events against each other and against the cell's edges, so a day with
+   three or four of them reads as one striped block — and the last chip sits hard against the cell
+   below it, which is why a popover opening over that boundary looked like it was spilling. The
+   fix is height and spacing, not a popover: `dayMaxEvents: 4` in the view, a floor under the row
+   here, and a gap that belongs to the chip rather than to the cell.
+   ---------------------------------------------------------------------------------------------- */
+.fc .fc-daygrid-day-frame { min-height: 140px; }
+.fc .fc-daygrid-day-events { padding: 0 4px 4px; }
+.fc .fc-daygrid-day-top { padding: .25rem .25rem 0; }
+
+/* The gap belongs on the EVENT, not on its harness. FullCalendar's own spacing is
+   `.fc-daygrid-event { margin-top: 1px }`; a rule on `.fc-daygrid-event-harness + …` measured a gap
+   of exactly 0 because the harness is not where the margin lives — and setting the event's margin
+   to 0 had quietly removed the one pixel that was there. */
+.fc .fc-daygrid-event { margin-top: 4px; }
+.fc .fc-timegrid-event .fc-event-main { padding: .1rem .15rem; }
+
+/* A week/day tile is the prototype's two-line slot: the name in bold, the time under it, smaller.
+   FullCalendar lays those two out in a flex ROW inside `.fc-event-main-frame`, so `display: block`
+   on the children does nothing — the frame has to turn, and `order` has to put the title first,
+   because the DOM order is time-then-title.
+
+   `:not(.fc-timegrid-event-short)` is FullCalendar's own marker for an event too short to hold two
+   lines. Those keep the one-line treatment rather than being squeezed; so does month view, where a
+   cell has no room for two and the title is the only part worth the space. */
+.fc .fc-timegrid-event:not(.fc-timegrid-event-short) .fc-event-main-frame { flex-direction: column; }
+.fc .fc-timegrid-event:not(.fc-timegrid-event-short) .fc-event-title-container { order: 1; }
+.fc .fc-timegrid-event:not(.fc-timegrid-event-short) .fc-event-time { order: 2; }
+.fc .fc-timegrid-event .fc-event-title { font-weight: 700; }
+.fc .fc-timegrid-event .fc-event-time {
+    font-size: .72rem;
+    opacity: .85;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The clock gutter, to match the grid's time column. */
+.fc .fc-timegrid-axis-cushion, .fc .fc-timegrid-slot-label-cushion {
+    color: var(--bs-gray-600);
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The "+N more" link, which is a control and reads as one. */
+.fc .fc-daygrid-more-link {
+    color: #0E4A9E;
+    font-weight: 600;
+    font-size: .75rem;
+    padding: 0 .3rem;
+    border-radius: .35rem;
+}
+.fc .fc-daygrid-more-link:hover { background: #E7F0FF; }
+
+/* ----------------------------------------------------------------------------------------------
+   HOVERING AN EVENT MUST NOT TAKE ITS COLOUR AWAY.
+
+   Metronic's plugins bundle carries
+       .fc .fc-daygrid-dot-event:hover { background: var(--bs-light); color: var(--bs-primary); }
+   at (0,3,0), which outranks the brand file's `.fc-event.cbev-company` / `.fc .cbev-company`
+   (0,2,0). So every month-view event — in the grid and inside the "+N more" popover — dropped to
+   near-white under the pointer. On a company event, whose label is WHITE, that is white text on
+   #F9F9F9: the name disappears while you are pointing at it, which is exactly when you need it.
+
+   Measured, not inferred: hovering the first popover event read back
+   `backgroundColor: rgb(249, 249, 249)` while its unhovered neighbours read rgb(124, 58, 237).
+
+   The fill is restored for both scopes and the hover is shown with a ring instead. The two colours
+   themselves are still the brand file's — see the note at the top of this section.
+   ---------------------------------------------------------------------------------------------- */
+.fc .fc-daygrid-dot-event.cbev-company:hover,
+.fc .fc-daygrid-dot-event.cbev-company.fc-event-mirror { background: var(--cb-violet-strong); color: #fff; }
+
+.fc .fc-daygrid-dot-event.cbev-personal:hover,
+.fc .fc-daygrid-dot-event.cbev-personal.fc-event-mirror { background: var(--cb-brand-fill); color: #fff; }
+
+.fc .fc-event:hover { box-shadow: 0 0 0 2px rgba(14, 74, 158, .3); }
+
+/* ----------------------------------------------------------------------------------------------
+   THE "+N MORE" POPOVER IS A SURFACE, AND HAS TO LOOK LIKE ONE.
+
+   It opens white on a white grid with no shadow and no padding, so its edge is invisible: the chips
+   inside it run to the border and the row of cells behind it reads as part of the same list. Give
+   it the card's frame and the grid's own header band, and clip it — `overflow: hidden` makes it
+   structurally impossible for a chip to be painted outside the box it belongs to, which is what a
+   day with many events looked like.
+
+   The body scrolls at 320px rather than growing: a day with twenty events otherwise produces a
+   popover taller than the screen, running past the bottom of the grid with no way back.
+   ---------------------------------------------------------------------------------------------- */
+.fc .fc-popover {
+    background: #fff;
+    border: 1px solid var(--bs-gray-200);
+    border-radius: .75rem;
+    box-shadow: 0 8px 24px rgba(14, 74, 158, .14);
+    overflow: hidden;
+}
+
+.fc .fc-popover-header {
+    background: #F7FAFF;
+    border-bottom: 2px solid #0E4A9E;
+    font-weight: 700;
+    padding: .5rem .75rem;
+}
+
+.fc .fc-popover-body {
+    padding: .5rem;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.fc .fc-popover .fc-daygrid-event { margin: 0 0 3px; }
+.fc .fc-popover .fc-daygrid-event:last-child { margin-bottom: 0; }
+
+/* The list view, given the same band and row rhythm. */
+.fc .fc-list { border-radius: .75rem; }
+.fc .fc-list-day-cushion { background: #F7FAFF; font-weight: 700; }
+.fc .fc-list-event:hover td { background: #F7FAFF; }
+
+/* ----------------------------------------------------------------------------------------------
+   A PLAIN TABLE WITH A HEADER THAT STAYS. Same mechanism, for the list table on these screens that
+   is not a grid. Replaces `.table-responsive`, which scrolls horizontally but — having no bounded
+   height — never scrolls vertically, so a sticky <th> inside it has nothing to stick to.
+   ---------------------------------------------------------------------------------------------- */
+.cb-table-scroll {
+    overflow: auto;
+    max-height: calc(100vh - 320px);
+    min-height: 200px;
+}
+
+.cb-table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+}

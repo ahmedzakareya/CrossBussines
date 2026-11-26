@@ -6643,6 +6643,26 @@
   <data name="Nobody here" xml:space="preserve"><value>Personne ici</value></data>
   <data name="The case is closed; its kit leaves the store once the store holds every component." xml:space="preserve"><value>Le cas est clos ; son kit sort dès que le magasin a chaque composant.</value></data>
   <data name="{0} d {1} h" xml:space="preserve"><value>{0} j {1} h</value></data>
+  <data name="Over an hour since the last look" xml:space="preserve"><value>Plus d'une heure depuis le dernier examen</value></data>
+  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>Choisissez les services OCT et champ visuel dans les paramètres de la clinique pour les commander ici.</value></data>
+  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>Le service que la visite ophtalmologique commande pour cet examen.</value></data>
+  <data name="unitset:EyeOct" xml:space="preserve"><value>Service OCT</value></data>
+  <data name="unitset:EyeVf" xml:space="preserve"><value>Service champ visuel</value></data>
+  <data name="Test service" xml:space="preserve"><value>Service de l'examen</value></data>
+  <data name="Choose the store..." xml:space="preserve"><value>Choisissez le magasin...</value></data>
+  <data name="Choose the unit's store first" xml:space="preserve"><value>Choisissez d'abord le magasin de l'unité</value></data>
+  <data name="From the unit's store" xml:space="preserve"><value>Depuis le magasin de l'unité</value></data>
+  <data name="In the unit's store" xml:space="preserve"><value>Au magasin de l'unité</value></data>
+  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>Sortir maintenant le kit de cette séance du magasin de l'unité ?</value></data>
+  <data name="Kit issued" xml:space="preserve"><value>Kit sorti</value></data>
+  <data name="Kit waiting" xml:space="preserve"><value>Kit en attente</value></data>
+  <data name="The unit has no kit set" xml:space="preserve"><value>L'unité n'a pas de kit défini</value></data>
+  <data name="kitcard:Chemo" xml:space="preserve"><value>Kit de chaque cycle de chimiothérapie</value></data>
+  <data name="kitcard:Dialysis" xml:space="preserve"><value>Kit de chaque séance de dialyse</value></data>
+  <data name="kitcard:Physio" xml:space="preserve"><value>Kit de chaque séance de kinésithérapie</value></data>
+  <data name="kitwhen:Chemo" xml:space="preserve"><value>Sort du magasin quand le cycle est administré</value></data>
+  <data name="kitwhen:Dialysis" xml:space="preserve"><value>Sort du magasin à la fin de la séance</value></data>
+  <data name="kitwhen:Physio" xml:space="preserve"><value>Sort du magasin quand la séance a lieu</value></data>
   <data name="Cancel and return the dose to the pharmacy store" xml:space="preserve"><value>Annuler et retourner la dose au magasin de la pharmacie</value></data>
   <data name="Cancelled — the dose is back in the store" xml:space="preserve"><value>Annulé — la dose est de retour au magasin</value></data>
   <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>La dose a été administrée : elle ne peut pas être annulée</value></data>
@@ -8442,6 +8462,20 @@
   <data name="The teeth it shows" xml:space="preserve"><value>Dents visibles</value></data>
   <data name="The teeth this image shows (FDI numbers, e.g. 16, 17)" xml:space="preserve"><value>Les dents visibles sur cette image (numéros FDI, ex. 16, 17)</value></data>
   <data name="Write the teeth as FDI numbers, e.g. 16, 17" xml:space="preserve"><value>Écrivez les dents en numéros FDI, ex. 16, 17</value></data>
+  <data name="A prepared cycle awaits its independent check: check it or take it back first" xml:space="preserve"><value>Un cycle préparé attend sa double vérification : vérifiez-le ou annulez-le d'abord</value></data>
+  <data name="Awaiting the independent check" xml:space="preserve"><value>En attente de la double vérification</value></data>
+  <data name="By a second clinician, not the one who prepared it." xml:space="preserve"><value>Par un second soignant, pas celui qui l'a préparée.</value></data>
+  <data name="Checked: give it" xml:space="preserve"><value>Vérifié : administrer</value></data>
+  <data name="Double-checked" xml:space="preserve"><value>Double vérifié</value></data>
+  <data name="Only a prepared cycle is checked" xml:space="preserve"><value>Seul un cycle préparé est vérifié</value></data>
+  <data name="Only a prepared cycle is taken back" xml:space="preserve"><value>Seul un cycle préparé est annulé</value></data>
+  <data name="Prepare cycle {0} for the check" xml:space="preserve"><value>Préparer le cycle {0} pour vérification</value></data>
+  <data name="Record this cycle with these doses? A second clinician checks it before it is given." xml:space="preserve"><value>Enregistrer ce cycle avec ces doses ? Un second soignant le vérifie avant administration.</value></data>
+  <data name="Take it back" xml:space="preserve"><value>Annuler la préparation</value></data>
+  <data name="The independent check is by a second clinician, not the one who prepared it" xml:space="preserve"><value>La double vérification est faite par un second soignant, pas par celui qui a préparé</value></data>
+  <data name="What did the check find?" xml:space="preserve"><value>Qu'a révélé la vérification ?</value></data>
+  <data name="Write what the check found" xml:space="preserve"><value>Indiquez ce que la vérification a révélé</value></data>
+  <data name="You checked the drugs, doses and patient independently: give this cycle?" xml:space="preserve"><value>Vous avez vérifié médicaments, doses et patient de façon indépendante : administrer ce cycle ?</value></data>
   <data name="A frequency is 1 to 120 months" xml:space="preserve"><value>Une fréquence va de 1 à 120 mois</value></data>
   <data name="A waiting period is 0 to 60 months" xml:space="preserve"><value>Un délai de carence va de 0 à 60 mois</value></data>
   <data name="A yearly count is 1 to 52" xml:space="preserve"><value>Un nombre annuel va de 1 à 52</value></data>
@@ -8527,20 +8561,6 @@
   <data name="The recording is not in a supported format" xml:space="preserve"><value>Le format de l&#x27;enregistrement n&#x27;est pas pris en charge</value></data>
   <data name="Call recording is not installed yet (hospital_h176_call_recording.sql)." xml:space="preserve"><value>L&#x27;enregistrement des appels n&#x27;est pas encore installé (hospital_h176_call_recording.sql).</value></data>
   <data name="Recording asked by {0}" xml:space="preserve"><value>Demandé par {0}</value></data>
-  <data name="A prepared cycle awaits its independent check: check it or take it back first" xml:space="preserve"><value>Un cycle préparé attend sa double vérification : vérifiez-le ou annulez-le d'abord</value></data>
-  <data name="Awaiting the independent check" xml:space="preserve"><value>En attente de la double vérification</value></data>
-  <data name="By a second clinician, not the one who prepared it." xml:space="preserve"><value>Par un second soignant, pas celui qui l'a préparée.</value></data>
-  <data name="Checked: give it" xml:space="preserve"><value>Vérifié : administrer</value></data>
-  <data name="Double-checked" xml:space="preserve"><value>Double vérifié</value></data>
-  <data name="Only a prepared cycle is checked" xml:space="preserve"><value>Seul un cycle préparé est vérifié</value></data>
-  <data name="Only a prepared cycle is taken back" xml:space="preserve"><value>Seul un cycle préparé est annulé</value></data>
-  <data name="Prepare cycle {0} for the check" xml:space="preserve"><value>Préparer le cycle {0} pour vérification</value></data>
-  <data name="Record this cycle with these doses? A second clinician checks it before it is given." xml:space="preserve"><value>Enregistrer ce cycle avec ces doses ? Un second soignant le vérifie avant administration.</value></data>
-  <data name="Take it back" xml:space="preserve"><value>Annuler la préparation</value></data>
-  <data name="The independent check is by a second clinician, not the one who prepared it" xml:space="preserve"><value>La double vérification est faite par un second soignant, pas par celui qui a préparé</value></data>
-  <data name="What did the check find?" xml:space="preserve"><value>Qu'a révélé la vérification ?</value></data>
-  <data name="Write what the check found" xml:space="preserve"><value>Indiquez ce que la vérification a révélé</value></data>
-  <data name="You checked the drugs, doses and patient independently: give this cycle?" xml:space="preserve"><value>Vous avez vérifié médicaments, doses et patient de façon indépendante : administrer ce cycle ?</value></data>
   <data name="A live vaccine is not given in immunosuppression or pregnancy" xml:space="preserve"><value>Un vaccin vivant n'est pas administré en cas d'immunodépression ou de grossesse</value></data>
   <data name="A severe reaction to a previous dose or a component: this vaccine is not given" xml:space="preserve"><value>Réaction grave à une dose antérieure ou à un composant : ce vaccin n'est pas administré</value></data>
   <data name="Answer the screening questions" xml:space="preserve"><value>Répondez aux questions de dépistage</value></data>
@@ -8678,6 +8698,20 @@
   <data name="ret:Essix" xml:space="preserve"><value>Essix (transparente)</value></data>
   <data name="ret:Hawley" xml:space="preserve"><value>Hawley</value></data>
   <data name="ret:None" xml:space="preserve"><value>Aucune</value></data>
+  <data name="Open in the File Manager" xml:space="preserve"><value>Ouvrir dans le gestionnaire de fichiers</value></data>
+  <data name="The internal media server" xml:space="preserve"><value>Le serveur média interne</value></data>
+  <data name="LiveKit on a server inside the hospital: group calls of more than four go through it" xml:space="preserve"><value>LiveKit sur un serveur de l’hôpital : les appels de groupe de plus de quatre passent par lui</value></data>
+  <data name="Media server address" xml:space="preserve"><value>Adresse du serveur média</value></data>
+  <data name="API key" xml:space="preserve"><value>Clé API</value></data>
+  <data name="API secret" xml:space="preserve"><value>Secret API</value></data>
+  <data name="Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call." xml:space="preserve"><value>Vide : les appels de groupe restent à quatre, chaque appareil relié aux autres. Le secret n’atteint jamais un navigateur : chacun reçoit un jeton de salle pour un appel.</value></data>
+  <data name="Who reviews every recording" xml:space="preserve"><value>Qui examine tous les enregistrements</value></data>
+  <data name="Nobody — only the people in each call" xml:space="preserve"><value>Personne — seulement les participants de chaque appel</value></data>
+  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve"><value>Des personnes nommées seulement. Sinon, un enregistrement ne s’ouvre qu’aux participants de l’appel ; chaque ouverture est consignée.</value></data>
+  <data name="Write the media server address as wss://host:port" xml:space="preserve"><value>Écrivez l’adresse du serveur média sous la forme wss://hôte:port</value></data>
+  <data name="Through the internal media server, up to twelve people" xml:space="preserve"><value>Par le serveur média interne, jusqu’à douze personnes</value></data>
+  <data name="Internal media server (group calls above four)" xml:space="preserve"><value>Serveur média interne (appels de groupe de plus de quatre)</value></data>
+  <data name="Each person sends their picture once and it passes it to the others — inside the hospital only" xml:space="preserve"><value>Chacun envoie son image une fois et le serveur la transmet aux autres — dans l’hôpital uniquement</value></data>
   <data name="A graft is recorded with its lot" xml:space="preserve"><value>Une greffe est enregistrée avec son lot</value></data>
   <data name="A peri-implant review is of a restored implant" xml:space="preserve"><value>Un contrôle péri-implantaire porte sur un implant restauré</value></data>
   <data name="A review cannot be before the restoration was fitted" xml:space="preserve"><value>Un contrôle ne peut précéder la pose de la restauration</value></data>
@@ -8714,6 +8748,7 @@
   <data name="peri:Mucositis" xml:space="preserve"><value>Mucosite péri-implantaire</value></data>
   <data name="peri:Periimplantitis" xml:space="preserve"><value>Péri-implantite</value></data>
   <data name="Bleeds on probing" xml:space="preserve"><value>Saignement au sondage</value></data>
+  <data name="{0} days (retention)" xml:space="preserve"><value>{0} jours</value></data>
   <data name="A conventional impression leaves for the lab only disinfected; the disinfectant is recorded when it is sent." xml:space="preserve"><value>Une empreinte conventionnelle ne part au laboratoire que désinfectée ; le désinfectant est noté à l'envoi.</value></data>
   <data name="Check the work" xml:space="preserve"><value>Contrôler le travail</value></data>
   <data name="Checked on receipt" xml:space="preserve"><value>Contrôlé à la réception</value></data>
@@ -8736,21 +8771,6 @@
   <data name="qc:Margins" xml:space="preserve"><value>Limites</value></data>
   <data name="qc:Occlusion" xml:space="preserve"><value>Occlusion</value></data>
   <data name="qc:Shade" xml:space="preserve"><value>Teinte</value></data>
-  <data name="Open in the File Manager" xml:space="preserve"><value>Ouvrir dans le gestionnaire de fichiers</value></data>
-  <data name="The internal media server" xml:space="preserve"><value>Le serveur média interne</value></data>
-  <data name="LiveKit on a server inside the hospital: group calls of more than four go through it" xml:space="preserve"><value>LiveKit sur un serveur de l’hôpital : les appels de groupe de plus de quatre passent par lui</value></data>
-  <data name="Media server address" xml:space="preserve"><value>Adresse du serveur média</value></data>
-  <data name="API key" xml:space="preserve"><value>Clé API</value></data>
-  <data name="API secret" xml:space="preserve"><value>Secret API</value></data>
-  <data name="Empty: group calls stay at four people, each device connected to the others. The secret never reaches a browser: each person gets a room token for one call." xml:space="preserve"><value>Vide : les appels de groupe restent à quatre, chaque appareil relié aux autres. Le secret n’atteint jamais un navigateur : chacun reçoit un jeton de salle pour un appel.</value></data>
-  <data name="Who reviews every recording" xml:space="preserve"><value>Qui examine tous les enregistrements</value></data>
-  <data name="Nobody — only the people in each call" xml:space="preserve"><value>Personne — seulement les participants de chaque appel</value></data>
-  <data name="Named people only. Besides them, a recording opens only for the people who were in that call; every opening is logged." xml:space="preserve"><value>Des personnes nommées seulement. Sinon, un enregistrement ne s’ouvre qu’aux participants de l’appel ; chaque ouverture est consignée.</value></data>
-  <data name="Write the media server address as wss://host:port" xml:space="preserve"><value>Écrivez l’adresse du serveur média sous la forme wss://hôte:port</value></data>
-  <data name="Through the internal media server, up to twelve people" xml:space="preserve"><value>Par le serveur média interne, jusqu’à douze personnes</value></data>
-  <data name="Internal media server (group calls above four)" xml:space="preserve"><value>Serveur média interne (appels de groupe de plus de quatre)</value></data>
-  <data name="Each person sends their picture once and it passes it to the others — inside the hospital only" xml:space="preserve"><value>Chacun envoie son image une fois et le serveur la transmet aux autres — dans l’hôpital uniquement</value></data>
-  <data name="{0} days (retention)" xml:space="preserve"><value>{0} jours</value></data>
   <data name="This calculator reads one code" xml:space="preserve"><value>Ce calcul lit un code</value></data>
   <data name="This calculator reads sixteen codes, in order: the four regions, each as area, erythema, induration, scaling" xml:space="preserve"><value>Ce calcul lit seize codes, dans l'ordre : les quatre régions, chacune en surface, érythème, infiltration, desquamation</value></data>
   <data name="This calculator reads two codes, in order" xml:space="preserve"><value>Ce calcul lit deux codes, dans l'ordre</value></data>
@@ -8870,26 +8890,6 @@
   <data name="The viewer address names an unknown placeholder" xml:space="preserve"><value>L'adresse du visualiseur contient un paramètre inconnu</value></data>
   <data name="Viewer address" xml:space="preserve"><value>Adresse du visualiseur</value></data>
   <data name="Write {0} where the study's number goes; {1} names the patient's file. Leave it empty to disconnect." xml:space="preserve"><value>Écrivez {0} à la place du numéro de l'examen ; {1} désigne le dossier du patient. Laissez vide pour déconnecter.</value></data>
-  <data name="Over an hour since the last look" xml:space="preserve"><value>Plus d'une heure depuis le dernier examen</value></data>
-  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>Choisissez les services OCT et champ visuel dans les paramètres de la clinique pour les commander ici.</value></data>
-  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>Le service que la visite ophtalmologique commande pour cet examen.</value></data>
-  <data name="unitset:EyeOct" xml:space="preserve"><value>Service OCT</value></data>
-  <data name="unitset:EyeVf" xml:space="preserve"><value>Service champ visuel</value></data>
-  <data name="Test service" xml:space="preserve"><value>Service de l'examen</value></data>
-  <data name="Choose the store..." xml:space="preserve"><value>Choisissez le magasin...</value></data>
-  <data name="Choose the unit's store first" xml:space="preserve"><value>Choisissez d'abord le magasin de l'unité</value></data>
-  <data name="From the unit's store" xml:space="preserve"><value>Depuis le magasin de l'unité</value></data>
-  <data name="In the unit's store" xml:space="preserve"><value>Au magasin de l'unité</value></data>
-  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>Sortir maintenant le kit de cette séance du magasin de l'unité ?</value></data>
-  <data name="Kit issued" xml:space="preserve"><value>Kit sorti</value></data>
-  <data name="Kit waiting" xml:space="preserve"><value>Kit en attente</value></data>
-  <data name="The unit has no kit set" xml:space="preserve"><value>L'unité n'a pas de kit défini</value></data>
-  <data name="kitcard:Chemo" xml:space="preserve"><value>Kit de chaque cycle de chimiothérapie</value></data>
-  <data name="kitcard:Dialysis" xml:space="preserve"><value>Kit de chaque séance de dialyse</value></data>
-  <data name="kitcard:Physio" xml:space="preserve"><value>Kit de chaque séance de kinésithérapie</value></data>
-  <data name="kitwhen:Chemo" xml:space="preserve"><value>Sort du magasin quand le cycle est administré</value></data>
-  <data name="kitwhen:Dialysis" xml:space="preserve"><value>Sort du magasin à la fin de la séance</value></data>
-  <data name="kitwhen:Physio" xml:space="preserve"><value>Sort du magasin quand la séance a lieu</value></data>
   <data name="Claims file (FHIR)" xml:space="preserve"><value>Fichier des demandes (FHIR)</value></data>
   <data name="Detail" xml:space="preserve"><value>Détail</value></data>
   <data name="Download" xml:space="preserve"><value>Télécharger</value></data>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Send an email" xml:space="preserve">
+    <value>إرسال بريد</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>بريد</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>بخصوص</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>إلى</value>
+  </data>
+  <data name="Cc" xml:space="preserve">
+    <value>نسخة</value>
+  </data>
+  <data name="Add Cc" xml:space="preserve">
+    <value>إضافة نسخة</value>
+  </data>
+  <data name="Subject" xml:space="preserve">
+    <value>الموضوع</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>إرسال</value>
+  </data>
+  <data name="Sending…" xml:space="preserve">
+    <value>جارٍ الإرسال…</value>
+  </data>
+  <data name="Add at least one recipient" xml:space="preserve">
+    <value>أضف مستلمًا واحدًا على الأقل</value>
+  </data>
+  <data name="Write a subject" xml:space="preserve">
+    <value>اكتب موضوعًا</value>
+  </data>
+  <data name="The message was not sent" xml:space="preserve">
+    <value>لم تُرسَل الرسالة</value>
+  </data>
+  <data name="Queued for sending" xml:space="preserve">
+    <value>في قائمة الإرسال</value>
+  </data>
+  <data name="The message was sent" xml:space="preserve">
+    <value>تم إرسال الرسالة</value>
+  </data>
+  <data name="Regarding:" xml:space="preserve">
+    <value>بخصوص:</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>نص الرسالة</value>
+  </data>
+  <data name="Discard" xml:space="preserve">
+    <value>تجاهل</value>
+  </data>
+</root>

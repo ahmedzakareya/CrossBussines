@@ -258,13 +258,14 @@ namespace CrossBuy.BL.Communication
             bool canModerate = CommPermissionLevel.Satisfies(grant, CommPermissionLevel.Moderate)
                                || visibilities.MayReadAnyRestricted;
 
+            var authorVisibilities = ResolveAuthorVisibilities(thread, visibilities);
             return new CommThreadAccess
             {
                 ThreadId = thread.Id,
                 CanRead = true,
-                CanComment = canComment,
+                CanComment = canComment && authorVisibilities.Count > 0,
                 CanModerate = canModerate,
-                AuthorVisibilities = ResolveAuthorVisibilities(thread, visibilities),
+                AuthorVisibilities = authorVisibilities,
                 IsParticipant = isParticipant,
                 Reason = thread.IsLocked ? "thread is locked" : "ok",
             };
@@ -282,13 +283,14 @@ namespace CrossBuy.BL.Communication
         //
         // Restricted is present for any resolved employee because a private note about a record you can open is
         // a normal act and the author can always read their own (see ResolveVisibilitiesAsync).
-        private static IReadOnlyList<string> ResolveAuthorVisibilities(CommThread thread, CommVisibilitySet visibilities)
+        private IReadOnlyList<string> ResolveAuthorVisibilities(CommThread thread, CommVisibilitySet visibilities)
         {
             int threadRank = CommVisibility.Rank(thread.Visibility);
 
             return CommVisibility.Values
                 .Where(v => CommVisibility.Rank(v) >= threadRank)
                 .Where(visibilities.Allowed.Contains)
+                .Where(v => _options.MayAuthorVisibility(thread.EntityType, v))
                 .OrderBy(CommVisibility.Rank)
                 .ToList();
         }
@@ -411,6 +413,8 @@ namespace CrossBuy.BL.Communication
                 || (comment.CreatedAt.HasValue
                     && DateTime.UtcNow - comment.CreatedAt.Value <= TimeSpan.FromMinutes(_options.AuthorEditWindowMinutes.Value));
 
+            bool legalHold = _options.GovernanceFor(comment.EntityType).LegalHold;
+
             bool canEdit = !deleted && threadAccess.CanComment
                            && ((mine && withinWindow) || threadAccess.CanModerate);
 
@@ -424,12 +428,12 @@ namespace CrossBuy.BL.Communication
 
             return new CommCommentRights
             {
-                CanEdit = canEdit,
-                CanDelete = canDelete,
-                CanRestore = canRestore,
+                CanEdit = canEdit && !legalHold,
+                CanDelete = canDelete && !legalHold,
+                CanRestore = canRestore && !legalHold,
                 CanReact = !deleted && threadAccess.CanComment,
                 CanReply = !deleted && threadAccess.CanComment && comment.Depth < _options.MaxReplyDepth,
-                Reason = mine && !withinWindow && !threadAccess.CanModerate ? "author edit window closed" : "ok",
+                Reason = legalHold ? "entity on legal hold" : mine && !withinWindow && !threadAccess.CanModerate ? "author edit window closed" : "ok",
             };
         }
 

@@ -59,6 +59,9 @@ fails** (SQL-208 no `BusinessEvents`; SQL-207 no `Notifications.EntityId`).
 17. `hm9_loyalty_earn.sql`       [schema] — PointsMovements + rate/eligibility columns (needs Companies, BranchPosSettings, ItemCategories, Items).
 18. `hm10_pay_idempotency.sql`   [schema] — HyperPayTokens + the unique index (needs the base; a new table cannot have a pre-existing duplicate).
 19. `inventory_reconcile_log.sql`[schema] — inv-reconcile audit trail (HM-D6).
+20. `hm12_promotions.sql`       [schema] — PosPromotions + PosPromotionItems + PosOrderLinePromotions, the retail
+    promotion rules and what fired per sold line. Seeds NOTHING: a branch with no rows behaves exactly as before.
+    (needs PosOrderLines — the engine writes its discount onto that existing column, so no posting path changes.)
 
 ### Stage 4 — ACCOUNT RENAMES / RELABELS  [ours] — need the accounts to exist first
 20. `hm16_rename_grni.sql`                    [ref] — 210203 → "Goods Received Not Invoiced (GRNI)". (needs account 210203)

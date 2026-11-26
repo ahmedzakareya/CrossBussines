@@ -1,0 +1,111 @@
+@model CrossBuy.BL.CrmIdentity.JourneyFile
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var j = Model.J; var canManage = ViewBag.CanManage == true;
+    var name = !isAr && !string.IsNullOrWhiteSpace(j.NameEn) ? j.NameEn : j.Name;
+    var seg = !isAr && !string.IsNullOrWhiteSpace(Model.Segment.NameEn) ? Model.Segment.NameEn : Model.Segment.Name;
+    int C(string k) => Model.Counts.GetValueOrDefault(k);
+    var icon = new Dictionary<string, (string i, string c)> { ["email"] = ("ki-sms", "#3A5795"), ["whatsapp"] = ("ki-whatsapp", "#25D366"), ["wait"] = ("ki-time", "#6B7280"), ["branch"] = ("ki-question-2", "#7239EA"), ["task"] = ("ki-phone", "#0F766E") };
+    string E(string? s) => System.Net.WebUtility.HtmlEncode(s ?? "");
+    string Flow(List<CrossBuy.BL.CrmIdentity.CrmJourneyRules.Node> list)
+    {
+        var sb = new System.Text.StringBuilder("<div class=\"crm-jr-list\">");
+        foreach (var n in list)
+        {
+            var (ic, c) = icon[n.Type]; var st = Model.Stats.GetValueOrDefault(n.Id) ?? new CrossBuy.BL.CrmIdentity.NodeStat(0, 0, 0, 0, 0);
+            var what = n.Type switch { "email" => n.Subject, "whatsapp" => n.Template, "wait" => n.Days + " " + T["days"].Value, "branch" => T["cond:" + n.Cond].Value, _ => n.Subject };
+            var nums = n.Type == "branch" ? "" : $"<span class=\"crm-jr-stat\" title=\"{E(T["done"].Value)}\"><i class=\"ki-outline ki-check fs-8\"></i> <span class=\"num\">{st.Passed}</span></span>" + (st.Skipped > 0 ? $"<span class=\"crm-jr-stat skip\" title=\"{E(T["skipped"].Value)}\"><i class=\"ki-outline ki-minus-circle fs-8\"></i> <span class=\"num\">{st.Skipped}</span></span>" : "");
+            var here = st.Here > 0 ? $"<span class=\"badge badge-light-primary ms-2\"><span class=\"num\">{st.Here}</span> {E(T["here now"].Value)}</span>" : "";
+            sb.Append($"<div class=\"crm-jr-card\"><div class=\"crm-step-ico\" style=\"--c:{c}\"><i class=\"ki-outline {ic} fs-3\"></i></div><div class=\"flex-grow-1 min-w-0\"><div class=\"d-flex flex-stack gap-2\"><span class=\"fw-bold fs-7\">{E(T["node:" + n.Type].Value)}{here}</span><span class=\"d-flex gap-1\">{nums}</span></div><div class=\"fs-7 text-gray-700 text-truncate\">{E(what)}</div></div></div>");
+            if (n.Type == "branch")
+                sb.Append($"<div class=\"crm-jr-split\"><div><span class=\"badge badge-light-success mb-2\">{E(T["yes"].Value)} · <span class=\"num\">{st.Yes}</span></span>{Flow(n.Yes)}</div><div><span class=\"badge badge-light mb-2\">{E(T["no"].Value)} · <span class=\"num\">{st.No}</span></span>{Flow(n.No)}</div></div>");
+            sb.Append("<div class=\"crm-jr-line\"></div>");
+        }
+        return sb.Append("</div>").ToString();
+    }
+    var tone = new Dictionary<string, string> { ["Active"] = "badge-light-success", ["Paused"] = "badge-light", ["Draft"] = "badge-light-primary" };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@name <span class="badge @tone[j.Status] ms-2 fs-8 align-middle">@T["jst:" + j.Status]</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Journeys","Crm")" class="text-muted text-hover-primary">@T["Marketing journeys"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@name</li></ul></div>
+        @if (canManage)
+        {
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("JourneyEditor","Crm", new { id = j.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</a>
+                @if (j.Status != "Active") { <button type="button" class="btn btn-sm btn-success" data-status="Active"><i class="ki-outline ki-to-right fs-4"></i>@T["Switch on"]</button> }
+                else { <button type="button" class="btn btn-sm btn-light" data-status="Paused"><i class="ki-outline ki-time fs-4"></i>@T["Pause"]</button> }
+            </div>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-4 mb-5">
+            @foreach (var (label, value, sub, ic, fg) in new[] {
+                (T["Entered"].Value, C("Entered").ToString(), (string?)null, "ki-entrance-left", "#3A5795"),
+                (T["On it now"].Value, C("Active").ToString(), null, "ki-route", "#3A5795"),
+                (T["Finished"].Value, C("Finished").ToString(), null, "ki-flag", "#15803D"),
+                (T["Left"].Value, (C("OptOut") + C("LeftSegment") + C("Removed") + C("Manual")).ToString(), C("OptOut") > 0 ? C("OptOut") + " " + T["withdrew consent"].Value : null, "ki-exit-right", "#6B7280"),
+                (T["Not sent: no consent"].Value, Model.ConsentSkips.ToString(), T["no message was sent to them"].Value, "ki-shield-tick", "#7239EA"),
+                (T["Sales within 30 days of entering"].Value, Model.AttributedSales.ToString("N0"), Model.Buyers + " " + T["accounts bought"].Value, "ki-basket", "#15803D") })
+            {
+                <div class="col-6 col-md-4 col-xl-2"><div class="card h-100"><div class="card-body p-5"><div class="d-flex align-items-center gap-2 mb-2"><i class="ki-outline @ic fs-2" style="color:@fg"></i><span class="text-muted fw-semibold fs-8">@label</span></div>
+                    <div class="fw-bold fs-2 num lh-1">@value</div>@if (sub != null) { <div class="text-muted fs-9 mt-2">@sub</div> }</div></div></div>
+            }
+        </div>
+        <div class="row g-5">
+            <div class="col-xl-6"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["The path"]</span>
+                <span class="text-muted fs-7 mt-1"><i class="ki-outline ki-filter fs-7"></i> @T["Starts when someone enters"]: <a href="@Url.Action("SegmentEditor","Crm", new { id = Model.Segment.ID })" class="fw-semibold">@seg</a> (<span class="num">@Model.Segment.MemberCount</span>)</span></div></div>
+                <div class="card-body pt-2 overflow-auto"><div class="crm-jr-edit crm-jr-view">@Html.Raw(Flow(Model.Nodes))</div></div></div></div>
+            <div class="col-xl-6"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["People on this journey"]</span><span class="text-muted fs-7 mt-1" id="resultCount">—</span></div>
+                    <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+                <div class="card-body pt-2">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name or account"]" /></div>
+                        <div class="col-md-4"><select id="f_status" class="form-select form-select-solid form-select-sm cb-filter" data-control="select2" data-hide-search="true">
+                            <option value="">@T["Everyone"]</option><option value="Active">@T["On it now"]</option><option value="Finished">@T["Finished"]</option>
+                            @foreach (var r in new[] { "OptOut", "LeftSegment", "Removed" }) { <option value="@r">@T["jexit:" + r]</option> }</select></div>
+                        <div class="col-md-1"><button type="button" id="f_reset" class="btn btn-sm btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3 p-0"></i></button></div>
+                    </div>
+                    <div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Person"]</th><th>@T["Where they are"]</th><th>@T["Last thing that happened"]</th><th class="text-end pe-4"></th></tr></thead>
+                        <tbody id="rows" class="fs-6"></tbody></table></div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@(j.Status == "Active" ? T["Nobody has entered yet — the CRM worker adds people within five minutes."] : T["Switch the journey on and people who enter the segment start walking it."])</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div></div></div>
+        </div>
+    </div></div>
+</div>
+<div class="modal fade" id="eventsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="eventsTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10" id="eventsBody"></div></div></div></div>
+@section Scripts {
+<script>
+(function(){
+  var jid = @j.ID;
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+    ["on"] = T["Switch the journey on? Everyone who enters the segment from now on starts walking it."].Value, ["onAll"] = T["Switch the journey on? Everyone already in the segment, and everyone who enters it later, starts walking it."].Value,
+    ["pause"] = T["Pause the journey? Nobody moves on until it is switched on again."].Value }));
+  cbServerList({ url:'@Url.Action("JourneyMembersData","Crm")', isAr:@(isAr ? "true" : "false"), addParams:function(p){ p.set('id', jid); var s = document.getElementById('f_status').value; if (s) p.set('status', s); } });
+  document.getElementById('rows').addEventListener('click', async function(e){
+    var b = e.target.closest('[data-events]'); if (!b) return;
+    document.getElementById('eventsTitle').textContent = b.getAttribute('data-name');
+    document.getElementById('eventsBody').innerHTML = await fetch('@Url.Action("JourneyMemberEvents","Crm")?id=' + b.getAttribute('data-events'), { credentials:'same-origin' }).then(function(r){ return r.text(); });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('eventsModal')).show();
+  });
+  document.querySelectorAll('[data-status]').forEach(function(b){ b.addEventListener('click', async function(){
+    var st = b.getAttribute('data-status');
+    var q = st === 'Paused' ? txt.pause : (@(j.IncludeExisting ? "true" : "false") ? txt.onAll : txt.on);
+    if (window.cbConfirm && !(await window.cbConfirm(q, { kind: st === 'Paused' ? 'danger' : 'primary', title: '' }))) return;
+    var fd = new FormData(); fd.append('id', jid); fd.append('status', st); fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("JourneyStatus","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    if (r.ok) location.reload(); else if (window.CB && CB.toast) CB.toast(r.error || txt.failed, 'error');
+  }); });
+})();
+</script>
+}

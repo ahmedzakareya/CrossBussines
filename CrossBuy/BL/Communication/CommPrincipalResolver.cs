@@ -322,4 +322,37 @@ namespace CrossBuy.BL.Communication
             return CommPrincipalExpansion.Of(employeeIds, root.H_Name, root.H_NameEn ?? root.H_Name);
         }
     }
+
+    // Source: @role:{scope}.{role}. The scope is mandatory because role names are module-local
+    // (for example, Manager may exist in HR and Projects). The RBAC directory owns the reverse
+    // assignment query and applies company, active, employee-principal, and validity-window filters.
+    public sealed class RoleCommPrincipalSource : ICommPrincipalSource
+    {
+        private readonly IPlatformRoleDirectory _roles;
+
+        public RoleCommPrincipalSource(IPlatformRoleDirectory roles) => _roles = roles;
+
+        public string Kind => CommMentionTargetKind.Role;
+
+        public async Task<CommPrincipalExpansion> ExpandAsync(
+            int? id, string? key, int companyId, CancellationToken cancellationToken = default)
+        {
+            if (id.HasValue || string.IsNullOrWhiteSpace(key))
+                return CommPrincipalExpansion.Unsupported("a role mention needs a scoped role key");
+
+            var separator = key.IndexOf('.');
+            if (separator <= 0 || separator == key.Length - 1)
+                return CommPrincipalExpansion.Unsupported(
+                    "role mentions must use @role:{Scope}.{Role}, for example @role:Inventory.InventoryManager");
+
+            var scope = key[..separator];
+            var role = key[(separator + 1)..];
+            if (!EntityRegistry.IsKnownScope(scope))
+                return CommPrincipalExpansion.Unsupported($"'{scope}' is not a known role scope");
+
+            var ids = await _roles.EmployeeIdsForRoleAsync(companyId, scope, role, cancellationToken);
+            return CommPrincipalExpansion.Of(ids, key, key,
+                ids.Count == 0 ? "no active employees hold this role in this company" : null);
+        }
+    }
 }

@@ -63,7 +63,7 @@
                 <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Email"]</label><input name="email" id="f_email" type="email" class="form-control form-control-solid" /></div>
                 <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Contact person"]</label><input name="contactPerson" id="f_contact" class="form-control form-control-solid" /></div>
                 <div class="col-md-8 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Address"]</label><textarea name="address" id="f_address" class="form-control form-control-solid" rows="2"></textarea></div>
-                <div class="col-md-4 mb-4 d-flex align-items-end"><input type="hidden" name="isActive" value="false" /><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="f_active" checked /><label class="form-check-label fw-semibold ms-2" for="f_active">@SR["Active"]</label></div></div>
+                <div class="col-md-4 mb-4 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="f_active" checked /><input type="hidden" name="isActive" value="false" /><label class="form-check-label fw-semibold ms-2" for="f_active">@SR["Active"]</label></div></div>
             </div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>

@@ -187,7 +187,15 @@ namespace CrossBuy.Tests
                 Assert.DoesNotContain("X-AI-Secret\", \"", src, StringComparison.Ordinal);
                 Assert.DoesNotContain("Bearer ", src, StringComparison.Ordinal);
                 Assert.DoesNotContain("ApiKey =", src, StringComparison.Ordinal);
-                Assert.DoesNotContain("sk-", src, StringComparison.Ordinal);
+                // "sk-" ALONE MATCHED A FOLDER NAME (2026-11-10). AskRefusalLog writes to App_Data/ask-refusals,
+                // and the substring sits inside "ask-" exactly as it would inside task-, risk- or disk-. So a
+                // CREDENTIAL guard was failing on a directory path, and a credential guard that cries wolf is one
+                // somebody eventually deletes - which is how the real check gets switched off.
+                //
+                // An OpenAI key is "sk-" at the START of a string literal followed by a long run of key
+                // characters. Matching that shape keeps the guard sharp and stops it firing on English words.
+                Assert.DoesNotMatch(new System.Text.RegularExpressions.Regex(
+                    "\"sk-[A-Za-z0-9_-]{16,}"), src);
             }
         }
 

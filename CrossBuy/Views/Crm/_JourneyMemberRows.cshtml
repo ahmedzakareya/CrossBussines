@@ -1,0 +1,25 @@
+@model List<CrossBuy.BL.CrmIdentity.JourneyMemberRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@foreach (var r in Model)
+{
+    var m = r.M;
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("Contact","Crm", new { id = m.ContactId })" class="fw-bold text-gray-900 text-hover-primary d-block">@r.Name</a><span class="text-muted fs-8">@r.Account</span></td>
+        <td>
+            @if (m.Status == "Active")
+            {
+                <span class="badge badge-light-primary">@(r.Node == null ? T["On it now"].Value : T["node:" + r.Node.Type].Value)</span>
+                @if (m.NextAt != null) { <div class="fs-8 text-muted mt-1">@T["until"] <span class="num">@m.NextAt.Value.ToLocalTime().ToString("MM-dd HH:mm")</span></div> }
+            }
+            else if (m.Status == "Finished") { <span class="badge badge-light-success">@T["Finished"]</span> }
+            else { <span class="badge @(m.ExitReason == "OptOut" ? "badge-light-danger" : "badge-light")">@T["jexit:" + m.ExitReason]</span> }
+        </td>
+        <td>@if (r.Last != null)
+            {
+                <span class="fs-7">@T["jev:" + r.Last.Outcome]</span>
+                @if (r.Last.Detail != null && r.Last.Outcome is "Skipped" or "Failed") { <div class="fs-8 text-danger">@T[r.Last.Detail]</div> }
+                <div class="fs-8 text-muted num">@r.Last.At.ToLocalTime().ToString("MM-dd HH:mm")</div>
+            }</td>
+        <td class="text-end pe-4"><button type="button" class="btn btn-sm btn-icon btn-light" data-events="@m.ID" data-name="@r.Name" title="@T["What happened"]"><i class="ki-outline ki-time fs-5"></i></button></td>
+    </tr>
+}

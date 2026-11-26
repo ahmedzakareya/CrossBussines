@@ -1,0 +1,85 @@
+@model CrossBuy.Models.Context.Crm.CrmChannel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var sfx = isAr ? ".rtl" : "";
+    var embed = ViewBag.Embed == true;
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>@Model.Name</title>
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        html[lang="ar"] body { font-family: 'Cairo', sans-serif; }
+        html, body { height: 100%; margin: 0; background: @(embed ? "#fff" : "var(--bs-gray-100)"); }
+        .cw { display: flex; flex-direction: column; height: 100%; max-width: @(embed ? "none" : "420px"); margin: 0 auto; background: #fff; @(embed ? "" : "box-shadow:0 10px 40px rgba(0,0,0,.12);") }
+        .cw-head { background: var(--cb-brand, #3A5795); color: #fff; padding: 1rem 1.25rem; }
+        .cw-msgs { flex: 1; overflow-y: auto; padding: 1rem; background: var(--cb-blue-25, #F3F7FF); }
+        .b { max-width: 80%; padding: .55rem .8rem; border-radius: .9rem; margin-bottom: .5rem; font-size: .92rem; white-space: pre-wrap; word-wrap: break-word; }
+        .b.me { background: var(--cb-brand, #3A5795); color: #fff; margin-inline-start: auto; }
+        .b.them { background: #fff; border: 1px solid var(--bs-gray-200); }
+        .b .t { font-size: .68rem; opacity: .7; margin-top: .2rem; }
+        .cw-foot { border-top: 1px solid var(--bs-gray-200); padding: .75rem; }
+    </style>
+</head>
+<body>
+<div class="cw">
+    <div class="cw-head"><div class="fw-bold fs-5">@Model.Name</div><div class="fs-8 opacity-75">@T["We usually reply within minutes"]</div></div>
+    <div class="cw-msgs" id="msgs">
+        <div id="start">
+            <div class="b them">@T["Hello! Leave your name and question, and a member of our team will answer you here."]</div>
+            <div class="mt-4">
+                <input id="sName" class="form-control form-control-solid mb-3" maxlength="150" placeholder="@T["Your name"]" />
+                <input id="sContact" class="form-control form-control-solid mb-3" maxlength="150" placeholder="@T["Mobile or email (optional)"]" dir="ltr" />
+                <textarea id="sMsg" class="form-control form-control-solid mb-3" rows="3" maxlength="4000" placeholder="@T["Your question"]"></textarea>
+                <div class="text-danger fs-8 fw-semibold mb-2 d-none" id="sErr"></div>
+                <button type="button" id="sGo" class="btn btn-primary w-100">@T["Start the chat"]</button>
+            </div>
+        </div>
+    </div>
+    <div class="cw-foot d-none" id="foot"><div class="d-flex gap-2">
+        <textarea id="mText" class="form-control form-control-solid" rows="1" maxlength="4000" placeholder="@T["Write a message…"]"></textarea>
+        <button type="button" id="mSend" class="btn btn-primary btn-icon"><i class="ki-outline ki-send fs-2"></i></button></div></div>
+</div>
+<script>
+(function () {
+  var key = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PublicKey)), base = '/store/chat/' + key, qs = location.search;
+  var store = 'cbchat:' + key, token = null, last = 0;
+  try { token = localStorage.getItem(store); } catch (e) { }
+  var msgs = document.getElementById('msgs');
+  function add(m) { var d = document.createElement('div'); d.className = 'b ' + (m.mine ? 'me' : 'them'); d.textContent = m.body; var t = document.createElement('div'); t.className = 't'; t.textContent = new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); d.appendChild(t); msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; }
+  function begin() { document.getElementById('start').remove(); document.getElementById('foot').classList.remove('d-none'); poll(); setInterval(poll, 4000); }
+  function poll() {
+    if (!token) return;
+    fetch(base + '/poll?token=' + encodeURIComponent(token) + '&after=' + last).then(function (r) { if (r.status === 404) { try { localStorage.removeItem(store); } catch (e) { } location.reload(); return []; } return r.json(); })
+      .then(function (list) { (list || []).forEach(function (m) { last = Math.max(last, m.id); add(m); }); }).catch(function () { });
+  }
+  function post(path, data) { var fd = new FormData(); Object.keys(data).forEach(function (k) { fd.append(k, data[k]); }); return fetch(base + path + qs, { method: 'POST', body: fd }).then(function (r) { return r.json(); }); }
+  document.getElementById('sGo').addEventListener('click', async function () {
+    var err = document.getElementById('sErr'); err.classList.add('d-none');
+    var page = new URLSearchParams(location.search).get('page') || document.referrer || '';
+    var r = await post('/start', { name: document.getElementById('sName').value, contact: document.getElementById('sContact').value, message: document.getElementById('sMsg').value, page: page }).catch(function () { return { ok: false }; });
+    if (!r.ok) { err.textContent = r.message || '...'; err.classList.remove('d-none'); return; }
+    token = r.token; try { localStorage.setItem(store, token); } catch (e) { }
+    begin();
+  });
+  async function send() {
+    var ta = document.getElementById('mText'), body = ta.value.trim(); if (!body) return;
+    ta.value = '';
+    var r = await post('/send', { token: token, body: body }).catch(function () { return { ok: false }; });
+    if (!r.ok) { ta.value = body; return; }
+    poll();
+  }
+  document.getElementById('mSend').addEventListener('click', send);
+  document.getElementById('mText').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  if (token) begin();
+})();
+</script>
+</body>
+</html>

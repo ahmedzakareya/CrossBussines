@@ -1,5 +1,6 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
+using CrossBuy.BL.Construction;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -88,6 +89,7 @@ namespace CrossBuy.BL
 		private readonly IReceivableService _ar;
 		private readonly IProgressService _progress;
 		private readonly IContractService _contract;
+		private readonly ICommercialRevisionService _commercialRevisions;
 		// The canonical event backbone. It REFUSES to record outside an ambient transaction (ADR-001),
 		// which is why every lifecycle method below now opens a ScopedTx even when its own write is a
 		// single row: the fact and its event have to share one fate, or a rolled-back approval would
@@ -97,8 +99,9 @@ namespace CrossBuy.BL
 		// question the access service owns.
 		private readonly IProjectsAccessService _access;
 		public ProgressBillingService(CrossDbContext db, IReceivableService ar, IProgressService progress, IContractService contract,
-			CrossBuy.BL.Platform.IBusinessEventService events, IProjectsAccessService access)
-		{ _db = db; _ar = ar; _progress = progress; _contract = contract; _events = events; _access = access; }
+			CrossBuy.BL.Platform.IBusinessEventService events, IProjectsAccessService access,
+			ICommercialRevisionService commercialRevisions)
+		{ _db = db; _ar = ar; _progress = progress; _contract = contract; _events = events; _access = access; _commercialRevisions = commercialRevisions; }
 
 		// Surfaced to the user as-is, because "you cannot do that" without the reason is what makes a
 		// workflow control feel like a bug. Public so the view and the tests name the same string.
@@ -525,19 +528,27 @@ namespace CrossBuy.BL
 			if (pv.RetentionAmount > 0)
 			{
 				if (acc1104 == null) return (false, "The retention account (1104) is not configured");
-				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
+				var receiptsBefore = _db.ChangeTracker.Entries<Receipt>().Select(e => e.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
 				var (rok, rerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.RetentionAmount, "Retention", acc1104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
 				if (!rok) return (false, "Could not post the retention: " + rerr);
-				retReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
+				var createdReceipts = _db.ChangeTracker.Entries<Receipt>().Select(e => e.Entity)
+					.Where(r => !receiptsBefore.Contains(r) && r.CompanyID == companyId && r.CustomerId == customerId).ToList();
+				if (createdReceipts.Count != 1 || createdReceipts[0].ID <= 0)
+					return (false, "Could not identify the retention receipt created for this certificate.");
+				retReceiptId = createdReceipts[0].ID;
 			}
 			// (3) advance recovery (Dr 2104 / Cr 1102) — settlement receipt, ProjectId-tagged
 			if (pv.AdvanceRecoveryAmount > 0)
 			{
 				if (acc2104 == null) return (false, "The advance account (2104) is not configured");
-				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
+				var receiptsBefore = _db.ChangeTracker.Entries<Receipt>().Select(e => e.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
 				var (aok, aerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.AdvanceRecoveryAmount, "AdvanceRecovery", acc2104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
 				if (!aok) return (false, "Could not post the advance recovery: " + aerr);
-				advReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
+				var createdReceipts = _db.ChangeTracker.Entries<Receipt>().Select(e => e.Entity)
+					.Where(r => !receiptsBefore.Contains(r) && r.CompanyID == companyId && r.CustomerId == customerId).ToList();
+				if (createdReceipts.Count != 1 || createdReceipts[0].ID <= 0)
+					return (false, "Could not identify the advance recovery receipt created for this certificate.");
+				advReceiptId = createdReceipts[0].ID;
 			}
 
 			// persist snapshot + links + status
@@ -551,6 +562,24 @@ namespace CrossBuy.BL
 			foreach (var l in pv.Lines)
 				track.Lines.Add(new ProgressBillingLine { BoqItemId = l.BoqItemId, CumulativeExecutedValue = l.CumulativeExecutedValue, PreviouslyBilledValue = l.PreviouslyBilledValue, PeriodValue = l.PeriodValue });
 			await _db.SaveChangesAsync();
+			foreach (var line in track.Lines)
+			{
+				decimal certifiedQuantity = 0m;
+				if (line.BoqItemId is > 0)
+				{
+					var rate = await _db.BoqItems.AsNoTracking()
+						.Where(b => b.ID == line.BoqItemId && b.CompanyID == companyId && b.ProjectId == track.ProjectId)
+						.Select(b => (decimal?)b.UnitPrice).SingleOrDefaultAsync();
+					if (rate == null) return (false, "The certified BOQ line no longer exists in this project");
+					if (rate.Value == 0m && line.PeriodValue != 0m)
+						return (false, "Cannot capture certified quantity for a zero-rate BOQ line with a non-zero value");
+					if (rate.Value != 0m)
+						certifiedQuantity = Math.Round(line.PeriodValue / rate.Value, 4, MidpointRounding.AwayFromZero);
+				}
+				var captured = await _commercialRevisions.CaptureCertificateLineSnapshotAsync(
+					companyId, line.ID, certifiedQuantity, actorEmployeeId);
+				if (!captured.ok) return (false, "Could not preserve the certificate's commercial basis: " + captured.error);
+			}
 			// Inside the financial transaction, before the commit: if any compensation below had failed,
 			// the rollback takes the event with it and nothing was ever told that this billing posted.
 			// The round carried for FIDELITY, not for addressing: posting is not approval work and its

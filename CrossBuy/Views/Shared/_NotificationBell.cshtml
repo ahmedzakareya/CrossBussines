@@ -2,6 +2,7 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     var nbIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var nbIsFr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
 }
 <style>
     .cbnb-toast { position: relative; background-image: none !important; padding-inline-start: 64px !important; }
@@ -102,13 +103,14 @@
 (function () {
     if (window.__cbnbInit) return; window.__cbnbInit = true;
     var isAr = @(nbIsAr ? "true" : "false");
+    var isFr = @(nbIsFr ? "true" : "false");
 
     function boot() {
         var badge = document.getElementById('cbnb_badge');
         var list = document.getElementById('cbnb_list');
         var empty = document.getElementById('cbnb_empty');
         if (!badge || !list) return;
-        var unread = 0, maxId = 0;
+        var unread = 0;
         var LBL_UNREAD = '@Localizer["unread"]';
         @* NOT {0}/{1}: IViewLocalizer runs its key through String.Format, so a brace placeholder
            with no argument throws FormatException - and this partial is in the shared layouts, so
@@ -203,9 +205,19 @@
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
+        @* The frame and the message, split on the message itself. No excerpt (every kernel
+           notification, and a deleted comment) means the body is shown exactly as before. *@
+        function splitBody(body, excerpt) {
+            if (!excerpt) { return { lead: body, quote: null }; }
+            var i = body.lastIndexOf(excerpt);
+            if (i < 0) { return { lead: body, quote: null }; }
+            var lead = body.slice(0, i).replace(/[:\u061B\u060C]\s*$/, "").trim();
+            return { lead: lead, quote: excerpt };
+        }
+
         function itemHtml(n) {
-            var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
-            var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+            var title = (isAr ? n.titleAr : isFr ? n.titleFr : n.titleEn) || n.titleEn || n.titleAr || '';
+            var body = (isAr ? n.bodyAr : isFr ? n.bodyFr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
             var icon = n.icon || 'ki-notification-status';
             var c = catColor(n.category);
             var cur = (n.url ? ' style="cursor:pointer"' : '');
@@ -228,7 +240,7 @@
                three badges plus a 35px symbol plus three lines of text do not fit across it. Nothing
                the page shows is dropped, it is just placed where there is room for it. *@
             var catBadge = n.category
-                ? '<span class="badge badge-light-' + c + ' fs-9">' + esc(n.category) + '</span>'
+                ? '<span class="badge badge-light-' + c + ' fs-9">' + esc(n.categoryLabel || n.category) + '</span>'
                 : '';
 
             var marks = '';
@@ -261,7 +273,8 @@
                the item's px-5 gutter and takes menu-rounded's corners, so it reads as a block. *@
             var shade = n.isRead ? '' : ' bg-light-primary';
             return '<div class="menu-item px-5 cbnb-item' + (n.isRead ? ' cbnb-read' : '') + '"' +
-                ' data-id="' + esc(n.id) + '" data-url="' + esc(n.url || '') + '"' + cur + '>' +
+                ' data-id="' + esc(n.id) + '" data-src="' + esc(n.src || 'k') + '"' +
+                ' data-url="' + esc(n.url || '') + '"' + cur + '>' +
                 '<' + tag + href + ' class="menu-link px-3 py-2 align-items-start' + shade + '">' +
                     avatar +
                     @* THE TITLE CARRIES THE READ STATE. Unread goes one weight above the menu's own
@@ -296,7 +309,19 @@
                            1.64:1 - de-emphasis became deletion. The read/unread distinction is
                            carried by title weight, title colour, symbol opacity and the dot; the
                            body does not need to carry it and is the one place that cost legibility. *@
-                        '<span class="d-block fs-7 fw-semibold mt-1 cbnb-body text-muted" title="' + esc(body) + '">' + esc(body) + '</span>' +
+                        @* THE MESSAGE IS NOT THE FRAME. "فلان أشار إليك في تعليق على قيد يومية #16172:"
+                           is scaffolding the reader already knows from the title; the words someone
+                           actually wrote are the only part worth scanning for, and they sat at the end
+                           of the same grey run. Split on the EXCERPT the server returned - never on a
+                           colon, which appears inside messages too - and let the message carry the
+                           weight and the colour. *@
+                        (function () {
+                            var parts = splitBody(body, n.excerpt);
+                            return '<span class="d-block fs-7 mt-1 cbnb-body" title="' + esc(body) + '">' +
+                                   (parts.lead ? '<span class="fw-semibold text-muted">' + esc(parts.lead) + '</span>' : '') +
+                                   (parts.quote ? '<span class="cbnb-quote fw-bold text-gray-800">' + esc(parts.quote) + '</span>' : '') +
+                                   '</span>';
+                        })() +
                         @* BADGES ON THEIR OWN LINE, INSIDE the text block. They used to stack in a
                            right-hand column, where their ~110px width set that column and squeezed
                            the title and body into 137px of the 350px menu. Here they cost 24px of
@@ -332,7 +357,11 @@
                 if (el.__bound) return; el.__bound = true;
                 el.addEventListener('click', function () {
                     var id = el.getAttribute('data-id'); var url = el.getAttribute('data-url');
-                    if (id) fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+                    // The id alone is ambiguous: the kernel inbox and the communication inbox number
+                    // independently, so the row carries the mailbox it came from and hands it straight
+                    // back. Without this, marking a mention read marks an unrelated kernel row instead.
+                    var src = el.getAttribute('data-src') || 'k';
+                    if (id) fetch('/api/notifications/' + id + '/read?src=' + encodeURIComponent(src), { method: 'POST', credentials: 'same-origin' }).catch(function () {});
                     // A row with a url is now a real <a>, so the browser navigates and this must not
                     // also assign location - that was a second navigation racing the first.
                     var isAnchor = !!el.querySelector('a.menu-link');
@@ -365,17 +394,66 @@
         }
         function toastFor(n) {
             if (!window.toastr) return;
-            var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
-            var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
-            var lvl = (n.priority === 'Critical') ? 'error' : (n.priority === 'High') ? 'warning' : 'info';
+            var title = (isAr ? n.titleAr : isFr ? n.titleFr : n.titleEn) || n.titleEn || n.titleAr || '';
+            var body = (isAr ? n.bodyAr : isFr ? n.bodyFr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+            @* A MENTION IS NOT A WARNING.
+
+               High priority used to pick toastr's WARNING level, which paints the panel amber - a
+               colour this product bans for anything that is not a hazard, and which measured 2.15:1
+               for its own white text. Somebody naming you in a comment is important, not dangerous.
+
+               So: only CRITICAL keeps a hazard colour. Everything else takes the informational one,
+               and the priority still shows where it belongs - the bell row's own badge. *@
+            var lvl = (n.priority === 'Critical') ? 'error' : 'info';
+
             // Keep the DEFAULT toastr look; REMOVE the type-icon and insert the sender's PHOTO in its place.
             // On phones the top corner sits behind the fixed header → show bottom-center so it's always visible.
             var pos = (window.innerWidth < 768) ? 'toast-bottom-center' : (isAr ? 'toast-top-left' : 'toast-top-right');
-            var $t = toastr[lvl](body, title, { timeOut: 6000, closeButton: true, escapeHtml: true, positionClass: pos });
+            @* THE TOAST IS THE DOOR, NOT A SIGNPOST. It already knows where the thing is, so
+               clicking it goes there - printing the url into the body would be asking the reader
+               to read an address and then find it themselves, in a panel that disappears in six
+               seconds. Marked read on the way out for the same reason the bell row is: acting on
+               a notification IS reading it.
+
+               tapToDismiss stays OFF so the click reaches onclick rather than only closing the
+               toast, and the close button keeps its own job - dismiss without going anywhere. *@
+            @* THE SAME SPLIT THE LIST MAKES. A toast is the one place the message gets a second of
+               attention, and burying it after "X mentioned you in a comment on Y:" spends that second
+               on scaffolding the title already said.
+
+               escapeHtml goes OFF because the body is now markup - and every piece of it is escaped
+               here first, by the same esc() the list uses. Nothing unescaped reaches it. *@
+            var split = splitBody(body, n.excerpt);
+            var html = (split.quote
+                @* NOT text-muted: that grey is built for a white card, and the toast is orange,
+                   red or blue depending on priority - on those it reads as dirt rather than as
+                   de-emphasis. The frame simply steps BACK from whatever colour the toast is
+                   already using, so it works on every level without a palette per level. *@
+                ? (split.lead ? '<span class="cbnb-toast-lead">' + esc(split.lead) + '</span>' : '') +
+                  '<span class="cbnb-quote fw-bold">' + esc(split.quote) + '</span>'
+                : esc(body));
+            var opts = { timeOut: 6000, closeButton: true, escapeHtml: false, positionClass: pos };
+
+            if (n.url) {
+                opts.tapToDismiss = false;
+                opts.onclick = function () {
+                    try {
+                        if (n.id) {
+                            fetch('/api/notifications/' + n.id + '/read?src=' + encodeURIComponent(n.src || 'k'),
+                                  { method: 'POST', credentials: 'same-origin' }).catch(function () { });
+                        }
+                    } catch (e) { }
+                    window.location.href = n.url;
+                };
+            }
+            var $t = toastr[lvl](html, esc(title), opts);
             try {
                 var el = $t && $t[0];
                 if (el) {
                     el.classList.add('cbnb-toast');
+                    // Only when there is somewhere to go - a pointer over a toast that does nothing
+                    // is a promise the panel cannot keep.
+                    if (n.url) { el.style.cursor = 'pointer'; }
                     var media;
                     if (n.actorAvatar) { media = document.createElement('img'); media.className = 'cbnb-toast-av'; media.src = n.actorAvatar; media.alt = ''; }
                     else { media = document.createElement('span'); media.className = 'cbnb-toast-ic'; media.innerHTML = '<i class="ki-outline ' + (n.icon || 'ki-notification-status') + '"></i>'; }
@@ -383,12 +461,27 @@
                 }
             } catch (e) { }
         }
+        // The id alone no longer identifies a notification - the mailbox has to come with it.
+        var seen = { k: 0, c: 0 };
+        function box(n) { return (n && n.src === "c") ? "c" : "k"; }
+        function isNew(n) { return n.id > seen[box(n)]; }
+        function remember(n) { var b = box(n); if (n.id > seen[b]) seen[b] = n.id; }
+
         function apply(res, toastNew) {
-            if (toastNew && res.data) res.data.filter(function (n) { return n.id > maxId; }).forEach(toastFor);
+            // ONE WATERMARK PER MAILBOX.
+            //
+            // `maxId` was a single number, which was correct while every notification came from one
+            // table. The bell now merges two inboxes that NUMBER INDEPENDENTLY: the kernel is past
+            // 14000 and the communication inbox is in single digits, so a brand-new mention (id 9)
+            // failed `9 > 14283` and was silently never announced - the toast "disappeared" for
+            // exactly the notifications that needed it most.
+            if (toastNew && res.data) res.data.filter(isNew).forEach(toastFor);
             render(res.data);
             setBadge(res.unread || 0);
             setScope(res.shown || (res.data ? res.data.length : 0), res.total || 0);
-            if (res.data && res.data.length && res.data[0].id > maxId) maxId = res.data[0].id;
+            // Raise EACH mailbox’s watermark, and from the whole page rather than from row 0:
+            // the list is merged by time, so the newest row of one inbox can sit anywhere in it.
+            if (res.data) res.data.forEach(remember);
         }
         function load(toastNew) {
             fetch('/api/notifications', { credentials: 'same-origin' })
@@ -418,8 +511,11 @@
             try {
                 var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
                 conn.on('notification', function (n) {
-                    if (n && n.id && n.id <= maxId) return;
-                    if (n && n.id) maxId = n.id;
+                    // The live push takes the same per-mailbox watermark as the poll, or the two
+                    // disagree about what "already seen" means and a pushed row re-announces itself
+                    // on the next poll.
+                    if (n && n.id && !isNew(n)) return;
+                    if (n && n.id) remember(n);
                     prepend(n); toastFor(n);
                 });
                 conn.start().catch(function () {});

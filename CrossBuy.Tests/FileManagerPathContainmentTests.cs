@@ -33,6 +33,18 @@ namespace CrossBuy.Tests
 		}
 
 		[Theory]
+		[InlineData("/uploads/library/7/chat/attachment.pdf", true)]
+		[InlineData("\\uploads\\library\\7\\chat\\attachment.pdf", true)]
+		[InlineData("/uploads/library/70/chat/attachment.pdf", false)]
+		[InlineData("/uploads/library/7/attachment.pdf", false)]
+		[InlineData("/uploads/library/7/chat-archive/attachment.pdf", false)]
+		[InlineData(null, false)]
+		public void Chat_library_classification_is_company_scoped_and_separator_safe(string? storedPath, bool expected)
+		{
+			Assert.Equal(expected, FileManagerPaths.IsPrivateChatLibraryPath(7, storedPath));
+		}
+
+		[Theory]
 		// Traversal, in both separator flavours, including the shape that reaches real configuration.
 		[InlineData("/uploads/library/1/../../../appsettings.Production.json")]
 		[InlineData("/uploads/library/1/..\\..\\..\\appsettings.Production.json")]

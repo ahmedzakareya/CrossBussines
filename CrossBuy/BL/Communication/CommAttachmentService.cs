@@ -36,6 +36,15 @@ namespace CrossBuy.BL.Communication
 
         Task<IReadOnlyList<CommAttachmentDto>> ListForCommentAsync(
             BusinessContext context, long commentId, CancellationToken cancellationToken = default);
+
+        // Portal listing is still constrained by the exact comment/thread read policy used by delivery.
+        Task<IReadOnlyList<CommAttachmentDto>> ListAccessibleAsync(
+            BusinessContext context, string? query, CancellationToken cancellationToken = default);
+
+        // The authorized byte path (GAP-01). Addressed by AttachmentId, never by a storage key. Returns null
+        // for absent, foreign-company, unreadable-thread, above-tier, withdrawn and removed alike.
+        Task<CommAttachmentDto?> OpenAuthorizedAsync(
+            BusinessContext context, long attachmentId, CancellationToken cancellationToken = default);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -320,10 +329,33 @@ namespace CrossBuy.BL.Communication
             return true;
         }
 
+        // READING AN ATTACHMENT LIST IS READING THE COMMENT, and must be authorized as such.
+        //
+        // THE DEFECT THIS CLOSES. This method used to filter on CompanyID alone. Tenant isolation held, but
+        // nothing asked whether the caller may READ the comment — so any colleague in the same company could
+        // name a commentId and receive the attachment rows for a conversation they have no access to: a
+        // thread they are not a participant in, a record their module permission does not cover, or a comment
+        // written at a visibility above their tier.
+        //
+        // WHY THAT IS WORSE THAN AN ORDINARY OVER-READ. The row carries StorageKey, which is a CAPABILITY,
+        // not an identifier: /uploads/** is served by StaticFileMiddleware behind PrivateFileGate, and that
+        // gate's policy for these prefixes is RequireAuthenticated — it checks that SOMEONE is signed in, not
+        // WHO. RequireCompanyMatch exists in that enum and is deliberately applied to no prefix yet. So a
+        // StorageKey handed to the wrong reader is a working download link for them, and it cannot be revoked.
+        // Returning the key IS granting the file.
+        //
+        // The checks below are the same four CommCommentService.GetAsync performs, in the same order and with
+        // the same 404-not-403 discipline: telling a caller that a comment exists but is above their tier
+        // discloses that somebody wrote something confidential about this record. RemoveAsync above already
+        // authorized thread AND comment rights; a read that returns a capability deserves no less than the
+        // write that merely hides one.
         public async Task<IReadOnlyList<CommAttachmentDto>> ListForCommentAsync(
             BusinessContext context, long commentId, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(context);
+
+            if (await AuthorizeCommentReadAsync(context, commentId, cancellationToken) == null)
+                throw new CommNotFoundException("Comment", commentId);
 
             var rows = await _db.Attachments.AsNoTracking()
                 .Where(a => a.CommentId == commentId && a.CompanyID == context.CompanyId && a.DeletedAt == null)
@@ -332,6 +364,111 @@ namespace CrossBuy.BL.Communication
 
             var actors = await _actors.ResolveAsync(rows.Select(r => r.UploadedByEmployeeId), cancellationToken);
             return rows.Select(r => ToDto(r, _actors.Get(actors, r.UploadedByEmployeeId))).ToList();
+        }
+
+        public async Task<IReadOnlyList<CommAttachmentDto>> ListAccessibleAsync(
+            BusinessContext context, string? query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            if (context.CompanyId <= 0) return Array.Empty<CommAttachmentDto>();
+
+            var term = (query ?? string.Empty).Trim();
+            var candidates = await _db.Attachments.AsNoTracking()
+                .Where(a => a.CompanyID == context.CompanyId && a.DeletedAt == null
+                            && (term.Length == 0 || a.FileName.Contains(term)))
+                .OrderByDescending(a => a.CreatedAt).ThenByDescending(a => a.Id)
+                .ToListAsync(cancellationToken);
+            if (candidates.Count == 0) return Array.Empty<CommAttachmentDto>();
+
+            // Authorize once per comment through the same predicate used by OpenAuthorizedAsync. A portal
+            // listing must not turn company membership into access to every attachment in that company.
+            var visible = new List<CommCommentAttachment>();
+            foreach (var group in candidates.GroupBy(a => a.CommentId))
+            {
+                if (await AuthorizeCommentReadAsync(context, group.Key, cancellationToken) != null)
+                    visible.AddRange(group);
+            }
+            if (visible.Count == 0) return Array.Empty<CommAttachmentDto>();
+
+            var actors = await _actors.ResolveAsync(visible.Select(r => r.UploadedByEmployeeId), cancellationToken);
+            return visible.Select(r => ToDto(r, _actors.Get(actors, r.UploadedByEmployeeId))).ToList();
+        }
+
+        // THE ONE AUTHORIZATION, so the list path and the delivery path cannot drift apart.
+        //
+        // Both of them answer the same question — "may this caller read this comment?" — and the moment that
+        // question has two implementations, one of them is eventually weakened alone. It returns null rather
+        // than throwing so each caller can shape its own refusal: the list throws CommNotFoundException, the
+        // byte delivery returns a bare 404. The DECISION is identical either way.
+        //
+        // Null means: no such comment, another company's comment, a thread this caller may not read, a
+        // visibility above their tier, or a withdrawn comment they cannot moderate. Deliberately one value —
+        // a caller that could tell those apart could map the conversation it is not allowed to see.
+        private async Task<(CommComment Comment, CommThread Thread, CommThreadAccess Access)?>
+            AuthorizeCommentReadAsync(BusinessContext context, long commentId, CancellationToken cancellationToken)
+        {
+            var comment = await _db.Comments.AsNoTracking()
+                .Where(c => c.Id == commentId && c.CompanyID == context.CompanyId)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (comment == null) return null;
+
+            // The thread is read through the comment, never taken from the caller: a caller-supplied thread id
+            // alongside a comment id is two facts that can disagree, and the comment's own ThreadId is the one
+            // the attachment rows are filed under.
+            var thread = await _db.Threads.AsNoTracking()
+                .Where(t => t.Id == comment.ThreadId && t.CompanyID == context.CompanyId && t.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (thread == null) return null;
+
+            var access = await _access.ResolveThreadAccessAsync(context, thread, cancellationToken);
+            if (!access.CanRead) return null;
+
+            var entity = new CommEntityRef(thread.EntityType, thread.EntityId);
+            var visibilities = await _access.ResolveVisibilitiesAsync(context, entity, cancellationToken);
+            if (!_access.CanReadComment(visibilities, comment, context)) return null;
+
+            // A deleted comment's attachments stay visible to a moderator and to nobody else — the same rule
+            // the comment body itself follows, so the two cannot disagree about what was withdrawn.
+            if (comment.DeletedAt != null && !access.CanModerate) return null;
+
+            return (comment, thread, access);
+        }
+
+        // GAP-01 — THE AUTHORIZED BYTE PATH.
+        //
+        // Until now a Comm attachment was reachable by its stored path alone. CommPanel wrote the bytes under
+        // wwwroot and put the resulting "/uploads/comm/threads/<guid>.<ext>" into the page as an href, so the
+        // only thing between a signed-in user of ANY company and the file was knowing that path —
+        // StaticFileMiddleware serves it behind PrivateFileGate, whose policy for that prefix is
+        // RequireAuthenticated: it checks that SOMEONE is signed in, never WHO.
+        //
+        // This method is what the browser now goes through instead. It is addressed by AttachmentId — a
+        // business identifier the caller is entitled to hold — and never by a storage key, because naming
+        // bytes must not be a way to reach them. It is the same stance DocumentsController already takes for
+        // platform documents, applied to the surface that still lacked it.
+        //
+        // IT RETURNS NULL FOR EVERYTHING IT REFUSES. Absent, another company's, a thread the caller may not
+        // read, a comment above their tier, a withdrawn comment, a removed attachment — one answer, so a
+        // caller probing ids learns nothing from the difference between "no" and "not here".
+        public async Task<CommAttachmentDto?> OpenAuthorizedAsync(
+            BusinessContext context, long attachmentId, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            if (context.CompanyId <= 0 || attachmentId <= 0) return null;
+
+            var row = await _db.Attachments.AsNoTracking()
+                .Where(a => a.Id == attachmentId
+                            && a.CompanyID == context.CompanyId
+                            && a.DeletedAt == null)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (row == null) return null;
+
+            // The comment is taken from the ROW, so the caller cannot pair an attachment it may reach with a
+            // comment it may read. The authorization below is about the comment this attachment is actually on.
+            if (await AuthorizeCommentReadAsync(context, row.CommentId, cancellationToken) == null) return null;
+
+            var uploader = await _actors.ResolveAsync(new[] { row.UploadedByEmployeeId }, cancellationToken);
+            return ToDto(row, _actors.Get(uploader, row.UploadedByEmployeeId));
         }
 
         internal static CommAttachmentDto ToDto(CommCommentAttachment row, CommActorDto uploader) => new()

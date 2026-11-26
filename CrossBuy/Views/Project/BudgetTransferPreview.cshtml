@@ -1,0 +1,48 @@
+@using CrossBuy.BL
+@using System.Globalization
+@model CrossBuy.BL.Construction.ConstructionTransferPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{Layout="~/Views/Shared/_LayoutBackend.cshtml";string L(string key)=>SR["Construction.TransferUi."+key].Value;string Amount(decimal? n)=>n?.ToString("0.############################",CultureInfo.CurrentCulture)??"—";string Label(CrossBuy.BL.Construction.ConstructionTransferChoice x)=>x.WbsCode+" — "+DisplayName.Of(x.WbsName,x.WbsNameEn)+" / "+x.CostCode+" — "+DisplayName.Of(x.CostName,x.CostNameEn);}
+<div class="app-container container-fluid py-6"><div class="d-flex flex-stack gap-4 mb-5"><div><h1 class="fs-3 fw-bold">@L("Title")</h1><p class="text-muted">@Model.Code — @DisplayName.Of(Model.Name,Model.NameEn)</p></div><a asp-controller="Project" asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@L("Budgets")</a></div>
+<div class="alert alert-warning">@L("Explanation")</div>
+@if(Model.ApplicationSaved){<div class="alert alert-success" role="status">@L("ApplicationSaved")</div>}
+@if(Model.DecisionSaved){<div class="alert alert-success" role="status">@L("DecisionSaved")</div>}
+@if(Model.RequestSaved){<div class="alert alert-success" role="status">@L("RequestSaved")</div>}
+@if(Model.PolicyMode!="IndependentApproval"){<div class="alert alert-info">@L(Model.PolicyMode=="Disabled"?"Disabled":"Unconfigured")</div>}
+@if(Model.Error!=null){var error=SR["Construction.TransferUi.Error."+Model.Error];<div class="alert alert-danger" role="alert">@(error.IsResourceNotFound?L("Error.General"):error.Value)</div>}
+@if(Model.PolicyMode=="IndependentApproval"&&Model.BudgetVersionId!=null){<section class="card mb-5"><div class="card-body"><form asp-action="Preview" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="row g-4">@Html.AntiForgeryToken()
+<div class="col-md-5"><label class="form-label" for="transfer-from">@L("From")</label><select id="transfer-from" name="fromLineId" class="form-select" required><option value="">@L("Choose")</option>@foreach(var line in Model.Lines){<option value="@line.Id" selected="@(Model.FromLineId==line.Id)">@Label(line) — @Amount(line.Amount)</option>}</select></div>
+<div class="col-md-5"><label class="form-label" for="transfer-to">@L("To")</label><select id="transfer-to" name="toLineId" class="form-select" required><option value="">@L("Choose")</option>@foreach(var line in Model.Lines){<option value="@line.Id" selected="@(Model.ToLineId==line.Id)">@Label(line) — @Amount(line.Amount)</option>}</select></div>
+<div class="col-md-2"><label class="form-label" for="transfer-amount">@L("Amount")</label><input id="transfer-amount" name="amount" inputmode="decimal" class="form-control" value="@(Model.Amount.HasValue?Amount(Model.Amount):"")" required/></div><div><button type="submit" class="btn btn-primary">@L("Preview")</button></div></form></div></section>}
+@if(Model.BudgetVersionId==null){<div class="alert alert-info">@L("NoBaseline")</div>}
+@if(Model.Quote is {Ok:true} quote){<section class="card"><div class="card-header"><h2 class="card-title fs-5">@L("Result")</h2></div><div class="card-body"><p>@L("Available"): <strong dir="ltr">@Amount(quote.Available) @quote.Currency</strong></p><table class="table"><thead><tr><th></th><th>@L("Before")</th><th>@L("After")</th></tr></thead><tbody><tr><th>@L("From")</th><td>@Amount(quote.FromBefore)</td><td>@Amount(quote.FromAfter)</td></tr><tr><th>@L("To")</th><td>@Amount(quote.ToBefore)</td><td>@Amount(quote.ToAfter)</td></tr></tbody></table><p class="text-muted">@L("Unchanged")</p><form asp-action="Request" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="mt-4">
+@Html.AntiForgeryToken()<input type="hidden" name="fromLineId" value="@Model.FromLineId"/><input type="hidden" name="toLineId" value="@Model.ToLineId"/>
+<input type="hidden" name="amount" value="@Amount(Model.Amount)"/><input type="hidden" name="witness" value="@quote.Witness"/><input type="hidden" name="requestId" value="@Guid.NewGuid()"/>
+<label class="form-label" for="transfer-reason">@L("Reason")</label><textarea id="transfer-reason" name="reason" class="form-control mb-3" maxlength="1000" required></textarea>
+<p class="text-muted">@L("RequestNotice")</p><button type="submit" class="btn btn-primary">@L("Request")</button></form></div></section>}
+<section class="card mt-5"><div class="card-header"><h2 class="card-title fs-5">@L("Requests")</h2></div><div class="card-body">
+<p class="text-muted">@L("HistoryNotice")</p>
+@if(Model.Requests.Count==0){<p>@L("NoRequests")</p>}else{<div class="table-responsive"><table class="table align-middle"><thead><tr><th>@L("RequestNumber")</th><th>@L("Baseline")</th><th>@L("From") / @L("To")</th><th>@L("Amount")</th><th>@L("Reason")</th><th>@L("RequestedBy")</th><th>@L("State")</th><th>@L("IndependentDecision")</th><th>@L("Application")</th></tr></thead><tbody>
+@foreach(var item in Model.Requests){var decision=Model.Decisions.SingleOrDefault(x=>x.TransferRequestId==item.ID);var application=Model.Applications.SingleOrDefault(x=>x.TransferRequestId==item.ID);<tr><td>@item.ID</td><td>@item.BudgetVersionId</td><td>@item.FromLineId → @item.ToLineId</td><td>@Amount(item.Amount)</td><td class="text-break">@item.Reason</td><td>@item.CreatedBy<br/><time datetime="@item.CreatedAt.ToString("o")">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm",CultureInfo.CurrentCulture) UTC</time></td>
+<td><span class="badge @(decision==null?"badge-light-warning":decision.Outcome=="Approved"?"badge-light-success":"badge-light-danger")">@L(application!=null?"Applied":decision==null?"AwaitingWorkflow":decision.Outcome=="Approved"?"ApprovedPendingExecution":"Rejected")</span>
+@if(decision!=null){<p class="small mt-2 text-break">@decision.Reason<br/>@L("DecisionBy"): @decision.CreatedBy<br/>@decision.CreatedAt.ToString("yyyy-MM-dd HH:mm",CultureInfo.CurrentCulture) UTC</p>}</td>
+<td><details><summary>@L("ReviewDetails")</summary><p class="small mt-2">@L("From"): @Amount(item.FromBefore) → @Amount(item.FromAfter)<br/>@L("To"): @Amount(item.ToBefore) → @Amount(item.ToAfter)</p></details>
+@if(decision==null&&Model.ViewerEmployeeId!=item.CreatedBy){<form asp-action="Decide" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post" class="mt-3">
+@Html.AntiForgeryToken()<input type="hidden" name="transferRequestId" value="@item.ID"/><input type="hidden" name="decisionId" value="@Guid.NewGuid()"/>
+<label for="decision-reason-@item.ID" class="form-label">@L("DecisionReason")</label><textarea id="decision-reason-@item.ID" name="reason" class="form-control form-control-sm mb-2" maxlength="1000" required></textarea><p class="small text-muted">@L("DecisionNotice")</p><div class="d-flex gap-2 flex-wrap">
+@if(Model.PolicyMode=="IndependentApproval"&&Model.BudgetVersionId==item.BudgetVersionId&&Model.PolicyToken==Convert.ToBase64String(item.PolicyToken)){<button name="outcome" value="Approved" class="btn btn-sm btn-primary" type="submit">@L("ApproveDecision")</button>}
+<button name="outcome" value="Rejected" class="btn btn-sm btn-light-danger" type="submit">@L("RejectDecision")</button></div></form>}
+else if(decision==null){<p class="small text-muted mt-2">@L("OwnRequest")</p>}</td><td>
+@if(application!=null){<a asp-controller="Project" asp-action="BudgetVersions" asp-route-id="@Model.ProjectId" asp-route-v="@application.ResultBudgetVersionId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-sm btn-light-primary">@L("ResultVersion") #@application.ResultBudgetVersionId</a><p class="small mt-2">@L("AppliedBy"): @application.AppliedBy<br/>@application.AppliedAt.ToString("yyyy-MM-dd HH:mm",CultureInfo.CurrentCulture) UTC</p>}
+else if(decision?.Outcome=="Approved"){
+ if(Model.ViewerEmployeeId==decision.CreatedBy){<p class="small text-muted">@L("SeparateExecutorNotice")</p>}
+ else if(Model.PolicyMode=="IndependentApproval"&&Model.BudgetVersionId==item.BudgetVersionId&&Model.PolicyToken==Convert.ToBase64String(item.PolicyToken)){
+ <form asp-action="Apply" asp-route-projectId="@Model.ProjectId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post">
+ @Html.AntiForgeryToken()<input type="hidden" name="transferDecisionId" value="@decision.ID"/><input type="hidden" name="applicationId" value="@Guid.NewGuid()"/>
+ <label for="application-reason-@item.ID" class="form-label">@L("ApplicationReason")</label><textarea id="application-reason-@item.ID" name="reason" maxlength="1000" required class="form-control form-control-sm mb-2"></textarea>
+ <p class="small text-muted">@L("ApplicationNotice")</p><button type="submit" class="btn btn-sm btn-primary">@L("Apply")</button></form>}
+ else{<p class="small text-muted">@L("StaleApplication")</p>}
+}</td></tr>}
+
+</tbody></table></div>}</div></section>
+</div>

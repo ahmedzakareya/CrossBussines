@@ -41,12 +41,12 @@ License: For each use you must have a valid license purchased only from above li
 <html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
 	<!--begin::Head-->
 	<head>
-		<title>@anchor — CrossBuy</title>
+		<title>@anchor — @CrossBuy.BL.Platform.ProductIdentity.Name</title>
 		<meta charset="utf-8" />
-		<meta name="description" content="CrossBuy client portal." />
+		<meta name="description" content="@(CrossBuy.BL.Platform.ProductIdentity.ShortName) client portal." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.Icon)" asp-append-version="true" />
 		<!--begin::Fonts(mandatory for all pages)-->
 		<link rel="stylesheet" href="~/Backend-assets/fonts/inter/inter.css" />
 		<!--end::Fonts-->
@@ -55,6 +55,12 @@ License: For each use you must have a valid license purchased only from above li
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
 			<style>
 				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
@@ -67,7 +73,24 @@ License: For each use you must have a valid license purchased only from above li
 		{
 			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<!-- The product token layer, AFTER the theme bundle so it wins on specificity order.
+			     Without this the portal rendered raw Metronic demo30: the theme's blue, the theme's
+			     buttons, the theme's radii - none of them the CrossBusiness identity the rest of the
+			     product uses. Same stylesheet the back office loads; one token layer, not two. -->
+			<link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		}
+		<style>
+			.cb-portal-composer { position: relative; overflow: visible; border: 1px solid var(--bs-gray-300); border-radius: 16px; background: var(--bs-body-bg); box-shadow: 0 4px 16px rgba(16,24,40,.06); }
+			.cb-portal-composer textarea { resize: vertical; min-height: 100px; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+			.cb-portal-composer-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--bs-gray-200); }
+			.cb-portal-emoji-picker { position: absolute; inset-inline-start: 8px; bottom: calc(100% + 8px); z-index: 1085; width: min(276px, calc(100vw - 40px)); max-height: min(320px, 52vh); overflow: auto; padding: 10px; border: 1px solid var(--bs-gray-200); border-radius: 16px; background: var(--bs-body-bg); box-shadow: 0 12px 32px rgba(16,24,40,.16); }
+			.cb-portal-emoji-heading { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; margin-bottom: 8px; border-bottom: 1px solid var(--bs-gray-200); color: var(--bs-gray-700); font-size: .78rem; font-weight: 600; }
+			.cb-portal-emoji-heading i { color: var(--bs-primary); font-size: 1rem; }
+			.cb-portal-emoji-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+			.cb-portal-emoji-choice { display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 11px; background: transparent; cursor: pointer; font: 21px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; transition: background .14s ease, transform .14s ease; }
+			.cb-portal-emoji-choice:hover, .cb-portal-emoji-choice:focus-visible { background: var(--bs-light-primary); outline: none; transform: translateY(-1px); }
+		</style>
 		<!--end::Global Stylesheets Bundle-->
 	</head>
 	<!--end::Head-->
@@ -246,9 +269,23 @@ License: For each use you must have a valid license purchased only from above li
 												}
 												<form method="post" action="@Url.Action("PostComment", "ClientPortal", new { threadId = Model.ThreadId })">
 													@Html.AntiForgeryToken()
-													<textarea name="body" rows="4" class="form-control form-control-solid mb-5"
-															  placeholder="@(isAr ? "اكتب رسالتك هنا" : "Write your message here")"></textarea>
-													<button type="submit" class="btn btn-primary fw-bold">@(isAr ? "إرسال" : "Send")</button>
+									<div class="cb-portal-composer">
+										<textarea id="cbPortalMessage" name="body" rows="4" class="form-control px-4 pt-4 mb-0"
+												  placeholder="@(isAr ? "اكتب رسالتك هنا" : "Write your message here")"
+												  aria-label="@(isAr ? "اكتب رسالتك هنا" : "Write your message here")"></textarea>
+										<div class="cb-portal-composer-tools">
+											<button type="button" id="cbPortalEmoji" class="btn btn-sm btn-icon btn-light btn-active-light-primary rounded-circle w-36px h-36px"
+													title="@(isAr ? "إدراج رمز تعبيري" : "Insert an emoji")"
+													aria-label="@(isAr ? "إدراج رمز تعبيري" : "Insert an emoji")">
+												<i class="ki-outline ki-emoji-happy fs-4" aria-hidden="true"></i>
+											</button>
+											<button type="submit" class="btn btn-primary fw-bold rounded-pill px-5 py-2">
+												<i class="ki-outline ki-send fs-5 me-1" aria-hidden="true"></i>@(isAr ? "إرسال" : "Send")
+											</button>
+										</div>
+										<div id="cbPortalEmojiPane" class="cb-portal-emoji-picker d-none" role="dialog"
+											 aria-label="@(isAr ? "إدراج رمز تعبيري" : "Insert an emoji")"></div>
+									</div>
 												</form>
 											</div>
 										</div>
@@ -262,7 +299,7 @@ License: For each use you must have a valid license purchased only from above li
 							<div id="kt_app_footer" class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
 								<div class="text-gray-900 order-2 order-md-1">
 									<span class="text-muted fw-semibold me-1">@DateTime.UtcNow.Year&copy;</span>
-									<span class="text-gray-800">CrossBuy</span>
+									<span class="text-gray-800">@CrossBuy.BL.Platform.ProductIdentity.ShortName</span>
 								</div>
 							</div>
 							<!--end::Footer-->
@@ -280,6 +317,45 @@ License: For each use you must have a valid license purchased only from above li
 		<script>var hostUrl = "/portal-assets/";</script>
 		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
 		<script src="/portal-assets/js/scripts.bundle.js"></script>
+		<script>
+			(function () {
+				var button = document.getElementById('cbPortalEmoji');
+				var pane = document.getElementById('cbPortalEmojiPane');
+				var input = document.getElementById('cbPortalMessage');
+				if (!button || !pane || !input) return;
+				var heading = document.createElement('div');
+				heading.className = 'cb-portal-emoji-heading';
+				heading.innerHTML = '<i class="ki-outline ki-emoji-happy" aria-hidden="true"></i>';
+				var headingText = document.createElement('span');
+				headingText.textContent = button.title;
+				heading.appendChild(headingText);
+				pane.appendChild(heading);
+				var grid = document.createElement('div');
+				grid.className = 'cb-portal-emoji-grid';
+				['😀','😃','😄','😁','😆','😂','🤣','🥹','😊','😍','🥰','😘','😎','🤩','🥳','🫠','🥲','🤔','🫡','🤯','🫣','🤗','🫶','🙂','😉','👍','👎','👏','🙌','🙏','🤝','💪','👌','🫰','❤️','🩷','✨','🔥','🎉','🚀','🌟','💯','✅','❌','⚡','🎯','🧠','🫧','🪩','🪄'].forEach(function (emoji) {
+					var choice = document.createElement('button');
+					choice.type = 'button'; choice.className = 'cb-portal-emoji-choice';
+					choice.textContent = emoji; choice.title = emoji;
+					choice.setAttribute('aria-label', emoji);
+					grid.appendChild(choice);
+				});
+				pane.appendChild(grid);
+				button.addEventListener('click', function () { pane.classList.toggle('d-none'); });
+				pane.addEventListener('click', function (event) {
+					var choice = event.target.closest('.cb-portal-emoji-choice');
+					if (!choice) return;
+					var start = input.selectionStart == null ? input.value.length : input.selectionStart;
+					var end = input.selectionEnd == null ? start : input.selectionEnd;
+					input.value = input.value.slice(0, start) + choice.textContent + input.value.slice(end);
+					input.focus(); input.setSelectionRange(start + choice.textContent.length, start + choice.textContent.length);
+					pane.classList.add('d-none');
+				});
+				document.addEventListener('click', function (event) {
+					if (!pane.contains(event.target) && !button.contains(event.target)) pane.classList.add('d-none');
+				});
+				document.addEventListener('keydown', function (event) { if (event.key === 'Escape') pane.classList.add('d-none'); });
+			})();
+		</script>
 		<!--end::Javascript-->
 	</body>
 	<!--end::Body-->

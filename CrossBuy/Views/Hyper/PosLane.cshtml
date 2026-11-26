@@ -13,6 +13,27 @@
     // HM-1: the open cart + document-currency decimals (both computed server-side; the view only formats for display).
     var order = ViewBag.Order as PosOrderDto;
     var docDp = (int)(ViewBag.DocDp ?? 2);
+    // HM-11: parked sales and the suspend/resume gate. `held` is already empty when the capability is off
+    // (the controller gates it), so the view never has to decide policy - it only decides layout.
+    var held = ViewBag.Held as List<HeldOrderDto> ?? new List<HeldOrderDto>();
+    var suspendOn = caps.Any(k => k.Key == "SuspendResume" && k.On);
+    // Capability keys with NO consumer anywhere in the application. Verified by searching for
+    // IsCapabilityEnabledAsync("<key>") across *.cs and *.cshtml - each of these returned zero call sites.
+    // Remove a key from here in the SAME change that ships its consumer, never before.
+    // Promotions is NOT reserved: it has had a consumer since HM-5. PosOrderService.AddLineAsync reads
+    // the capability and passes it to pricing, which applies the Inventory promotion rules into the
+    // unit price. A search for IsCapabilityEnabledAsync("Promotions") misses it because that consumer
+    // queries BranchCapabilities directly rather than through the central gate.
+    @* HM-EXP: ExpiryControl has a consumer now - the till refuses an out-of-date item at the SCAN
+       and prints the nearest usable date on the row - so it is no longer reserved. The other two
+       stay listed until something actually reads them. *@
+    var NotBuilt = new[] { "ShelfLabels", "CashDrawer" };
+    var promos = ViewBag.Promos as List<AppliedPromotion> ?? new List<AppliedPromotion>();
+    // HM-16: the PLU fallback. Results only appear when the cashier asked for them — an empty search
+    // shows the quick items, not an empty table pretending to be a result set.
+    var lookup = ViewBag.Lookup as List<CrossBuy.Models.Context.Inventory.Item> ?? new List<CrossBuy.Models.Context.Inventory.Item>();
+    var lookupQ = ViewBag.LookupQ as string;
+    var promoTotal = promos.Sum(x => x.Amount);
     var fmt = docDp > 0 ? "0." + new string('0', docDp) : "0";
     ViewData["Title"] = isAr ? "الممرّ" : "Lane";
 }
@@ -21,7 +42,20 @@
 
         @if (TempData["PosMsg"] != null)
         {
-            <div class="alert alert-success d-flex align-items-center mb-6"><i class="ki-outline ki-check-circle fs-2 me-3"></i>@TempData["PosMsg"]</div>
+            <div class="alert alert-primary d-flex align-items-center mb-6"><i class="ki-outline ki-check-circle fs-2 me-3"></i>@TempData["PosMsg"]</div>
+        }
+        @* HM-11: CHANGE DUE, stated once and loudly. It is deliberately a separate banner from the "paid"
+           message: the cashier acts on this number with a queue waiting, and burying it inside a sentence
+           about an invoice number is how a till hands back the wrong money. *@
+        @if (TempData["PosChange"] != null)
+        {
+            <div class="alert alert-primary d-flex align-items-center mb-6">
+                <i class="ki-outline ki-dollar fs-2tx me-4"></i>
+                <div>
+                    <div class="fs-7 text-muted">@(isAr ? "الباقي للعميل" : "Change due to customer")</div>
+                    <div class="fs-1 fw-bolder text-gray-900" style="font-variant-numeric:tabular-nums">@TempData["PosChange"]</div>
+                </div>
+            </div>
         }
         @if (TempData["PosErr"] != null)
         {
@@ -31,8 +65,8 @@
         <!--begin::HM-1 selling panel — scan → cart → cash pay. Server computes everything (RecomputeAsync); this only displays.-->
         @if (openShift == null)
         {
-            <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-5 mb-6">
-                <i class="ki-outline ki-information-5 fs-2tx text-warning me-4"></i>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-6">
+                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
                 <div class="d-flex flex-stack flex-grow-1">
                     <div class="fs-6 text-gray-700">@(isAr ? "افتح وردية للبدء في البيع." : "Open a shift to start selling.")</div>
                 </div>
@@ -51,11 +85,76 @@
                 <div class="card-body pt-2">
                     <!--scan box (autofocus)-->
                     @* HM-10 slice A: offline banner (message only) — populated by the connectivity detector at the bottom. *@
-                    <div id="cbOffline" class="alert alert-warning d-none d-flex align-items-center mb-4"><i class="ki-outline ki-wifi fs-2 me-3"></i>@(isAr ? "لا اتصال — انتظر عودة الشبكة قبل بدء بيعة." : "No connection — wait for the network before starting a sale.")</div>
-                    <form method="post" action="/hyper/pos/scan" class="d-flex gap-3 mb-5 cb-guard" autocomplete="off">
+                    <div id="cbOffline" class="alert alert-danger d-none d-flex align-items-center mb-4"><i class="ki-outline ki-wifi fs-2 me-3"></i>@(isAr ? "لا اتصال — انتظر عودة الشبكة قبل بدء بيعة." : "No connection — wait for the network before starting a sale.")</div>
+                        @* HM-16 — SELL WHEN THE SCANNER CANNOT. A torn barcode, a dead scanner or loose
+                           produce all stop a till that can only scan. This is a GET: searching never
+                           changes the basket, so a mistyped query cannot sell anything. *@
+                    <form method="get" action="/hyper/pos/lane" class="d-flex gap-3 mb-3" autocomplete="off">
+                        <input type="text" name="q" value="@lookupQ" class="form-control form-control-solid" placeholder="@(isAr ? "ابحث بالاسم أو الكود أو PLU…" : "Search by name, code or PLU…")" />
+                        <button type="submit" class="btn btn-light-primary"><i class="ki-outline ki-magnifier fs-4"></i>@(isAr ? "بحث" : "Find")</button>
+                            @if (!string.IsNullOrWhiteSpace(lookupQ))
+                            {
+                            <a href="/hyper/pos/lane" class="btn btn-light">@(isAr ? "مسح" : "Clear")</a>
+                            }
+                    </form>
+
+                        @if (!string.IsNullOrWhiteSpace(lookupQ))
+                        {
+                        <div class="border border-gray-300 border-dashed rounded p-3 mb-4">
+                                @if (lookup.Count == 0)
+                                {
+                                <div class="text-muted fs-7 py-2">@(isAr ? "لا صنف يطابق " : "Nothing matches ")"@lookupQ"</div>
+                                }
+                                else
+                                {
+                                <div class="fs-8 text-muted mb-2">@lookup.Count @(isAr ? "نتيجة — اضغط المفتاح أو Alt ورقمه" : "matches — press the key, or Alt and its number")</div>
+                                <div class="lane-keys">
+                                        @{ var kn = 0; }
+                                        @foreach (var it in lookup)
+                                        {
+                                            kn++;
+                                            @* A weighed item gets no key: adding "one" of something sold by the kilo
+                                               would invent a quantity. It carries its instruction instead. *@
+                                            if (it.IsWeighted)
+                                            {
+                                        <div class="lane-key" style="cursor:default">
+                                            <div class="lane-key-name">@(isAr ? it.Name : (it.NameEn ?? it.Name))</div>
+                                            <div class="lane-key-foot">
+                                                <span class="lane-chip">@(isAr ? "زِنه وامسح الملصق" : "Weigh it and scan")</span>
+                                                <span class="lane-key-no">@it.ItemCode</span>
+                                            </div>
+                                        </div>
+                                            }
+                                            else
+                                            {
+                                        <form method="post" action="/hyper/pos/lookup/add" class="cb-guard">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="itemId" value="@it.ID" />
+                                            <button type="submit" class="lane-key" data-quickkey="@kn">
+                                                <div class="lane-key-name">@(isAr ? it.Name : (it.NameEn ?? it.Name))</div>
+                                                <div class="lane-key-foot">
+                                                    <span class="lane-key-price" style="font-variant-numeric:tabular-nums">@((it.SalesPrice ?? 0m).ToString(fmt))</span>
+                                                    <span class="lane-key-no">@(kn <= 8 ? "Alt+" + kn : it.ItemCode)</span>
+                                                </div>
+                                            </button>
+                                        </form>
+                                            }
+                                        }
+                                </div>
+                                }
+                        </div>
+                        }
+
+                    @* The scan field is the largest control on the lane and keeps focus: a lane is
+                       driven by a scanner, which is a keyboard that types fast and presses Enter. *@
+                    <form method="post" action="/hyper/pos/scan" class="d-flex align-items-center gap-3 mb-4 cb-guard" autocomplete="off">
                         @Html.AntiForgeryToken()
-                        <input type="text" name="barcode" autofocus class="form-control form-control-solid" placeholder="@(isAr ? "امسح الباركود..." : "Scan barcode...")" />
-                        <button type="submit" class="btn btn-primary"><i class="ki-outline ki-plus fs-4"></i>@(isAr ? "إضافة" : "Add")</button>
+                        <span class="lane-scan">
+                            <i class="ki-outline ki-barcode"></i>
+                            <input type="text" name="barcode" autofocus class="form-control" placeholder="@(isAr ? "امسح الباركود أو اكتب الرمز…" : "Scan a barcode or type a code…")" />
+                            <span class="lane-scan-hint">Enter</span>
+                        </span>
+                        <button type="submit" class="btn btn-primary lane-scan-add"><i class="ki-outline ki-plus fs-2"></i>@(isAr ? "إضافة" : "Add")</button>
                     </form>
 
                     @if (order == null || order.Lines.Count == 0)
@@ -64,56 +163,268 @@
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
-                                <thead>
-                                    <tr class="fw-semibold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
-                                        <th>@(isAr ? "الصنف" : "Item")</th>
-                                        <th class="text-end">@(isAr ? "السعر" : "Unit price")</th>
-                                        <th class="text-center w-175px">@(isAr ? "الكمية" : "Qty")</th>
-                                        <th class="text-end">@(isAr ? "الإجمالي" : "Total")</th>
-                                        <th class="w-50px"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var ln in order.Lines)
-                                    {
-                                        <tr>
-                                            <td class="fw-semibold text-gray-900">@ln.Name@(ln.UoMName != null ? " · " + ln.UoMName : "")</td>
-                                            <td class="text-end" style="font-variant-numeric:tabular-nums">@ln.UnitPrice.ToString(fmt)</td>
-                                            <td class="text-center">
-                                                <form method="post" action="/hyper/pos/line/qty" class="d-inline-flex align-items-center gap-1">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="lineId" value="@ln.Id" />
-                                                    <input type="number" name="qty" value="@ln.Qty.ToString("0.###")" min="0" step="1" class="form-control form-control-solid form-control-sm w-90px text-center" />
-                                                    <button type="submit" class="btn btn-icon btn-sm btn-light" title="@(isAr ? "تحديث" : "Update")"><i class="ki-outline ki-check fs-5"></i></button>
-                                                </form>
-                                            </td>
-                                            <td class="text-end fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@ln.LineTotal.ToString(fmt)</td>
-                                            <td>
-                                                <form method="post" action="/hyper/pos/line/remove">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="lineId" value="@ln.Id" />
-                                                    <button type="submit" class="btn btn-icon btn-sm btn-light-danger" title="@(isAr ? "حذف" : "Remove")"><i class="ki-outline ki-trash fs-5"></i></button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                    @* Basket lines are a list, not a data table: the cashier and the customer both
+                       watch this, so the name carries weight and the line total is the largest
+                       figure on the row. data-lane-row is what the arrow keys select. *@
+                    <div class="mb-2">
+                        @foreach (var ln in order.Lines)
+                        {
+                            <div class="lane-row" data-lane-row>
+                                <div>
+                                    <div class="lane-row-name">@ln.Name</div>
+                                    <div class="lane-row-sub"><span style="font-variant-numeric:tabular-nums">@ln.UnitPrice.ToString(fmt)</span> @(isAr ? "للوحدة" : "each")@(ln.UoMName != null ? " · " + ln.UoMName : "")@{
+                                        @* The date of the batch this line will actually draw from. Printed rather
+                                           than reduced to a traffic light, because "soon" means a different number
+                                           to fresh milk and to tinned fish, and only the cashier holding the pack
+                                           can judge it. Absent when the item is not dated. *@
+                                        var __exp = (ViewBag.LineExpiry as Dictionary<int, DateTime>);
+                                        DateTime __d;
+                                        if (__exp != null && __exp.TryGetValue(ln.ItemId, out __d))
+                                        {
+                                        <span> · </span><span class="lane-chip" style="font-variant-numeric:tabular-nums">@(isAr ? "صالح حتى " : "use by ")@__d.ToString("yyyy-MM-dd")</span>
+                                        }
+                                        @* THE SAVING, ON THE LINE IT CAME OFF. The unit price above stays the
+                                           SHELF price - replacing it with the discounted figure would hide that
+                                           an offer ran at all, and a customer who asks about the shelf price
+                                           deserves an answer the cashier can read straight off the screen. *@
+                                        if (ln.DiscountAmount > 0m)
+                                        {
+                                        <span> · </span><span class="lane-row-save" style="font-variant-numeric:tabular-nums">@(isAr ? "وفّرت " : "saved ")@ln.DiscountAmount.ToString(fmt)</span>
+                                        }
+                                    }</div>
+                                </div>
+                                <div>
+                                    <form method="post" action="/hyper/pos/line/qty" class="lane-step">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="lineId" value="@ln.Id" />
+                                        <button type="button" data-step="-1" aria-label="@(isAr ? "إنقاص" : "Decrease")">&minus;</button>
+                                        <input type="number" name="qty" value="@ln.Qty.ToString("0.###")" min="0" step="1" class="lane-step-v" aria-label="@(isAr ? "الكمية" : "Quantity")" />
+                                        <button type="button" data-step="1" aria-label="@(isAr ? "زيادة" : "Increase")">+</button>
+                                    </form>
+                                </div>
+                                <div class="lane-row-total" style="font-variant-numeric:tabular-nums">@ln.LineTotal.ToString(fmt)</div>
+                                <div>
+                                    <form method="post" action="/hyper/pos/line/remove">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="lineId" value="@ln.Id" />
+                                        <button type="submit" class="lane-del" title="@(isAr ? "حذف" : "Remove")"><i class="ki-outline ki-trash fs-4"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                        @* HM-12 — WHAT THE CUSTOMER SAVED, named. A total that is simply lower than the shelf
+                           price invites the question "why?" at the till, and a cashier who cannot answer it
+                           holds up the queue. Each rule that fired is listed by its own name. *@
+                        @if (promos.Count > 0)
+                        {
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="lane-change" style="text-align:start;border-style:solid">
+                                <div class="fs-7 fw-bold mb-2" style="color:var(--lane-brand)"><i class="ki-outline ki-discount fs-5 me-1"></i>@(isAr ? "عروض مطبَّقة" : "Offers applied")</div>
+                                @foreach (var pr in promos)
+                                {
+                                    <div class="d-flex flex-stack fs-7 py-1">
+                                        <span class="text-gray-800">@pr.Display(isAr)</span>
+                                        <span class="lane-row-save" style="font-variant-numeric:tabular-nums">- @pr.Amount.ToString(fmt)</span>
+                                    </div>
+                                }
+                                <div class="separator separator-dashed my-2"></div>
+                                <div class="d-flex flex-stack fs-7">
+                                    <span class="fw-bold text-gray-700">@(isAr ? "إجمالي التوفير" : "Total saved")</span>
+                                    <span class="lane-row-save" style="font-variant-numeric:tabular-nums">- @promoTotal.ToString(fmt)</span>
+                                </div>
+                            </div>
+                        }
+                        <div class="separator separator-dashed my-4"></div>
+                        @* The due figure is what the customer asks for and what the cashier reads aloud, so it is
+                           the largest element on the lane - not a label with a number beside it. *@
+                        // One figure for the whole trolley. A shopper who watched three small savings
+                        // scroll past still wants to know what the trip saved them, and it is the number
+                        // they repeat to whoever sent them. Bare C# here: this is already inside a code
+                        // block, where @{ is a compile error rather than a style choice.
+                        var __saved = order.Lines.Sum(x => x.DiscountAmount);
+                        if (__saved > 0m)
+                        {
+                            <div class="lane-change mb-3" style="text-align:start;border-style:solid">
+                                <div class="fs-7 fw-bold" style="color:var(--lane-brand)">
+                                    <i class="ki-outline ki-discount fs-5 me-1"></i>@(isAr ? "وفّر العميل" : "Customer saved")
+                                    <span class="ms-2" style="font-variant-numeric:tabular-nums">@__saved.ToString(fmt)</span>
+                                </div>
+                            </div>
+                        }
+                        <div class="lane-due mb-4">
+                            <div class="lane-due-label">@(isAr ? "المطلوب" : "Due")</div>
+                            <div class="lane-due-value" style="font-variant-numeric:tabular-nums">@order.GrandTotal.ToString(fmt)</div>
+                        </div>
+                        <div class="d-flex flex-stack">
+                            <div></div>
+                            <div class="d-flex gap-2">
+                                @* HM-11: PARK and VOID sit beside Pay because they are the two ways a sale ends WITHOUT money.
+                                   Both are neutral, never amber: an amber button on a till reads as a warning the cashier
+                                   has done something wrong. *@
+                                @if (suspendOn)
+                                {
+                                    <form method="post" action="/hyper/pos/hold" class="cb-guard">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lane-sec px-5" title="@(isAr ? "تعليق البيع لعميل آخر" : "Park this sale")"><i class="ki-outline ki-time fs-3 me-1"></i>@(isAr ? "تعليق" : "Park") <kbd class="lane-kbd">F6</kbd></button>
+                                    </form>
+                                }
+                                <form method="post" action="/hyper/pos/void" class="cb-guard" data-cb-confirm="@(isAr ? "إلغاء البيع بالكامل؟" : "Void the whole sale?")">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="lane-sec lane-sec-danger px-5"><i class="ki-outline ki-trash fs-3 me-1"></i>@(isAr ? "إلغاء" : "Void") <kbd class="lane-kbd">F8</kbd></button>
+                                </form>
+                            </div>
                         </div>
 
-                        <div class="separator separator-dashed my-4"></div>
-                        <div class="d-flex flex-stack">
-                            <div>
-                                <span class="text-muted fs-6 me-2">@(isAr ? "الإجمالي" : "Total")</span>
-                                <span class="fs-2 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@order.GrandTotal.ToString(fmt)</span>
+                        @* ============================================================================================
+                           HM-11 — TENDERS AND CHANGE.
+                           The engine has taken a LIST of tenders since PayTendersAsync shipped; this lane sent a
+                           hardcoded "Cash" and threw the rest away. Cash / Card / Split now reach it.
+                           CHANGE IS COMPUTED, NOT POSTED: money handed back is drawer movement, not revenue, so the
+                           sale is settled at what is DUE and the change is shown to the cashier instead.
+                           ============================================================================================ *@
+                        @* HM-26 — THE COUPON, ABOVE THE TENDERS.
+                           It must be entered before payment because it changes the basket's total AND its tax.
+                           Putting it beside the cash box would invite the cashier to take the money first and
+                           discover the discount afterwards, which is a refund rather than a sale. *@
+                        var cpn = ViewBag.Coupon as CrossBuy.BL.CouponPreview;
+                        @if (cpn != null)
+                        {
+                            <div class="d-flex flex-stack bg-light-primary rounded px-4 py-3 mt-4">
+                                <div class="min-w-0">
+                                    <span class="fw-bold text-gray-900 d-block">
+                                        <i class="ki-outline ki-discount fs-5 me-1"></i>@(isAr ? cpn.Name : (cpn.NameEn ?? cpn.Name))
+                                        <span class="badge badge-light ms-2" style="font-variant-numeric:tabular-nums">@cpn.Code</span>
+                                    </span>
+                                    <span class="fs-8 text-gray-700">@(isAr ? "خصم" : "Discount") <span style="font-variant-numeric:tabular-nums">@cpn.Discount.ToString(fmt)</span></span>
+                                </div>
+                                <form method="post" action="/hyper/pos/coupon/remove" class="cb-guard">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-light">@(isAr ? "إزالة" : "Remove")</button>
+                                </form>
                             </div>
-                            <form method="post" action="/hyper/pos/pay" class="cb-guard" id="cbPayForm" data-order="@ctx?.OrderId">
+                        }
+                        else
+                        {
+                            <form method="post" action="/hyper/pos/coupon/apply" class="cb-guard mt-4">
                                 @Html.AntiForgeryToken()
-                                <input type="hidden" name="payToken" id="cbPayToken" />   @* HM-10 slice A: client idempotency token *@
-                                <button type="submit" class="btn btn-success btn-lg"><i class="ki-outline ki-dollar fs-3"></i>@(isAr ? "دفع نقدي" : "Pay cash")</button>
+                                <div class="d-flex align-items-end gap-2">
+                                    <div class="flex-grow-1">
+                                        <label class="form-label fs-8 text-muted mb-1">@(isAr ? "رمز كوبون" : "Coupon code")</label>
+                                        <input type="text" name="code" maxlength="40" autocomplete="off"
+                                               class="form-control form-control-solid" placeholder="@(isAr ? "اتركه فارغاً إن لم يوجد" : "leave empty if none")" />
+                                    </div>
+                                    <button type="submit" class="btn btn-light-primary">@(isAr ? "طبّق" : "Apply")</button>
+                                </div>
                             </form>
+                        }
+
+                        <form method="post" action="/hyper/pos/pay" class="cb-guard mt-4" id="cbPayForm" data-order="@ctx?.OrderId">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="payToken" id="cbPayToken" />   @* HM-10 slice A: client idempotency token *@
+                            @{ int? ageMin = ViewBag.AgeMin as int?; }
+                            @if (ageMin != null)
+                            {
+                                @* HM-AGE: a legal refusal, not a hint. The gate carries the number the licence
+                                   actually sets, so a cashier never has to remember which SKU is which, and the
+                                   claim it collects is what the server stamps on the order. The server refuses
+                                   the post on its own - this panel is what the cashier SEES, never the control. *@
+                                <div class="lane-gate" data-age-gate>
+                                    <div class="lane-gate-head"><i class="ki-outline ki-shield-tick fs-2 me-2"></i>@(isAr ? "التحقّق من السن مطلوب" : "Age check required")</div>
+                                    <div class="lane-gate-body">@(isAr
+                                        ? "تحتوي السلة على صنف لا يُباع إلا لمن أتمّ " + ageMin.Value.ToString() + " سنة. اطلب إثبات هوية العميل قبل التحصيل."
+                                        : "This basket holds an item sold only to customers aged " + ageMin.Value.ToString() + " and over. Ask the customer for ID before taking payment.")</div>
+                                    <button type="button" class="lane-gate-ok" data-age-ok>
+                                        <i class="ki-outline ki-check fs-2 me-1"></i>@(isAr ? "رأيت الهوية — العميل مستوفٍ للسن" : "I checked the ID — the customer qualifies")
+                                        <kbd class="lane-kbd">Shift+F7</kbd>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="ageConfirmed" id="cbAgeConfirmed" value="false" />
+                            }
+                            <div class="d-flex flex-wrap align-items-end gap-3">
+                                @* Tenders are buttons, not a dropdown: taking cash was open-pick-close-type, and it is the
+                                   one action a lane repeats all day. The select remains as the POSTED value, so the
+                                   server contract is unchanged and the keyboard layer drives the same control. *@
+                                <div class="w-100">
+                                    <label class="form-label fs-8 text-muted mb-1">@(isAr ? "طريقة الدفع" : "Payment method")</label>
+                                    <select name="method" id="cbPayMethod" class="d-none">
+                                        <option value="Cash" selected>@(isAr ? "نقدي" : "Cash")</option>
+                                        <option value="Card">@(isAr ? "شبكة" : "Card")</option>
+                                        <option value="Split">@(isAr ? "مُقسَّم" : "Split")</option>
+                                    </select>
+                                    <div class="lane-tenders">
+                                        <button type="button" class="lane-tender is-on" data-tender="Cash"><i class="ki-outline ki-dollar"></i><span>@(isAr ? "نقدي" : "Cash")</span><kbd class="lane-kbd">F9</kbd></button>
+                                        <button type="button" class="lane-tender" data-tender="Card"><i class="ki-outline ki-credit-cart"></i><span>@(isAr ? "شبكة" : "Card")</span><kbd class="lane-kbd">F10</kbd></button>
+                                        <button type="button" class="lane-tender" data-tender="Split"><i class="ki-outline ki-arrow-two-diagonals"></i><span>@(isAr ? "مُقسَّم" : "Split")</span><kbd class="lane-kbd">⇧F9</kbd></button>
+                                    </div>
+                                </div>
+                                <div data-cb-pay="cash">
+                                    <label class="form-label fs-8 text-muted mb-1">@(isAr ? "المبلغ المستلم" : "Cash tendered")</label>
+                                    <input type="number" step="any" min="0" name="cashTendered" id="cbCashIn" class="form-control form-control-solid w-150px text-end" placeholder="@order.GrandTotal.ToString(fmt)" />
+                                </div>
+                                <div data-cb-pay="card" hidden>
+                                    <label class="form-label fs-8 text-muted mb-1">@(isAr ? "مبلغ الشبكة" : "Card amount")</label>
+                                    <input type="number" step="any" min="0" name="cardAmount" id="cbCardAmt" class="form-control form-control-solid w-150px text-end" />
+                                </div>
+                                @* HM-22 — SPEND POINTS, as a TENDER rather than a discount.
+                                   The field appears only when redemption can really happen: the capability is on,
+                                   a point has a configured value, and THIS customer has a balance. A box that is
+                                   always drawn and always refuses is how a cashier learns to ignore the lane. *@
+                                @{
+                                    var ptVal = (decimal)(ViewBag.PointValue ?? 0m);
+                                    var ptBal = (long)(ViewBag.PointsBalance ?? 0L);
+                                    var ptTender = ViewBag.PointsTenderOk as bool? ?? false;
+                                    // ALL FOUR, or the field is not drawn. Dropping the tender check would offer a
+                                    // box whose use kills the settlement after the points are typed.
+                                    var ptOn = (ViewBag.LoyaltyOn as bool? ?? false) && ptVal > 0m && ptBal > 0 && ptTender;
+                                }
+                                @if (ptOn)
+                                {
+                                    <div>
+                                        <label class="form-label fs-8 text-muted mb-1">
+                                            @(isAr ? "نقاط تُصرف" : "Points to spend")
+                                            <span class="text-gray-700 fw-bold ms-1" style="font-variant-numeric:tabular-nums">@ptBal</span>
+                                            <span class="text-muted">@(isAr ? "متاحة" : "available")</span>
+                                        </label>
+                                        <input type="number" step="1" min="0" max="@ptBal" name="redeemPoints"
+                                               class="form-control form-control-solid w-150px text-end"
+                                               style="font-variant-numeric:tabular-nums" placeholder="0" />
+                                        <div class="fs-8 text-muted mt-1">
+                                            @(isAr ? $"النقطة = {ptVal.ToString(fmt)}" : $"1 point = {ptVal.ToString(fmt)}")
+                                        </div>
+                                    </div>
+                                }
+                                <div id="cbChangeBox" class="lane-change w-100" hidden>
+                                    <div class="fs-8 text-muted fw-semibold">@(isAr ? "الباقي للعميل" : "Change due")</div>
+                                    <div class="lane-change-value" id="cbChange" style="font-variant-numeric:tabular-nums">0</div>
+                                </div>
+                                <button type="submit" class="lane-pay"><i class="ki-outline ki-dollar fs-2 me-1"></i>@(isAr ? "تحصيل" : "Take payment") <kbd class="lane-kbd">Ctrl+Enter</kbd></button>
+                            </div>
+                        </form>
+                    }
+
+                    @* HM-11: THE PARKED SALES OF THIS BRANCH. Recall is branch-scoped in the controller too — the list
+                       is a convenience, not the authority, so a crafted post cannot reach another store's basket. *@
+                    @if (suspendOn && held.Count > 0)
+                    {
+                        <div class="separator separator-dashed my-4"></div>
+                        <div class="fs-7 fw-bold text-gray-700 mb-2"><i class="ki-outline ki-time fs-5 me-1"></i>@(isAr ? "مبيعات معلّقة" : "Parked sales") <span class="badge badge-light-primary ms-1">@held.Count</span></div>
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var h in held)
+                            {
+                                <div class="d-flex flex-stack bg-light-primary rounded px-4 py-2">
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-gray-900 text-truncate">@(string.IsNullOrWhiteSpace(h.FirstItem) ? (isAr ? "سلة" : "Basket") : h.FirstItem)</div>
+                                        <div class="fs-8 text-muted">@h.ItemCount @(isAr ? "صنف" : "items") · @h.GrandTotal.ToString(fmt)</div>
+                                    </div>
+                                    <form method="post" action="/hyper/pos/resume" class="cb-guard">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="orderId" value="@h.Id" />
+                                        <button type="submit" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-entrance-left fs-5"></i>@(isAr ? "استئناف" : "Resume")</button>
+                                    </form>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -133,7 +444,7 @@
                                 <div class="fs-7 text-muted">@(isAr ? "الوردية" : "Shift")</div>
                                 @if (openShift != null)
                                 {
-                                    <div class="fs-4 fw-semibold"><span class="badge badge-light-success fs-6"><i class="ki-outline ki-time fs-7 text-success me-1"></i>@(isAr ? "مفتوحة" : "Open") #@openShift.ID</span></div>
+                                    <div class="fs-4 fw-semibold"><span class="badge badge-light-primary fs-6"><i class="ki-outline ki-time fs-7 text-primary me-1"></i>@(isAr ? "مفتوحة" : "Open") #@openShift.ID</span></div>
                                     <div class="text-muted fs-8">@(isAr ? "الرصيد الافتتاحي" : "Opening float"): @openShift.OpeningFloat.ToString(fmt)</div>
                                 }
                                 else
@@ -172,17 +483,31 @@
                     <div class="card-body pt-2">
                         @if (!hasCapConfig)
                         {
-                            <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-4 mb-4">
-                                <i class="ki-outline ki-information-5 fs-2x text-warning me-3"></i>
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-4">
+                                <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
                                 <div class="fs-7 text-gray-700">@(isAr ? "لم تُطبَّق قدرات على هذا الفرع بعد — القائمة معطَّلة افتراضيًّا لا لأنها أوقِفت." : "No capabilities configured for this branch yet — the list is off by default, not disabled.")</div>
                             </div>
                         }
                         <div class="d-flex flex-wrap gap-2">
+                            @* HM-11 — A GREEN TICK MUST MEAN SOMETHING WORKS.
+                               Four of these keys are catalogue entries with no consumer anywhere in the
+                               application: Promotions, ExpiryControl, ShelfLabels and CashDrawer. Two of them
+                               have shipped seeded ON, so a store manager switched on "Suspend / resume" or
+                               "Cash drawer", saw a green tick, looked for the button and found nothing. That is
+                               the module's most direct source of operator distrust: once the panel lies about
+                               one row, it is not believed about the other nine.
+                               SuspendResume left this list in HM-11 - it now has a real Park/Resume consumer.
+                               The remaining four are shown as RESERVED: declared, not yet built. Honest beats
+                               flattering, and the day a consumer ships, its key comes off this array. *@
                             @foreach (var cap in caps)
                             {
-                                if (cap.On)
+                                if (NotBuilt.Contains(cap.Key))
                                 {
-                                    <span class="badge badge-light-success fs-7 py-2 px-3"><i class="ki-outline ki-check-circle fs-7 text-success me-1"></i>@(isAr ? cap.Ar : cap.En)</span>
+                                    <span class="badge badge-light fs-7 py-2 px-3 text-muted" title="@(isAr ? "معلَن ولم يُنفَّذ بعد" : "Declared, not implemented yet")"><i class="ki-outline ki-information-5 fs-7 text-muted me-1"></i>@(isAr ? cap.Ar : cap.En) <span class="opacity-75">· @(isAr ? "محجوز" : "reserved")</span></span>
+                                }
+                                else if (cap.On)
+                                {
+                                    <span class="badge badge-light-primary fs-7 py-2 px-3"><i class="ki-outline ki-check-circle fs-7 text-primary me-1"></i>@(isAr ? cap.Ar : cap.En)</span>
                                 }
                                 else
                                 {
@@ -240,3 +565,41 @@
         });
     })();
 </script>
+
+@section Scripts {
+    <script>
+        // HM-11 — LIVE CHANGE AND METHOD SWITCHING.
+        // The arithmetic is repeated here ONLY to show the cashier a number while they type; the server
+        // recomputes it and is the authority. A till that shows a change figure the server never agreed to
+        // is worse than one that shows none.
+        (function () {
+            var grand = @(order != null ? order.GrandTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0");
+            var dp = @docDp;
+            var method = document.getElementById('cbPayMethod');
+            var cashIn = document.getElementById('cbCashIn');
+            var cardAmt = document.getElementById('cbCardAmt');
+            var box = document.getElementById('cbChangeBox');
+            var out = document.getElementById('cbChange');
+            if (!method || !box) { return; }
+
+            function show(sel, on) {
+                document.querySelectorAll('[data-cb-pay="' + sel + '"]').forEach(function (e) { e.hidden = !on; });
+            }
+            function recalc() {
+                var m = method.value;
+                show('cash', m !== 'Card');
+                show('card', m === 'Split');
+                if (m === 'Card') { box.hidden = true; return; }
+                var due = m === 'Split' ? grand - (parseFloat(cardAmt && cardAmt.value) || 0) : grand;
+                var paid = parseFloat(cashIn && cashIn.value) || 0;
+                var change = paid - due;
+                box.hidden = !(paid > 0 && change >= 0);
+                if (!box.hidden) { out.textContent = change.toFixed(dp); }
+            }
+            method.addEventListener('change', recalc);
+            if (cashIn) { cashIn.addEventListener('input', recalc); }
+            if (cardAmt) { cardAmt.addEventListener('input', recalc); }
+            recalc();
+        })();
+    </script>
+}

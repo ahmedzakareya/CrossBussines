@@ -1,67 +1,269 @@
-@using CrossBuy.BL
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model CrossBuy.BL.CrmIdentity.ForecastBoard
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
 @{
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
-    var rows = ViewBag.Forecast as List<ForecastRow> ?? new();
-    var totWeighted = rows.Sum(r => r.WeightedAmount);
-    var totOpen = rows.Sum(r => r.OpenAmount);
-    var totWon = rows.Sum(r => r.WonAmount);
-    string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var ci = new System.Globalization.CultureInfo(isAr ? "ar-KW" : "en-GB");
+    var p = Model.Period; var tot = Model.Total;
+    var canEdit = ViewBag.CanEdit == true;
+    string Label(CrossBuy.BL.CrmIdentity.CrmForecastRules.Period x) => x.IsQuarter ? (T["Quarter"].Value + " " + (x.FirstMonth / 3 + 1) + " — " + x.Year) : x.Start.ToString("MMMM yyyy", ci);
+    string Money(decimal v) => v.ToString("N0");
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+    string Face(CrossBuy.BL.CrmIdentity.PersonRef who, int px = 35)
+    {
+        var ini = Initials(who.Name);
+        var inner = who.HasPhoto ? $"<img src=\"/People/Photo/{who.EmployeeId}\" alt=\"\" onerror=\"this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>{ini}</span>'\" />" : $"<span class=\"symbol-label crm-initials fs-8\">{ini}</span>";
+        return $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0\">{inner}</div>";
+    }
+    var monthKey = p.IsQuarter ? p.Start.ToString("yyyy-MM") : p.Key;
+    var quarterKey = CrossBuy.BL.CrmIdentity.CrmForecastRules.Quarter(p.Start).Key;
+    var mine = Model.Mine;
+    var status = new Dictionary<string, (string cls, string label)> {
+        ["Submitted"] = ("badge-light-primary", T["fst:Submitted"].Value), ["Approved"] = ("badge-light-success", T["fst:Approved"].Value),
+        ["Returned"] = ("badge-light-danger", T["fst:Returned"].Value), ["Superseded"] = ("badge-light", T["fst:Superseded"].Value) };
+    var focusRow = Model.People.FirstOrDefault(r => r.Person.EmployeeId == Model.Focus);
 }
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
-        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Sales forecast"]</h1>
-        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">@SR["CRM"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Forecast"]</li></ul></div>
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Forecast"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Forecast"]</li></ul></div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="btn-group" role="group">
+                <a href="?period=@monthKey" class="btn btn-sm @(p.IsQuarter ? "btn-light" : "btn-primary")">@T["Month"]</a>
+                <a href="?period=@quarterKey" class="btn btn-sm @(p.IsQuarter ? "btn-primary" : "btn-light")">@T["Quarter"]</a>
+            </div>
+            <div class="d-flex align-items-center bg-light rounded px-2">
+                <a href="?period=@p.Previous.Key" class="btn btn-icon btn-sm btn-active-light-primary" title="@T["Previous"]"><i class="ki-outline ki-@(isAr ? "right" : "left") fs-3"></i></a>
+                <span class="fw-bold fs-6 px-3 text-nowrap">@Label(p)</span>
+                <a href="?period=@p.Next.Key" class="btn btn-icon btn-sm btn-active-light-primary" title="@T["Next"]"><i class="ki-outline ki-@(isAr ? "left" : "right") fs-3"></i></a>
+            </div>
+            <a href="@Url.Action("Quotas","Crm", new { year = p.Year })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-flag fs-4"></i>@T["Targets"]</a>
+            @if (mine != null && canEdit) { <button type="button" class="btn btn-sm btn-primary" id="btnSubmit"><i class="ki-outline ki-check fs-4"></i>@T["Submit my forecast"]</button> }
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="row g-3 g-xl-5 mb-5">
+        @Html.AntiForgeryToken()
+        @* ---- the period in five numbers ---- *@
+        <div class="row g-4 mb-5">
             @{
-                // (label, value, raw, icon, bg-tint, fg)
-                var kpis = new (string label, string value, string raw, string icon, string bg, string fg)[] {
-                    (Localizer["Weighted (expected)"].Value, totWeighted.ToString("N0"), Raw(totWeighted), "ki-chart-line-up", "#E7F0FF", "#0E4A9E"),
-                    (Localizer["Total open pipeline"].Value, totOpen.ToString("N0"), Raw(totOpen), "ki-chart-simple", "#E7F0FF", "#145DBF"),
-                    (Localizer["Won"].Value, totWon.ToString("N0"), Raw(totWon), "ki-medal-star", "#E7F0FF", "#0E4A9E"),
+                var kpis = new (string label, string value, string? sub, string icon, string fg)[] {
+                    (T["Target"].Value, Money(tot.Quota), tot.Quota == 0 ? T["No target set"].Value : null, "ki-flag", "#3A5795"),
+                    (T["fc:Won"].Value, Money(tot.Won), tot.Attainment is int a ? a + "% " + T["of target"].Value : null, "ki-cup", "#15803D"),
+                    (T["Forecast (won + commit)"].Value, Money(tot.Forecast), tot.ForecastPercent is int f ? f + "% " + T["of target"].Value : null, "ki-check-square", "#3A5795"),
+                    (T["Upside (+ best case)"].Value, Money(tot.Upside), null, "ki-chart-line-up", "#0F766E"),
+                    (T["Pipeline coverage"].Value, tot.Coverage is decimal c ? c.ToString("0.0") + "×" : "—", tot.Gap > 0 ? T["of what is still missing"].Value + " " + Money(tot.Gap) : T["Target reached"].Value, "ki-chart-simple", "#7239EA"),
                 };
             }
             @foreach (var k in kpis)
             {
-                <div class="col-md-4">
-                    <div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
-                        <div class="d-flex flex-column me-2">
-                            <span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@k.raw">@k.value</span>
-                            <span class="fs-7 text-muted mt-2">@k.label</span>
-                        </div>
-                        <span class="symbol symbol-45px"><span class="symbol-label" style="background:@k.bg;"><i class="ki-outline @k.icon fs-2x" style="color:@k.fg;"></i></span></span>
-                    </div></div>
-                </div>
+                <div class="col-6 col-lg"><div class="card h-100"><div class="card-body p-5">
+                    <div class="d-flex align-items-center gap-2 mb-2"><i class="ki-outline @k.icon fs-2" style="color:@k.fg"></i><span class="text-muted fw-semibold fs-7">@k.label</span></div>
+                    <div class="fw-bold fs-2x text-gray-900 num lh-1">@k.value</div>
+                    @if (k.sub != null) { <div class="text-muted fs-8 mt-2">@k.sub</div> }
+                </div></div></div>
             }
         </div>
-
-        <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Forecast by expected close month"]</div></div>
-            <div class="card-body">
-                <div class="table-responsive"><table class="table align-middle fs-6 gy-3" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Month"]</th><th class="text-center">@Localizer["Open opps"]</th><th class="text-end">@Localizer["Open value"]</th><th class="text-end">@Localizer["Weighted"]</th><th class="text-end pe-4">@Localizer["Won"]</th></tr></thead>
-                    <tbody>
-                    @foreach (var r in rows)
-                    {
-                        <tr style="border-bottom:1px dashed #eef1f6;">
-                            <td class="ps-4 fw-bold text-gray-800">@r.Month</td>
-                            <td class="text-center">@r.OpenCount</td>
-                            <td class="text-end text-muted">@r.OpenAmount.ToString("N0")</td>
-                            <td class="text-end fw-bold" style="color:#0E4A9E;">@r.WeightedAmount.ToString("N0")</td>
-                            <td class="text-end fw-bold pe-4" style="color:#0E4A9E;">@r.WonAmount.ToString("N0")</td>
-                        </tr>
-                    }
-                    @if (rows.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No opportunities with an expected close date"]</td></tr> }
-                    </tbody>
-                    @if (rows.Count > 0)
-                    {
-                        <tfoot><tr class="fw-bolder fs-6" style="background:#E7F0FF;border-top:2px solid #0E4A9E;"><td class="ps-4" style="color:#145DBF;">@SR["Total"]</td><td></td><td class="text-end" style="color:#0E4A9E;">@totOpen.ToString("N0")</td><td class="text-end" style="color:#0E4A9E;">@totWeighted.ToString("N0")</td><td class="text-end pe-4" style="color:#0E4A9E;">@totWon.ToString("N0")</td></tr></tfoot>
-                    }
-                </table></div>
-                <div class="text-muted fs-8 mt-3">@Localizer["Weighted = Σ (opportunity amount × stage probability). Lost opportunities are excluded."]</div>
+        @if (mine?.Latest is { Status: "Returned" } ret)
+        {
+            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5 mb-5">
+                <i class="ki-outline ki-arrow-circle-left fs-2x text-danger me-4"></i>
+                <div class="fw-semibold"><div class="fw-bold text-danger mb-1">@T["Your forecast was returned"] — @ret.Reviewer?.Name</div><div class="text-gray-800">@ret.ReviewNote</div></div>
             </div>
+        }
+        @* ---- one row per person ---- *@
+        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0">
+            <span class="fw-bold fs-4 text-gray-900">@T["Forecast by person"]</span>
+            <span class="text-muted fs-7 mt-1">@T["Each person places their deals and submits; their manager signs off — and may adjust the number without changing theirs."]</span></div>
+            <div class="card-toolbar gap-3 fs-8 fw-semibold">
+                <span><span class="crm-fc-dot" style="--c:#15803D"></span>@T["fc:Won"]</span><span><span class="crm-fc-dot" style="--c:#3A5795"></span>@T["fc:Commit"]</span>
+                <span><span class="crm-fc-dot" style="--c:#5EEAD4"></span>@T["fc:BestCase"]</span></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:200px">@T["Person"]</th><th class="text-end">@T["Target"]</th><th class="text-end">@T["fc:Won"]</th><th class="text-end">@T["fc:Commit"]</th><th class="text-end">@T["fc:BestCase"]</th><th class="text-end">@T["fc:Pipeline"]</th><th style="min-width:170px">@T["Against target"]</th><th>@T["Submission"]</th><th class="text-end pe-4"></th></tr></thead>
+                <tbody class="fs-6">
+                @foreach (var r in Model.People)
+                {
+                    var q = r.R.Quota; var scale = Math.Max(q, r.R.Upside); if (scale == 0) scale = 1;
+                    var s = r.Latest;
+                    <tr class="@(r.Person.EmployeeId == Model.Focus ? "bg-light-primary" : "")">
+                        <td class="ps-4"><a href="?period=@p.Key&person=@r.Person.EmployeeId#deals" class="d-flex align-items-center gap-3 text-hover-primary">@Html.Raw(Face(r.Person))<span><span class="fw-bold text-gray-900 d-block">@r.Person.Name</span><span class="text-muted fs-8">@(r.Role != null ? T["crmrole:" + r.Role].Value : "")</span></span></a></td>
+                        <td class="text-end num">@(q > 0 ? Money(q) : "—")</td>
+                        <td class="text-end num fw-semibold" style="color:#15803D">@Money(r.R.Won)</td>
+                        <td class="text-end num fw-semibold">@Money(r.R.Commit)</td>
+                        <td class="text-end num">@Money(r.R.BestCase)</td>
+                        <td class="text-end num text-muted">@Money(r.R.Pipeline)</td>
+                        <td>
+                            <div class="crm-fc-bar" title="@(r.R.Attainment?.ToString() ?? "—")% / @(r.R.ForecastPercent?.ToString() ?? "—")%">
+                                <span style="--c:#15803D;width:@((r.R.Won * 100 / scale).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span><span style="--c:#3A5795;width:@((r.R.Commit * 100 / scale).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span><span style="--c:#5EEAD4;width:@((r.R.BestCase * 100 / scale).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                                @if (q > 0 && scale > q) { <i class="crm-fc-mark" style="inset-inline-start:@((q * 100 / scale).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i> }
+                            </div>
+                            <div class="fs-8 text-muted mt-1 num">@(r.R.ForecastPercent is int fp ? fp + "% " + T["pct:forecast"].Value : T["No target set"].Value)</div>
+                        </td>
+                        <td>
+                            @if (s == null) { <span class="text-muted fs-8">@T["Not submitted"]</span> }
+                            else
+                            {
+                                <span class="badge @status[s.Status].cls">@status[s.Status].label</span>
+                                <div class="fs-8 text-muted mt-1 num">@s.At.ToLocalTime().ToString("MM-dd HH:mm")@if (s.AdjustedCommit != null) { <span> · @T["adjusted to"] <b class="text-gray-800">@Money(s.AdjustedCommit.Value)</b></span> }</div>
+                            }
+                        </td>
+                        <td class="text-end pe-4 text-nowrap">
+                            @if (r.CanReview && s != null)
+                            {
+                                <button type="button" class="btn btn-sm btn-light-success" data-review="@s.Id" data-approve="1" data-name="@r.Person.Name" data-forecast="@((s.Won + s.Commit).ToString(System.Globalization.CultureInfo.InvariantCulture))"><i class="ki-outline ki-check fs-5"></i>@T["Sign off"]</button>
+                                <button type="button" class="btn btn-sm btn-light-danger" data-review="@s.Id" data-approve="0" data-name="@r.Person.Name">@T["Return"]</button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (Model.People.Count == 0) { <tr><td colspan="9" class="text-center text-muted py-10">@T["Nobody has a target or a deal in this period yet."] <a href="@Url.Action("Quotas","Crm", new { year = p.Year })">@T["Targets"]</a></td></tr> }
+                </tbody>
+                @if (Model.People.Count > 1)
+                {
+                    <tfoot><tr class="fw-bold border-top border-gray-300"><td class="ps-4">@T["Total"]</td><td class="text-end num">@Money(tot.Quota)</td><td class="text-end num" style="color:#15803D">@Money(tot.Won)</td><td class="text-end num">@Money(tot.Commit)</td><td class="text-end num">@Money(tot.BestCase)</td><td class="text-end num">@Money(tot.Pipeline)</td><td colspan="3"></td></tr></tfoot>
+                }
+            </table></div>
+            @if (Model.Unowned > 0) { <div class="fs-8 text-muted mt-3"><i class="ki-outline ki-information-2 fs-7"></i> <span class="num">@Model.Unowned</span> @T["deals in this period have no owner, so they are in nobody's forecast."]</div> }
+            </div></div>
+
+        <div class="row g-5">
+            @* ---- the deals of the period: where the numbers come from ---- *@
+            <div class="col-xl-8" id="deals"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0">
+                    <span class="fw-bold fs-4 text-gray-900">@T["Deals in this period"]@if (focusRow != null) { <span class="text-muted fw-semibold fs-6"> — @focusRow.Person.Name</span> }</span>
+                    <span class="text-muted fs-7 mt-1" id="resultCount">—</span></div>
+                    <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+                <div class="card-body pt-2">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-5"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by deal or account…"]" /></div>
+                        <div class="col-md-3"><select id="f_owner" class="form-select form-select-solid form-select-sm cb-filter" data-control="select2" data-hide-search="true">
+                            <option value="">@T["Everyone"]</option>
+                            @foreach (var r in Model.People) { <option value="@r.Person.EmployeeId" selected="@(r.Person.EmployeeId == Model.Focus)">@r.Person.Name</option> }
+                        </select></div>
+                        <div class="col-md-3"><select id="f_cat" class="form-select form-select-solid form-select-sm cb-filter" data-control="select2" data-hide-search="true">
+                            <option value="">@T["All categories"]</option>
+                            @foreach (var cat in new[] { "Commit", "BestCase", "Pipeline", "Omitted", "Won", "Lost" }) { <option value="@cat">@T["fc:" + cat]</option> }
+                        </select></div>
+                        <div class="col-md-1"><button type="button" id="f_reset" class="btn btn-sm btn-light w-100" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-3 p-0"></i></button></div>
+                    </div>
+                    <div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:210px">@T["Deal"]</th><th style="min-width:170px">@T["Owner"]</th><th>@T["Expected close"]</th><th class="text-end">@T["Probability"]</th><th class="text-end">@T["Amount"]</th><th class="pe-4" style="min-width:150px">@T["Category"]</th></tr></thead>
+                        <tbody id="rows" class="fs-6"></tbody>
+                    </table></div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No deal closes in this period."]</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div></div></div>
+            @* ---- what was promised, and what was decided ---- *@
+            <div class="col-xl-4"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0">
+                    <span class="fw-bold fs-4 text-gray-900">@T["Submission history"]</span>
+                    <span class="text-muted fs-7 mt-1">@(focusRow?.Person.Name ?? "—") · @Label(p)</span></div></div>
+                <div class="card-body pt-2">
+                    @if (Model.History.Count == 0) { <div class="text-muted fs-7 py-5">@T["Nothing submitted for this period yet."]</div> }
+                    @foreach (var h in Model.History)
+                    {
+                        <div class="crm-fc-hist @(h.Status == "Superseded" ? "opacity-50" : "")">
+                            <div class="d-flex flex-stack"><span class="badge @status[h.Status].cls">@status[h.Status].label</span><span class="fs-8 text-muted num">@h.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div>
+                            <div class="d-flex flex-wrap gap-4 mt-2 fs-7">
+                                <span><span class="text-muted">@T["Forecast"]</span> <b class="num">@Money(h.Won + h.Commit)</b></span>
+                                <span><span class="text-muted">@T["fc:BestCase"]</span> <b class="num">@Money(h.BestCase)</b></span>
+                                <span><span class="text-muted">@T["Target"]</span> <b class="num">@Money(h.Quota)</b></span>
+                            </div>
+                            @if (h.Note != null) { <div class="fs-7 text-gray-700 mt-2">“@h.Note”</div> }
+                            @if (h.Reviewer != null)
+                            {
+                                <div class="d-flex align-items-center gap-2 mt-3 fs-8">@Html.Raw(Face(h.Reviewer, 25))<span class="fw-semibold">@h.Reviewer.Name</span><span class="text-muted num">@h.ReviewedAt?.ToLocalTime().ToString("MM-dd HH:mm")</span></div>
+                                @if (h.AdjustedCommit != null) { <div class="fs-8 mt-1">@T["adjusted to"] <b class="num">@Money(h.AdjustedCommit.Value)</b></div> }
+                                @if (h.ReviewNote != null) { <div class="fs-7 text-gray-700 mt-1">“@h.ReviewNote”</div> }
+                            }
+                        </div>
+                    }
+                </div></div></div>
         </div>
+        @* ---- the months around: the trend the old screen showed, now against the target ---- *@
+        <div class="card mt-5"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Month by month"]</span>
+            <span class="text-muted fs-7 mt-1">@T["Expected close date decides the month a deal counts in."]</span></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Month"]</th><th class="text-end">@T["Target"]</th><th class="text-end">@T["fc:Won"]</th><th class="text-end">@T["fc:Commit"]</th><th class="text-end">@T["fc:BestCase"]</th><th class="text-end">@T["fc:Pipeline"]</th><th class="text-end pe-4">@T["Forecast"]</th></tr></thead>
+                <tbody class="fs-6">
+                @foreach (var m in Model.Months)
+                {
+                    var mp = CrossBuy.BL.CrmIdentity.CrmForecastRules.Parse(m.Key)!;
+                    var inP = p.MonthKeys.Contains(m.Key);
+                    <tr class="@(inP ? "bg-light-primary fw-semibold" : "")"><td class="ps-4"><a href="?period=@m.Key" class="text-gray-900 text-hover-primary">@mp.Start.ToString("MMMM yyyy", ci)</a></td>
+                        <td class="text-end num">@(m.R.Quota > 0 ? Money(m.R.Quota) : "—")</td><td class="text-end num" style="color:#15803D">@Money(m.R.Won)</td><td class="text-end num">@Money(m.R.Commit)</td>
+                        <td class="text-end num">@Money(m.R.BestCase)</td><td class="text-end num text-muted">@Money(m.R.Pipeline)</td>
+                        <td class="text-end pe-4 num fw-bold">@Money(m.R.Forecast)@if (m.R.ForecastPercent is int fp) { <span class="text-muted fw-semibold fs-8"> · @fp%</span> }</td></tr>
+                }
+                </tbody></table></div></div></div>
     </div></div>
 </div>
+<div class="modal fade" id="revModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="revTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="mb-5" id="revAdjustBox"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Forecast you sign off (leave it to keep theirs)"]</label>
+            <input id="revAdjust" class="form-control form-control-solid num" inputmode="decimal" dir="ltr" />
+            <div class="fs-8 text-muted mt-1">@T["Their own number stays as they submitted it; yours is kept beside it."]</div></div>
+        <label class="fw-semibold fs-7 text-gray-700 mb-2" id="revNoteLabel"></label>
+        <textarea id="revNote" class="form-control form-control-solid" rows="3" maxlength="500"></textarea>
+        <div class="text-danger fs-8 fw-semibold mt-2 d-none" id="revErr"></div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="revGo"></button></div>
+</div></div></div>
+@section Scripts {
+<script>
+(function(){
+  var period = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(p.Key));
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["failed"] = T["Could not save. Refresh the page and try again."].Value, ["submitQ"] = T["Submit your forecast for"].Value + " " + Label(p) + "?",
+    ["submitNote"] = T["A word for your manager (optional)"].Value, ["submit"] = T["Submit my forecast"].Value, ["cancel"] = T["Cancel"].Value,
+    ["approveT"] = T["Sign off the forecast of"].Value, ["returnT"] = T["Return the forecast of"].Value, ["approve"] = T["Sign off"].Value, ["return"] = T["Return"].Value,
+    ["noteA"] = T["A note (optional)"].Value, ["noteR"] = T["Why is it returned?"].Value, ["saved"] = T["Saved"].Value }));
+  function token(){ return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+  function post(url, data){ var fd = new FormData(); Object.keys(data).forEach(function(k){ if (data[k] != null && data[k] !== '') fd.append(k, data[k]); }); fd.append('__RequestVerificationToken', token());
+    return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  function toast(msg, kind){ if (window.CB && CB.toast) CB.toast(msg, kind || 'success'); }
+  var list = cbServerList({ url:'@Url.Action("ForecastDeals","Crm")', isAr:@(isAr ? "true" : "false"), addParams:function(ps){
+    ps.set('period', period);
+    var o = document.getElementById('f_owner').value, c = document.getElementById('f_cat').value;
+    if (o) ps.set('owner', o); if (c) ps.set('category', c); } });
+  // a deal changes category in place; the numbers above are recomputed on the next load of the page
+  document.getElementById('rows').addEventListener('change', async function(e){
+    var w = e.target.closest('select[data-owner]');
+    if (w) { var ro = await post('@Url.Action("ForecastOwner","Crm")', { id: w.getAttribute('data-owner'), owner: w.value });
+      if (ro.ok) { toast(txt.saved); setTimeout(function(){ location.reload(); }, 600); } else { w.value = w.getAttribute('data-was'); toast(ro.error || txt.failed, 'error'); } return; }
+    var s = e.target.closest('select[data-deal]'); if (!s) return;
+    var r = await post('@Url.Action("ForecastCategory","Crm")', { id: s.getAttribute('data-deal'), category: s.value });
+    if (r.ok) { s.setAttribute('data-was', s.value); s.closest('tr').querySelector('.crm-fc-chosen')?.classList.remove('d-none'); toast(txt.saved); setTimeout(function(){ location.reload(); }, 600); }
+    else { s.value = s.getAttribute('data-was'); toast(r.error || txt.failed, 'error'); }
+  });
+  var sb = document.getElementById('btnSubmit');
+  if (sb) sb.addEventListener('click', async function(){
+    if (!window.Swal) return;
+    var res = await Swal.fire({ title: txt.submitQ, input: 'textarea', inputPlaceholder: txt.submitNote, showCancelButton: true, buttonsStyling: false,
+      confirmButtonText: txt.submit, cancelButtonText: txt.cancel, customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
+    if (!res.isConfirmed) return;
+    var r = await post('@Url.Action("ForecastSubmit","Crm")', { period: period, note: res.value || '' });
+    if (r.ok) location.reload(); else toast(r.error || txt.failed, 'error');
+  });
+  var modal = document.getElementById('revModal'), cur = null;
+  document.querySelectorAll('[data-review]').forEach(function(b){ b.addEventListener('click', function(){
+    var approve = b.getAttribute('data-approve') === '1';
+    cur = { id: b.getAttribute('data-review'), approve: approve, forecast: b.getAttribute('data-forecast') };
+    document.getElementById('revTitle').textContent = (approve ? txt.approveT : txt.returnT) + ' ' + b.getAttribute('data-name');
+    document.getElementById('revAdjustBox').classList.toggle('d-none', !approve);
+    document.getElementById('revAdjust').value = approve ? Number(cur.forecast).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '';
+    document.getElementById('revNoteLabel').textContent = approve ? txt.noteA : txt.noteR;
+    document.getElementById('revNote').value = ''; document.getElementById('revErr').classList.add('d-none');
+    var go = document.getElementById('revGo'); go.textContent = approve ? txt.approve : txt.return; go.className = 'btn ' + (approve ? 'btn-success' : 'btn-danger');
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  }); });
+  document.getElementById('revGo').addEventListener('click', async function(){
+    var adj = document.getElementById('revAdjust').value.replace(/,/g, '').trim();
+    var r = await post('@Url.Action("ForecastReview","Crm")', { id: cur.id, approve: cur.approve ? 'true' : 'false', adjustedCommit: cur.approve ? adj : '', note: document.getElementById('revNote').value });
+    if (r.ok) location.reload(); else { var e = document.getElementById('revErr'); e.textContent = r.error || txt.failed; e.classList.remove('d-none'); }
+  });
+})();
+</script>
+}

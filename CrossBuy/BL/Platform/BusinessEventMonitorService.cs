@@ -155,7 +155,8 @@ namespace CrossBuy.BL.Platform
                         : p.EntityType,
                     CompanyId = p.CompanyID, BranchId = p.BranchID,
                     ActorEmployeeId = p.ActorEmployeeId,
-                    ActorName = p.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(p.ActorEmployeeId.Value) : null,
+                    ActorName = p.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(p.ActorEmployeeId.Value).Name : null,
+                    ActorAvatarUrl = p.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(p.ActorEmployeeId.Value).Avatar : null,
                     CreatedAt = p.CreatedAt, CompletedAt = p.CompletedAt, Visibility = p.Visibility,
                     DispatchId = p.DispatchId, Consumer = p.Consumer, DispatchStatus = p.Status,
                     Attempts = p.Attempts, UpdatedAt = p.UpdatedAt,
@@ -213,7 +214,8 @@ namespace CrossBuy.BL.Platform
                         : ev.EntityType,
                     CompanyId = ev.CompanyID, BranchId = ev.BranchID,
                     ActorEmployeeId = ev.ActorEmployeeId,
-                    ActorName = ev.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(ev.ActorEmployeeId.Value) : null,
+                    ActorName = ev.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(ev.ActorEmployeeId.Value).Name : null,
+                    ActorAvatarUrl = ev.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(ev.ActorEmployeeId.Value).Avatar : null,
                     CreatedAt = ev.CreatedAt, CompletedAt = ev.CompletedAt, Visibility = ev.Visibility,
                     DispatchId = d?.ID, Consumer = d?.Consumer, DispatchStatus = d?.Status,
                     Attempts = d?.Attempts ?? 0, UpdatedAt = d?.UpdatedAt,
@@ -297,15 +299,21 @@ namespace CrossBuy.BL.Platform
                 : (true, false, null, null);
         }
 
-        private async Task<Dictionary<int, string>> ResolveActorNamesAsync(IEnumerable<int?> ids, CancellationToken cancellationToken)
+        // THE NAME AND THE PHOTO, from one query. Same shape as TimelineProjectionService, and for the
+        // same reason: the monitor's Actor column named the person and drew nothing, so an operator
+        // scanning a page of events had to read every row to see who was behind it. An event with no
+        // actor is the system, and the view says so in words rather than being handed a stand-in face.
+        private async Task<Dictionary<int, (string Name, string? Avatar)>> ResolveActorNamesAsync(
+            IEnumerable<int?> ids, CancellationToken cancellationToken)
         {
             var list = ids.Where(i => i.HasValue).Select(i => i!.Value).Distinct().ToList();
-            if (list.Count == 0) return new Dictionary<int, string>();
+            if (list.Count == 0) return new Dictionary<int, (string, string?)>();
             bool isArabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
             var rows = await _db.Employee.AsNoTracking().Where(e => list.Contains(e.ID))
-                .Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync(cancellationToken);
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage }).ToListAsync(cancellationToken);
             return rows.ToDictionary(r => r.ID,
-                r => (isArabic ? (r.FullName ?? r.FullNameEn) : (r.FullNameEn ?? r.FullName)) ?? ("#" + r.ID));
+                r => ((isArabic ? (r.FullName ?? r.FullNameEn) : (r.FullNameEn ?? r.FullName)) ?? ("#" + r.ID),
+                      string.IsNullOrWhiteSpace(r.ProfileImage) ? null : r.ProfileImage));
         }
 
         private static string? Summarise(string? error)

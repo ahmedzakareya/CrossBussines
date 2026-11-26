@@ -41,6 +41,7 @@
 	}
 	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 	@await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/hyper-lane.css" asp-append-version="true" />
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" class="app-default" data-kt-app-page-loading="on">
 	<script>var defaultThemeMode = "light"; var themeMode; if (document.documentElement) { if (document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if (localStorage.getItem("data-bs-theme") !== null) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
@@ -57,7 +58,7 @@
 							<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" class="h-28px theme-light-show" asp-append-version="true" />
 <img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark" class="h-28px theme-dark-show" asp-append-version="true" />
 						</a>
-						<span class="badge badge-light-warning fw-semibold fs-7"><i class="ki-outline ki-basket fs-7 me-1"></i>@(isAr ? "هايبر ماركت" : "Hypermarket")</span>
+						<span class="badge badge-light-primary fw-semibold fs-7"><i class="ki-outline ki-basket fs-7 me-1"></i>@(isAr ? "هايبر ماركت" : "Hypermarket")</span>
 						@if (!string.IsNullOrEmpty(ctx?.BranchName))
 						{
 							<span class="badge badge-light-primary fw-semibold fs-7"><i class="ki-outline ki-geolocation fs-7 me-1"></i>@ctx?.BranchName</span>
@@ -115,5 +116,6 @@
 	<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
 	<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
 	@await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/hyper-lane-keys.js" asp-append-version="true"></script>
 </body>
 </html>

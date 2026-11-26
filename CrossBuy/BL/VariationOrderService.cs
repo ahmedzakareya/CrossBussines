@@ -1,5 +1,7 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
+using CrossBuy.Models.Context.Construction;
+using CrossBuy.BL.Construction;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -43,7 +45,8 @@ namespace CrossBuy.BL
 	public class VariationOrderService : IVariationOrderService
 	{
 		private readonly CrossDbContext _db;
-		public VariationOrderService(CrossDbContext db) { _db = db; }
+		private readonly ICommercialRevisionService _revisions;
+		public VariationOrderService(CrossDbContext db, ICommercialRevisionService revisions) { _db = db; _revisions = revisions; }
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		public Task<List<VariationOrder>> GetForProjectAsync(int companyId, int projectId) =>
@@ -115,38 +118,73 @@ namespace CrossBuy.BL
 			if (vo == null) return (false, "Variation order not found");
 			if (vo.Status != "Draft") return (false, "The variation order is already approved");
 			if (vo.Lines.Count == 0) return (false, "The variation order has no lines");
+			if (string.IsNullOrWhiteSpace(vo.Reason)) return (false, "A reason is required to approve a variation order");
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var adjusted = new List<(VariationOrderLine Line, BoqItem Item)>();
+			foreach (var line in vo.Lines.Where(l => l.Kind == "Adjust"))
+			{
+				if (line.BoqItemId is not > 0) return (false, "An amended line must reference an existing BOQ item");
+				var item = await _db.BoqItems.FirstOrDefaultAsync(b => b.ID == line.BoqItemId && b.ProjectId == vo.ProjectId && b.CompanyID == companyId);
+				if (item == null) return (false, $"The amended line #{line.BoqItemId} was not found");
+				adjusted.Add((line, item));
+			}
 
 			int sort = ((await _db.BoqItems.Where(b => b.CompanyID == companyId && b.ProjectId == vo.ProjectId).Select(b => (int?)b.SortOrder).MaxAsync()) ?? 0) + 1;
-			decimal total = 0m;
-			foreach (var l in vo.Lines)
+			var addedItems = new List<BoqItem>();
+			foreach (var line in vo.Lines.Where(l => l.Kind != "Adjust"))
 			{
-				if (l.Kind == "Adjust" && l.BoqItemId > 0)
+				var item = new BoqItem
 				{
-					var it = await _db.BoqItems.FirstOrDefaultAsync(b => b.ID == l.BoqItemId!.Value && b.ProjectId == vo.ProjectId && b.CompanyID == companyId);
-					if (it == null) return (false, $"The amended line #{l.BoqItemId} was not found");
-					l.OldQuantity = it.Quantity; l.OldUnitPrice = it.UnitPrice;   // re-snapshot the actual current values
-					it.Quantity = l.Quantity; it.UnitPrice = l.UnitPrice;
-					if (l.MaterialCost.HasValue) it.MaterialCost = l.MaterialCost;
-					if (l.LaborCost.HasValue) it.LaborCost = l.LaborCost;
-					if (l.SubcontractCost.HasValue) it.SubcontractCost = l.SubcontractCost;
-					if (l.EquipmentCost.HasValue) it.EquipmentCost = l.EquipmentCost;
-				}
-				else
-				{
-					_db.BoqItems.Add(new BoqItem
-					{
-						CompanyID = companyId, ProjectId = vo.ProjectId, VariationOrderId = vo.ID, SortOrder = sort++,
-						Code = l.Code, Description = l.Description ?? "", DescriptionEn = l.DescriptionEn, Unit = l.Unit,
-						Quantity = l.Quantity, UnitPrice = l.UnitPrice,
-						MaterialCost = l.MaterialCost, LaborCost = l.LaborCost, SubcontractCost = l.SubcontractCost, EquipmentCost = l.EquipmentCost,
-						CreatedAt = DateTime.UtcNow
-					});
-				}
-				total += l.ValueChange;
+					CompanyID = companyId, ProjectId = vo.ProjectId, VariationOrderId = vo.ID, SortOrder = sort++,
+					Code = line.Code, Description = line.Description ?? "", DescriptionEn = line.DescriptionEn, Unit = line.Unit,
+					Quantity = line.Quantity, UnitPrice = line.UnitPrice,
+					MaterialCost = line.MaterialCost, LaborCost = line.LaborCost, SubcontractCost = line.SubcontractCost, EquipmentCost = line.EquipmentCost,
+					CreatedAt = DateTime.UtcNow
+				};
+				_db.BoqItems.Add(item);
+				addedItems.Add(item);
 			}
-			vo.Value = R(total);
+
+			// The revision service accepts only approved variation sources. This status change and all BOQ/revision
+			// writes stay inside the same transaction, so no partially approved change can escape.
 			vo.Status = "Approved"; vo.ApprovedAt = DateTime.UtcNow; vo.ApprovedBy = userId;
-			await _db.SaveChangesAsync();   // NO journal entry
+			await _db.SaveChangesAsync();
+
+			var opened = await _revisions.OpenAsync(companyId, vo.ProjectId, null,
+				CommercialRevisionSource.Variation, vo.ID, vo.ApprovedAt!.Value,
+				userId);
+			if (!opened.ok) return (false, opened.error);
+
+			foreach (var (line, item) in adjusted)
+			{
+				line.OldQuantity = item.Quantity;
+				line.OldUnitPrice = item.UnitPrice;
+				var staged = await _revisions.StageLineChangeAsync(companyId, opened.revisionId,
+					item.ID, line.Quantity, line.UnitPrice, $"Variation order VO-{vo.VoNo}");
+				if (!staged.ok) return (false, staged.error);
+				if (line.MaterialCost.HasValue) item.MaterialCost = line.MaterialCost;
+				if (line.LaborCost.HasValue) item.LaborCost = line.LaborCost;
+				if (line.SubcontractCost.HasValue) item.SubcontractCost = line.SubcontractCost;
+				if (line.EquipmentCost.HasValue) item.EquipmentCost = line.EquipmentCost;
+			}
+			foreach (var item in addedItems)
+			{
+				var staged = await _revisions.StageLineChangeAsync(companyId, opened.revisionId,
+					item.ID, item.Quantity, item.UnitPrice, $"New line from variation order VO-{vo.VoNo}");
+				if (!staged.ok) return (false, staged.error);
+			}
+
+			var approved = await _revisions.ApproveAsync(companyId, opened.revisionId, userId, vo.Reason);
+			if (!approved.ok) return (false, approved.error);
+
+			// Recalculate the VO amount from the actual values at approval time; a draft may have become stale.
+			var adjustmentImpact = await _db.CommercialRevisionLines
+				.Where(l => l.CommercialRevisionId == opened.revisionId && l.BoqItemId != null)
+				.SumAsync(l => (decimal?)l.ValueImpact) ?? 0m;
+			vo.Value = R(addedItems.Sum(i => i.Quantity * i.UnitPrice) + adjustmentImpact);
+			await _db.SaveChangesAsync();
+			await tx.CommitAsync();	// operational/commercial only; no journal entry
 			return (true, null);
 		}
 

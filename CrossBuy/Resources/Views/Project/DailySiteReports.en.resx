@@ -1,0 +1,176 @@
+<root>
+  <data name="Daily site reports" xml:space="preserve"><value>Daily site reports</value></data>
+  <data name="Projects" xml:space="preserve"><value>Projects</value></data>
+  <data name="This report records site evidence. It does not post inventory or accounting entries." xml:space="preserve"><value>This report records site evidence. It does not post inventory or accounting entries.</value></data>
+  <data name="Create daily report" xml:space="preserve"><value>Create daily report</value></data>
+  <data name="Create an active construction site before recording a report." xml:space="preserve"><value>Create an active construction site before recording a report.</value></data>
+  <data name="Site" xml:space="preserve"><value>Site</value></data>
+  <data name="Choose a site" xml:space="preserve"><value>Choose a site</value></data>
+  <data name="Report date" xml:space="preserve"><value>Report date</value></data>
+  <data name="Weather" xml:space="preserve"><value>Weather</value></data>
+  <data name="Temperature °C" xml:space="preserve"><value>Temperature °C</value></data>
+  <data name="Work start" xml:space="preserve"><value>Work start</value></data>
+  <data name="Work end" xml:space="preserve"><value>Work end</value></data>
+  <data name="Total working hours" xml:space="preserve"><value>Total working hours</value></data>
+  <data name="Shifts" xml:space="preserve"><value>Shifts</value></data>
+  <data name="Rain stopped work" xml:space="preserve"><value>Rain stopped work</value></data>
+  <data name="Plan for next day" xml:space="preserve"><value>Plan for next day</value></data>
+  <data name="General remarks" xml:space="preserve"><value>General remarks</value></data>
+  <data name="Save draft" xml:space="preserve"><value>Save draft</value></data>
+  <data name="Reports" xml:space="preserve"><value>Reports</value></data>
+  <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Work hours" xml:space="preserve"><value>Work hours</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="No daily site reports yet." xml:space="preserve"><value>No daily site reports yet.</value></data>
+  <data name="Submitted for review" xml:space="preserve"><value>Submitted for review</value></data>
+  <data name="Submit" xml:space="preserve"><value>Submit</value></data>
+  <data name="Review" xml:space="preserve"><value>Review</value></data>
+  <data name="Approve" xml:space="preserve"><value>Approve</value></data>
+  <data name="Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Submitted" xml:space="preserve"><value>Submitted</value></data>
+  <data name="Reviewed" xml:space="preserve"><value>Reviewed</value></data>
+  <data name="Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="Saved" xml:space="preserve"><value>Saved</value></data>
+  <data name="InvalidReport" xml:space="preserve"><value>The report details are invalid.</value></data>
+  <data name="SiteNotAvailable" xml:space="preserve"><value>The selected site is unavailable.</value></data>
+  <data name="ReportAlreadyExists" xml:space="preserve"><value>A report already exists for this site and date.</value></data>
+  <data name="InvalidTransition" xml:space="preserve"><value>This workflow action is invalid.</value></data>
+  <data name="NotFound" xml:space="preserve"><value>The report was not found.</value></data>
+  <data name="ConcurrencyConflict" xml:space="preserve"><value>The report changed. Refresh the page and try again.</value></data>
+  <data name="SeparateReviewerRequired" xml:space="preserve"><value>The creator cannot review their own report.</value></data>
+  <data name="SeparateApproverRequired" xml:space="preserve"><value>The reviewer cannot approve the same report.</value></data>
+  <data name="ApprovedReportIsImmutable" xml:space="preserve"><value>An approved report cannot be changed.</value></data>
+  <data name="OnlyCreatorCanSubmit" xml:space="preserve"><value>Only the report creator can submit this draft.</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>You are not authorized to perform this action.</value></data>
+  <data name="Site resources" xml:space="preserve"><value>Site resources</value></data>
+  <data name="Manpower" xml:space="preserve"><value>Manpower</value></data>
+  <data name="Regular" xml:space="preserve"><value>Regular</value></data>
+  <data name="Overtime" xml:space="preserve"><value>Overtime</value></data>
+  <data name="Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Own employee" xml:space="preserve"><value>Own employee</value></data>
+  <data name="Subcontractor" xml:space="preserve"><value>Subcontractor</value></data>
+  <data name="Trade" xml:space="preserve"><value>Trade</value></data>
+  <data name="Employee" xml:space="preserve"><value>Employee</value></data>
+  <data name="Subcontract" xml:space="preserve"><value>Subcontract</value></data>
+  <data name="Headcount" xml:space="preserve"><value>Headcount</value></data>
+  <data name="WBS" xml:space="preserve"><value>WBS</value></data>
+  <data name="Regular hours" xml:space="preserve"><value>Regular hours</value></data>
+  <data name="Overtime hours" xml:space="preserve"><value>Overtime hours</value></data>
+  <data name="Add manpower" xml:space="preserve"><value>Add manpower</value></data>
+  <data name="Equipment" xml:space="preserve"><value>Equipment</value></data>
+  <data name="Owned asset" xml:space="preserve"><value>Owned asset</value></data>
+  <data name="Rental subcontract" xml:space="preserve"><value>Rental subcontract</value></data>
+  <data name="Rental equipment description" xml:space="preserve"><value>Rental equipment description</value></data>
+  <data name="Operator" xml:space="preserve"><value>Operator</value></data>
+  <data name="Working hours" xml:space="preserve"><value>Working hours</value></data>
+  <data name="Idle hours" xml:space="preserve"><value>Idle hours</value></data>
+  <data name="Downtime hours" xml:space="preserve"><value>Downtime hours</value></data>
+  <data name="Downtime reason" xml:space="preserve"><value>Downtime reason</value></data>
+  <data name="Meter start" xml:space="preserve"><value>Meter start</value></data>
+  <data name="Meter end" xml:space="preserve"><value>Meter end</value></data>
+  <data name="Fuel quantity" xml:space="preserve"><value>Fuel quantity</value></data>
+  <data name="Add equipment" xml:space="preserve"><value>Add equipment</value></data>
+  <data name="InvalidManpowerLine" xml:space="preserve"><value>Invalid manpower details.</value></data>
+  <data name="InvalidEquipmentLine" xml:space="preserve"><value>Invalid equipment details.</value></data>
+  <data name="DraftOwnerRequired" xml:space="preserve"><value>Only the draft creator can add site resources.</value></data>
+  <data name="EmployeeNotAvailable" xml:space="preserve"><value>The selected employee is unavailable.</value></data>
+  <data name="SubcontractNotAvailable" xml:space="preserve"><value>The selected subcontract is unavailable.</value></data>
+  <data name="WbsNodeNotAvailable" xml:space="preserve"><value>The selected WBS node is unavailable.</value></data>
+  <data name="AssetNotAvailable" xml:space="preserve"><value>The selected asset is unavailable.</value></data>
+  <data name="Executed quantities" xml:space="preserve"><value>Executed quantities</value></data>
+  <data name="BOQ item" xml:space="preserve"><value>BOQ item</value></data>
+  <data name="Quantity executed" xml:space="preserve"><value>Quantity executed</value></data>
+  <data name="Location / level" xml:space="preserve"><value>Location / level</value></data>
+  <data name="Remarks" xml:space="preserve"><value>Remarks</value></data>
+  <data name="Add quantity" xml:space="preserve"><value>Add quantity</value></data>
+  <data name="BoqItemNotAvailable" xml:space="preserve"><value>The selected BOQ item is unavailable.</value></data>
+  <data name="InvalidQuantityLine" xml:space="preserve"><value>Invalid quantity details.</value></data>
+  <data name="Materials received / consumed" xml:space="preserve"><value>Materials received / consumed</value></data>
+  <data name="Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Consumed" xml:space="preserve"><value>Consumed</value></data>
+  <data name="Posted receipt line" xml:space="preserve"><value>Posted receipt line</value></data>
+  <data name="Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Delivery note" xml:space="preserve"><value>Delivery note</value></data>
+  <data name="Record receipt evidence" xml:space="preserve"><value>Record receipt evidence</value></data>
+  <data name="Posted project issue line" xml:space="preserve"><value>Posted project issue line</value></data>
+  <data name="Record consumption evidence" xml:space="preserve"><value>Record consumption evidence</value></data>
+  <data name="MaterialSourceNotAvailable" xml:space="preserve"><value>The inventory source line is unavailable for this project.</value></data>
+  <data name="MaterialQuantityExceedsSource" xml:space="preserve"><value>The recorded quantity exceeds the remaining source quantity.</value></data>
+  <data name="InvalidMaterialLine" xml:space="preserve"><value>Invalid material evidence details.</value></data>
+  <data name="Delays, blockers and incidents" xml:space="preserve"><value>Delays, blockers and incidents</value></data>
+  <data name="Event type" xml:space="preserve"><value>Event type</value></data>
+  <data name="Delay" xml:space="preserve"><value>Delay</value></data>
+  <data name="Blocker" xml:space="preserve"><value>Blocker</value></data>
+  <data name="Incident" xml:space="preserve"><value>Incident</value></data>
+  <data name="Severity" xml:space="preserve"><value>Severity</value></data>
+  <data name="Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="High" xml:space="preserve"><value>High</value></data>
+  <data name="Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Responsible party" xml:space="preserve"><value>Responsible party</value></data>
+  <data name="Started at" xml:space="preserve"><value>Started at</value></data>
+  <data name="Ended at" xml:space="preserve"><value>Ended at</value></data>
+  <data name="Needed by" xml:space="preserve"><value>Needed by</value></data>
+  <data name="Requires follow-up" xml:space="preserve"><value>Requires follow-up</value></data>
+  <data name="Add event" xml:space="preserve"><value>Add event</value></data>
+  <data name="InvalidEvent" xml:space="preserve"><value>Invalid event details.</value></data>
+  <data name="Photos and attachments" xml:space="preserve"><value>Photos and attachments</value></data>
+  <data name="Company library file" xml:space="preserve"><value>Company library file</value></data>
+  <data name="Choose a file" xml:space="preserve"><value>Choose a file</value></data>
+  <data name="Caption" xml:space="preserve"><value>Caption</value></data>
+  <data name="Attach file" xml:space="preserve"><value>Attach file</value></data>
+  <data name="InvalidAttachment" xml:space="preserve"><value>Invalid attachment details.</value></data>
+  <data name="AttachmentNotAvailable" xml:space="preserve"><value>The file is not available in your company library.</value></data>
+  <data name="AttachmentAlreadyAdded" xml:space="preserve"><value>This file is already attached to the report.</value></data>
+  <data name="UnsupportedAttachmentType" xml:space="preserve"><value>Unsupported file type. Use a JPG, PNG, WebP image, or PDF.</value></data>
+  <data name="AttachmentUploadFailed" xml:space="preserve"><value>The attachment could not be uploaded and added to the report.</value></data>
+  <data name="Upload site photo or PDF" xml:space="preserve"><value>Upload site photo or PDF</value></data>
+  <data name="Upload and attach" xml:space="preserve"><value>Upload and attach</value></data>
+  <data name="Accepted files: JPG, PNG, WebP, PDF. Maximum 20 MB." xml:space="preserve"><value>Accepted: JPG, PNG, WebP, PDF. Maximum 20 MB.</value></data>
+  <data name="Visitors" xml:space="preserve"><value>Visitors</value></data>
+  <data name="Visitor name" xml:space="preserve"><value>Visitor name</value></data>
+  <data name="Organisation" xml:space="preserve"><value>Organisation</value></data>
+  <data name="Visit purpose" xml:space="preserve"><value>Visit purpose</value></data>
+  <data name="Time in" xml:space="preserve"><value>Time in</value></data>
+  <data name="Time out" xml:space="preserve"><value>Time out</value></data>
+  <data name="Add visitor" xml:space="preserve"><value>Add visitor</value></data>
+  <data name="Site instructions" xml:space="preserve"><value>Site instructions</value></data>
+  <data name="Instruction source" xml:space="preserve"><value>Instruction source</value></data>
+  <data name="Instruction reference" xml:space="preserve"><value>Instruction reference</value></data>
+  <data name="Instruction description" xml:space="preserve"><value>Instruction description</value></data>
+  <data name="Consultant" xml:space="preserve"><value>Consultant</value></data>
+  <data name="Client" xml:space="preserve"><value>Client</value></data>
+  <data name="Internal" xml:space="preserve"><value>Internal</value></data>
+  <data name="Recording an instruction here does not create an RFI or variation." xml:space="preserve"><value>Recording an instruction here does not create an RFI or variation.</value></data>
+  <data name="InvalidVisitor" xml:space="preserve"><value>Invalid visitor details.</value></data>
+  <data name="InvalidInstruction" xml:space="preserve"><value>Invalid instruction details.</value></data>
+  <data name="Kind" xml:space="preserve"><value>Kind</value></data>
+  <data name="Document" xml:space="preserve"><value>Document</value></data>
+  <data name="Photo" xml:space="preserve"><value>Photo</value></data>
+  <data name="Photo taken at" xml:space="preserve"><value>Photo taken at</value></data>
+  <data name="Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Photo metadata only applies to image uploads." xml:space="preserve"><value>Photo metadata applies to image uploads only.</value></data>
+  <data name="Amendment revision" xml:space="preserve"><value>Amendment revision</value></data>
+  <data name="Amendment reason" xml:space="preserve"><value>Amendment reason</value></data>
+  <data name="Create amendment" xml:space="preserve"><value>Create amendment</value></data>
+  <data name="Amends report" xml:space="preserve"><value>Amends report</value></data>
+  <data name="InvalidAmendment" xml:space="preserve"><value>A reason is required and may contain up to 1,000 characters.</value></data>
+  <data name="AmendmentRequiresApprovedReport" xml:space="preserve"><value>Only an approved report can be amended.</value></data>
+  <data name="AmendmentAlreadyExists" xml:space="preserve"><value>A later amendment already exists for this report.</value></data>
+  <data name="AmendmentDraftOnly" xml:space="preserve"><value>Only the author can change lines or details in their own draft amendment.</value></data>
+  <data name="AmendmentLineNotFound" xml:space="preserve"><value>The selected line was not found in this amendment.</value></data>
+  <data name="Update amendment details" xml:space="preserve"><value>Update amendment details</value></data>
+  <data name="Save amendment details" xml:space="preserve"><value>Save amendment details</value></data>
+  <data name="Change reason" xml:space="preserve"><value>Reason for this change</value></data>
+  <data name="Replace a copied line" xml:space="preserve"><value>Replace a copied line</value></data>
+  <data name="Choose copied line" xml:space="preserve"><value>Choose copied line</value></data>
+  <data name="Choose a line" xml:space="preserve"><value>Choose a line</value></data>
+  <data name="Remove from amendment" xml:space="preserve"><value>Remove from amendment</value></data>
+</root>
+
+
+
+
+

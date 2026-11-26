@@ -184,14 +184,23 @@ namespace CrossBuy.Tests
             Assert.True(scope.IsComplete);
             Assert.True(scope.Covers(DevScope));
 
-            // The gitignored per-machine file is checked when it exists. Skipped rather than asserted
-            // absent: CI has no such file, and a test that failed there would be testing the checkout.
+            // The gitignored per-machine file is cross-checked only when it actually PARTICIPATES in the
+            // provider configuration. The condition used to be File.Exists alone, which was the wrong
+            // question: on 2026-11-10 the file was present but carried no OpenAi section at all, so the test
+            // failed on a machine fact rather than on anything about the code - and the assertions that
+            // matter (the scope above, resolved from DevelopmentConfig) had all passed.
+            //
+            // Its own comment already had the right reasoning for CI: "a test that failed there would be
+            // testing the checkout". A file with no provider section is the same case as no file.
             var devFile = Path.Combine(RepoRoot(), "CrossBuy", "appsettings.Development.json");
             if (File.Exists(devFile))
             {
                 var text = File.ReadAllText(devFile);
-                Assert.Contains(RealDevelopmentProjectId, text, StringComparison.Ordinal);
-                Assert.DoesNotContain(RealProductionProjectId, text, StringComparison.Ordinal);
+                if (text.Contains(OpenAiOptions.ConfigRoot, StringComparison.Ordinal))
+                {
+                    Assert.Contains(RealDevelopmentProjectId, text, StringComparison.Ordinal);
+                    Assert.DoesNotContain(RealProductionProjectId, text, StringComparison.Ordinal);
+                }
             }
         }
 

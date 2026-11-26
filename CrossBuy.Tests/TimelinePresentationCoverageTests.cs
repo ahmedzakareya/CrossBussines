@@ -76,19 +76,24 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void JournalEntry_Reversed_is_blocked_by_the_capability_flag_and_NOT_by_presentation()
+        public void JournalEntry_Reversed_now_has_BOTH_a_presentation_and_the_capability()
         {
-            // The whole point of family A. If this ever starts failing because the presentation went
-            // missing, the diagnosis in the file header is wrong and the 77 rows have a second cause.
+            // FAMILY A IS CLOSED. The presentation was never the problem - that half of this assertion
+            // is unchanged, and it is what proved the gap was capability rather than coverage.
             Assert.True(TimelineEventPresenter.TryPresent(
                 JournalEntryEvents.Reversed, 1, null, out _, out var error), error);
 
             using var host = new PlatformTestHost();
             var definition = host.Registry().GetDefinition(EntityRegistry.JournalEntry);
 
-            // Deliberate, and asserted elsewhere too (Slice3JournalReversalTests): no journal-entry
-            // timeline screen exists. This is the ONLY reason those 77 rows are still terminal.
-            Assert.False(definition.SupportsTimeline);
+            // The other half has flipped, by the first of the two exits the consumer's own message
+            // names: "either enable the capability or stop producing the event". Accounting/JournalEntry
+            // now renders the timeline, so the capability has a screen behind it and the cause of those
+            // 77 terminal rows is gone for every reversal recorded from here on.
+            //
+            // THE ROWS THEMSELVES ARE NOT RETRIED by this change. They sit at Attempts = MaxAttempts and
+            // stay terminal; what ends is the production of new ones.
+            Assert.True(definition.SupportsTimeline);
         }
 
         // ----------------------------------------------------------------------------------------
@@ -169,16 +174,32 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public async Task The_consumer_still_refuses_JournalEntry_Reversed_and_names_the_capability()
+        public async Task The_consumer_now_accepts_JournalEntry_Reversed()
         {
             using var host = new PlatformTestHost();
             var consumer = Consumer(host);
 
-            var ex = await Assert.ThrowsAsync<BusinessEventContractException>(() =>
-                consumer.HandleAsync(Envelope(EntityRegistry.JournalEntry, JournalEntryEvents.Reversed)));
+            // It used to throw, naming "SupportsTimeline is false". That was the whole of family A, and
+            // enabling the capability is what ends it: the same envelope the consumer refused 77 times
+            // is now handled.
+            await consumer.HandleAsync(Envelope(EntityRegistry.JournalEntry, JournalEntryEvents.Reversed));
+        }
 
-            // The REASON is the assertion. If this ever changes to a presentation complaint, family A has
-            // regressed into family B and the recovery plan for those 77 rows no longer applies.
+        // THE REFUSAL ITSELF MUST STILL WORK, and it is worth its own test now that JournalEntry no
+        // longer demonstrates it. The rule was never about journals - it reads SupportsTimeline off
+        // whatever entity arrives - so it is proved here by one whose capability really is off, and
+        // the message is still the assertion: a presentation complaint instead would mean the guard
+        // has regressed into family B.
+        [Fact]
+        public async Task The_consumer_refuses_an_entity_whose_timeline_is_off_and_names_the_capability()
+        {
+            using var host = new PlatformTestHost();
+            var consumer = Consumer(host);
+            Assert.False(host.Registry().GetDefinition(EntityRegistry.Quotation).SupportsTimeline);
+
+            var ex = await Assert.ThrowsAsync<BusinessEventContractException>(() =>
+                consumer.HandleAsync(Envelope(EntityRegistry.Quotation, QuotationEvents.AcceptedByCustomer)));
+
             Assert.Contains("SupportsTimeline is false", ex.Message, StringComparison.Ordinal);
             Assert.DoesNotContain(NoPresentation, ex.Message, StringComparison.Ordinal);
         }

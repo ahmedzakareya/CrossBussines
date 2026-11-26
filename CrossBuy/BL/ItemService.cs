@@ -53,6 +53,7 @@ namespace CrossBuy.BL
 		public bool TrackSerial { get; set; }
 		public bool IsWeighted { get; set; }                  // HM-3
 		public int? ScaleCode { get; set; }                   // HM-3
+		public int? MinAgeYears { get; set; }                 // HM-AGE: age bar in years; null = unrestricted
 		public int? DefaultTaxCodeId { get; set; }
 		public decimal? SalesPrice { get; set; }
 		public decimal? MinMarginPct { get; set; }
@@ -433,6 +434,7 @@ namespace CrossBuy.BL
 				BaseUoMId = x.BaseUoMId, PurchaseUoMId = x.PurchaseUoMId, SalesUoMId = x.SalesUoMId,
 				CostingMethod = x.CostingMethod, TrackBatch = x.TrackBatch, TrackExpiry = x.TrackExpiry, TrackSerial = x.TrackSerial,
 				IsWeighted = x.IsWeighted, ScaleCode = x.ScaleCode,   // HM-3
+				MinAgeYears = x.MinAgeYears,   // HM-AGE
 				DefaultTaxCodeId = x.DefaultTaxCodeId, SalesPrice = x.SalesPrice, MinMarginPct = x.MinMarginPct, OpeningCost = x.OpeningCost,
 				ImagePath = x.ImagePath,
 				StoreOldPrice = x.StoreOldPrice, StoreBadge = x.StoreBadge, StoreRating = x.StoreRating, StoreVendor = x.StoreVendor, StoreHoverImage = x.StoreHoverImage,
@@ -468,6 +470,7 @@ namespace CrossBuy.BL
 			item.PurchaseUoMId = x.PurchaseUoMId; item.SalesUoMId = x.SalesUoMId; item.CostingMethod = x.CostingMethod;
 			item.TrackBatch = x.TrackBatch; item.TrackExpiry = x.TrackExpiry; item.TrackSerial = x.TrackSerial;
 			item.IsWeighted = x.IsWeighted; item.ScaleCode = x.ScaleCode;   // HM-3
+			item.MinAgeYears = x.MinAgeYears;   // HM-AGE
 			item.DefaultTaxCodeId = x.DefaultTaxCodeId; item.SalesPrice = x.SalesPrice; item.MinMarginPct = x.MinMarginPct; item.OpeningCost = x.OpeningCost;
 			if (!string.IsNullOrEmpty(x.ImagePath)) item.ImagePath = x.ImagePath;
 			item.StoreOldPrice = x.StoreOldPrice; item.StoreBadge = x.StoreBadge; item.StoreRating = x.StoreRating; item.StoreVendor = x.StoreVendor;

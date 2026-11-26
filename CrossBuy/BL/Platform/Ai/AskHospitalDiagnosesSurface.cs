@@ -57,7 +57,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"التشخيصات المسجَّلة على الكشوف: إيه أكتر الأمراض، وتوزيعها على الأقسام والأطباء والشهور",
-			"The diagnoses recorded on consultations: the commonest conditions and how they fall across departments, practitioners and months");
+			"The diagnoses recorded on consultations: the commonest conditions and how they fall across departments, practitioners and months",
+			"Diagnostics enregistrés lors des consultations : les plus fréquents et leur répartition par service, praticien et mois");
 
 		public override AskText Rules => AskText.Of(
 			"كل سطر هنا تشخيص واحد اتكتب على كشف · الزيارة الواحدة ممكن تحمل أكتر من تشخيص، "
@@ -82,35 +83,35 @@ namespace CrossBuy.BL.Platform.Ai
 			// named-value filter from ever looking for it, and the question about one of them gets
 			// answered with the total of all of them. That shape has cost this layer five wrong
 			// answers; it is not repeated here.
-			new AskColumn { Name = "rank", Kind = AskColumnKind.Dimension, Label = AskText.Of("ترتيب التشخيص", "Diagnosis rank"),
+			new AskColumn { Name = "rank", Kind = AskColumnKind.Dimension, Label = AskText.Of("ترتيب التشخيص", "Diagnosis rank", "Rang du diagnostic"),
 				Synonyms = new[] { "ترتيب", "الترتيب", "ترتيب التشخيص", "rank", "ranking", "diagnosis rank" } },
 			// Labelled «التوقيع» and not «توقيع الكشف» on purpose: the longer label would have made
 			// "كشف" a word this surface claims, and «كام كشف» would then have been read as naming
 			// THIS column instead of asking the question the caveat exists to answer.
-			new AskColumn { Name = "signoff", Kind = AskColumnKind.Dimension, Label = AskText.Of("التوقيع", "Sign-off"),
+			new AskColumn { Name = "signoff", Kind = AskColumnKind.Dimension, Label = AskText.Of("التوقيع", "Sign-off", "Validation"),
 				Synonyms = new[] { "توقيع", "التوقيع", "sign off", "signoff", "signature" } },
-			new AskColumn { Name = "visit", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الزيارة", "Visit type"),
+			new AskColumn { Name = "visit", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الزيارة", "Visit type", "Type de visite"),
 				Synonyms = new[] { "نوع الزيارة", "نوع الكشف", "visit type", "kind of visit" } },
-			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department"),
+			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department", "Service"),
 				Synonyms = new[] { "قسم", "القسم", "اقسام", "الاقسام", "حسب القسم",
 					"department", "departments", "by department" } },
-			new AskColumn { Name = "practitioner", Kind = AskColumnKind.Dimension, Label = AskText.Of("الطبيب", "Practitioner"),
+			new AskColumn { Name = "practitioner", Kind = AskColumnKind.Dimension, Label = AskText.Of("الطبيب", "Practitioner", "Praticien"),
 				Synonyms = new[] { "طبيب", "الطبيب", "دكتور", "الدكتور", "حسب الطبيب",
 					"doctor", "practitioner", "by doctor", "per doctor" } },
-			new AskColumn { Name = "diagnosis", Kind = AskColumnKind.Dimension, Label = AskText.Of("التشخيص", "Diagnosis"),
+			new AskColumn { Name = "diagnosis", Kind = AskColumnKind.Dimension, Label = AskText.Of("التشخيص", "Diagnosis", "Diagnostic"),
 				Synonyms = new[] { "تشخيص", "التشخيص", "تشخيصات", "التشخيصات", "حسب التشخيص",
 					"مرض", "المرض", "امراض", "الامراض", "تشخيصا",
 					"diagnosis", "diagnoses", "condition", "conditions", "disease", "diseases",
 					"by diagnosis", "icd", "icd10" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
 			// THE ONE MEASURE, AND IT CARRIES NO DIAGNOSIS WORD. "تشخيصات" belongs to the DIMENSION
 			// above, so «عدد التشخيصات» reads as "count, grouped by diagnosis" — which is the table
 			// the asker wanted — instead of collapsing to a single number with no breakdown.
-			new AskColumn { Name = "diagnoses", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد التشخيصات", "Diagnoses"),
+			new AskColumn { Name = "diagnoses", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد التشخيصات", "Diagnoses", "Diagnostics"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "حالة", "حالات", "الحالات",
 					"count", "how many", "cases", "case" } },
 		};

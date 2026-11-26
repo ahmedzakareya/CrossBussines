@@ -719,6 +719,8 @@ BEGIN
         TitleEn               NVARCHAR(300)  NOT NULL,
         BodyAr                NVARCHAR(MAX)  NOT NULL,
         BodyEn                NVARCHAR(MAX)  NOT NULL,
+        TitleFr               NVARCHAR(300)  NULL,
+        BodyFr                NVARCHAR(MAX)  NULL,
         Url                   NVARCHAR(400)  NULL,
         DedupKey              NVARCHAR(160)  NOT NULL,
         ReadAt                DATETIME2      NULL,
@@ -735,6 +737,13 @@ BEGIN
     PRINT 'CREATED dbo.CommNotifications';
 END
 ELSE PRINT 'dbo.CommNotifications EXISTS';
+GO
+
+-- Additive French fields: existing notification history remains valid and can use English fallback.
+IF COL_LENGTH('dbo.CommNotifications', 'TitleFr') IS NULL
+    ALTER TABLE dbo.CommNotifications ADD TitleFr NVARCHAR(300) NULL;
+IF COL_LENGTH('dbo.CommNotifications', 'BodyFr') IS NULL
+    ALTER TABLE dbo.CommNotifications ADD BodyFr NVARCHAR(MAX) NULL;
 GO
 
 -- TRUE idempotency, per company — not the legacy NotificationService's unread-noise guard. A retried transaction

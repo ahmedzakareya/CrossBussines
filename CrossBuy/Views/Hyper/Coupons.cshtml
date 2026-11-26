@@ -1,0 +1,249 @@
+@using CrossBuy.Models.Context.Pos
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var coupons = ViewBag.Coupons as List<PosCoupon> ?? new();
+    var edit = ViewBag.Edit as PosCoupon;
+    var redeemed = ViewBag.Redeemed as Dictionary<int, (int Count, decimal Total)> ?? new();
+    var dp = (int)(ViewBag.Dp ?? 2);
+    var fmt = dp > 0 ? "0." + new string('0', dp) : "0";
+    ViewData["Title"] = isAr ? "الكوبونات" : "Coupons";
+
+    var msgMap = new Dictionary<string, string> {
+        ["coupon-saved"] = isAr ? "حُفظ الكوبون." : "The coupon was saved.",
+        ["coupon-code-required"] = isAr ? "رمز الكوبون مطلوب." : "The coupon code is required.",
+        ["coupon-code-taken"] = isAr ? "هذا الرمز مستعمل بالفعل." : "That code is already in use.",
+        ["coupon-type-unknown"] = isAr ? "نوع الخصم غير معروف." : "Unknown discount type.",
+        ["coupon-value-positive"] = isAr ? "قيمة الخصم يجب أن تكون أكبر من صفر." : "The discount value must be greater than zero.",
+        ["coupon-percent-over-100"] = isAr ? "النسبة لا تتجاوز 100%." : "A percentage cannot exceed 100%.",
+        ["coupon-dates-reversed"] = isAr ? "تاريخ البداية بعد تاريخ النهاية." : "The start date is after the end date.",
+        ["coupon-limit-zero"] = isAr ? "اترك الحدّ فارغاً إن كان بلا حدّ — الصفر يعني «لا يُستعمل أبداً»." : "Leave a limit empty for unlimited — zero means “may never be used”.",
+        ["coupon-limit-below-used"] = isAr ? "لا يمكن خفض الحدّ تحت ما استُعمل فعلاً." : "A limit cannot go below what has already been used.",
+        ["coupon-not-found"] = isAr ? "الكوبون غير موجود." : "Coupon not found.",
+        ["no-permission"] = isAr ? "إنشاء الكوبونات يحتاج صلاحية مدير." : "Creating coupons needs manager permission."
+    };
+    Func<object, string> say = c => { var k = c as string ?? ""; return msgMap.TryGetValue(k, out var v) ? v : k; };
+
+    Func<PosCoupon, string> remaining = c =>
+        c.UsageLimit == null
+            ? (isAr ? "بلا حدّ" : "unlimited")
+            : Math.Max(0, c.UsageLimit.Value - c.UsageCount).ToString();
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (TempData["HyperMsg"] != null)
+        {
+            <div class="alert alert-success d-flex align-items-center mb-6"><i class="ki-outline ki-check-circle fs-2 me-3"></i>@say(TempData["HyperMsg"])</div>
+        }
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-danger d-flex align-items-start mb-6"><i class="ki-outline ki-information-5 fs-2 me-3 mt-1"></i><div>@say(TempData["HyperErr"])</div></div>
+        }
+
+        @* WHAT A COUPON IS HERE, stated once, because the difference from a promotion is the whole
+           reason this screen exists separately from Inventory > Promotions. *@
+        <div class="alert alert-primary d-flex align-items-start mb-6">
+            <i class="ki-outline ki-discount fs-2tx me-4 mt-1"></i>
+            <div class="min-w-0">
+                <div class="fw-bold fs-6 mb-1">@(isAr ? "الكوبون ليس عرضاً" : "A coupon is not a promotion")</div>
+                <div class="fs-7 text-gray-700" style="line-height:1.9">
+                    @(isAr
+                        ? "العرض قاعدة تسعير تُطبَّق تلقائياً على الأصناف. الكوبون رمز يُدخله الكاشير، يخصم من السلّة كلها، وله حدّ لعدد مرّات استعماله. ولهذا يعيش هنا لا في «العروض» بالمخزون."
+                        : "A promotion is a pricing rule applied automatically to items. A coupon is a code the cashier types, it discounts the whole basket, and it has a limit on how many times it may be used. That is why it lives here and not in Inventory’s promotions.")
+                    <a href="/Inventory/Promotions" class="fw-bold ms-1">@(isAr ? "العروض" : "Promotions")</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-5">
+                <form method="post" action="/hyper/coupons">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@(edit?.ID ?? 0)" />
+                    <div class="card">
+                        <div class="card-header min-h-50px align-items-center">
+                            <h3 class="card-title fs-5 fw-bold text-gray-900">
+                                @(edit == null ? (isAr ? "كوبون جديد" : "New coupon") : (isAr ? "تعديل كوبون" : "Edit coupon"))
+                            </h3>
+                            <div class="card-toolbar">
+                                @if (edit != null)
+                                {
+                                    <a href="/hyper/coupons" class="btn btn-sm btn-light me-2">@(isAr ? "جديد" : "New")</a>
+                                }
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-5"></i>@(isAr ? "حفظ" : "Save")</button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "الرمز" : "Code")</label>
+                                    <input name="code" value="@edit?.Code" maxlength="40" required class="form-control form-control-solid" style="font-variant-numeric:tabular-nums" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "الاسم" : "Name")</label>
+                                    <input name="name" value="@edit?.Name" maxlength="200" class="form-control form-control-solid" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "الاسم بالإنجليزية" : "English name")</label>
+                                    <input name="nameEn" value="@edit?.NameEn" maxlength="200" class="form-control form-control-solid" />
+                                </div>
+                                @* col-md-3 inside this narrow column squashed the select until it read "P".
+                                   A control whose value cannot be read is worse than one that is merely ugly. *@
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "النوع" : "Type")</label>
+                                    <select name="discountType" class="form-select form-select-solid">
+                                        <option value="Percent" selected="@(edit == null || edit.DiscountType == "Percent")">@(isAr ? "نسبة %" : "Percent %")</option>
+                                        <option value="Amount" selected="@(edit?.DiscountType == "Amount")">@(isAr ? "مبلغ" : "Amount")</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "القيمة" : "Value")</label>
+                                    <input name="value" type="number" step="any" min="0" value="@(edit?.Value.ToString())" required class="form-control form-control-solid" style="font-variant-numeric:tabular-nums" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "أقلّ قيمة للسلّة" : "Minimum basket")</label>
+                                    <input name="minBasket" type="number" step="any" min="0" value="@(edit?.MinBasket?.ToString())" class="form-control form-control-solid" placeholder="@(isAr ? "بلا حدّ" : "none")" style="font-variant-numeric:tabular-nums" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "أقصى خصم (للنسبة)" : "Max discount (percent only)")</label>
+                                    <input name="maxDiscount" type="number" step="any" min="0" value="@(edit?.MaxDiscount?.ToString())" class="form-control form-control-solid" placeholder="@(isAr ? "بلا سقف" : "uncapped")" style="font-variant-numeric:tabular-nums" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "صالح من" : "Valid from")</label>
+                                    <input name="validFrom" type="date" value="@(edit?.ValidFrom?.ToString("yyyy-MM-dd"))" class="form-control form-control-solid" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "صالح حتى" : "Valid to")</label>
+                                    <input name="validTo" type="date" value="@(edit?.ValidTo?.ToString("yyyy-MM-dd"))" class="form-control form-control-solid" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "حدّ الاستعمال الكلّي" : "Total usage limit")</label>
+                                    <input name="usageLimit" type="number" min="1" step="1" value="@(edit?.UsageLimit?.ToString())" class="form-control form-control-solid" placeholder="@(isAr ? "بلا حدّ" : "unlimited")" style="font-variant-numeric:tabular-nums" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-semibold fs-7 text-gray-700 mb-2">@(isAr ? "حدّ لكل عميل" : "Per-customer limit")</label>
+                                    <input name="perCustomerLimit" type="number" min="1" step="1" value="@(edit?.PerCustomerLimit?.ToString())" class="form-control form-control-solid" placeholder="@(isAr ? "بلا حدّ" : "unlimited")" style="font-variant-numeric:tabular-nums" />
+                                </div>
+
+                                @* The distinction that a zero in these boxes would destroy. *@
+                                <div class="col-12">
+                                    <div class="fs-8 text-muted" style="line-height:1.9">
+                                        @(isAr
+                                            ? "اترك الحدّ فارغاً إن كان بلا حدّ. الصفر ليس «بلا حدّ» بل «لا يُستعمل أبداً» — ولذلك تُرفض الصفر بدل تخمين أيّهما قصدت. وحدّ «لكل عميل» يُرفض على سلّة بلا عميل معرَّف، لأن حدّاً لا يمكن فرضه ليس حدّاً."
+                                            : "Leave a limit empty for unlimited. Zero is not “unlimited”, it is “may never be used” — so zero is refused rather than guessed at. A per-customer limit is also refused on a basket with no identified customer, because a limit that cannot be enforced is not a limit.")
+                                    </div>
+                                </div>
+
+                                @* Full width each: at col-md-6 in this column the longer label wrapped onto three
+                                   lines beside its box and read as broken rather than as a sentence. *@
+                                <div class="col-12">
+                                    <div class="form-check form-check-custom form-check-solid align-items-center">
+                                        <input class="form-check-input" type="checkbox" name="requiresCustomer" value="true" id="reqCust" checked="@(edit?.RequiresCustomer ?? false)" />
+                                        <label class="form-check-label fs-7 ms-2" for="reqCust">@(isAr ? "يتطلّب عميلاً معرَّفاً" : "Requires an identified customer")</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-check-custom form-check-solid align-items-center">
+                                        <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isAct" checked="@(edit?.IsActive ?? true)" />
+                                        <label class="form-check-label fs-7 ms-2" for="isAct">@(isAr ? "مفعَّل" : "Active")</label>
+                                    </div>
+                                </div>
+
+                                @if (edit != null)
+                                {
+                                    <div class="col-12">
+                                        <div class="separator separator-dashed my-2"></div>
+                                        <div class="fs-8 text-muted" style="line-height:1.9">
+                                            @(isAr
+                                                ? $"استُعمل {edit.UsageCount} مرّة. العدّاد يملكه الصندوق ولا يُكتب من هنا."
+                                                : $"Used {edit.UsageCount} time(s). The till owns that counter; it is never written from here.")
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-xl-7">
+                <div class="card">
+                    <div class="card-header min-h-50px align-items-center">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "الكوبونات" : "Coupons")</h3>
+                        <div class="card-toolbar"><span class="badge badge-light">@coupons.Count</span></div>
+                    </div>
+                    <div class="card-body pt-4">
+                        @if (coupons.Count == 0)
+                        {
+                            <div class="text-muted fs-7 py-6 text-center">@(isAr ? "لا كوبونات بعد." : "No coupons yet.")</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-3 mb-0">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                        <th class="ps-4">@(isAr ? "المتبقّي" : "Remaining")</th>
+                                        <th>@(isAr ? "الكوبون" : "Coupon")</th>
+                                        <th>@(isAr ? "الخصم" : "Discount")</th>
+                                        <th class="text-end pe-4">@(isAr ? "ما صُرف" : "Given away")</th>
+                                    </tr></thead>
+                                    <tbody class="fs-6">
+                                        @foreach (var c in coupons)
+                                        {
+                                            var r = redeemed.TryGetValue(c.ID, out var rv) ? rv : (Count: 0, Total: 0m);
+                                            var exhausted = c.UsageLimit != null && c.UsageCount >= c.UsageLimit.Value;
+                                            <tr class="@(c.IsActive ? "" : "opacity-50")">
+                                                <td class="ps-4">
+                                                    @if (exhausted)
+                                                    {
+                                                        <span class="badge badge-light-danger fw-bold">@(isAr ? "استُنفد" : "Exhausted")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="fs-4 fw-bolder text-gray-900" style="font-variant-numeric:tabular-nums">@remaining(c)</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a href="/hyper/coupons?id=@c.ID" class="fw-bold text-gray-800 text-hover-primary d-block">@(isAr ? c.Name : (c.NameEn ?? c.Name))</a>
+                                                    <span class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">@c.Code</span>
+                                                    @if (!c.IsActive)
+                                                    {
+                                                        <span class="badge badge-light fs-8 ms-1 text-muted">@(isAr ? "موقوف" : "Inactive")</span>
+                                                    }
+                                                </td>
+                                                <td class="text-gray-700" style="font-variant-numeric:tabular-nums">
+                                                    @(c.DiscountType == "Percent" ? c.Value.ToString("0.##") + "%" : c.Value.ToString(fmt))
+                                                    @if (c.PerCustomerLimit != null)
+                                                    {
+                                                        <span class="fs-8 text-muted d-block">@(isAr ? $"{c.PerCustomerLimit} لكل عميل" : $"{c.PerCustomerLimit} per customer")</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end pe-4">
+                                                    <span class="fw-bold text-gray-900 d-block" style="font-variant-numeric:tabular-nums">@r.Total.ToString(fmt)</span>
+                                                    <span class="fs-8 text-muted">@r.Count @(isAr ? "استبدال" : "redemptions")</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @* Two counters of the same campaign that legitimately differ, said plainly so nobody
+                               reports it as a bug. *@
+                            <div class="fs-8 text-muted mt-4" style="line-height:1.9">
+                                @(isAr
+                                    ? "«المتبقّي» يُحسب من عدّاد الاستعمال، و«ما صُرف» من صفوف الاستبدال الفعلية. قد يختلفان: الكوبون الذي طُبّق ثم أُزيل قبل التحصيل يعيد استعماله ولا يترك صفّ استبدال."
+                                    : "“Remaining” comes from the usage counter; “given away” comes from the actual redemption rows. They can differ: a coupon applied and then removed before settlement returns its use and leaves no redemption row.")
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

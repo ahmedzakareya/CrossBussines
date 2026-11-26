@@ -49,7 +49,8 @@ namespace CrossBuy.BL
 			return await _db.AttendancePolicies.AsNoTracking().FirstOrDefaultAsync(x => x.LeavePolicyTypeID == a.LeavePolicyTypeID);
 		}
 
-		private static bool IsWorkDay(AttendancePolicies p, DateTime d)
+		// public: the CRM booking page and sequence timing ask the same question of the same policy (CRM C6)
+		public static bool IsWorkDay(AttendancePolicies p, DateTime d)
 		{
 			return d.DayOfWeek switch
 			{

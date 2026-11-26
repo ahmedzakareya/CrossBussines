@@ -168,8 +168,17 @@ namespace CrossBuy.Models.Context.Pos
 		public DateTime? ClosedAt { get; set; }
 		// POS-4c Hold/Recall (takeaway parking): a held order stays Open (NO accounting) but is set aside
 		// so the cashier can start a new order, then recall it later. IsHeld=false = the active order.
+		// HM-26: the coupon currently applied to this basket; one at most (the unique index on
+		// PosCouponRedemptions.OrderId is what actually enforces it).
+		public int? CouponId { get; set; }
 		public bool IsHeld { get; set; } = false;
 		public DateTime? HeldAt { get; set; }
+		// HM-AGE: the proof the age gate actually ran. A gate that leaves nothing behind cannot be
+		// answered for later, so the cashier who cleared the sale, the moment, and the bar they
+		// cleared it against are all stamped on the order at payment.
+		public int? AgeVerifiedByEmployeeId { get; set; }
+		public DateTime? AgeVerifiedAtUtc { get; set; }
+		public int? AgeVerifiedMinYears { get; set; }
 		// POS-4d-2 merge: when this order's lines were merged into another, it becomes Status='Void' and points here.
 		public int? MergedIntoOrderId { get; set; }
 		// Customer link (nullable → backward-compat; null resolves to the global Walk-in at pay). Set on create.
@@ -262,6 +271,11 @@ namespace CrossBuy.Models.Context.Pos
 		public int? UoMId { get; set; }                       // HM-2: the unit this line is sold in (null = base); used at pay-time deduction
 		public decimal UnitPrice { get; set; }
 		public decimal DiscountAmount { get; set; }
+		// HM-26 — the COUPON's share of this line, deliberately NOT folded into DiscountAmount above.
+		// That column already carries the price list's and the promotion engine's decisions. Merged, a
+		// mis-keyed coupon could not be removed without restoring the line to the wrong price, because
+		// nothing would know which part of the discount belonged to which rule.
+		public decimal CouponDiscount { get; set; }
 		public decimal TaxRate { get; set; }                  // resolved from Item.DefaultTaxCodeId → else company default VAT code → else 0
 		public decimal LineTotal { get; set; }                // Qty*UnitPrice - DiscountAmount (pre-tax)
 		public string? Notes { get; set; }
@@ -444,6 +458,47 @@ namespace CrossBuy.Models.Context.Pos
 	// The chosen option's ExtraPrice is FOLDED into PosOrderLine.UnitPrice at add time (so Pay/Split price
 	// correctly with no change); this row snapshots the choice for display + drives the backflush at pay
 	// (LinkedItem × QtyDeducted × line qty issued as a 0-price invoice line via StockService). No GL/stock at setup.
+	// ===== HM-26 — COUPONS. A code the cashier enters, discounting the BASKET, with limits on how
+	// many times it may be used. Distinct from Promotion, which is an automatic PER-LINE price rule.
+	public class PosCoupon
+	{
+		public int ID { get; set; }
+		public int CompanyID { get; set; }
+		public string Code { get; set; } = "";
+		public string Name { get; set; } = "";
+		public string? NameEn { get; set; }
+		public string DiscountType { get; set; } = "Percent";   // Percent | Amount
+		public decimal Value { get; set; }
+		public int? CurrencyId { get; set; }
+		public decimal? MinBasket { get; set; }
+		public decimal? MaxDiscount { get; set; }               // caps a Percent coupon; null = uncapped
+		public DateTime? ValidFrom { get; set; }
+		public DateTime? ValidTo { get; set; }
+		// NULL = UNLIMITED in both of these. Zero would mean "may never be used" — a different statement.
+		public int? UsageLimit { get; set; }
+		public int UsageCount { get; set; }
+		public int? PerCustomerLimit { get; set; }
+		public bool RequiresCustomer { get; set; }
+		public bool IsActive { get; set; } = true;
+		public DateTime? CreatedAt { get; set; }
+		public int? CreatedBy { get; set; }
+	}
+
+	// One use. The per-customer limit is answered by COUNTING THESE ROWS rather than by a second
+	// counter, because two counters of the same fact are two facts the day one of them is missed.
+	public class PosCouponRedemption
+	{
+		public int ID { get; set; }
+		public int CompanyID { get; set; }
+		public int CouponId { get; set; }
+		public int OrderId { get; set; }
+		public int? InvoiceId { get; set; }
+		public int? CustomerId { get; set; }
+		public decimal DiscountAmount { get; set; }
+		public DateTime RedeemedAt { get; set; }
+		public int? RedeemedByEmployeeId { get; set; }
+	}
+
 	public class PosOrderLineModifier
 	{
 		public int ID { get; set; }
@@ -470,5 +525,76 @@ namespace CrossBuy.Models.Context.Pos
 		public string? Reference { get; set; }                // txn ref / approval code (card networks)
 		public int? ReceiptId { get; set; }                   // RC-6c: the AR receipt this tender created (for clean reversal)
 		public DateTime CreatedAt { get; set; }
+	}
+
+	// ===== HM-12 — RETAIL PROMOTIONS =====
+	//
+	// A promotion is a RULE OVER A BASKET, not a price on an item. "Buy 2, the cheapest is free" has no
+	// unit price to write down, and the moment one is invented the rule has to be duplicated into every
+	// screen that prices anything. One rule store, one engine, one place to change a campaign.
+	//
+	// The engine's output is PosOrderLine.DiscountAmount - a column that already existed and is already
+	// carried by RecomputeAsync into the subtotal, the tax, the invoice, AR and COGS. So promotions
+	// reach the ledger by the route a manual discount already took; no posting path is new.
+	public class PosPromotion
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int? BranchId { get; set; }                    // null = every branch of the company
+		public string Code { get; set; } = "";                // the internal tag sales reports filter on
+		public string NameAr { get; set; } = "";
+		public string NameEn { get; set; } = "";
+
+		/// PercentOff | AmountOff | BuyXGetY | ThresholdAmount
+		public string PromoType { get; set; } = "PercentOff";
+
+		public decimal TriggerQty { get; set; }               // BuyXGetY: the X
+		public decimal RewardQty { get; set; }                // BuyXGetY: the Y
+		public decimal DiscountPct { get; set; }
+		public decimal DiscountAmount { get; set; }
+		public decimal MinBasket { get; set; }                // ThresholdAmount: the basket must reach this
+
+		/// Lower runs FIRST. A fixed order is what makes two overlapping offers reproducible - without it
+		/// the same trolley can total differently on two tills and nobody can say which is right.
+		public int Priority { get; set; } = 100;
+
+		/// The stacking control. Once an exclusive rule touches a line, no further rule may: this is what
+		/// stops a coupon and a loyalty reward combining into a sale below cost.
+		public bool IsExclusive { get; set; }
+
+		/// Ceiling, as a percentage of what the rule discounts. 0 = no ceiling.
+		public decimal MaxDiscountPct { get; set; }
+
+		public DateTime? StartsAt { get; set; }
+		public DateTime? EndsAt { get; set; }
+		public bool IsActive { get; set; } = true;
+		public DateTime CreatedAt { get; set; }
+	}
+
+	/// Membership. Role separates the two halves of a mix-and-match: a Trigger is what the customer must
+	/// buy, a Reward is what gets discounted. An item may be Both (classic BOGO on one product), and a
+	/// promotion with NO rows at all is basket-wide.
+	public class PosPromotionItem
+	{
+		public int ID { get; set; }
+		public int PromotionId { get; set; }
+		public int? ItemId { get; set; }
+		public int? CategoryId { get; set; }
+		public string Role { get; set; } = "Both";            // Trigger | Reward | Both
+	}
+
+	/// WHAT ACTUALLY FIRED, per sold line, written at settlement and never derived afterwards. A campaign
+	/// renamed or ended tomorrow must not change what yesterday's receipt says was given away.
+	public class PosOrderLinePromotion
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int OrderId { get; set; }
+		public int OrderLineId { get; set; }
+		public int PromotionId { get; set; }
+		public string PromoCode { get; set; } = "";           // COPIED, not joined
+		public string PromoName { get; set; } = "";
+		public decimal Amount { get; set; }
+		public DateTime AppliedAt { get; set; }
 	}
 }

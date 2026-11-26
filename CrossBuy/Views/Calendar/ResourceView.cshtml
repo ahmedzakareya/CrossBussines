@@ -33,8 +33,29 @@
     };
 
     const int StartHour = 7, EndHour = 20;
-    var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
+
+    // THE ROWS. Half-hours, matching Timeline: these two screens are one pattern and a room whose
+    // grid is coarser than a person's would make the same booking look like two different lengths.
+    var slots = new List<DateTime>();
+    for (var t = day.AddHours(StartHour); t < day.AddHours(EndHour); t = t.AddMinutes(30)) { slots.Add(t); }
+
+    // "Finished" is a claim about now, so it is only made on the day the reader is actually in.
+    var nowUtc = DateTime.UtcNow;
+    var isToday = day.Date == DateTime.Now.Date;
+
+    // A resource is not a person, so it gets a marked glyph tile rather than a face — the documented
+    // exception to "show the person", not a silhouette standing in for one.
+    Func<string, string> kindIcon = k => k switch
+    {
+        "Room" => "ki-home-2",
+        "Vehicle" => "ki-truck",
+        "Equipment" => "ki-wrench",
+        _ => "ki-element-11",
+    };
 }
+
+@* The shared schedule grid — the same stylesheet the people timeline links. *@
+<link rel="stylesheet" href="~/css/schedule-grid.css" asp-append-version="true" />
 
 <!--begin::Toolbar-->
 @* Same responsive toolbar and same accessible names as Timeline — these two screens are one pattern
@@ -67,7 +88,18 @@
     <div class="card card-flush">
         <div class="card-header align-items-center py-4">
             <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@T("الموارد", "Resources")</h3></div>
-            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@Model.Resources.Count</span></div>
+            @* THE KEY, in the same form the people timeline carries. A grid of tinted tiles that
+               never says what a tint means is a grid nobody can read. *@
+            <div class="card-toolbar d-flex flex-wrap gap-5 align-items-center">
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch own"></span>@T("محجوز", "Booked")</span>
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch conflict"></span>@T("حجز مزدوج", "Double booked")</span>
+                @if (isToday)
+                {
+                    <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch past"></span>@T("انتهى", "Finished")</span>
+                }
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch open"></span>@T("متاح", "Open")</span>
+                <span class="badge badge-light-primary fs-7 fw-bold cb-num">@Model.Resources.Count</span>
+            </div>
         </div>
         <div class="card-body pt-0">
             @if (Model.Resources.Count == 0)
@@ -80,70 +112,66 @@
             }
             else
             {
-                @* Focusable scroll region — see Timeline.cshtml. Same grid, same rule. *@
-                <div class="table-responsive" tabindex="0" role="region"
+                @* KEYBOARD-REACHABLE SCROLL REGION — same reasoning as Timeline's: a box that scrolls
+                   but cannot be focused is unreachable without a mouse (axe scrollable-region-focusable). *@
+                <div class="cb-sched-wrap" tabindex="0" role="region"
                      aria-label="@T("شبكة ساعات الموارد", "Resource hour grid")">
-                    <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
-                        <thead>
-                            <tr class="fw-bold text-muted fs-8" style="border-bottom:2px solid #0E4A9E;">
-                                <th class="min-w-150px">@T("المورد", "Resource")</th>
-                                @foreach (var h in hours)
-                                {
-                                    <th class="text-center min-w-50px">@h.ToString("00")</th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <div class="cb-sched" style="grid-template-columns:70px repeat(@Model.Resources.Count, minmax(170px,1fr));">
+                        <div class="hd corner"></div>
+                        @foreach (var r in Model.Resources)
+                        {
+                            <div class="hd"><div class="d-flex align-items-center min-w-0">
+                                @* A resource is not a person, so it gets a marked kind tile rather than
+                                   a face — the documented exception to "show the person", not a
+                                   silhouette standing in for one. *@
+                                <div class="symbol symbol-35px symbol-circle flex-shrink-0">
+                                    <span class="symbol-label cb-initials"><i class="ki-outline @kindIcon(r.Kind) fs-5" aria-hidden="true"></i></span>
+                                </div>
+                                <div class="d-flex flex-column ms-3 min-w-0">
+                                    <span class="text-gray-900 fs-6 fw-bold text-truncate"><bdi>@r.Name</bdi></span>
+                                    <span class="text-muted fw-semibold fs-7 text-truncate">@kindLabel(r.Kind)@if (r.Capacity.HasValue) {<text> · </text>@T("يتّسع لـ", "seats")<text> </text><span class="cb-num">@r.Capacity</span>}</span>
+                                </div>
+                            </div></div>
+                        }
+                        @foreach (var slot in slots)
+                        {
+                            <div class="tm"><span class="cb-num">@slot.ToString("HH:mm")</span></div>
                             @foreach (var r in Model.Resources)
                             {
-                                @* The resource→occurrence join is done in the service, for the same
-                                   reason the timeline's is. *@
-                                var mine = r.Occurrences;
-                                <tr>
-                                    <td>
-                                        <span class="fw-semibold text-gray-900 fs-7"><bdi>@r.Name</bdi></span>
-                                        <div class="text-muted fs-8">
-                                            @kindLabel(r.Kind)@(r.Capacity.HasValue ? " · " + T("يتّسع لـ", "seats") + " " + r.Capacity : "")
-                                        </div>
-                                    </td>
-                                    @foreach (var h in hours)
-                                    {
-                                        var slotStart = day.AddHours(h).ToUniversalTime();
-                                        var slotEnd = slotStart.AddHours(1);
-                                        var hits = mine.Where(o => o.StartUtc < slotEnd && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStart).ToList();
-                                        if (hits.Count > 1)
-                                        {
-                                            @* A room booked twice in the same hour is the thing this view
-                                               exists to make visible. It is shown, not hidden behind the
-                                               first booking. *@
-                                            <td class="text-center p-1">
-                                                <a href="@eventHref(hits[0].EventId)" class="badge badge-light-danger fs-8 w-100 text-truncate d-inline-block"
-                                                   title="@string.Join(" / ", hits.Select(x => x.Title))">
-                                                    @hits.Count ⚠
-                                                </a>
-                                            </td>
-                                        }
-                                        else if (hits.Count == 1)
-                                        {
-                                            <td class="text-center p-1">
-                                                <a href="@eventHref(hits[0].EventId)" class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hits[0].Title">
-                                                    @hits[0].Title@(hits[0].IsRepeat ? " ↻" : "")
-                                                </a>
-                                            </td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-center p-1"><span class="text-muted fs-8">·</span></td>
-                                        }
-                                    }
-                                </tr>
+                                var slotStartUtc = slot.ToUniversalTime();
+                                var slotEndUtc = slotStartUtc.AddMinutes(30);
+                                var hits = r.Occurrences.Where(o => o.StartUtc < slotEndUtc && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStartUtc).ToList();
+                                if (hits.Count > 1)
+                                {
+                                    @* A room booked twice in the same slot is the thing this view exists
+                                       to make visible. It is shown, not hidden behind the first booking. *@
+                                    <div><a href="@eventHref(hits[0].EventId)" class="cb-slot conflict"
+                                           title="@string.Join(" / ", hits.Select(x => x.Title))">
+                                        <span class="fw-bold d-block text-truncate">⚠ <bdi>@hits[0].Title</bdi></span>
+                                        <span class="fs-8 opacity-75 d-block text-truncate"><span class="cb-num">@hits.Count</span> @T("حجوزات في نفس الفترة", "bookings in this slot")</span>
+                                    </a></div>
+                                }
+                                else if (hits.Count == 1)
+                                {
+                                    @* Same two states the people grid uses, on the fact a room has:
+                                       a booking that has already ended is not a booking to plan around. *@
+                                    var done = isToday && (hits[0].EndUtc ?? hits[0].StartUtc.AddMinutes(30)) <= nowUtc;
+                                    <div><a href="@eventHref(hits[0].EventId)" class="cb-slot @(done ? "past" : "own")" title="@hits[0].Title">
+                                        <span class="fw-bold d-block text-truncate"><bdi>@hits[0].Title</bdi>@(hits[0].IsRepeat ? " ↻" : "")</span>
+                                        <span class="fs-8 opacity-75 d-block text-truncate">@(done ? T("انتهى", "Finished") : T("محجوز", "Booked"))</span>
+                                    </a></div>
+                                }
+                                else
+                                {
+                                    <div class="free"></div>
+                                }
                             }
-                        </tbody>
-                    </table>
+                        }
+                    </div>
                 </div>
                 <div class="text-muted fs-8 mt-3">
-                    @T("⚠ تعني حجزًا مزدوجًا لنفس المورد في نفس الساعة. ↻ تعني موعدًا متكررًا.",
-                       "⚠ marks a double booking of the same resource in the same hour. ↻ marks a repeating occurrence.")
+                    @T("⚠ تعني حجزًا مزدوجًا لنفس المورد في نفس الفترة. ↻ تعني موعدًا متكررًا.",
+                       "⚠ marks a double booking of the same resource in the same slot. ↻ marks a repeating occurrence.")
                 </div>
             }
         </div>

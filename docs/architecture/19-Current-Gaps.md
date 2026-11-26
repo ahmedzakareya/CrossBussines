@@ -5,6 +5,29 @@
 > been withdrawn: all nine work-order write actions already carried `[InvPerm("doc")]` + anti-forgery. The
 > permission-coverage numbers below are the regenerated, corrected figures.
 
+## 2026-11-10 remeasurement — FOUR OF FIVE ITEMS CHECKED WERE DESCRIBED WRONGLY
+
+The register below dates from 2026-09-07. Five items were re-measured against the code and the
+database on 2026-11-10 rather than re-read. **Four had moved; two of those were its highest
+severity.** Anyone planning from the un-remeasured text spends effort on work finished two months
+ago and cannot see what has arrived since.
+
+| # | what the register says | measured 2026-11-10 |
+|---|---|---|
+| **A2** | *Critical* — Platform Kernel SQL not deployed; invoice, customer and work-order creation **fail** | **CLOSED.** `BusinessEvents` and `BusinessEventDispatch` exist in CrossBuyDB2 with **555 events** and 1,415 dispatch rows across 20 event types, oldest 2026-08-03, newest **2026-11-10 11:10**. The kernel has been live for three months. |
+| **B2** | *High* — `DefaultCompanyId = 1` in 8 controllers / ~767 call sites | **CLOSED.** Zero live declarations in any controller. A grep still returns five hits because the removals left explanatory COMMENTS behind; comments stripped, the count is 0. |
+| **B1** | *Critical* — no EF global query filters at all | **PARTIAL, and far further on than stated.** 65 of 324 entity types carry a filter. The platform declares 14 centrally in `CompanyQueryFilters`; the Construction pack and the purchase-order invoice links declare 27 more beside their own entities. |
+| **A4** | *High* — uploaded files served as unguarded static URLs | **HALF CLOSED.** `PrivateFileGate` now classifies nine prefixes and the anonymous hole is shut. What remains is narrower and should be restated: the policy is `RequireAuthenticated`, which asks WHETHER someone is signed in, never WHO — so any authenticated user of any company still reaches any file by URL. `RequireCompanyMatch` exists in the enum, is applied to no prefix, and **cannot be the fix**: the paths are flat GUIDs carrying no company for a path-policy to match. Serving through an authorizing controller is still the only answer. |
+| **A9** | *Medium* — duplicated session gate with divergent bypass lists | **OPEN, and worse than written.** They do not have divergent lists; they have different MECHANISMS. `SessionValidationMiddleware` decides by URL path and bypasses 26 of them; `SessionValidationAttribute` decides by the presence of `Session["Employee"]` and bypasses nothing. An action carrying the attribute on one of those 26 paths gets two contradicting answers. |
+
+**Found on 2026-11-10 and absent from this register entirely:** 27+ entities were READ-filtered by
+company while the write guard skipped them — `CompanyWriteGuardInterceptor` asked a hand-written
+`PilotEntities` array that the model had outgrown, so a caller could not read another company's rows
+but was not stopped from writing one. Closed the same day by deriving guard membership from the model
+(`CompanyQueryFilters.IsGuarded`), with an explicit, currently-empty exclusion list. The lesson for
+this document: a register that is not re-measured does not merely go stale, it hides what arrived after
+it was written.
+
 ## Scope
 Prioritised register of everything discovery found missing, broken or inconsistent. Each gap carries evidence, a
 size and a priority. Categories are kept separate as required.

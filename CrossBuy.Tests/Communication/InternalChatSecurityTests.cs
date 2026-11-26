@@ -89,6 +89,9 @@ namespace CrossBuy.Tests.Communication
             => Task.FromResult((IReadOnlyList<RoleGrant>)Array.Empty<RoleGrant>());
         public Task<bool> AnyConfiguredAsync(int companyId, string scope, CancellationToken cancellationToken = default)
             => Task.FromResult(false);
+        public Task<IReadOnlyList<int>> EmployeeIdsForRoleAsync(
+            int companyId, string scope, string role, CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<int>)Array.Empty<int>());
     }
 
     internal sealed class SwitchableContext : IBusinessContextAccessor
@@ -677,6 +680,24 @@ namespace CrossBuy.Tests.Communication
         public void Ordinary_business_attachments_are_allowed(string ext, string contentType)
             => Assert.True(ChatAttachments.IsAcceptedType(ext, contentType));
 
+        [Theory]
+        [InlineData("preview.png", "image/png")]
+        [InlineData("preview.jpg", "image/jpeg")]
+        [InlineData("preview.pdf", "application/pdf")]
+        [InlineData("preview.txt", "text/plain")]
+        [InlineData("preview.csv", "text/csv")]
+        public void Passive_chat_attachment_formats_can_be_previewed_inline(string fileName, string contentType)
+            => Assert.True(ChatAttachments.IsSafeInlinePreview(fileName, contentType));
+
+        [Theory]
+        [InlineData("preview.svg", "image/svg+xml")]
+        [InlineData("preview.html", "text/html")]
+        [InlineData("preview.xml", "application/xml")]
+        [InlineData("preview.png", "text/html")]
+        [InlineData("preview.pdf", "application/octet-stream")]
+        public void Active_unknown_or_mismatched_content_stays_download_only(string fileName, string contentType)
+            => Assert.False(ChatAttachments.IsSafeInlinePreview(fileName, contentType));
+
         [Fact]
         public void An_image_extension_with_a_non_image_declared_type_is_refused()
             => Assert.False(ChatAttachments.IsAcceptedType(".png", "text/html"));
@@ -757,6 +778,139 @@ namespace CrossBuy.Tests.Communication
                 dir = System.IO.Directory.GetParent(dir)?.FullName;
             }
             throw new System.IO.FileNotFoundException("could not locate " + relative + " above " + AppContext.BaseDirectory);
+        }
+
+        // =====================================================================================
+        // MESSAGE SEARCH (Communication Hub §4.9).
+        //
+        // Search is the easiest place in a messaging product to leak, because it reaches ACROSS
+        // conversations by construction: one query, every thread the engine can see. The property
+        // worth proving is therefore not "it finds things" but "it finds nothing the caller could
+        // not already open".
+        // =====================================================================================
+
+        [Fact]
+        public async Task Search_finds_a_message_in_my_own_conversation()
+        {
+            using var host = new ChatHost();
+            int conv = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            host.SeedMessage(conv, ChatHost.Bob, "the shipment arrives on Tuesday");
+
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+            var hits = await host.Service().SearchMessagesAsync("shipment");
+
+            var hit = Assert.Single(hits);
+            Assert.Equal(conv, hit.ConversationId);
+            Assert.Contains("shipment", hit.Body);
+            Assert.False(hit.IsGroup);
+            Assert.NotEqual("", hit.SenderName);          // the sender is named, not a bare id
+        }
+
+        // THE ONE THAT MATTERS. Mallory is in CompanyB. A conversation in CompanyA containing the same
+        // word must be invisible to her — asserted with a CONTROL, so an empty result cannot pass by
+        // accident: the same search run by Alice does find it.
+        [Fact]
+        public async Task Search_never_reaches_another_companys_conversation()
+        {
+            using var host = new ChatHost();
+            int theirs = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            host.SeedMessage(theirs, ChatHost.Alice, "margin on the Riyadh contract");
+
+            host.ActAs(ChatHost.Mallory, ChatHost.CompanyB);
+            Assert.Empty(await host.Service().SearchMessagesAsync("Riyadh"));
+
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+            Assert.NotEmpty(await host.Service().SearchMessagesAsync("Riyadh"));
+        }
+
+        // Membership is not enough on its own. A member row pointing at a conversation that belongs to
+        // another company must not surface it — the conversation's own CompanyID is the barrier, which
+        // is the same reasoning MyConversationsAsync records.
+        [Fact]
+        public async Task A_membership_row_alone_cannot_surface_a_foreign_conversation()
+        {
+            using var host = new ChatHost();
+            int foreign = host.SeedDirect(ChatHost.CompanyB, ChatHost.Mallory, ChatHost.Alice);
+            host.SeedMessage(foreign, ChatHost.Mallory, "quarterly rebate schedule");
+
+            // Alice really is a member of that CompanyB conversation, and is acting in CompanyA.
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+
+            Assert.Empty(await host.Service().SearchMessagesAsync("rebate"));
+        }
+
+        // ALICE MUST OWN A CONVERSATION FOR THIS TEST TO MEAN ANYTHING.
+        //
+        // The first version seeded only the Bob↔Carol conversation, so Alice was a member of nothing and
+        // the service returned early on an empty membership set — the membership filter was never
+        // reached and the test passed vacuously. A mutation run proved it: replacing the membership
+        // predicate with `c.ID > 0` changed no result. Giving Alice her own conversation forces the
+        // filter to actually discriminate, and her own hit is asserted so the search is known to work.
+        [Fact]
+        public async Task Search_does_not_reach_a_conversation_I_am_not_a_member_of()
+        {
+            using var host = new ChatHost();
+
+            int notMine = host.SeedDirect(ChatHost.CompanyA, ChatHost.Bob, ChatHost.Carol);
+            host.SeedMessage(notMine, ChatHost.Bob, "pricing exception for Carol");
+
+            // Alice's OWN conversation, in the same company, containing the SAME term.
+            int mine = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            host.SeedMessage(mine, ChatHost.Alice, "pricing for my own account");
+
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+            var hits = await host.Service().SearchMessagesAsync("pricing");
+
+            // Asymmetric: she sees hers and only hers. A bare count could not tell the two apart.
+            Assert.All(hits, h => Assert.Equal(mine, h.ConversationId));
+            Assert.DoesNotContain(hits, h => h.ConversationId == notMine);
+            Assert.Single(hits);
+
+            // Control: Bob is in BOTH, so he finds both — the refusal above is membership, not the term.
+            host.ActAs(ChatHost.Bob, ChatHost.CompanyA);
+            var bobHits = await host.Service().SearchMessagesAsync("pricing");
+            Assert.Equal(2, bobHits.Count);
+        }
+
+        [Fact]
+        public async Task A_deleted_message_is_not_searchable()
+        {
+            using var host = new ChatHost();
+            int conv = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            int msg = host.SeedMessage(conv, ChatHost.Bob, "retracted discount offer");
+
+            host.ActAs(ChatHost.Bob, ChatHost.CompanyA);
+            Assert.True(await host.Service().DeleteAsync(ChatHost.Bob, msg));
+
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+            Assert.Empty(await host.Service().SearchMessagesAsync("discount"));
+        }
+
+        [Fact]
+        public async Task An_unresolved_caller_searches_nothing()
+        {
+            using var host = new ChatHost();
+            int conv = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            host.SeedMessage(conv, ChatHost.Bob, "annual audit window");
+
+            host.ActAsNobody();
+            Assert.Empty(await host.Service().SearchMessagesAsync("audit"));
+        }
+
+        // A one-character query is a scan of everything the caller can reach and answers nothing useful.
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("  ")]
+        [InlineData("a")]
+        public async Task A_query_too_short_to_be_a_search_returns_nothing(string? term)
+        {
+            using var host = new ChatHost();
+            int conv = host.SeedDirect(ChatHost.CompanyA, ChatHost.Alice, ChatHost.Bob);
+            host.SeedMessage(conv, ChatHost.Bob, "aaaa");
+
+            host.ActAs(ChatHost.Alice, ChatHost.CompanyA);
+            Assert.Empty(await host.Service().SearchMessagesAsync(term));
         }
 
         private static string StripCsComments(string s)

@@ -1,0 +1,22 @@
+@model List<CrossBuy.BL.CrmIdentity.SegmentRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string Say(CrossBuy.BL.CrmIdentity.CrmJourneyRules.Rule r)
+    {
+        var kind = CrossBuy.BL.CrmIdentity.CrmJourneyRules.Fields.GetValueOrDefault(r.Field, "text");
+        var v = kind switch { "bool" => r.Value == "yes" ? T["yes"].Value : T["no"].Value, "days" => r.Value + " " + T["days"].Value, "employee" => "#" + r.Value, _ => r.Value ?? "" };
+        return T["rule:" + r.Field].Value + ": " + v;
+    }
+}
+@foreach (var r in Model)
+{
+    var s = r.Seg;
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("SegmentEditor","Crm", new { id = s.ID })" class="fw-bold text-gray-900 text-hover-primary">@(!isAr && !string.IsNullOrWhiteSpace(s.NameEn) ? s.NameEn : s.Name)</a>
+            <div class="d-flex flex-wrap gap-1 mt-1">@for (var i = 0; i < r.Rules.Count; i++) { if (i > 0) { <span class="fs-9 fw-bold text-muted align-self-center">@(s.MatchAll ? T["and"] : T["or"])</span> } <span class="badge badge-light fs-9 fw-semibold">@Say(r.Rules[i])</span> }</div></td>
+        <td class="text-end num fw-bold fs-4">@s.MemberCount</td>
+        <td class="fs-8 text-muted num">@(s.RefreshedAt?.ToLocalTime().ToString("MM-dd HH:mm") ?? "—")</td>
+        <td class="text-end num">@r.Journeys</td>
+    </tr>
+}

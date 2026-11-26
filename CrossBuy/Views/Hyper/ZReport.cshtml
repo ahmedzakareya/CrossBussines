@@ -1,0 +1,248 @@
+@using CrossBuy.Controllers
+@using CrossBuy.BL
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var branches = ViewBag.HyperBranches as List<HyperController.HyperBranchItem> ?? new();
+    var branch = ViewBag.Branch as CrossBuy.Models.Context.Admin.Branch;
+    var shifts = ViewBag.Shifts as List<HyperController.HyperShiftRow> ?? new();
+    var terminals = ViewBag.Terminals as List<CrossBuy.Models.Context.Pos.PosTerminal> ?? new();
+    var z = ViewBag.Z as ZReportDto;
+    var dp = (int)(ViewBag.Dp ?? 2);
+    var fmt = dp > 0 ? "0." + new string('0', dp) : "0";
+    ViewData["Title"] = isAr ? "تقرير الوردية Z" : "Z report";
+
+    var msgMap = new Dictionary<string, string> {
+        ["shift-not-here"] = isAr ? "هذه الوردية ليست على فرعك." : "That shift is not on your branch."
+    };
+    Func<object, string> say = c => { var k = c as string ?? ""; return msgMap.TryGetValue(k, out var v) ? v : k; };
+    Func<int, string> termOf = id => terminals.FirstOrDefault(t => t.ID == id)?.Code ?? ("#" + id);
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-danger d-flex align-items-center mb-6"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@say(TempData["HyperErr"])</div>
+        }
+
+        @if (ViewBag.NoBranch == true)
+        {
+            <div class="card"><div class="card-body p-10 text-center">
+                <i class="ki-outline ki-shop fs-3tx text-muted mb-4 d-block"></i>
+                <div class="fs-5 fw-bold text-gray-800">@(isAr ? "لا يوجد فرع هايبر ماركت بعد" : "No hypermarket branch yet")</div>
+            </div></div>
+            return;
+        }
+
+        @if (branches.Count > 1)
+        {
+            <div class="d-flex flex-wrap gap-2 mb-5">
+                @foreach (var b in branches)
+                {
+                    var on = branch != null && b.Id == branch.ID;
+                    <a href="/hyper/reports/zreport?branchId=@b.Id" class="btn btn-sm @(on ? "btn-primary" : "btn-light")">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</a>
+                }
+            </div>
+        }
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-header min-h-50px align-items-center">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900">@(isAr ? "الورديات" : "Shifts")</h3>
+                        <div class="card-toolbar"><span class="badge badge-light">@(ViewBag.Total ?? shifts.Count)</span></div>
+                    </div>
+                    <div class="card-body pt-4">
+                        @* Search and paging. Before this the list was a bare Take(25), so every shift past
+                           the newest 25 was unreachable — an older shift's Z report could not be opened at
+                           all, which is a missing feature rather than a long list. *@
+                        <form method="get" action="/hyper/reports/zreport" class="d-flex gap-2 mb-4">
+                            <input type="hidden" name="branchId" value="@(branch?.ID ?? 0)" />
+                            <input name="q" value="@(ViewBag.Q as string)" type="text"
+                                   class="form-control form-control-solid form-control-sm"
+                                   placeholder="@(isAr ? "ترمينال أو نوع وردية…" : "Terminal or shift type…")" />
+                            <button type="submit" class="btn btn-sm btn-light-primary">@(isAr ? "بحث" : "Search")</button>
+                            @if (!string.IsNullOrWhiteSpace(ViewBag.Q as string))
+                            {
+                                <a href="/hyper/reports/zreport?branchId=@(branch?.ID)" class="btn btn-sm btn-light">@(isAr ? "إلغاء" : "Clear")</a>
+                            }
+                        </form>
+
+                        @if (shifts.Count == 0)
+                        {
+                            <div class="text-muted fs-7 py-6 text-center">@(isAr ? "لا ورديات على هذا الفرع بعد." : "No shifts on this branch yet.")</div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-1">
+                                @foreach (var sh in shifts)
+                                {
+                                    var sel = z != null && z.ShiftId == sh.Id;
+                                    <a href="/hyper/reports/zreport?branchId=@(branch?.ID)&amp;shiftId=@sh.Id"
+                                       class="d-flex flex-stack rounded px-3 py-2 text-decoration-none @(sel ? "bg-light-primary" : "bg-light")">
+                                        <span class="min-w-0">
+                                            <span class="fw-bold text-gray-900 d-block">@termOf(sh.TerminalId) · @sh.ShiftType</span>
+                                            <span class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">@sh.OpenedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                                        </span>
+                                        @if (sh.Status == "Open")
+                                        {
+                                            <span class="badge badge-light-success fs-8">@(isAr ? "مفتوحة" : "Open")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light fs-8 text-muted">@(isAr ? "مغلقة" : "Closed")</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+
+                            int zPage = (int)(ViewBag.Page ?? 1);
+                            int zPages = (int)(ViewBag.Pages ?? 1);
+                            var zQ = ViewBag.Q as string;
+                            @if (zPages > 1)
+                            {
+                                <div class="d-flex flex-stack mt-4">
+                                    <span class="fs-8 text-muted">@(isAr ? $"صفحة {zPage} من {zPages}" : $"Page {zPage} of {zPages}")</span>
+                                    <div class="d-flex gap-2">
+                                        @if (zPage > 1)
+                                        {
+                                            <a href="/hyper/reports/zreport?branchId=@(branch?.ID)&amp;q=@zQ&amp;page=@(zPage - 1)" class="btn btn-sm btn-light">@(isAr ? "السابق" : "Previous")</a>
+                                        }
+                                        @if (zPage < zPages)
+                                        {
+                                            <a href="/hyper/reports/zreport?branchId=@(branch?.ID)&amp;q=@zQ&amp;page=@(zPage + 1)" class="btn btn-sm btn-light">@(isAr ? "التالي" : "Next")</a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                @if (z == null)
+                {
+                    <div class="card"><div class="card-body p-10 text-center text-muted fs-7">
+                        @(isAr ? "اختر وردية لعرض تقريرها." : "Pick a shift to see its report.")
+                    </div></div>
+                }
+                else
+                {
+                    @* THE NUMBER THE REPORT EXISTS FOR, first and largest. Everything below it is the working
+                       that produced it; a manager at close of day is asking one question only. *@
+                    <div class="card mb-5">
+                        <div class="card-body">
+                            <div class="d-flex flex-stack flex-wrap gap-4">
+                                <div>
+                                    <div class="fs-7 text-muted">@(isAr ? "فرق الصندوق" : "Cash variance")</div>
+                                    @if (z.CashVariance == null)
+                                    {
+                                        <div class="fs-2hx fw-bolder text-gray-500">—</div>
+                                        <div class="fs-8 text-muted">@(isAr ? "لم تُغلق الوردية بعد" : "The shift is not closed yet")</div>
+                                    }
+                                    else
+                                    {
+                                        var v = z.CashVariance.Value;
+                                        var tone = v == 0 ? "text-success" : (v < 0 ? "text-danger" : "text-gray-900");
+                                        <div class="fs-2hx fw-bolder @tone" style="font-variant-numeric:tabular-nums">@((v > 0 ? "+" : "") + v.ToString(fmt))</div>
+                                        <div class="fs-8 text-muted">
+                                            @(v == 0 ? (isAr ? "الدرج مطابق" : "The drawer agrees")
+                                                     : v < 0 ? (isAr ? "عجز — المعدود أقل من المتوقع" : "Short — counted less than expected")
+                                                             : (isAr ? "زيادة — المعدود أكثر من المتوقع" : "Over — counted more than expected"))
+                                        </div>
+                                    }
+                                </div>
+                                <div class="text-end">
+                                    <div class="fs-7 text-muted">@z.TerminalCode · @z.ShiftType</div>
+                                    <div class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">
+                                        @z.OpenedAt.ToString("yyyy/MM/dd HH:mm")
+                                        @if (z.ClosedAt.HasValue) { <text> — @z.ClosedAt.Value.ToString("HH:mm")</text> }
+                                    </div>
+                                    <span class="badge @(z.Status == "Open" ? "badge-light-success" : "badge-light") fs-8 mt-1">@(z.Status == "Open" ? (isAr ? "مفتوحة" : "Open") : (isAr ? "مغلقة" : "Closed"))</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-5">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header min-h-45px align-items-center"><h3 class="card-title fs-6 fw-bold">@(isAr ? "النقد" : "Cash")</h3></div>
+                                <div class="card-body pt-3 fs-7">
+                                    <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "رصيد الافتتاح" : "Opening float")</span><span style="font-variant-numeric:tabular-nums">@z.OpeningFloat.ToString(fmt)</span></div>
+                                    @* HM-20: the mid-shift movements are shown because they are now PART of expected
+                                       cash. Hiding them would leave the figure below impossible to reconcile from the
+                                       rest of this card, and an unreconcilable expectation discredits the variance. *@
+                                    @if (z.CashMovedIn != 0)
+                                    {
+                                        <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "نقد أُدخل للدرج" : "Cash put into the drawer")</span><span class="text-success" style="font-variant-numeric:tabular-nums">+@z.CashMovedIn.ToString(fmt)</span></div>
+                                    }
+                                    @if (z.CashMovedOut != 0)
+                                    {
+                                        <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "نقد أُخرج (توريد/دفعات)" : "Cash taken out (drops / payouts)")</span><span class="text-danger" style="font-variant-numeric:tabular-nums">−@z.CashMovedOut.ToString(fmt)</span></div>
+                                    }
+                                    <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "النقد المتوقع" : "Expected cash")</span><span class="fw-bold" style="font-variant-numeric:tabular-nums">@z.ExpectedCash.ToString(fmt)</span></div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span class="text-muted">@(isAr ? "المعدود عند الإغلاق" : "Counted at close")</span>
+                                        <span style="font-variant-numeric:tabular-nums">@(z.ClosingFloat?.ToString(fmt) ?? "—")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header min-h-45px align-items-center"><h3 class="card-title fs-6 fw-bold">@(isAr ? "المبيعات" : "Sales")</h3></div>
+                                <div class="card-body pt-3 fs-7">
+                                    <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "عدد الفواتير" : "Receipts")</span><span style="font-variant-numeric:tabular-nums">@z.OrderCount</span></div>
+                                    <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "قبل الضريبة" : "Subtotal")</span><span style="font-variant-numeric:tabular-nums">@z.SubTotal.ToString(fmt)</span></div>
+                                    <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "الضريبة" : "Tax")</span><span style="font-variant-numeric:tabular-nums">@z.TaxTotal.ToString(fmt)</span></div>
+                                    @if (z.ReturnsTotal != 0)
+                                    {
+                                        <div class="d-flex justify-content-between py-1"><span class="text-muted">@(isAr ? "المرتجعات" : "Returns")</span><span class="text-danger" style="font-variant-numeric:tabular-nums">@z.ReturnsTotal.ToString(fmt)</span></div>
+                                    }
+                                    <div class="separator separator-dashed my-2"></div>
+                                    <div class="d-flex justify-content-between"><span class="fw-bold">@(isAr ? "الإجمالي" : "Grand total")</span><span class="fw-bolder fs-5" style="font-variant-numeric:tabular-nums">@z.GrandTotal.ToString(fmt)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-5">
+                        <div class="card-header min-h-45px align-items-center"><h3 class="card-title fs-6 fw-bold">@(isAr ? "التحصيل بالوسيلة" : "Takings by tender")</h3></div>
+                        <div class="card-body pt-3">
+                            @if (z.Payments.Count == 0)
+                            {
+                                <div class="text-muted fs-7">@(isAr ? "لا تحصيل على هذه الوردية." : "Nothing was taken on this shift.")</div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table align-middle gy-3 mb-0">
+                                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                            <th class="ps-4">@(isAr ? "الوسيلة" : "Tender")</th>
+                                            <th class="text-end" style="width:120px">@(isAr ? "العدد" : "Count")</th>
+                                            <th class="text-end pe-4" style="width:160px">@(isAr ? "المبلغ" : "Amount")</th>
+                                        </tr></thead>
+                                        <tbody class="fs-6">
+                                            @foreach (var pay in z.Payments)
+                                            {
+                                                <tr>
+                                                    <td class="ps-4 fw-bold text-gray-800">@pay.Method</td>
+                                                    <td class="text-end" style="font-variant-numeric:tabular-nums">@pay.Count</td>
+                                                    <td class="text-end pe-4 fw-bold" style="font-variant-numeric:tabular-nums">@pay.Amount.ToString(fmt)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

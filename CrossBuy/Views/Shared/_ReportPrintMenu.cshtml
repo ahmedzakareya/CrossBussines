@@ -118,7 +118,7 @@ else
                    "start" means when the page reads right to left. *@
                 data-kt-menu-trigger="click" data-kt-menu-placement="@(arabic ? "bottom-end" : "bottom-start")"
                 title="@Localizer["Choose a print layout"]">
-            <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
+            <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]@if (!string.IsNullOrWhiteSpace(Model.ButtonLabel)) {<text>: @Model.ButtonLabel</text>}
             <i class="ki-outline ki-down fs-7 ms-1"></i>
         </button>
 

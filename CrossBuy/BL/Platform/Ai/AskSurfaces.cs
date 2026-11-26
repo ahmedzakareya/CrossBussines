@@ -350,27 +350,34 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public static AskText Explain(AskQueryValidation v, bool arabic) => v.Fault switch
 		{
-			AskQueryFault.UnknownSurface => AskText.Of("لا أعرف هذا المصدر.", "I do not know that data surface."),
+			AskQueryFault.UnknownSurface => AskText.Of("لا أعرف هذا المصدر.", "I do not know that data surface.",
+				"Je ne connais pas cette source de données."),
 			AskQueryFault.UnknownColumn => AskText.Of(
 				$"لا يوجد حقل باسم «{v.Offender}» في هذا المصدر.",
-				$"There is no field called \"{v.Offender}\" on this surface."),
+				$"There is no field called \"{v.Offender}\" on this surface.",
+				$"Aucun champ nommé « {v.Offender} » n'existe dans cette vue."),
 			AskQueryFault.NotAMeasure => AskText.Of(
 				$"«{v.Offender}» ليس حقلًا رقميًا يُجمَع.",
-				$"\"{v.Offender}\" is not a numeric field that can be totalled."),
+				$"\"{v.Offender}\" is not a numeric field that can be totalled.",
+				$"« {v.Offender} » n'est pas un champ numérique pouvant être totalisé."),
 			AskQueryFault.NotADimension => AskText.Of(
 				$"«{v.Offender}» لا يصلح للتجميع حسبه.",
-				$"\"{v.Offender}\" cannot be grouped by."),
+				$"\"{v.Offender}\" cannot be grouped by.",
+				$"« {v.Offender} » ne peut pas servir de critère de regroupement."),
 			AskQueryFault.NoMeasure => AskText.Of(
 				"لعرض سجلات بدل إجماليات، لا بد من تحديد الترتيب — بأي حقل تريد أحدثها؟",
-				"To list records rather than totals, an ordering is required — by which field should the newest be?"),
+				"To list records rather than totals, an ordering is required — by which field should the newest be?",
+				"Pour afficher des fiches plutôt que des totaux, précisez le tri : quel champ doit déterminer les plus récentes ?"),
 			AskQueryFault.LimitOutOfRange => AskText.Of(
 				$"عدد الصفوف المطلوب خارج الحدود (1..{MaxLimit}).",
-				$"The requested row count is outside the allowed range (1..{MaxLimit})."),
+				$"The requested row count is outside the allowed range (1..{MaxLimit}).",
+				$"Le nombre de lignes demandé est hors limites (1..{MaxLimit})."),
 			AskQueryFault.TooManyGroups => AskText.Of(
 				$"أكثر من {MaxGroups} مستويات تجميع.",
-				$"More than {MaxGroups} grouping levels."),
+				$"More than {MaxGroups} grouping levels.",
+				$"Plus de {MaxGroups} niveaux de regroupement."),
 			AskQueryFault.BadFilterValue => AskText.Of(
-				"شرط تصفية غير صالح.", "An invalid filter condition."),
+				"شرط تصفية غير صالح.", "An invalid filter condition.", "Un critère de filtrage n'est pas valide."),
 			_ => AskText.Of("", ""),
 		};
 	}

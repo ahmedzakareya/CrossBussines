@@ -99,7 +99,8 @@ namespace CrossBuy.BL
             // ---- announcements: audience is Company/Branch, publishing is a right ----
             if (action == CommunicationActions.AnnouncementSend)
             {
-                if (bootstrapOpen) return true;
+                // Publishing is not covered by the module's general bootstrap-open read/write posture.
+                // A company-wide broadcast is a privileged action and must always be explicitly granted.
                 if (!(commAdmin || publisher)) return false;
                 // A branch-scoped grant may only publish to its own branch. A company-wide grant (null) may
                 // publish anywhere in the company.

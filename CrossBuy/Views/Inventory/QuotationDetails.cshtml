@@ -1,4 +1,4 @@
-@using CrossBuy.Models.Context.Inventory
+﻿@using CrossBuy.Models.Context.Inventory
 @using CrossBuy.Models.Context.Accounting
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
@@ -108,8 +108,31 @@
             ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.Quotation;
             ViewBag.ConversationEntityId = Model.ID;
             ViewBag.ConversationListUrl = Url.Action("QuotationConversation", "Inventory");
+            ViewBag.ConversationMentionUrl = Url.Action("QuotationConversationMentions", "Inventory");
             ViewBag.ConversationAddUrl = Url.Action("QuotationConversationAdd", "Inventory");
             ViewBag.ConversationReactUrl = Url.Action("QuotationConversationReact", "Inventory");
+
+            @* COMMUNICATION PHASE 3. Both endpoints live on the TASKS controller, not this module:
+               the conversation is this screen's, the work is Tasks'. Naming them here is what opts
+               this screen in - the shared partial resolves no url on a caller's behalf, so a screen
+               that omits these two keeps exactly its previous behaviour.
+
+               This record type is EligibleForTaskLink in the entity registry, which is the other half
+               of the opt-in: a url on a type the registry refuses would offer work that cannot be
+               linked. *@
+            ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+            ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+            ViewBag.ConversationApprovalsUrl = Url.Action("ConversationApprovals", "Tasks");
+            @* LINKING AN EXISTING TASK. Three endpoints, named by the HOST because the partial
+               resolves none on a caller's behalf - the SHF rule on this file says so, and the
+               reason is that a second module including the panel would otherwise post its
+               messages at this module's controller, against a permission gate written for this
+               record. The panel reveals the button only when all three are present AND the
+               service reports LinkingAvailable, so a deployment without the CommTaskLinks table
+               shows nothing rather than a button that refuses. *@
+            ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+            ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+            ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
         }
         @await Html.PartialAsync("_DocEventTimeline")
         @await Html.PartialAsync("_EntityConversation")

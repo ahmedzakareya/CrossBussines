@@ -54,7 +54,7 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void JournalEntry_is_registered_with_an_accounting_scope_and_no_timeline_screen()
+        public void JournalEntry_is_registered_with_an_accounting_scope_and_a_timeline_screen()
         {
             using var host = new PlatformTestHost();
             var definition = host.Registry().GetDefinition(EntityRegistry.JournalEntry);
@@ -62,10 +62,17 @@ namespace CrossBuy.Tests
             Assert.Equal(EntityRegistry.ScopeAccounting, definition.PermissionScope);
             Assert.Equal("Accounting", definition.Module);
             Assert.True(definition.SupportsSearch);
-            // Deliberately false: there is no journal-entry timeline screen, and enabling the flag without one
-            // would make ITimelineProjectionService answer for a screen that does not exist.
-            Assert.False(definition.SupportsTimeline);
-            Assert.False(definition.SupportsComments);
+            // NOW TRUE, and the reason is the same reason it used to be false. This assertion read
+            // "deliberately false: there is no journal-entry timeline screen, and enabling the flag
+            // without one would make ITimelineProjectionService answer for a screen that does not
+            // exist." Accounting/JournalEntry now mounts the timeline and the conversation, so the
+            // condition the flag was waiting on is met.
+            //
+            // This is the first of the two exits the consumer's own message names for the stranded
+            // JournalEntry.Reversed dispatch rows - "either enable the capability or stop producing
+            // the event" - so family A in TimelinePresentationCoverageTests is closed by this line.
+            Assert.True(definition.SupportsTimeline);
+            Assert.True(definition.SupportsComments);
             Assert.False(definition.ListedInRecordPicker);
             Assert.Equal("/Accounting/JournalEntry?id=7", host.Registry().BuildUrl(EntityRegistry.JournalEntry, 7));
         }
@@ -93,20 +100,22 @@ namespace CrossBuy.Tests
 
             // Every consumer that can USE this event gets a row, in the same transaction.
             //
-            // This assertion used to be Registered.Length - every registered consumer, unconditionally.
-            // That is the rule that produced the 77 terminal TimelineProjection failures sitting on
-            // CrossBuyDev, all of them this very event type: JournalEntry declares SupportsTimeline =
-            // false (asserted above), so the timeline row was created, retried five times and died,
-            // every single time an entry was reversed. BusinessEventService now skips a consumer that
-            // provably cannot use the event, so the count is the ELIGIBLE set rather than the registered
-            // one.
+            // THE COUNT IS THE ELIGIBLE SET, NOT THE REGISTERED ONE, and that rule has not changed -
+            // only this entity's eligibility has. It used to be Registered.Length unconditionally,
+            // which is what produced the 77 terminal TimelineProjection failures on CrossBuyDev, all
+            // of them this event type: the timeline row was created for an entity whose capability
+            // was off, retried five times and died, every single time an entry was reversed.
+            //
+            // JournalEntry now DECLARES a timeline (asserted above, and the screen that justifies it
+            // exists), so the timeline consumer is eligible and the set is every registered consumer
+            // again. The guard that matters is still exercised, by an entity whose capability really
+            // is off - see TimelineDispatchEligibilityTests.
             var consumers = await verify.BusinessEventDispatches.AsNoTracking()
                 .Where(d => d.EventId == eventId).Select(d => d.Consumer).OrderBy(c => c).ToListAsync();
 
-            Assert.DoesNotContain(BusinessEventConsumers.TimelineProjection, consumers);
+            Assert.Contains(BusinessEventConsumers.TimelineProjection, consumers);
             Assert.Equal(
                 BusinessEventConsumers.Registered
-                    .Where(c => !string.Equals(c, BusinessEventConsumers.TimelineProjection, StringComparison.Ordinal))
                     .OrderBy(c => c).ToList(),
                 consumers);
 

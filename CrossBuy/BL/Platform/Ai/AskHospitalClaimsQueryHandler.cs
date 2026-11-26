@@ -27,10 +27,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن مطالبات التأمين: المبلغ المطالَب به والمعتمد وعدد البنود حسب الحالة أو جهة الدفع",
-			"Any question about insurance claims: the claimed and accepted amounts and line count by status or payer");
+			"Any question about insurance claims: the claimed and accepted amounts and line count by status or payer",
+			"Questions sur les demandes de remboursement : montants réclamés et acceptés, et nombre de lignes par statut ou payeur");
 
 		public override AskText Example => AskText.Of(
-			"إيه حالة المطالبات؟", "What is the state of the claims?");
+			"إيه حالة المطالبات؟", "What is the state of the claims?", "Quel est le statut des demandes de remboursement ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

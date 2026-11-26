@@ -10,7 +10,12 @@ namespace CrossBuy.Models.Context.Loyalty
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
 		public int CustomerId { get; set; }
-		public string Kind { get; set; } = "Earn";     // Earn | ReturnReversal | CancelReversal
+		// Earn | ReturnReversal | CancelReversal | Redeem | RedeemReversal
+		// HM-22 added the last two. The column is a free NVARCHAR(30) with no CHECK constraint, so they need
+		// no migration — but note that Redeem is NEGATIVE and is NOT a reversal. Anything deciding "how much
+		// of this earn has been given back" must filter on Kind, never on the sign, or a customer who spent
+		// points on the sale that earned them will have that spending mistaken for a refund of it.
+		public string Kind { get; set; } = "Earn";
 		public int? SourceInvoiceId { get; set; }        // the sale that earned (always set — the trace + reversal anchor)
 		public string? SourceDocType { get; set; }       // reversal provenance, e.g. "SalesReturn"
 		public int? SourceDocId { get; set; }            // the return/cancel document id

@@ -1,0 +1,25 @@
+@model List<CrossBuy.BL.CrmIdentity.SequenceRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string Initials(string? s) { var w = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((w.Length > 0 ? w[0][..1] : "") + (w.Length > 1 ? w[1][..1] : "")).ToUpperInvariant(); }
+}
+@foreach (var r in Model)
+{
+    var s = r.Seq; var ended = r.Completed + r.Stopped; var answered = r.Replied + r.Booked;
+    var pct = ended + r.Active == 0 ? 0 : (int)Math.Round(answered * 100.0 / (ended + r.Active));
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("Sequence","Crm", new { id = s.ID })" class="fw-bold text-gray-900 text-hover-primary">@(!isAr && !string.IsNullOrWhiteSpace(s.NameEn) ? s.NameEn : s.Name)</a>
+            @if (!s.IsActive) { <span class="badge badge-light ms-2">@T["Paused"]</span> }</td>
+        <td><span class="badge badge-light-primary">@T["aud:" + s.Target]</span></td>
+        <td class="text-end num">@r.Steps</td>
+        <td class="text-end num fw-semibold">@r.Active</td>
+        <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1 bg-light"><div class="progress-bar bg-success" style="width:@pct%"></div></div><span class="num fs-8 fw-semibold">@pct%</span></div></td>
+        <td class="text-end num">@r.Booked</td>
+        <td>@if (r.Owner != null)
+            {
+                var ini = Initials(r.Owner.Name);
+                <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle">@if (r.Owner.HasPhoto) { <img src="/People/Photo/@r.Owner.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-9&quot;>@ini</span>'" /> } else { <span class="symbol-label crm-initials fs-9">@ini</span> }</div><span class="fs-7">@r.Owner.Name</span></div>
+            }</td>
+    </tr>
+}

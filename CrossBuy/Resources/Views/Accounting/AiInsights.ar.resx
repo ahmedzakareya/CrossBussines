@@ -217,4 +217,40 @@
   <data name="Items analysed" xml:space="preserve">
     <value>الأصناف التي تم تحليلها</value>
   </data>
+  <data name="These entries carry no source document, so duplication cannot be judged" xml:space="preserve">
+    <value>هذه القيود بلا مستند مصدر، فيتعذّر الحكم على تكرارها</value>
+  </data>
+  <data name="Not checked" xml:space="preserve">
+    <value>لم يُفحص</value>
+  </data>
+  <data name="Duplicate checking covered" xml:space="preserve">
+    <value>فحص التكرار غطّى</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>من</value>
+  </data>
+  <data name="entries" xml:space="preserve">
+    <value>قيد</value>
+  </data>
+  <data name="The remaining" xml:space="preserve">
+    <value>والباقي</value>
+  </data>
+  <data name="carry no source document and a generated description, so a duplicate cannot be told apart from a coincidence. Nothing is claimed about them either way." xml:space="preserve">
+    <value>بلا مستند مصدر ووصفه مُولَّد آليًا، فلا يمكن تمييز التكرار عن المصادفة. ولا يُدَّعى عنها شيء في أي اتجاه.</value>
+  </data>
+  <data name="Review queue" xml:space="preserve">
+    <value>طابور المراجعة</value>
+  </data>
+  <data name="These are not findings. They are the entries whose amount and line count look least like the rest, ordered by how unusual they are — somewhere to start looking, not a list of errors." xml:space="preserve">
+    <value>هذه ليست نتائج. هي القيود التي يبدو مبلغها وعدد سطورها الأبعد عن بقية الدفتر، مرتَّبة حسب درجة غرابتها — نقطة بداية للنظر، لا قائمة أخطاء.</value>
+  </data>
+  <data name="Lines" xml:space="preserve">
+    <value>السطور</value>
+  </data>
+  <data name="Unusualness" xml:space="preserve">
+    <value>درجة الغرابة</value>
+  </data>
+  <data name="not measurable in this period" xml:space="preserve">
+    <value>غير قابل للقياس في هذه الفترة</value>
+  </data>
 </root>

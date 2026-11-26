@@ -52,8 +52,10 @@ namespace CrossBuy.Models.Communication
 
         public required string DefaultTitleAr { get; init; }
         public required string DefaultTitleEn { get; init; }
+        public string DefaultTitleFr { get; init; } = "";
         public required string DefaultBodyAr { get; init; }
         public required string DefaultBodyEn { get; init; }
+        public string DefaultBodyFr { get; init; } = "";
 
         // Resource key PREFIX for a deployment that wants localized text. The provider looks for
         // "<prefix>.TitleAr" etc. and falls back to the defaults above when the key is absent — so no resx
@@ -106,6 +108,12 @@ namespace CrossBuy.Models.Communication
     {
         public const string ActorName = "actor";
         public const string EntityLabel = "entity";
+
+        // ONE RENDER PASS FILLS BOTH LANGUAGES from ONE token dictionary, so a single {entity}
+        // value would have to serve an Arabic sentence and an English one at the same time - which
+        // is why the English body used to read "...on JournalEntry#16172" and the Arabic one
+        // exactly the same. The English templates take their own token.
+        public const string EntityLabelEn = "entityEn";
         public const string EntityKind = "entityKind";
         public const string Excerpt = "excerpt";
         public const string ThreadSubject = "thread";
@@ -192,6 +200,8 @@ namespace CrossBuy.Models.Communication
         public required string TitleEn { get; init; }
         public required string BodyAr { get; init; }
         public required string BodyEn { get; init; }
+        public string TitleFr { get; init; } = "";
+        public string BodyFr { get; init; } = "";
         public required string Category { get; init; }
         public required string Priority { get; init; }
         public required string LegacyNotificationType { get; init; }

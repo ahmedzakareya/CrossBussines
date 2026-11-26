@@ -135,6 +135,23 @@ namespace CrossBuy.Controllers.Api
 		// ---------- ML: journal anomaly scan (Phase 1, no LLM / no API key) ----------
 		// .NET gathers posted entries (company-scoped) and forwards them to the Python
 		// ML service, which flags possible anomalies for human review. Read-only.
+		// SEC-03 — AUTHORITY, NOT MERELY A RESOLVED COMPANY.
+		//
+		// WHAT WAS WRONG. ResolveCompanyAsync() below fixed the TENANCY defect described above, and the
+		// controller is JWT-authenticated — but neither is authorization. Any employee who could obtain a
+		// token could run an anomaly scan across the whole company ledger.
+		//
+		// WHY `report-read` AND NOT `read`. AccountingAccessService answers `read` UNCONDITIONALLY for a
+		// configured company — its own comment says "any authenticated employee may open an accounting
+		// screen" — so guarding this with `read` would have been a fix that changed nothing. `report-read`
+		// exists precisely for this shape and its own comment explains why: a report "crosses documents,
+		// periods and customers in a single artifact that can be exported and mailed, so it answers to a
+		// role rather than to mere membership". An anomaly scan over every posted entry is that artifact,
+		// and it is additionally forwarded to an external processor. It resolves to chief || acct || auditor.
+		//
+		// NOT `profitability-report-read`: that tier is for what the company EARNED (margin, profit), which
+		// this does not disclose. Widening a guard is recoverable; mis-scoping the vocabulary is not.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, CrossBuy.BL.AccountingActions.ReportRead)]
 		[HttpPost("anomaly/journal-scan")]
 		public async Task<IActionResult> AnomalyJournalScan()
 		{
@@ -146,6 +163,10 @@ namespace CrossBuy.Controllers.Api
 		// ---------- ML: cash-flow projection (Phase 1, no LLM / no API key) ----------
 		// Opening cash + outstanding AR/AP (FIFO settlement, mirroring the aging logic)
 		// with expected due dates → forwarded to Python which projects the running balance.
+		// SEC-03 — same authority, same reasoning as the anomaly scan above. A cash-flow projection reads
+		// opening cash plus every outstanding receivable and payable with its due date: a cross-document,
+		// cross-period financial artifact. `report-read`, not `read`.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, CrossBuy.BL.AccountingActions.ReportRead)]
 		[HttpPost("forecast/cashflow")]
 		public async Task<IActionResult> ForecastCashflow(int horizonDays = 90)
 		{
@@ -157,6 +178,24 @@ namespace CrossBuy.Controllers.Api
 		// ---------- ML: inventory analysis (Phase 1, no LLM / no API key) ----------
 		// Per-item on-hand/value/outbound demand + reorder points → Python classifies
 		// slow-moving / reorder / stockout-risk and suggests reorder quantities.
+		// SEC-03 — INTERIM CONTROL, AND THE LIMITATION IS STATED RATHER THAN HIDDEN.
+		//
+		// This endpoint returns per-item on-hand quantity AND VALUE plus reorder points — a valuation
+		// artifact, not a stock lookup. InventoryAccessService answers `"read" => true` ("any authenticated
+		// user in this company may view"), so `read` would guard nothing, exactly as `read` would not have
+		// guarded the two accounting endpoints above.
+		//
+		// Accounting solved this with a dedicated `report-read` tier. INVENTORY HAS NO EQUIVALENT: its four
+		// actions are read | doc | purchase | manage, and none of them means "may see aggregated valuation".
+		// Creating one would mean editing InventoryAccessService — a shared security file this wave does not
+		// own — and inventing vocabulary the owner has not approved.
+		//
+		// So this takes the narrowest EXISTING action that implies valuation authority, `manage`
+		// (InventoryManager). That is deliberately stricter than the right answer: a purchasing officer who
+		// legitimately needs a reorder recommendation is now refused. Over-restriction is recoverable by a
+		// complaint; under-restriction is a disclosure. The proper fix is an `InventoryActions.ReportRead`
+		// mirroring the accounting tier, and it is listed as an owner decision in the wave report.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Inventory, "manage")]
 		[HttpPost("inventory/analyze")]
 		public async Task<IActionResult> InventoryAnalyze(int slowDays = 90)
 		{

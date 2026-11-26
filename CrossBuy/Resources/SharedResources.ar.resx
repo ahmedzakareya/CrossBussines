@@ -3883,7 +3883,2043 @@
   <data name="Punch locations" xml:space="preserve">
     <value>مواقع البصمة</value>
   </data>
-  <data name="Bedside scanning" xml:space="preserve"><value>المسح عند السرير</value></data>
+  <data name="Project purchasing" xml:space="preserve">
+    <value>مشتريات المشاريع</value>
+  </data>
+  <data name="Comm.Notification.MentionedInComment.TitleAr" xml:space="preserve">
+    <value>أشار إليك {actor}</value>
+  </data>
+  <data name="Construction.Editor.AllocationSaved" xml:space="preserve">
+    <value>حُفظ التوزيع الكامل للبنود. راجع المقترح قبل تقديمه للاعتماد.</value>
+  </data>
+  <data name="Construction.Editor.AllocationTitle" xml:space="preserve">
+    <value>توزيع الشراء على الميزانية</value>
+  </data>
+  <data name="Construction.TransferUi.IndependentDecision" xml:space="preserve">
+    <value>القرار المستقل</value>
+  </data>
+  <data name="Construction.ActualUi.Allocated" xml:space="preserve">
+    <value>موزّع</value>
+  </data>
+  <data name="Construction.Purchase.Error.SourceAlreadyAdmitted" xml:space="preserve">
+    <value>اعتُمد هذا الشراء بالفعل. التعديلات المالية تتطلب مسارًا مستقلًا.</value>
+  </data>
+  <data name="Construction.Editor.InvalidNumbers" xml:space="preserve">
+    <value>راجع الحقول المطلوبة والأرقام العشرية. استخدم النقطة دون فواصل آلاف؛ يجب إكمال كل بند.</value>
+  </data>
+  <data name="Construction.Rebase.Error.PolicyNotConfigured" xml:space="preserve">
+    <value>يجب إعداد سياسة ميزانية صريحة للشركة أولًا.</value>
+  </data>
+  <data name="Account name is required" xml:space="preserve">
+    <value>اسم الحساب مطلوب</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidBudgetKind" xml:space="preserve">
+    <value>اختر ميزانية أصلية أو معدلة أو سيناريو تقديريًا.</value>
+  </data>
+  <data name="Construction.ActualUi.Choose" xml:space="preserve">
+    <value>اختر</value>
+  </data>
+  <data name="Construction.Warehouse.ReviewSite" xml:space="preserve">
+    <value>فحص الموقع والطلب</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidCurrencyPrecision" xml:space="preserve">
+    <value>التزم بدقة عملة الميزانية المعتمدة.</value>
+  </data>
+  <data name="Construction.Exception.Error.IdempotencyConflict" xml:space="preserve">
+    <value>استُخدم معرّف الإرسال سابقًا لتفاصيل مختلفة.</value>
+  </data>
+  <data name="Construction.PolicyUi.Unconfigured" xml:space="preserve">
+    <value>غير محدد — لا توجد سياسة مفترضة</value>
+  </data>
+  <data name="Construction.Rebase.Request" xml:space="preserve">
+    <value>طلب مراجعة ربط الميزانية</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Confirmed" xml:space="preserve">
+    <value>اجتازت المصادر التحقق. أكّد الربط التحليلي. المبلغ الوظيفي المتحقق منه:</value>
+  </data>
+  <data name="choose a warehouse" xml:space="preserve">
+    <value>اختر المخزن</value>
+  </data>
+  <data name="Supplier returns" xml:space="preserve">
+    <value>مرتجع المورد</value>
+  </data>
+  <data name="Construction.Purchase.Error.ApprovalAlreadyPending" xml:space="preserve">
+    <value>يوجد طلب اعتماد قيد المراجعة لهذا الشراء. راجع سجله أدناه.</value>
+  </data>
+  <data name="Construction.Purchase.Request.NoAllocation" xml:space="preserve">
+    <value>لا يوجد توزيع حالي متحقق منه لعرضه.</value>
+  </data>
+  <data name="Branch capabilities" xml:space="preserve">
+    <value>قدرات الفرع</value>
+  </data>
+  <data name="Construction.Warehouse.Date" xml:space="preserve">
+    <value>التاريخ (UTC)</value>
+  </data>
+  <data name="Construction.Exception.Amount" xml:space="preserve">
+    <value>صافي المبلغ الموزع</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Quantity" xml:space="preserve">
+    <value>الكمية الأساسية</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.InvalidWarehouseExceptionRequest" xml:space="preserve">
+    <value>بيانات طلب الموافقة غير مكتملة أو غير صالحة.</value>
+  </data>
+  <data name="Construction.Exception.History" xml:space="preserve">
+    <value>سجل الطلبات والقرارات</value>
+  </data>
+  <data name="Link the opportunity to an account first" xml:space="preserve">
+    <value>اربط الفرصة بحساب أولاً</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.InvalidForecastAmount" xml:space="preserve">
+    <value>يجب ألا تكون مبالغ الميزانية والالتزامات والتكلفة المتبقّية سالبة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidTransferApplication" xml:space="preserve">
+    <value>طلب التنفيذ غير صحيح.</value>
+  </data>
+  <data name="Construction.ActualUi.ConfirmNotice" xml:space="preserve">
+    <value>تمت مراجعة المصدر والإجمالي. ستُفحص صلاحية الأبعاد وحداثة المصدر مجددًا عند التأكيد.</value>
+  </data>
+  <data name="Construction.Budget.SaveFailed" xml:space="preserve">
+    <value>تعذر إكمال عملية الميزانية.</value>
+  </data>
+  <data name="Items &amp; pricing" xml:space="preserve">
+    <value>الأصناف والتسعير</value>
+  </data>
+  <data name="Lead name is required" xml:space="preserve">
+    <value>اسم العميل المحتمل مطلوب</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Cost" xml:space="preserve">
+    <value>التكلفة بالعملة الوظيفية</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Date" xml:space="preserve">
+    <value>وقت التسجيل (UTC)</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Item" xml:space="preserve">
+    <value>الصنف</value>
+  </data>
+  <data name="Construction.Purchase.Request.Exception" xml:space="preserve">
+    <value>استثناء الميزانية المعتمد</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.InvalidWarehouseExceptionDecision" xml:space="preserve">
+    <value>بيانات القرار غير مكتملة أو غير صالحة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidTransferDecision" xml:space="preserve">
+    <value>اختر الموافقة أو الرفض وأدخل سببًا لا يزيد على 1000 حرف.</value>
+  </data>
+  <data name="Construction.Purchase.Request.NoHistory" xml:space="preserve">
+    <value>لم يُقدّم طلب اعتماد لهذا الشراء بعد.</value>
+  </data>
+  <data name="Construction.Editor.Dimension" xml:space="preserve">
+    <value>العمل ورمز التكلفة المدرجان في الميزانية</value>
+  </data>
+  <data name="Construction.Rebase.TargetBudget" xml:space="preserve">
+    <value>نسخة الميزانية المعتمدة الحالية</value>
+  </data>
+  <data name="Construction.PolicyUi.Disabled" xml:space="preserve">
+    <value>غير مسموح</value>
+  </data>
+  <data name="Construction.TransferUi.HistoryNotice" xml:space="preserve">
+    <value>آخر 50 طلبًا بعملة الميزانية المسجلة. القرارات محفوظة دون تعديل ولا تنفّذ أي نقل.</value>
+  </data>
+  <data name="Construction.Editor.SaveDraft" xml:space="preserve">
+    <value>حفظ المسودة وتوزيعها</value>
+  </data>
+  <data name="Construction.ActualUi.Truncated" xml:space="preserve">
+    <value>تظهر أحدث ١٠٠ بند مصروف. يمكن فتح بند أقدم بإدخال رقم بند القيد.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.InvalidConsumptionRequest" xml:space="preserve">
+    <value>أدخل أرقام مصادر صحيحة وسبب الربط ثم تحقق من المصادر.</value>
+  </data>
+  <data name="Construction.ActualUi.Line" xml:space="preserve">
+    <value>بند القيد</value>
+  </data>
+  <data name="Construction.ActualUi.Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="Construction.ActualUi.Date" xml:space="preserve">
+    <value>التاريخ</value>
+  </data>
+  <data name="Construction.Exception.State.Pending" xml:space="preserve">
+    <value>بانتظار المراجعة المستقلة</value>
+  </data>
+  <data name="Construction.TransferUi.Preview" xml:space="preserve">
+    <value>فحص الإمكانية</value>
+  </data>
+  <data name="Construction.Rebase.Activated" xml:space="preserve">
+    <value>مفعّل</value>
+  </data>
+  <data name="Construction.TransferUi.Budgets" xml:space="preserve">
+    <value>نسخ الميزانية</value>
+  </data>
+  <data name="Tag archived" xml:space="preserve">
+    <value>تمت أرشفة الوسم</value>
+  </data>
+  <data name="Construction.Exception.State.Consumed" xml:space="preserve">
+    <value>استُخدم مرة واحدة لاعتماد الشراء</value>
+  </data>
+  <data name="Sync conflict review" xml:space="preserve">
+    <value>مراجعة تعارضات المزامنة</value>
+  </data>
+  <data name="Construction.Editor.SaveAllocation" xml:space="preserve">
+    <value>حفظ التوزيع ومراجعة الطلب</value>
+  </data>
+  <data name="Construction.Rebase.State.None" xml:space="preserve">
+    <value>لم يُطلب</value>
+  </data>
+  <data name="Construction.Purchase.Error.ApprovalAlreadyDecided" xml:space="preserve">
+    <value>تم اتخاذ قرار بشأن هذا الطلب بالفعل.</value>
+  </data>
+  <data name="Construction.Editor.AllocationNotice" xml:space="preserve">
+    <value>وزّع صراحةً كامل صافي كل بند شراء محفوظ على أعمال ورموز تكلفة مؤهلة. حفظ التوزيع لا يعتمد الشراء ولا يحجز الميزانية.</value>
+  </data>
+  <data name="Construction.TransferUi.Unconfigured" xml:space="preserve">
+    <value>يجب أن يحدد مسؤول الشركة سياسة نقل الميزانية صراحةً. لا توجد سياسة مفترضة.</value>
+  </data>
+  <data name="Construction.PolicyUi.ManualAuthorOwned" xml:space="preserve">
+    <value>توقع يدوي مع تسجيل المسؤول والطريقة</value>
+  </data>
+  <data name="Construction.ActualUi.Reload" xml:space="preserve">
+    <value>إعادة تحميل المصدر الحالي</value>
+  </data>
+  <data name="Construction.ActualUi.Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Currency information unavailable" xml:space="preserve">
+    <value>معلومات العملة غير متاحة</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidTransfer" xml:space="preserve">
+    <value>اختر بندين مختلفين من الميزانية الحالية ومبلغًا موجبًا.</value>
+  </data>
+  <data name="Data quality &amp; duplicates" xml:space="preserve">
+    <value>جودة البيانات والتكرار</value>
+  </data>
+  <data name="choose an item or an account" xml:space="preserve">
+    <value>اختر صنفًا أو حسابًا</value>
+  </data>
+  <data name="Construction.ForecastUi.Reason" xml:space="preserve">
+    <value>السبب وأساس التقدير</value>
+  </data>
+  <data name="My day" xml:space="preserve">
+    <value>يومي</value>
+  </data>
+  <data name="Construction.ConsumptionUi.CandidateNotice" xml:space="preserve">
+    <value>اختر رقم المصدر من الاقتراحات أو الجدولين أدناه. القوائم مرشحة فقط؛ زر التحقق يفحص الزوج المختار. يمكنك إدخال رقم مصدر أقدم مباشرة.</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidCurrencyPrecision" xml:space="preserve">
+    <value>أدخل المبالغ بدقة العملة المحددة دون كسور إضافية.</value>
+  </data>
+  <data name="Construction.TransferUi.ApproveDecision" xml:space="preserve">
+    <value>تسجيل موافقة مستقلة</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.IssueOrActualSourceNotProven" xml:space="preserve">
+    <value>تعذر إثبات حركة الصرف أو أدلة تكلفتها الفعلية لهذا الاستلام.</value>
+  </data>
+  <data name="Construction.Editor.Unit" xml:space="preserve">
+    <value>الوحدة</value>
+  </data>
+  <data name="Construction.Editor.Item" xml:space="preserve">
+    <value>الصنف</value>
+  </data>
+  <data name="Construction.Rebase.Error.RebaseBaselineLineageRequired" xml:space="preserve">
+    <value>يدعم هذا المسار الميزانية المعتمدة التالية مباشرة فقط.</value>
+  </data>
+  <data name="Allocate actual costs" xml:space="preserve">
+    <value>توزيع التكاليف الفعلية</value>
+  </data>
+  <data name="Budget exceptions" xml:space="preserve">
+    <value>استثناءات الميزانية</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.History" xml:space="preserve">
+    <value>طلبات وموافقات الموقع</value>
+  </data>
+  <data name="Construction.PartialInvoice.Total" xml:space="preserve">
+    <value>الإجمالي</value>
+  </data>
+  <data name="Construction.PartialInvoice.Title" xml:space="preserve">
+    <value>فاتورة شراء مشروع جزئية</value>
+  </data>
+  <data name="Construction.Purchase.Error.ApprovedBaselineRequired" xml:space="preserve">
+    <value>يلزم مرجع ميزانية مشروع حالي ومعتمد.</value>
+  </data>
+  <data name="Construction.ForecastUi.HistoryNotice" xml:space="preserve">
+    <value>أحدث 50 سجلًّا محرَّرًا. وتُعرض القيم التاريخية كما حُفظت، ولا يُعاد احتسابها على الأساس المالي الحالي.</value>
+  </data>
+  <data name="Construction.Exception.Review" xml:space="preserve">
+    <value>مراجعة هذا الطلب</value>
+  </data>
+  <data name="Construction.ForecastUi.Details" xml:space="preserve">
+    <value>التفاصيل المحفوظة</value>
+  </data>
+  <data name="Construction.Exception.Reload" xml:space="preserve">
+    <value>تحميل الحالة الحالية</value>
+  </data>
+  <data name="Construction.Exception.Reject" xml:space="preserve">
+    <value>رفض الاستثناء</value>
+  </data>
+  <data name="Construction.Exception.Reason" xml:space="preserve">
+    <value>سبب الطلب</value>
+  </data>
+  <data name="Construction.PartialInvoice.Order" xml:space="preserve">
+    <value>أمر الشراء</value>
+  </data>
+  <data name="Construction.Editor.Limit" xml:space="preserve">
+    <value>تم الوصول إلى الحد الأقصى لعدد البنود.</value>
+  </data>
+  <data name="Construction.Editor.Notes" xml:space="preserve">
+    <value>ملاحظات</value>
+  </data>
+  <data name="Construction.Exception.Submit" xml:space="preserve">
+    <value>إرسال طلب الاستثناء</value>
+  </data>
+  <data name="Project purchase approval" xml:space="preserve">
+    <value>اعتماد شراء المشروع</value>
+  </data>
+  <data name="Construction.ForecastUi.Method" xml:space="preserve">
+    <value>الطريقة: تكلفة متبقّية يدوية شاملةً الالتزامات</value>
+  </data>
+  <data name="Line {0}" xml:space="preserve">
+    <value>البند {0}</value>
+  </data>
+  <data name="Construction.Purchase.Request.Preserved" xml:space="preserve">
+    <value>تم الاحتفاظ بالسبب أدناه. أعد تحميل المقترح الحالي وراجعه قبل تقديم طلب آخر.</value>
+  </data>
+  <data name="Construction.ForecastUi.Number" xml:space="preserve">
+    <value>السجلّ / التوقيت العالمي</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidBudgetDimension" xml:space="preserve">
+    <value>لم يعد أحد بنود الميزانية صالحًا للاعتماد. راجع جميع أبعاد الميزانية الحالية.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.WarehouseConsentLineageChanged" xml:space="preserve">
+    <value>لم تعد الموافقة مرتبطة بمصدر الطلب الحالي.</value>
+  </data>
+  <data name="Construction.Purchase.Error.InvalidApprovalRequest" xml:space="preserve">
+    <value>أدخل سببًا لا يتجاوز ١٠٠٠ حرف وراجع مقترحًا محفوظًا وحاليًا قبل التقديم.</value>
+  </data>
+  <data name="Construction.Purchase.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>حدث تعديل متزامن. حدّث الطلب قبل اتخاذ القرار.</value>
+  </data>
+  <data name="Construction.Editor.Add" xml:space="preserve">
+    <value>إضافة بند</value>
+  </data>
+  <data name="Construction.TransferUi.Unchanged" xml:space="preserve">
+    <value>إجمالي البندين لم يتغير. الأرقام معاينة لحالة المصادر وليست اعتمادًا.</value>
+  </data>
+  <data name="Construction.Exception.Error.InvalidExceptionRequest" xml:space="preserve">
+    <value>أدخل السبب وأعد تحميل معاينة مالية صالحة.</value>
+  </data>
+  <data name="Promotions &amp; loyalty" xml:space="preserve">
+    <value>العروض والولاء</value>
+  </data>
+  <data name="Construction.Rebase.Approve" xml:space="preserve">
+    <value>اعتماد اقتراح ربط الميزانية</value>
+  </data>
+  <data name="Construction.ActualUi.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Construction.TransferUi.To" xml:space="preserve">
+    <value>إلى بند الميزانية</value>
+  </data>
+  <data name="Construction.Structure.Error.StructureNotConfigured" xml:space="preserve">
+    <value>حدد الحد الأقصى لعمق الشركة قبل إضافة بنود الأعمال.</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.General" xml:space="preserve">
+    <value>تعذّر إعداد التوقّع أو حفظه. راجع سياسة الشركة واكتمال تغطية التكلفة، ثم حدّث الصفحة وراجع من جديد.</value>
+  </data>
+  <data name="Construction.Rebase.Error.General" xml:space="preserve">
+    <value>تعذر التحقق من مصدر العملية. راجع الميزانية والاعتمادات وسجل الاستلام ثم أعد التحميل.</value>
+  </data>
+  <data name="Construction.Purchase.Error.LineAllocationIncomplete" xml:space="preserve">
+    <value>يجب أن تساوي توزيعات كل بند شراء كامل صافي مبلغه المحفوظ تمامًا.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Empty" xml:space="preserve">
+    <value>لا توجد روابط استهلاك مسجلة لهذا المشروع.</value>
+  </data>
+  <data name="Goods receipt" xml:space="preserve">
+    <value>استلام البضاعة</value>
+  </data>
+  <data name="Construction.Exception.State.Stale" xml:space="preserve">
+    <value>تغيّر الأساس المالي</value>
+  </data>
+  <data name="Construction.Rebase.ExposureState" xml:space="preserve">
+    <value>ربط الالتزام</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Issue" xml:space="preserve">
+    <value>رقم حركة الصرف</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Saved" xml:space="preserve">
+    <value>تم تسجيل الربط أو تأكيد تسجيل الطلب السابق.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidName" xml:space="preserve">
+    <value>أدخل الاسم بالعربية بما لا يتجاوز 200 حرف.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidNode" xml:space="preserve">
+    <value>أدخل الرمز والاسم بالعربية وطريقة قياس التقدم.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidForm" xml:space="preserve">
+    <value>راجع القيم المدخلة.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidSite" xml:space="preserve">
+    <value>أدخل رمز الموقع واسمه بالعربية.</value>
+  </data>
+  <data name="Construction.ForecastUi.SaveNotice" xml:space="preserve">
+    <value>يضيف الحفظ سجلًّا جديدًا يحمل هويتك ووقتك والأساس المالي المصدر. والسجلّات السابقة محفوظة. وتُفحص المصادر من جديد عند الحفظ.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Title" xml:space="preserve">
+    <value>ربط استهلاك المواد</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيرت المصادر بعد المعاينة. راجعها وأعد التحقق.</value>
+  </data>
+  <data name="Construction.PolicyUi.Restricted" xml:space="preserve">
+    <value>مخزن الموقع المصرح به فقط</value>
+  </data>
+  <data name="Construction.ForecastUi.Commitment" xml:space="preserve">
+    <value>الالتزامات القائمة</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Unknown" xml:space="preserve">
+    <value>الحالة غير متاحة</value>
+  </data>
+  <data name="Construction.Warehouse.DecisionReason" xml:space="preserve">
+    <value>سبب القرار</value>
+  </data>
+  <data name="Account Insights" xml:space="preserve">
+    <value>تحليلات الحسابات</value>
+  </data>
+  <data name="Construction.Structure.Error.WarehouseAccessDenied" xml:space="preserve">
+    <value>اختر مخزنًا مصرحًا لك باستخدامه أو اترك الموقع دون ربط.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Received" xml:space="preserve">
+    <value>المستلم</value>
+  </data>
+  <data name="Purchasing &amp; suppliers" xml:space="preserve">
+    <value>المشتريات والموردون</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.State.Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Construction.Rebase.Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="Construction.Rebase.Date" xml:space="preserve">
+    <value>تاريخ الطلب (UTC)</value>
+  </data>
+  <data name="enter a debit or a credit" xml:space="preserve">
+    <value>أدخل مدينًا أو دائنًا</value>
+  </data>
+  <data name="Construction.PolicyUi.ApprovedException" xml:space="preserve">
+    <value>يتطلب موقع آخر استثناءً معتمدًا</value>
+  </data>
+  <data name="Construction.Purchase.Error.SupplierNotFound" xml:space="preserve">
+    <value>اختر موردًا نشطًا تابعًا لهذه الشركة.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Preview" xml:space="preserve">
+    <value>التحقق من المصادر</value>
+  </data>
+  <data name="Construction.TransferUi.After" xml:space="preserve">
+    <value>بعد المقترح (غير منفذ)</value>
+  </data>
+  <data name="Construction.TransferUi.Apply" xml:space="preserve">
+    <value>تنفيذ النقل المعتمد</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.ActualCoverageRequired" xml:space="preserve">
+    <value>أكمل توزيع التكلفة الفعلية قبل ربط الاستهلاك.</value>
+  </data>
+  <data name="Construction.TransferUi.Title" xml:space="preserve">
+    <value>فحص إمكانية نقل الميزانية</value>
+  </data>
+  <data name="Discount approvals" xml:space="preserve">
+    <value>موافقات الخصم</value>
+  </data>
+  <data name="Z report" xml:space="preserve">
+    <value>تقرير الوردية Z</value>
+  </data>
+  <data name="Construction.TransferUi.State" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Construction.Rebase.State.Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="Budget transfer feasibility" xml:space="preserve">
+    <value>فحص إمكانية نقل الميزانية</value>
+  </data>
+  <data name="Lead not found" xml:space="preserve">
+    <value>العميل المحتمل غير موجود</value>
+  </data>
+  <data name="New project purchase draft" xml:space="preserve">
+    <value>مسودة شراء مشروع</value>
+  </data>
+  <data name="choose an item" xml:space="preserve">
+    <value>اختر الصنف</value>
+  </data>
+  <data name="Construction.PolicyUi.Conflict" xml:space="preserve">
+    <value>تغير الإعداد. راجع الاختيار الحالي ثم أعد الحفظ.</value>
+  </data>
+  <data name="Construction.Editor.Preserved" xml:space="preserve">
+    <value>تم الاحتفاظ بمدخلاتك الأصلية والسبب أدناه. يجب إعادة تحميل بيانات المصدر المتغيرة صراحةً.</value>
+  </data>
+  <data name="Construction.Purchase.Error.BudgetHardBlock" xml:space="preserve">
+    <value>يتجاوز أمر الشراء حد الميزانية المحدد.</value>
+  </data>
+  <data name="Construction.PolicyUi.BudgetTransfer" xml:space="preserve">
+    <value>D-09: نقل الميزانية</value>
+  </data>
+  <data name="Construction.Rebase.Saved" xml:space="preserve">
+    <value>تم تسجيل العملية. راجع حالة المسار الحالية أدناه.</value>
+  </data>
+  <data name="Project cost forecast" xml:space="preserve">
+    <value>توقّع تكلفة المشروع</value>
+  </data>
+  <data name="Construction.Rebase.State" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Construction.Rebase.Error.AccessDenied" xml:space="preserve">
+    <value>ليست لديك صلاحية تنفيذ هذه العملية.</value>
+  </data>
+  <data name="Construction.ActualUi.AlreadyAllocated" xml:space="preserve">
+    <value>لهذا المصدر توزيع موجود. لا يمكن استبدال سجل التوزيع من هذه الشاشة.</value>
+  </data>
+  <data name="Construction.Warehouse.Decision" xml:space="preserve">
+    <value>القرار المستقل</value>
+  </data>
+  <data name="Construction.Rebase.Title" xml:space="preserve">
+    <value>إعادة اعتماد المشتريات على الميزانية</value>
+  </data>
+  <data name="Construction.Rebase.Order" xml:space="preserve">
+    <value>طلب الشراء</value>
+  </data>
+  <data name="Construction.Structure.Error.ReasonRequired" xml:space="preserve">
+    <value>أدخل سبب التغيير بما لا يتجاوز 1000 حرف.</value>
+  </data>
+  <data name="Construction.Rebase.History" xml:space="preserve">
+    <value>سجل الطلبات</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InsufficientUncommittedBudget" xml:space="preserve">
+    <value>المبلغ المقترح يتجاوز المتاح في البند بعد التكاليف والالتزامات.</value>
+  </data>
+  <data name="Construction.Rebase.Empty" xml:space="preserve">
+    <value>لا توجد مشتريات محجوزة على ميزانيات سابقة.</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Closed" xml:space="preserve">
+    <value>مغلق</value>
+  </data>
+  <data name="Construction.Editor.Currency" xml:space="preserve">
+    <value>عملة الميزانية المعتمدة</value>
+  </data>
+  <data name="Construction.Purchase.Error.InvalidDraftRequest" xml:space="preserve">
+    <value>راجع حقول المسودة والتواريخ وإصدار الميزانية وقيم البنود الكاملة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.TransferAlreadyApplied" xml:space="preserve">
+    <value>تم تنفيذ هذا النقل المعتمد بالفعل.</value>
+  </data>
+  <data name="Construction.ForecastUi.Author" xml:space="preserve">
+    <value>معرّف الموظف المحرِّر</value>
+  </data>
+  <data name="Construction.PolicyUi.Explanation" xml:space="preserve">
+    <value>كل اختيار يخص الشركة الحالية فقط. لا يتم اختيار أو حفظ أي سياسة تلقائيًا. يلزم سبب وصلاحية إدارة مشاريع الشركة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.General" xml:space="preserve">
+    <value>تعذر التحقق من اكتمال المصادر. لن تعرض أرقام للمقترح ولم يحدث أي تغيير.</value>
+  </data>
+  <data name="Tag deleted" xml:space="preserve">
+    <value>تم حذف الوسم</value>
+  </data>
+  <data name="Construction.Purchase.Request.Lines" xml:space="preserve">
+    <value>بنود الشراء المحفوظة</value>
+  </data>
+  <data name="Comm.Notification.CommentOnFollowedThread.BodyAr" xml:space="preserve">
+    <value>أضاف {actor} تعليقًا: {excerpt}</value>
+  </data>
+  <data name="Construction.ForecastUi.Remaining" xml:space="preserve">
+    <value>التكلفة المتبقّية شاملةً الالتزامات</value>
+  </data>
+  <data name="Construction.ForecastUi.Actual" xml:space="preserve">
+    <value>صافي التكلفة الفعلية</value>
+  </data>
+  <data name="Barcodes" xml:space="preserve">
+    <value>الباركودات</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidBudgetDimension" xml:space="preserve">
+    <value>اختر بند أعمال يملك ميزانية في هذا المشروع ورمز تكلفة نشطًا تابعًا للشركة.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Preserved" xml:space="preserve">
+    <value>تم الاحتفاظ بهوية الطلب؛ لا تنشئ طلبًا جديدًا لإعادة محاولة إصدار لم تتأكد نتيجته.</value>
+  </data>
+  <data name="Construction.ForecastUi.Budget" xml:space="preserve">
+    <value>الميزانية</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Pending" xml:space="preserve">
+    <value>بانتظار المراجعة المستقلة</value>
+  </data>
+  <data name="Construction.Purchase.Request.Title" xml:space="preserve">
+    <value>اعتماد مشتريات الإنشاءات</value>
+  </data>
+  <data name="Construction.Purchase.Request.Total" xml:space="preserve">
+    <value>إجمالي المبلغ</value>
+  </data>
+  <data name="Construction.Warehouse.State.Approved" xml:space="preserve">
+    <value>موافق عليه</value>
+  </data>
+  <data name="Construction.Rebase.NotActivated" xml:space="preserve">
+    <value>غير مفعّل</value>
+  </data>
+  <data name="Construction.PolicyUi.Title" xml:space="preserve">
+    <value>سياسات الإنشاءات للشركة</value>
+  </data>
+  <data name="Construction.PolicyUi.Saved" xml:space="preserve">
+    <value>تم حفظ اختيار الشركة مع سجل تدقيق.</value>
+  </data>
+  <data name="Construction.Purchase.Request.Decision" xml:space="preserve">
+    <value>ملاحظة القرار</value>
+  </data>
+  <data name="Construction.Dsr.Title" xml:space="preserve">
+    <value>تقارير الموقع اليومية</value>
+  </data>
+  <data name="Weighed items" xml:space="preserve">
+    <value>الأصناف الموزونة</value>
+  </data>
+  <data name="Construction.Purchase.Error.WarehouseNotFound" xml:space="preserve">
+    <value>اختر مستودعًا نشطًا تابعًا لهذه الشركة.</value>
+  </data>
+  <data name="Branch stock" xml:space="preserve">
+    <value>أرصدة الفرع</value>
+  </data>
+  <data name="Construction.ConsumptionUi.ReceiptSources" xml:space="preserve">
+    <value>مصادر الاستلام المرشحة للمشروع</value>
+  </data>
+  <data name="Contact name is required" xml:space="preserve">
+    <value>اسم جهة الاتصال مطلوب</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.AccessDenied" xml:space="preserve">
+    <value>ليس لديك صلاحية لتنفيذ هذا الإجراء.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.IssueAlreadyAttributed" xml:space="preserve">
+    <value>هذه الحركة مرتبطة بالفعل. راجع سجل الربط.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Back" xml:space="preserve">
+    <value>أوامر الشراء</value>
+  </data>
+  <data name="Construction.PartialInvoice.Date" xml:space="preserve">
+    <value>تاريخ الفاتورة</value>
+  </data>
+  <data name="Construction.Structure.Error.DepthBelowExistingNodes" xml:space="preserve">
+    <value>هذا العمق أقل من مستوى أحد بنود الهيكل الموجودة.</value>
+  </data>
+  <data name="Ticket not found" xml:space="preserve">
+    <value>التذكرة غير موجودة</value>
+  </data>
+  <data name="Points redemption" xml:space="preserve">
+    <value>استبدال النقاط</value>
+  </data>
+  <data name="Construction.ForecastUi.Previous" xml:space="preserve">
+    <value>السجلّ السابق</value>
+  </data>
+  <data name="Construction.ConsumptionUi.SourceDocument" xml:space="preserve">
+    <value>رقم الاستلام / القيد</value>
+  </data>
+  <data name="Construction.Purchase.Error.DocumentPrecisionNotSupported" xml:space="preserve">
+    <value>دقة العملة غير مدعومة في تخزين مستند الشراء.</value>
+  </data>
+  <data name="Construction.Structure.Error.NodeNotEditable" xml:space="preserve">
+    <value>هذا البند غير متاح للتعديل.</value>
+  </data>
+  <data name="Sourcing overview" xml:space="preserve">
+    <value>نظرة عامة: مصادر التوفير</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidDepthSetting" xml:space="preserve">
+    <value>اختر عددًا صحيحًا من 1 إلى 32.</value>
+  </data>
+  <data name="The purchase order must be approved before receiving goods" xml:space="preserve">
+    <value>يجب اعتماد أمر الشراء قبل استلام البضاعة.</value>
+  </data>
+  <data name="Construction.Rebase.Explanation" xml:space="preserve">
+    <value>راجع المشتريات المحجوزة دون تغيير قيمتها مقابل الميزانية المعتمدة الحالية. تفعيل ربط الالتزام لا يمنح اعتماد الشراء.</value>
+  </data>
+  <data name="Construction.Structure.Title" xml:space="preserve">
+    <value>هيكل المشروع</value>
+  </data>
+  <data name="Construction.Editor.NoWarehouse" xml:space="preserve">
+    <value>لم يُحدد مستودع</value>
+  </data>
+  <data name="Construction.Structure.Saved" xml:space="preserve">
+    <value>تم حفظ هيكل المشروع.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidDefaultAccount" xml:space="preserve">
+    <value>اختر حسابًا نشطًا يقبل الترحيل ويتبع هذه الشركة.</value>
+  </data>
+  <data name="Construction.Purchase.Error.IdempotencyConflict" xml:space="preserve">
+    <value>استُخدم معرف التقديم هذا لتفاصيل مختلفة. أعد تحميل المقترح قبل تقديم طلب جديد.</value>
+  </data>
+  <data name="Item lookup / PLU" xml:space="preserve">
+    <value>البحث عن صنف</value>
+  </data>
+  <data name="Construction.Rebase.State.Approved" xml:space="preserve">
+    <value>معتمد</value>
+  </data>
+  <data name="Budget versions" xml:space="preserve">
+    <value>إصدارات الميزانية</value>
+  </data>
+  <data name="Construction.PartialInvoice.Reload" xml:space="preserve">
+    <value>إعادة تحميل المصدر الحالي</value>
+  </data>
+  <data name="Construction.PartialInvoice.Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Escalated {0} breached ticket(s); {1} have no owner" xml:space="preserve">
+    <value>تم تصعيد {0} تذكرة؛ و{1} بلا مالك</value>
+  </data>
+  <data name="Construction.Purchase.Error.IndependentApproverRequired" xml:space="preserve">
+    <value>لا يجوز لمن أنشأ أمر الشراء أو طلب اعتماده اتخاذ قرار بشأن طلبه.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Confirm" xml:space="preserve">
+    <value>تأكيد الربط</value>
+  </data>
+  <data name="Construction.Rebase.Activate" xml:space="preserve">
+    <value>تفعيل ربط الالتزام</value>
+  </data>
+  <data name="Construction.ForecastUi.Unconfigured" xml:space="preserve">
+    <value>حدّد سياسة صريحة لتوقّع التكلفة على مستوى الشركة قبل تحرير أي توقّع.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.ApprovedWarehouseConsentRequired" xml:space="preserve">
+    <value>الموافقة المطلوبة غير موجودة أو لم تعتمد.</value>
+  </data>
+  <data name="Construction.TransferUi.AwaitingWorkflow" xml:space="preserve">
+    <value>بانتظار قرار مستقل؛ لم يُنفّذ</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Explanation" xml:space="preserve">
+    <value>يسجل هذا الطلب موافقة على موقع محدد بعد إعادة أساس الالتزام. يلزم أن يراجعه مستخدم مستقل عن مقدم الطلب.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Tax" xml:space="preserve">
+    <value>الضريبة</value>
+  </data>
+  <data name="Construction.PartialInvoice.Net" xml:space="preserve">
+    <value>الصافي</value>
+  </data>
+  <data name="Construction.Warehouse.State.Pending" xml:space="preserve">
+    <value>بانتظار القرار</value>
+  </data>
+  <data name="Cash drawer" xml:space="preserve">
+    <value>درج النقد</value>
+  </data>
+  <data name="Construction.Rebase.Error.IdempotencyConflict" xml:space="preserve">
+    <value>استُخدم معرّف الطلب ببيانات مختلفة. أعد التحميل لبدء طلب منفصل.</value>
+  </data>
+  <data name="Comm.Notification.AddedAsParticipant.BodyAr" xml:space="preserve">
+    <value>أضافك {actor} إلى محادثة على {entity}</value>
+  </data>
+  <data name="Construction.ForecastUi.Save" xml:space="preserve">
+    <value>حفظ التوقّع</value>
+  </data>
+  <data name="Construction.Structure.Error.OpenChildNodes" xml:space="preserve">
+    <value>أكمل البنود التابعة أو أرشفها أولًا.</value>
+  </data>
+  <data name="Department not found" xml:space="preserve">
+    <value>القسم غير موجود</value>
+  </data>
+  <data name="Comm.Notification.ReplyToMyComment.BodyAr" xml:space="preserve">
+    <value>رد {actor} على تعليقك على {entity}: {excerpt}</value>
+  </data>
+  <data name="Comm.Notification.MyCommentDeleted.TitleAr" xml:space="preserve">
+    <value>حُذف تعليقك</value>
+  </data>
+  <data name="Construction.Rebase.RequestNumber" xml:space="preserve">
+    <value>رقم الطلب</value>
+  </data>
+  <data name="Construction.Purchase.Error.FunctionalCurrencyNotProven" xml:space="preserve">
+    <value>حدّد العملة الوظيفية للشركة صراحةً قبل إعداد هذا الشراء.</value>
+  </data>
+  <data name="Construction.Purchase.Error.AllocationSourceChanged" xml:space="preserve">
+    <value>تغيّر التخصيص أو مرجع الميزانية. راجع طلبًا جديدًا.</value>
+  </data>
+  <data name="Branches &amp; terminals" xml:space="preserve">
+    <value>الفروع ونقاط البيع</value>
+  </data>
+  <data name="Company construction policies" xml:space="preserve">
+    <value>سياسات الإنشاءات للشركة</value>
+  </data>
+  <data name="Construction.Purchase.Error.PolicyNotConfigured" xml:space="preserve">
+    <value>يجب تحديد سياسة ميزانية صريحة للشركة أولًا.</value>
+  </data>
+  <data name="Communication Hub" xml:space="preserve">
+    <value>مركز التواصل</value>
+  </data>
+  <data name="Construction.Purchase.Error.ExceptionSourceChanged" xml:space="preserve">
+    <value>لم يعد استثناء الميزانية المعتمد صالحًا للبيانات الحالية. اطلب مراجعة جديدة.</value>
+  </data>
+  <data name="Construction.ForecastUi.NoHistory" xml:space="preserve">
+    <value>لا توجد توقّعات مسجّلة لهذا المشروع بعد.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيرت بيانات المصدر أو سياسة الشركة؛ أعد مراجعة الطلب.</value>
+  </data>
+  <data name="Construction.Structure.Error.CleanUnitOfWorkRequired" xml:space="preserve">
+    <value>أعد فتح الصفحة وحاول الحفظ مرة أخرى.</value>
+  </data>
+  <data name="Construction.ForecastUi.Budgets" xml:space="preserve">
+    <value>إصدارات الميزانية</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidForm" xml:space="preserve">
+    <value>راجع قيم النموذج وحاول مجددًا.</value>
+  </data>
+  <data name="Coupons" xml:space="preserve">
+    <value>الكوبونات</value>
+  </data>
+  <data name="Construction.ActualUi.Unallocated" xml:space="preserve">
+    <value>غير موزّع</value>
+  </data>
+  <data name="Construction.Editor.UnitPrice" xml:space="preserve">
+    <value>سعر الوحدة</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.SeparateApproverRequired" xml:space="preserve">
+    <value>يجب أن يصدر القرار مستخدم مستقل عن مقدم الطلب.</value>
+  </data>
+  <data name="Construction.Budget.Error.ReasonRequired" xml:space="preserve">
+    <value>أدخل سببًا لا يتجاوز ١٠٠٠ حرف.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionAlreadyRequested" xml:space="preserve">
+    <value>يوجد طلب سابق لهذا المصدر والموقع.</value>
+  </data>
+  <data name="Construction.Rebase.PurchaseRequest" xml:space="preserve">
+    <value>طلب اعتماد الشراء</value>
+  </data>
+  <data name="Opportunity not found" xml:space="preserve">
+    <value>الفرصة غير موجودة</value>
+  </data>
+  <data name="Construction.Editor.Remove" xml:space="preserve">
+    <value>إزالة بند غير محفوظ</value>
+  </data>
+  <data name="Policy name is required" xml:space="preserve">
+    <value>اسم السياسة مطلوب</value>
+  </data>
+  <data name="Construction.Budget.Error.PolicyNotConfigured" xml:space="preserve">
+    <value>يجب اختيار سياسة ميزانية الشركة صراحةً قبل المتابعة.</value>
+  </data>
+  <data name="Construction.Budget.Error.SeparateApproverRequired" xml:space="preserve">
+    <value>يتطلب الاعتماد مستخدمًا آخر غير من أنشأ الإصدار أو أرسله.</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetHasNoLines" xml:space="preserve">
+    <value>احفظ بند ميزانية واحدًا على الأقل قبل إرسال هذا الإصدار.</value>
+  </data>
+  <data name="Construction.Purchase.Error.WarehouseExceptionBindingRequired" xml:space="preserve">
+    <value>يجب ربط موافقة استثناء المخزن السارية بهذا الشراء قبل إرسال الطلب أو اعتماده.</value>
+  </data>
+  <data name="Basket analysis" xml:space="preserve">
+    <value>تحليل السلة</value>
+  </data>
+  <data name="Construction.TransferUi.Error.InvalidTransferRequest" xml:space="preserve">
+    <value>أعد فحص النقل وأدخل سببًا لا يزيد على 1000 حرف.</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.ForecastRequestIdConflict" xml:space="preserve">
+    <value>استُخدمت هوية هذا الطلب من قبل لمحتوى مختلف. حدّث الصفحة وراجع من جديد.</value>
+  </data>
+  <data name="Conversation channels" xml:space="preserve">
+    <value>قنوات المحادثات</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="Construction.Rebase.State.Pending" xml:space="preserve">
+    <value>قيد الانتظار</value>
+  </data>
+  <data name="Construction.ActualUi.Sources" xml:space="preserve">
+    <value>مصادر المصروفات الموجودة</value>
+  </data>
+  <data name="Construction.Rebase.Commitment" xml:space="preserve">
+    <value>صافي الالتزام دون تغيير</value>
+  </data>
+  <data name="Route it to a unit before escalating it" xml:space="preserve">
+    <value>وجّهها إلى وحدة قبل تصعيدها</value>
+  </data>
+  <data name="Activity subject is required" xml:space="preserve">
+    <value>موضوع النشاط مطلوب</value>
+  </data>
+  <data name="Incomplete lines" xml:space="preserve">
+    <value>بنود غير مكتملة</value>
+  </data>
+  <data name="Construction.TransferUi.Amount" xml:space="preserve">
+    <value>المبلغ المقترح</value>
+  </data>
+  <data name="Construction.PartialInvoice.Issued" xml:space="preserve">
+    <value>تم إصدار الفاتورة:</value>
+  </data>
+  <data name="Construction.Editor.OrderDate" xml:space="preserve">
+    <value>تاريخ الشراء</value>
+  </data>
+  <data name="Construction.TransferUi.ApplicationReason" xml:space="preserve">
+    <value>سبب التنفيذ</value>
+  </data>
+  <data name="List name is required" xml:space="preserve">
+    <value>اسم القائمة مطلوب</value>
+  </data>
+  <data name="Construction.Purchase.Error.ApprovalSnapshotChanged" xml:space="preserve">
+    <value>لم يعد طلب الاعتماد مطابقًا للبيانات الأصلية المحفوظة.</value>
+  </data>
+  <data name="Construction.ActualUi.Error.InvalidAllocationRequest" xml:space="preserve">
+    <value>أكمل السبب وتوزيعًا صحيحًا واحدًا على الأقل.</value>
+  </data>
+  <data name="Construction.TransferUi.Before" xml:space="preserve">
+    <value>قبل المقترح</value>
+  </data>
+  <data name="Top sellers" xml:space="preserve">
+    <value>الأكثر مبيعاً</value>
+  </data>
+  <data name="Construction.ForecastUi.Variance" xml:space="preserve">
+    <value>الميزانية ناقص التوقّع</value>
+  </data>
+  <data name="Construction.Exception.Error.AlreadyDecided" xml:space="preserve">
+    <value>يوجد بالفعل قرار مسجل لا يمكن استبداله لهذا الطلب.</value>
+  </data>
+  <data name="Comm.Notification.AddedAsParticipant.TitleAr" xml:space="preserve">
+    <value>أضافك {actor} إلى محادثة</value>
+  </data>
+  <data name="Construction.TransferUi.Choose" xml:space="preserve">
+    <value>اختر بند ميزانية</value>
+  </data>
+  <data name="Construction.TransferUi.Error.DecisionIdConflict" xml:space="preserve">
+    <value>استُخدم رقم القرار لتفاصيل مختلفة. أعد فتح الصفحة قبل إصدار القرار.</value>
+  </data>
+  <data name="Project structure" xml:space="preserve">
+    <value>هيكل المشروع</value>
+  </data>
+  <data name="Expiry control" xml:space="preserve">
+    <value>تتبّع الصلاحية</value>
+  </data>
+  <data name="Construction.PartialInvoice.Confirm" xml:space="preserve">
+    <value>تأكيد الإصدار</value>
+  </data>
+  <data name="Construction.ActualUi.UnknownCurrency" xml:space="preserve">
+    <value>العملة غير مثبتة</value>
+  </data>
+  <data name="Construction.Exception.State.Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.NoOperationalGrant" xml:space="preserve">
+    <value>هذه الموافقة سجل مراجعة فقط؛ لا تمنح صلاحية للمخزن ولا تنشئ قبول شراء أو حركة مخزون.</value>
+  </data>
+  <data name="Construction.Rebase.Error.InvalidRebaseRequest" xml:space="preserve">
+    <value>أكمل السبب وأعد تحميل الطلب قبل الإرسال.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.HistoryNotice" xml:space="preserve">
+    <value>آخر 100 سجل ثابت. عرض السجلات لا يمثل شهادة تحقق جديدة من التغطية المالية.</value>
+  </data>
+  <data name="It has already been converted" xml:space="preserve">
+    <value>تم تحويله من قبل</value>
+  </data>
+  <data name="Comm.Notification.ReactionOnMyComment.BodyAr" xml:space="preserve">
+    <value>أضاف {actor} تفاعل «{reaction}» على تعليقك</value>
+  </data>
+  <data name="Construction.Purchase.Error.DimensionNotEligible" xml:space="preserve">
+    <value>يجب أن يكون العمل ورمز التكلفة نشطين، ومؤهلين للميزانية والتكلفة، ومدرجين معًا في الميزانية الأساسية المعتمدة.</value>
+  </data>
+  <data name="Construction.Exception.Overrun" xml:space="preserve">
+    <value>تجاوز الميزانية</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.DecisionSaved" xml:space="preserve">
+    <value>تم تسجيل القرار المستقل.</value>
+  </data>
+  <data name="Construction.ForecastUi.DimensionLimit" xml:space="preserve">
+    <value>يدعم هذا النموذج حتى 1,000 بُعد ميزانية. ولا يمكن حفظ توقّع جزئي.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Billed" xml:space="preserve">
+    <value>المفوتر سابقًا</value>
+  </data>
+  <data name="Escalated to {0}; {1} notified" xml:space="preserve">
+    <value>تم التصعيد إلى {0} — وأُشعر {1}</value>
+  </data>
+  <data name="Construction.Rebase.Error.RebaseOverrunRequiresReview" xml:space="preserve">
+    <value>سيؤدي الربط إلى تجاوز الميزانية المعتمدة ولا يمكن تفعيله عبر هذا المسار.</value>
+  </data>
+  <data name="Construction.Warehouse.Reject" xml:space="preserve">
+    <value>رفض</value>
+  </data>
+  <data name="Construction.Warehouse.Reason" xml:space="preserve">
+    <value>سبب طلب الاستثناء</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidParent" xml:space="preserve">
+    <value>البند الأب المحدد غير متاح لهذه العملية.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.BudgetCurrencyChanged" xml:space="preserve">
+    <value>تغيّرت عملة الشركة. راجع أساس الميزانية قبل التنفيذ.</value>
+  </data>
+  <data name="Construction.Warehouse.Approve" xml:space="preserve">
+    <value>موافقة</value>
+  </data>
+  <data name="Construction.ActualUi.Net" xml:space="preserve">
+    <value>صافي التكلفة بالعملة الوظيفية</value>
+  </data>
+  <data name="Construction.ActualUi.Wbs" xml:space="preserve">
+    <value>عنصر التكلفة في هيكل المشروع</value>
+  </data>
+  <data name="Construction.Warehouse.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetTransferWorkflowRequired" xml:space="preserve">
+    <value>هذا التعديل ينقل الميزانية بين البنود. استخدم مسار نقل الميزانية المخصص؛ اعتماد التعديل العادي لا ينفّذ النقل.</value>
+  </data>
+  <data name="Construction.PolicyUi.Invalid" xml:space="preserve">
+    <value>اختر سياسة مسموحة وأدخل السبب. لم يتم الحفظ.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Date" xml:space="preserve">
+    <value>تاريخ الطلب</value>
+  </data>
+  <data name="Call logged and routed to {0}, but no employee is assigned to that department yet" xml:space="preserve">
+    <value>تم تسجيل المكالمة ووُجِّهت إلى {0}، لكن لا يوجد موظف مُسنَد إلى هذا القسم بعد</value>
+  </data>
+  <data name="Partial project purchase invoices" xml:space="preserve">
+    <value>فواتير شراء المشروع الجزئية</value>
+  </data>
+  <data name="Purchase budget readmission" xml:space="preserve">
+    <value>إعادة اعتماد المشتريات</value>
+  </data>
+  <data name="Construction.Purchase.Error.AllocationOverflow" xml:space="preserve">
+    <value>تتجاوز مبالغ التوزيع الحدود المدعومة.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Destination" xml:space="preserve">
+    <value>موقع المخزن المقصود</value>
+  </data>
+  <data name="Construction.Purchase.Error.BudgetExceptionNotRequired" xml:space="preserve">
+    <value>لا يتطلب المقترح الحالي استثناء الميزانية هذا. أعد تحميله وراجعه قبل التقديم.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Unavailable" xml:space="preserve">
+    <value>تعذر إعداد طلب الموافقة لهذا الموقع. تحقق من أساس الالتزام وصلاحياتك وحالة المستند.</value>
+  </data>
+  <data name="Comm.Notification.MentionedInComment.BodyAr" xml:space="preserve">
+    <value>أشار إليك {actor} في تعليق على {entity}: {excerpt}</value>
+  </data>
+  <data name="Construction.Purchase.Request.Explanation" xml:space="preserve">
+    <value>قدّم مقترح الشراء المحفوظ لمراجعة مستقلة. تقديم الطلب وحده لا يعتمد الشراء ولا يحجز الميزانية.</value>
+  </data>
+  <data name="Construction.Structure.Error.DuplicateCode" xml:space="preserve">
+    <value>هذا الرمز مستخدم بالفعل في الشركة أو المشروع نفسه.</value>
+  </data>
+  <data name="Item margins" xml:space="preserve">
+    <value>هوامش الأصناف</value>
+  </data>
+  <data name="Branch transfers" xml:space="preserve">
+    <value>التحويلات بين الفروع</value>
+  </data>
+  <data name="Tag restored" xml:space="preserve">
+    <value>تمت استعادة الوسم</value>
+  </data>
+  <data name="Construction.Warehouse.DecisionSaved" xml:space="preserve">
+    <value>تم تسجيل القرار المستقل. التنفيذ يتطلب اعتماد الشراء وإعادة الفحص.</value>
+  </data>
+  <data name="Construction.TransferUi.ReviewDetails" xml:space="preserve">
+    <value>مراجعة تغيرات الميزانية المطلوبة</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionAlreadyDecided" xml:space="preserve">
+    <value>سبق اتخاذ قرار على هذا الطلب.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.TransferAlreadyDecided" xml:space="preserve">
+    <value>يوجد قرار مسجل بالفعل ولا يمكن استبداله.</value>
+  </data>
+  <data name="Construction.Warehouse.SelectDecision" xml:space="preserve">
+    <value>موافقة استثناء المخزن المرتبطة بهذا الشراء</value>
+  </data>
+  <data name="Construction.TransferUi.Error.SeparateApproverRequired" xml:space="preserve">
+    <value>لا يمكنك إصدار القرار على طلبك.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.QuantifiedTransferNotSupported" xml:space="preserve">
+    <value>نقل بنود تتضمن كمية وسعرًا يحتاج مسارًا مستقلًا مختبرًا.</value>
+  </data>
+  <data name="Comm.Notification.ThreadLocked.BodyAr" xml:space="preserve">
+    <value>أغلق {actor} المحادثة على {entity}. {reason}</value>
+  </data>
+  <data name="Construction.TransferUi.StaleApplication" xml:space="preserve">
+    <value>تغيّرت السياسة أو النسخة المعتمدة؛ راجع أساس النقل قبل طلب موافقة جديدة.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidHierarchy" xml:space="preserve">
+    <value>راجع مستويات البند الأب والبنود التابعة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.SeparateExecutorRequired" xml:space="preserve">
+    <value>يجب أن ينشئ النسخة الناتجة موظف مخوّل مختلف عن موافقها المستقل.</value>
+  </data>
+  <data name="The durations must be greater than zero" xml:space="preserve">
+    <value>يجب أن تكون المدد أكبر من صفر</value>
+  </data>
+  <data name="Construction purchase order" xml:space="preserve">
+    <value>أمر شراء إنشاءات</value>
+  </data>
+  <data name="Open a shift" xml:space="preserve">
+    <value>بدء وردية</value>
+  </data>
+  <data name="Construction.TransferUi.ApprovedPendingExecution" xml:space="preserve">
+    <value>موافقة مستقلة مسجلة؛ لم يُنفّذ</value>
+  </data>
+  <data name="Construction.Exception.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>غيّرت عملية أخرى حالة الطلب. أعد تحميله.</value>
+  </data>
+  <data name="enter a price" xml:space="preserve">
+    <value>أدخل السعر</value>
+  </data>
+  <data name="It is already with the highest unit" xml:space="preserve">
+    <value>هي بالفعل لدى أعلى وحدة</value>
+  </data>
+  <data name="Construction.TransferUi.ResultVersion" xml:space="preserve">
+    <value>نسخة الميزانية الناتجة</value>
+  </data>
+  <data name="Construction.Purchase.Request.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Construction.Purchase.Request.Submit" xml:space="preserve">
+    <value>تقديم للاعتماد</value>
+  </data>
+  <data name="Construction.Purchase.Error.DuplicateAllocation" xml:space="preserve">
+    <value>تكرر بند الشراء مع بُعد الميزانية نفسه. اجمع بنود التوزيع هذه صراحةً.</value>
+  </data>
+  <data name="Construction.Editor.Budget" xml:space="preserve">
+    <value>ميزانية المشروع</value>
+  </data>
+  <data name="Construction.Exception.Error.ExceptionNotRequired" xml:space="preserve">
+    <value>السياسة والحالة المالية الحاليتان لا تتطلبان هذا الاستثناء.</value>
+  </data>
+  <data name="Call centre" xml:space="preserve">
+    <value>مركز الاتصال</value>
+  </data>
+  <data name="Construction.Warehouse.Title" xml:space="preserve">
+    <value>استثناء استخدام مخزن موقع آخر</value>
+  </data>
+  <data name="Construction.Purchase.Error.InvalidAllocation" xml:space="preserve">
+    <value>اختر بند شراء محفوظًا وبُعد ميزانية مؤهلًا، ثم أدخل صافي المبلغ الدقيق لكل توزيع.</value>
+  </data>
+  <data name="Construction.Editor.Choose" xml:space="preserve">
+    <value>اختر صراحةً</value>
+  </data>
+  <data name="Construction.Purchase.Request.Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Construction.Purchase.Request.Reload" xml:space="preserve">
+    <value>إعادة تحميل المقترح الحالي</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Title" xml:space="preserve">
+    <value>موافقة مستقلة على موقع المخزن بعد إعادة الأساس</value>
+  </data>
+  <data name="Construction.Budget.Error.ImmutableBudget" xml:space="preserve">
+    <value>هذا الإصدار مقفل. أنشئ إصدارًا جديدًا لتعديل ميزانية معتمدة.</value>
+  </data>
+  <data name="Item sourcing" xml:space="preserve">
+    <value>مصادر توفير الأصناف</value>
+  </data>
+  <data name="Construction.Purchase.Error.General" xml:space="preserve">
+    <value>تعذر إكمال قرار أمر شراء الإنشاءات. حدّث الطلب وحاول مجددًا.</value>
+  </data>
+  <data name="Call logged" xml:space="preserve">
+    <value>تم تسجيل المكالمة</value>
+  </data>
+  <data name="Construction.Purchase.Error.DraftSourceChanged" xml:space="preserve">
+    <value>تغيّرت مسودة الشراء. راجع طلبًا جديدًا قبل الاعتماد.</value>
+  </data>
+  <data name="Construction.Budget.Error.AccessDenied" xml:space="preserve">
+    <value>ليست لديك صلاحية إدارة ميزانية هذا المشروع.</value>
+  </data>
+  <data name="Construction.TransferUi.Application" xml:space="preserve">
+    <value>التنفيذ</value>
+  </data>
+  <data name="Construction.TransferUi.Error.ApplicationIdConflict" xml:space="preserve">
+    <value>استُخدم مفتاح التنفيذ لأمر مختلف.</value>
+  </data>
+  <data name="Deal rules" xml:space="preserve">
+    <value>قواعد الصفقات</value>
+  </data>
+  <data name="Construction.PartialInvoice.Project" xml:space="preserve">
+    <value>المشروع</value>
+  </data>
+  <data name="Report Studio" xml:space="preserve">
+    <value>استوديو التقارير</value>
+  </data>
+  <data name="Construction.PartialInvoice.Preview" xml:space="preserve">
+    <value>معاينة المبالغ</value>
+  </data>
+  <data name="Construction.Editor.RejectedInput" xml:space="preserve">
+    <value>البنود الأصلية المقدمة</value>
+  </data>
+  <data name="Construction.Rebase.Error.SeparateApproverRequired" xml:space="preserve">
+    <value>يجب أن يتخذ مراجع آخر القرار بشأن هذا الاقتراح.</value>
+  </data>
+  <data name="Construction.ForecastUi.Saved" xml:space="preserve">
+    <value>تم حفظ التوقّع كسجلّ محرَّر جديد.</value>
+  </data>
+  <data name="Construction.ForecastUi.Total" xml:space="preserve">
+    <value>الإجمالي</value>
+  </data>
+  <data name="Construction.ForecastUi.Title" xml:space="preserve">
+    <value>توقّع تكلفة المشروع</value>
+  </data>
+  <data name="Rule name is required" xml:space="preserve">
+    <value>اسم القاعدة مطلوب</value>
+  </data>
+  <data name="Construction.Rebase.State.Closed" xml:space="preserve">
+    <value>مغلق</value>
+  </data>
+  <data name="Construction.TransferUi.OwnRequest" xml:space="preserve">
+    <value>يجب أن يصدر القرار على طلبك موظف مخوّل آخر.</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>المخزون</value>
+  </data>
+  <data name="Construction.TransferUi.DecisionReason" xml:space="preserve">
+    <value>سبب القرار</value>
+  </data>
+  <data name="Construction.TransferUi.Available" xml:space="preserve">
+    <value>المتاح في البند المصدر بعد التكاليف الفعلية والالتزامات</value>
+  </data>
+  <data name="Construction.Purchase.Request.Description" xml:space="preserve">
+    <value>الوصف</value>
+  </data>
+  <data name="Construction.PolicyUi.CostForecast" xml:space="preserve">
+    <value>D-12: توقع التكلفة</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidBudgetLines" xml:space="preserve">
+    <value>راجع المبالغ والكميات وأسباب التغيير. لا تكرر بند الأعمال ورمز التكلفة معًا.</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetNotFound" xml:space="preserve">
+    <value>لم يُعثر على إصدار الميزانية.</value>
+  </data>
+  <data name="Construction.TransferUi.Result" xml:space="preserve">
+    <value>نتيجة الفحص</value>
+  </data>
+  <data name="Construction.TransferUi.Reason" xml:space="preserve">
+    <value>سبب النقل</value>
+  </data>
+  <data name="Construction.Purchase.Error.BudgetWarning" xml:space="preserve">
+    <value>يتجاوز هذا الشراء الميزانية وفق سياسة التحذير المحددة للشركة. راجع التوزيع بعناية قبل التقديم.</value>
+  </data>
+  <data name="Construction.Editor.DecimalHint" xml:space="preserve">
+    <value>أدخل الأرقام باستخدام 0–9 والنقطة العشرية، دون فواصل آلاف. تُحسب المبالغ ويُتحقق منها عند الحفظ.</value>
+  </data>
+  <data name="Construction.Structure.Error.AccessDenied" xml:space="preserve">
+    <value>لا تملك صلاحية تعديل هذه البيانات.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Currency" xml:space="preserve">
+    <value>العملة</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidNodeDatesOrOrder" xml:space="preserve">
+    <value>راجع الفترة الزمنية وترتيب العرض.</value>
+  </data>
+  <data name="Construction.Purchase.Error.ReceiptCoverageRequired" xml:space="preserve">
+    <value>كميات الاستلام أو أدلة ترحيلها لا تطابق الشراء المعتمد. راجع مطابقة الاستلام قبل المتابعة.</value>
+  </data>
+  <data name="Construction.TransferUi.From" xml:space="preserve">
+    <value>من بند الميزانية</value>
+  </data>
+  <data name="Construction.ForecastUi.Baseline" xml:space="preserve">
+    <value>إصدار الميزانية المصدر</value>
+  </data>
+  <data name="Construction.Purchase.Error.BudgetCurrencyMismatch" xml:space="preserve">
+    <value>يجب أن تطابق عملة الميزانية المعتمدة العملة الوظيفية للشركة لهذا المسار.</value>
+  </data>
+  <data name="Service desk" xml:space="preserve">
+    <value>مكتب الخدمة</value>
+  </data>
+  <data name="Construction.Purchase.Error.InvalidDraftLines" xml:space="preserve">
+    <value>يحتاج كل بند إلى صنف أو وصف صالح، وكمية موجبة، وقيم صحيحة وغير سالبة للسعر والخصم والضريبة.</value>
+  </data>
+  <data name="Unified inbox" xml:space="preserve">
+    <value>صندوق المحادثات الموحد</value>
+  </data>
+  <data name="Construction.PartialInvoice.Quantity" xml:space="preserve">
+    <value>كمية الفوترة</value>
+  </data>
+  <data name="Construction.Structure.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيرت البيانات منذ فتح الصفحة. راجع القيم الحالية قبل إعادة المحاولة.</value>
+  </data>
+  <data name="Comm.Notification.ReplyToMyComment.TitleAr" xml:space="preserve">
+    <value>رد {actor} على تعليقك</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.WarehouseExceptionRequestNotFound" xml:space="preserve">
+    <value>لم يتم العثور على طلب الموافقة.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيرت الميزانية أو سياسة الشركة. أعد التحميل والفحص.</value>
+  </data>
+  <data name="Construction.ActualUi.Confirm" xml:space="preserve">
+    <value>تأكيد التوزيع التحليلي</value>
+  </data>
+  <data name="Construction.TransferUi.DecisionNotice" xml:space="preserve">
+    <value>الموافقة تعيد فحص السياسة والأرصدة والالتزامات الحالية. لا تنفّذ النقل ولا تمنح صلاحية صرف.</value>
+  </data>
+  <data name="Construction.TransferUi.ApplicationNotice" xml:space="preserve">
+    <value>يُعاد التحقق من الأساس الحالي وتُنشأ نسخة معتمدة جديدة؛ لا تُعاد إجازة الالتزامات القائمة تلقائيًا.</value>
+  </data>
+  <data name="Construction.Exception.Error.AllocationRequired" xml:space="preserve">
+    <value>يلزم حفظ توزيع التكاليف قبل طلب الاستثناء.</value>
+  </data>
+  <data name="Construction.TransferUi.Baseline" xml:space="preserve">
+    <value>نسخة الميزانية</value>
+  </data>
+  <data name="Call logged and routed to {0}; {1} notified" xml:space="preserve">
+    <value>تم تسجيل المكالمة وتوجيهها إلى {0} — وأُشعر {1}</value>
+  </data>
+  <data name="Scale setup" xml:space="preserve">
+    <value>إعداد الموازين</value>
+  </data>
+  <data name="Construction.ActualUi.Error.InvalidActualCostDimension" xml:space="preserve">
+    <value>أحد الأبعاد المختارة غير صالح لهذا المصدر.</value>
+  </data>
+  <data name="Construction.Exception.Error.IndependentApproverRequired" xml:space="preserve">
+    <value>لا يمكن لمقدم الطلب اتخاذ القرار على استثنائه.</value>
+  </data>
+  <data name="It has already been converted to an account" xml:space="preserve">
+    <value>تم تحويله إلى حساب من قبل</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Reason" xml:space="preserve">
+    <value>سبب الطلب</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Reject" xml:space="preserve">
+    <value>رفض</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Review" xml:space="preserve">
+    <value>مراجعة الموقع</value>
+  </data>
+  <data name="Construction.Warehouse.State.Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Construction.TransferUi.NoBaseline" xml:space="preserve">
+    <value>تلزم ميزانية أساس معتمدة.</value>
+  </data>
+  <data name="Construction.Structure.Error.RestructureWorkflowRequired" xml:space="preserve">
+    <value>يتطلب نقل البند مراجعة مستقلة للأثر.</value>
+  </data>
+  <data name="Construction.Purchase.Error.UnitNotFound" xml:space="preserve">
+    <value>اختر وحدة نشطة تابعة لهذه الشركة.</value>
+  </data>
+  <data name="Construction.PolicyUi.Changed" xml:space="preserve">
+    <value>وقت التغيير / رقم الموظف</value>
+  </data>
+  <data name="Construction.Budget.Error.BaselineChanged" xml:space="preserve">
+    <value>تغيّرت الميزانية المرجعية. أنشئ إصدارًا من المرجع الحالي قبل الاعتماد.</value>
+  </data>
+  <data name="Construction.PolicyUi.Choose" xml:space="preserve">
+    <value>اختر صراحةً</value>
+  </data>
+  <data name="Waste &amp; write-off" xml:space="preserve">
+    <value>الهالك والتلف</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.DecisionReason" xml:space="preserve">
+    <value>سبب القرار</value>
+  </data>
+  <data name="Construction.TransferUi.RequestSaved" xml:space="preserve">
+    <value>تم تسجيل طلب النقل؛ لم تُنقل أي مبالغ.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Add lines to the opportunity before converting it to a quotation" xml:space="preserve">
+    <value>أضف بنوداً إلى الفرصة قبل تحويلها إلى عرض سعر</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Submit" xml:space="preserve">
+    <value>إرسال للمراجعة المستقلة</value>
+  </data>
+  <data name="Construction.Purchase.Request.History" xml:space="preserve">
+    <value>سجل الاعتماد</value>
+  </data>
+  <data name="Construction.ActualUi.Error.ActualAllocationDoesNotReconcile" xml:space="preserve">
+    <value>يجب أن تطابق التوزيعات صافي التكلفة وإشارته تمامًا دون تكرار الأبعاد.</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Received" xml:space="preserve">
+    <value>مستلم</value>
+  </data>
+  <data name="Construction.PartialInvoice.Description" xml:space="preserve">
+    <value>الوصف</value>
+  </data>
+  <data name="Construction.Exception.Requester" xml:space="preserve">
+    <value>الموظف مقدم الطلب</value>
+  </data>
+  <data name="Construction.ActualUi.Error.HistoricalBaseCurrencyIdentityNotProven" xml:space="preserve">
+    <value>إثبات العملة الوظيفية الأصلية غير متاح. لا يمكن استخدام عملة الشركة الحالية بديلًا عنه.</value>
+  </data>
+  <data name="Construction.Structure.Error.DepthLimitExceeded" xml:space="preserve">
+    <value>يتجاوز البند الحد الأقصى لعمق الهيكل في الشركة.</value>
+  </data>
+  <data name="Pipeline name is required" xml:space="preserve">
+    <value>اسم المسار مطلوب</value>
+  </data>
+  <data name="Construction.ForecastUi.Preview" xml:space="preserve">
+    <value>مراجعة التوقّع</value>
+  </data>
+  <data name="Marketing journeys" xml:space="preserve">
+    <value>رحلات التسويق</value>
+  </data>
+  <data name="Tag saved" xml:space="preserve">
+    <value>تم حفظ الوسم</value>
+  </data>
+  <data name="Construction.Rebase.Approvals" xml:space="preserve">
+    <value>فتح الاعتمادات</value>
+  </data>
+  <data name="Comm.Notification.CommentOnFollowedThread.TitleAr" xml:space="preserve">
+    <value>تعليق جديد على {entity}</value>
+  </data>
+  <data name="Construction.Rebase.Truncated" xml:space="preserve">
+    <value>تظهر أحدث ١٠٠ عملية. يمكن فتح الأقدم من صفحة اعتماد الشراء الخاصة بها.</value>
+  </data>
+  <data name="Construction.Purchase.Error.AllocationPrecisionInvalid" xml:space="preserve">
+    <value>يتجاوز مبلغ التوزيع الدقة المدعومة. لا تُقرّبه تلقائيًا.</value>
+  </data>
+  <data name="Construction.Exception.Order" xml:space="preserve">
+    <value>طلب الشراء</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيّر الأساس المالي أو السياسة أو بيانات المصدر أو السجلّ. حدّث الصفحة وراجع توقّعًا جديدًا.</value>
+  </data>
+  <data name="Construction.PolicyUi.Current" xml:space="preserve">
+    <value>الاختيار الحالي</value>
+  </data>
+  <data name="Construction.Exception.Empty" xml:space="preserve">
+    <value>لم تُسجل طلبات استثناء.</value>
+  </data>
+  <data name="Construction.Rebase.Reload" xml:space="preserve">
+    <value>إعادة تحميل البيانات الحالية</value>
+  </data>
+  <data name="Construction.Rebase.Reject" xml:space="preserve">
+    <value>رفض الاقتراح</value>
+  </data>
+  <data name="Construction.Rebase.Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Construction.TransferUi.Error.ApprovedTransferDecisionRequired" xml:space="preserve">
+    <value>يلزم قرار موافقة مستقل مطابق للطلب.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.SourcesEmpty" xml:space="preserve">
+    <value>لا توجد مصادر مرشحة. راجع المشروع والمصادر المرحلة وتوزيع التكلفة الفعلية.</value>
+  </data>
+  <data name="Construction.Exception.Saved" xml:space="preserve">
+    <value>تم تسجيل الإجراء على طلب الاستثناء.</value>
+  </data>
+  <data name="Construction.Exception.Title" xml:space="preserve">
+    <value>استثناءات الميزانية</value>
+  </data>
+  <data name="Construction.PolicyUi.IndependentApproval" xml:space="preserve">
+    <value>يتطلب موافقة مستقلة وسببًا</value>
+  </data>
+  <data name="Opportunity Insights" xml:space="preserve">
+    <value>تحليلات الفرص</value>
+  </data>
+  <data name="Construction.Purchase.Request.Date" xml:space="preserve">
+    <value>تاريخ الطلب (UTC)</value>
+  </data>
+  <data name="Construction.Purchase.Request.Cost" xml:space="preserve">
+    <value>رمز التكلفة</value>
+  </data>
+  <data name="Construction.Purchase.Request.Back" xml:space="preserve">
+    <value>أوامر الشراء</value>
+  </data>
+  <data name="Construction.Purchase.Request.Work" xml:space="preserve">
+    <value>أعمال المشروع</value>
+  </data>
+  <data name="Construction.Rebase.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغيرت البيانات. أعد التحميل والمراجعة قبل إعادة الإرسال.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.UnknownCurrency" xml:space="preserve">
+    <value>العملة غير مثبتة</value>
+  </data>
+  <data name="Construction.ActualUi.SplitNotice" xml:space="preserve">
+    <value>أدخل حتى ثمانية توزيعات واترك الأسطر غير المستخدمة فارغة. يجب أن يطابق المجموع صافي التكلفة وإشارته دون افتراض توزيع تلقائي.</value>
+  </data>
+  <data name="Construction.Editor.Warehouse" xml:space="preserve">
+    <value>المستودع</value>
+  </data>
+  <data name="Construction.Purchase.Error.FreshBudgetAdmissionRequired" xml:space="preserve">
+    <value>لا يُعد تأكيد حجز سابق تصريحًا باعتماد أمر الشراء هذا.</value>
+  </data>
+  <data name="Construction.Editor.DraftTitle" xml:space="preserve">
+    <value>مسودة شراء إنشاءات جديدة</value>
+  </data>
+  <data name="Construction.Editor.DraftSaved" xml:space="preserve">
+    <value>حُفظت مسودة الشراء غير المعتمدة. وزّع بنودها قبل طلب الاعتماد.</value>
+  </data>
+  <data name="Construction.Purchase.Error.AllocationNotFound" xml:space="preserve">
+    <value>احفظ توزيعًا كاملًا لهذه المسودة على الميزانية قبل طلب الاعتماد.</value>
+  </data>
+  <data name="Construction.ForecastUi.CurrencyId" xml:space="preserve">
+    <value>معرّف العملة المسجّلة</value>
+  </data>
+  <data name="Project purchase allocation" xml:space="preserve">
+    <value>توزيع تكلفة شراء المشروع</value>
+  </data>
+  <data name="Construction.Rebase.Budgets" xml:space="preserve">
+    <value>نسخ الميزانية</value>
+  </data>
+  <data name="Cashier lane" xml:space="preserve">
+    <value>ممرّ الكاشير</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Cancelled" xml:space="preserve">
+    <value>ملغى</value>
+  </data>
+  <data name="Till customer" xml:space="preserve">
+    <value>عميل الصندوق</value>
+  </data>
+  <data name="Assignment &amp; territories" xml:space="preserve">
+    <value>التوزيع والمناطق</value>
+  </data>
+  <data name="Opportunity title is required" xml:space="preserve">
+    <value>عنوان الفرصة مطلوب</value>
+  </data>
+  <data name="Comm.Notification.ReactionOnMyComment.TitleAr" xml:space="preserve">
+    <value>تفاعل {actor} مع تعليقك</value>
+  </data>
+  <data name="Construction.Editor.SourceLine" xml:space="preserve">
+    <value>بند الشراء</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidResponsibleEmployee" xml:space="preserve">
+    <value>اختر موظفًا مسؤولًا يتبع هذه الشركة.</value>
+  </data>
+  <data name="Construction.ForecastUi.ReadOnly" xml:space="preserve">
+    <value>لديك صلاحية اطّلاع. والتحرير يتطلّب صلاحية إدارة ميزانية المشروع.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.SourceId" xml:space="preserve">
+    <value>رقم المصدر</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Error.DecisionIdConflict" xml:space="preserve">
+    <value>تعارض معرّف القرار مع عملية سابقة.</value>
+  </data>
+  <data name="enter a quantity" xml:space="preserve">
+    <value>أدخل الكمية</value>
+  </data>
+  <data name="Construction.Budget.Error.SaveFailed" xml:space="preserve">
+    <value>تعذر إكمال عملية الميزانية.</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Construction.PolicyUi.CrossSiteWarehouse" xml:space="preserve">
+    <value>D-10: استخدام مخزن موقع آخر</value>
+  </data>
+  <data name="Construction.ActualUi.Empty" xml:space="preserve">
+    <value>لا توجد بنود مصروفات للمشروع.</value>
+  </data>
+  <data name="Construction.ActualUi.Entry" xml:space="preserve">
+    <value>القيد المالي</value>
+  </data>
+  <data name="Construction.TransferUi.SeparateExecutorNotice" xml:space="preserve">
+    <value>يجب أن ينشئ موظف مخوّل آخر النسخة الناتجة؛ لا يجوز أن يكون موافقها المستقل هو منشئها أيضًا.</value>
+  </data>
+  <data name="Construction.Rebase.OriginalBudget" xml:space="preserve">
+    <value>نسخة الميزانية الأصلية</value>
+  </data>
+  <data name="Construction.ActualUi.Saved" xml:space="preserve">
+    <value>تم تسجيل التوزيع التحليلي.</value>
+  </data>
+  <data name="Construction.ActualUi.Title" xml:space="preserve">
+    <value>توزيع التكاليف الفعلية للمشروع</value>
+  </data>
+  <data name="Construction.Purchase.Error.ItemNotFound" xml:space="preserve">
+    <value>اختر صنفًا نشطًا تابعًا لهذه الشركة.</value>
+  </data>
+  <data name="Construction.Rebase.Workflow" xml:space="preserve">
+    <value>مسار إعادة الاعتماد</value>
+  </data>
+  <data name="Construction.Purchase.Error.ApprovedExceptionRequired" xml:space="preserve">
+    <value>يلزم استثناء ميزانية معتمد من شخص مستقل.</value>
+  </data>
+  <data name="Comm.Notification.MyCommentDeleted.BodyAr" xml:space="preserve">
+    <value>حذف {actor} تعليقك على {entity}. {reason}</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidReference" xml:space="preserve">
+    <value>أحد السجلات المحددة لم يعد متاحًا. أعد تحميل الصفحة.</value>
+  </data>
+  <data name="Construction.Structure.Error.NodeNotFound" xml:space="preserve">
+    <value>البند المطلوب غير متاح.</value>
+  </data>
+  <data name="Shrinkage" xml:space="preserve">
+    <value>الفاقد والانكماش</value>
+  </data>
+  <data name="Segments" xml:space="preserve">
+    <value>الشرائح</value>
+  </data>
+  <data name="Construction.TransferUi.Request" xml:space="preserve">
+    <value>تسجيل طلب النقل</value>
+  </data>
+  <data name="Construction.ForecastUi.Disabled" xml:space="preserve">
+    <value>توقّع التكلفة معطَّل بموجب سياسة الشركة. ويبقى السجلّ التاريخي القائم متاحًا.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Error.General" xml:space="preserve">
+    <value>أدلة المصادر غير مكتملة أو لم تعد صالحة. راجع المصادر ثم أعد التحقق؛ لم يُسجّل الربط التحليلي.</value>
+  </data>
+  <data name="Construction.ForecastUi.CommitmentWarning" xml:space="preserve">
+    <value>التقدير أقل من الالتزامات القائمة في بُعد واحد على الأقل. راجع تقديرك؛ وهذا تنبيه لا سياسة اعتماد.</value>
+  </data>
+  <data name="Construction.PolicyUi.Foundation" xml:space="preserve">
+    <value>إعداد السياسات فقط: الحفظ لا ينفذ نقل ميزانية أو يوافق على استعارة مخزن أو ينشئ توقع تكلفة. تحتاج مسارات التشغيل إلى استكمال واختبار مستقل.</value>
+  </data>
+  <data name="Construction.Editor.ExpectedDate" xml:space="preserve">
+    <value>تاريخ التسليم المتوقع</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Receipt" xml:space="preserve">
+    <value>رقم بند الاستلام</value>
+  </data>
+  <data name="Construction.Rebase.Orders" xml:space="preserve">
+    <value>مشتريات محجوزة على ميزانيات سابقة</value>
+  </data>
+  <data name="Construction.ActualUi.Budgets" xml:space="preserve">
+    <value>نسخ الميزانية</value>
+  </data>
+  <data name="Construction.ActualUi.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>تغير المصدر. أعد تحميله ومراجعته.</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidStatusTransition" xml:space="preserve">
+    <value>تغيير الحالة المطلوب غير متاح.</value>
+  </data>
+  <data name="Ticket #{0} opened" xml:space="preserve">
+    <value>فُتحت التذكرة #{0}</value>
+  </data>
+  <data name="Escalated to {0}, but no employee is assigned to that unit yet" xml:space="preserve">
+    <value>تم التصعيد إلى {0}، لكن لا يوجد موظف مُسنَد إلى هذه الوحدة بعد</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetAmountMismatch" xml:space="preserve">
+    <value>يجب أن يساوي المبلغ الكمية مضروبة في السعر بعد التقريب بدقة العملة.</value>
+  </data>
+  <data name="Construction.ActualUi.CostCode" xml:space="preserve">
+    <value>كود التكلفة</value>
+  </data>
+  <data name="Construction.ConsumptionUi.SourcesTruncated" xml:space="preserve">
+    <value>تظهر آخر 100 نتيجة. أدخل رقم مصدر أقدم مباشرة عند الحاجة.</value>
+  </data>
+  <data name="Construction.PolicyUi.Reason" xml:space="preserve">
+    <value>سبب التغيير</value>
+  </data>
+  <data name="Construction.Purchase.Request.Net" xml:space="preserve">
+    <value>صافي المبلغ</value>
+  </data>
+  <data name="Construction.Purchase.Request.Tax" xml:space="preserve">
+    <value>مبلغ الضريبة</value>
+  </data>
+  <data name="Construction.Purchase.Error.DocumentCurrencyNotProven" xml:space="preserve">
+    <value>يجب وجود عملة مستند محفوظة وصالحة.</value>
+  </data>
+  <data name="choose an account" xml:space="preserve">
+    <value>اختر الحساب</value>
+  </data>
+  <data name="Construction.PartialInvoice.Explanation" xml:space="preserve">
+    <value>فوترة الكميات المستلمة فقط. عاين المبالغ قبل التأكيد؛ إصدار الفاتورة لا يعيد استلام المخزون.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.RequestSaved" xml:space="preserve">
+    <value>تم إرسال طلب الموافقة المستقلة.</value>
+  </data>
+  <data name="Service catalogue" xml:space="preserve">
+    <value>قائمة الخدمات والأسعار</value>
+  </data>
+  <data name="Ticket title is required" xml:space="preserve">
+    <value>عنوان التذكرة مطلوب</value>
+  </data>
+  <data name="Construction.Editor.FreeText" xml:space="preserve">
+    <value>بند خدمة بوصف حر</value>
+  </data>
+  <data name="Knowledge base" xml:space="preserve">
+    <value>قاعدة المعرفة</value>
+  </data>
+  <data name="Construction.TransferUi.Disabled" xml:space="preserve">
+    <value>نقل الميزانية غير مسموح حسب اختيار الشركة الصريح.</value>
+  </data>
+  <data name="Construction.Exception.Approve" xml:space="preserve">
+    <value>اعتماد مستقل</value>
+  </data>
+  <data name="Construction.Purchase.Request.SubmitTitle" xml:space="preserve">
+    <value>طلب اعتماد مستقل</value>
+  </data>
+  <data name="Construction.Warehouse.ChooseDecision" xml:space="preserve">
+    <value>اختر موافقة سارية</value>
+  </data>
+  <data name="Construction.Purchase.Error.MatchingBudgetExceptionRequired" xml:space="preserve">
+    <value>يتطلب هذا المقترح استثناء ميزانية مستقلًا ومعتمدًا للتوزيع الحالي. لا يوجد استثناء معتمد مؤهل حاليًا.</value>
+  </data>
+  <data name="Construction.Warehouse.Explanation" xml:space="preserve">
+    <value>حدد موقع الاستخدام المطلوب واطلب موافقة مستقلة. الموافقة لا تنشئ شراءً أو حركة مخزنية، وتُراجع مجددًا عند اعتماد الشراء.</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>غير موجود</value>
+  </data>
+  <data name="Construction.Budget.Title" xml:space="preserve">
+    <value>إصدارات الميزانية</value>
+  </data>
+  <data name="Construction.Editor.Discount" xml:space="preserve">
+    <value>مبلغ خصم البند</value>
+  </data>
+  <data name="Construction.Warehouse.PolicyRequired" xml:space="preserve">
+    <value>طلب الاستثناء يتطلب إعدادًا صريحًا لسياسة الشركة يسمح بالموافقة على الاستثناءات. لا يغيّر هذا القسم سياسة الشركة.</value>
+  </data>
+  <data name="Construction.Exception.Error.InvalidExceptionDecision" xml:space="preserve">
+    <value>أدخل سبب القرار وأعد تحميل الطلب.</value>
+  </data>
+  <data name="Nothing was saved." xml:space="preserve">
+    <value>لم يُحفظ شيء.</value>
+  </data>
+  <data name="Construction.Purchase.Error.DraftCurrencyChanged" xml:space="preserve">
+    <value>تغيّرت إعدادات العملة. راجع مسودة الشراء مجددًا.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Actuals" xml:space="preserve">
+    <value>توزيع التكاليف الفعلية</value>
+  </data>
+  <data name="Construction.Budget.Saved" xml:space="preserve">
+    <value>تم حفظ عملية الميزانية.</value>
+  </data>
+  <data name="Construction.Purchase.Request.Quantity" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Construction.Rebase.PurchaseNotice" xml:space="preserve">
+    <value>يصدر قرار اعتماد الشراء من شاشة الاعتمادات الحالية. ويظل الاستلام والفوترة خاضعين لصلاحياتهما والتحقق من البيانات الحالية.</value>
+  </data>
+  <data name="The purchase order must be approved before invoicing" xml:space="preserve">
+    <value>يجب اعتماد أمر الشراء قبل تحويله إلى فاتورة.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Reload" xml:space="preserve">
+    <value>إعادة الاختيار</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Reason" xml:space="preserve">
+    <value>سبب الربط</value>
+  </data>
+  <data name="Construction.Exception.Error.ExceptionSourceChanged" xml:space="preserve">
+    <value>تغيّر الأساس المالي. راجعه مجددًا.</value>
+  </data>
+  <data name="Material consumption linkage" xml:space="preserve">
+    <value>ربط استهلاك المواد</value>
+  </data>
+  <data name="Construction.ConsumptionUi.History" xml:space="preserve">
+    <value>الاستهلاك المرتبط</value>
+  </data>
+  <data name="Construction.Editor.DraftNotice" xml:space="preserve">
+    <value>احفظ مقترح شراء غير معتمد بعملة الميزانية المعتمدة. لا تُحجز ميزانية ولا تُنشأ حركة مخزون أو قيود محاسبية.</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidReference" xml:space="preserve">
+    <value>أحد المراجع المحددة غير صالح لهذا المشروع أو الشركة.</value>
+  </data>
+  <data name="Construction.Purchase.Error.ForeignSourceLine" xml:space="preserve">
+    <value>أحد بنود الشراء المختارة لا ينتمي إلى هذا المقترح المحفوظ. أعد تحميله.</value>
+  </data>
+  <data name="Sales targets" xml:space="preserve">
+    <value>أهداف المبيعات</value>
+  </data>
+  <data name="Construction.Exception.DecisionReason" xml:space="preserve">
+    <value>سبب القرار</value>
+  </data>
+  <data name="Could not link the account to a financial customer" xml:space="preserve">
+    <value>تعذّر ربط الحساب بعميل مالي</value>
+  </data>
+  <data name="Construction.TransferUi.Requests" xml:space="preserve">
+    <value>طلبات نقل الميزانية</value>
+  </data>
+  <data name="Construction.TransferUi.Applied" xml:space="preserve">
+    <value>تم التنفيذ</value>
+  </data>
+  <data name="Checkout" xml:space="preserve">
+    <value>الصندوق</value>
+  </data>
+  <data name="Construction.Rebase.Error.WarehouseExceptionContinuationUnavailable" xml:space="preserve">
+    <value>هذا الأمر يتطلب استثناء مخزن. لا تدعم إعادة الاعتماد استخدام هذا الاستثناء بعد، لذلك لا يمكن إنشاء طلب اعتماد جديد من هذا المسار.</value>
+  </data>
+  <data name="Construction.TransferUi.Error.RequestIdConflict" xml:space="preserve">
+    <value>استُخدم رقم الطلب لتفاصيل مختلفة. أعد الفحص قبل الإرسال مجددًا.</value>
+  </data>
+  <data name="Construction.Structure.SaveFailed" xml:space="preserve">
+    <value>تعذر الحفظ. راجع القيم وحاول مرة أخرى.</value>
+  </data>
+  <data name="Construction.Exception.AllOrders" xml:space="preserve">
+    <value>كل الطلبات الموزعة وسجل الاستثناءات</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.ForecastDimensionsRequired" xml:space="preserve">
+    <value>يلزم تقدير كامل وغير مكرَّر لكل بُعد ميزانية.</value>
+  </data>
+  <data name="Construction.TransferUi.RequestNumber" xml:space="preserve">
+    <value>الطلب</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidPreviousBudget" xml:space="preserve">
+    <value>اختر إصدارًا معتمدًا سابقًا من هذا المشروع.</value>
+  </data>
+  <data name="Operation failed" xml:space="preserve">
+    <value>فشلت العملية</value>
+  </data>
+  <data name="Construction &amp; project budgets" xml:space="preserve">
+    <value>الإنشاءات وميزانيات المشاريع</value>
+  </data>
+  <data name="Construction.Editor.BaseUnit" xml:space="preserve">
+    <value>وحدة الصنف الأساسية، أو دون وحدة للخدمة</value>
+  </data>
+  <data name="Construction.Budget.Error.InvalidBudgetTransition" xml:space="preserve">
+    <value>هذا الإجراء غير متاح في حالة الإصدار الحالية.</value>
+  </data>
+  <data name="Construction.TransferUi.RequestNotice" xml:space="preserve">
+    <value>تسجيل الطلب لا يغيّر الأرصدة. يراجعه موظف مخوّل مختلف؛ والتنفيذ إجراء مستقل يعيد التحقق من الأساس الحالي.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Available" xml:space="preserve">
+    <value>المتاح للفوترة</value>
+  </data>
+  <data name="Construction.Rebase.State.Received" xml:space="preserve">
+    <value>مستلم</value>
+  </data>
+  <data name="Construction.Purchase.Error.AccessDenied" xml:space="preserve">
+    <value>ليست لديك صلاحية اتخاذ قرار بشأن طلب شراء الإنشاءات هذا.</value>
+  </data>
+  <data name="Construction.TransferUi.DecisionSaved" xml:space="preserve">
+    <value>تم تسجيل القرار المستقل؛ لم تُنقل أي مبالغ.</value>
+  </data>
+  <data name="Construction.Rebase.PurchaseState" xml:space="preserve">
+    <value>اعتماد الشراء</value>
+  </data>
+  <data name="Construction.ForecastUi.InputNotice" xml:space="preserve">
+    <value>أدخل كل بُعد صراحةً. التكلفة المتبقّية تشمل الالتزامات القائمة، فلا تضفها مرة أخرى. ولا يُملأ أي تقدير تلقائيًا.</value>
+  </data>
+  <data name="Loyalty programme" xml:space="preserve">
+    <value>برنامج الولاء</value>
+  </data>
+  <data name="Construction.Purchase.Request.Allocation" xml:space="preserve">
+    <value>التوزيع على الميزانية</value>
+  </data>
+  <data name="Construction.Editor.Supplier" xml:space="preserve">
+    <value>المورد</value>
+  </data>
+  <data name="Construction.Rebase.ReviewState" xml:space="preserve">
+    <value>مراجعة ربط الميزانية</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.State.Pending" xml:space="preserve">
+    <value>بانتظار المراجعة</value>
+  </data>
+  <data name="Construction.Purchase.Error.SourceAlreadyProcessed" xml:space="preserve">
+    <value>لم يعد هذا الشراء مسودة غير معتمدة. يظهر سجل اعتماده أدناه.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Warehouse" xml:space="preserve">
+    <value>المخزن</value>
+  </data>
+  <data name="Account is required" xml:space="preserve">
+    <value>الحساب مطلوب</value>
+  </data>
+  <data name="Construction.Purchase.Error.PersistedDraftRequired" xml:space="preserve">
+    <value>يجب حفظ مسودة شراء للإنشاءات قبل طلب الاعتماد.</value>
+  </data>
+  <data name="Construction.TransferUi.Rejected" xml:space="preserve">
+    <value>طلب مرفوض</value>
+  </data>
+  <data name="A quotation has already been created for this opportunity" xml:space="preserve">
+    <value>تم إنشاء عرض سعر لهذه الفرصة من قبل</value>
+  </data>
+  <data name="Suppliers" xml:space="preserve">
+    <value>الموردون</value>
+  </data>
+  <data name="Construction.TransferUi.ApplicationSaved" xml:space="preserve">
+    <value>تم تنفيذ النقل وتسجيل نسخة الميزانية الناتجة دون تكرار.</value>
+  </data>
+  <data name="Construction.Exception.Error.General" xml:space="preserve">
+    <value>الإجراء غير متاح. أعد التحميل وتحقق من السياسة والتوزيع والتغطية المالية.</value>
+  </data>
+  <data name="Construction.Rebase.State.Unknown" xml:space="preserve">
+    <value>غير متاح</value>
+  </data>
+  <data name="Campaign name is required" xml:space="preserve">
+    <value>اسم الحملة مطلوب</value>
+  </data>
+  <data name="Construction.Editor.TaxRate" xml:space="preserve">
+    <value>نسبة الضريبة (%)</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.AmountOverflow" xml:space="preserve">
+    <value>يتجاوز التوقّع نطاق المبالغ المدعوم.</value>
+  </data>
+  <data name="Construction.ForecastUi.ManualInput" xml:space="preserve">
+    <value>أدخل تقديرك للتكلفة المتبقّية</value>
+  </data>
+  <data name="Construction.Budget.Error.CompanyCurrencyNotConfigured" xml:space="preserve">
+    <value>يلزم تحديد عملة شركة مدعومة. راجع الإعدادات مع مسؤول الشركة.</value>
+  </data>
+  <data name="Construction.ForecastUi.NoBaseline" xml:space="preserve">
+    <value>يلزم أساس مالي معتمد لتحرير التوقّع.</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetAmountTooLarge" xml:space="preserve">
+    <value>يتجاوز إجمالي الميزانية المبلغ المدعوم. راجع البنود.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.Explanation" xml:space="preserve">
+    <value>أدخل رقم بند الاستلام وحركة الصرف المرحلة صراحةً. يتحقق النظام من الشركة والمشروع والمخزون والقيد والتوزيع الفعلي وتغطية الاستلام المتبقية. هذا ربط تحليلي فقط ولا ينشئ حركة مخزون أو قيدًا ماليًا.</value>
+  </data>
+  <data name="Construction.Warehouse.NoHistory" xml:space="preserve">
+    <value>لا توجد طلبات استثناء متاحة للعرض.</value>
+  </data>
+  <data name="Construction.Warehouse.Refused" xml:space="preserve">
+    <value>تعذر حفظ الإجراء. احتُفظ بالبيانات المدخلة؛ حدّث الصفحة وراجع الطلب والسياسة والصلاحيات قبل المحاولة مجددًا.</value>
+  </data>
+  <data name="Construction.Purchase.Error.ServiceUnavailable" xml:space="preserve">
+    <value>خدمة اعتماد مشتريات الإنشاءات غير متاحة.</value>
+  </data>
+  <data name="Tax &amp; invoicing" xml:space="preserve">
+    <value>الضرائب والفوترة</value>
+  </data>
+  <data name="Construction.Warehouse.RequestSaved" xml:space="preserve">
+    <value>تم تسجيل طلب استثناء المخزن دون تنفيذ شراء أو حركة مخزنية.</value>
+  </data>
+  <data name="Construction.Warehouse.Request" xml:space="preserve">
+    <value>طلب موافقة مستقلة</value>
+  </data>
+  <data name="Build plan" xml:space="preserve">
+    <value>خطة البناء</value>
+  </data>
+  <data name="Construction.TransferUi.NoRequests" xml:space="preserve">
+    <value>لا توجد طلبات نقل مسجلة.</value>
+  </data>
+  <data name="Construction.PolicyUi.Mode" xml:space="preserve">
+    <value>السياسة</value>
+  </data>
+  <data name="Construction.PolicyUi.Save" xml:space="preserve">
+    <value>حفظ اختيار الشركة</value>
+  </data>
+  <data name="Construction.Exception.State.Approved" xml:space="preserve">
+    <value>معتمد — يخضع للتحقق المالي الحالي</value>
+  </data>
+  <data name="Construction.Budget.Error.ConcurrencyConflict" xml:space="preserve">
+    <value>غيّر مستخدم آخر هذه القيم. راجع الإصدار الحالي قبل الحفظ مجددًا.</value>
+  </data>
+  <data name="Construction.ConsumptionUi.IssueSources" xml:space="preserve">
+    <value>حركات صرف غير مرتبطة ولها توزيع فعلي</value>
+  </data>
+  <data name="Construction.PartialInvoice.FullConversionRefused" xml:space="preserve">
+    <value>لأمر الشراء فواتير جزئية سابقة. استخدم الفوترة الجزئية للكميات المتبقية.</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.InvalidCurrencyPrecision" xml:space="preserve">
+    <value>استخدم مبالغ قابلة للتمثيل بدقّة عند دقّة العملة المسجّلة. والقيم لا تُقرَّب تلقائيًا.</value>
+  </data>
+  <data name="Comm.Notification.ThreadLocked.TitleAr" xml:space="preserve">
+    <value>أُغلقت المحادثة</value>
+  </data>
+  <data name="Construction.Warehouse.NotReady" xml:space="preserve">
+    <value>لا يمكن إنشاء طلب جديد بهذه البيانات حاليًا؛ قد يكون هناك طلب مماثل أو بيانات تحتاج إلى مراجعة.</value>
+  </data>
+  <data name="Construction.TransferUi.RejectDecision" xml:space="preserve">
+    <value>رفض الطلب</value>
+  </data>
+  <data name="Construction.TransferUi.Error.TransferRequestNotFound" xml:space="preserve">
+    <value>طلب النقل غير متاح في هذا المشروع.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Approve" xml:space="preserve">
+    <value>موافقة</value>
+  </data>
+  <data name="Construction.ActualUi.Explanation" xml:space="preserve">
+    <value>وزّع بنود قيود المصروفات الموجودة على هيكل المشروع وأكواد التكلفة. لا تنشئ هذه العملية قيدًا ماليًا أو حركة مخزون ولا تعدّلهما.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.NoHistory" xml:space="preserve">
+    <value>لا توجد طلبات سابقة لهذا الشراء.</value>
+  </data>
+  <data name="Construction.Warehouse.Destination" xml:space="preserve">
+    <value>موقع الاستخدام المطلوب</value>
+  </data>
+  <data name="Construction.Rebase.ApprovalNumber" xml:space="preserve">
+    <value>رقم الاعتماد</value>
+  </data>
+  <data name="Construction.Rebase.State.Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Construction.TransferUi.DecisionBy" xml:space="preserve">
+    <value>الموظف صاحب القرار</value>
+  </data>
+  <data name="Follow-up sequences" xml:space="preserve">
+    <value>تسلسلات المتابعة</value>
+  </data>
+  <data name="Construction.Warehouse.ChooseSite" xml:space="preserve">
+    <value>اختر موقعًا متاحًا</value>
+  </data>
+  <data name="Construction.Purchase.Request.State.Approved" xml:space="preserve">
+    <value>معتمد</value>
+  </data>
+  <data name="Construction.ForecastUi.Eac" xml:space="preserve">
+    <value>التكلفة النهائية المتوقّعة</value>
+  </data>
+  <data name="Construction.Exception.NewRequest" xml:space="preserve">
+    <value>طلب استثناء</value>
+  </data>
+  <data name="Construction.Rebase.Preserved" xml:space="preserve">
+    <value>تم الاحتفاظ بمعرّف الطلب والسبب. أعد التحميل لمراجعة البيانات المتغيرة قبل بدء طلب جديد.</value>
+  </data>
+  <data name="Construction.TransferUi.Explanation" xml:space="preserve">
+    <value>يتطلب النقل موافقة مستقلة وتنفيذًا بواسطة موظف مخوّل مختلف عن الموافق. يُعاد فحص السياسة والأرصدة وتُنشأ نسخة ميزانية مرتبطة، دون قيد محاسبي أو حركة مخزون.</value>
+  </data>
+  <data name="My booking link" xml:space="preserve">
+    <value>رابط حجز مواعيدي</value>
+  </data>
+  <data name="Construction.Structure.Error.InvalidCostCode" xml:space="preserve">
+    <value>أدخل الرمز والاسم بالعربية وفئة التكلفة.</value>
+  </data>
+  <data name="Construction.TransferUi.RequestedBy" xml:space="preserve">
+    <value>الموظف / التاريخ (UTC)</value>
+  </data>
+  <data name="Construction.Budget.Error.CleanUnitOfWorkRequired" xml:space="preserve">
+    <value>تعذر بدء العملية. أعد تحميل الصفحة وحاول مجددًا.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.Decision" xml:space="preserve">
+    <value>القرار</value>
+  </data>
+  <data name="Customer registry" xml:space="preserve">
+    <value>سجل العملاء</value>
+  </data>
+  <data name="Construction.ForecastUi.History" xml:space="preserve">
+    <value>سجلّ التوقّعات</value>
+  </data>
+  <data name="Website forms" xml:space="preserve">
+    <value>نماذج الموقع</value>
+  </data>
+  <data name="Construction.ForecastUi.Explanation" xml:space="preserve">
+    <value>توقّع تحليلي يدوي فقط. لا يعتمد إنفاقًا ولا يغيّر الميزانيات أو المحاسبة أو المخزون.</value>
+  </data>
+  <data name="Construction.ActualUi.Error.General" xml:space="preserve">
+    <value>لا يمكن توزيع هذا المصدر. راجع حالة القيد وإثبات العملة وأبعاد المشروع.</value>
+  </data>
+  <data name="Construction.ActualUi.Preview" xml:space="preserve">
+    <value>مراجعة المصدر والإجمالي</value>
+  </data>
+  <data name="Construction.Exception.Preserved" xml:space="preserve">
+    <value>تم الاحتفاظ بالسبب المُرسل. أعد تحميل الصفحة وراجع المبالغ الحالية قبل الإرسال مجددًا.</value>
+  </data>
+  <data name="Construction.RebasedWarehouseConsent.State.Approved" xml:space="preserve">
+    <value>موافق عليه</value>
+  </data>
+  <data name="Construction.ForecastUi.Error.InvalidForecastRequest" xml:space="preserve">
+    <value>راجع القيم المُدخلة ثم راجع التوقّع من جديد.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Refused" xml:space="preserve">
+    <value>تعذر إكمال الطلب. راجع الصلاحيات والكميات المستلمة ومستندات المصدر، ثم أعد المعاينة.</value>
+  </data>
+  <data name="Construction.PartialInvoice.Receipt" xml:space="preserve">
+    <value>الاستلام</value>
+  </data>
+  <data name="Construction.Purchase.Request.Overrun" xml:space="preserve">
+    <value>تجاوز الميزانية</value>
+  </data>
+  <data name="Construction.Boq.UnitChangeNeedsRevision" xml:space="preserve">
+    <value>يتطلب تغيير وحدة بند مرتبط بمستخلص مراجعة الأثر واعتماد تعديل تجاري.</value>
+  </data>
+  <data name="Construction.Navigation.ChooseProject" xml:space="preserve">
+    <value>اختر المشروع من القائمة أدناه لفتح {0}.</value>
+  </data>
+  <data name="Construction.Purchase.Request.SelectException" xml:space="preserve">
+    <value>اختر الاستثناء المعتمد</value>
+  </data>
+  <data name="Construction.Navigation.ChooseOrder" xml:space="preserve">
+    <value>افتح قائمة الإجراءات لأمر شراء مشروع لاستخدام {0}. يتاح توزيع التكلفة للمسودات.</value>
+  </data>
+  <data name="Construction.Purchase.Request.Submitted" xml:space="preserve">
+    <value>تم تقديم طلب اعتماد الشراء للمراجعة المستقلة.</value>
+  </data>
+  <data name="Construction.Budget.Error.BudgetCurrencyChanged" xml:space="preserve">
+    <value>تختلف عملة الشركة عن الإصدار السابق. يلزم مراجعة العملة قبل نسخه.</value>
+  </data>
+  <data name="Construction.Warehouse.History" xml:space="preserve">
+    <value>أحدث 50 طلب استثناء</value>
+  </data>
+  <data name="Construction.Exception.Explanation" xml:space="preserve">
+    <value>يلزم اعتماد الأساس المالي نفسه من مراجع مستقل. اعتماد الاستثناء وحده لا يحجز الميزانية ولا يعتمد الشراء.</value>
+  </data>
+  <data name="Construction.Exception.Back" xml:space="preserve">
+    <value>العودة لميزانية المشروع</value>
+  </data>
+  <data name="Construction.Exception.Show" xml:space="preserve">
+    <value>عرض</value>
+  </data>
+  <data name="Construction.ForecastUi.Dimension" xml:space="preserve">
+    <value>بُعد الميزانية</value>
+  </data>
+  <data name="Construction.Budget.Error.OriginalBudgetAlreadyExists" xml:space="preserve">
+    <value>توجد ميزانية أصلية لهذا المشروع. أنشئ إصدارًا معدلًا.</value>
+  </data>
+  <data name="Construction.Rebase.Independent" xml:space="preserve">
+    <value>لا يمكن لمقدم الطلب اتخاذ قرار بشأن اقتراحه. ويتطلب اعتماد الشراء أيضًا مراجعًا مستقلًا.</value>
+  </data>
+  <data name="Construction.TransferUi.AppliedBy" xml:space="preserve">
+    <value>نفّذه</value>
+  </data>
+  <data name="Construction.ActualUi.Amount" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
   <data name="Returned for review" xml:space="preserve">
     <value>أُعيد للمراجعة</value>
   </data>
@@ -3896,6 +5932,7 @@
   <data name="What to review" xml:space="preserve">
     <value>ما يجب مراجعته</value>
   </data>
+  <data name="Bedside scanning" xml:space="preserve"><value>المسح عند السرير</value></data>
   <data name="Notifiable diseases" xml:space="preserve"><value>الأمراض واجبة الإبلاغ</value></data>
   <data name="Downtime copies" xml:space="preserve"><value>نسخ وقت التوقف</value></data>
   <data name="Clinical surveillance" xml:space="preserve"><value>الرصد السريري</value></data>
@@ -3912,5 +5949,53 @@
   </data>
   <data name="Global search" xml:space="preserve">
     <value>البحث الشامل</value>
+  </data>
+  <data name="Item name" xml:space="preserve">
+    <value>اسم الصنف</value>
+  </data>
+  <data name="This basket holds an item restricted to customers aged {0} and over. Check the customer's ID, then confirm the age before taking payment." xml:space="preserve">
+    <value>تحتوي هذه السلة على صنف لا يُباع إلا لمن أتمّ {0} سنة. تحقّق من هوية العميل ثم أكّد السن قبل التحصيل.</value>
+  </data>
+  <data name="Sales restriction" xml:space="preserve">
+    <value>قيد على البيع</value>
+  </data>
+  <data name="Minimum buyer age" xml:space="preserve">
+    <value>السنّ الأدنى للمشتري</value>
+  </data>
+  <data name="Leave empty if unrestricted" xml:space="preserve">
+    <value>اتركه فارغاً إن لم يكن مقيَّداً</value>
+  </data>
+  <data name="The cashier lane will refuse payment for a basket holding this item until the age is confirmed." xml:space="preserve">
+    <value>سيرفض ممرّ الكاشير تحصيل أي سلة تحتوي هذا الصنف حتى يُؤكَّد السنّ.</value>
+  </data>
+  <data name="Open a shift before taking a return." xml:space="preserve">
+    <value>افتح وردية قبل قبول أي مرتجع.</value>
+  </data>
+  <data name="Choose at least one line and a quantity to return." xml:space="preserve">
+    <value>اختر سطراً واحداً على الأقل وكمية لإرجاعها.</value>
+  </data>
+  <data name="Only {0} of {1} is still returnable." xml:space="preserve">
+    <value>لم يتبقَّ من {1} سوى {0} قابلة للإرجاع.</value>
+  </data>
+  <data name="That sale has no invoice, so nothing can be returned against it." xml:space="preserve">
+    <value>هذه البيعة بلا فاتورة، فلا يمكن الإرجاع عليها.</value>
+  </data>
+  <data name="That sale has no customer, so a return cannot be credited." xml:space="preserve">
+    <value>هذه البيعة بلا عميل، فلا يمكن قيد المرتجع.</value>
+  </data>
+  <data name="That invoice has no lines." xml:space="preserve">
+    <value>هذه الفاتورة بلا سطور.</value>
+  </data>
+  <data name="The customer has no receivables account, so the refund cannot be paid out." xml:space="preserve">
+    <value>لا يوجد حساب مدين للعميل، فلا يمكن صرف المبلغ.</value>
+  </data>
+  <data name="Return {0} was posted, but the cash could not be taken out of the drawer: {1}" xml:space="preserve">
+    <value>قُيِّد المرتجع {0} لكن تعذّر إخراج النقد من الدرج: {1}</value>
+  </data>
+  <data name="Return {0} posted - refund {1}." xml:space="preserve">
+    <value>تم قيد المرتجع {0} — المبلغ المردود {1}.</value>
+  </data>
+  <data name="This item cannot be sold {0}" xml:space="preserve">
+    <value>لا يمكن بيع هذا الصنف {0}</value>
   </data>
 </root>

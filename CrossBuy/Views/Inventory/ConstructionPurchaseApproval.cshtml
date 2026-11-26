@@ -1,0 +1,116 @@
+@using CrossBuy.BL
+@using System.Globalization
+@model CrossBuy.ViewModel.ConstructionPurchaseRequestPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var warehouse=ViewBag.WarehouseException as CrossBuy.BL.Construction.ConstructionWarehouseExceptionPage;
+    var rebasedConsent=ViewBag.RebasedWarehouseConsent as CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentPanel;
+    string Exact(decimal amount) => amount.ToString(Model.CurrencyDecimals is >= 0 and <= 8
+        ? "0." + new string('0', Model.CurrencyDecimals) + new string('#', 28 - Model.CurrencyDecimals)
+        : "0.############################", CultureInfo.CurrentCulture);
+    string Message(string code)
+    {
+        var value = SR["Construction.Purchase.Error." + code];
+        return value.IsResourceNotFound ? SR["Construction.Purchase.Error.General"].Value : value.Value;
+    }
+    string State(string status)
+    {
+        var value = SR["Construction.Purchase.Request.State." + status];
+        return value.IsResourceNotFound ? SR["Construction.Purchase.Request.State.Unknown"].Value : value.Value;
+    }
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@SR["Construction.Purchase.Request.Title"]</h1>
+            <div class="text-muted">@Model.ProjectCode — @DisplayName.Of(Model.ProjectName, Model.ProjectNameEn) — @Model.OrderNumber</div></div>
+        <div class="d-flex gap-2"><a asp-action="PurchaseOrders" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light">@SR["Construction.Purchase.Request.Back"]</a>
+            <a asp-controller="ConstructionRebase" asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Rebase.Title"]</a>
+            <a asp-controller="Project" asp-action="BudgetExceptions" asp-route-id="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Exception.Title"]</a>
+            @if(warehouse!=null){<a href="#warehouse-exception" class="btn btn-light-primary">@SR["Construction.Warehouse.Title"]</a>}
+            @if(rebasedConsent!=null){<a href="#rebased-warehouse-consent" class="btn btn-light-primary">@SR["Construction.RebasedWarehouseConsent.Title"]</a>}
+            @if (Model.Status == "Draft") { <a asp-action="ConstructionPurchaseAllocation" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Editor.AllocationTitle"]</a> }
+        </div>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["InvMsg"] is string message) { <div class="alert alert-success" role="status">@message</div> }
+        @if (TempData["InvErr"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+        <div class="alert alert-info">@SR["Construction.Purchase.Request.Explanation"]</div>
+        @if (Model.RefusalCode != null)
+        {
+            <div class="alert alert-danger" role="alert">@Message(Model.RefusalCode) @SR["Construction.Purchase.Request.Preserved"]</div>
+        }
+        @if (Model.RefusalCode == null && (!Model.CanSubmit || Model.ReadinessCode == "BudgetWarning"))
+        {
+            <div class="alert alert-warning" role="status">@Message(Model.ReadinessCode)</div>
+        }
+        <div class="card mb-5"><div class="card-body">
+            <div class="row g-4">
+                <div class="col-sm-3"><div class="text-muted">@SR["Construction.Purchase.Request.Status"]</div><div class="fw-semibold">@State(Model.Status)</div></div>
+                <div class="col-sm-3"><div class="text-muted">@SR["Construction.Purchase.Request.Net"]</div><div dir="ltr">@Exact(Model.NetAmount) @Model.CurrencyCode</div></div>
+                <div class="col-sm-3"><div class="text-muted">@SR["Construction.Purchase.Request.Tax"]</div><div dir="ltr">@Exact(Model.TaxAmount) @Model.CurrencyCode</div></div>
+                <div class="col-sm-3"><div class="text-muted">@SR["Construction.Purchase.Request.Total"]</div><div class="fw-bold" dir="ltr">@Exact(Model.TotalAmount) @Model.CurrencyCode</div></div>
+            </div>
+        </div></div>
+        <div class="card mb-5"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Purchase.Request.Lines"]</h2></div>
+            <div class="card-body table-responsive"><table class="table table-row-dashed align-middle">
+                <thead><tr><th>@SR["Construction.Purchase.Request.Description"]</th><th>@SR["Construction.Purchase.Request.Quantity"]</th><th class="text-end">@SR["Construction.Purchase.Request.Net"]</th></tr></thead>
+                <tbody>@foreach (var line in Model.Lines) { <tr><td>@line.Description</td><td dir="ltr">@line.Quantity.ToString("0.############################", CultureInfo.CurrentCulture)</td><td class="text-end" dir="ltr">@Exact(line.NetAmount) @Model.CurrencyCode</td></tr> }</tbody>
+            </table></div>
+        </div>
+        <div class="card mb-5"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Purchase.Request.Allocation"]</h2></div>
+            <div class="card-body">
+                @if (Model.Splits.Count == 0) { <p class="text-muted">@SR["Construction.Purchase.Request.NoAllocation"]</p> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed">
+                        <thead><tr><th>@SR["Construction.Purchase.Request.Work"]</th><th>@SR["Construction.Purchase.Request.Cost"]</th><th class="text-end">@SR["Construction.Purchase.Request.Net"]</th></tr></thead>
+                        <tbody>@foreach (var split in Model.Splits) { <tr><td>@split.WbsCode — @DisplayName.Of(split.WbsName, split.WbsNameEn)</td><td>@split.CostCode — @DisplayName.Of(split.CostName, split.CostNameEn)</td><td class="text-end" dir="ltr">@Exact(split.Amount) @Model.CurrencyCode</td></tr> }</tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+        @if(warehouse!=null){<partial name="_ConstructionWarehouseException" model="warehouse"/>}
+        @if(rebasedConsent!=null){<partial name="_ConstructionRebasedWarehouseConsent" model="rebasedConsent"/>}
+        <div class="card mb-5"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Purchase.Request.SubmitTitle"]</h2></div>
+            <div class="card-body">
+                <form asp-action="RequestConstructionPurchaseApproval" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.ProjectId" /><input type="hidden" name="orderId" value="@Model.OrderId" />
+                    <input type="hidden" name="allocationId" value="@Model.AllocationId" /><input type="hidden" name="sourceVersion" value="@Model.SourceVersion" /><input type="hidden" name="requestId" value="@Model.RequestId" />
+                    @if(warehouse is {RequiresBinding:true}){
+                        <label for="warehouse-approved-decision" class="form-label">@SR["Construction.Warehouse.SelectDecision"]</label>
+                        <select id="warehouse-approved-decision" name="warehouseDecisionId" class="form-select mb-4" required>
+                            <option value="">@SR["Construction.Warehouse.ChooseDecision"]</option>
+                            @foreach(var decision in warehouse.ReadyDecisions){<option value="@decision.Id" selected="@((int?)ViewBag.WarehouseDecisionId==decision.Id)">@decision.Reason</option>}
+                        </select>
+                    }
+                    @if (Model.Exceptions.Count > 0)
+                    {
+                        <label for="construction-exception" class="form-label">@SR["Construction.Purchase.Request.Exception"]</label>
+                        <select id="construction-exception" name="exceptionId" class="form-select mb-4" required>
+                            <option value="">@SR["Construction.Purchase.Request.SelectException"]</option>
+                            @foreach (var exception in Model.Exceptions) { <option value="@exception.Id" selected="@(Model.SelectedExceptionId == exception.Id)">@exception.Reason — @SR["Construction.Purchase.Request.Overrun"]: @Exact(exception.Overrun) @Model.CurrencyCode</option> }
+                        </select>
+                    }
+                    <label for="construction-request-reason" class="form-label">@SR["Construction.Purchase.Request.Reason"]</label>
+                    <textarea id="construction-request-reason" name="reason" class="form-control mb-4" maxlength="1000" required rows="3">@Model.Reason</textarea>
+                    @if (Model.CanSubmit&&(warehouse is not {RequiresBinding:true}||warehouse.ReadyDecisions.Count>0)) { <button type="submit" class="btn btn-primary">@SR["Construction.Purchase.Request.Submit"]</button> }
+                    else { <a asp-action="ConstructionPurchaseApproval" asp-route-projectId="@Model.ProjectId" asp-route-orderId="@Model.OrderId" asp-route-culture="@CultureInfo.CurrentCulture.Name" asp-route-ui-culture="@CultureInfo.CurrentUICulture.Name" class="btn btn-light-primary">@SR["Construction.Purchase.Request.Reload"]</a> }
+                </form>
+            </div>
+        </div>
+        <div class="card mb-5"><div class="card-header"><h2 class="card-title fs-5">@SR["Construction.Purchase.Request.History"]</h2></div>
+            <div class="card-body">
+                @if (Model.History.Count == 0) { <p class="text-muted">@SR["Construction.Purchase.Request.NoHistory"]</p> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed">
+                        <thead><tr><th>@SR["Construction.Purchase.Request.Date"]</th><th>@SR["Construction.Purchase.Request.Status"]</th><th>@SR["Construction.Purchase.Request.Reason"]</th><th>@SR["Construction.Purchase.Request.Decision"]</th></tr></thead>
+                        <tbody>@foreach (var entry in Model.History) { <tr><td dir="ltr">@entry.RequestedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</td><td>@State(entry.Status)</td><td>@entry.Reason</td><td>@entry.DecisionNote</td></tr> }</tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>

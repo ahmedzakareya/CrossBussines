@@ -90,6 +90,22 @@
     background-color: #1F2D4D !important;
     border-color: #1F2D4D !important;
 }
+
+/* HOVER LEGIBILITY on a btn-light base. The rule above forces color:#fff with specificity (0,3,0),
+   but the theme's `.btn.btn-light:hover:not(.btn-active)` is (0,4,0) and also !important, so it wins
+   the BACKGROUND while this file wins the COLOUR. The result was white text on --bs-light-active
+   (#F5F7FB): measured 1.1:1, i.e. the label vanished on hover. Reproduced on BOTH Inventory/Categories
+   (the visual authority) and Project/Projects, so this was never one screen's bug.
+   Scoped to the btn-light combination ONLY: the 31 icon buttons that carry btn-active-light-primary
+   WITHOUT btn-light keep the navy fill above, where white reads at 13.6:1.
+   #3A5795 on #E7F0FF measures 6.2:1 - AA for body text, AAA for large - and keeps the subtle hover
+   the theme intends rather than flipping a table row's action button to a dark fill. */
+.btn.btn-light.btn-active-light-primary:hover:not(.btn-active),
+.btn.btn-light.btn-active-light-primary:focus:not(.btn-active) {
+    color: #3A5795 !important;
+    background-color: #E7F0FF !important;
+    border-color: #E7F0FF !important;
+}
 /* The same trap on a btn-outline base (2026-11-16): the payment-method tiles on /Hospital/Bill are
    `btn-check + btn btn-outline btn-outline-dashed btn-active-light-primary`. The theme's outline hover keeps a
    near-white background while the rule above forces white text, so the label vanished on hover. Hover now
@@ -249,6 +265,31 @@
     /* never let the page body itself scroll sideways (the scroll lives inside .table-responsive) */
     #kt_app_content, #kt_app_content > .app-container { overflow-x: clip; }
 }
+
+/* ============================================================================================
+   A DATE FIELD IS A FORM CONTROL AND MUST LAY OUT LIKE ONE.
+
+   flatpickr replaces <input type="date"> with a text input wrapped in
+   `<div class="flatpickr-wrapper">`, and that wrapper is display:inline-block with a
+   shrink-to-fit width. An inline <label> therefore stays on the SAME LINE as the field, and
+   the field stops short of its column - so one cell of a grid is stacked and the next is not.
+
+   Measured on /Crm/Opportunities, two identical col-md-6 cells side by side:
+
+       الحملة (a <select>)        label y=396, control y=424, width 364  <- stacked, full width
+       الإغلاق المتوقع (flatpickr)  label y=408, control y=396, width 179  <- same line, short
+
+   Both columns were [x, 396, 384, 71]. The grid was never asymmetric; the wrapper was.
+
+   This was found once before and fixed only for #taskModal. It is not a Tasks problem - forty
+   views build date fields this way - so the rule lives here now and that scoped copy is gone.
+
+   ONE DECLARATION, and deliberately not two. `display: block` is enough: a block-level wrapper
+   already fills its column, so it needs no width of its own, and inside a `d-flex` toolbar a
+   flex item is blockified anyway - which means this cannot reach in and stretch the narrow date
+   filters that several screens lay out that way. Adding `width: 100%` WOULD have reached them.
+   ============================================================================================ */
+.flatpickr-wrapper { display: block; }
 
 /* ===== CrossBuy brand — flatpickr (date picker) popup, applied app-wide ===== */
 .flatpickr-calendar { font-family: inherit !important; border: 1px solid #dde0e5 !important; border-radius: 12px !important; box-shadow: 0 8px 28px rgba(15,23,42,.10) !important; }
@@ -618,6 +659,24 @@
        the "darker red" a white-on-red chip requires. */
     --cb-danger-strong: #DC2626;
 
+    /* THE FLAT RED. A danger tone that reads as a STATE rather than as an alarm, for the places
+       where a figure has to say "this is wrong" without shouting across the page at the reader.
+
+       It belongs to the flat-design family, which sits at 63% saturation where the Tailwind ramp
+       sits at 70-78. That difference is the whole point: the calm comes from dropping SATURATION,
+       not from going darker, so the hue stays unmistakably red instead of sliding into maroon.
+       --cb-danger-strong (#DC2626) stays exactly as it is for chips, badges and buttons, where its
+       brightness is correct; this is the quieter sibling, not a replacement.
+
+       Measured as TEXT ON WHITE, which is how it is used:
+         #E74C3C  alizarin     sat 78%   3.82   FAILS AA
+         #C0392B  pomegranate  sat 63%   5.44   PASS  <- taken
+         #A93226  deeper flat  sat 63%   6.62   PASS, if calmer is ever wanted
+         #DC2626  danger-strong          4.83   passes, but reads as an alarm
+
+       Same rule as --cb-warning-strong: only the depth moves, never the meaning. */
+    --cb-danger-flat: #C0392B;
+
     /* WARNING NEEDED ITS OWN DEEPER STEP for the same reason danger did. White on the spec's
        #F59E0B is 2.15 - under even the 3:1 a non-text graphic needs - so anything that shows a
        white mark on amber sits here instead. Measured: white on #B45309 = 5.02 PASS. The hue is
@@ -902,13 +961,102 @@
 /* A MENTION, WHEREVER IT IS RENDERED. This lived in a <style> block inside Tasks/Detail, so it
    existed on one page only and the Workspace Mentions list had nowhere to get it from.
 
-   NO "@" IS DRAWN. The tint and the weight are what mark the name as a mention; the sign is
-   authoring syntax and the reader has no use for it. */
-.cb-mention {
-    color: var(--cb-brand-ink);
-    background: var(--cb-brand-surface);
+   NO "@" IS DRAWN. The ground and the weight are what mark the name as a mention; the sign is
+   authoring syntax and the reader has no use for it.
+
+   IT IS A SOLID PILL BECAUSE THE PALE ONE DISAPPEARED. It used to be --cb-brand-surface
+   (--cb-blue-50, #E7F0FF) on whatever lay behind it. That is exactly the colour Metronic's
+   .bg-light-primary paints a bubble, so in the conversation panel a mention inside one of the
+   reader's OWN messages sat on an identical ground: measured on the running page, chip and bubble
+   were both rgb(231,240,255) and the contrast between them was 1.00. Not subtle - absent.
+
+   THE STEP WAS CHOSEN BY MEASUREMENT, against both grounds a mention can land on in that panel
+   (bg-light-primary #E7F0FF and bg-light #F9F9F9):
+
+       ground      vs own bubble   vs other bubble   white text on it
+       blue-50          1.00            1.09               1.15
+       blue-100         1.15            1.25               1.32
+       blue-300         2.04            2.22               2.34
+       blue-500         6.15            6.70               7.05   <-
+
+   blue-500 is the first step that clears 3:1 as a non-text boundary on BOTH grounds, and white on
+   it is 7.05 - AA for body text with room to spare. The lighter steps fail the same way the
+   original did, just less obviously, which is worse.
+
+   ONE TREATMENT, NOT A PANEL-LOCAL FORK. Tasks and the Workspace mentions list render on white,
+   where the pale tint did work; giving the conversation panel its own override would leave three
+   screens showing three different marks for one thing. */
+/* THE SAME MENTION, DRAWN WITH ZERO LAYOUT COST.
+ *
+ * The composer paints its text twice: the real textarea (transparent) and a mirrored layer behind
+ * it. The caret belongs to the textarea, so every pixel of ADVANCE WIDTH the mirror adds pushes the
+ * drawn glyphs away from the caret the reader is watching. Measured on .cb-mention: 4.55px of
+ * padding each side and font-weight 600 against the box’s 500 - enough to put the caret visibly off
+ * the text after a single mention.
+ *
+ * So: the pill is a BOX-SHADOW spread, which paints outside the glyph box without occupying space,
+ * the weight is inherited, and there is no padding. Same colours as .cb-mention, so the measured
+ * contrast is unchanged and the composer reads exactly like the sent message.
+ *
+ * No unicode-bidi here either, deliberately: isolating a run would reorder the mirror differently
+ * from the textarea, which is the same drift by another route.
+ */
+/* WHAT SOMEBODY ACTUALLY WROTE, inside a notification that also explains itself.
+ *
+ * The body of a comment notification is a frame plus a message: "X mentioned you in a comment on
+ * Y:" then the words. The frame repeats the title and is the same on every row of its kind, so the
+ * message is the only part a reader scans for - and it was the same grey as the rest.
+ *
+ * A rule on the READING edge, not a box: the row is one line tall and a tint or a border on four
+ * sides would turn a list into a stack of cards. border-inline-start is logical, so it sits on the
+ * right in Arabic with no mirrored override - the same device .cb-unread-row already uses.
+ *
+ * THE RULE TAKES THE TEXT'S OWN COLOUR. A fixed grey is right on the white dropdown and wrong
+ * on a toast, which is orange, red or blue by priority - currentColor is correct on all four
+ * without a palette per surface. color-mix thins it; a browser without color-mix keeps the
+ * solid rule, which is a little strong rather than broken. */
+.cbnb-quote {
+    display: inline-block;
+    border-inline-start: 2px solid currentColor;
+    border-inline-start-color: color-mix(in srgb, currentColor 35%, transparent);
+    padding-inline-start: .4rem;
+    margin-inline-start: .35rem;
+}
+
+/* THE NOTIFICATION TOAST TAKES THE BRAND'S OWN BLUE, not toastr's.
+ *
+ * MEASURED, white text on each candidate:
+ *     amber #F59E0B (what High priority used)   2.15:1   - and amber is banned here anyway
+ *     toastr info #3B82F6                       3.68:1   - still under AA
+ *     --cb-blue-500 #3A5795 (this product)      7.05:1   - AA and AAA
+ * and the frame at 72% opacity on that blue still measures 4.56:1, so the de-emphasised half
+ * stays readable rather than becoming decoration.
+ *
+ * SCOPED to .cbnb-toast - the notification bell's own toasts. CB.toast uses the same plugin for
+ * save confirmations and refusals, and those keep their green and red. */
+.cbnb-toast.toastr-info,
+.cbnb-toast.toast-info {
+    background-color: var(--cb-blue-500) !important;
+}
+
+/* The notification FRAME inside a toast: one step back from the toast's own text colour,
+ * never a grey of its own. .text-muted here measured as dirt on the warning orange. */
+.cbnb-toast-lead {
+    opacity: .72;
+}
+
+.cb-mention-live {
+    color: #fff;
+    background: var(--cb-blue-500);
     border-radius: .35rem;
-    padding: 0 .3rem;
+    box-shadow: 0 0 0 .18em var(--cb-blue-500);
+}
+
+.cb-mention {
+    color: #fff;
+    background: var(--cb-blue-500);
+    border-radius: .35rem;
+    padding: 0 .35rem;
     font-weight: 600;
     unicode-bidi: isolate;          /* a Latin name inside Arabic prose keeps its own run */
 }
@@ -1125,14 +1273,9 @@
 
 /* Preserved existing Tasks/Index rules; relocated without redesign. */
 
-    /* DATE FIELDS IN THIS MODAL SIT ON THEIR LABEL'S LINE AND ARE 220px WIDE, unlike every other control
-       in the same grid. flatpickr wraps each date input in `<div class="flatpickr-wrapper">`, and that
-       wrapper is display:inline-block with an intrinsic 220px - so the inline <label> before it stays on
-       the same line and the field stops short of the column edge. Invisible while the dialog was narrow
-       and one field per row; obvious the moment the form became a 3-up grid. Scoped to #taskModal so the
-       shared flatpickr styling is untouched. */
-    #taskModal .flatpickr-wrapper { display: block; width: 100%; }
-    #taskModal .flatpickr-wrapper > .flatpickr-input { width: 100%; }
+    /* The date-field wrapper fix that used to live here is now shared - see
+       `.flatpickr-wrapper { display: block }` near the flatpickr popup styling above.
+       Every screen had the defect, not just this modal. */
 
 /* Preserved existing Tasks/Detail rules; relocated without redesign. */
 
@@ -1695,4 +1838,98 @@
 @media (max-width: 575.98px) {
     #kt_calendar_app .fc-toolbar-chunk .fc-button-group { gap: .25rem; flex-wrap: wrap; justify-content: center; }
     #kt_calendar_app .fc-toolbar-chunk .fc-button { padding-inline: .45rem; }
+}
+
+/* Workspace activity detail: identical long-word wrapping in LTR and RTL. */
+#activity .text-break { word-break: break-word; }
+
+/* ============================================================================================
+   SELECT2 CLEAR BUTTON, UNDER RTL.
+
+   The x sat ON TOP of the selected text on every Arabic screen that uses a clearable select2 -
+   114 views use the control. The cause is in the theme, not in any one page:
+
+     .select2-container--bootstrap5 .select2-selection__clear {
+         position: absolute; top: 50%; right: 3rem; ...
+     }
+
+   `right: 3rem` is a PHYSICAL offset. Under RTL the text begins on the right, so the button
+   lands on the first characters of the value. The theme does ship [dir=rtl] overrides for the
+   `default` and `classic` select2 themes - but NOT for `bootstrap5`, which is the one Metronic
+   actually uses. plugins.bundle.rtl.css carries the identical unflipped rule, so loading the RTL
+   bundle does not fix it: there is nothing in it to flip.
+
+   Mirrored here rather than patched into the vendor bundle, so a theme upgrade cannot silently
+   drop the fix. 3rem is the theme's own offset, kept, so the button keeps clearing the chevron.
+   ============================================================================================ */
+[dir="rtl"] .select2-container--bootstrap5 .select2-selection__clear {
+    right: auto;
+    left: 3rem;
+}
+
+/* The `default` select2 theme carries the same physical offset and the same blind spot.
+   Only Admin/EmployeeData uses that variant today, and it already patches itself with
+   !important at its own 26px - which still wins there. This is here so the next screen that
+   falls back to the default theme does not rediscover the bug. */
+[dir="rtl"] .select2-container--default .select2-selection--single .select2-selection__clear {
+    float: left;
+    margin-right: auto;
+    margin-left: 20px;
+}
+
+/* ============================================================================================
+   MULTI-SELECT CHIPS: THE REMOVE CONTROL HAD NO BOX.
+
+   Measured on /Crm/Opportunities, theme select2-container--bootstrap5, chip 92x24:
+   the remove button rendered 12 x 7.8px at opacity .5 - a grey sliver on a grey pill that
+   nobody could see, let alone hit. Every multi-select in the product had it.
+
+   THE CAUSE IS IN THE THEME, not in our markup. Metronic styles the control as a masked icon:
+
+       .select2-selection__choice__remove      { mask-image: <x.svg>; position: absolute;
+                                                 top: 50%; transform: translateY(-50%);
+                                                 opacity: .5; display: block; }
+       .select2-selection__choice__remove span { display: none; }
+
+   It sets a mask and a colour and never sets a WIDTH or a HEIGHT - and the only thing the box
+   could have been sized from, the <span> holding the literal "x", is hidden by the very next
+   rule. So the button collapsed to its padding (12 x 7.8), the 16x16 mask was squashed inside
+   it, and with no inset-inline-end it sat at its static position with nothing to anchor it.
+
+   THE FIX KEEPS METRONIC’S DESIGN and only gives it the box it assumes: same mask, same chip,
+   same hover colour. The control simply becomes a flex item of the chip it belongs to, which
+   is also what makes it correct in both directions - the chip is `display: inline-flex`, so
+   laying the icon out in flow puts it at the start of the chip in Arabic and in English
+   without a single physical offset. Absolute positioning is what forced a direction-specific
+   offset in the first place; see the select2 clear-button note above for the same lesson.
+
+   OPACITY GOES TO 1, and that is a contrast argument rather than a preference. The icon is
+   gray-700 (#4b5675) on the gray-300 chip (#dbdfe9): 5.46:1 measured, comfortably past the
+   3:1 a non-text graphic owes a reader. At .5 it blends halfway into the chip and lands near
+   2:1 - under the floor. An action a user must find is not decoration.
+
+   The hit area is 1.05rem with a .7rem glyph inside it, so the target is bigger than the mark.
+   ============================================================================================ */
+.select2-container--bootstrap5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice .select2-selection__choice__remove {
+    position: static;
+    transform: none;
+    opacity: 1;
+    flex: 0 0 auto;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-inline-end: .3rem;
+    margin-inline-start: -.15rem;
+    mask-size: .7rem .7rem;
+    -webkit-mask-size: .7rem .7rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color .15s ease;
+}
+
+/* The theme’s hover already recolours the mask to the primary; it also re-sets opacity to 1,
+   which is now the resting state, so nothing here fights it. The ring is ours: a masked icon
+   cannot show a background of its own, so the feedback has to be the mark changing colour. */
+.select2-container--bootstrap5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice .select2-selection__choice__remove:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 1px;
 }

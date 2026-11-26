@@ -298,6 +298,13 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HrLeaveLiabilityDataSource>();
             services.AddScoped<IReportDataSource, HrExpiriesDataSource>();
 
+            // HYPER (2026-11-09): the first hypermarket dataset. Handed over by TAB-6 because every
+            // module reports through the Studio and CrossBuy/BL/Reporting is this tab's tree. One
+            // source, CrossDbContext only - no module service, so the pack still builds on its own.
+            services.AddSingleton<IReportDefinitionProvider, HyperReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HyperTopSellersDataSource>();
+            services.AddScoped<IReportDataSource, HyperBasketAnalysisDataSource>();
+
             // HR-B3: the planned-vs-actual data source asks the canonical attendance authority what
             // an employee was expected to work, rather than carrying a second copy of the formula.
             // That makes the resolver a dependency of REPORTING, so reporting must be able to supply
@@ -354,6 +361,11 @@ namespace CrossBuy.BL.Reporting
             foreach (var people in HrAnalyticsDatasets.All())
             {
                 var definition = people;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var hyper in HyperDatasets.All())
+            {
+                var definition = hyper;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

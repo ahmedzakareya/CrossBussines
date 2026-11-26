@@ -21,6 +21,7 @@ namespace CrossBuy.BL
 	// one inline BOQ row posted from the editor (invoice-lines style). Kind = "main" (section header) or "sub".
 	public class BoqRowInput
 	{
+		public int Id { get; set; }
 		public string? Kind { get; set; }
 		public string? Code { get; set; }
 		public string? Description { get; set; }
@@ -77,8 +78,13 @@ namespace CrossBuy.BL
 		public static BoqSaveResult Refuse(string message) => new() { ok = false, error = message };
 	}
 
+	public sealed record BoqEditorState(List<BoqItem> Lines, string Snapshot);
+
 	public interface IBoqService
 	{
+		Task<BoqEditorState> GetEditorAsync(int companyId, int projectId, CancellationToken ct = default);
+		Task<BoqSaveResult> SaveEditorAsync(int companyId, int projectId, List<BoqRowInput> rows,
+			string? expectedSnapshot, int? actorEmployeeId, CancellationToken ct = default);
 		Task<List<BoqItem>> GetForProjectAsync(int companyId, int projectId);
 		Task<(bool ok, string? error, int id)> SaveItemAsync(BoqItem dto);
 		Task<(bool ok, string? error)> DeleteItemAsync(int companyId, int id);
@@ -123,6 +129,7 @@ namespace CrossBuy.BL
 	// ==========================================================================================
 	public class BoqService : IBoqService
 	{
+		public const string UnitChangeRefusal = "Changing the unit of a committed line requires an impact review and an approved commercial revision.";
 		private const string Source = nameof(BoqService);
 
 		private readonly CrossDbContext _db;
@@ -135,6 +142,77 @@ namespace CrossBuy.BL
 		}
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+		private static string? UnitText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+		public async Task<BoqEditorState> GetEditorAsync(int companyId, int projectId, CancellationToken ct = default)
+		{
+			if (companyId <= 0 || _db.CompanyScope.FilterCompanyId != companyId)
+				return new(new(), "");
+			var query = _db.BoqItems.AsNoTracking().Where(x => x.CompanyID == companyId &&
+				x.ProjectId == projectId && x.Status != BoqLineStatus.Retired).OrderBy(x => x.ID);
+			List<BoqItem> lines;
+			var versions = new Dictionary<int, byte[]>();
+			if (_db.Database.IsSqlServer())
+			{
+				// Read the displayed facts and their native versions in the SAME statement.
+				var captured = await query.Select(x => new { Line = x, Native = EF.Property<byte[]>(x, "RowVersion") }).ToListAsync(ct);
+				lines = captured.Select(x => x.Line).ToList();
+				foreach (var row in captured) versions.Add(row.Line.ID, row.Native);
+			}
+			else lines = await query.ToListAsync(ct);
+			var payload = companyId + ":" + projectId + "|" + string.Join("|", lines.Select(x =>
+				x.ID + ":" + Convert.ToBase64String(x.ConcurrencyToken) + ":" +
+				(versions.TryGetValue(x.ID, out var native) ? Convert.ToBase64String(native) : "")));
+			var snapshot = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(payload)));
+			return new(lines.OrderBy(x => x.SortOrder).ThenBy(x => x.ID).ToList(), snapshot);
+		}
+
+		public async Task<BoqSaveResult> SaveEditorAsync(int companyId, int projectId, List<BoqRowInput> rows,
+			string? expectedSnapshot, int? actorEmployeeId, CancellationToken ct = default)
+		{
+			try { return await SaveEditorCoreAsync(companyId, projectId, rows, expectedSnapshot, actorEmployeeId, ct); }
+			catch (Exception ex) when (IsEditorLockConflict(ex))
+			{ return BoqSaveResult.Refuse(ConstructionConcurrency.ConflictMessage); }
+		}
+
+		private static bool IsEditorLockConflict(Exception exception)
+		{
+			// SqlServerExecutionStrategy wraps a deadlock inside InvalidOperationException and
+			// DbUpdateException. Translate only these SQL numbers; never retry a stale browser save.
+			for (Exception? current = exception; current != null; current = current.InnerException)
+				if (current is Microsoft.Data.SqlClient.SqlException sql && sql.Number is 1205 or 1222) return true;
+			return false;
+		}
+
+		private async Task<BoqSaveResult> SaveEditorCoreAsync(int companyId, int projectId, List<BoqRowInput> rows,
+			string? expectedSnapshot, int? actorEmployeeId, CancellationToken ct)
+		{
+			if (string.IsNullOrWhiteSpace(expectedSnapshot))
+				return BoqSaveResult.Refuse(ConstructionConcurrency.ConflictMessage);
+			// The range lock also covers a concurrently inserted/deleted line, including lines omitted
+			// from the submission. Row-by-row checks alone cannot protect a whole-table editor.
+			if (_db.Database.CurrentTransaction != null)
+				return BoqSaveResult.Refuse("The BOQ editor requires its own transaction");
+			await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+			var current = await GetEditorAsync(companyId, projectId, ct);
+			if (!string.Equals(current.Snapshot, expectedSnapshot, StringComparison.Ordinal))
+				return BoqSaveResult.Refuse(ConstructionConcurrency.ConflictMessage);
+			if (rows.Any(x => x.Id < 0) || rows.Where(x => x.Id > 0).GroupBy(x => x.Id).Any(x => x.Count() > 1))
+				return BoqSaveResult.Refuse("Invalid or duplicate BOQ line identity");
+			var byId = current.Lines.ToDictionary(x => x.ID);
+			if (rows.Any(x => x.Id > 0 && !byId.ContainsKey(x.Id)))
+				return BoqSaveResult.Refuse("Line was not found in this project");
+			var mapped = rows.Select(x => new BoqLineInput
+			{
+				Id=x.Id, Kind=x.Kind, Code=x.Code, Description=x.Description, DescriptionEn=x.DescriptionEn,
+				Unit=x.Unit, Quantity=x.Quantity, UnitPrice=x.UnitPrice, MaterialCost=x.MaterialCost,
+				LaborCost=x.LaborCost, SubcontractCost=x.SubcontractCost, EquipmentCost=x.EquipmentCost,
+				ExpectedToken=x.Id > 0 ? byId[x.Id].ConcurrencyToken : null
+			}).ToList();
+			var result = await SaveLinesAsync(companyId, projectId, mapped, actorEmployeeId, "BOQ editor save", ct);
+			if (result.ok) await transaction.CommitAsync(ct);
+			return result;
+		}
 
 		public Task<List<BoqItem>> GetForProjectAsync(int companyId, int projectId) =>
 			_db.BoqItems.AsNoTracking()
@@ -145,9 +223,9 @@ namespace CrossBuy.BL
 		/// should use; GetForProjectAsync stays as-is so existing callers are unaffected.
 		public async Task<List<BoqItem>> GetActiveForProjectAsync(int companyId, int projectId)
 		{
-			var retired = await _db.BoqLineStates.AsNoTracking()
+			var retired = await _db.BoqItems.AsNoTracking()
 				.Where(s => s.CompanyID == companyId && s.ProjectId == projectId && s.Status == BoqLineStatus.Retired)
-				.Select(s => s.BoqItemId).ToListAsync();
+				.Select(s => s.ID).ToListAsync();
 
 			return await _db.BoqItems.AsNoTracking()
 				.Where(b => b.CompanyID == companyId && b.ProjectId == projectId && !retired.Contains(b.ID))
@@ -172,7 +250,7 @@ namespace CrossBuy.BL
 			BoqItem e;
 			bool isNew = dto.ID <= 0;
 			if (!isNew)
-				e = await _db.BoqItems.FirstOrDefaultAsync(b => b.ID == dto.ID && b.CompanyID == dto.CompanyID) ?? throw new InvalidOperationException("Line not found");
+				e = await _db.BoqItems.FirstOrDefaultAsync(b => b.ID == dto.ID && b.CompanyID == dto.CompanyID && b.ProjectId == dto.ProjectId) ?? throw new InvalidOperationException("Line not found");
 			else
 			{
 				e = new BoqItem { CompanyID = dto.CompanyID, ProjectId = dto.ProjectId, CreatedAt = DateTime.UtcNow };
@@ -183,10 +261,11 @@ namespace CrossBuy.BL
 			}
 
 			// C1 / CR-03: a contractual value may not be changed here once the line is committed.
-			if (!isNew && (e.Quantity != dto.Quantity || e.UnitPrice != dto.UnitPrice))
+			var unitChanged = !string.Equals(UnitText(e.Unit), UnitText(dto.Unit), StringComparison.Ordinal);
+			if (!isNew && (e.Quantity != dto.Quantity || e.UnitPrice != dto.UnitPrice || unitChanged))
 			{
 				var guard = await CommercialChangeRefusalAsync(dto.CompanyID, dto.ProjectId, e.ID, e.Code ?? e.Description);
-				if (guard != null) return (false, guard, 0);
+				if (guard != null) return (false, unitChanged ? UnitChangeRefusal : guard, 0);
 			}
 
 			e.ParentId = dto.ParentId; if (!isNew && dto.SortOrder > 0) e.SortOrder = dto.SortOrder;
@@ -216,9 +295,11 @@ namespace CrossBuy.BL
 			if (refs.TryGetValue(id, out var why))
 				return (false, $"Line «{e.Code ?? e.Description}» cannot be deleted — {why}");
 
-			_db.BoqItems.Remove(e);
-			var state = await _db.BoqLineStates.FirstOrDefaultAsync(s => s.BoqItemId == id);
-			if (state != null) _db.BoqLineStates.Remove(state);
+			e.Status = BoqLineStatus.Retired;
+			e.RetiredAt = DateTime.UtcNow;
+			e.RetiredReason = "Single-item retirement";
+			e.ConcurrencyToken = ConstructionConcurrency.NewToken();
+			
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -271,6 +352,36 @@ namespace CrossBuy.BL
 		public async Task<BoqSaveResult> SaveLinesAsync(int companyId, int projectId, List<BoqLineInput> rows,
 			int? actorEmployeeId, string reason, CancellationToken ct = default)
 		{
+			// The line identities, retirement, and audit are one save even though new IDs need two
+			// SaveChanges calls. A conflict at either call must not leave a partial BOQ behind.
+			var ownsTransaction = _db.Database.CurrentTransaction == null;
+			await using var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+			var existingTransaction = _db.Database.CurrentTransaction!;
+			var savepoint = "Boq_" + Guid.NewGuid().ToString("N")[..24];
+			if (!ownsTransaction) await existingTransaction.CreateSavepointAsync(savepoint, ct);
+			try
+			{
+				var result = await SaveLinesCoreAsync(companyId, projectId, rows, actorEmployeeId, reason, ct);
+				if (ownsTransaction)
+				{
+					if (result.ok) await transaction!.CommitAsync(ct);
+					else await transaction!.RollbackAsync(ct);
+				}
+				else if (!result.ok) await existingTransaction.RollbackToSavepointAsync(savepoint, ct);
+				return result;
+			}
+			catch (DbUpdateConcurrencyException)
+			{
+				if (ownsTransaction) await transaction!.RollbackAsync(ct);
+				else await existingTransaction.RollbackToSavepointAsync(savepoint, ct);
+				_db.ChangeTracker.Clear();
+				return BoqSaveResult.Refuse(ConstructionConcurrency.ConflictMessage);
+			}
+		}
+
+		private async Task<BoqSaveResult> SaveLinesCoreAsync(int companyId, int projectId, List<BoqLineInput> rows,
+			int? actorEmployeeId, string reason, CancellationToken ct)
+		{
 			if (companyId <= 0) return BoqSaveResult.Refuse("Unresolved company");
 			if (string.IsNullOrWhiteSpace(reason))
 				return BoqSaveResult.Refuse("A reason is required for a commercial change");
@@ -291,11 +402,11 @@ namespace CrossBuy.BL
 											$"(duplicate line code '{dupe.Key}')");
 
 			// ---- the existing, non-retired lines ---------------------------------------------------
-			var states = await _db.BoqLineStates
+			var states = await _db.BoqItems
 				.Where(s => s.CompanyID == companyId && s.ProjectId == projectId)
 				.ToListAsync(ct);
-			var stateByItem = states.ToDictionary(s => s.BoqItemId);
-			var retiredIds = states.Where(s => s.Status == BoqLineStatus.Retired).Select(s => s.BoqItemId).ToHashSet();
+			var stateByItem = states.ToDictionary(s => s.ID);
+			var retiredIds = states.Where(s => s.Status == BoqLineStatus.Retired).Select(s => s.ID).ToHashSet();
 
 			var existing = await _db.BoqItems
 				.Where(b => b.CompanyID == companyId && b.ProjectId == projectId)
@@ -340,10 +451,11 @@ namespace CrossBuy.BL
 					!ConstructionConcurrency.Matches(r.ExpectedToken, st?.ConcurrencyToken ?? Array.Empty<byte>()))
 					return BoqSaveResult.Refuse(ConstructionConcurrency.ConflictMessage);
 
-				if (line.Quantity != r.Quantity || line.UnitPrice != r.UnitPrice)
+				var unitChanged = !string.Equals(UnitText(line.Unit), UnitText(r.Unit), StringComparison.Ordinal);
+				if (line.Quantity != r.Quantity || line.UnitPrice != r.UnitPrice || unitChanged)
 				{
 					var refusal = await CommercialChangeRefusalAsync(companyId, projectId, line.ID, line.Code ?? line.Description);
-					if (refusal != null) return BoqSaveResult.Refuse(refusal);
+					if (refusal != null) return BoqSaveResult.Refuse(unitChanged ? UnitChangeRefusal : refusal);
 				}
 			}
 
@@ -393,6 +505,10 @@ namespace CrossBuy.BL
 					if (line.Quantity != r.Quantity) { Track("Quantity", null, null, line.Quantity, r.Quantity); line.Quantity = r.Quantity; }
 					if (line.UnitPrice != r.UnitPrice) { Track("UnitPrice", null, null, line.UnitPrice, r.UnitPrice); line.UnitPrice = r.UnitPrice; }
 
+					// Every editable field participates in the token, including estimated cost and ordering.
+					changed |= line.MaterialCost != r.MaterialCost || line.LaborCost != r.LaborCost
+						|| line.SubcontractCost != r.SubcontractCost || line.EquipmentCost != r.EquipmentCost
+						|| line.SortOrder != sort || line.ParentId != (isSub ? lastMainId : null);
 					line.MaterialCost = r.MaterialCost; line.LaborCost = r.LaborCost;
 					line.SubcontractCost = r.SubcontractCost; line.EquipmentCost = r.EquipmentCost;
 
@@ -442,8 +558,8 @@ namespace CrossBuy.BL
 				var st = stateByItem.TryGetValue(b.ID, out var found) ? found : null;
 				if (st == null)
 				{
-					st = NewState(companyId, projectId, b.ID, actorEmployeeId, now);
-					_db.BoqLineStates.Add(st);
+					st = b;
+					InitializeState(st, actorEmployeeId, now);
 					stateByItem[b.ID] = st;
 				}
 				st.Status = BoqLineStatus.Retired;
@@ -466,8 +582,7 @@ namespace CrossBuy.BL
 
 			foreach (var (item, row) in newlyAdded)
 			{
-				var st = NewState(companyId, projectId, item.ID, actorEmployeeId, now);
-				_db.BoqLineStates.Add(st);
+				InitializeState(item, actorEmployeeId, now);
 
 				drafts.Add(ConstructionAuditDraft.Text(companyId, projectId, ConstructionAuditEntityTypes.BoqItem,
 					item.ID, item.ID, "Description", null, item.Description,
@@ -483,7 +598,7 @@ namespace CrossBuy.BL
 			// Ensure every pre-existing line that had no state row gets one, so identity and concurrency
 			// are complete from the first C1 save onward.
 			foreach (var b in existing.Where(b => !stateByItem.ContainsKey(b.ID)))
-				_db.BoqLineStates.Add(NewState(companyId, projectId, b.ID, actorEmployeeId, now));
+				InitializeState(b, actorEmployeeId, now);
 
 			_audit.Record(drafts);
 			await _db.SaveChangesAsync(ct);
@@ -497,19 +612,18 @@ namespace CrossBuy.BL
 		// ------------------------------------------------------------------------------------------
 		// helpers
 		// ------------------------------------------------------------------------------------------
-		private static BoqLineState NewState(int companyId, int projectId, int boqItemId, int? actor, DateTime now) =>
-			new()
-			{
-				CompanyID = companyId, ProjectId = projectId, BoqItemId = boqItemId,
-				Status = BoqLineStatus.Active, CreatedAt = now, CreatedBy = actor,
-				ConcurrencyToken = ConstructionConcurrency.NewToken()
-			};
+		private static void InitializeState(BoqItem item, int? actor, DateTime now)
+        {
+            item.CreatedBy ??= actor;
+            item.CreatedAt ??= now;
+            if (item.ConcurrencyToken.Length == 0) item.ConcurrencyToken = ConstructionConcurrency.NewToken();
+        }
 
-		private async Task EnsureStateAsync(BoqItem item, int? actor)
-		{
-			if (await _db.BoqLineStates.AnyAsync(s => s.BoqItemId == item.ID)) return;
-			_db.BoqLineStates.Add(NewState(item.CompanyID, item.ProjectId, item.ID, actor, DateTime.UtcNow));
-		}
+        private Task EnsureStateAsync(BoqItem item, int? actor)
+        {
+            InitializeState(item, actor, DateTime.UtcNow);
+            return Task.CompletedTask;
+        }
 
 		/// Why each of the given lines may not be removed. A line absent from the result is free to retire.
 		/// Every branch names the document that holds it, because "cannot delete" without a reason is
@@ -559,7 +673,7 @@ namespace CrossBuy.BL
 		/// C1 / CR-03 — why a contractual quantity/rate may not be changed on this path, or null when it may.
 		private async Task<string?> CommercialChangeRefusalAsync(int companyId, int projectId, int boqItemId, string label)
 		{
-			var state = await _db.BoqLineStates.AsNoTracking().FirstOrDefaultAsync(s => s.BoqItemId == boqItemId);
+			var state = await _db.BoqItems.AsNoTracking().FirstOrDefaultAsync(s => s.ID == boqItemId);
 			bool underRevision = state?.CurrentRevisionId != null;
 
 			var refs = await ReferencesAsync(companyId, new[] { boqItemId });

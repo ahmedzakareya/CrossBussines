@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Project structure" xml:space="preserve"><value>هيكل المشروع</value></data>
+  <data name="Projects" xml:space="preserve"><value>المشاريع</value></data>
+  <data name="Bill of quantities" xml:space="preserve"><value>جدول الكميات</value></data>
+  <data name="Your unsaved entry" xml:space="preserve"><value>محاولتك غير المحفوظة</value></data>
+  <data name="Review the current values below before trying again." xml:space="preserve"><value>راجع القيم الحالية أدناه قبل إعادة المحاولة.</value></data>
+  <data name="Read-only access" xml:space="preserve"><value>صلاحية عرض فقط</value></data>
+  <data name="Company structure settings" xml:space="preserve"><value>إعدادات هيكل الشركة</value></data>
+  <data name="This setting applies to all projects in the current company." xml:space="preserve"><value>ينطبق هذا الإعداد على جميع مشاريع الشركة الحالية.</value></data>
+  <data name="Choose a maximum depth before adding WBS nodes." xml:space="preserve"><value>حدد الحد الأقصى لعمق الهيكل قبل إضافة بنود الأعمال.</value></data>
+  <data name="Maximum WBS depth" xml:space="preserve"><value>الحد الأقصى لعمق الهيكل</value></data>
+  <data name="Reason for change" xml:space="preserve"><value>سبب التغيير</value></data>
+  <data name="Save company setting" xml:space="preserve"><value>حفظ إعداد الشركة</value></data>
+  <data name="Work breakdown structure" xml:space="preserve"><value>هيكل الأعمال (WBS)</value></data>
+  <data name="No WBS nodes yet." xml:space="preserve"><value>لا توجد بنود في هيكل الأعمال بعد.</value></data>
+  <data name="Node" xml:space="preserve"><value>بند الأعمال</value></data>
+  <data name="Progress method" xml:space="preserve"><value>طريقة قياس التقدم</value></data>
+  <data name="Status" xml:space="preserve"><value>الحالة</value></data>
+  <data name="Actions" xml:space="preserve"><value>الإجراءات</value></data>
+  <data name="Level" xml:space="preserve"><value>المستوى</value></data>
+  <data name="Budget control node" xml:space="preserve"><value>بند رقابي للميزانية</value></data>
+  <data name="Accepts costs" xml:space="preserve"><value>يستقبل التكاليف</value></data>
+  <data name="Edit names" xml:space="preserve"><value>تعديل الأسماء</value></data>
+  <data name="Name in Arabic" xml:space="preserve"><value>الاسم بالعربية</value></data>
+  <data name="Name in English" xml:space="preserve"><value>الاسم بالإنجليزية</value></data>
+  <data name="Save" xml:space="preserve"><value>حفظ</value></data>
+  <data name="Change status" xml:space="preserve"><value>تغيير الحالة</value></data>
+  <data name="New status" xml:space="preserve"><value>الحالة الجديدة</value></data>
+  <data name="Choose" xml:space="preserve"><value>اختر</value></data>
+  <data name="Apply status" xml:space="preserve"><value>تطبيق الحالة</value></data>
+  <data name="Add WBS node" xml:space="preserve"><value>إضافة بند أعمال</value></data>
+  <data name="Parent node" xml:space="preserve"><value>البند الأب</value></data>
+  <data name="Root node" xml:space="preserve"><value>بند رئيسي</value></data>
+  <data name="Code" xml:space="preserve"><value>الرمز</value></data>
+  <data name="Responsible team member" xml:space="preserve"><value>المسؤول من فريق المشروع</value></data>
+  <data name="Not assigned" xml:space="preserve"><value>غير محدد</value></data>
+  <data name="Display order" xml:space="preserve"><value>ترتيب العرض</value></data>
+  <data name="Planned start" xml:space="preserve"><value>البداية المخططة</value></data>
+  <data name="Planned finish" xml:space="preserve"><value>النهاية المخططة</value></data>
+  <data name="Add node" xml:space="preserve"><value>إضافة البند</value></data>
+  <data name="Company cost codes" xml:space="preserve"><value>أكواد تكلفة الشركة</value></data>
+  <data name="Cost codes are shared by projects in this company." xml:space="preserve"><value>تُستخدم أكواد التكلفة في مشاريع هذه الشركة.</value></data>
+  <data name="No cost codes yet." xml:space="preserve"><value>لا توجد أكواد تكلفة بعد.</value></data>
+  <data name="Name" xml:space="preserve"><value>الاسم</value></data>
+  <data name="Category" xml:space="preserve"><value>الفئة</value></data>
+  <data name="Use" xml:space="preserve"><value>الاستخدام</value></data>
+  <data name="Cost allocation" xml:space="preserve"><value>تحميل التكاليف</value></data>
+  <data name="Grouping" xml:space="preserve"><value>تجميع</value></data>
+  <data name="Add cost code" xml:space="preserve"><value>إضافة كود تكلفة</value></data>
+  <data name="Parent cost code" xml:space="preserve"><value>كود التكلفة الأب</value></data>
+  <data name="No parent" xml:space="preserve"><value>بدون أب</value></data>
+  <data name="Accepts cost allocation" xml:space="preserve"><value>يسمح بتحميل التكاليف</value></data>
+  <data name="Project sites" xml:space="preserve"><value>مواقع المشروع</value></data>
+  <data name="No project sites yet." xml:space="preserve"><value>لا توجد مواقع للمشروع بعد.</value></data>
+  <data name="Warehouse" xml:space="preserve"><value>المخزن</value></data>
+  <data name="Not linked" xml:space="preserve"><value>غير مرتبط</value></data>
+  <data name="Restricted warehouse" xml:space="preserve"><value>مخزن لا تملك صلاحية عرضه</value></data>
+  <data name="Add site" xml:space="preserve"><value>إضافة موقع</value></data>
+  <data name="Address" xml:space="preserve"><value>العنوان</value></data>
+  <data name="Only warehouses you are allowed to use are listed." xml:space="preserve"><value>تظهر فقط المخازن التي تملك صلاحية استخدامها.</value></data>
+  <data name="Status.Draft" xml:space="preserve"><value>مسودة</value></data>
+  <data name="Status.Active" xml:space="preserve"><value>نشط</value></data>
+  <data name="Status.Suspended" xml:space="preserve"><value>معلق</value></data>
+  <data name="Status.Completed" xml:space="preserve"><value>مكتمل</value></data>
+  <data name="Status.Archived" xml:space="preserve"><value>مؤرشف</value></data>
+  <data name="Progress.Quantity" xml:space="preserve"><value>الكميات المقاسة</value></data>
+  <data name="Progress.Milestone" xml:space="preserve"><value>المعالم</value></data>
+  <data name="Progress.WeightedActivity" xml:space="preserve"><value>أوزان الأنشطة</value></data>
+  <data name="Progress.ManualApproved" xml:space="preserve"><value>تقدم يدوي معتمد</value></data>
+  <data name="Category.Material" xml:space="preserve"><value>المواد</value></data>
+  <data name="Category.Labor" xml:space="preserve"><value>العمالة</value></data>
+  <data name="Category.Equipment" xml:space="preserve"><value>المعدات</value></data>
+  <data name="Category.Subcontractor" xml:space="preserve"><value>مقاولو الباطن</value></data>
+  <data name="Category.SiteExpense" xml:space="preserve"><value>مصروفات الموقع</value></data>
+  <data name="Category.Transportation" xml:space="preserve"><value>النقل</value></data>
+  <data name="Category.Accommodation" xml:space="preserve"><value>الإقامة</value></data>
+  <data name="Category.Overhead" xml:space="preserve"><value>المصاريف العامة</value></data>
+  <data name="Category.Contingency" xml:space="preserve"><value>الاحتياطي</value></data>
+  <data name="Category.Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="Unavailable team member" xml:space="preserve"><value>عضو فريق غير متاح</value></data>
+  <data name="Budget versions" xml:space="preserve"><value>إصدارات الميزانية</value></data>
+</root>

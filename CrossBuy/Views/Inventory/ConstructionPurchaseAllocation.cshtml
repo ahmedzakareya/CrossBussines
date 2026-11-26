@@ -1,0 +1,4 @@
+@model CrossBuy.ViewModel.ConstructionPurchaseEditorPage
+@{ Layout = "~/Views/Shared/_LayoutInventory.cshtml"; }
+@await Html.PartialAsync("_ConstructionPurchaseEditor", Model)
+@section Scripts { <script src="~/js/construction-purchase-editor.js" asp-append-version="true"></script> }

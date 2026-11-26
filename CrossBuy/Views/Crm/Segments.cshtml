@@ -1,0 +1,42 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var canManage = ViewBag.CanManage == true;
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Segments"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Segments"]</li></ul></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Journeys","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-route fs-4"></i>@T["Marketing journeys"]</a>
+            @if (canManage) { <a href="@Url.Action("SegmentEditor","Crm")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New segment"]</a> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-10"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@T["Search by name"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@T["Add search terms…"]" /></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @T["Reset"]</button></div>
+        </div></div></div>
+        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Segments"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7" id="resultCount">—</span></div>
+            <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:300px">@T["Segment"]</th><th class="text-end">@T["People now"]</th><th>@T["Refreshed"]</th><th class="text-end">@T["Journeys"]</th></tr></thead>
+                <tbody id="rows" class="fs-6"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No segment yet."]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div></div>
+        <div class="notice d-flex rounded border border-dashed p-6 mt-5" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-filter fs-2x text-white"></i></span></span>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A segment keeps itself up to date"]</h4>
+                <div class="fs-6 text-gray-700">@T["It reads the CRM, posted sales and recorded consent together, and is recomputed every hour. The existing marketing lists stay as they are: fixed lists you fill by hand."]</div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts { <script>cbServerList({ url:'@Url.Action("SegmentsData","Crm")', isAr:@(isAr ? "true" : "false") });</script> }

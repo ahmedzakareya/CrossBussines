@@ -214,8 +214,8 @@ namespace CrossBuy.Tests
         public async Task<byte[]> LineTokenAsync(int boqItemId)
         {
             await using var db = NewContext();
-            return await db.BoqLineStates.AsNoTracking()
-                .Where(s => s.BoqItemId == boqItemId).Select(s => s.ConcurrencyToken).SingleAsync();
+            return await db.BoqItems.AsNoTracking()
+                .Where(b => b.ID == boqItemId).Select(b => b.ConcurrencyToken).SingleAsync();
         }
 
         public async Task<byte[]> ScopeTokenAsync(int scopeId)
@@ -235,9 +235,9 @@ namespace CrossBuy.Tests
         public async Task<Dictionary<string, int>> ActiveLineIdsByCodeAsync(int projectId)
         {
             await using var db = NewContext();
-            var retired = await db.BoqLineStates.AsNoTracking()
-                .Where(s => s.ProjectId == projectId && s.Status == BoqLineStatus.Retired)
-                .Select(s => s.BoqItemId).ToListAsync();
+            var retired = await db.BoqItems.AsNoTracking()
+                .Where(b => b.ProjectId == projectId && b.Status == BoqLineStatus.Retired)
+                .Select(b => b.ID).ToListAsync();
 
             return await db.BoqItems.AsNoTracking()
                 .Where(b => b.ProjectId == projectId && b.Code != null && !retired.Contains(b.ID))

@@ -59,7 +59,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"حركات المخزون: الوارد والمنصرف والصافي والتكلفة، حسب الصنف أو المخزن أو نوع الحركة أو الشهر",
-			"Stock movements: in, out, net and cost, by item, warehouse, movement type or month");
+			"Stock movements: in, out, net and cost, by item, warehouse, movement type or month",
+			"Mouvements de stock : entrées, sorties, solde net et coût, par article, entrepôt, type de mouvement ou mois");
 
 		public override AskText Rules => AskText.Of(
 			"الوارد والمنصرف مفصولان ولا يُجمعان في رقم واحد · التكلفة هي المسجَّلة وقت الحركة، وتكون "
@@ -68,43 +69,47 @@ namespace CrossBuy.BL.Platform.Ai
 			"In and out are kept separate and never summed into one figure · cost is the one recorded "
 			+ "at the time of the movement, and is unknown rather than zero where none was recorded · "
 			+ "sales-invoice reversals are included and shown under their own type · movements are "
-			+ "concentrated in a few days, so any per-day average over the whole calendar misleads.");
+			+ "concentrated in a few days, so any per-day average over the whole calendar misleads.",
+			"Les entrées et les sorties restent séparées et ne sont jamais additionnées · le coût est celui "
+			+ "enregistré au moment du mouvement et reste inconnu, plutôt que nul, s'il n'a pas été saisi · "
+			+ "les extournes de factures de vente sont incluses et identifiées par leur type · les mouvements "
+			+ "étant concentrés sur quelques jours, une moyenne quotidienne sur toute la période serait trompeuse.");
 
 		public override IReadOnlyList<AskColumn> Columns { get; } = new[]
 		{
-			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item"),
+			new AskColumn { Name = "item", Kind = AskColumnKind.Dimension, Label = AskText.Of("الصنف", "Item", "Article"),
 				Synonyms = new[] { "صنف", "اصناف", "الاصناف", "بضاعة", "البضاعة", "منتج", "منتجات", "المنتجات",
 					"item", "items", "product", "products", "sku", "goods" } },
-			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code"),
+			new AskColumn { Name = "itemcode", Kind = AskColumnKind.Dimension, Label = AskText.Of("كود الصنف", "Item code", "Code article"),
 				Synonyms = new[] { "كود", "الكود", "code", "item code" } },
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("الفئة", "Category", "Catégorie"),
 				Synonyms = new[] { "فئة", "فئات", "الفئات", "تصنيف", "التصنيف", "تصنيفات", "التصنيفات",
 					"مجموعة", "المجموعات", "قسم", "الاقسام",
 					"category", "categories", "item category", "group", "groups", "classification" } },
 			// WAREHOUSE IS THE REASON THIS SURFACE EXISTS. Every movement has one, so "what moved in
 			// which store" is answerable here and nowhere else in the assistant.
-			new AskColumn { Name = "warehouse", Kind = AskColumnKind.Dimension, Label = AskText.Of("المخزن", "Warehouse"),
+			new AskColumn { Name = "warehouse", Kind = AskColumnKind.Dimension, Label = AskText.Of("المخزن", "Warehouse", "Entrepôt"),
 				Synonyms = new[] { "مخزن", "مخازن", "المخازن", "المخزن", "مستودع", "مستودعات", "فرع", "الفروع",
 					"warehouse", "warehouses", "store", "stores", "location", "locations", "branch" } },
-			new AskColumn { Name = "movementtype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الحركة", "Movement type"),
+			new AskColumn { Name = "movementtype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الحركة", "Movement type", "Type de mouvement"),
 				Synonyms = new[] { "نوع الحركة", "انواع الحركات", "نوع", "النوع", "حسب النوع", "بالنوع",
 					"سبب الحركة", "مصدر الحركة",
 					"movement type", "movement types", "type", "by type", "reason", "source" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "شهريا", "بالشهر",
 					"month", "monthly", "months", "per month", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
-			new AskColumn { Name = "qtyin", Kind = AskColumnKind.Measure, Label = AskText.Of("الوارد", "Quantity in"),
+			new AskColumn { Name = "qtyin", Kind = AskColumnKind.Measure, Label = AskText.Of("الوارد", "Quantity in", "Quantité entrante"),
 				Synonyms = new[] { "وارد", "الوارد", "داخل", "الداخل", "دخل", "استلمنا", "اضافة", "الاضافات",
 					"in", "inbound", "received", "receipts", "quantity in", "additions" } },
-			new AskColumn { Name = "qtyout", Kind = AskColumnKind.Measure, Label = AskText.Of("المنصرف", "Quantity out"),
+			new AskColumn { Name = "qtyout", Kind = AskColumnKind.Measure, Label = AskText.Of("المنصرف", "Quantity out", "Quantité sortante"),
 				Synonyms = new[] { "منصرف", "المنصرف", "صادر", "الصادر", "خارج", "الخارج", "خرج", "صرفنا", "اتصرف",
 					"out", "outbound", "issued", "issues", "quantity out", "consumed" } },
-			new AskColumn { Name = "netqty", Kind = AskColumnKind.Measure, Label = AskText.Of("الصافي", "Net quantity"),
+			new AskColumn { Name = "netqty", Kind = AskColumnKind.Measure, Label = AskText.Of("الصافي", "Net quantity", "Quantité nette"),
 				Synonyms = new[] { "صافي", "الصافي", "الفرق", "net", "net quantity", "difference", "change" } },
-			new AskColumn { Name = "cost", Kind = AskColumnKind.Measure, IsMoney = true, Nullable = true, Label = AskText.Of("التكلفة", "Cost"),
+			new AskColumn { Name = "cost", Kind = AskColumnKind.Measure, IsMoney = true, Nullable = true, Label = AskText.Of("التكلفة", "Cost", "Coût"),
 				Synonyms = new[] { "تكلفة", "التكلفة", "قيمة", "القيمة", "كلفة", "تكاليف",
 					"cost", "value", "costs", "worth" } },
 			// A MEASURE IS NAMED BY WHAT IT COUNTS, NOT BY THE SUBJECT OF THE SURFACE.
@@ -116,7 +121,7 @@ namespace CrossBuy.BL.Platform.Ai
 			// so letting the measure own it means the measure wins almost every sentence.
 			//
 			// What is left are the forms that actually ask for a COUNT.
-			new AskColumn { Name = "movements", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الحركات", "Movements"),
+			new AskColumn { Name = "movements", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الحركات", "Movements", "Mouvements"),
 				Synonyms = new[] { "عدد الحركات", "كام حركة", "عدد الحركة", "كم حركة",
 					"movement count", "how many movements", "number of movements", "transaction count" } },
 		};

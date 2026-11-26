@@ -67,6 +67,58 @@ namespace CrossBuy.Controllers
             return content == null ? NotFound() : Stream(content);
         }
 
+        // GET /Documents/comm/{attachmentId}/content — a Communication Hub attachment (GAP-01).
+        //
+        // WHY IT LIVES HERE. This controller already is the product's authorized byte surface, and its
+        // header above describes exactly the defect this route closes, in the same words: a URL is not an
+        // authorization. The Comm panel was the last surface still handing the browser a stored path under
+        // wwwroot, where PrivateFileGate asks only whether SOMEONE is signed in — never WHO. Rather than
+        // invent a second delivery surface with its own idea of what a refusal looks like, the attachment
+        // joins this one.
+        //
+        // ADDRESSED BY AttachmentId. Never by a storage key: the service resolves the key AFTER authorizing
+        // the comment the attachment hangs on, and the key never reaches the caller.
+        //
+        // THE SAME ONE REFUSAL SHAPE as every route above — absent, another company's, a thread this caller
+        // may not read, a comment above their tier, a withdrawn comment and a removed attachment all return
+        // a bare 404. A reader probing ids learns nothing from the difference.
+        [HttpGet("comm/{attachmentId:long}/content")]
+        public async Task<IActionResult> CommAttachment(
+            [FromServices] CrossBuy.BL.Communication.ICommAttachmentService attachments,
+            [FromServices] IBusinessContextAccessor contexts,
+            [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env,
+            long attachmentId,
+            bool preview = false,
+            CancellationToken ct = default)
+        {
+            if (attachmentId <= 0) return NotFound();
+
+            var context = await contexts.TryGetCurrentAsync(ct);
+            if (context == null || context.CompanyId <= 0) return NotFound();
+
+            // Every check lives in the service, beside the list path it shares its authorization with.
+            // This action decides nothing; it turns "no" into a 404 and a file into a response.
+            var dto = await attachments.OpenAuthorizedAsync(context, attachmentId, ct);
+            if (dto == null) return NotFound();
+
+            var path = CrossBuy.BL.Communication.CommPanel.ResolvePhysicalPath(dto.StorageKey, env.WebRootPath);
+            if (path == null || !System.IO.File.Exists(path)) return NotFound();
+
+            // Opened read/share-read so a concurrent upload or backup cannot make a download fail, and
+            // streamed rather than buffered — these are user files of arbitrary size.
+            var stream = new System.IO.FileStream(
+                path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read);
+
+            var content = new DocumentContent(stream, dto.FileName, dto.ContentType);
+            if (preview && CrossBuy.BL.ChatAttachments.IsSafeInlinePreview(dto.FileName, dto.ContentType))
+            {
+                Response.Headers["X-Content-Type-Options"] = "nosniff";
+                Response.Headers["Cache-Control"] = "private, no-store";
+                return File(content.Content, content.ContentType!, enableRangeProcessing: true);
+            }
+            return Stream(content);
+        }
+
         // GET /Documents/for/{entityType}/{entityId} — the authorized listing for one record.
         // Returns metadata only, and only for documents this caller may see; never a key or a path.
         [HttpGet("for/{entityType}/{entityId:int}")]

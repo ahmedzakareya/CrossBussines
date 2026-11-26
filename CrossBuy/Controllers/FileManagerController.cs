@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers
 {
@@ -13,22 +11,21 @@ namespace CrossBuy.Controllers
     public class FileManagerController : Controller
     {
         private readonly IFileManagerService _fm;
-        private readonly IEmployeeService _employees;
+        private readonly CrossBuy.BL.Communication.ICommAttachmentService _commAttachments;
         private readonly IWebHostEnvironment _env;
-        private readonly CrossDbContext _db;
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
-        public FileManagerController(IFileManagerService fm, IEmployeeService employees, IWebHostEnvironment env, CrossDbContext db,
+        public FileManagerController(IFileManagerService fm,
+            CrossBuy.BL.Communication.ICommAttachmentService commAttachments, IWebHostEnvironment env,
             CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
-        { _fm = fm; _employees = employees; _env = env; _db = db; _contexts = contexts; }
+        { _fm = fm; _commAttachments = commAttachments; _env = env; _contexts = contexts; }
 
         private async Task<(int empId, int companyId)?> MeAsync()
         {
-            var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(uid)) return null;
-            var emp = await _employees.GetEmployeeByUserIdAsync(uid);
-            if (emp == null) return null;
-            var companyId = await _db.Employee.AsNoTracking().Where(e => e.ID == emp.ID).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
-            return (emp.ID, companyId);
+            CrossBuy.Models.Platform.BusinessContext? context;
+            try { context = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted); }
+            catch (Exception) { return null; }
+            if (context == null || context.CompanyId <= 0 || context.EmployeeId is not > 0) return null;
+            return (context.EmployeeId.Value, context.CompanyId);
         }
 
         [HttpGet]
@@ -45,27 +42,67 @@ namespace CrossBuy.Controllers
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
             var result = await _fm.ListAsync(me.Value.companyId, folderId, q);
-
-            // THE OWNER'S PHOTOGRAPH. One company-scoped lookup for the whole page, through the same
-            // helper every other screen draws a person with, so this listing cannot drift away from
-            // the rest of the product. The helper owns the tenancy predicate and the stored-path
-            // normalisation; repeating either here is how copies of one query end up disagreeing.
-            //
-            // The context is re-resolved and checked against the company MeAsync already agreed, so a
-            // row can never be decorated with a face resolved under a different tenant.
             var context = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted);
             if (context == null || context.CompanyId != me.Value.companyId) return Unauthorized();
 
             var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
-                _db, context, result.items.Select(i => i.ownerEmployeeId), HttpContext.RequestAborted);
-
+                HttpContext.RequestServices.GetRequiredService<CrossDbContext>(), context,
+                result.items.Select(item => item.ownerEmployeeId), HttpContext.RequestAborted);
             return Json(result with
             {
-                items = result.items
-                    .Select(i => i with { ownerAvatarUrl = photos.GetValueOrDefault(i.ownerEmployeeId) })
-                    .ToList()
+                items = result.items.Select(item => item with
+                {
+                    ownerAvatarUrl = photos.GetValueOrDefault(item.ownerEmployeeId)
+                }).ToList()
             });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ChatAttachments(string? q)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            var context = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+            if (context == null || context.CompanyId != me.Value.companyId) return Unauthorized();
+
+            var legacy = await _fm.ListChatAttachmentsAsync(me.Value.companyId, me.Value.empId, q);
+            var isArabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+            var communication = await _commAttachments.ListAccessibleAsync(context, q, HttpContext.RequestAborted);
+            var legacyPhotos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+                HttpContext.RequestServices.GetRequiredService<CrossDbContext>(), context,
+                legacy.Select(item => item.ownerEmployeeId), HttpContext.RequestAborted);
+            var rows = legacy.Select(item => new
+                {
+                    id = (long)item.id, isFolder = false, name = item.name, nameAr = item.nameAr,
+                    nameEn = item.nameEn, size = item.size, sizeText = item.sizeText,
+                    modified = item.modified, ext = item.ext, url = item.url,
+                    ownerName = item.ownerName,
+                    ownerAvatarUrl = legacyPhotos.GetValueOrDefault(item.ownerEmployeeId), isChatAttachment = true
+                })
+                .Concat(communication.Select(item => new
+                {
+                    id = item.AttachmentId, isFolder = false,
+                    name = item.FileName, nameAr = item.FileName, nameEn = (string?)null,
+                    size = item.SizeBytes, sizeText = FormatSize(item.SizeBytes),
+                    modified = item.UploadedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-",
+                    ext = Path.GetExtension(item.FileName).TrimStart('.'),
+                    // Content is streamed by DocumentsController, which re-checks thread/comment access.
+                    // THE ROUTE IS SPELLED ONCE. This read $"/Documents/comm/{id}/content" literally, which
+                    // is the same URL CommPanel builds for the conversation panel - two spellings of one
+                    // route, and the kind that drifts silently because changing the action's template
+                    // cannot break a string literal.
+                    url = CrossBuy.BL.Communication.CommPanel.DeliveryUrl(item.AttachmentId),
+                    ownerName = item.UploadedBy.Display(isArabic),
+                    ownerAvatarUrl = item.UploadedBy.AvatarUrl, isChatAttachment = true
+                }));
+            return Json(rows.OrderByDescending(row => row.modified));
+        }
+
+        private static string FormatSize(long bytes) => bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1024 * 1024 => $"{bytes / 1024d:0.#} KB",
+            _ => $"{bytes / (1024d * 1024):0.#} MB"
+        };
 
         [HttpGet]
         public async Task<IActionResult> FolderTree()
@@ -159,7 +196,7 @@ namespace CrossBuy.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Download(int id)
+        public async Task<IActionResult> Download(int id, bool preview = false, bool download = false)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
             var file = await _fm.GetFileAsync(me.Value.companyId, id);
@@ -172,7 +209,25 @@ namespace CrossBuy.Controllers
                 return NotFound();
             }
             if (!System.IO.File.Exists(phys)) return NotFound();
-            return PhysicalFile(phys, file.ContentType ?? "application/octet-stream", file.Name);
+            // Old library rows can have no MIME type (or the browser's generic octet-stream value),
+            // which makes a valid PDF look like an empty iframe. Infer only from the stored filename;
+            // the inline-preview allow-list below still decides whether the browser may render it.
+            var contentType = file.ContentType;
+            if (string.IsNullOrWhiteSpace(contentType) ||
+                contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase))
+            {
+                var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+                if (provider.TryGetContentType(file.Name, out var inferred)) contentType = inferred;
+            }
+            contentType ??= "application/octet-stream";
+
+            // Preview remains an explicit, safe inline path. The download button is a separate user
+            // choice and receives a filename disposition so opening the modal never forces a download.
+            if (preview && !CrossBuy.BL.ChatAttachments.IsSafeInlinePreview(file.Name, contentType))
+                return NotFound();
+            return download
+                ? PhysicalFile(phys, contentType, file.Name, enableRangeProcessing: true)
+                : PhysicalFile(phys, contentType, enableRangeProcessing: true);
         }
 
         private static List<int> ParseIds(string? ids) =>

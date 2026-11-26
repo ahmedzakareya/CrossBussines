@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using CrossBuy.BL.Communication;
 using CrossBuy.BL.Platform;
@@ -144,6 +145,357 @@ namespace CrossBuy.Tests.Communication
                                 StorageKey = "comm/secret.pdf",
                             },
                         })));
+        }
+
+        // =========================================================================================
+        // READING AN ATTACHMENT LIST IS READING THE COMMENT.
+        //
+        // The test above proves the WRITE is refused. It does not prove the READ is, and the read is the
+        // more dangerous of the two: CommAttachmentDto carries StorageKey, and StorageKey is a CAPABILITY.
+        // /uploads/** is served by StaticFileMiddleware behind PrivateFileGate, whose policy for those
+        // prefixes is RequireAuthenticated — it checks that SOMEONE is signed in, not WHO, and
+        // RequireCompanyMatch is deliberately applied to no prefix. So handing the key to the wrong reader
+        // is handing them a working, unrevocable download link.
+        //
+        // ListForCommentAsync used to filter on CompanyID alone, so any colleague who could name a
+        // commentId received the keys for a conversation they had no access to.
+        //
+        // THE POSITIVE CONTROL IS THE POINT. A refusal test alone passes just as well against a method that
+        // refuses everybody, which would hide the feature being broken rather than secured. The permitted
+        // caller must get the attachment back in the same test, against the same seeded row.
+        // =========================================================================================
+        [Fact]
+        public async Task An_attachment_list_is_refused_to_a_caller_who_may_not_read_the_comment()
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context,
+                _host.CommentOn(entity, "carries a confidential file",
+                    attachments: new[]
+                    {
+                        new CommAttachmentRequest
+                        {
+                            FileName = "payroll.pdf",
+                            ContentType = "application/pdf",
+                            SizeBytes = 2048,
+                            StorageKey = "comm/payroll-9f2c.pdf",
+                        },
+                    }));
+
+            // THE CONTROL: the permitted caller really can read it, and really does get the key. Without
+            // this the refusal below would prove nothing.
+            var permitted = await _host.Attachments(permissions: ViewOnly())
+                .ListForCommentAsync(context, seeded.CommentId);
+            var only = Assert.Single(permitted);
+            Assert.Equal("payroll.pdf", only.FileName);
+            Assert.Equal("comm/payroll-9f2c.pdf", only.StorageKey);
+
+            // THE REFUSAL: same company, same comment id, a caller the entity gate denies. Not an empty
+            // list — a refusal, and one that does not confirm the comment exists.
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                _host.Attachments(permissions: DeniesEverything())
+                    .ListForCommentAsync(context, seeded.CommentId));
+        }
+
+        // The same boundary across a TENANT, which the company predicate alone did already hold — asserted
+        // so a future refactor cannot trade one check for the other and believe it broke even.
+        [Fact]
+        public async Task An_attachment_list_never_crosses_a_company_even_for_a_fully_permitted_caller()
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context,
+                _host.CommentOn(entity, "ours",
+                    attachments: new[]
+                    {
+                        new CommAttachmentRequest
+                        {
+                            FileName = "ours.pdf",
+                            ContentType = "application/pdf",
+                            SizeBytes = 11,
+                            StorageKey = "comm/ours.pdf",
+                        },
+                    }));
+
+            // Fully permitted, but in the OTHER company. The id is valid; the tenant is not.
+            var foreign = CommunicationTestHost.Context(
+                CommunicationTestHost.OtherCompanyEmployee, CommunicationTestHost.OtherCompanyId);
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                _host.Attachments(permissions: ViewOnly())
+                    .ListForCommentAsync(foreign, seeded.CommentId));
+        }
+
+        // =========================================================================================
+        // GAP-01 — THE AUTHORIZED BYTE PATH.
+        //
+        // Closing the metadata leak (above) was not enough. CommPanel wrote attachment bytes into
+        // wwwroot and put the resulting "/uploads/comm/threads/<guid>.<ext>" into the page as an href,
+        // so the file was reachable by path by ANY signed-in user of ANY company — PrivateFileGate's
+        // policy for that prefix is RequireAuthenticated, which asks whether someone is signed in,
+        // never who. The tests below cover the replacement: delivery through
+        // /Documents/comm/{id}/content, which re-authorizes on every request.
+        // =========================================================================================
+
+        private static StubPermissionProvider ViewAndConfidential() =>
+            new(PlatformActions.View, PlatformActions.ViewConfidential);
+
+        private async Task<(BusinessContext Context, long AttachmentId, long CommentId)> SeedAttachmentAsync(
+            string visibility = CommVisibility.Internal, StubPermissionProvider? author = null)
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: author ?? ViewOnly()).AddAsync(
+                context,
+                _host.CommentOn(entity, "with a file", visibility: visibility,
+                    attachments: new[]
+                    {
+                        new CommAttachmentRequest
+                        {
+                            FileName = "note.pdf",
+                            ContentType = "application/pdf",
+                            SizeBytes = 64,
+                            StorageKey = CommPanel.PrivateKeyPrefix + "seeded.pdf",
+                        },
+                    }));
+
+            var attachment = Assert.Single(seeded.Attachments);
+            return (context, attachment.AttachmentId, seeded.CommentId);
+        }
+
+        [Fact]
+        public async Task File_portal_attachment_listing_includes_only_comments_the_caller_can_read()
+        {
+            var (context, attachmentId, _) = await SeedAttachmentAsync();
+
+            var permitted = await _host.Attachments(permissions: ViewOnly())
+                .ListAccessibleAsync(context, null);
+            Assert.Contains(permitted, item => item.AttachmentId == attachmentId);
+
+            var denied = await _host.Attachments(permissions: DeniesEverything())
+                .ListAccessibleAsync(context, null);
+            Assert.DoesNotContain(denied, item => item.AttachmentId == attachmentId);
+        }
+
+        // 1. THE POSITIVE CONTROL. Without it every refusal below would pass equally well against a
+        //    method that refuses everybody, which would hide the feature being broken rather than secured.
+        [Fact]
+        public async Task An_authorized_reader_receives_the_attachment()
+        {
+            var (context, attachmentId, _) = await SeedAttachmentAsync();
+
+            var dto = await _host.Attachments(permissions: ViewOnly())
+                .OpenAuthorizedAsync(context, attachmentId);
+
+            Assert.NotNull(dto);
+            Assert.Equal("note.pdf", dto!.FileName);
+        }
+
+        // 2. ANOTHER COMPANY. The attachment id is real; the tenant is not.
+        [Fact]
+        public async Task A_foreign_company_reader_is_refused_the_attachment()
+        {
+            var (_, attachmentId, _) = await SeedAttachmentAsync();
+
+            var foreign = CommunicationTestHost.Context(
+                CommunicationTestHost.OtherCompanyEmployee, CommunicationTestHost.OtherCompanyId);
+
+            Assert.Null(await _host.Attachments(permissions: ViewOnly())
+                .OpenAuthorizedAsync(foreign, attachmentId));
+        }
+
+        // 3. SAME COMPANY, NO RIGHT TO THE RECORD. The case the old static URL could not express at all.
+        [Fact]
+        public async Task A_same_company_reader_who_may_not_open_the_record_is_refused_the_attachment()
+        {
+            var (context, attachmentId, _) = await SeedAttachmentAsync();
+
+            Assert.Null(await _host.Attachments(permissions: DeniesEverything())
+                .OpenAuthorizedAsync(context, attachmentId));
+        }
+
+        // 4. ABOVE THE READER'S TIER. Authored Confidential; read by a plain viewer.
+        [Fact]
+        public async Task A_reader_below_the_comments_visibility_tier_is_refused_the_attachment()
+        {
+            var (context, attachmentId, _) = await SeedAttachmentAsync(
+                CommVisibility.Confidential, ViewAndConfidential());
+
+            // The author's own tier still reaches it — so the refusal below is about the TIER and not
+            // about the comment being unreadable to everyone.
+            Assert.NotNull(await _host.Attachments(permissions: ViewAndConfidential())
+                .OpenAuthorizedAsync(context, attachmentId));
+
+            Assert.Null(await _host.Attachments(permissions: ViewOnly())
+                .OpenAuthorizedAsync(context, attachmentId));
+        }
+
+        // 5. A WITHDRAWN COMMENT. Its attachments follow the comment body's rule, so the two cannot
+        //    disagree about what was withdrawn.
+        [Fact]
+        public async Task A_withdrawn_comments_attachment_is_refused_to_an_ordinary_reader()
+        {
+            var (context, attachmentId, commentId) = await SeedAttachmentAsync();
+
+            Assert.NotNull(await _host.Attachments(permissions: ViewOnly())
+                .OpenAuthorizedAsync(context, attachmentId));   // readable before withdrawal
+
+            await _host.Comments(permissions: ViewOnly()).DeleteAsync(context, commentId);
+
+            Assert.Null(await _host.Attachments(permissions: ViewOnly())
+                .OpenAuthorizedAsync(context, attachmentId));
+        }
+
+        // 6. THE BYPASS ITSELF. Two structural facts, because this is a claim about what CANNOT happen.
+        //
+        //    a) A newly stored key is not a path the browser could use, and it resolves to a file
+        //       OUTSIDE the web root — so StaticFileMiddleware has nothing to serve, whatever any gate
+        //       rule says. The protection is structural, not configured.
+        //    b) The panel hands out a ROUTE, never the stored key.
+        [Fact]
+        public void A_stored_attachment_key_is_not_reachable_by_a_static_url()
+        {
+            var webRoot = Path.Combine(Path.GetTempPath(), "cb-webroot-probe", "wwwroot");
+
+            var key = CommPanel.PrivateKeyPrefix + "abc123.png";
+            Assert.DoesNotContain("/", CommPanel.PrivateKeyPrefix);   // not a path fragment
+            Assert.False(key.StartsWith("/", StringComparison.Ordinal));
+
+            var resolved = CommPanel.ResolvePhysicalPath(key, webRoot);
+            Assert.NotNull(resolved);
+            Assert.DoesNotContain(
+                Path.Combine("cb-webroot-probe", "wwwroot"),
+                resolved!);                                            // never under the served tree
+
+            // Traversal in a key cannot climb out of the private store.
+            var escaped = CommPanel.ResolvePhysicalPath(
+                CommPanel.PrivateKeyPrefix + "../../web.config", webRoot);
+            Assert.NotNull(escaped);
+            Assert.StartsWith(CommPanel.PrivateStoreRoot(webRoot), escaped!, StringComparison.Ordinal);
+
+            // An absolute or foreign-shaped key is refused rather than guessed at.
+            Assert.Null(CommPanel.ResolvePhysicalPath("https://evil.example/x.png", webRoot));
+            Assert.Null(CommPanel.ResolvePhysicalPath("/uploads/hr-docs/secret.pdf", webRoot));
+
+            // The browser is given a route addressed by id, which re-authorizes on every request.
+            Assert.Equal("/Documents/comm/42/content", CommPanel.DeliveryUrl(42));
+        }
+
+        // =========================================================================================
+        // SELF-SERVICE PARTICIPATION IS NOT A PROMOTION ROUTE.
+        //
+        // FollowAsync is deliberately self-service — a caller adds THEMSELVES, with no moderator in the
+        // loop. That makes the role argument the whole of the security boundary: Owner carries moderation
+        // weight, so a caller who could pass it would promote themselves by pressing Follow.
+        //
+        // The guard existed and was reasoned about in a comment, but nothing exercised it. A guard with no
+        // test is a guard that survives exactly as long as nobody refactors near it.
+        // =========================================================================================
+        [Theory]
+        [InlineData(CommParticipantRole.Owner)]        // the escalation the guard exists to stop
+        [InlineData(CommParticipantRole.Participant)]  // also not self-assignable: it is granted, not taken
+        public async Task Following_a_thread_cannot_be_used_to_assign_yourself_a_privileged_role(string role)
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context, _host.CommentOn(entity, "a thread to follow"));
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                _host.Participation(permissions: ViewOnly())
+                    .FollowAsync(context, seeded.ThreadId, role));
+        }
+
+        // THE CONTROL for the theory above. Without it the refusal would pass just as well against a
+        // FollowAsync that refuses every role, which would be the feature broken rather than secured.
+        //
+        // IT ASSERTS ACCEPTANCE, NOT THE STORED ROLE — and the difference is the real contract. Authoring
+        // a comment already makes you a Participant (rank 2), and EnsureAsync never LOWERS a role, so
+        // asking to Watch (rank 1) is accepted and then correctly does not demote you. Writing this test
+        // the obvious way, asserting the stored role equals the requested one, fails on Watcher against
+        // entirely correct code.
+        [Theory]
+        [InlineData(CommParticipantRole.Follower)]
+        [InlineData(CommParticipantRole.Watcher)]
+        public async Task The_two_self_service_roles_are_accepted(string role)
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context, _host.CommentOn(entity, "a thread to follow"));
+
+            var participant = await _host.Participation(permissions: ViewOnly())
+                .FollowAsync(context, seeded.ThreadId, role);
+
+            Assert.NotNull(participant);
+
+            // Accepted, and never a demotion: the author keeps at least the Participant standing that
+            // commenting earned them.
+            Assert.Contains(
+                participant.Role,
+                new[] { role, CommParticipantRole.Participant });
+            Assert.NotEqual(CommParticipantRole.Owner, participant.Role);   // and never an escalation
+        }
+
+        // NEVER-LOWER, stated on its own because the theory above can only imply it. A Watch request from
+        // someone who already commented must not quietly reduce their notification appetite.
+        [Fact]
+        public async Task Asking_to_watch_does_not_demote_an_existing_participant()
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context, _host.CommentOn(entity, "I commented, so I participate"));
+
+            var after = await _host.Participation(permissions: ViewOnly())
+                .FollowAsync(context, seeded.ThreadId, CommParticipantRole.Watcher);
+
+            Assert.Equal(CommParticipantRole.Participant, after.Role);
+
+            // ...while an UPGRADE is honoured, so the rule is "never lower", not "never change".
+            var upgraded = await _host.Participation(permissions: ViewOnly())
+                .FollowAsync(context, seeded.ThreadId, CommParticipantRole.Follower);
+
+            Assert.Equal(CommParticipantRole.Follower, upgraded.Role);
+        }
+
+        // Following something you cannot READ would create a notification subscription to content you can
+        // never open — a quiet way to learn that a record exists and when it is active.
+        [Fact]
+        public async Task A_caller_who_may_not_read_the_record_cannot_follow_its_thread()
+        {
+            var context = CommunicationTestHost.Context();
+            var entity = CommunicationTestHost.Invoice();
+
+            var seeded = await _host.Comments(permissions: ViewOnly()).AddAsync(
+                context, _host.CommentOn(entity, "private matter"));
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                _host.Participation(permissions: DeniesEverything())
+                    .FollowAsync(context, seeded.ThreadId, CommParticipantRole.Follower));
+        }
+
+        // 7. EXISTING ATTACHMENTS KEEP WORKING. Rows written before GAP-01 carry wwwroot-relative keys
+        //    and must still resolve through the authorized path — the fix must not strand stored bytes.
+        [Fact]
+        public void A_legacy_upload_key_still_resolves_for_the_authorized_path()
+        {
+            var webRoot = Path.Combine(Path.GetTempPath(), "cb-webroot-probe", "wwwroot");
+
+            var legacy = CommPanel.UploadFolderUrl + "/911b7ff56c834b5faa9f70e0c8172fe3.jpg";
+            var resolved = CommPanel.ResolvePhysicalPath(legacy, webRoot);
+
+            Assert.NotNull(resolved);
+            Assert.EndsWith("911b7ff56c834b5faa9f70e0c8172fe3.jpg", resolved!, StringComparison.Ordinal);
+            Assert.Contains("threads", resolved!);
         }
 
         // =========================================================================================

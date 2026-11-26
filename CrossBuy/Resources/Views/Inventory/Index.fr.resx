@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -186,5 +186,17 @@
   </data>
   <data name="Movements" xml:space="preserve">
     <value>Mouvements</value>
+  </data>
+  <data name="Reorder advice" xml:space="preserve">
+    <value>Conseils de réappro.</value>
+  </data>
+  <data name="Risk Insights" xml:space="preserve">
+    <value>Analyses de risque</value>
+  </data>
+  <data name="local" xml:space="preserve">
+    <value>local</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
   </data>
 </root>

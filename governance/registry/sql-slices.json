@@ -213,6 +213,51 @@
       "note": "Historical platform tag authority restored from 36387987; reused by CRM. Tags/TagAssignments created; both recorded passes committed without business rows. Real SQL Server fresh/input-first/concurrency matrix NOT PROVEN; no isolated database created."
     },
     {
+      "sliceId": "SQL-24",
+      "slice": "comm_task_links.sql",
+      "tree": "CANONICAL",
+      "owner": "Communication",
+      "appliedStatus": "Baseline recorded in CrossBuyDB2 2026-10-29 from verified schema evidence; DDL observed 2026-10-26",
+      "gatesCorePath": "Yes - task/conversation linking",
+      "note": "Backs ICommTaskLinkStore. Guarded; base and message-level slices are recorded separately by exact raw SHA-256. Catalog inspection confirmed the table, columns, constraints and filtered indexes; canonical 7183 preflight verified CrossBuyDB2 plus TaskLinksProvisioned=true. The EF store remains fail-closed on profiles without that explicit pairing. This increment inserted two PlatformSchemaHistory baseline rows only; no DDL or business data was changed."
+    },
+    {
+      "sliceId": "SQL-25",
+      "slice": "crm_call_centre_reconciled_001.sql",
+      "tree": "CANONICAL",
+      "owner": "CRM",
+      "appliedStatus": "Authored - NOT recorded applied to CrossBuyDB2",
+      "gatesCorePath": "Yes - CRM calls and routed tickets",
+      "note": "R1 successor reconciles the old call-centre/routing/ticket-source scripts as one guarded additive slice. Legacy files remain hash-verified and excluded from deployment. No SQL was executed against CrossBuyDB2."
+    },
+    {
+      "sliceId": "SQL-26",
+      "slice": "purchase_invoice_line_location.sql",
+      "tree": "CANONICAL",
+      "owner": "Inventory/Procurement",
+      "appliedStatus": "Authored - NOT recorded applied to CrossBuyDB2",
+      "gatesCorePath": "Yes - purchase invoice receiving location",
+      "note": "Canonical byte-identical source promoted from the old package root; the package file is generated and excluded from deployment. Adds a nullable line location and its guarded index; no SQL was executed against CrossBuyDB2."
+    },
+    {
+      "sliceId": "SQL-27",
+      "slice": "task_templates_description_en_slice_001.sql",
+      "tree": "CANONICAL",
+      "owner": "Tasks",
+      "appliedStatus": "Applied and recorded in CrossBuyDB2, CrossBuyDev and CrossBuyCert on 2026-10-29",
+      "gatesCorePath": "No",
+      "note": "Successor to the immutable checklist/dependencies/templates base. Adds only nullable DescriptionEn columns; existing rows are not backfilled. Applied idempotently and recorded in DB2/Dev/Cert; only CrossBuyCert required the two nullable columns to be added."
+    },
+    {
+      "sliceId": "SQL-28",
+      "slice": "task_dependencies_self_edge_guard_slice_001.sql",
+      "tree": "CANONICAL",
+      "owner": "Tasks",
+      "appliedStatus": "Applied and recorded in CrossBuyDB2, CrossBuyDev and CrossBuyCert on 2026-10-29",
+      "gatesCorePath": "No",
+      "note": "Restores the missing trusted CK_TaskDependencies_NotSelf constraint on existing task-dependency tables. No self-dependency rows existed in the three local databases; WITH CHECK validated during apply. Catalog recheck confirms the constraint enabled/trusted and zero violating rows in all three."
+    },
+    {
       "sliceId": "SQL-29",
       "slice": "hospital_h1_facility.sql",
       "tree": "CANONICAL",

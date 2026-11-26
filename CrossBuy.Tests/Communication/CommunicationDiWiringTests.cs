@@ -4,6 +4,7 @@ using CrossBuy.Models.Communication;
 using CrossBuy.Models.Context;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -43,6 +44,11 @@ namespace CrossBuy.Tests.Communication
         // ITimelineProjectionService were ever un-registered by the host, this platform would fail to resolve —
         // and this test is where that would surface, rather than on somebody's first comment.
         private ServiceProvider BuildContainer(Action<IServiceCollection>? extra = null)
+            => BuildContainer(configuration: null, extra);
+
+        private ServiceProvider BuildContainer(
+            IConfiguration? configuration,
+            Action<IServiceCollection>? extra)
         {
             var services = new ServiceCollection();
             services.AddLogging();
@@ -61,9 +67,10 @@ namespace CrossBuy.Tests.Communication
             services.AddScoped<IPlatformPermissionProvider, PlatformPermissionProvider>();
             services.AddScoped<IOrgHierarchy, OrgHierarchy>();
             services.AddScoped<ITimelineProjectionService, TimelineProjectionService>();
+            services.AddScoped<IPlatformRoleDirectory, PlatformRoleDirectory>();
 
             // ---- the platform under test: ONE call ----
-            services.AddCommunicationPlatform(configuration: null!);
+            services.AddCommunicationPlatform(configuration!);
 
             extra?.Invoke(services);
 
@@ -161,6 +168,177 @@ namespace CrossBuy.Tests.Communication
             Assert.IsType<NullCommBusinessEventBridge>(bridge);
         }
 
+        // PERSISTENT TASK LINKS ARE DECIDED BY THE DATABASE, AND DEFAULT CLOSED.
+        //
+        // The two failure modes are not symmetric. Off against a provisioned database is a Link button
+        // that honestly reports "not provisioned" — a configuration gap somebody notices. On against an
+        // UNPROVISIONED one is a SQL-208 from the driver in the middle of somebody's work, which is the
+        // HM-D44 shape. This solution reaches BOTH a provisioned database (CrossBuyDB2, via the https
+        // profile's connection override) and an unprovisioned one (CrossBuyDev, via appsettings), so the
+        // decision cannot come from the build.
+        //
+        // It resolves the PROBING store, which asks the catalogues before delegating. This fixture is
+        // SQLite, so the probe answers "I cannot tell" — and that answer must read as NOT provisioned.
+        [Fact]
+        public void Task_links_resolve_the_probing_store_and_default_closed()
+        {
+            using var provider = BuildContainer();
+            using var scope = provider.CreateScope();
+
+            var store = scope.ServiceProvider.GetRequiredService<ICommTaskLinkStore>();
+
+            Assert.IsType<ProbingCommTaskLinkStore>(store);
+            Assert.False(store.IsProvisioned);
+        }
+
+        // THE FLAG CANNOT GRANT. This is the invariant that makes the flag safe to commit.
+        //
+        // Under the old semantics `true` registered EfCommTaskLinkStore outright, which meant a committed
+        // `true` without the committed CrossBuyDB2 connection string handed every clean checkout the EF
+        // store pointed at CrossBuyDev — a table that does not exist there, and a SQL-208 on first use.
+        // The flag was therefore chained to a machine-local connection string and could never travel.
+        //
+        // Now `true` means no more than "ask the database", so this asserts a NEGATIVE: declaring the
+        // schema provisioned against a database that is not does NOT produce persistence. If anybody
+        // restores the old swap, this fails.
+        [Fact]
+        public void Declaring_the_schema_provisioned_does_not_by_itself_activate_persistence()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CommunicationPlatform:TaskLinksProvisioned"] = "true",
+                })
+                .Build();
+
+            using var provider = BuildContainer(configuration, extra: null);
+            using var scope = provider.CreateScope();
+
+            var store = scope.ServiceProvider.GetRequiredService<ICommTaskLinkStore>();
+
+            Assert.IsType<ProbingCommTaskLinkStore>(store);
+            Assert.IsNotType<EfCommTaskLinkStore>(store);
+
+            // The database under this container has no CommTaskLinks and is not even SQL Server, so the
+            // claim in configuration is overruled by the catalogue read.
+            Assert.False(store.IsProvisioned);
+        }
+
+        // THE FLAG CAN STILL RESTRICT. An operator must be able to switch a feature off without a schema
+        // change, and explicit `false` does that without a probe at all — the kill switch is not merely
+        // "the probe will probably say no".
+        [Fact]
+        public void An_explicit_false_forces_the_unprovisioned_store_without_probing()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CommunicationPlatform:TaskLinksProvisioned"] = "false",
+                })
+                .Build();
+
+            using var provider = BuildContainer(configuration, extra: null);
+            using var scope = provider.CreateScope();
+
+            var store = scope.ServiceProvider.GetRequiredService<ICommTaskLinkStore>();
+
+            Assert.IsType<UnprovisionedCommTaskLinkStore>(store);
+            Assert.False(store.IsProvisioned);
+        }
+
+        // THE ACTIVATION MUST LIVE IN A FILE, NOT IN SOMEBODY'S SHELL.
+        //
+        // The two tests above prove the SWITCH works. They cannot prove anybody threw it, and on
+        // 2026-10-27 nobody had: the flag existed only as a per-process environment variable passed at
+        // launch, so a routine restart silently removed the task-link action from all nine Communication
+        // Hub host screens at once — conversation-level and message-level together, with no hint
+        // rendered, because canLink() gates both on LinkingAvailable. Nothing had regressed; the
+        // activation had simply never been durable.
+        //
+        // So this pins the PAIRING the registration comment prescribes: the flag belongs beside the
+        // connection that earns it.
+        //
+        // BOTH DIRECTIONS, because the failure modes are not symmetric and each has bitten:
+        //   * https overrides the connection to the PROVISIONED database, so it must declare the flag —
+        //     without it the feature is dark, which is the defect above.
+        //   * http and IIS Express fall back to appsettings.json and CrossBuyDev, which has NO
+        //     CommTaskLinks table, so they must NOT declare it — a blanket "true" there is a SQL-208
+        //     from the driver in the middle of somebody's work, the HM-D44 shape.
+        [Fact]
+        public void The_https_launch_profile_declares_task_links_provisioned_and_the_others_do_not()
+        {
+            var root = RepoRoot();
+            using var doc = System.Text.Json.JsonDocument.Parse(
+                System.IO.File.ReadAllText(
+                    System.IO.Path.Combine(root, "CrossBuy", "Properties", "launchSettings.json")));
+
+            var profiles = doc.RootElement.GetProperty("profiles");
+
+            static (string? Connection, string? Flag) Read(System.Text.Json.JsonElement profile)
+            {
+                if (!profile.TryGetProperty("environmentVariables", out var env))
+                    return (null, null);
+                string? Get(string key) => env.TryGetProperty(key, out var v) ? v.GetString() : null;
+                return (Get("ConnectionStrings__DefaultConnection"),
+                        Get("CommunicationPlatform__TaskLinksProvisioned"));
+            }
+
+            var https = Read(profiles.GetProperty("https"));
+
+            // The profile that serves the Communication Hub dev target points at the provisioned
+            // database AND says so. Asserting only the flag would pass against a profile that had
+            // meanwhile been repointed at an unprovisioned database — which is the outage, not the fix.
+            Assert.NotNull(https.Connection);
+            Assert.Contains("CrossBuyDB2", https.Connection!, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("true", https.Flag);
+
+            // Every OTHER profile inherits appsettings.json, whose DefaultConnection is CrossBuyDev —
+            // verified here rather than assumed, so this half cannot go vacuous if that default moves.
+            var appsettings = System.IO.File.ReadAllText(
+                System.IO.Path.Combine(root, "CrossBuy", "appsettings.json"));
+            Assert.Contains("CrossBuyDev", appsettings, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("TaskLinksProvisioned", appsettings, StringComparison.OrdinalIgnoreCase);
+
+            foreach (var profile in profiles.EnumerateObject())
+            {
+                if (profile.Name == "https") { continue; }
+
+                var other = Read(profile.Value);
+                if (other.Connection != null
+                    && other.Connection.Contains("CrossBuyDB2", StringComparison.OrdinalIgnoreCase))
+                {
+                    // A second profile may legitimately be pointed at the provisioned database later;
+                    // if it is, it owes the same declaration.
+                    Assert.Equal("true", other.Flag);
+                    continue;
+                }
+
+                Assert.True(other.Flag == null,
+                    $"Profile '{profile.Name}' declares TaskLinksProvisioned but does not point at a " +
+                    "database known to have CommTaskLinks. Activating the EF store there is a SQL-208 " +
+                    "on first use.");
+            }
+        }
+
+        private static string RepoRoot()
+        {
+            var fromEnvironment = Environment.GetEnvironmentVariable("CROSSBUY_REPO_ROOT");
+            if (!string.IsNullOrWhiteSpace(fromEnvironment)
+                && System.IO.File.Exists(System.IO.Path.Combine(fromEnvironment, "CrossBuy.sln")))
+            {
+                return fromEnvironment;
+            }
+
+            var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+            while (dir != null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "CrossBuy.sln")))
+            {
+                dir = dir.Parent;
+            }
+
+            Assert.NotNull(dir);
+            return dir!.FullName;
+        }
+
         // Opting in is an EXPLICIT second call. This proves the override actually takes effect — a registration
         // that appended without winning would leave the null bridge in place and the opt-in would silently do
         // nothing.
@@ -213,11 +391,11 @@ namespace CrossBuy.Tests.Communication
             Assert.Contains(CommTimelineSourceKinds.CommAudit, sources);
         }
 
-        // All three built-in principal kinds must be present. @role is deliberately absent — the vocabulary
-        // declares it, and no source resolves it (ADR-032 §5). This test is what stops "we'll wire role mentions
-        // later" from quietly becoming "role mentions resolve to nobody and nobody noticed".
+        // Every built-in principal kind, including @role, must be wired. Role expansion remains disabled by
+        // default in configuration; registering the source makes the capability explicitly opt-in rather
+        // than silently unsupported.
         [Fact]
-        public void Principal_sources_cover_employee_team_and_department_but_not_role()
+        public void Principal_sources_cover_employee_team_department_and_role()
         {
             using var provider = BuildContainer();
             using var scope = provider.CreateScope();
@@ -227,7 +405,7 @@ namespace CrossBuy.Tests.Communication
             Assert.Contains(CommMentionTargetKind.Employee, resolver.SupportedKinds);
             Assert.Contains(CommMentionTargetKind.Team, resolver.SupportedKinds);
             Assert.Contains(CommMentionTargetKind.Department, resolver.SupportedKinds);
-            Assert.DoesNotContain(CommMentionTargetKind.Role, resolver.SupportedKinds);
+            Assert.Contains(CommMentionTargetKind.Role, resolver.SupportedKinds);
         }
 
         // A host with no configuration section must still resolve valid options. Without the explicit

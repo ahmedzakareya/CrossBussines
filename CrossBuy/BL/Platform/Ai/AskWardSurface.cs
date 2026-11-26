@@ -46,7 +46,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"لوحة الأسرّة: كام سرير وفين، وإيه الفاضي والمشغول دلوقتي، حسب الجناح أو الغرفة",
-			"The bed board: how many beds there are and where, and which are free or occupied right now, by ward or room");
+			"The bed board: how many beds there are and where, and which are free or occupied right now, by ward or room",
+			"Tableau des lits : nombre, emplacement et disponibilité actuelle par unité, chambre ou type de chambre");
 
 		public override AskText Rules => AskText.Of(
 			"كل سطر هنا سرير واحد شغّال · الأرقام دي لحظية — حالة السرير دلوقتي، مش متوسط فترة · "
@@ -69,7 +70,7 @@ namespace CrossBuy.BL.Platform.Ai
 			// and a value promoted to vocabulary is a value the named-value filter stops looking for —
 			// «كام سرير فاضي» would then be read as a question ABOUT the status column and answered
 			// with all twenty-two beds. The spoken spellings live on the row's search key instead.
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة السرير", "Bed status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة السرير", "Bed status", "Statut du lit"),
 				// "اشغال" AND "occupancy" ARE THIS COLUMN, which is why they are here and the status
 				// VALUES are not. «نسبة اشغال الاسرة» answered "عدد الأسرّة: 22" with a "مالقيتش
 				// «اشغال»" opener - a false unknown, which staples a doubt to a correct answer and
@@ -80,7 +81,7 @@ namespace CrossBuy.BL.Platform.Ai
 				// "occupancy" is not inside "Occupied".
 				Synonyms = new[] { "حالة", "الحالة", "حالة السرير", "اشغال", "الاشغال", "نسبة الاشغال",
 					"معدل الاشغال", "status", "bed status", "state", "occupancy", "occupancy rate" } },
-			new AskColumn { Name = "ward", Kind = AskColumnKind.Dimension, Label = AskText.Of("الجناح", "Ward"),
+			new AskColumn { Name = "ward", Kind = AskColumnKind.Dimension, Label = AskText.Of("الجناح", "Ward", "Unité"),
 				// "القسم" IS THE WARD HERE, and only here. On the diagnoses, appointments and
 				// billing surfaces that word means the clinical DEPARTMENT, because that is what
 				// those rows hang off. Beds hang off wards, and nobody asking «المنومين حسب القسم»
@@ -88,13 +89,13 @@ namespace CrossBuy.BL.Platform.Ai
 				Synonyms = new[] { "جناح", "الجناح", "اجنحة", "الاجنحة", "حسب الجناح",
 					"قسم", "القسم", "اقسام", "الاقسام", "حسب القسم",
 					"ward", "wards", "by ward", "unit", "department", "by department" } },
-			new AskColumn { Name = "room", Kind = AskColumnKind.Dimension, Label = AskText.Of("الغرفة", "Room"),
+			new AskColumn { Name = "room", Kind = AskColumnKind.Dimension, Label = AskText.Of("الغرفة", "Room", "Chambre"),
 				Synonyms = new[] { "غرفة", "الغرفة", "غرف", "الغرف", "اوضة", "حسب الغرفة",
 					"room", "rooms", "by room" } },
-			new AskColumn { Name = "roomtype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الغرفة", "Room type"),
+			new AskColumn { Name = "roomtype", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الغرفة", "Room type", "Type de chambre"),
 				Synonyms = new[] { "نوع الغرفة", "نوع الاوضة", "فئة الغرفة", "room type", "room class" } },
 
-			new AskColumn { Name = "beds", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأسرّة", "Beds"),
+			new AskColumn { Name = "beds", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد الأسرّة", "Beds", "Lits"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "سرير", "اسرة", "الاسرة", "سراير",
 					"beds", "bed", "count", "how many" } },
 		};

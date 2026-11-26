@@ -1,4 +1,5 @@
 @using CrossBuy.Models.Context.Crm
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
 @using CrossBuy.BL
 @model CrmTicket
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -11,6 +12,19 @@
     var subjectDisp = !isAr && !string.IsNullOrWhiteSpace(Model.SubjectEn) ? Model.SubjectEn! : Model.Subject;
     var now = DateTime.UtcNow;
     var priorities = new[] { ("Urgent", Localizer["Urgent"].Value), ("High", Localizer["High"].Value), ("Normal", Localizer["Normal"].Value), ("Low", Localizer["Low"].Value) };
+    var orgTree = ViewBag.OrgTree as List<CrossBuy.BL.CrmOrgNode> ?? new();
+    var recordTypes = ViewBag.RecordTypes as List<CrossBuy.BL.TaskLinkTypeDto> ?? new();
+    var sourceLink = ViewBag.SourceLink as CrossBuy.BL.TaskLinkDto;
+
+    @* Same chart, same drawing as the call screen - a node picked in one place has to look
+       like the same node in the other. Non-breaking spaces: ordinary ones collapse. *@
+    string orgLabel(CrossBuy.BL.CrmOrgNode n)
+    {
+        var pad = string.Concat(Enumerable.Repeat("\u00A0\u00A0\u00A0\u00A0", n.Depth));
+        var name = DisplayName.Of(n.NameAr, n.NameEn);
+        var ty = DisplayName.Of(n.TypeAr, n.TypeEn);
+        return pad + (n.Depth > 0 ? "\u2022\u00A0" : "") + name + (string.IsNullOrWhiteSpace(ty) ? "" : "\u00A0\u00A0\u00B7\u00A0" + ty);
+    }
     var statuses = new[] { ("New", Localizer["New"].Value), ("Open", Localizer["Open"].Value), ("Pending", Localizer["Pending"].Value), ("Resolved", Localizer["Resolved"].Value), ("Closed", Localizer["Closed"].Value) };
     string stNm(string s) => statuses.FirstOrDefault(x => x.Item1 == s).Item2 ?? s;
     bool isClosed = Model.Status == "Resolved" || Model.Status == "Closed";
@@ -24,8 +38,6 @@
         <a href="@Url.Action("Tickets","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <div class="row g-5">
             <div class="col-lg-7">
@@ -41,6 +53,80 @@
                                 <select id="t_account" name="accountId" class="form-select form-select-solid" style="width:100%">@if (Model.AccountId.HasValue) { <option value="@Model.AccountId" selected>@accountName</option> }</select></div>
                             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Category"]</label><input name="category" class="form-control form-control-solid" value="@Model.Category" placeholder="@Localizer["Inquiry / complaint / support"]" /></div>
                             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Category (EN)"]</label><input name="categoryEn" class="form-control form-control-solid" value="@Model.CategoryEn" /></div>
+                            @* HOW IT ARRIVED and WHO CALLED. The ticket recorded what was asked and never how it
+                               reached us, so the first question a support desk is asked - where is the volume
+                               coming from - had no answer in the data. The number is on the ticket itself because
+                               an inbound call from a number no account matches had nowhere else to be written. *@
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Channel"]</label>
+                                <select name="channel" class="form-select form-select-solid">
+                                    <option value="">@Localizer["— not stated —"]</option>
+                                    @foreach (var ch in new (string v, string ar, string en)[] {
+                                        ("Phone","هاتف","Phone"), ("Email","بريد","Email"), ("WhatsApp","واتساب","WhatsApp"),
+                                        ("WalkIn","حضور","Walk-in"), ("Portal","بوابة العميل","Portal"), ("Other","أخرى","Other") })
+                                    { <option value="@ch.v" selected="@(Model.Channel == ch.v)">@(isAr ? ch.ar : ch.en)</option> }
+                                </select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Caller phone"]</label>
+                                <input name="callerPhone" class="form-control form-control-solid" dir="ltr" value="@Model.CallerPhone" /></div>
+                            @* WHAT IT IS ABOUT. Resolved live rather than stored as a label: an order
+                               that was renamed or cancelled must not keep its old caption here.
+                               Shown as a LINK, because the first thing the unit receiving this ticket
+                               wants is the record itself, not its number. *@
+                            <div class="col-12">
+                                <label class="fw-semibold fs-7 text-muted mb-1">@Localizer["About"]</label>
+                                <div class="rounded p-4" style="background:#F9FAFB;border:1px solid #E4E8F0;">
+                                    @if (sourceLink != null)
+                                    {
+                                        <div class="d-flex align-items-center mb-3">
+                                            <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-primary">
+                                                <i class="ki-outline @(string.IsNullOrWhiteSpace(sourceLink.Icon) ? "ki-element-11" : sourceLink.Icon) fs-5 text-primary"></i></span></span>
+                                            <div class="flex-grow-1" style="min-width:0">
+                                                <div class="fs-8 text-gray-500">@DisplayName.Of(sourceLink.TypeLabelAr, sourceLink.TypeLabelEn)</div>
+                                                @if (!string.IsNullOrWhiteSpace(sourceLink.Url))
+                                                { <a href="@sourceLink.Url" class="fw-bold text-truncate d-block">@sourceLink.Label</a> }
+                                                else
+                                                { <span class="fw-bold">@sourceLink.Label</span> }
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <select id="srcType" name="sourceType" class="form-select form-select-solid form-select-sm">
+                                                <option value="">@Localizer["— nothing —"]</option>
+                                                @foreach (var t in recordTypes)
+                                                { <option value="@t.Key" selected="@(Model.SourceType == t.Key)">@DisplayName.Of(t.LabelAr, t.LabelEn)</option> }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-7">
+                                            @* The current record is written in as the one option, so re-saving
+                                               the ticket without touching this box keeps the link instead of
+                                               quietly clearing it. *@
+                                            <select id="srcRecord" name="sourceId" data-no-select2
+                                                    class="form-select form-select-solid form-select-sm">
+                                                @if (Model.SourceId is > 0)
+                                                { <option value="@Model.SourceId" selected>@(sourceLink?.Label ?? ("#" + Model.SourceId))</option> }
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @* WHICH DEPARTMENT THE PROBLEM BELONGS TO - not the same question as who owns it.
+                               The owner is one person and changes with holidays; the department is where the
+                               work lives, and is what the agent on the phone can answer immediately. The call
+                               screen writes this same column when a call is routed, so the two agree. *@
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Department"]</label>
+                                @if (orgTree.Count == 0)
+                                {
+                                    <div class="rounded border border-dashed p-3 fs-8 text-gray-600" style="border-color:#dbe3ef !important;">@Localizer["This company has no org structure yet."]</div>
+                                }
+                                else
+                                {
+                                    <select name="departmentId" class="form-select form-select-solid">
+                                        <option value="">@Localizer["— not routed —"]</option>
+                                        @foreach (var n in orgTree)
+                                        { <option value="@n.Id" selected="@(Model.DepartmentId == n.Id)">@orgLabel(n)</option> }
+                                    </select>
+                                }
+                            </div>
                             <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Description"]</label><textarea name="description" class="form-control form-control-solid" rows="4">@Model.Description</textarea></div>
                             <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Description (EN)"]</label><textarea name="descriptionEn" class="form-control form-control-solid" rows="3" placeholder="@Localizer["Optional English description"]">@Model.DescriptionEn</textarea></div>
                             <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
@@ -52,6 +138,76 @@
                 {
                     @await Html.PartialAsync("_Timeline", (List<Activity>)ViewBag.Timeline)
                 }
+
+                @if (isEdit)
+                {
+                    @* THE CALLS ON THIS TICKET. One ticket takes many calls, and until now none of
+                       them were recorded anywhere - so a ticket could not answer "what have we
+                       actually done about this". *@
+                    var tcalls = ViewBag.TicketCalls as List<CrossBuy.Models.Context.Crm.CrmCall> ?? new();
+                    @* THE SAME CALL MUST READ THE SAME ON BOTH SCREENS. This table printed the raw
+                       stored values - "Answered" on an Arabic page, and the UTC stamp, so a call
+                       taken at 10:30 in Cairo showed 07:30 here and 10:30 on the call log. *@
+                    string outName(string o) => o switch
+                    {
+                        "NoAnswer"  => isAr ? "بدون رد"   : "No answer",
+                        "Busy"      => isAr ? "مشغول"     : "Busy",
+                        "Voicemail" => isAr ? "بريد صوتي" : "Voicemail",
+                        "Dropped"   => isAr ? "انقطعت"    : "Dropped",
+                        _           => isAr ? "تم الرد"   : "Answered",
+                    };
+                    <div class="card mb-5">
+                        <div class="card-header"><div class="card-title fw-bold">@Localizer["Calls"] (@tcalls.Count)</div>
+                            <div class="card-toolbar">@* THE TICKET TRAVELS WITH THE LINK. Leaving from a ticket to log a call and then being
+                                   asked to type that ticket’s number back in is the screen forgetting
+                                   where you came from - and the number it wants is on the page you just left. *@
+                                <a href="@Url.Action("Calls","Crm", new { ticketId = Model.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-phone fs-4"></i>@Localizer["Log a call"]</a></div>
+                        </div>
+                        <div class="card-body">
+                                @* THE SAME ROWS THE CALL LOG DRAWS. This table was a second, thinner
+                                   copy - no number, no detail, and it had already drifted on the two
+                                   things a copy always drifts on: it printed the raw "Answered" on an
+                                   Arabic page and the UTC stamp. The ticket column is dropped, because
+                                   inside a ticket every row is that ticket. *@
+                                @await Html.PartialAsync("_CallRows", tcalls, new ViewDataDictionary(ViewData) { ["ShowTicket"] = false })
+                        </div>
+                    </div>
+
+                    @* THE CONVERSATION. A ticket is the one record whose VALUE is the conversation -
+                       what the customer said, what was promised, what was tried - and this screen
+                       had no notes, no history and no attachments at all, while a complete comment
+                       platform sat beside it unusable here for one missing registration.
+
+                       It goes through the SAME endpoints the accounting documents use: the family
+                       map now carries CrmTicket and the gate asks the CRM authority about it, so
+                       there is one permission rule rather than a second copy. *@
+                    ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.CrmTicket;
+                    ViewBag.ConversationEntityId = Model.ID;
+                    ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+                    ViewBag.ConversationMentionUrl = Url.Action("InvoiceConversationMentions", "Accounting");
+                    ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+                    ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+
+                    @* COMMUNICATION PHASE 3 - TASKS. Every endpoint below lives on the TASKS controller, not this
+                       module: the conversation is this screen's, the work is Tasks'. Naming them here is the whole
+                       of the opt-in - the shared partial resolves nothing on a caller's behalf, so a screen that
+                       omits them keeps exactly its previous behaviour.
+
+                       THE PANEL STILL DECIDES WHETHER TO SHOW ANYTHING. It reveals the link controls only when all
+                       three link urls are present AND the service reports LinkingAvailable AND a thread exists, so a
+                       deployment without the CommTaskLinks table shows nothing rather than a button that refuses.
+
+                       CrmTicket is NOT EligibleForTaskLink. Linking an existing task works; one created from a
+                       message carries no anchor and the panel says so. *@
+                    ViewBag.ConversationCreateTaskUrl = Url.Action("CreateFromMessage", "Tasks");
+                    ViewBag.ConversationTasksUrl = Url.Action("ForConversation", "Tasks");
+                    ViewBag.ConversationLinkUrl = Url.Action("LinkConversation", "Tasks");
+                    ViewBag.ConversationUnlinkUrl = Url.Action("UnlinkConversation", "Tasks");
+                    ViewBag.ConversationLinkSearchUrl = Url.Action("LinkCandidates", "Tasks");
+                    @await Html.PartialAsync("_EntityConversation")
+                }
+                @* CRM C8: what the customer sees — the public thread, articles that fit, the rating. Loaded by crm-ticket-desk.js. *@
+                @if (isEdit) { <div id="ticketDesk" data-src="@Url.Action("TicketDesk","Crm", new { id = Model.ID })" data-reply="@Url.Action("TicketReply","Crm")" data-failed="@(isAr ? "تعذّر الحفظ. حدّث الصفحة وحاول مرة أخرى." : "Could not save. Refresh the page and try again.")"></div> }
             </div>
 
             <div class="col-lg-5">
@@ -74,12 +230,45 @@
                         </div>
                     </div>
 
+                    @* ESCALATION IS A MOVE UP THE CHART, which is why it lives next to the routing
+                       and not next to the status. "Escalated" as a status would say that something
+                       is urgent without saying who is now expected to act. *@
+                    <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Routing"]</div></div>
+                        <div class="card-body">
+                            @if (Model.DepartmentId is > 0)
+                            {
+                                var cur = orgTree.FirstOrDefault(n => n.Id == Model.DepartmentId);
+                                <div class="d-flex align-items-center mb-4">
+                                    <span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-primary">
+                                        <i class="ki-outline ki-abstract-26 fs-5 text-primary"></i></span></span>
+                                    <div>
+                                        <div class="fs-8 text-gray-500">@Localizer["Currently with"]</div>
+                                        <div class="fw-bold">@(cur != null ? DisplayName.Of(cur.NameAr, cur.NameEn) : "#" + Model.DepartmentId)</div>
+                                    </div>
+                                </div>
+                                <form asp-action="EscalateTicket" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Escalate this ticket to the unit above?"]">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.ID" />
+                                    <input name="reason" class="form-control form-control-solid form-control-sm mb-3" placeholder="@Localizer["Why is it being escalated? (optional)"]" />
+                                    <button class="btn btn-sm btn-light-danger w-100"><i class="ki-outline ki-arrow-up fs-4"></i>@Localizer["Escalate"]</button>
+                                </form>
+                            }
+                            else
+                            {
+                                @* Not a failure state - most tickets are handled where they were raised.
+                                   It says what is missing and where to set it, rather than showing a
+                                   button that can only refuse. *@
+                                <div class="fs-7 text-gray-600">@Localizer["Not routed to any unit yet. Choose one in the form and save."]</div>
+                            }
+                        </div>
+                    </div>
+
                     <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["SLA"]</div></div>
                         <div class="card-body">
                             <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["First response due"]</span>
-                                <span class="fw-bold @(frBreached?"text-danger":"text-gray-800")">@(Model.FirstResponseDueAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span></div>
+                                <span id="slaFirstDue" class="fw-bold @(frBreached?"text-danger":"text-gray-800")">@(Model.FirstResponseDueAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span></div>
                             <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["First responded"]</span>
-                                <span class="fw-bold text-primary">@(Model.FirstRespondedAt?.ToString("yyyy-MM-dd HH:mm") ?? (frBreached ? Localizer["overdue"].Value : "—"))</span></div>
+                                @* Repainted in place when a reply stamps it - see the listener below. *@
+                                <span id="slaFirstResponded" class="fw-bold text-primary">@(Model.FirstRespondedAt?.ToString("yyyy-MM-dd HH:mm") ?? (frBreached ? Localizer["overdue"].Value : "—"))</span></div>
                             <div class="separator my-3"></div>
                             <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Resolution due"]</span>
                                 <span class="fw-bold @(resBreached?"text-danger":"text-gray-800")">@(Model.ResolutionDueAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span></div>
@@ -108,8 +297,94 @@
         </div>
     </div></div>
 </div>
+@* CRM C8: the customer panel's bubbles and lines come from the CRM stylesheet *@
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /><link href="~/css/crm-rating.css" rel="stylesheet" asp-append-version="true" /> }
 @section Scripts {
+<script src="~/js/crm-ticket-desk.js" asp-append-version="true"></script>
 <script>
+var CB_S2_NONE = @Html.Raw(Json.Serialize(Localizer["No results"].Value));
+var CB_S2_SEARCHING = @Html.Raw(Json.Serialize(Localizer["Searching…"].Value));
+var CB_S2_ERROR = @Html.Raw(Json.Serialize(Localizer["The results could not be loaded"].Value));
+
+// A REPLY CAN CHANGE THIS PAGE, not just the thread.
+//
+// Answering a customer stamps the ticket’s first response server-side. The SLA card went on
+// showing "—" (or "overdue") until somebody reloaded - a value the reader had just changed and
+// could not see. The conversation announces what the server returned; this repaints the one line
+// it affects, because the house rule is that a mutation repaints its section and never the page.
+(function () {
+    document.addEventListener("cb:conversation:added", function (ev) {
+        var at = ev && ev.detail && ev.detail.firstResponded;
+        if (!at) { return; }                       // a later reply stamps nothing
+        var el = document.getElementById("slaFirstResponded");
+        if (!el) { return; }
+        var d = new Date(at);
+        var p = function (x) { return (x < 10 ? "0" : "") + x; };
+        // The server answers in UTC without a zone, exactly as it stores it - read it back in the
+        // reader’s clock so this line matches every other stamp on the screen.
+        var utc = /[Zz]|[+\-]\d\d:?\d\d$/.test(at) ? d : new Date(at + "Z");
+        el.textContent = utc.getFullYear() + "-" + p(utc.getMonth() + 1) + "-" + p(utc.getDate()) +
+                         " " + p(utc.getHours()) + ":" + p(utc.getMinutes());
+        // The deadline stops being a breach the moment it is answered.
+        var due = document.getElementById("slaFirstDue");
+        if (due) { due.classList.remove("text-danger"); due.classList.add("text-gray-800"); }
+    });
+})();
+
+// THE RECORD PICKER, same contract as the call screen: the type decides which table is
+// searched, and select2 is REBUILT on a type change because its ajax options are read once at
+// init - a re-pointed instance keeps searching the previous type and returns the wrong rows.
+//
+// The existing link is pre-written as the single option, so saving the ticket without touching
+// this box keeps it instead of silently clearing the link.
+(function () {
+    var tries = 0;
+    (function ready() {
+        if (!window.jQuery || !jQuery.fn || !jQuery.fn.select2) {
+            if (++tries > 60) { return; }
+            return setTimeout(ready, 100);
+        }
+        var $type = jQuery("#srcType"), $rec = jQuery("#srcRecord");
+        if (!$type.length || !$rec.length) { return; }
+        var URL = @Html.Raw(Json.Serialize(Url.Action("RecordSearch", "Crm")));
+        var PLACEHOLDER = @Html.Raw(Json.Serialize(Localizer["Search for the record"].Value));
+        var first = true;
+
+        function build() {
+            if ($rec.hasClass("select2-hidden-accessible")) { $rec.select2("destroy"); }
+            if (!first) { $rec.empty(); }      // keep what is already linked on the first pass
+            first = false;
+            var t = $type.val();
+            $rec.prop("disabled", !t);
+            if (!t) { return; }
+            $rec.select2({
+                width: "100%",
+                dir: (document.documentElement.getAttribute("dir") || "").toLowerCase() === "rtl" ? "rtl" : "ltr",
+                dropdownParent: jQuery(document.body),
+                placeholder: PLACEHOLDER, allowClear: true, minimumInputLength: 0,
+                ajax: {
+                    url: URL, dataType: "json", delay: 300,
+                    data: function (p) { return { entityType: $type.val(), term: p.term || "" }; },
+                    processResults: function (d) { return { results: (d && d.results) || [] }; },
+                    cache: true
+                },
+                // select2 ships ENGLISH strings and the theme never localises them, so an
+                // Arabic page answered an Arabic search with "No results found". The language
+                // object is per INSTANCE - select2 has no global - and it sits BESIDE ajax,
+                // never inside it: nested there it is simply ignored, and the picker renders,
+                // runs and stays English.
+                language: {
+                    noResults: function () { return CB_S2_NONE; },
+                    searching: function () { return CB_S2_SEARCHING; },
+                    errorLoading: function () { return CB_S2_ERROR; }
+                }
+            });
+        }
+        $type.on("change", build);
+        build();
+    })();
+})();
+
 if(window.jQuery){ jQuery('#t_account').select2({ placeholder:'@Localizer["Search account…"]', allowClear:true, minimumInputLength:1,
   ajax:{ url:'@Url.Action("AccountPickData","Crm")', dataType:'json', delay:250, data:function(p){return {term:p.term};}, processResults:function(d){return {results:d.results};} } }); }
 </script>

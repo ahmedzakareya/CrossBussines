@@ -46,7 +46,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"مواعيد العيادات: العدد ومتوسط الانتظار ومدة الكشف حسب الحالة أو الطبيب أو القسم أو اليوم",
-			"Clinic appointments: the count, average wait and consultation length by status, practitioner, department or day");
+			"Clinic appointments: the count, average wait and consultation length by status, practitioner, department or day",
+			"Rendez-vous des cliniques : nombre, attente moyenne et durée des consultations par statut, praticien, service ou jour");
 
 		public override AskText Rules => AskText.Of(
 			"العدد هو عدد المواعيد، مش عدد المرضى — المريض الواحد ممكن يكون ليه أكتر من موعد · "
@@ -71,33 +72,33 @@ namespace CrossBuy.BL.Platform.Ai
 			// None of these synonyms is a status value, and none ever may be. A value word listed
 			// here becomes surface vocabulary, the named-value filter stops looking for it, and a
 			// question about one status is answered with the total for all of them.
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الموعد", "Status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الموعد", "Status", "Statut"),
 				Synonyms = new[] { "حالة", "الحالة", "حالة الموعد", "status", "appointment status" } },
-			new AskColumn { Name = "visit", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الزيارة", "Visit type"),
+			new AskColumn { Name = "visit", Kind = AskColumnKind.Dimension, Label = AskText.Of("نوع الزيارة", "Visit type", "Type de visite"),
 				Synonyms = new[] { "نوع الزيارة", "نوع الموعد", "نوع", "visit type", "appointment type", "kind of visit" } },
-			new AskColumn { Name = "practitioner", Kind = AskColumnKind.Dimension, Label = AskText.Of("الطبيب", "Practitioner"),
+			new AskColumn { Name = "practitioner", Kind = AskColumnKind.Dimension, Label = AskText.Of("الطبيب", "Practitioner", "Praticien"),
 				Synonyms = new[] { "طبيب", "الطبيب", "دكتور", "الدكتور", "حسب الطبيب",
 					"doctor", "practitioner", "by doctor", "per doctor" } },
-			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department"),
+			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department", "Service"),
 				Synonyms = new[] { "قسم", "القسم", "اقسام", "الاقسام", "حسب القسم",
 					"department", "departments", "by department" } },
-			new AskColumn { Name = "hour", Kind = AskColumnKind.Dimension, Label = AskText.Of("الساعة", "Hour"),
+			new AskColumn { Name = "hour", Kind = AskColumnKind.Dimension, Label = AskText.Of("الساعة", "Hour", "Heure"),
 				Synonyms = new[] { "ساعة", "الساعة", "ساعات", "بالساعة", "hour", "by hour", "time of day" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
-			new AskColumn { Name = "appointments", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد المواعيد", "Appointments"),
+			new AskColumn { Name = "appointments", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد المواعيد", "Appointments", "Rendez-vous"),
 				Synonyms = new[] { "عدد", "العدد", "كام", "مواعيد", "المواعيد", "حجوزات", "الحجوزات",
 					"appointments", "bookings", "count", "how many" } },
 			// MINUTES, AND ABSENT ON PURPOSE WHERE THEY WERE NEVER RECORDED.
 			new AskColumn { Name = "wait", Kind = AskColumnKind.Measure, Nullable = true,
-				Label = AskText.Of("دقائق الانتظار", "Wait minutes"),
+				Label = AskText.Of("دقائق الانتظار", "Wait minutes", "Minutes d'attente"),
 				Synonyms = new[] { "انتظار", "الانتظار", "مدة الانتظار", "استنى", "استنوا", "طابور",
 					"wait", "waiting", "waiting time", "wait minutes" } },
 			new AskColumn { Name = "consult", Kind = AskColumnKind.Measure, Nullable = true,
-				Label = AskText.Of("دقائق الكشف", "Consultation minutes"),
+				Label = AskText.Of("دقائق الكشف", "Consultation minutes", "Minutes de consultation"),
 				Synonyms = new[] { "مدة الكشف", "زمن الكشف", "مدة الزيارة", "طول الكشف",
 					"consultation", "consult", "consultation time", "visit length" } },
 		};

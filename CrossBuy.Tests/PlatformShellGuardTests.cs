@@ -27,6 +27,7 @@ public sealed class PlatformShellGuardTests
     /// </summary>
     private static readonly (string Folder, string Tab)[] PlatformSurfaces =
     {
+        ("PlatformAdministration", "TAB-1"),
         ("Workspace",            "TAB-1"),
         ("BusinessEventMonitor", "TAB-1"),
         ("Reports",              "TAB-2"),

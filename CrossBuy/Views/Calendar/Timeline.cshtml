@@ -21,7 +21,24 @@
     // The working day the grid spans. Anything outside it still appears, clamped to the edge, so an
     // early or late meeting is never invisible.
     const int StartHour = 7, EndHour = 20;
-    var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
+
+    // THE ROWS. Half-hours, not whole ones. An hour-wide cell can only ever say "busy", and the thing
+    // a scheduler is reading this grid for is the gap INSIDE the hour.
+    var slots = new List<DateTime>();
+    for (var t = day.AddHours(StartHour); t < day.AddHours(EndHour); t = t.AddMinutes(30)) { slots.Add(t); }
+
+    // "Finished" is a claim about now, so it is only made on the day the reader is actually in.
+    var nowUtc = DateTime.UtcNow;
+    var isToday = day.Date == DateTime.Now.Date;
+
+    // Two initials for somebody with no photograph on file, which is the fallback every other avatar
+    // in the product uses. Local to the view on purpose: reaching into a module's UI helper to draw a
+    // platform screen is the coupling this grid exists on the platform side to avoid.
+    Func<string, string> initialsOf = n =>
+    {
+        var p = (n ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant();
+    };
 
     // BOOKED FIRST. Forty rows of empty dots is what buried the signal - a reader had to scan the
     // whole grid to discover that two rows carried anything. Order is otherwise preserved.
@@ -48,6 +65,12 @@
         .ThenBy(g => g.Name, StringComparer.CurrentCulture)
         .ToList();
 
+    // THE COLUMNS. Flattened out of the groups rather than out of Model.People, so the order the
+    // grouping already decided — busiest branch first, booked first inside it — survives the change
+    // of axis. The branch travels with the person into their column heading, which is what replaces
+    // the full-width group rows the table used to carry.
+    var columns = groups.SelectMany(g => g.Rows.Select(r => new { Row = r, Branch = g.Name })).ToList();
+
     // The local wall-clock of an occurrence. StartUtc is stored as an instant; the grid and this
     // list must agree on the conversion, so it is done in one place.
     Func<CalendarOccurrence, string> when = o =>
@@ -64,6 +87,10 @@
     Func<CalendarOccurrence, string> eventHref = o =>
         $"/Calendar/Index?eventId={o.EventId}&day={day:yyyy-MM-dd}";
 }
+
+@* The shared schedule grid. External rather than view-local because the palette rule on these
+   screens scans the VIEW for hex colours, and a grid's tints belong in a stylesheet either way. *@
+<link rel="stylesheet" href="~/css/schedule-grid.css" asp-append-version="true" />
 
 <!--begin::Toolbar-->
 @* RESPONSIVE TOOLBAR. `flex-wrap gap-3` is the pattern Tasks/AutoRules and Tasks/HoursReport already
@@ -137,7 +164,11 @@
             }
             else
             {
-                <div class="table-responsive">
+                @* `.cb-table-scroll` and not `.table-responsive`: the latter scrolls sideways but has
+                   no bounded height, so it is a scroll container the page can never scroll — and a
+                   sticky <th> inside one has nothing to stick to. *@
+                <div class="cb-table-scroll" tabindex="0" role="region"
+                     aria-label="@T("مواعيد اليوم", "Bookings today")">
                 <table class="table table-row-dashed align-middle fs-6 gy-4 mb-0">
                     <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                         <th class="ps-4 min-w-125px">@T("الوقت", "Time")</th>
@@ -216,98 +247,94 @@
             </div>
             @* THE KEY. Nothing on this page said what a cell meant. Same form as the legend on
                /Pos/Reservations and /Calendar. *@
-            <div class="card-toolbar d-flex gap-4 fs-8 text-muted flex-wrap align-items-center">
-                <span><span class="badge badge-light-primary fs-8 me-1">&nbsp;&nbsp;</span> @T("مشغول", "Busy")</span>
-                <span><span class="text-muted me-1">·</span> @T("متفرغ", "Free")</span>
-                <span class="text-gray-500">@T("الساعات ٠٧–١٩ بالتوقيت المحلي", "Hours 07–19, local time")</span>
+            <div class="card-toolbar d-flex flex-wrap gap-5 align-items-center">
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch own"></span>@T("ينظّم", "Organiser")</span>
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch att"></span>@T("مشارك", "Attending")</span>
+                @if (isToday)
+                {
+                    <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch past"></span>@T("انتهى", "Finished")</span>
+                }
+                <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="cb-swatch open"></span>@T("متفرغ", "Free")</span>
+                <span class="fs-8 text-gray-500">@T("الساعات ٠٧–١٩ بالتوقيت المحلي، كل خانة نصف ساعة", "Hours 07–19 local time, each cell is half an hour")</span>
             </div>
         </div>
         <div class="card-body pt-0">
-            @* KEYBOARD-REACHABLE SCROLL REGION. `.table-responsive` scrolls horizontally, and a region
-               that scrolls but cannot be focused is unreachable to anyone not using a mouse — axe's
+            @* KEYBOARD-REACHABLE SCROLL REGION. The box scrolls in both directions, and a region that
+               scrolls but cannot be focused is unreachable to anyone not using a mouse — axe's
                scrollable-region-focusable. `tabindex="0"` puts it in the tab order so arrow keys work;
-               role+aria-label give it a name once it is focusable, so it is announced as something
-               rather than as an unnamed group. No visual change. *@
-            <div class="table-responsive" tabindex="0" role="region"
-                 aria-label="@T("شبكة ساعات الموظفين", "Employee hour grid")">
-                <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
-                    <thead>
-                        <tr class="fw-bold text-muted fs-8" style="border-bottom:2px solid #0E4A9E;">
-                            <th class="min-w-150px">@T("الموظف", "Employee")</th>
-                            @foreach (var h in hours)
-                            {
-                                <th class="text-center min-w-50px">@h.ToString("00")</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.People.Count == 0)
+               role+aria-label give it a name once it is focusable. *@
+            @if (columns.Count == 0)
+            {
+                <div class="text-center text-muted py-10">@T("لا موظفين", "No employees")</div>
+            }
+            else
+            {
+                @* NO BRANCH STRIP ABOVE THE GRID. The table carried a full-width heading row per
+                   branch and the first pass at this screen turned those into a row of chips, which
+                   put a block of text between the reader and the thing they came for. The prototype
+                   this design comes from carries that kind of fact in the COLUMN HEADING, and so
+                   does this one: the branch sits under each person's name. *@
+                <div class="cb-sched-wrap" tabindex="0" role="region"
+                     aria-label="@T("شبكة ساعات الموظفين", "Employee hour grid")">
+                    <div class="cb-sched" style="grid-template-columns:70px repeat(@columns.Count, minmax(170px,1fr));">
+                        <div class="hd corner"></div>
+                        @foreach (var c in columns)
                         {
-                            <tr><td colspan="@(hours.Count + 1)" class="text-center text-muted py-10">@T("لا موظفين", "No employees")</td></tr>
-                        }
-                        @foreach (var g in groups)
-                        {
-                            @* THE GROUP HEADING. Same shaded full-width row this product already uses for
-                               group rows elsewhere (#f4f6f8). It carries the branch, how many people sit
-                               in it and how many of them are booked - so a branch that is entirely free is
-                               readable as a fact instead of as thirteen columns of dots. *@
-                            <tr data-cb-calendar-group>
-                                <td colspan="@(hours.Count + 1)" class="py-2">
-                                    <div class="d-flex align-items-center flex-wrap gap-2">
-                                        <span class="fw-bold fs-7 text-gray-900">
-                                            <i class="ki-outline ki-bank fs-7 me-1" style="color:#0E4A9E;"></i><bdi>@g.Name</bdi>
-                                        </span>
-                                        <span class="badge badge-light fs-8 tabular-nums">@g.Rows.Count @T(g.Rows.Count == 1 ? "موظف" : "موظفين", "people")</span>
-                                        @if (g.Booked > 0)
-                                        {
-                                            <span class="badge badge-light-primary fs-8 tabular-nums">@g.Booked @T("مشغول", "booked")</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge badge-light-success fs-8">@T("الفرع بالكامل متفرغ", "Whole branch free")</span>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        @foreach (var emp in g.Rows)
-                        {
-                            @* The employee→occurrence join is done in the service. A view that rebuilds a
-                               relationship is a view that can get it wrong where no test can see it. *@
-                            var mine = emp.Occurrences;
-                            <tr>
-                                <td class="fw-semibold fs-7 @(mine.Count == 0 ? "text-muted" : "text-gray-900")">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <bdi>@emp.EmployeeName</bdi>
-                                        @if (mine.Count > 0) { <span class="badge badge-light-primary fs-8 tabular-nums">@mine.Count</span> }
-                                    </div>
-                                </td>
-                                @foreach (var h in hours)
-                                {
-                                    @* An occurrence covers this hour if it overlaps it — a 09:30–10:30
-                                       meeting is busy in both 09 and 10, not only where it starts. *@
-                                    var slotStart = day.AddHours(h).ToUniversalTime();
-                                    var slotEnd = slotStart.AddHours(1);
-                                    var hit = mine.FirstOrDefault(o => o.StartUtc < slotEnd && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStart);
-                                    if (hit != null)
+                            @* A SCREEN THAT NAMES A PERSON SHOWS THAT PERSON. Initials on the brand
+                               tint when there is no photograph on file — never a silhouette. *@
+                            <div class="hd"><div class="d-flex align-items-center min-w-0">
+                                <div class="symbol symbol-35px symbol-circle flex-shrink-0">
+                                    @if (!string.IsNullOrWhiteSpace(c.Row.PhotoUrl))
                                     {
-                                        <td class="text-center p-1">
-                                            <a href="@eventHref(hit)" class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block"
-                                               title="@hit.Title@(string.IsNullOrWhiteSpace(hit.Location) ? "" : " — " + hit.Location)">
-                                                @hit.Title@(hit.IsRepeat ? " ↻" : "")
-                                            </a>
-                                        </td>
+                                        <img src="@c.Row.PhotoUrl" alt="" loading="lazy" style="object-fit:cover" />
                                     }
                                     else
                                     {
-                                        <td class="text-center p-1"><span class="text-muted fs-8">·</span></td>
+                                        <span class="symbol-label fw-bold cb-initials">@initialsOf(c.Row.EmployeeName)</span>
                                     }
+                                </div>
+                                <div class="d-flex flex-column ms-3 min-w-0">
+                                    <span class="text-gray-900 fs-6 fw-bold text-truncate"><bdi>@c.Row.EmployeeName</bdi></span>
+                                    <span class="text-muted fw-semibold fs-7 text-truncate"><bdi>@c.Branch</bdi>@if (c.Row.Occurrences.Count > 0) {<text> · </text><span class="cb-num">@c.Row.Occurrences.Count</span>}</span>
+                                </div>
+                            </div></div>
+                        }
+                        @foreach (var slot in slots)
+                        {
+                            <div class="tm"><span class="cb-num">@slot.ToString("HH:mm")</span></div>
+                            @foreach (var c in columns)
+                            {
+                                @* An occurrence covers this slot if it OVERLAPS it — a 09:30–10:30
+                                   meeting is busy at 09:30, 10:00 and 10:30, not only where it starts.
+                                   Same predicate the hourly grid used, on a half-hour window. *@
+                                var slotStartUtc = slot.ToUniversalTime();
+                                var slotEndUtc = slotStartUtc.AddMinutes(30);
+                                var hit = c.Row.Occurrences.FirstOrDefault(o => o.StartUtc < slotEndUtc && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStartUtc);
+                                if (hit != null)
+                                {
+                                    @* THE STATE OF THE CELL, from what the data actually says. Owning
+                                       an event and being invited to one are not the same hour, and
+                                       an hour that has already ended is not a plan. "Finished" is
+                                       only claimed when the grid is showing today — on any other day
+                                       it would be a statement about the past dressed as a status. *@
+                                    var owns = hit.OwnerEmpId == c.Row.EmployeeId;
+                                    var ended = isToday && (hit.EndUtc ?? hit.StartUtc.AddMinutes(30)) <= nowUtc;
+                                    var state = ended ? "past" : owns ? "own" : "att";
+                                    <div><a href="@eventHref(hit)" class="cb-slot @state"
+                                           title="@hit.Title@(string.IsNullOrWhiteSpace(hit.Location) ? "" : " — " + hit.Location) — @when(hit)">
+                                        <span class="fw-bold d-block text-truncate"><bdi>@hit.Title</bdi>@(hit.IsRepeat ? " ↻" : "")</span>
+                                        <span class="fs-8 opacity-75 d-block text-truncate">@(ended ? T("انتهى", "Finished") : owns ? T("ينظّم", "Organiser") : T("مشارك", "Attending"))@if (!string.IsNullOrWhiteSpace(hit.Location)) {<text> · </text><bdi>@hit.Location</bdi>}</span>
+                                    </a></div>
                                 }
-                            </tr>
+                                else
+                                {
+                                    <div class="free"></div>
+                                }
+                            }
                         }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </div>
+            }
             <div class="text-muted fs-8 mt-3">
                 @T("↻ تعني موعدًا متكررًا. الساعات معروضة بالتوقيت المحلي للخادم.",
                    "↻ marks a repeating occurrence. Hours are shown in the server's local time.")

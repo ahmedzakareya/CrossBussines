@@ -31,7 +31,7 @@
         <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
                 <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select to load items"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
-            <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="writeOffDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="writeOffDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Default reason"]</label>
                 <select name="reason" class="form-select form-select-solid" data-control="select2" data-hide-search="true">@foreach (var r in reasons) { <option value="@r.Item1">@r.Item2</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
@@ -69,6 +69,7 @@
         }
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
@@ -109,12 +110,34 @@ window.onItemScanned=function(p){
 };
 var saveBtn=document.getElementById('save');
 if(saveBtn) saveBtn.addEventListener('click',function(){
-  var lines=[]; [].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){
-    var id=parseInt(tr.getAttribute('data-item')); var q=parseFloat(tr.querySelector('.qty').value);
-    var rk=tr.querySelector('.rack').value,sc=tr.querySelector('.sec').value,bin=rk||sc;
-    if(id&&q>0) lines.push({itemId:id,qty:q,reason:tr.querySelector('.reason').value,batchNo:tr.querySelector('.batch').value||null,serialNo:tr.querySelector('.serial').value||null,binLocationId:bin?parseInt(bin):null});
+    // The shared guard. This screen's rows carry the item as a data attribute rather than a
+  // select, and its quantity is born at 0 rather than 1 - so `touched` reads those, and the
+  // rest of the decision is the same one every document screen now makes.
+  var lines = CBLines.gather({
+    rows: '#rows tr',
+    // THE QUANTITY IS THE TOUCH HERE, NOT THE ITEM. This screen lists the warehouse's whole
+    // stock book as ready-made rows, so every row arrives with an item already on it. Treating
+    // that as 'touched' made the guard refuse all twenty-nine of them at once. A row with no
+    // quantity means 'not writing this one off' - the same meaning an unticked row has on the
+    // planning screen - so the quantity, which is what the user actually types, decides.
+    // The reason select carries no empty option, so the first reason is chosen by the server on
+    // every row - counting it as input marked the whole book as unfinished. Like the item, it is
+    // pre-filled; only the quantity and the free-text batch/serial are things a person typed.
+    touched:function(tr){ return !!(CBLines.num(tr,'.qty')!==0
+        || CBLines.str(tr,'.batch') || CBLines.str(tr,'.serial')); },
+    problem:function(tr){
+      if(!parseInt(tr.getAttribute('data-item'))) return CBLines.T.item;
+      if(CBLines.num(tr,'.qty')<=0) return CBLines.T.qty;
+      return null; },
+    build:function(tr){
+      var rk=CBLines.str(tr,'.rack'), sc=CBLines.str(tr,'.sec'), bin=rk||sc;
+      return {itemId:parseInt(tr.getAttribute('data-item')),qty:CBLines.num(tr,'.qty'),
+              reason:tr.querySelector('.reason').value,
+              batchNo:CBLines.str(tr,'.batch')||null,serialNo:CBLines.str(tr,'.serial')||null,
+              binLocationId:bin?parseInt(bin):null}; },
+    emptyMessage: document.getElementById('f').getAttribute('data-noitems')
   });
-  if(!lines.length){ alert(document.getElementById('f').getAttribute('data-noitems')); return; }
+  if(!lines) return;
   CB.confirm({type:'delete', text:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Post this stock write-off? The quantities will be permanently removed."].Value))}).then(function(ok){
     if(!ok) return;
     document.getElementById('linesJson').value=JSON.stringify(lines); document.getElementById('f').submit();

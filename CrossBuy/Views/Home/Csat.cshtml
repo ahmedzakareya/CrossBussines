@@ -1,0 +1,41 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = null;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var sfx = isAr ? ".rtl" : "";
+    var done = ViewBag.Done == true; var subject = ViewBag.Subject as string; var token = (string)ViewBag.Token; var pre = ViewBag.Score as int?;
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+    <title>@T["How did we do?"]</title>
+    <link rel="stylesheet" href="~/Backend-assets/fonts/cairo/cairo.css" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/style.bundle@(sfx).css" rel="stylesheet" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/crm-rating.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        html[lang="ar"] body { font-family: 'Cairo', sans-serif; } body { background: var(--bs-gray-100); min-height: 100vh; }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center p-5">
+<div class="card shadow-sm mw-500px w-100"><div class="card-body p-10">
+    @if (done)
+    {
+        <div class="text-center"><div class="symbol symbol-65px symbol-circle mb-5"><span class="symbol-label" style="background:#DCFCE7"><i class="ki-outline ki-heart fs-2x" style="color:#15803D"></i></span></div>
+            <h2 class="fw-bold mb-3">@T["Thank you for your answer"]</h2><div class="text-muted fs-6">@T["It helps us serve you better."]</div></div>
+    }
+    else
+    {
+        <h2 class="fw-bold text-center mb-2">@T["How did we do?"]</h2>
+        @if (!string.IsNullOrWhiteSpace(subject)) { <div class="text-center text-muted fs-7 mb-7">@T["Your request"]: @subject</div> }
+        <form method="post" action="/store/csat/@token@Context.Request.QueryString">
+            <div class="mb-7">@await Html.PartialAsync("~/Views/Shared/_CrmRating.cshtml", ((int?)pre, true))</div>
+            <textarea name="comment" class="form-control form-control-solid mb-6" rows="3" maxlength="1000" placeholder="@T["Anything you would like to tell us? (optional)"]"></textarea>
+            <button type="submit" class="btn btn-primary w-100">@T["Send"]</button>
+        </form>
+    }
+</div></div>
+</body>
+</html>

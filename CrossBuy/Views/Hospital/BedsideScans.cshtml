@@ -104,8 +104,8 @@
                                     <td class="ps-4 text-nowrap"><span class="hp-num text-gray-800" dir="ltr">@HospitalNursingService.UtcToWard(s.At).ToString("MM-dd HH:mm")</span>@if (r.By != null) {<div class="text-muted fs-8">@r.By</div>}</td>
                                     <td><span class="text-gray-900 fw-bold d-block fs-7">@DisplayName.Of(r.Patient, r.PatientEn)</span><bdi class="text-muted fs-8 hp-num" dir="ltr">@r.Mrn</bdi></td>
                                     <td><span class="badge badge-light fw-semibold">@T["bsk:" + s.Kind]</span></td>
-                                    <td class="fs-8 text-gray-700"><div><span class="text-muted">@T["Wristband"]</span> <bdi class="hp-num" dir="ltr">@(s.Wristband ?? "—")</bdi></div>
-                                        <div><span class="text-muted">@T["Pack"]</span> <bdi class="hp-num" dir="ltr">@(s.Gtin ?? s.Item ?? "—")</bdi>@if (s.BatchNo != null) {<text> · </text><bdi class="hp-num" dir="ltr">@s.BatchNo</bdi>}</div></td>
+                                    <td class="fs-8 text-gray-700"><div><span class="text-muted">@(s.Kind == HospitalBedsideScanKind.Baby ? T["Mother's band"] : T["Wristband"])</span> <bdi class="hp-num" dir="ltr">@(s.Wristband ?? "—")</bdi></div>
+                                        <div><span class="text-muted">@(s.Kind switch { HospitalBedsideScanKind.Specimen => T["Tube label"], HospitalBedsideScanKind.Blood => T["Blood bag"], HospitalBedsideScanKind.Baby => T["Baby's band"], _ => T["Pack"] })</span> <bdi class="hp-num" dir="ltr">@(s.Gtin ?? s.Item ?? "—")</bdi>@if (s.BatchNo != null) {<text> · </text><bdi class="hp-num" dir="ltr">@s.BatchNo</bdi>}</div></td>
                                     <td><span class="badge badge-light-@Tone(s.Outcome) fs-7 fw-bold">@T["bso:" + s.Outcome]</span></td>
                                     <td class="fs-7 text-gray-700 pe-4"><bdi>@Detail(s)</bdi></td>
                                 </tr>

@@ -87,9 +87,9 @@
     // Reference palette: the STATUS is carried by the table's coloured BORDER + a status pill under the number.
     // Chairs are neutral (taupe) regardless of status — exactly like the design.
     var STAT = {
-        Available: { c: '#16a34a' },               // green  — فارغة
-        Occupied: { c: '#2f6fed' },                // blue   — مشغولة
-        Held: { c: '#f59e0b' },                    // orange — معلقة
+        Available: { c: '#0891B2' },               // teal   — فارغة (brand: no green)
+        Occupied: { c: '#3A5795' },                // navy   — مشغولة (brand)
+        Held: { c: '#64748B' },                    // slate  — معلقة (brand: no amber)
         Awaiting: { c: '#8b5cf6' },                // purple — بانتظار دفع
         Reserved: { c: '#e5484d' },                // red    — محجوزة
         Cleaning: { c: '#9aa4b2' },                // gray   — قيد التنظيف
@@ -108,6 +108,31 @@
     function statusLabel(s) { return { Occupied: L.occupied, Held: L.heldTable, Awaiting: L.awaiting, Reserved: L.reserved, Cleaning: L.cleaning, Closed: L.closed, Available: L.available }[s] || ''; }
 
     var CM = 34;   // chair margin around each table surface (px)
+    var AV=['300-1.jpg','300-2.jpg','300-3.jpg','300-4.jpg','300-5.jpg','300-6.jpg','300-7.jpg','300-8.jpg','300-9.jpg','300-10.jpg','300-11.jpg','300-12.jpg','300-13.jpg','300-14.jpg','300-15.jpg','300-16.jpg'], avIdx=0;
+    // a seated GUEST — a round face on the chair (the prototype's signature: who sits where)
+    function cfaceHtml(){ return '<div class="cface"><img src="/Backend-assets/media/avatars/'+AV[(avIdx++)%AV.length]+'" onerror="this.remove()" alt=""/></div>'; }
+    function mapShape(sh){ sh=(sh||'Square').toLowerCase(); return (sh==='round'||sh==='rect'||sh==='square')?sh:'square'; }
+    // ===== EXACT prototype geometry (rest.js seatGeo) =====
+    function seatGeo(shape, seats){
+        var seat=30, gapTbl=13, backOut=16, c;
+        if(shape==='round'){
+            var Dt=seats<=2?66:94, R=Dt/2+gapTbl+seat/2, reach=R+seat/2+backOut, S=2*reach+6; c=S/2;
+            var angs=seats<=2?[0,180]:seats===3?[0,120,240]:[0,90,180,270];
+            return {W:S,H:S,topW:Dt,topH:Dt,round:true,coords:angs.map(function(a){var r=a*Math.PI/180,ux=Math.sin(r),uy=-Math.cos(r);return{x:c+R*ux,y:c+R*uy,ux:ux,uy:uy};})};
+        }
+        if(shape==='square'){
+            var Tt=86, off=Tt/2+gapTbl+seat/2, reach2=off+seat/2+backOut, st=2*reach2+6, cc=st/2;
+            var defs=[[0,-1],[0,1],[-1,0],[1,0]].slice(0,seats);
+            return {W:st,H:st,topW:Tt,topH:Tt,round:false,coords:defs.map(function(d){return{x:cc+off*d[0],y:cc+off*d[1],ux:d[0],uy:d[1]};})};
+        }
+        var per=Math.ceil(seats/2), Tw=per===2?132:per===3?170:206, Th=72;
+        var off=Th/2+gapTbl+seat/2, reach3=off+seat/2+backOut, Hh=2*reach3+6, Ww=Tw+seat+8, cx=Ww/2, cy=Hh/2;
+        function rowX(n){var xs=[],usable=Tw-40;for(var i=0;i<n;i++)xs.push(cx-Tw/2+20+(n===1?usable/2:usable*i/(n-1)));return xs;}
+        var topN=Math.ceil(seats/2), botN=seats-topN, coords=[];
+        rowX(topN).forEach(function(x){coords.push({x:x,y:cy-off,ux:0,uy:-1});});
+        rowX(botN).forEach(function(x){coords.push({x:x,y:cy+off,ux:0,uy:1});});
+        return {W:Ww,H:Hh,topW:Tw,topH:Th,round:false,coords:coords};
+    }
     // One cushioned chair (seat cushion + a slim backrest behind it), rotated so the backrest faces OUTWARD.
     // col = null → neutral gray (free seat); col = status colour → an OCCUPIED (seated) chair.
     function oneChair(cx, cy, sw, rotDeg, col) {
@@ -146,8 +171,9 @@
         if (round) {
             var R = Math.min(w, h) / 2 + 16, cx = w / 2, cy = h / 2;
             for (i = 0; i < seats; i++) {
-                var a = -Math.PI / 2 + i * 2 * Math.PI / seats;
-                out += oneChair(cx + R * Math.cos(a), cy + R * Math.sin(a), sw, a * 180 / Math.PI + 90, cc(i));
+                var a = -Math.PI / 2 + i * 2 * Math.PI / seats, fx = cx + R * Math.cos(a), fy = cy + R * Math.sin(a);
+                out += oneChair(fx, fy, sw, a * 180 / Math.PI + 90, cc(i));
+                if (i < occN) out += faceAt(fx, fy);
             }
             return out;
         }
@@ -159,7 +185,7 @@
                 else if (side === 1) { x = w + gap; y = (j + 1) * h / (k + 1); rot = 90; }  // right
                 else if (side === 2) { x = (j + 1) * w / (k + 1); y = h + gap; rot = 180; } // bottom
                 else { x = -gap; y = (j + 1) * h / (k + 1); rot = 270; }                    // left
-                out += oneChair(x, y, sw, rot, ci++ < occN ? col : null);
+                var isOcc = ci < occN; out += oneChair(x, y, sw, rot, isOcc ? col : null); if (isOcc) out += faceAt(x, y); ci++;
             }
         }
         place(cnt[0], 0); place(cnt[1], 1); place(cnt[2], 2); place(cnt[3], 3);
@@ -170,29 +196,30 @@
     function tableCard(left, top, w, h, t, round) {
         var s = effStatus(t), c = STAT[s] || STAT.Available, occ = (s === 'Occupied' || s === 'Awaiting'), col = c.c;
         // occupied tables get a bright WHITE top (like tables 3 & 4 in the reference); free/held/reserved keep a warm oak WOOD top.
-        var topBg = occ
-            ? 'background:linear-gradient(158deg,#ffffff,#eef1f6)'
-            : 'background:'
+        var topBg = 'background:'
                 + 'repeating-linear-gradient(90deg,rgba(120,78,32,.15) 0 1px,rgba(120,78,32,.04) 1px 3px,transparent 3px 7px),'  // grain
                 + 'repeating-linear-gradient(90deg,rgba(95,60,18,.10) 0 2px,transparent 2px 38px),'                              // plank seams
                 + 'linear-gradient(155deg,#ead2a0,#d4b57e)';
-        var surface = topBg + ';border:2.5px solid ' + col + ';box-shadow:0 10px 24px rgba(70,50,20,.24),inset 0 1px 0 rgba(255,255,255,.5)' + (occ ? ',0 0 0 4px ' + hexA(col, .15) : '') + (c.dim ? ';opacity:.6;filter:grayscale(.3)' : '');
+        // ===== EXACT prototype table: wood top + flat chairs (back+pad) + guest faces + status RING =====
+        var shape = mapShape(t.shape), geo = seatGeo(shape, t.seats || 4);
+        var nF = occ ? Math.max(1, Math.min(t.guests || t.orderCount || 1, t.seats || 1)) : 0;
+        var seatsHtml = geo.coords.map(function (cc2, i) {
+            var backAng = Math.atan2(cc2.uy, cc2.ux) * 180 / Math.PI + 90, bx = cc2.x + cc2.ux * 15, by = cc2.y + cc2.uy * 15;
+            var back = '<div class="chair-back" style="left:' + bx + 'px;top:' + by + 'px;transform:translate(-50%,-50%) rotate(' + backAng + 'deg)"></div>';
+            if (i < nF) return back + '<div class="chair-occ" style="left:' + cc2.x + 'px;top:' + cc2.y + 'px">' + cfaceHtml() + '</div>';
+            return back + '<div class="chair-pad" style="left:' + cc2.x + 'px;top:' + cc2.y + 'px"></div>';
+        }).join('');
+        var tm = occ ? ('<span class="tm">' + esc(custName(t.customerName)) + '</span>')
+            : (t.status === 'Reserved' ? ('<span class="tm">' + statusLabel(s) + '</span>')
+            : ('<span class="tm"><span>' + (t.seats || 0) + '</span> ' + (L.person || '') + '</span>'));
         var occAttrs = occ ? (' draggable="true" data-order="' + (t.orderId || '') + '" data-cust="' + esc(custName(t.customerName)) + '" data-count="' + (t.orderCount || 1) + '"') : '';
-        var menuIcon = '<span class="tbl-menu" data-id="' + t.id + '" style="position:absolute;top:6px;' + (RTL ? 'left' : 'right') + ':6px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3"><i class="ki-outline ki-dots-vertical fs-6" style="color:' + col + '"></i></span>';
-        var cntBadge = (occ && (t.orderCount || 1) > 1) ? ('<span style="position:absolute;top:6px;' + (RTL ? 'right' : 'left') + ':6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:' + col + ';color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:3">' + t.orderCount + '</span>') : '';
-        var numSize = Math.round(Math.min(w, h) * 0.42);
-        var pill = '<span style="margin-top:7px;padding:3px 15px;border-radius:999px;background:' + col + ';color:#fff;font-size:11.5px;font-weight:800;line-height:1.5;box-shadow:0 2px 7px ' + hexA(col, .4) + '">' + statusLabel(s) + '</span>';
-        // POS-B2: reserved tables carry the reservation for the arrive/no-show action + show guest·time
         var resvAttrs = (t.status === 'Reserved') ? (' data-resv="' + (t.reservationId || '') + '" data-resvfor="' + esc(t.reservedFor || '') + '" data-resvat="' + esc(t.reservedAt || '') + '"') : '';
-        var resvCap = (t.status === 'Reserved' && (t.reservedFor || t.reservedAt)) ? ('<span style="margin-top:3px;font-size:9.5px;color:#fff;background:' + hexA(col, .85) + ';padding:1px 8px;border-radius:8px;font-weight:700;max-width:96%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.reservedAt ? (esc(t.reservedAt) + ' · ') : '') + esc(t.reservedFor || '') + '</span>') : '';
-        var label = '<span style="position:absolute;bottom:-34px;left:-8px;right:-8px;text-align:center;font-size:10px;color:#9a8e74;font-weight:700;text-shadow:0 1px 2px rgba(244,236,221,.9)">' + tr('طاولة ', 'Table ') + esc(t.code) + ' · ' + t.seats + ' ' + (L.person || '') + '</span>';
-        return '<div class="tseat" style="position:absolute;left:' + left + 'px;top:' + top + 'px;width:' + (w + CM * 2) + 'px;height:' + (h + CM * 2) + 'px">'
-            + '<div class="tcell d-flex flex-column flex-center text-center" data-id="' + t.id + '" data-code="' + esc(t.code) + '" data-status="' + t.status + '" data-seats="' + t.seats + '"' + occAttrs + resvAttrs + ' '
-            + 'style="position:absolute;left:' + CM + 'px;top:' + CM + 'px;width:' + w + 'px;height:' + h + 'px;cursor:pointer;' + (round ? 'border-radius:50%;' : 'border-radius:18px;') + surface + ';overflow:visible">'
-            + chairsHtml(t.seats, w, h, round, col, occ ? Math.max(1, Math.min(t.guests || t.orderCount || 1, t.seats)) : 0) + menuIcon + cntBadge
-            + '<span style="font-size:' + numSize + 'px;font-weight:800;color:#33302b;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.4)">' + esc(t.code) + '</span>'
-            + pill + resvCap + label
-            + '</div></div>';
+        var menuIcon = '<span class="tbl-menu" data-id="' + t.id + '" style="position:absolute;top:5px;' + (RTL ? 'left' : 'right') + ':5px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.78);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:4"><i class="ki-outline ki-dots-vertical fs-7" style="color:' + col + '"></i></span>';
+        var cntBadge = (occ && (t.orderCount || 1) > 1) ? ('<span style="position:absolute;top:5px;' + (RTL ? 'right' : 'left') + ':5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:' + col + ';color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:4">' + t.orderCount + '</span>') : '';
+        var topHtml = '<div class="tbl-top ' + (geo.round ? 'round' : shape) + '" style="width:' + geo.topW + 'px;height:' + geo.topH + 'px;--ring:' + col + (c.dim ? ';filter:grayscale(.5) brightness(1.02)' : '') + '">' + menuIcon + cntBadge + '<span class="tc">' + esc(t.code) + '</span>' + tm + '</div>';
+        var cx = left + w / 2, cy = top + h / 2;
+        return '<div class="tbl-unit tcell" data-id="' + t.id + '" data-code="' + esc(t.code) + '" data-status="' + t.status + '" data-seats="' + t.seats + '"' + occAttrs + resvAttrs + ' style="left:' + cx + 'px;top:' + cy + 'px">'
+            + '<div class="tbl-stage" style="width:' + geo.W + 'px;height:' + geo.H + 'px">' + seatsHtml + topHtml + '</div></div>';
     }
 
     function renderBoard() {
@@ -505,7 +532,7 @@
                 body += mi('ki-arrow-two-diagonals', tr('نقل الطلب لطاولة فارغة', 'Move order to a free table'), '#f1416c', 'move');
             }
             var stat = '<div style="padding:8px 14px 2px;font-size:10.5px;color:#a1a5b7;font-weight:700;border-top:1px solid #f4f4f6">' + tr('حالة الطاولة', 'Table status') + '</div>'
-                + '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px">' + chip('Available', tr('فارغة', 'Available'), '#1f9d5c') + chip('Reserved', tr('محجوزة', 'Reserved'), '#f6a609') + chip('Cleaning', tr('تنظيف', 'Cleaning'), '#a16207') + chip('Closed', tr('مغلقة', 'Closed'), '#7e8299') + '</div>';
+                + '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px">' + chip('Available', tr('فارغة', 'Available'), '#0891B2') + chip('Reserved', tr('محجوزة', 'Reserved'), '#e5484d') + chip('Cleaning', tr('تنظيف', 'Cleaning'), '#9aa4b2') + chip('Closed', tr('مغلقة', 'Closed'), '#7e8299') + '</div>';
             tblMenuEl.innerHTML = head + body + stat;
             tblMenuEl.style.display = 'block';
             var mw = 250, mh = Math.min(tblMenuEl.offsetHeight || 340, window.innerHeight * 0.82), vw = window.innerWidth, vh = window.innerHeight;
@@ -609,7 +636,7 @@
                 Swal.fire({
                     title: tr('حجز', 'Reservation'), text: body, icon: 'question', showCancelButton: true, showDenyButton: true,
                     confirmButtonText: tr('وصل — افتح طلب', 'Arrived — open order'), denyButtonText: tr('لم يحضر', 'No-show'), cancelButtonText: tr('رجوع', 'Back'),
-                    confirmButtonColor: '#16a34a', denyButtonColor: '#e5484d', reverseButtons: true
+                    confirmButtonColor: '#3A5795', denyButtonColor: '#e5484d', reverseButtons: true
                 }).then(function (r) { if (r.isConfirmed) arriveReservation(rid, code); else if (r.isDenied) noShowReservation(rid); });
             } else { if (confirm(tr('وصل العميل؟ (إلغاء = لم يحضر)', 'Arrived? (cancel = no-show)'))) arriveReservation(rid, code); else noShowReservation(rid); }
             return;

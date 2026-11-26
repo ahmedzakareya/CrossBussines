@@ -13,8 +13,8 @@
     var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
     var taxes = ViewBag.TaxCodes as List<TaxCode> ?? new();
     var itemTypes = new (string v, string ar, string en)[] {
-        ("Stockable","Stock item","Stockable"),("NonStockable","Consumable","Non-stockable"),
-        ("Service","Service","Service"),("Asset","Asset","Asset") };
+        ("Stockable","صنف مخزني","Stockable"),("NonStockable","صنف غير مخزني","Non-stockable"),
+        ("Service","خدمة","Service"),("Asset","أصل","Asset") };
     string num(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "";
     var blank = Url.Content("~/Backend-assets/media/svg/files/blank-image.svg");
     var hasImg = !string.IsNullOrWhiteSpace(Model.ImagePath);
@@ -103,6 +103,20 @@
                     </div>
                 </div>
                 <!--end::Tracking-->
+                <!--begin::Sales restriction-->
+                @* HM-AGE: a column nobody can set from a screen is not a feature. The bar belongs
+                   here, beside tracking, because it is the same kind of fact about the item - and it
+                   is a NUMBER, not a tick, because the age differs by country and by licence. *@
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Sales restriction"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <label class="form-label">@Localizer["Minimum buyer age"]</label>
+                        <input type="number" name="MinAgeYears" min="1" max="99" step="1" class="form-control mb-2"
+                               value="@(Model.MinAgeYears?.ToString(CultureInfo.InvariantCulture) ?? "")" placeholder="@Localizer["Leave empty if unrestricted"]" />
+                        <div class="text-muted fs-7">@Localizer["The cashier lane will refuse payment for a basket holding this item until the age is confirmed."]</div>
+                    </div>
+                </div>
+                <!--end::Sales restriction-->
             </div>
             <!--end::Aside column-->
 
@@ -131,9 +145,9 @@
                             <div class="card-toolbar"><a href="@Url.Action("ItemLedger","Inventory", new { itemId = Model.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-book-open fs-4"></i>@Localizer["Ledger"]</a></div></div>
                         <div class="card-body pt-2">
                             <div class="row g-4 mb-5">
-                                <div class="col-6 col-md-3"><div class="bg-light-success rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["On hand"]</div><div class="fs-2 fw-bold text-gray-900">@cardBalQty.ToString("0.##")</div></div></div>
+                                <div class="col-6 col-md-3"><div class="bg-light-primary rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["On hand"]</div><div class="fs-2 fw-bold text-gray-900">@cardBalQty.ToString("0.##")</div></div></div>
                                 <div class="col-6 col-md-3"><div class="bg-light-primary rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Avg cost"]</div><div class="fs-2 fw-bold text-gray-900">@cardBalAvg.ToString("0.00")</div></div></div>
-                                <div class="col-6 col-md-3"><div class="bg-light-warning rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Avg purchase"]</div><div class="fs-2 fw-bold text-gray-900">@avgPurchase.ToString("0.00")</div></div></div>
+                                <div class="col-6 col-md-3"><div class="bg-light-info rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Avg purchase"]</div><div class="fs-2 fw-bold text-gray-900">@avgPurchase.ToString("0.00")</div></div></div>
                                 <div class="col-6 col-md-3"><div class="bg-light rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Last op"]</div><div class="fs-5 fw-bold text-gray-900">@(lastOp == null ? "—" : srcName(lastOp.SourceType))</div><span class="text-muted fs-8">@(lastOp?.MovementDate.ToString("yyyy-MM-dd") ?? "")</span></div></div>
                             </div>
                             @{ var whBals = ViewBag.WarehouseBalances as List<(string code, string nameAr, string? nameEn, decimal qty, decimal value)> ?? new(); var whTotal = whBals.Sum(x => x.qty); }
@@ -157,7 +171,7 @@
                                                     <td><div class="d-flex flex-column"><span class="fw-bold text-gray-900">@(isAr ? w.nameAr : (string.IsNullOrEmpty(w.nameEn) ? w.nameAr : w.nameEn))</span><span class="text-muted fs-8">@w.code</span></div></td>
                                                     <td class="text-end fw-bold fs-5 text-gray-900">@w.qty.ToString("0.##")</td>
                                                     <td class="text-end text-muted">@w.value.ToString("N2")</td>
-                                                    <td><div class="d-flex align-items-center gap-2"><div class="progress h-8px flex-grow-1 bg-light-success"><div class="progress-bar bg-success" role="progressbar" style="width:@pct%"></div></div><span class="text-muted fs-8 fw-semibold" style="width:34px">@pct%</span></div></td>
+                                                    <td><div class="d-flex align-items-center gap-2"><div class="progress h-8px flex-grow-1 bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@pct%"></div></div><span class="text-muted fs-8 fw-semibold" style="width:34px">@pct%</span></div></td>
                                                 </tr>
                                             }
                                             </tbody>
@@ -380,7 +394,7 @@
                             }
                             <!--begin::Components-->
                             <div id="tabComponents">
-                                <div class="alert alert-light-warning d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Components of the composite item. On sale (bundle) or assembly, these are deducted from stock."]</div></div>
+                                <div class="alert alert-light-primary d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Components of the composite item. On sale (bundle) or assembly, these are deducted from stock."]</div></div>
                                 <div class="table-responsive">
                                     <table class="table align-middle table-row-dashed gy-3" id="compTable">
                                         <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th class="min-w-250px">@Localizer["Component"]</th><th class="min-w-120px">@Localizer["Qty"]</th><th class="min-w-100px">@Localizer["Scrap %"]</th><th class="min-w-150px">@Localizer["Unit"]</th><th class="w-50px"></th></tr></thead>

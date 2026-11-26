@@ -196,8 +196,10 @@ namespace CrossBuy.BL.Communication
                     // forever to do it.
                     TitleAr = Cap(rendered.TitleAr, Models.Context.Communication.CommunicationModel.TitleLength),
                     TitleEn = Cap(rendered.TitleEn, Models.Context.Communication.CommunicationModel.TitleLength),
+                    TitleFr = Cap(rendered.TitleFr, Models.Context.Communication.CommunicationModel.TitleLength),
                     BodyAr = rendered.BodyAr,
                     BodyEn = rendered.BodyEn,
+                    BodyFr = rendered.BodyFr,
                     Url = rendered.Url,
                     DedupKey = dedupKeys[employeeId],
                     CreatedBy = request.ActorEmployeeId,

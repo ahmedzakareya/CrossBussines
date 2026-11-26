@@ -1,0 +1,122 @@
+@model List<CrossBuy.BL.CrmIdentity.ChannelView>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var canManage = ViewBag.CanManage == true;
+    var origin = Context.Request.Scheme + "://" + Context.Request.Host;
+    var ch = new Dictionary<string, (string, string)> { ["WhatsApp"] = ("ki-whatsapp", "#25D366"), ["WebChat"] = ("ki-message-text-2", "#0F766E"), ["Email"] = ("ki-sms", "#3A5795") };
+    var dis = canManage ? "" : "disabled";
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Channels"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Inbox","Crm")" class="text-muted text-hover-primary">@T["Unified inbox"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Channels"]</li></ul></div>
+        @if (canManage)
+        {
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-light-primary" data-new="WebChat"><i class="ki-outline ki-message-text-2 fs-4"></i>@T["Website chat"]</button>
+                <button type="button" class="btn btn-sm btn-light-primary" data-new="WhatsApp"><i class="ki-outline ki-whatsapp fs-4"></i>@T["channel:WhatsApp"]</button>
+                @if (!Model.Any(c => c.Channel.Kind == "Email")) { <button type="button" class="btn btn-sm btn-light-primary" data-new="Email"><i class="ki-outline ki-sms fs-4"></i>@T["Company mailbox"]</button> }
+            </div>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-5">
+        @foreach (var v in Model)
+        {
+            var c = v.Channel; var (ic, col) = ch.GetValueOrDefault(c.Kind, ("ki-messages", "#3A5795"));
+            var connected = c.Kind != "WhatsApp" || (v.HasToken && v.HasAppSecret);
+            <div class="col-xl-6"><div class="card h-100"><div class="card-body">
+                <div class="d-flex flex-stack mb-4">
+                    <div class="d-flex align-items-center gap-3"><span class="crm-ch" style="--ch:@col;width:44px;height:44px"><i class="ki-outline @ic fs-2"></i></span>
+                        <div><div class="fw-bold fs-5 text-gray-900">@c.Name</div><div class="text-muted fs-7">@T["channel:" + c.Kind] · <span class="num">@v.Open</span> @T["open conversations"]</div></div></div>
+                    @if (!c.IsActive) { <span class="badge badge-light">@T["Off"]</span> }
+                    else if (connected) { <span class="badge badge-light-success">@T["Connected"]</span> }
+                    else { <span class="badge badge-light-danger">@T["Not connected yet"]</span> }
+                </div>
+                @if (c.Kind == "WebChat")
+                {
+                    <div class="fs-7 text-gray-700 mb-2">@T["Paste this line on your website: a chat bubble appears in the corner."]</div>
+                    <div class="bg-light rounded p-3 fs-8 num mb-3" style="direction:ltr;word-break:break-all">&lt;script src="@origin/store/chat/@c.PublicKey/embed.js" async&gt;&lt;/script&gt;</div>
+                    <a href="/store/chat/@c.PublicKey" target="_blank" rel="noopener" class="btn btn-sm btn-light"><i class="ki-outline ki-eye fs-5"></i>@T["Open the chat window"]</a>
+                }
+                else if (c.Kind == "WhatsApp")
+                {
+                    <div class="crm-line"><span class="text-muted">@T["Number"]</span><span class="num fw-semibold">@(v.DisplayPhone ?? "—")</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["Phone number ID"]</span><span class="num fw-semibold">@(v.PhoneNumberId ?? "—")</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["Access token"]</span><span class="fw-semibold">@(v.HasToken ? "••••••" : T["missing"].Value)</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["App secret"]</span><span class="fw-semibold">@(v.HasAppSecret ? "••••••" : T["missing"].Value)</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["Approved templates"]</span><span class="fw-semibold">@(v.Templates ?? "—")</span></div>
+                    <div class="fs-8 text-gray-700 mt-3 mb-1">@T["In Meta's app settings, set the webhook to:"]</div>
+                    <div class="bg-light rounded p-3 fs-8 num" style="direction:ltr;word-break:break-all">@origin/store/wa/@c.PublicKey/webhook<br />verify token: @c.VerifyToken</div>
+                }
+                else
+                {
+                    <div class="fs-7 text-gray-700">@T["Replies from the inbox go out through the company's own mail settings (SMTP)."]</div>
+                    <div class="fs-8 text-muted mt-2"><i class="ki-outline ki-information-2 fs-7"></i> @T["Receiving e-mail into the inbox needs the mailbox to be connected (IMAP) — a later step."]</div>
+                }
+                @if (canManage)
+                {
+                    <div class="mt-4"><button type="button" class="btn btn-sm btn-light-primary" data-edit="@c.ID" data-kind="@c.Kind" data-name="@c.Name" data-active="@(c.IsActive ? "1" : "0")"
+                        data-greeting="@v.Greeting" data-pnid="@v.PhoneNumberId" data-phone="@v.DisplayPhone" data-templates="@v.Templates">@T["Settings"]</button></div>
+                }
+            </div></div></div>
+        }
+        @if (Model.Count == 0) { <div class="col-12 text-center text-muted py-15">@T["No channel is connected yet"]</div> }
+        </div>
+    </div></div>
+</div>
+<div class="modal fade" id="chModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="chTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10"><div class="row g-5">
+        <input type="hidden" id="chId" /><input type="hidden" id="chKind" />
+        <div class="col-md-8"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input id="chName" class="form-control form-control-solid" maxlength="100" /></div>
+        <div class="col-md-4"><label class="form-check form-switch form-check-custom form-check-solid mt-9"><input class="form-check-input" type="checkbox" id="chActive" checked /><span class="form-check-label fw-semibold">@T["Active"]</span></label></div>
+        <div class="col-12" data-for="WebChat"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Greeting the visitor sees"]</label><input id="chGreeting" class="form-control form-control-solid" maxlength="300" /></div>
+        <div class="col-md-6" data-for="WhatsApp"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Phone number ID"]</label><input id="chPnid" class="form-control form-control-solid" dir="ltr" /></div>
+        <div class="col-md-6" data-for="WhatsApp"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Number"]</label><input id="chPhone" class="form-control form-control-solid" dir="ltr" placeholder="+965 ..." /></div>
+        <div class="col-12" data-for="WhatsApp"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Access token (leave empty to keep the stored one)"]</label><input id="chToken" type="password" class="form-control form-control-solid" autocomplete="new-password" dir="ltr" /></div>
+        <div class="col-12" data-for="WhatsApp"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["App secret (leave empty to keep the stored one)"]</label><input id="chSecret" type="password" class="form-control form-control-solid" autocomplete="new-password" dir="ltr" /></div>
+        <div class="col-12" data-for="WhatsApp"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Approved templates (comma separated)"]</label><input id="chTemplates" class="form-control form-control-solid" dir="ltr" /></div>
+        <div class="col-12" data-for="WhatsApp"><div class="fs-8 text-muted"><i class="ki-outline ki-lock-2 fs-7"></i> @T["Secrets are stored encrypted and are never shown again."]</div></div>
+        <div class="col-12 d-none" id="chError"><div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 fs-7 fw-semibold text-danger"></div></div>
+    </div></div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="chSave">@T["Save"]</button></div>
+</div></div></div>
+@section Scripts {
+<script>
+(function(){
+  var names = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["WebChat"] = T["Website chat"].Value, ["WhatsApp"] = "WhatsApp", ["Email"] = T["Company mailbox"].Value, ["confirm"] = T["Save the channel?"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value }));
+  var modal = document.getElementById('chModal');
+  function show(kind, b){
+    document.getElementById('chTitle').textContent = names[kind];
+    document.getElementById('chKind').value = kind; document.getElementById('chId').value = b ? b.getAttribute('data-edit') : '0';
+    document.getElementById('chName').value = b ? b.getAttribute('data-name') : names[kind];
+    document.getElementById('chActive').checked = !b || b.getAttribute('data-active') === '1';
+    document.getElementById('chGreeting').value = b ? (b.getAttribute('data-greeting') || '') : '';
+    document.getElementById('chPnid').value = b ? (b.getAttribute('data-pnid') || '') : '';
+    document.getElementById('chPhone').value = b ? (b.getAttribute('data-phone') || '') : '';
+    document.getElementById('chTemplates').value = b ? (b.getAttribute('data-templates') || '') : '';
+    document.getElementById('chToken').value = ''; document.getElementById('chSecret').value = '';
+    modal.querySelectorAll('[data-for]').forEach(function(el){ el.classList.toggle('d-none', el.getAttribute('data-for') !== kind); });
+    document.getElementById('chError').classList.add('d-none');
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  }
+  document.querySelectorAll('[data-new]').forEach(function(b){ b.addEventListener('click', function(){ show(b.getAttribute('data-new'), null); }); });
+  document.querySelectorAll('[data-edit]').forEach(function(b){ b.addEventListener('click', function(){ show(b.getAttribute('data-kind'), b); }); });
+  document.getElementById('chSave').addEventListener('click', async function(){
+    if (window.cbConfirm && !(await window.cbConfirm(names.confirm, { kind:'primary', title: document.getElementById('chTitle').textContent }))) return;
+    var fd = new FormData();
+    [['id','chId'],['kind','chKind'],['name','chName'],['greeting','chGreeting'],['phoneNumberId','chPnid'],['displayPhone','chPhone'],['templates','chTemplates'],['accessToken','chToken'],['appSecret','chSecret']]
+      .forEach(function(p){ fd.append(p[0], document.getElementById(p[1]).value); });
+    fd.append('isActive', document.getElementById('chActive').checked ? 'true' : 'false');
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveChannel","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: names.failed }; });
+    if (!r.ok) { var e = document.getElementById('chError'); e.querySelector('div').textContent = r.error || names.failed; e.classList.remove('d-none'); return; }
+    location.reload();   // a new channel brings its own code and webhook address, drawn by the server
+  });
+})();
+</script>
+}

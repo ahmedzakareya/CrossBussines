@@ -10,4 +10,4 @@ router = APIRouter(prefix="/anomaly", tags=["anomaly"], dependencies=[Depends(re
 
 @router.post("/journal")
 async def journal(body: AnomalyScanRequest) -> dict:
-    return detect_journal_anomalies([e.model_dump() for e in body.entries])
+    return detect_journal_anomalies([e.model_dump() for e in body.entries], body.reviewBudget)

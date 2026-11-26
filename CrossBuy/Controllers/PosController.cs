@@ -232,6 +232,13 @@ namespace CrossBuy.Controllers
 				var branch = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.ID == branchId);
 				ViewBag.Branch = branch;
 				ViewBag.Caps = await _pos.GetCapabilitiesAsync(branchId.Value);
+				// NEVER CONFIGURED is not the same state as ALL OFF, and seven switches look identical
+				// in both. A branch that has had no preset applied holds no BranchCapability rows at
+				// all, so the screen renders every switch off and reads as broken - which is exactly
+				// how it was reported. The service already answers this question and HyperController
+				// and HyperPosController already ask it; this screen, the one where capabilities are
+				// actually SET, was the only one that did not.
+				ViewBag.HasCapConfig = await _pos.HasCapabilityConfigAsync(branchId.Value);
 				ViewBag.PosSetting = await _pos.GetPosSettingAsync(branchId.Value);
 				ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(co);
 				ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == co).OrderBy(p => p.Name).ToListAsync();
@@ -243,6 +250,11 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ApplyPreset(int branchId, string presetCode)
 		{
+			// HM-28: branchId arrives on the request and is NOT trusted. PosGateAsync asks the POS service
+			// whether this employee holds a role AT THAT BRANCH, which is also the cross-company check: a
+			// branch belonging to another company denies, because the caller holds no role there.
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Setup), new { branchId });
 			var (ok, err) = await _pos.ApplyPresetAsync(branchId, presetCode);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Activity type and its default capabilities have been enabled"].Value : err;
 			return RedirectToAction(nameof(Setup), new { branchId });
@@ -251,6 +263,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveCapabilities(int branchId, string[] enabled)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Setup), new { branchId });
 			var set = new HashSet<string>(enabled ?? Array.Empty<string>());
 			var caps = Capabilities.ToDictionary(c => c.key, c => set.Contains(c.key));
 			var (ok, err) = await _pos.SaveCapabilitiesAsync(branchId, caps);
@@ -261,6 +275,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SavePosSetting(int branchId, int? defaultSalesWarehouseId, int? defaultPriceListId, decimal? serviceChargePct, int? defaultCurrencyId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Setup), new { branchId });
 			var (ok, err) = await _pos.SavePosSettingAsync(branchId, defaultSalesWarehouseId, defaultPriceListId, serviceChargePct, defaultCurrencyId);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Sales settings saved"].Value : err;
 			return RedirectToAction(nameof(Setup), new { branchId });
@@ -283,6 +299,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveDiningArea(int branchId, int id, string code, string name, int sort, bool isActive = true, string? nameEn = null)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Areas), new { branchId });
 			var (ok, err) = await _pos.SaveDiningAreaAsync(branchId, id, code, name, sort, isActive, nameEn);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Dining area saved"].Value : err;
 			return RedirectToAction(nameof(Areas), new { branchId });
@@ -291,6 +309,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteDiningArea(int id, int branchId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Areas), new { branchId });
 			var (ok, err) = await _pos.DeleteDiningAreaAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Dining area deleted"].Value : err;
 			return RedirectToAction(nameof(Areas), new { branchId });
@@ -299,6 +319,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveStation(int branchId, int id, string code, string name, string? nameEn, string stationType, bool isActive = true)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Areas), new { branchId });
 			var (ok, err) = await _pos.SaveStationAsync(branchId, id, code, name, nameEn, stationType, isActive);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Station saved"].Value : err;
 			return RedirectToAction(nameof(Areas), new { branchId });
@@ -307,6 +329,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteStation(int id, int branchId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Areas), new { branchId });
 			var (ok, err) = await _pos.DeleteStationAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Station deleted"].Value : err;
 			return RedirectToAction(nameof(Areas), new { branchId });
@@ -325,6 +349,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveDriver(int branchId, int id, string name, string? nameEn, string? phone, bool isActive = true)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Drivers), new { branchId });
 			var (ok, err) = await _pos.SaveDriverAsync(branchId, id, name, nameEn, phone ?? "", isActive);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Driver saved"].Value : err;
 			return RedirectToAction(nameof(Drivers), new { branchId });
@@ -333,6 +359,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteDriver(int branchId, int id)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Drivers), new { branchId });
 			var (ok, err) = await _pos.DeleteDriverAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Driver deleted"].Value : err;
 			return RedirectToAction(nameof(Drivers), new { branchId });
@@ -351,6 +379,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveDeliveryZone(int branchId, int id, string name, string? nameEn, decimal fee, bool isActive = true)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(DeliveryZones), new { branchId });
 			var (ok, err) = await _pos.SaveDeliveryZoneAsync(branchId, id, name, nameEn, fee, isActive);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Delivery zone saved"].Value : err;
 			return RedirectToAction(nameof(DeliveryZones), new { branchId });
@@ -359,6 +389,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteDeliveryZone(int branchId, int id)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(DeliveryZones), new { branchId });
 			var (ok, err) = await _pos.DeleteDeliveryZoneAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Delivery zone deleted"].Value : err;
 			return RedirectToAction(nameof(DeliveryZones), new { branchId });
@@ -384,6 +416,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveItemSourcing(int branchId, int itemId, string method, int? sourceBranchId, int? semiFinishedItemId, string? transferTiming)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(ItemSourcing), new { branchId });
 			var (ok, err) = await _pos.SaveBranchItemSourcingAsync(co, branchId, itemId, method, sourceBranchId, semiFinishedItemId, transferTiming);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Sourcing saved"].Value : err;
 			return RedirectToAction(nameof(ItemSourcing), new { branchId });
@@ -453,6 +487,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveReservation(int branchId, int id, int tableId, int? customerId, string guestName, string? guestPhone, DateTime reservedAt, int durationMinutes, int partySize, string? notes)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Reservations), new { branchId });
 			var (ok, err) = await _pos.SaveReservationAsync(co, branchId, id, tableId, customerId, guestName, guestPhone ?? "", reservedAt, durationMinutes, partySize, notes);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Reservation saved"].Value : err;
 			return RedirectToAction(nameof(Reservations), new { branchId });
@@ -461,6 +497,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SetReservationStatus(int branchId, int id, string status)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Reservations), new { branchId });
 			var (ok, err) = await _pos.SetReservationStatusAsync(co, id, status);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Reservation updated"].Value : err;
 			return RedirectToAction(nameof(Reservations), new { branchId });
@@ -544,6 +582,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveTable(int diningAreaId, int branchId, int id, string code, int seats, decimal x, decimal y, decimal w, decimal h, string shape, bool isActive = true)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(FloorPlan), new { branchId });
 			var (ok, err) = await _pos.SaveTableAsync(diningAreaId, id, code, seats, x, y, w, h, shape, isActive);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Table saved"].Value : err;
 			return RedirectToAction(nameof(FloorPlan), new { branchId, areaId = diningAreaId });
@@ -552,6 +592,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveLayout(int branchId, int areaId, string? layoutJson)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(FloorPlan), new { branchId, areaId });
 			List<LayoutRow> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<LayoutRow>>(layoutJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { rows = new(); }
 			await _pos.SaveTableLayoutAsync(rows.Select(r => (r.Id, r.X, r.Y, r.W, r.H)).ToList());
@@ -563,6 +605,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteTable(int id, int branchId, int areaId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(FloorPlan), new { branchId, areaId });
 			var (ok, err) = await _pos.DeleteTableAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Table deleted"].Value : err;
 			return RedirectToAction(nameof(FloorPlan), new { branchId, areaId });
@@ -571,6 +615,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> RegenerateQr(int id, int branchId, int areaId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(FloorPlan), new { branchId, areaId });
 			var (ok, err) = await _pos.RegenerateQrAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["QR code regenerated"].Value : err;
 			return RedirectToAction(nameof(FloorPlan), new { branchId, areaId });
@@ -654,6 +700,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> AddQuickItemJson(int branchId, int? groupId, int itemId)
 		{
+			// JSON endpoint: refuse in JSON. A redirect here would reach a fetch() caller as a 200
+			// with an HTML body, which reads as success and silently does nothing.
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
 			var (ok, err) = await _pos.AddQuickItemAsync(branchId, groupId, itemId);
 			return Json(new { ok, error = err });
 		}
@@ -742,6 +792,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SavePaymentMethod(int branchId, int id, string paymentMethod, string? displayName, string? displayNameEn, int? targetAccountId, int sort, bool isActive = true)
 		{
+			// HM-28: this names the GL account a tender settles to, so an ungated write re-routes money.
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(PaymentMethods), new { branchId });
 			var (ok, err) = await _pos.SavePaymentMethodAsync(branchId, id, paymentMethod, displayName, displayNameEn, targetAccountId, isActive, sort);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Payment method saved"].Value : err;
 			return RedirectToAction(nameof(PaymentMethods), new { branchId });
@@ -750,6 +803,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeletePaymentMethod(int branchId, int id)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(PaymentMethods), new { branchId });
 			var (ok, err) = await _pos.DeletePaymentMethodAsync(branchId, id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Deleted"].Value : err;
 			return RedirectToAction(nameof(PaymentMethods), new { branchId });
@@ -779,6 +834,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> AssignPosRole(int branchId, int employeeId, string posRole)
 		{
+			// HM-28: an UNGATED role grant is privilege escalation, not a configuration gap - it would let any session grant itself pos-manager at any branch and so defeat every branch guard in this module.
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(CashierRoles), new { branchId });
 			var (ok, err) = await _pos.AssignPosRoleAsync(branchId, employeeId, posRole);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Role assigned"].Value : err;
 			return RedirectToAction(nameof(CashierRoles), new { branchId });
@@ -787,6 +845,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> RemovePosRole(int branchId, int id)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(CashierRoles), new { branchId });
 			var (ok, err) = await _pos.RemovePosRoleAsync(branchId, id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Role removed"].Value : err;
 			return RedirectToAction(nameof(CashierRoles), new { branchId });
@@ -815,6 +875,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveTerminal(int branchId, int id, string code, string name, string? nameEn, string? receiptPrefix, int? cashAccountId, bool autoCreateCash = true, bool isActive = true, int paperWidthMm = 80, int copies = 1, string? printerName = null)
 		{
+			// HM-28: a terminal carries its own cash account and receipt series; both are money trails.
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Terminals), new { branchId });
 			var (ok, err, _) = await _pos.SaveTerminalAsync(branchId, id, code, name, nameEn, receiptPrefix, cashAccountId, autoCreateCash, isActive, paperWidthMm, copies, printerName);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Device saved"].Value : err;
 			return RedirectToAction(nameof(Terminals), new { branchId });
@@ -823,6 +886,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteTerminal(int branchId, int id)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Terminals), new { branchId });
 			var (ok, err) = await _pos.DeleteTerminalAsync(branchId, id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Device deleted"].Value : err;
 			return RedirectToAction(nameof(Terminals), new { branchId });
@@ -882,6 +947,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveMenuGroup(int branchId, int id, string name, string? nameEn, int sort, bool isActive = true, int? kitchenStationId = null)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(QuickMenu), new { branchId });
 			var (ok, err) = await _pos.SaveMenuGroupAsync(branchId, id, name, nameEn, sort, isActive, kitchenStationId);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Tab saved"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });
@@ -890,6 +957,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteMenuGroup(int id, int branchId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(QuickMenu), new { branchId });
 			var (ok, err) = await _pos.DeleteMenuGroupAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Tab deleted"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });
@@ -898,6 +967,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> AddQuickItem(int branchId, int? groupId, int itemId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(QuickMenu), new { branchId });
 			var (ok, err) = await _pos.AddQuickItemAsync(branchId, groupId, itemId);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Quick button added"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });
@@ -906,6 +977,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> RemoveQuickItem(int id, int branchId)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(QuickMenu), new { branchId });
 			var (ok, err) = await _pos.RemoveQuickItemAsync(id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Button deleted"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });
@@ -914,6 +987,8 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SetQuickCode(int branchId, int itemId, string? code)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(QuickMenu), new { branchId });
 			var (ok, err) = await _pos.SetQuickCodeAsync(co, itemId, code);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Quick code saved"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });

@@ -54,7 +54,9 @@ namespace CrossBuy.Tests
                 new CrmAccessService(host.Db, NoHttp(), accessor,
                     new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance),
                 B6TestWiring.Policies(host.Db), NullLogger<CrmAccessService>.Instance),
-                new PosAccessService(host.Db),
+                // OPS-01 — the catalogue company moved from a compile-time constant to configuration.
+                new PosAccessService(host.Db,
+                    Microsoft.Extensions.Options.Options.Create(new CrossBuy.Models.Platform.PosCompanyOptions())),
             };
             var adapters = new List<IModulePermissionAdapter>
             {

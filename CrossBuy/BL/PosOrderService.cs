@@ -125,7 +125,14 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error, int? invoiceId, bool alreadySynced)> SyncPaidOrderAsync(int companyId, PosSyncOrderInput payload, int? userId);   // POS-9d
 		Task<(bool ok, string? error, int? transferId)> ReplenishFinishedFromBranchAsync(int companyId, int branchId, int itemId, decimal qty, DateTime date, string? userId);   // BIS-3 method 2
 		Task<(bool ok, string? error, int? workOrderId)> PrepareSemiFinishedAsync(int companyId, int branchId, int itemId, decimal qty, decimal labor, decimal overhead, DateTime date, string? userId);   // BIS-3 method 3
-		Task<(bool ok, string? error, int? invoiceId)> PayTendersAsync(int companyId, int orderId, List<PosTenderInput> tenders, int? userId, decimal tipAmount = 0, string? tipMethod = null);
+		// HM-22: redeemPoints is OPTIONAL and defaults to 0, so every existing caller is unchanged. When it
+		// is set, the points are spent inside this method's settlement transaction — never before or after it.
+		Task<(bool ok, string? error, int? invoiceId)> PayTendersAsync(int companyId, int orderId, List<PosTenderInput> tenders, int? userId, decimal tipAmount = 0, string? tipMethod = null, long redeemPoints = 0);
+
+		// HM-26: recompute an open basket's totals and tax after something OUTSIDE this service changed a
+		// line (today: a coupon). RecomputeAsync is private and must stay the only implementation of that
+		// arithmetic; this is a door to it, not a second copy.
+		Task<(bool ok, string? error)> RecalcOrderAsync(int companyId, int orderId);
 		Task<(bool ok, string? error, int sentLines)> SendToKitchenAsync(int companyId, int orderId);
 		Task<(bool ok, string? error)> SetLineKdsStatusAsync(int companyId, int orderId, int lineId, string status);   // RC-3a: kitchen advances New→Preparing→Ready
 		Task<List<KitchenTicketDto>> GetKitchenTicketsAsync(int companyId, int branchId);   // RC-3b: open orders with sent lines, for the KDS
@@ -209,8 +216,13 @@ namespace CrossBuy.BL
 		private readonly ICurrencyRounding _rounding;
 		private readonly ICurrencyService _currency;
 		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
-		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer, IBomExplosionService bom, IPosPreparationService prep)
-		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; L = localizer; _bom = bom; _prep = prep; }
+		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer, IBomExplosionService bom, IPosPreparationService prep, Microsoft.Extensions.Options.IOptions<CrossBuy.Models.Platform.PosCompanyOptions> posCompany)
+		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; L = localizer; _bom = bom; _prep = prep; _pointValue = posCompany.Value.LoyaltyPointValue; }
+
+		// HM-25: the configured currency value of one loyalty point. Zero (the default) switches the
+		// IFRS 15 deferral below OFF entirely, which is also what happens on every deployment that does
+		// not run a loyalty scheme.
+		private readonly decimal _pointValue;
 
 		// HM-D5-أ 5ب-4: TEST-ONLY fault seam (default null ⇒ no-op in production). Set by a dev self-test to force a
 		// failure right before the sync-log commit, proving the whole replay rolls back atomically. Never set in prod.
@@ -408,6 +420,70 @@ namespace CrossBuy.BL
 			return (true, null);
 		}
 
+		// HM-25 — POINTS EARNED ARE DEFERRED REVENUE, NOT A FREE GIFT (IFRS 15).
+		//
+		// THE DEFECT THIS CLOSES: redemption debits the loyalty account (the «Points» tender settles against
+		// it), but NOTHING had ever credited that account, because earning only ever wrote to the
+		// PointsMovements memo ledger. Every redemption would therefore have driven a liability account into a
+		// DEBIT balance — a negative liability, which is not a thing — while the sale that created the
+		// obligation showed its full revenue. The shop would have reported revenue it still owed in goods.
+		//
+		// WHAT THE STANDARD SAYS. Under IFRS 15 a loyalty point is a MATERIAL RIGHT: a benefit the customer
+		// would not have received without this purchase. It is a separate performance obligation, so part of
+		// the transaction price is allocated to it and held as a CONTRACT LIABILITY until the points are
+		// redeemed (or lapse). Revenue moves to the period the customer actually takes the goods, not the
+		// period they earned the right to. IFRS 15 superseded IFRIC 13, which reached the same place through
+		// fair value rather than allocation.
+		//
+		// WHAT THIS DOES NOT DO, deliberately: it does not estimate BREAKAGE. The standard allows the
+		// liability to be released in proportion to the points a retailer EXPECTS to be redeemed, which needs
+		// a redemption-history estimate this shop does not have yet. Deferring the full value is the
+		// conservative position — it understates revenue rather than overstating it — and it is correct
+		// until there is history to estimate from. Releasing unredeemed points on expiry is the follow-on, and
+		// it needs an expiry policy that does not exist yet.
+		//
+		// THE ACCOUNT IS THE ONE ALREADY CONFIGURED for the «Points» payment method on this branch. One account
+		// credited on earn and debited on redemption nets to what the shop still owes. Asking for a second
+		// account would let the two halves of one obligation drift into different places.
+		private async Task<(bool ok, string? error)> DeferLoyaltyRevenueAsync(int companyId, PosOrder o, long pointsEarned, int? userId)
+		{
+			if (_pointValue <= 0m || pointsEarned <= 0) return (true, null);   // no scheme priced ⇒ nothing to defer
+
+			int liability = await _db.BranchPaymentMethods.AsNoTracking()
+				.Where(m => m.BranchId == o.BranchId && m.IsActive && m.PaymentMethod == "Points" && m.TargetAccountId != null)
+				.Select(m => m.TargetAccountId!.Value).FirstOrDefaultAsync();
+			// NO ACCOUNT ⇒ NO POSTING, and no failure. A branch that awards points without having nominated a
+			// liability account is misconfigured, but refusing the SALE over it would punish the customer at the
+			// till for a back-office omission. The memo ledger still records the points; /hyper/setup/loyalty is
+			// where the omission is reported.
+			if (liability == 0) return (true, null);
+
+			int revenue = await RevenueAccountAsync(companyId);
+			if (revenue == 0) return (false, "No revenue account is defined");
+
+			// The deferral is a P&L/liability entry, so it is measured in the FUNCTIONAL currency, like the
+			// shift-close variance and unlike the drawer figures.
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal amt = Math.Round(pointsEarned * _pointValue, __fdp, MidpointRounding.AwayFromZero);
+			if (amt <= 0m) return (true, null);
+
+			var (jok, jerr, _je) = await _journals.CreateAndPostAsync(new JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto",
+				SourceType = "PosLoyaltyDeferral", SourceId = o.InvoiceId ?? o.ID,
+				Description = $"Loyalty points deferred — invoice #{o.InvoiceId} ({pointsEarned} pts)",
+				Lines = new List<JournalLineInput>
+				{
+					// Dr revenue: the part of this sale the shop has NOT yet earned.
+					new JournalLineInput { AccountId = revenue, Debit = amt, Credit = 0, Description = "تأجيل إيراد نقاط الولاء" },
+					// Cr the loyalty contract liability: what it now owes the customer.
+					new JournalLineInput { AccountId = liability, Debit = 0, Credit = amt, Description = "التزام نقاط الولاء" },
+				}
+			}, userId);
+			if (!jok) return (false, "Could not post the loyalty deferral: " + jerr);
+			return (true, null);
+		}
+
 		private async Task<decimal> DefaultVatRateAsync(int companyId) =>
 			await _db.TaxCodes.Where(t => t.CompanyID == companyId && t.Kind == "VAT" && t.IsDefault && t.IsActive)
 				.Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
@@ -455,7 +531,16 @@ namespace CrossBuy.BL
 		// A single reusable walk-in customer per company (cash sales). Keyed by a stable NameEn marker.
 		private async Task<Models.Context.Accounting.Customer> EnsureWalkInAsync(int companyId)
 		{
-			var c = await _db.Customers.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.NameEn == "POS Walk-in");
+			// DETERMINISTIC, AND IT SKIPS A BROKEN ROW. The marker is not unique - a second "POS Walk-in"
+			// exists in this database - and an unordered FirstOrDefault may return EITHER, with the choice
+			// free to change with the query plan. One of the two had ControlAccountId = 0, so the day the
+			// server picked it, every cash sale would have failed at payment with "account 0 does not exist"
+			// and nothing about the till would have changed to explain it. Ordering by ID makes the choice
+			// stable; excluding 0 makes it correct even if another broken twin appears.
+			var c = await _db.Customers
+				.Where(x => x.CompanyID == companyId && x.NameEn == "POS Walk-in" && x.ControlAccountId != 0)
+				.OrderBy(x => x.ID)
+				.FirstOrDefaultAsync();
 			if (c != null) return c;
 			return await _receivables.CreateCustomerAsync(companyId, "عميل نقدي (كاشير)", "POS Walk-in", null, null);
 		}
@@ -1064,6 +1149,16 @@ namespace CrossBuy.BL
 			return result.OrderBy(r => r.SinceUtcIso).ToList();   // FIFO — oldest ticket first
 		}
 
+		public async Task<(bool ok, string? error)> RecalcOrderAsync(int companyId, int orderId)
+		{
+			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "A settled sale is not recomputed.");
+			await RecomputeAsync(o);
+			await _db.SaveChangesAsync();
+			return (true, null);
+		}
+
 		private async Task RecomputeAsync(PosOrder o)
 		{
 			// HM-2: round to the ORDER's document currency (o.CurrencyId stamped from branch DefaultCurrencyId; null → functional).
@@ -1071,7 +1166,9 @@ namespace CrossBuy.BL
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == o.ID).ToListAsync();
 			decimal sub = 0, tax = 0;
-			foreach (var l in lines) { l.LineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount); sub += l.LineTotal; tax += R(l.LineTotal * l.TaxRate / 100m); }
+			// HM-26: ONE extra subtrahend is the whole change. Tax is taken from LineTotal AFTER discounts,
+			// so a basket coupon reduces the tax base correctly without the tax path being touched at all.
+			foreach (var l in lines) { l.LineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount - l.CouponDiscount); sub += l.LineTotal; tax += R(l.LineTotal * l.TaxRate / 100m); }
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			var svcPct = setting?.ServiceChargePct ?? 0m;
 			o.SubTotal = R(sub);
@@ -1236,6 +1333,14 @@ namespace CrossBuy.BL
 			// (minimises sequence gaps if an earlier step returned). Distinct from the accounting InvoiceNo.
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = inv.ID; o.ReceiptId = receiptId; o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
+			// HM-26: point the coupon's redemption row at the invoice it actually discounted. Until settlement
+			// it carries only the order, because an open basket has no invoice to name. Done inline rather than
+			// through IPosCouponService so it stays inside THIS transaction and adds no dependency for one field.
+			if (o.CouponId != null)
+			{
+				var __red = await _db.PosCouponRedemptions.FirstOrDefaultAsync(r => r.OrderId == o.ID && r.CompanyID == companyId);
+				if (__red != null && __red.InvoiceId == null) __red.InvoiceId = inv.ID;
+			}
 			// HM-10 slice A: the AUTHORITATIVE idempotency key — INSERT the token row INSIDE the transaction, before commit.
 			// The unique index (CompanyId, Token) turns a CONCURRENT same-token pay into an INSERT failure (never a silent
 			// double post). It is NOT a field on PosOrder — two updates of the same order row to the same token make no
@@ -1244,7 +1349,10 @@ namespace CrossBuy.BL
 			try
 			{
 				await _db.SaveChangesAsync();
-				await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
+				long __pts = await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
+				// HM-25: the points just awarded are deferred revenue, not a giveaway (IFRS 15 material right).
+				var (__dok, __derr) = await DeferLoyaltyRevenueAsync(companyId, o, __pts, userId);
+				if (!__dok) { await tx.RollbackAsync(); return (false, __derr, null); }
 				await tx.CommitAsync();
 			}
 			catch (DbUpdateException ex) when (idempotencyToken != null && IsHyperPayTokenDuplicate(ex))
@@ -1270,7 +1378,7 @@ namespace CrossBuy.BL
 		// Builds a single sales invoice (revenue/stock/tax once) then settles it with one receipt per tender to that
 		// method's configured GL account (BranchPaymentMethod.TargetAccountId; Cash → terminal drawer → branch cash → 110101).
 		// The tender amounts (the portions ALLOCATED to the invoice) must sum to the grand total.
-		public async Task<(bool ok, string? error, int? invoiceId)> PayTendersAsync(int companyId, int orderId, List<PosTenderInput> tenders, int? userId, decimal tipAmount = 0, string? tipMethod = null)
+		public async Task<(bool ok, string? error, int? invoiceId)> PayTendersAsync(int companyId, int orderId, List<PosTenderInput> tenders, int? userId, decimal tipAmount = 0, string? tipMethod = null, long redeemPoints = 0)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
 			if (o == null) return (false, "Order not found", null);
@@ -1359,8 +1467,29 @@ namespace CrossBuy.BL
 			// HM-1-أ (ب-1-2): atomic receipt-number allocation as the last step before commit.
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = inv.ID; o.ReceiptId = receiptId; o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
+			// HM-26: point the coupon's redemption row at the invoice it actually discounted. Until settlement
+			// it carries only the order, because an open basket has no invoice to name. Done inline rather than
+			// through IPosCouponService so it stays inside THIS transaction and adds no dependency for one field.
+			if (o.CouponId != null)
+			{
+				var __red = await _db.PosCouponRedemptions.FirstOrDefaultAsync(r => r.OrderId == o.ID && r.CompanyID == companyId);
+				if (__red != null && __red.InvoiceId == null) __red.InvoiceId = inv.ID;
+			}
 			await _db.SaveChangesAsync();
-			await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
+			long __pts = await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
+			// HM-25: the points just awarded are deferred revenue, not a giveaway (IFRS 15 material right).
+			var (__dok, __derr) = await DeferLoyaltyRevenueAsync(companyId, o, __pts, userId);
+			if (!__dok) { await tx.RollbackAsync(); return (false, __derr, null); }
+
+			// HM-22 — SPEND the points INSIDE this transaction. The caller has already turned them into a
+			// «Points» tender above, so if this refuses, money has been allocated against a balance that cannot
+			// pay it — the whole settlement must roll back rather than let the sale through unpaid.
+			if (redeemPoints > 0)
+			{
+				var (rok, rerr, _) = await CrossBuy.BL.LoyaltyPointsHelper.RedeemForInvoiceAsync(
+					_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, redeemPoints, userId);
+				if (!rok) { await tx.RollbackAsync(); return (false, rerr, null); }
+			}
 			await tx.CommitAsync();
 			return (true, null, inv.ID);
 		}
@@ -1473,9 +1602,23 @@ namespace CrossBuy.BL
 			// HM-1-أ (ب-1-2): atomic receipt-number allocation as the last step before commit.
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = invoiceIds.First(); o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
+			// HM-26: point the coupon's redemption row at the invoice it actually discounted. Until settlement
+			// it carries only the order, because an open basket has no invoice to name. Done inline rather than
+			// through IPosCouponService so it stays inside THIS transaction and adds no dependency for one field.
+			if (o.CouponId != null)
+			{
+				var __red = await _db.PosCouponRedemptions.FirstOrDefaultAsync(r => r.OrderId == o.ID && r.CompanyID == companyId);
+				if (__red != null && __red.InvoiceId == null) __red.InvoiceId = invoiceIds.First();
+			}
 			await _db.SaveChangesAsync();
+			// Split-by-item: each bill is its own invoice, so each earns and each defers separately.
 			foreach (var iid in invoiceIds)   // HM-9 s2: earn per split invoice (guarded no-op)
-				await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, iid, o.CustomerId ?? 0, userId);
+			{
+				long __pts = await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, iid, o.CustomerId ?? 0, userId);
+				// HM-25: the points just awarded are deferred revenue, not a giveaway (IFRS 15 material right).
+				var (__dok, __derr) = await DeferLoyaltyRevenueAsync(companyId, o, __pts, userId);
+				if (!__dok) { await tx.RollbackAsync(); return (false, __derr, null); }
+			}
 			await tx.CommitAsync();
 			return (true, null, invoiceIds);
 		}
@@ -1492,6 +1635,23 @@ namespace CrossBuy.BL
 			if (o == null) return (false, "Order not found");
 			if (o.Status == "Voided") return (false, "The invoice is already cancelled");
 			if (o.Status != "Paid") return (false, "Only a paid invoice can be cancelled");
+
+			// ALREADY PARTLY RETURNED ⇒ REFUSE. Voiding returns every original outbound movement of the
+			// invoice, so a unit the customer already brought back would be returned a SECOND time and the
+			// warehouse would gain stock that was never bought. Measured: sell 2, return 1, void - on hand
+			// went 149 → 147 → 148 → 150. The customer control account netted out exactly, so the accounts
+			// showed nothing; only the stock ledger did.
+			//
+			// The remedy for the rest of a part-returned sale is to RETURN the rest, which already posts
+			// correctly. "Void" means the sale should never have happened, and that is no longer true once
+			// part of it has been refunded.
+			if (o.InvoiceId != null)
+			{
+				bool partlyReturned = await _db.SalesReturns.AsNoTracking()
+					.AnyAsync(r => r.CompanyID == companyId && r.OriginalInvoiceId == o.InvoiceId);
+				if (partlyReturned)
+					return (false, "This invoice has already been partly returned, so it cannot be cancelled. Return the remaining items instead.");
+			}
 
 			// all invoices of this order (single for PayAsync/PayTenders; N for split-by-item) — matched by the cashier note
 			string note = $"Cashier order #{o.ID}";
@@ -1545,6 +1705,33 @@ namespace CrossBuy.BL
 			}
 
 			await CrossBuy.BL.LoyaltyPointsHelper.ReverseAllForInvoiceAsync(_db, companyId, o.InvoiceId ?? 0, userId);   // HM-9 s2: reverse the earn on a paid-order cancel
+			// HM-22: and give back whatever points PAID for it. The JE reversal above has already credited the
+			// loyalty account, so without this the shop recovers its liability and the customer's points vanish.
+			await CrossBuy.BL.LoyaltyPointsHelper.ReverseRedeemForInvoiceAsync(_db, companyId, o.InvoiceId ?? 0, userId);
+
+			// HM-25: AND REVERSE THE DEFERRAL ITSELF. The two calls above move POINTS, which are a memo
+			// ledger; the deferral is the GL half - Dr revenue / Cr loyalty contract liability - and nothing
+			// was reversing it. So a cancelled sale took the points back from the customer and left the shop
+			// carrying the liability for them for ever. Every cancellation inflated it a little more.
+			//
+			// HOW IT WAS FOUND, because it is not visible from the code: a self-test cancelled both of its
+			// sales and reported allPass, yet the liability account had drifted by exactly two deferral
+			// amounts. The test asserted that the POINTS came back and never asserted anything about the GL,
+			// so it was blind in precisely the place the defect lived.
+			//
+			// Found by SOURCE rather than a stored id: the entry already carries SourceType
+			// "PosLoyaltyDeferral" and SourceId = the invoice, so no column has to be added to PosOrder.
+			// Filtered on ReversedByEntryId so a second pass can never double-reverse it.
+			int __defSource = o.InvoiceId ?? o.ID;
+			var __defIds = await _db.JournalEntries
+				.Where(j => j.CompanyID == companyId && j.SourceType == "PosLoyaltyDeferral"
+					&& j.SourceId == __defSource && j.Status == "Posted" && j.ReversedByEntryId == null)
+				.Select(j => j.ID).ToListAsync();
+			foreach (var __jid in __defIds)
+			{
+				var (__rok, __rerr, _) = await _journals.ReverseAsync(__jid, userId, $"Cancellation of loyalty deferral — order #{o.ID}");
+				if (!__rok) return (false, "Could not reverse the loyalty deferral entry: " + __rerr);
+			}
 			o.Status = "Voided"; o.ClosedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
 			await tx.CommitAsync();
@@ -1663,6 +1850,7 @@ namespace CrossBuy.BL
 			// is ONE ambient own-or-join transaction. Nothing is durable until the sync-log commits WITH the post, so a failure
 			// anywhere rolls the whole sale back (never a "posted-without-key" order ⇒ the device's retry cannot double-post).
 			int orderId = 0; int? invId = null; int syncLogId = 0; string? receiptAnomaly = null;
+ string? duplicateReceipt = null;
 			await using (var tx = await ScopedTx.BeginOrJoinAsync(_db))
 			{
 				// AUTHORITATIVE idempotency check INSIDE the transaction (the unique index on LocalGuid is the race backstop).
@@ -1701,7 +1889,27 @@ namespace CrossBuy.BL
 
 				// 4) keep the offline receipt no + advance the terminal counter (suffix-only; anomaly recorded AFTER commit)
 				var ord = await _db.PosOrders.FirstAsync(x => x.ID == orderId);
-				if (!string.IsNullOrWhiteSpace(p.ReceiptNo)) ord.ReceiptNo = p.ReceiptNo;
+
+				// THE DEVICE'S NUMBER IS A CLAIM, NOT AN ALLOCATION.
+				//
+				// This used to assign p.ReceiptNo unconditionally. A ReceiptNo is a tax-document number and
+				// two orders carrying the same one on the same terminal make the series unauditable - which
+				// is exactly the eight duplicate groups the receiptno_dup check reports. Nothing prevented a
+				// ninth: there is no unique index behind this column (it was cancelled), so the only defence
+				// was a detective check reading the damage afterwards.
+				//
+				// The sale is ALREADY POSTED here, so a clash must never fail it. The server-allocated number
+				// the order already carries is kept, and the clash is recorded as a conflict a manager sees -
+				// the same mechanism this method already uses for a mismatched series.
+				if (!string.IsNullOrWhiteSpace(p.ReceiptNo))
+				{
+					bool taken = await _db.PosOrders.AsNoTracking()
+						.AnyAsync(x => x.ID != orderId && x.TerminalId == ord.TerminalId && x.ReceiptNo == p.ReceiptNo);
+					if (taken)
+						duplicateReceipt = $"The device sent receipt number {p.ReceiptNo}, which this terminal has already issued on another order. The sale is posted and keeps its own number ({ord.ReceiptNo}); the device's number was not applied.";
+					else
+						ord.ReceiptNo = p.ReceiptNo;
+				}
 				if (term != null) { var (_, anom) = await AdvanceCounterPastOfflineReceiptAsync(term, p.ReceiptNo); receiptAnomaly = anom; }
 
 				// 5) the idempotency KEY — committed ATOMICALLY with the post above
@@ -1719,7 +1927,20 @@ namespace CrossBuy.BL
 			// The ReceiptNoMismatch anomaly is derived from the order's OWN data (independently surfaced by the
 			// receiptno_out_of_series integrity check), so if this one best-effort save fails we log it to the app-log —
 			// no silent swallow, no exception to the device. Return value stays success unless the POST itself failed above.
-			if (receiptAnomaly != null)
+			// Recorded like the mismatch above and for the same reason: after the commit, best effort, and
+			// never able to fail a sale whose money is already in the ledger.
+			if (duplicateReceipt != null)
+			{
+				var dupConflict = new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "ReceiptNoDuplicate", Detail = duplicateReceipt, Status = "Open", CreatedAt = DateTime.UtcNow };
+				try { _db.PosSyncConflicts.Add(dupConflict); await _db.SaveChangesAsync(); }
+				catch (Exception ex)
+				{
+					_db.Entry(dupConflict).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+					_logger.LogError(ex, "ReceiptNoDuplicate conflict NOT persisted for order {OrderId} terminal {TerminalId} receipt {ReceiptNo}", orderId, term?.ID, p.ReceiptNo);
+				}
+			}
+
+			if (receiptAnomaly != null)
 			{
 				var conflict = new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "ReceiptNoMismatch", Detail = receiptAnomaly, Status = "Open", CreatedAt = DateTime.UtcNow };
 				try {

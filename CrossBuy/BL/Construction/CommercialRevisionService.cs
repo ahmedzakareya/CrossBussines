@@ -347,75 +347,60 @@ namespace CrossBuy.BL.Construction
 			return (true, null);
 		}
 
-		public async Task<(bool ok, string? error, int snapshotId)> CaptureCertificateLineSnapshotAsync(
-			int companyId, int progressBillingLineId, decimal certifiedQuantity,
-			int? actorEmployeeId, CancellationToken ct = default)
-		{
-			var line = await (from l in _db.ProgressBillingLines.AsNoTracking()
-							  join h in _db.ProgressBillings.AsNoTracking() on l.BillingId equals h.ID
-							  where l.ID == progressBillingLineId && h.CompanyID == companyId
-							  select new { l.ID, l.BillingId, l.BoqItemId, l.PeriodValue, h.ProjectId })
-							 .FirstOrDefaultAsync(ct);
-			if (line == null) return (false, "Certificate line not found", 0);
+        public async Task<(bool ok, string? error, int snapshotId)> CaptureCertificateLineSnapshotAsync(
+            int companyId, int progressBillingLineId, decimal certifiedQuantity,
+            int? actorEmployeeId, CancellationToken ct = default)
+        {
+            var owned = await (from l in _db.ProgressBillingLines
+                               join h in _db.ProgressBillings on l.BillingId equals h.ID
+                               where l.ID == progressBillingLineId && h.CompanyID == companyId
+                               select new { Line = l, h.ProjectId }).FirstOrDefaultAsync(ct);
+            if (owned == null) return (false, "Certificate line not found", 0);
+            var line = owned.Line;
+            if (line.SnapshotCapturedAt != null)
+                return (false, "A snapshot already exists for this line — a snapshot is never overwritten", 0);
+            if (certifiedQuantity < 0) return (false, "Certified quantity cannot be negative", 0);
+            Models.Context.Accounting.BoqItem? item = null;
+            if (line.BoqItemId is > 0)
+            {
+                item = await _db.BoqItems.AsNoTracking().SingleOrDefaultAsync(
+                    b => b.ID == line.BoqItemId && b.CompanyID == companyId && b.ProjectId == owned.ProjectId, ct);
+                if (item == null) return (false, "BOQ line not found in this project", 0);
+            }
+            line.SnapshotClientContractId = item?.ClientContractId;
+            line.SnapshotCommercialRevisionId = item?.CurrentRevisionId;
+            line.SnapshotVariationOrderId = item?.VariationOrderId;
+            line.SnapshotContractedQuantity = item?.Quantity ?? 0m;
+            line.SnapshotContractedRate = item?.UnitPrice ?? 0m;
+            line.SnapshotCertifiedQuantity = certifiedQuantity;
+            line.SnapshotCertifiedValue = R(line.PeriodValue);
+            line.SnapshotCapturedAt = DateTime.UtcNow;
+            line.SnapshotCapturedBy = actorEmployeeId;
+            try { await _db.SaveChangesAsync(ct); }
+            catch (DbUpdateConcurrencyException) { return (false, ConstructionConcurrency.ConflictMessage, 0); }
+            return (true, null, line.ID);
+        }
 
-			if (await _db.CertificateLineSnapshots.AnyAsync(s => s.ProgressBillingLineId == progressBillingLineId, ct))
-				return (false, "A snapshot already exists for this line — a snapshot is never overwritten", 0);
-
-			decimal contractedQty = 0m, contractedRate = 0m;
-			int? revisionId = null;
-			if (line.BoqItemId is > 0)
-			{
-				var item = await _db.BoqItems.AsNoTracking()
-					.FirstOrDefaultAsync(b => b.ID == line.BoqItemId && b.CompanyID == companyId, ct);
-				if (item != null) { contractedQty = item.Quantity; contractedRate = item.UnitPrice; }
-
-				revisionId = await _db.BoqLineStates.AsNoTracking()
-					.Where(s => s.BoqItemId == line.BoqItemId).Select(s => s.CurrentRevisionId).FirstOrDefaultAsync(ct);
-			}
-
-			var contractId = await _db.BoqLineStates.AsNoTracking()
-				.Where(s => s.BoqItemId == line.BoqItemId).Select(s => s.ClientContractId).FirstOrDefaultAsync(ct);
-
-			var snap = new CertificateLineSnapshot
-			{
-				CompanyID = companyId,
-				ProjectId = line.ProjectId,
-				ProgressBillingLineId = line.ID,
-				ProgressBillingId = line.BillingId,
-				BoqItemId = line.BoqItemId,
-				ClientContractId = contractId,
-				CommercialRevisionId = revisionId,
-				ContractedQuantity = contractedQty,
-				ContractedRate = contractedRate,
-				CertifiedQuantity = certifiedQuantity,
-				CertifiedValue = R(line.PeriodValue),
-				CapturedAt = DateTime.UtcNow,
-				CapturedBy = actorEmployeeId
-			};
-			_db.CertificateLineSnapshots.Add(snap);
-			await _db.SaveChangesAsync(ct);
-			return (true, null, snap.ID);
-		}
-
-		public async Task<ReproducedCommercialValue?> ReproduceCertificateLineAsync(
-			int companyId, int progressBillingLineId, CancellationToken ct = default)
-		{
-			var s = await _db.CertificateLineSnapshots.AsNoTracking()
-				.FirstOrDefaultAsync(x => x.ProgressBillingLineId == progressBillingLineId && x.CompanyID == companyId, ct);
-			if (s == null) return null;
-
-			return new ReproducedCommercialValue
-			{
-				ProgressBillingLineId = s.ProgressBillingLineId,
-				CommercialRevisionId = s.CommercialRevisionId,
-				BoqItemId = s.BoqItemId,
-				ContractedQuantity = s.ContractedQuantity,
-				ContractedRate = s.ContractedRate,
-				CertifiedQuantity = s.CertifiedQuantity,
-				CertifiedValue = s.CertifiedValue,
-				CapturedAt = s.CapturedAt
-			};
-		}
+        public async Task<ReproducedCommercialValue?> ReproduceCertificateLineAsync(
+            int companyId, int progressBillingLineId, CancellationToken ct = default)
+        {
+            var line = await (from l in _db.ProgressBillingLines.AsNoTracking()
+                              join h in _db.ProgressBillings.AsNoTracking() on l.BillingId equals h.ID
+                              where l.ID == progressBillingLineId && h.CompanyID == companyId && l.SnapshotCapturedAt != null
+                              select l).SingleOrDefaultAsync(ct);
+            if (line == null) return null;
+            return new ReproducedCommercialValue
+            {
+                ProgressBillingLineId = line.ID,
+                CommercialRevisionId = line.SnapshotCommercialRevisionId,
+                BoqItemId = line.BoqItemId,
+                ContractedQuantity = line.SnapshotContractedQuantity!.Value,
+                ContractedRate = line.SnapshotContractedRate!.Value,
+                CertifiedQuantity = line.SnapshotCertifiedQuantity!.Value,
+                CertifiedValue = line.SnapshotCertifiedValue!.Value,
+                CapturedAt = line.SnapshotCapturedAt!.Value
+            };
+        }
 
 		public Task<CommercialRevision?> InForceAsync(int companyId, int projectId, CancellationToken ct = default) =>
 			_db.CommercialRevisions.AsNoTracking()
@@ -448,29 +433,25 @@ namespace CrossBuy.BL.Construction
 		private async Task<List<Models.Context.Accounting.BoqItem>> ActiveLinesAsync(
 			int companyId, int projectId, CancellationToken ct)
 		{
-			var retired = await _db.BoqLineStates.AsNoTracking()
+			var retired = await _db.BoqItems.AsNoTracking()
 				.Where(s => s.CompanyID == companyId && s.ProjectId == projectId && s.Status == BoqLineStatus.Retired)
-				.Select(s => s.BoqItemId).ToListAsync(ct);
+				.Select(s => s.ID).ToListAsync(ct);
 
 			return await _db.BoqItems.AsNoTracking()
 				.Where(b => b.CompanyID == companyId && b.ProjectId == projectId && !retired.Contains(b.ID))
 				.OrderBy(b => b.SortOrder).ThenBy(b => b.ID).ToListAsync(ct);
 		}
 
-		private async Task<BoqLineState> EnsureStateAsync(
-			int companyId, int projectId, int boqItemId, int? actor, DateTime now, CancellationToken ct)
-		{
-			var state = await _db.BoqLineStates.FirstOrDefaultAsync(s => s.BoqItemId == boqItemId, ct);
-			if (state != null) return state;
+        private async Task<Models.Context.Accounting.BoqItem> EnsureStateAsync(
+            int companyId, int projectId, int boqItemId, int? actor, DateTime now, CancellationToken ct)
+        {
+            var state = await _db.BoqItems.SingleAsync(
+                s => s.ID == boqItemId && s.CompanyID == companyId && s.ProjectId == projectId, ct);
+            state.CreatedBy ??= actor;
+            state.CreatedAt ??= now;
+            if (state.ConcurrencyToken.Length == 0) state.ConcurrencyToken = ConstructionConcurrency.NewToken();
+            return state;
+        }
 
-			state = new BoqLineState
-			{
-				CompanyID = companyId, ProjectId = projectId, BoqItemId = boqItemId,
-				Status = BoqLineStatus.Active, CreatedAt = now, CreatedBy = actor,
-				ConcurrencyToken = ConstructionConcurrency.NewToken()
-			};
-			_db.BoqLineStates.Add(state);
-			return state;
-		}
 	}
 }

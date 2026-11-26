@@ -1,0 +1,59 @@
+@model CrossBuy.BL.CrmIdentity.ServiceOverview
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var m = Model;
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /><link href="~/css/crm-rating.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Service desk"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Service desk"]</li></ul></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Tickets","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-support-24 fs-4"></i>@T["Tickets"]</a>
+            <a href="@Url.Action("KnowledgeBase","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-book-open fs-4"></i>@T["Knowledge base"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-4 mb-5">
+            @foreach (var (label, value, sub, ic, fg) in new[] {
+                (T["Open requests"].Value, m.Open.ToString(), (string?)null, "ki-support-24", "#3A5795"),
+                (T["Past their SLA now"].Value, m.Breached.ToString(), m.Unowned > 0 ? m.Unowned + " " + T["have no owner"].Value : T["Owners are told once a day, by themselves"].Value, "ki-time", m.Breached > 0 ? "#DC2626" : "#15803D"),
+                (T["First reply on time"].Value, m.FirstResponseMetPercent is int f ? f + "%" : "—", T["last 90 days"].Value, "ki-message-text-2", "#0F766E"),
+                (T["Satisfied customers"].Value, m.Csat30.SatisfiedPercent is int s ? s + "%" : "—", m.Csat30.Answers + " " + T["answers in 30 days"].Value + (m.Csat30.Average is decimal a ? " · " + a.ToString("0.0") + "/5" : ""), "ki-like", "#15803D"),
+                (T["Opened from the portal"].Value, m.PortalOpened30.ToString(), T["last 30 days"].Value, "ki-screen", "#7239EA") })
+            {
+                <div class="col-6 col-lg"><div class="card h-100"><div class="card-body p-5"><div class="d-flex align-items-center gap-2 mb-2"><i class="ki-outline @ic fs-2" style="color:@fg"></i><span class="text-muted fw-semibold fs-7">@label</span></div>
+                    <div class="fw-bold fs-2x num lh-1">@value</div>@if (sub != null) { <div class="text-muted fs-8 mt-2">@sub</div> }</div></div></div>
+            }
+        </div>
+        <div class="row g-5">
+            <div class="col-xl-7"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["What customers said"]</span><span class="text-muted fs-7 mt-1">@T["The rating each customer gave after their request was resolved. A score of 1 or 2 alerts the request's owner."]</span></div></div>
+                <div class="card-body pt-2">
+                    @if (m.Recent.Count == 0) { <div class="text-muted fs-7 py-6">@T["No rating yet."]</div> }
+                    @foreach (var (s, subject) in m.Recent)
+                    {
+                        <div class="d-flex gap-4 py-4 border-bottom border-gray-200">
+                            <div class="text-nowrap pt-1">@await Html.PartialAsync("~/Views/Shared/_CrmRating.cshtml", (s.Score is byte sc ? (int?)sc : null, false))</div>
+                            <div class="min-w-0 flex-grow-1"><a href="@Url.Action("TicketEditor","Crm", new { id = s.TicketId })" class="fw-bold text-gray-900 text-hover-primary">#@s.TicketId @subject</a>
+                                @if (s.Comment != null) { <div class="fs-7 text-gray-700 mt-1">“@s.Comment”</div> }
+                                <div class="fs-8 text-muted num mt-1">@s.AnsweredAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div></div>
+                        </div>
+                    }
+                </div></div></div>
+            <div class="col-xl-5"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["Articles that answer most"]</span><span class="text-muted fs-7 mt-1">@T["Shared in replies and read on the portal"]</span></div>
+                <div class="card-toolbar"><a href="@Url.Action("KbEditor","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-5"></i>@T["New article"]</a></div></div>
+                <div class="card-body pt-2">
+                    @if (m.TopArticles.Count == 0) { <div class="text-muted fs-7 py-6">@T["No published article yet."]</div> }
+                    @foreach (var a in m.TopArticles)
+                    {
+                        <a href="@Url.Action("KbEditor","Crm", new { id = a.ID })" class="d-flex flex-stack py-3 border-bottom border-gray-200 text-hover-primary">
+                            <span class="fw-semibold text-gray-900 text-truncate me-3">@(!isAr && !string.IsNullOrWhiteSpace(a.TitleEn) ? a.TitleEn : a.Title)</span>
+                            <span class="d-flex gap-3 fs-8 text-muted text-nowrap"><span title="@T["Shared in replies"]"><i class="ki-outline ki-send fs-7"></i> <span class="num">@a.UsedInTickets</span></span><span title="@T["Read on the portal"]"><i class="ki-outline ki-eye fs-7"></i> <span class="num">@a.Views</span></span></span>
+                        </a>
+                    }
+                </div></div></div>
+        </div>
+    </div></div>
+</div>

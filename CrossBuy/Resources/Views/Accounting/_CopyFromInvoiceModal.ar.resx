@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Add selected lines" xml:space="preserve">
+    <value>إضافة البنود المحددة</value>
+  </data>
+  <data name="Add selected lines ({0})" xml:space="preserve">
+    <value>إضافة البنود المحددة ({0})</value>
+  </data>
+  <data name="Back to invoices" xml:space="preserve">
+    <value>رجوع إلى الفواتير</value>
+  </data>
+  <data name="Choose a vendor first" xml:space="preserve">
+    <value>اختر المورد أولًا</value>
+  </data>
+  <data name="Copy from an earlier invoice" xml:space="preserve">
+    <value>نسخ من فاتورة سابقة</value>
+  </data>
+  <data name="Could not load. Try again." xml:space="preserve">
+    <value>تعذّر التحميل. حاول مرة أخرى.</value>
+  </data>
+  <data name="Invoice" xml:space="preserve">
+    <value>الفاتورة</value>
+  </data>
+  <data name="Invoices from this vendor" xml:space="preserve">
+    <value>فواتير هذا المورد</value>
+  </data>
+  <data name="Lines" xml:space="preserve">
+    <value>البنود</value>
+  </data>
+  <data name="Lines of invoice {0}" xml:space="preserve">
+    <value>بنود الفاتورة {0}</value>
+  </data>
+  <data name="No earlier invoices from this vendor" xml:space="preserve">
+    <value>لا توجد فواتير سابقة لهذا المورد</value>
+  </data>
+  <data name="No invoice matches this search" xml:space="preserve">
+    <value>لا توجد فاتورة تطابق هذا البحث</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Search by invoice number or note" xml:space="preserve">
+    <value>ابحث برقم الفاتورة أو الملاحظة</value>
+  </data>
+  <data name="Select all lines" xml:space="preserve">
+    <value>تحديد كل البنود</value>
+  </data>
+  <data name="This invoice has no lines" xml:space="preserve">
+    <value>هذه الفاتورة بلا بنود</value>
+  </data>
+  <data name="{0} lines added" xml:space="preserve">
+    <value>تمت إضافة {0} بند</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>الصنف</value>
+  </data>
+  <data name="No item (expense line)" xml:space="preserve">
+    <value>بدون صنف (بند مصروف)</value>
+  </data>
+  <data name="Choose a customer first" xml:space="preserve">
+    <value>اختر العميل أولًا</value>
+  </data>
+  <data name="Invoices for this customer" xml:space="preserve">
+    <value>فواتير هذا العميل</value>
+  </data>
+  <data name="No earlier invoices for this customer" xml:space="preserve">
+    <value>لا توجد فواتير سابقة لهذا العميل</value>
+  </data>
+</root>

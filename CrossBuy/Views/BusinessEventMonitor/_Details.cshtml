@@ -7,6 +7,15 @@
     string statusBadge(string? s) => s switch { "Done" => "success", "Failed" => "danger", "Claimed" => "warning", "Pending" => "secondary", _ => "secondary" };
 }
 @functions {
+    // Same initials rule as _Rows.cshtml, so one person looks the same in the list and the detail.
+    string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpperInvariant();
+    }
+
     // localized display for a coded value via SharedResources (SR); falls back to the raw code when unmapped
     string Disp(string prefix, string? val)
     {
@@ -37,7 +46,32 @@
             <div class="d-flex flex-stack border-bottom border-dashed py-3 px-3"><span class="text-muted fs-7">@Localizer["Company"] / @Localizer["Branch"]</span>
                 <span class="fw-semibold fs-7">@h.CompanyId @(h.BranchId.HasValue ? " / " + h.BranchId : "")</span></div>
             <div class="d-flex flex-stack border-bottom border-dashed py-3 px-3"><span class="text-muted fs-7">@Localizer["Actor"]</span>
-                <span class="fw-semibold fs-7">@(h.ActorName ?? Localizer["System"].Value)</span></div>
+                @* Same treatment as the list behind it: the row and its detail must not disagree
+                   about whether this event has a face. *@
+                @if (!string.IsNullOrWhiteSpace(h.ActorName))
+                {
+                    var photo = string.IsNullOrWhiteSpace(h.ActorAvatarUrl)
+                        ? null
+                        : Url.Content("~" + h.ActorAvatarUrl!.Replace("\\", "/"));
+                    <span class="d-inline-flex align-items-center">
+                        <span class="symbol symbol-circle symbol-25px me-2 flex-shrink-0">
+                            @if (photo != null)
+                            {
+                                <img src="@photo" alt="@h.ActorName" class="rounded-circle object-fit-cover" />
+                            }
+                            else
+                            {
+                                <span class="symbol-label bg-light-primary text-primary fw-bold fs-9">@Initials(h.ActorName)</span>
+                            }
+                        </span>
+                        <span class="fw-semibold fs-7">@h.ActorName</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="fw-semibold fs-7 text-gray-600">@Localizer["System"]</span>
+                }
+            </div>
             <div class="d-flex flex-stack py-3 px-3"><span class="text-muted fs-7">@Localizer["Visibility"]</span>
                 <span class="badge badge-light-warning fs-8">@Disp("evt_vis_", h.Visibility)</span></div>
         </div>
@@ -132,6 +166,7 @@
         ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PlatformEvent;
         ViewBag.ConversationEntityId   = (int)h.EventId;
         ViewBag.ConversationListUrl    = Url.Action("Notes", "BusinessEventMonitor");
+        ViewBag.ConversationMentionUrl = Url.Action("NotesMentions", "BusinessEventMonitor");
         ViewBag.ConversationAddUrl     = Url.Action("NotesAdd", "BusinessEventMonitor");
         ViewBag.ConversationReactUrl   = null;
     }

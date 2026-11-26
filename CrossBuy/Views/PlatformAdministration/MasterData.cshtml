@@ -1,0 +1,13 @@
+@model IReadOnlyList<CrossBuy.Models.Platform.EntityDefinition>
+@{
+ Layout="~/Views/Shared/_LayoutInventory.cshtml";
+ var ar=System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName=="ar";
+ string T(string a,string e)=>ar?a:e;
+ ViewData["Title"]=T("دليل البيانات الأساسية","Master Data Directory");
+ var routes=new Dictionary<string,string>{{"Employee","/Admin/EmployeesList"},{"Item","/Inventory/Items"},{"Customer","/Accounting/Customers"},{"Supplier","/Accounting/Vendors"}};
+}
+<div class="d-flex flex-column gap-6" data-r6-screen="master-data">
+ <div class="d-flex justify-content-between align-items-center gap-3"><h1 class="fs-2 fw-bold">@ViewData["Title"]</h1><a class="btn btn-light-primary" href="/SecurityConsole?culture=@(ar?"ar":"en")">@T("إدارة الصلاحيات","Security Console")</a></div>
+ <div class="alert alert-primary">@T("دليل وحدات السجلات الحالية. اعتماد مسؤولية الأعمال يحتاج حسم قرار الملكية D-31؛ لا تُدمج السجلات أو تُنقل ملكيتها هنا.","Directory of current record modules. Business stewardship awaits ownership decision D-31; records are not merged or reassigned here.")</div>
+ <div class="row g-5">@foreach(var item in Model){<div class="col-md-6"><div class="card h-100"><div class="card-header"><h2 class="card-title"><i class="@item.Icon fs-2 me-3"></i>@(ar?item.DisplayNameAr:item.DisplayNameEn)</h2></div><div class="card-body"><div class="text-muted">@T("وحدة السجل الحالية","Current record module")</div><p class="fw-bold">@item.Module</p><span class="badge badge-light-warning">@T("اعتماد مسؤولية الأعمال قيد الحسم","Business stewardship pending")</span>@if(routes.TryGetValue(item.Code,out var route)){<div class="mt-4"><a class="btn btn-light-primary" href="@route?culture=@(ar?"ar":"en")">@T("فتح السجلات","Open records")</a></div>}</div></div></div>}</div>
+</div>

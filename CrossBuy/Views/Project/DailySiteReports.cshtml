@@ -1,0 +1,310 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Construction
+@model CrossBuy.BL.Construction.ConstructionDailySiteReportPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    string Version(byte[] rowVersion) => Convert.ToBase64String(rowVersion);
+    var message = TempData["DsrMessage"]?.ToString();
+    var error = TempData["DsrError"]?.ToString();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-toolbar pt-6 pb-3"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div><h1 class="page-heading fs-3 fw-bold">@Localizer["Daily site reports"]</h1><div class="text-muted">@Model.Project.Code — @DisplayName.Of(Model.Project.Name, Model.Project.NameEn)</div></div>
+        <a class="btn btn-light-primary" asp-controller="Project" asp-action="Projects" asp-route-culture="@culture" asp-route-ui-culture="@culture">@Localizer["Projects"]</a>
+    </div></div>
+    <div class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (message != null) { <div class="alert alert-success" role="status">@Localizer[message]</div> }
+        @if (error != null) { <div class="alert alert-danger" role="alert">@Localizer[error]</div> }
+        <div class="alert alert-light-primary">@Localizer["This report records site evidence. It does not post inventory or accounting entries."]</div>
+
+        @if (Model.CanCreate)
+        {
+            <section class="card mb-6" aria-labelledby="dsr-create-title">
+                <div class="card-header"><h2 class="card-title fw-bold" id="dsr-create-title">@Localizer["Create daily report"]</h2></div>
+                <div class="card-body">
+                    @if (Model.Sites.Count == 0) { <div class="alert alert-warning">@Localizer["Create an active construction site before recording a report."]</div> }
+                    else
+                    {
+                        <form asp-controller="ConstructionDailySiteReports" asp-action="Create" method="post" class="row g-4 align-items-end">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="projectId" value="@Model.Project.ID" />
+                            <input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                            <div class="col-md-4"><label class="form-label" for="dsrSite">@Localizer["Site"]</label><select id="dsrSite" name="siteId" class="form-select" required><option value="">@Localizer["Choose a site"]</option>@foreach (var site in Model.Sites) { <option value="@site.ID" disabled="@(!site.IsActive)">@site.Code — @DisplayName.Of(site.Name, site.NameEn)</option> }</select></div>
+                            <div class="col-md-3"><label class="form-label" for="dsrDate">@Localizer["Report date"]</label><input id="dsrDate" name="reportDate" type="date" class="form-control" required value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                            <div class="col-md-3"><label class="form-label" for="dsrWeather">@Localizer["Weather"]</label><input id="dsrWeather" name="weather" maxlength="80" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label" for="dsrTemp">@Localizer["Temperature °C"]</label><input id="dsrTemp" name="temperatureC" type="number" step="0.1" min="-80" max="80" class="form-control" /></div>
+                            <div class="col-md-3"><label class="form-label" for="dsrStart">@Localizer["Work start"]</label><input id="dsrStart" name="workStart" type="time" class="form-control" /></div>
+                            <div class="col-md-3"><label class="form-label" for="dsrEnd">@Localizer["Work end"]</label><input id="dsrEnd" name="workEnd" type="time" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label" for="dsrHours">@Localizer["Total working hours"]</label><input id="dsrHours" name="totalHours" type="number" step="0.25" min="0" max="24" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label" for="dsrShifts">@Localizer["Shifts"]</label><input id="dsrShifts" name="shifts" type="number" min="1" max="4" value="1" class="form-control" required /></div>
+                            <div class="col-md-2"><div class="form-check mb-3"><input id="dsrRain" name="rainfallStopped" type="checkbox" value="true" class="form-check-input" /><label class="form-check-label" for="dsrRain">@Localizer["Rain stopped work"]</label></div></div>
+                            <div class="col-md-6"><label class="form-label" for="dsrPlan">@Localizer["Plan for next day"]</label><textarea id="dsrPlan" name="nextDayPlan" maxlength="2000" rows="2" class="form-control"></textarea></div>
+                            <div class="col-md-6"><label class="form-label" for="dsrRemarks">@Localizer["General remarks"]</label><textarea id="dsrRemarks" name="remarks" maxlength="4000" rows="2" class="form-control"></textarea></div>
+                            <div class="col-12"><button class="btn btn-primary" type="submit" disabled="@(Model.Sites.Count == 0)">@Localizer["Save draft"]</button></div>
+                        </form>
+                    }
+                </div>
+            </section>
+        }
+
+        <section class="card" aria-labelledby="dsr-list-title">
+            <div class="card-header"><h2 class="card-title fw-bold" id="dsr-list-title">@Localizer["Reports"]</h2><span class="badge badge-light-primary">@Model.Reports.Count</span></div>
+            <div class="card-body"><div class="table-responsive"><table class="table align-middle table-row-dashed">
+                <thead><tr><th>@Localizer["Report date"]</th><th>@Localizer["Site"]</th><th>@Localizer["Status"]</th><th>@Localizer["Weather"]</th><th>@Localizer["Work hours"]</th><th>@Localizer["Next day plan"]</th><th>@Localizer["Actions"]</th></tr></thead>
+                <tbody>
+                @if (Model.Reports.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-8">@Localizer["No daily site reports yet."]</td></tr> }
+                @foreach (var report in Model.Reports)
+                {
+                    var site = Model.Sites.FirstOrDefault(x => x.ID == report.SiteId);
+                    var statusClass = report.Status switch { "Approved" => "success", "Reviewed" => "primary", "Submitted" => "warning", _ => "secondary" };
+                    <tr>
+                        <td><bdi dir="ltr">@report.ReportDate.ToString("yyyy-MM-dd")</bdi>@if (report.RevisionNo > 1) { <div><span class="badge badge-light-info">@Localizer["Amendment revision"] @report.RevisionNo</span></div> }</td>
+                        <td>@(site == null ? $"#{report.SiteId}" : $"{site.Code} — {DisplayName.Of(site.Name, site.NameEn)}")</td>
+                        <td><span class="badge badge-light-@statusClass">@Localizer[report.Status]</span></td>
+                        <td>@(report.WeatherCondition ?? "—") @if (report.TemperatureC.HasValue) { <span>(@report.TemperatureC °C)</span> }</td>
+                        <td>@(report.TotalWorkingHours?.ToString("0.##") ?? "—")</td>
+                        <td class="text-wrap">@(report.NextDayPlan ?? "—")</td>
+                        <td class="text-nowrap">
+                            @if (report.Status == "Approved" && Model.CanCreate)
+                            {
+                                <form asp-controller="ConstructionDailySiteReports" asp-action="Amend" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="mb-2">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                    <label class="form-label small" for="amend-reason-@report.ID">@Localizer["Amendment reason"]</label>
+                                    <input id="amend-reason-@report.ID" name="reason" maxlength="1000" required class="form-control form-control-sm mb-1" />
+                                    <button class="btn btn-sm btn-light-warning" type="submit">@Localizer["Create amendment"]</button>
+                                </form>
+                            }
+                            <details class="mb-2">
+                                <summary>@Localizer["Site resources"] (@Model.ManpowerLines.Count(x => x.ReportId == report.ID) / @Model.EquipmentLines.Count(x => x.ReportId == report.ID) / @Model.QuantityLines.Count(x => x.ReportId == report.ID) / @Model.MaterialLines.Count(x => x.ReportId == report.ID) / @Model.Events.Count(x => x.ReportId == report.ID) / @Model.Visitors.Count(x => x.ReportId == report.ID) / @Model.Instructions.Count(x => x.ReportId == report.ID) / @Model.Attachments.Count(x => x.ReportId == report.ID))</summary>
+                                <div class="p-3 border rounded mt-2">
+                                    @if (report.AmendsReportId.HasValue) { <div class="alert alert-light-warning py-2"><strong>@Localizer["Amendment reason"]:</strong> @report.AmendmentReason · @Localizer["Amends report"] #@report.AmendsReportId</div> }
+                                    @if (report.AmendsReportId.HasValue && report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="UpdateAmendmentHeader" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mb-4 p-3 bg-light rounded">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" /><input type="hidden" name="expectedVersion" value="@Version(report.RowVersion)" />
+                                            <div class="col-12 fw-bold">@Localizer["Update amendment details"]</div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Weather"]</label><input name="weather" maxlength="80" value="@report.WeatherCondition" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Temperature °C"]</label><input name="temperatureC" type="number" step="0.1" min="-80" max="80" value="@report.TemperatureC" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Work start"]</label><input name="workStart" type="time" value="@report.WorkStartTime?.ToString("hh\\:mm")" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Work end"]</label><input name="workEnd" type="time" value="@report.WorkEndTime?.ToString("hh\\:mm")" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Total working hours"]</label><input name="totalHours" type="number" step="0.25" min="0" max="24" value="@report.TotalWorkingHours" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-1"><label class="form-label">@Localizer["Shifts"]</label><input name="shifts" type="number" min="1" max="4" value="@report.ShiftCount" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><div class="form-check mt-4"><input name="rainfallStopped" type="checkbox" value="true" checked="@report.RainfallStopped" class="form-check-input" /><label class="form-check-label">@Localizer["Rain stopped work"]</label></div></div>
+                                            <div class="col-md-5"><label class="form-label">@Localizer["Plan for next day"]</label><textarea name="nextDayPlan" maxlength="2000" rows="2" class="form-control form-control-sm">@report.NextDayPlan</textarea></div>
+                                            <div class="col-md-5"><label class="form-label">@Localizer["General remarks"]</label><textarea name="remarks" maxlength="4000" rows="2" class="form-control form-control-sm">@report.GeneralRemarks</textarea></div>
+                                            <div class="col-md-8"><label class="form-label">@Localizer["Change reason"]</label><input name="reason" maxlength="1000" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-4 align-self-end"><button class="btn btn-sm btn-primary" type="submit">@Localizer["Save amendment details"]</button></div>
+                                        </form>
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="RemoveAmendmentLine" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mb-4 p-3 bg-light rounded">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-12 fw-bold">@Localizer["Replace a copied line"]</div>
+                                            <div class="col-md-8"><label class="form-label">@Localizer["Choose copied line"]</label><select name="target" class="form-select form-select-sm" required>
+                                                <option value="">@Localizer["Choose a line"]</option>
+                                                @foreach (var x in Model.ManpowerLines.Where(x => x.ReportId == report.ID)) { <option value="Manpower:@x.ID">@Localizer["Manpower"] — @x.Trade · @x.Headcount</option> }
+                                                @foreach (var x in Model.EquipmentLines.Where(x => x.ReportId == report.ID)) { <option value="Equipment:@x.ID">@Localizer["Equipment"] — @(x.EquipmentDescription ?? $"#{x.FixedAssetId}")</option> }
+                                                @foreach (var x in Model.QuantityLines.Where(x => x.ReportId == report.ID)) { <option value="Quantity:@x.ID">@Localizer["Executed quantities"] — BOQ #@x.BoqItemId · @x.QuantityExecuted</option> }
+                                                @foreach (var x in Model.MaterialLines.Where(x => x.ReportId == report.ID)) { <option value="Material:@x.ID">@Localizer["Materials received / consumed"] — #@x.ItemId · @x.Quantity</option> }
+                                                @foreach (var x in Model.Events.Where(x => x.ReportId == report.ID)) { <option value="Event:@x.ID">@Localizer["Delays, blockers and incidents"] — @x.Description</option> }
+                                                @foreach (var x in Model.Visitors.Where(x => x.ReportId == report.ID)) { <option value="Visitor:@x.ID">@Localizer["Visitors"] — @x.VisitorName · @x.Purpose</option> }
+                                                @foreach (var x in Model.Instructions.Where(x => x.ReportId == report.ID)) { <option value="Instruction:@x.ID">@Localizer["Site instructions"] — @x.Description</option> }
+                                                @foreach (var x in Model.Attachments.Where(x => x.ReportId == report.ID)) { <option value="Attachment:@x.Id">@Localizer["Photos and attachments"] — @x.FileName</option> }
+                                            </select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Change reason"]</label><input name="reason" maxlength="1000" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-1 align-self-end"><button class="btn btn-sm btn-light-danger" type="submit">@Localizer["Remove from amendment"]</button></div>
+                                        </form>
+                                    }
+                                    <h3 class="fs-6">@Localizer["Manpower"]</h3>
+                                    @foreach (var line in Model.ManpowerLines.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@line.Trade · @line.Headcount · @Localizer["Regular"] @line.RegularHours / @Localizer["Overtime"] @line.OvertimeHours</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-action="AddManpower" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Source"]</label><select name="source" class="form-select form-select-sm"><option value="OwnEmployee">@Localizer["Own employee"]</option><option value="Subcontractor">@Localizer["Subcontractor"]</option></select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Trade"]</label><input name="trade" maxlength="100" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Employee"]</label><select name="employeeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.Employees) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Subcontract"]</label><select name="subcontractId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.Subcontracts) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Headcount"]</label><input name="headcount" type="number" min="1" max="10000" value="1" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Regular hours"]</label><input name="regularHours" type="number" min="0" max="24" step="0.25" value="0" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Overtime hours"]</label><input name="overtimeHours" type="number" min="0" max="24" step="0.25" value="0" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Add manpower"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Equipment"]</h3>
+                                    @foreach (var line in Model.EquipmentLines.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@(line.EquipmentDescription ?? $"#{line.FixedAssetId}") · @Localizer["Work hours"] @line.WorkingHours · @Localizer["Idle hours"] @line.IdleHours · @Localizer["Downtime hours"] @line.DowntimeHours</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-action="AddEquipment" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Owned asset"]</label><select name="fixedAssetId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.Assets) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Rental subcontract"]</label><select name="subcontractId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.Subcontracts) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Rental equipment description"]</label><input name="equipmentDescription" maxlength="200" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Operator"]</label><select name="operatorEmployeeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.Employees) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Working hours"]</label><input name="workingHours" type="number" min="0" max="24" step="0.25" value="0" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Idle hours"]</label><input name="idleHours" type="number" min="0" max="24" step="0.25" value="0" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Downtime hours"]</label><input name="downtimeHours" type="number" min="0" max="24" step="0.25" value="0" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Downtime reason"]</label><input name="downtimeReason" maxlength="1000" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Meter start"]</label><input name="meterStart" type="number" min="0" step="0.001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Meter end"]</label><input name="meterEnd" type="number" min="0" step="0.001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Fuel quantity"]</label><input name="fuelQuantity" type="number" min="0" step="0.001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Add equipment"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Executed quantities"]</h3>
+                                    @foreach (var line in Model.QuantityLines.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">BOQ #@line.BoqItemId · WBS #@line.WbsNodeId · @line.QuantityExecuted @line.Unit · @(line.Location ?? "—")</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-action="AddQuantity" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-4"><label class="form-label">@Localizer["BOQ item"]</label><select name="boqItemId" class="form-select form-select-sm" required><option value="">—</option>@foreach (var choice in Model.BoqItems) { <option value="@choice.Id">@choice.Label (@choice.Unit)</option> }</select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm" required><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Quantity executed"]</label><input name="quantity" type="number" min="0.001" step="0.001" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Location / level"]</label><input name="location" maxlength="200" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-5"><label class="form-label">@Localizer["Remarks"]</label><input name="remarks" maxlength="1000" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Add quantity"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Materials received / consumed"]</h3>
+                                    @foreach (var line in Model.MaterialLines.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@Localizer[line.Direction] · @(Model.ItemLabels.TryGetValue(line.ItemId, out var itemLabel) ? itemLabel : $"#{line.ItemId}") · @line.Quantity · @(line.DeliveryNoteNo ?? "—")</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-action="AddMaterial" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <input type="hidden" name="direction" value="Received" />
+                                            <div class="col-md-5"><label class="form-label">@Localizer["Posted receipt line"]</label><select name="sourceLineId" class="form-select form-select-sm" required><option value="">—</option>@foreach (var choice in Model.ReceiptLines) { <option value="@choice.Id">@choice.Label · @choice.AvailableQuantity</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Quantity"]</label><input name="quantity" type="number" min="0.001" step="0.001" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Delivery note"]</label><input name="deliveryNoteNo" maxlength="100" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-4 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Record receipt evidence"]</button></div>
+                                        </form>
+                                        <form asp-action="AddMaterial" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <input type="hidden" name="direction" value="Consumed" />
+                                            <div class="col-md-5"><label class="form-label">@Localizer["Posted project issue line"]</label><select name="sourceLineId" class="form-select form-select-sm" required><option value="">—</option>@foreach (var choice in Model.IssueLines) { <option value="@choice.Id">@choice.Label · @choice.AvailableQuantity</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Quantity"]</label><input name="quantity" type="number" min="0.001" step="0.001" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Remarks"]</label><input name="remarks" maxlength="1000" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-4 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Record consumption evidence"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Delays, blockers and incidents"]</h3>
+                                    @foreach (var line in Model.Events.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@Localizer[line.EventType] · @Localizer[line.Severity] · @line.Description @if (line.Reportable) { <span class="badge badge-light-warning">@Localizer["Requires follow-up"]</span> }</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-action="AddEvent" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Event type"]</label><select name="eventType" class="form-select form-select-sm"><option value="Delay">@Localizer["Delay"]</option><option value="Blocker">@Localizer["Blocker"]</option><option value="Incident">@Localizer["Incident"]</option></select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Severity"]</label><select name="severity" class="form-select form-select-sm"><option value="Low">@Localizer["Low"]</option><option value="Medium">@Localizer["Medium"]</option><option value="High">@Localizer["High"]</option><option value="Critical">@Localizer["Critical"]</option></select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Description"]</label><input name="description" maxlength="2000" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Responsible party"]</label><input name="responsibleParty" maxlength="100" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var choice in Model.WbsNodes) { <option value="@choice.Id">@choice.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Started at"]</label><input name="startedAt" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Ended at"]</label><input name="endedAt" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Needed by"]</label><input name="neededByDate" type="date" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><div class="form-check mt-4"><input id="eventReportable-@report.ID" name="reportable" type="checkbox" value="true" class="form-check-input" /><label class="form-check-label" for="eventReportable-@report.ID">@Localizer["Requires follow-up"]</label></div></div>
+                                            <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-light-primary" type="submit">@Localizer["Add event"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Visitors"]</h3>
+                                    @foreach (var visitor in Model.Visitors.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@visitor.VisitorName · @(visitor.Organisation ?? "—") · @visitor.Purpose · @(visitor.TimeIn?.ToString("yyyy-MM-dd HH:mm") ?? "—") – @(visitor.TimeOut?.ToString("yyyy-MM-dd HH:mm") ?? "—")</div> }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="AddVisitor" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Visitor name"]</label><input name="visitorName" maxlength="150" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Organisation"]</label><input name="organisation" maxlength="150" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Visit purpose"]</label><input name="purpose" maxlength="500" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Time in"]</label><input name="timeIn" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Time out"]</label><input name="timeOut" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2 align-self-end"><button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Add visitor"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Site instructions"]</h3>
+                                    @foreach (var instruction in Model.Instructions.Where(x => x.ReportId == report.ID))
+                                    { <div class="small text-muted">@Localizer[instruction.Source] · @(instruction.InstructionReference ?? "—") · @instruction.Description</div> }
+                                    <div class="small text-muted">@Localizer["Recording an instruction here does not create an RFI or variation."]</div>
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="AddInstruction" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Instruction source"]</label><select name="source" class="form-select form-select-sm"><option value="Consultant">@Localizer["Consultant"]</option><option value="Client">@Localizer["Client"]</option><option value="Internal">@Localizer["Internal"]</option></select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Instruction reference"]</label><input name="reference" maxlength="100" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-5"><label class="form-label">@Localizer["Instruction description"]</label><input name="description" maxlength="2000" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-1 align-self-end"><button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Add"]</button></div>
+                                        </form>
+                                    }
+                                    <hr /><h3 class="fs-6">@Localizer["Photos and attachments"]</h3>
+                                    @foreach (var attachment in Model.Attachments.Where(x => x.ReportId == report.ID))
+                                    {
+                                        <div class="small mb-1"><a asp-controller="FileManager" asp-action="Download" asp-route-id="@attachment.LibraryItemId">@attachment.FileName</a> · @Localizer[attachment.Kind]@if (!string.IsNullOrWhiteSpace(attachment.Caption)) { <span class="text-muted"> — @attachment.Caption</span> }@if (attachment.WbsNodeId.HasValue) { <span class="text-muted"> · WBS #@attachment.WbsNodeId</span> }@if (attachment.TakenAt.HasValue) { <span class="text-muted"> · @attachment.TakenAt.Value.ToString("yyyy-MM-dd HH:mm")</span> }@if (attachment.Latitude.HasValue && attachment.Longitude.HasValue) { <span class="text-muted"> · @attachment.Latitude.Value.ToString("0.000000"), @attachment.Longitude.Value.ToString("0.000000")</span> }</div>
+                                    }
+                                    @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                                    {
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="AddAttachment" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-6"><label class="form-label">@Localizer["Company library file"]</label><select name="libraryItemId" class="form-select form-select-sm" required><option value="">@Localizer["Choose a file"]</option>@foreach (var file in Model.LibraryFiles) { <option value="@file.Id">@file.Label</option> }</select></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Kind"]</label><select name="kind" class="form-select form-select-sm"><option value="Document">@Localizer["Document"]</option><option value="Photo">@Localizer["Photo"]</option></select></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Caption"]</label><input name="caption" maxlength="250" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var node in Model.WbsNodes) { <option value="@node.Id">@node.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Photo taken at"]</label><input name="takenAt" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Latitude"]</label><input name="latitude" type="number" min="-90" max="90" step="0.000001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Longitude"]</label><input name="longitude" type="number" min="-180" max="180" step="0.000001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2 align-self-end"><button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Attach file"]</button></div>
+                                        </form>
+                                        <form asp-controller="ConstructionDailySiteReports" asp-action="UploadAttachment" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" enctype="multipart/form-data" class="row g-2 mt-2">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                            <div class="col-md-6"><label class="form-label">@Localizer["Upload site photo or PDF"]</label><input name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="form-control form-control-sm" /></div>
+                                            <div class="col-md-4"><label class="form-label">@Localizer["Caption"]</label><input name="caption" maxlength="250" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["WBS"]</label><select name="wbsNodeId" class="form-select form-select-sm"><option value="">—</option>@foreach (var node in Model.WbsNodes) { <option value="@node.Id">@node.Label</option> }</select></div>
+                                            <div class="col-md-3"><label class="form-label">@Localizer["Photo taken at"]</label><input name="takenAt" type="datetime-local" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Latitude"]</label><input name="latitude" type="number" min="-90" max="90" step="0.000001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label">@Localizer["Longitude"]</label><input name="longitude" type="number" min="-180" max="180" step="0.000001" class="form-control form-control-sm" /></div>
+                                            <div class="col-md-2 align-self-end"><button type="submit" class="btn btn-sm btn-primary">@Localizer["Upload and attach"]</button></div>
+                                            <div class="col-12 small text-muted">@Localizer["Accepted files: JPG, PNG, WebP, PDF. Maximum 20 MB."] @Localizer["Photo metadata only applies to image uploads."]</div>
+                                        </form>
+                                    }
+                                </div>
+                            </details>
+                            @if (report.Status == "Draft" && report.CreatedBy == Model.CurrentEmployeeId)
+                            {
+                                <form asp-action="Transition" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                    <input type="hidden" name="transition" value="Submit" /><input type="hidden" name="expectedVersion" value="@Version(report.RowVersion)" />
+                                    <input type="hidden" name="reason" value="@Localizer["Submitted for review"].Value" />
+                                    <button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Submit"]</button>
+                                </form>
+                            }
+                            @if (report.Status == "Submitted" && Model.CanReview)
+                            {
+                                <form asp-action="Transition" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                    <input type="hidden" name="transition" value="Review" /><input type="hidden" name="expectedVersion" value="@Version(report.RowVersion)" /><input type="hidden" name="reason" value="Reviewed" />
+                                    <button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Review"]</button>
+                                </form>
+                            }
+                            @if (report.Status == "Reviewed" && Model.CanApprove)
+                            {
+                                <form asp-action="Transition" asp-route-projectId="@Model.Project.ID" asp-route-reportId="@report.ID" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="culture" value="@culture" /><input type="hidden" name="ui-culture" value="@culture" />
+                                    <input type="hidden" name="transition" value="Approve" /><input type="hidden" name="expectedVersion" value="@Version(report.RowVersion)" /><input type="hidden" name="reason" value="Approved" />
+                                    <button type="submit" class="btn btn-sm btn-primary">@Localizer["Approve"]</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table></div></div>
+        </section>
+    </div></div>
+</div>
+

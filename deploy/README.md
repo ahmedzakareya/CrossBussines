@@ -15,36 +15,46 @@ and the **database strategy decision**.
 
 ## Database strategy — READ THIS
 
-**The authoritative way to stand up the schema is BACKUP / RESTORE of `CrossBuyDB2`, not
-re-running SQL scripts.** Reasons, stated plainly:
+**Schema authority is the canonical authored slices in `CrossBuy/deploy/sql`, reconciled with
+`dbo.PlatformSchemaHistory`.** Backup/restore and the generated fresh-database package are
+provisioning mechanisms; neither proves that every current authored slice is present or recorded.
+Do not replay the historical `C:/temp` scripts. Reasons, stated plainly:
 
-1. **EF Core migrations are broken** in this project — there is no `dotnet ef database update`
-   path and no single canonical migration history.
+1. **EF Core migrations are not the deployment path** in this project. Versioned SQL slices and
+   `PlatformSchemaHistory` provide the authored and applied records instead.
 2. The schema was built **incrementally with ~90 ad-hoc `sqlcmd` scripts** in `C:/temp`
    (e.g. `acc_phase*.sql`, `inv_phase*.sql`, `cb_mc_*.sql`, `cb_crm_*.sql`). That pile also
    contains throwaway checks, `DROP`s, fixes, and seed scripts. It **cannot be safely or
    verifiably linearized** into a "clean ordered build" — and I cannot test such a build
    without a blank SQL instance to run it against. Shipping it would risk a broken/partial
    schema on day one.
-3. A `RESTORE` reproduces the **exact, already-verified** schema (every table, index, the
-   `AppCache` session table, etc.) in one step.
+3. A verified `RESTORE` reproduces the schema and data captured in that backup, but does not
+   certify newer repository slices. Preserve its history and reconcile exact paths and raw hashes
+   after restore.
 
-So the flow is:
-1. **Locally:** `BACKUP DATABASE CrossBuyDB2` → `CrossBuyDB2.bak` (see `00_backup_dev_db.sql`).
-2. **On the server:** `RESTORE` the `.bak`.
-3. **On the server:** run `10_purge_for_production.sql` to wipe demo/test data while keeping
-   masters & config → clean production DB.
+For an environment provisioned from a backup:
+1. Verify the backup and record its source environment and application version.
+2. Restore it without replacing or deleting `PlatformSchemaHistory`.
+3. Reconcile exact applied paths and raw hashes with the canonical manifest. Record a baseline
+   only for individually verified slice identities; never bulk-stamp pending entries.
+4. Apply only reviewed, release-accepted canonical slices in dependency order. Reconcile again
+   before promotion.
+
+`10_purge_for_production.sql` is a separate data-purge operation, not schema reconciliation; it
+must follow the production data-handling procedure.
 
 > The per-module delta scripts in `C:/temp` (`cb_mc_*.sql`, `cb_crm_3_*.sql`, …) are kept as a
 > historical record of schema changes. You only need them if you ever rebuild the dev DB by
 > hand; for deployment they are **not** used.
 
-### Alternative (also verified): build from scratch — `sql/fresh/`
-A clean from-scratch build is now available **and tested** in `deploy/sql/fresh/` (generated from
+### Clean bootstrap package — `sql/fresh/`
+A clean from-scratch bootstrap is available and was tested in `deploy/sql/fresh/` (generated from
 the verified live schema, not the 90 ad-hoc files). Four ordered scripts (create DB → schema →
-config seed → FKs) produce an empty-of-test-data CrossBuyDB2 with only the config needed to log in.
+config seed → FKs) produce an empty-of-test-data database with only the config needed to log in.
 A fresh DB built from them boots the app and logs in as Admin (verified). See `sql/fresh/README.md`.
 Run with `sql/fresh/run_all.cmd`.
 
-**Pick one:** *restore* = exact copy of dev data; *fresh build* = clean slate (you create your own
-company/branches/customers/items). Both end at a working CrossBuyDB2.
+This package is a bootstrap snapshot for an empty development/test environment. It is not a second
+authored-slice history and does not replace canonical SQL governance. Reconcile its resulting
+schema to individually verified slice identities before promoting that environment. A backup
+restore remains available when a verified source image is required, under the admission steps above.

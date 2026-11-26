@@ -1,5 +1,6 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
+using CrossBuy.BL.Construction;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -45,7 +46,9 @@ namespace CrossBuy.BL
 		public const string RetentionAccountCode = "2105";     // Cr — subcontractor retention payable
 		private readonly CrossDbContext _db;
 		private readonly IPayableService _ap;
-		public SubcontractBillingService(CrossDbContext db, IPayableService ap) { _db = db; _ap = ap; }
+		private readonly ISubcontractScopeService _scopes;
+		public SubcontractBillingService(CrossDbContext db, IPayableService ap, ISubcontractScopeService scopes)
+		{ _db = db; _ap = ap; _scopes = scopes; }
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		public Task<List<Subcontract>> GetSubcontractsAsync(int companyId, int projectId) =>
@@ -130,20 +133,42 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> ApproveBillingAsync(int companyId, int id)
 		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "Certificate not found");
 			if (hdr.Status != "Draft") return (false, "The current status does not allow approval");
 			if (hdr.GrossWork <= 0) return (false, "There is no work to bill");
+			// Claim the draft row before checking its lines. CertifyLineAsync accepts writes only while
+			// this row is Draft, so this update serializes a concurrent line addition with approval.
+			if (await _db.SubcontractBillings.Where(b => b.ID == id && b.CompanyID == companyId && b.Status == "Draft")
+				.ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, "Approved")) != 1)
+				return (false, "The current status does not allow approval");
+			var lineCheck = await _scopes.ValidateHeaderAgainstLinesAsync(companyId, id);
+			if (!lineCheck.ok) return (false, lineCheck.error);
 			hdr.Status = "Approved"; await _db.SaveChangesAsync();
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
 		public async Task<(bool ok, string? error)> PostBillingAsync(int companyId, int id, int? userId)
 		{
-			var hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			SubcontractBilling? hdr;
+			if (_db.Database.IsSqlServer())
+			{
+				hdr = (await _db.SubcontractBillings
+					.FromSqlInterpolated($"SELECT * FROM SubcontractBillings WITH (UPDLOCK) WHERE ID = {id} AND CompanyID = {companyId}")
+					.AsTracking().ToListAsync()).FirstOrDefault();
+			}
+			else
+			{
+				hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
+			}
 			if (hdr == null) return (false, "Certificate not found");
 			if (hdr.Status == "Posted") return (false, "The certificate is already posted");
 			if (hdr.Status != "Approved") return (false, "The certificate must be approved before posting");
+			var lineCheck = await _scopes.ValidateHeaderAgainstLinesAsync(companyId, id);
+			if (!lineCheck.ok) return (false, lineCheck.error);
 			var sc = await _db.Subcontracts.AsNoTracking().FirstAsync(s => s.ID == hdr.SubcontractId);
 			var expAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == ExpenseAccountCode).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (expAcc == null) return (false, $"The execution cost account ({ExpenseAccountCode}) is not configured");
@@ -161,15 +186,20 @@ namespace CrossBuy.BL
 			if (hdr.RetentionAmount > 0)
 			{
 				if (retAcc == null) return (false, "The subcontractor retention account (2105) is not configured");
-				int before = await _db.Payments.Where(p => p.CompanyID == companyId && p.VendorId == hdr.VendorId).Select(p => (int?)p.ID).MaxAsync() ?? 0;
+				var paymentsBefore = _db.ChangeTracker.Entries<Payment>().Select(e => e.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
 				var (pok, perr) = await _ap.CreatePaymentAsync(companyId, hdr.VendorId, hdr.BillingDate, hdr.RetentionAmount, "Retention", retAcc.Value, hdr.Note, userId, 0m, null, null, projectId: hdr.ProjectId);
 				if (!pok) return (false, "Could not post the subcontractor retention: " + perr);
-				retPayId = await _db.Payments.Where(p => p.CompanyID == companyId && p.VendorId == hdr.VendorId && p.ID > before).Select(p => (int?)p.ID).MaxAsync();
+				var createdPayments = _db.ChangeTracker.Entries<Payment>().Select(e => e.Entity)
+					.Where(p => !paymentsBefore.Contains(p) && p.CompanyID == companyId && p.VendorId == hdr.VendorId).ToList();
+				if (createdPayments.Count != 1 || createdPayments[0].ID <= 0)
+					return (false, "Could not identify the retention payment created for this subcontract.");
+				retPayId = createdPayments[0].ID;
 			}
 
 			hdr.PurchaseInvoiceId = inv.ID; hdr.RetentionPaymentId = retPayId;
 			hdr.Status = "Posted"; hdr.PostedAt = DateTime.UtcNow; hdr.PostedBy = userId;
 			await _db.SaveChangesAsync();
+			await tx.CommitAsync();
 			return (true, null);
 		}
 

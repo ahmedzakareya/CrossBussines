@@ -78,7 +78,7 @@
     {
       "packagePath": "deploy/sql/construction_c1_contract_mapping_measurement.sql",
       "canonicalPath": "CrossBuy/deploy/sql/construction_c1_contract_mapping_measurement.sql",
-      "rawSha256": "95a9d6b90fb48390d99fce2f755386aceb9ea6c9dfc507ef61339b3af1b8140e",
+      "rawSha256": "90be9d2557747a1931dd3eeef5267a3d24bbbda7d2cc952b73610ba2af294b16",
       "featureOwner": "NOT PROVEN",
       "migrationOwner": "Integration Owner",
       "origin": "R1 legacy authoring migration - compatibility copy retained"
@@ -482,9 +482,49 @@
       "featureOwner": "Accounting/Projects",
       "migrationOwner": "Integration Owner",
       "origin": "R1-ACCOUNTING-AUDIT-SUCCESSOR-001"
+    },
+    {
+      "canonicalPath": "CrossBuy/deploy/sql/purchase_invoice_line_location.sql",
+      "packagePath": "deploy/sql/purchase_invoice_line_location.sql",
+      "rawSha256": "c379c437227269700bd2871a63c01fc706a37ae5a976d65c6fbf1467895f0e8d",
+      "featureOwner": "Inventory/Procurement",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-INVENTORY-LOCATION-001"
+    }
+  ],
+  "retiredSources": [
+    {
+      "path": "deploy/sql/crm_call_centre_legacy_001.sql",
+      "rawSha256": "25c6a2f226265ae2c0b12913aaae67138f3771f5ab4a600fff1ea07ef0518c86",
+      "reason": "Superseded as a deployment input by CrossBuy/deploy/sql/crm_call_centre.sql and crm_call_centre_reconciled_001.sql; retained unchanged for history."
+    },
+    {
+      "path": "deploy/sql/crm_call_routing.sql",
+      "rawSha256": "7f5c2d869d90e585d68ce1e82d370477b2ff637d289df24e5fcd601ff7e89f90",
+      "reason": "Superseded as a deployment input by the canonical CRM call-centre successor; retained unchanged for history."
+    },
+    {
+      "path": "deploy/sql/crm_ticket_source.sql",
+      "rawSha256": "1e1334c7914a9a00c3917096e1e6671e68e4cfc2ca29b0e977802a095bd7709f",
+      "reason": "Superseded as a deployment input by the canonical CRM call-centre successor; retained unchanged for history."
     }
   ],
   "legacyUnmigrated": [
+    {
+      "path": "deploy/sql/crm_call_centre_legacy_001.sql",
+      "rawSha256": "25c6a2f226265ae2c0b12913aaae67138f3771f5ab4a600fff1ea07ef0518c86",
+      "reason": "R1-retired-source; superseded by canonical CRM slices and retained as history."
+    },
+    {
+      "path": "deploy/sql/crm_call_routing.sql",
+      "rawSha256": "7f5c2d869d90e585d68ce1e82d370477b2ff637d289df24e5fcd601ff7e89f90",
+      "reason": "R1-retired-source; superseded by canonical CRM slices and retained as history."
+    },
+    {
+      "path": "deploy/sql/crm_ticket_source.sql",
+      "rawSha256": "1e1334c7914a9a00c3917096e1e6671e68e4cfc2ca29b0e977802a095bd7709f",
+      "reason": "R1-retired-source; superseded by canonical CRM slices and retained as history."
+    },
     {
       "path": "deploy/sql/00_backup_dev_db.sql",
       "rawSha256": "378ff64ce7cfc3fccee31ae04806cdc240a8c43eb364ab616ad25c2744c4a3e8",

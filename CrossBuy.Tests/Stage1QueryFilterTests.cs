@@ -126,7 +126,21 @@ namespace CrossBuy.Tests
             foreach (var entity in CompanyQueryFilters.PilotEntities)
                 Assert.Contains(entity, filtered);
 
-            Assert.Equal(CompanyQueryFilters.PilotEntities.Length, filtered.Count);
+            // THE COUNT EQUALITY IS GONE, DELIBERATELY (2026-11-10). It claimed "the platform pilot IS the
+            // filtered set", and that stopped being true when the Construction pack began declaring
+            // HasQueryFilter beside each of its own entities: 35 listed in PilotEntities, 65 on the model.
+            // Widening the array to 65 would be the WRONG correction - a module filtering its own entities is
+            // the behaviour we want, not drift - so the claim moves to where it belongs: "nothing outside the
+            // pilot is filtered" is No_entity_outside_the_pilot_is_filtered, over the entities B1 excluded for
+            // a stated reason, and write-guard coverage is Stage1WriteGuardTests.
+            //
+            // What replaces it is stronger and still true of all 65: a query filter here is a COMPANY filter,
+            // so it must sit on an entity that actually has a CompanyID to filter by. A filter on an entity
+            // without one would silently never match - the quiet half of a half-isolated entity.
+            Assert.NotEmpty(filtered);   // positive control: the model really does filter something
+            Assert.All(model.GetEntityTypes().Where(t => t.GetQueryFilter() != null),
+                t => Assert.True(t.FindProperty("CompanyID") != null,
+                    $"{t.ClrType.Name} carries a query filter but has no CompanyID to filter on."));
         }
 
         // The other half of the same claim, and the one that matters for honesty: nothing OUTSIDE the pilot

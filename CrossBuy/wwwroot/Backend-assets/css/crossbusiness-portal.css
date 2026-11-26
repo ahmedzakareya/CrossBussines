@@ -1,0 +1,45 @@
+/* =================================================================================================
+   CrossBusiness — Client Portal identity overrides.
+
+   WHY THIS FILE EXISTS RATHER THAN A FEW LINES IN crossbuy-brand.css.
+
+   The portal runs on a DIFFERENT Metronic bundle (portal-assets, demo30) from the back office
+   (Backend-assets). demo30 ships its own hardcoded page-band colour as a theme token:
+
+       --bs-app-toolbar-bg: linear-gradient(180deg, #217AFF 0%, #217AFF 100%);
+
+   That is a bright blue nobody chose; the product primary is #3A5795 (ProductIdentity.Palette).
+
+   The token could not simply be redefined in crossbuy-brand.css. The BACK OFFICE bundle never
+   defines --bs-app-toolbar-bg at all, yet back-office pages do use the .app-toolbar class — their
+   toolbars resolve it to nothing today and are transparent. Defining it globally would therefore
+   paint a blue band across the back office as well, which is a regression dressed as a fix.
+
+   So the override is scoped to this stylesheet, and this stylesheet is linked ONLY by the portal
+   pages. Values come from ProductIdentity.Palette and are not re-picked here.
+   ================================================================================================= */
+
+:root {
+	/* ProductIdentity.Palette.Primary — the single canonical product-brand colour. */
+	--bs-app-toolbar-bg: linear-gradient(180deg, #3A5795 0%, #3A5795 100%);
+}
+
+/* The band's own text and chrome. demo30 assumes white-on-bright-blue; white on #3A5795 measures
+   7.05:1, so the same treatment keeps passing AA on the darker ground. Stated rather than assumed
+   because the ratio is the reason the band may carry body text at all. */
+.app-toolbar .text-white,
+.app-toolbar .page-heading,
+.app-toolbar .breadcrumb-item,
+.app-toolbar .breadcrumb-item a {
+	color: #FFFFFF;
+}
+
+/* The avatar's SHAPE only. It used to carry a tinted disc as cosmetic cover for a broken image -
+   ContactPhoto answered 404 when a row's PhotoPath named a file that no longer existed, and the
+   browser drew its torn-page glyph. That was fixed at the source: the endpoint now serves the
+   neutral avatar for a signed-in caller with nothing servable, so a real image always arrives and
+   there is nothing left to hide. What remains is the cropping every avatar wants. */
+img[src$="/ClientPortal/Contacts/photo"] {
+	border-radius: 50%;
+	object-fit: cover;
+}

@@ -1,4 +1,4 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.BL.Platform;    // Client Portal: AddCrossBuyPortalAuthentication()
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
@@ -210,6 +210,21 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.OrgStructureReportPermissions.View,
         "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer")
     .MapPermission(CrossBuy.BL.Reporting.OrgStructureReportPermissions.Notes,
+        "Admin", "SuperAdmin")
+    //   hyper.reports.view   best-selling items for a hypermarket branch: quantity sold, order
+    //                        count and net sales. Sales is the operational role that runs the
+    //                        shop floor, mapped for the same reason Storekeeper reads stock.
+    //   hyper.reports.cost   additionally reveals COST and MARGIN on the same report, through the
+    //                        per-field RequiredPermissionKey. Administration only, matching
+    //                        inventory.reports.cost and accounting.reports.profitability - a
+    //                        margin is the most commercially sensitive number the POS holds.
+    //
+    // Until these two lines existed the dataset was registered, listed and clickable, and refused
+    // EVERY caller: no authority claims the "hyper." namespace, so an unmapped key is denied for
+    // all. Narrow or widen by editing THESE lines; nothing in the platform changes.
+    .MapPermission(CrossBuy.BL.Reporting.HyperReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "Sales")
+    .MapPermission(CrossBuy.BL.Reporting.HyperReportPermissions.Cost,
         "Admin", "SuperAdmin"));
 
 // ---- ADR-037: THE MODULE FIELD AUTHORITY BOUNDARY ----------------------------------------------
@@ -350,6 +365,15 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.IRuntimeInstanceInfo, CrossBu
 // registered too because WorkerGate is IAsyncDisposable and the lease must be released once, by the
 // same instance that took it.
 builder.Services.Configure<CrossBuy.BL.Platform.RuntimeOptions>(builder.Configuration.GetSection("Runtime"));
+
+// COMPANY PINS COME FROM CONFIGURATION, NEVER FROM A COMPILED CONSTANT.
+//
+// PublicCatalogOptions documented itself as reading the "Store" section "and nowhere else", but no
+// binding existed: IOptions<> handed out the class default and the section in appsettings.json was
+// read by nothing. The storefront was therefore still pinned by a literal, just one that had moved.
+// PosCompanyOptions is registered beside it so the same gap cannot open twice.
+builder.Services.Configure<CrossBuy.Models.Platform.PublicCatalogOptions>(builder.Configuration.GetSection("Store"));
+builder.Services.Configure<CrossBuy.Models.Platform.PosCompanyOptions>(builder.Configuration.GetSection("Pos"));
 builder.Services.AddSingleton<CrossBuy.BL.Platform.WorkerGate>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IWorkerGate>(sp => sp.GetRequiredService<CrossBuy.BL.Platform.WorkerGate>());
 
@@ -365,6 +389,10 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBu
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventService, CrossBuy.BL.Platform.BusinessEventService>();           // ADR-001: in-transaction event recording
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformAdminIdentity, CrossBuy.BL.Platform.IdentityPlatformAdminIdentity>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.HrPermissionVocabulary>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.ProjectsPermissionVocabulary>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.TasksPermissionVocabulary>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.CommunicationPermissionVocabulary>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabulary, CrossBuy.BL.ModulePermissions.HospitalPermissionVocabulary>();   // H192: hospital roles become assignable (owner-approved 2026-11-18)
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabularyRegistry, CrossBuy.BL.Platform.PlatformPermissionVocabularyRegistry>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformGrantWriter, CrossBuy.BL.Platform.PlatformGrantWriter>();
@@ -450,12 +478,67 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 // a singleton would capture that context across requests. Placed immediately beside the same tab's own
 // IBoqService line rather than in a new block, per SHF-01: append in the tab's region, reorder nothing.
 //
-// Its two siblings in that slice - ISubcontractScopeService and ICommercialRevisionService - are NOT
-// registered here. They are deliberately left alone: no controller resolves them yet, so they break
-// nothing, and registering a service nobody asks for is a guess about how their owner intends to wire it.
+// ISubcontractScopeService is registered here because subcontract certificate approval and posting
+// enforce the C1 line-to-header cap. Commercial revisions are a separate C7 workflow consumed by
+// variation approval.
 builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionAuditService,
                            CrossBuy.BL.Construction.ConstructionAuditService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.ISubcontractScopeService,
+                           CrossBuy.BL.Construction.SubcontractScopeService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.ICommercialRevisionService,
+                           CrossBuy.BL.Construction.CommercialRevisionService>();
 builder.Services.AddScoped<IBoqService, BoqService>();   // Projects & Contracting P1 BOQ
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetPolicyService,
+                           CrossBuy.BL.Construction.ConstructionBudgetPolicyService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetVersionService,
+                           CrossBuy.BL.Construction.ConstructionBudgetVersionService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionFinancialSourceService,
+                           CrossBuy.BL.Construction.ConstructionFinancialSourceService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionOrderAllocationService,
+                           CrossBuy.BL.Construction.ConstructionOrderAllocationService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionCommitmentReservationService,
+                           CrossBuy.BL.Construction.ConstructionCommitmentReservationService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetExceptionService,
+                           CrossBuy.BL.Construction.ConstructionBudgetExceptionService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseDraftService,
+                           CrossBuy.BL.Construction.ConstructionPurchaseDraftService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService,
+                           CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.ConstructionPurchaseApprovalService>(sp => (CrossBuy.BL.Construction.ConstructionPurchaseApprovalService)sp.GetRequiredService<CrossBuy.BL.Construction.IConstructionPurchaseApprovalService>());
+builder.Services.AddScoped<CrossBuy.BL.Construction.ConstructionReservationRebaseRequestService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionRebaseWorkspaceService, CrossBuy.BL.Construction.ConstructionRebaseWorkspaceService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionPurchaseEditorService,
+                           CrossBuy.BL.Construction.ConstructionPurchaseEditorService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionPartialInvoiceService>(sp => new CrossBuy.BL.Construction.ConstructionPartialInvoiceService(
+    sp.GetRequiredService<CrossDbContext>(), sp.GetRequiredService<IProjectsAccessService>(),
+    sp.GetRequiredService<InventoryAccessService>(), sp.GetRequiredService<CrossBuy.BL.Construction.IConstructionAuditService>(),
+    sp.GetRequiredService<ICurrencyRounding>(), sp.GetRequiredService<IPayableService>()));
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionActualCostWorkspace, CrossBuy.BL.Construction.ConstructionActualCostWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionConsumptionWorkspace, CrossBuy.BL.Construction.ConstructionConsumptionWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionCompanyPolicyWorkspace, CrossBuy.BL.Construction.ConstructionCompanyPolicyWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferPreview, CrossBuy.BL.Construction.ConstructionBudgetTransferPreview>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionCostForecastService, CrossBuy.BL.Construction.ConstructionCostForecastService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionRequests, CrossBuy.BL.Construction.ConstructionWarehouseExceptionRequests>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionDecisions, CrossBuy.BL.Construction.ConstructionWarehouseExceptionDecisions>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseExceptionWorkspace, CrossBuy.BL.Construction.ConstructionWarehouseExceptionWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentService, CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedWarehouseConsentWorkspace, CrossBuy.BL.Construction.ConstructionRebasedWarehouseConsentWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionCostForecastWorkspace, CrossBuy.BL.Construction.ConstructionCostForecastWorkspace>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferRequests, CrossBuy.BL.Construction.ConstructionBudgetTransferRequestService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferDecisions, CrossBuy.BL.Construction.ConstructionBudgetTransferDecisionService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetTransferApplications, CrossBuy.BL.Construction.ConstructionBudgetTransferApplicationService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionActualCostService,
+                           CrossBuy.BL.Construction.ConstructionActualCostService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionMaterialConsumptionService,
+                           CrossBuy.BL.Construction.ConstructionMaterialConsumptionService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionBudgetExposureService,
+                           CrossBuy.BL.Construction.ConstructionBudgetExposureService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionWarehouseAccess,
+                           CrossBuy.BL.Construction.ConstructionWarehouseAccess>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionStructureService,
+                           CrossBuy.BL.Construction.ConstructionStructureService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionDailySiteReportService,
+                           CrossBuy.BL.Construction.ConstructionDailySiteReportService>();
 builder.Services.AddScoped<IContractService, ContractService>();   // Projects & Contracting P2 contract (advance/retention)
 builder.Services.AddScoped<IProgressService, ProgressService>();   // Projects & Contracting P3 execution/progress (operational)
 builder.Services.AddScoped<IProgressBillingService, ProgressBillingService>();   // Projects & Contracting P4 progress billing (المستخلص)
@@ -473,6 +556,8 @@ builder.Services.AddScoped<IEquipmentDepreciationService, EquipmentDepreciationS
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IPosSetupService, PosSetupService>();
 builder.Services.AddScoped<IPosOrderService, PosOrderService>();
+builder.Services.AddScoped<IPosCouponService, PosCouponService>();   // HM-26: basket coupons with redemption limits
+builder.Services.AddScoped<IPosPromotionEngine, PosPromotionEngine>();   // HM-12: the "Promotions" capability's first consumer
 // POS authorization (Phase 3C-2). Three registrations, not one: the concrete type, the module
 // interface used by POS screens, and IModuleAccessService — the last is how the platform finds
 // POS by scope, and without it the service resolves fine while authorizing nothing.
@@ -695,6 +780,8 @@ builder.Services.AddScoped<IPosPreparationService, PosPreparationService>();
 builder.Services.AddScoped<IRestaurantInventoryIntelligenceService, RestaurantInventoryIntelligenceService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IManufService, ManufService>();
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionRebasedReceiptService,
+                           CrossBuy.BL.Construction.ConstructionRebasedReceiptService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
 builder.Services.AddScoped<ISellingService, SellingService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
@@ -792,6 +879,8 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskLabSurface>();
 // THE ROSTER, the fifth governed surface and the first under Hr authority. It carries no pay
 // data of any kind - see AskWorkforceSurface for why that is a decision and not an omission.
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskWorkforceSurface>();
+// TASKS use the same list authorizer as /Tasks, including linked-source visibility filtering.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskTasksSurface>();
 // COMPOSING A QUERY, cheap-and-exact first. The rule composer resolves an ordinary sales question
 // from the surface own declared vocabulary in microseconds; the model composer handles a wording
 // nobody declared and costs seconds, so it is asked only when the rules decline.
@@ -817,6 +906,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Plat
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskLabQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskWardQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskWorkforceQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskTasksQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskService, CrossBuy.BL.Platform.Ai.AskService>();
 // What the chat box was last talking about, so a follow-up need not restate its subject. Keyed by
 // the authenticated user as well as the conversation, and it carries a PARAMETER, never an answer:
@@ -847,6 +937,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskIntentResolver>(sp =>
 		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.ServiceIntentResolver>(),
 		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.KeywordIntentResolver>(),
 	}));
+
 builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>();
 
 // Approvals read platform (TAB-6, narrow read ownership). The reusable cross-silo inbox: it consumes

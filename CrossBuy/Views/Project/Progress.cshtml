@@ -12,14 +12,19 @@
     string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
     bool locked = Model.Status == "Confirmed";
     string dis = locked ? "disabled" : "";
-    string StatusBadge(string s) => s == "Confirmed" ? "success" : "warning";
+    string StatusBadge(string s) => s == "Confirmed" ? "success" : "secondary";
+    // Every link out of this screen must carry the culture. Without it the request is answered
+    // under the default culture, and clicking "edit" lands on the SAME screen rendered in English
+    // LTR - which reads as "editing is broken" rather than as a language switch.
+    var culture = System.Globalization.CultureInfo.CurrentCulture.Name;
+    var uiCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
 }
 <style>
     /* REUSED BOQ inline-lines pattern (.cb-2row): labels above each cell, wraps to 2 rows per item (no cramped scroll) */
     .cb-2row thead{display:none}
     .cb-2row #rows tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem .75rem;padding:.9rem .5rem;border-bottom:1px solid var(--bs-gray-200)}
     .cb-2row #rows tr:last-child{border-bottom:0}
-    .cb-2row #rows tr.over-boq{background:var(--bs-light-warning)}
+    .cb-2row #rows tr.over-boq{background:var(--bs-light-danger)}
     .cb-2row #rows td{display:flex;flex-direction:column;justify-content:flex-end;border:0!important;padding:0!important}
     .cb-2row #rows td::before{content:attr(data-l);font-size:.72rem;line-height:1;color:var(--bs-gray-500);font-weight:600;margin-bottom:.35rem;min-height:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cb-2row #rows td.cb-desc{grid-column:span 2}
@@ -33,15 +38,15 @@
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Execution & progress"]</h1>
             <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn)) @(prj?.ContractValue != null ? "· " + Localizer["Contract value"].Value + ": " + prj!.ContractValue!.Value.ToString("N2") : "")</span></div>
         <div class="d-flex gap-2">
-            <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
-            <a href="@Url.Action("Progress","Project", new { id = prj?.ID })" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New measurement"]</a>
+            <a asp-controller="Project" asp-action="Projects" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+            <a asp-controller="Project" asp-action="Progress" asp-route-id="@prj?.ID" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New measurement"]</a>
             @if (!locked) { <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button> }
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
-        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+        @if (TempData["PrjMsg"] != null) { <div class="notice d-flex align-items-center bg-light-success rounded border-success border border-dashed p-4 mb-5" role="status"><i class="ki-outline ki-information-5 fs-2 text-success me-3"></i><span class="fw-semibold fs-7 text-gray-800">@TempData["PrjMsg"]</span></div> }
+        @if (TempData["PrjErr"] != null) { <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5" role="alert"><i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i><span class="fw-semibold fs-7 text-gray-800">@TempData["PrjErr"]</span></div> }
 
         <!--begin::Measurements list-->
         <div class="card mb-5">
@@ -64,11 +69,18 @@
                                 <td class="text-end">@mrow.ExecutedValue.ToString("N2")</td>
                                 <td class="text-center"><span class="badge badge-light-@StatusBadge(mrow.Status)">@Localizer[mrow.Status]</span></td>
                                 <td class="text-center text-nowrap">
-                                    <a href="@Url.Action("Progress","Project", new { id = prj?.ID, m = mrow.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
                                     @if (mrow.Status == "Draft")
                                     {
-                                        <form asp-action="ConfirmProgress" method="post" class="d-inline" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Confirm measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Confirm"]"><i class="ki-outline ki-check fs-5"></i></button></form>
-                                        <form asp-action="DeleteProgress" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                        <a asp-controller="Project" asp-action="Progress" asp-route-id="@prj?.ID" asp-route-m="@mrow.ID" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Project" asp-action="Progress" asp-route-id="@prj?.ID" asp-route-m="@mrow.ID" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" class="btn btn-sm btn-icon btn-light me-1" title="@SR["View"]"><i class="ki-outline ki-eye fs-5"></i></a>
+                                    }
+                                    @if (mrow.Status == "Draft")
+                                    {
+                                        <form asp-action="ConfirmProgress" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" method="post" class="d-inline" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Confirm measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Confirm"]"><i class="ki-outline ki-check fs-5"></i></button></form>
+                                        <form asp-action="DeleteProgress" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
                                     }
                                 </td>
                             </tr>
@@ -80,7 +92,7 @@
         <!--end::Measurements list-->
 
         <!--begin::Measurement editor-->
-        <form asp-action="SaveProgress" method="post" id="fEditor">@Html.AntiForgeryToken()
+        <form asp-action="SaveProgress" asp-route-culture="@culture" asp-route-ui-culture="@uiCulture" method="post" id="fEditor">@Html.AntiForgeryToken()
             <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
             <input type="hidden" name="measurementId" value="@Model.MeasurementId" />
             <input type="hidden" name="rowsJson" id="rowsJson" />
@@ -90,14 +102,14 @@
                         @if (locked) { <span class="badge badge-light-primary ms-2">@Localizer["Confirmed"]</span> }</h3>
                 </div>
                 <div class="card-body">
-                    @if (locked) { <div class="alert alert-info">@Localizer["This measurement is confirmed (read-only)"]</div> }
+                    @if (locked) { <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fw-semibold fs-7 text-gray-800">@Localizer["This measurement is confirmed (read-only)"]</span></div> }
                     <div class="row mb-4">
                         <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@Localizer["Measurement date"]</label>
                             <input name="measurementDate" id="prg_date" class="form-control form-control-solid js-prg-date" autocomplete="off" value="@Model.MeasurementDate.ToString("yyyy-MM-dd")" @dis /></div>
                         <div class="col-md-9"><label class="fw-semibold fs-6 mb-2">@Localizer["Note"]</label>
                             <input name="note" class="form-control form-control-solid" value="@Model.Note" @dis /></div>
                     </div>
-                    @if (!Model.HasBoq) { <div class="alert alert-warning">@Localizer["No BOQ — enter overall project %"]</div> }
+                    @if (!Model.HasBoq) { <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fw-semibold fs-7 text-gray-800">@Localizer["No BOQ — enter overall project %"]</span></div> }
 
                     <div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr style="border-bottom:2px solid #0E4A9E;"><th></th></tr></thead>
                         <tbody id="rows">
@@ -105,8 +117,8 @@
                         {
                             <tr data-boqid="@(l.BoqItemId?.ToString() ?? "")" data-bq="@iv(l.BoqQty)" data-up="@iv(l.UnitPrice)" data-bv="@iv(l.BoqValue)" data-pe="@iv(l.PrevExecutedValue)">
                                 <td data-l="@Localizer["Code"]"><span class="lt">@(string.IsNullOrEmpty(l.Code) ? "—" : l.Code)</span></td>
-                                <td data-l="@SR["Description"]" class="cb-desc"><span class="lt lt-start">@l.Description</span></td>
-                                <td data-l="@Localizer["Unit"]"><span class="lt">@(string.IsNullOrEmpty(l.Unit) ? "—" : l.Unit)</span></td>
+                                <td data-l="@SR["Description"]" class="cb-desc"><span class="lt lt-start">@(l.BoqItemId == null ? Localizer["Project (no BOQ)"].Value : l.Description)</span></td>
+                                <td data-l="@Localizer["Unit"]"><bdi class="lt">@(string.IsNullOrEmpty(l.Unit) ? "—" : l.Unit)</bdi></td>
                                 <td data-l="@Localizer["BOQ qty"]"><span class="lt">@l.BoqQty.ToString("N2")</span></td>
                                 <td data-l="@Localizer["BOQ value"]"><span class="lt">@l.BoqValue.ToString("N2")</span></td>
                                 <td data-l="@Localizer["Previous"]"><span class="lt">@l.PrevExecutedValue.ToString("N2")</span></td>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;   // D-5: the line-based StripForeignKeys collects kept lines
 using CrossBuy.Models.Context;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -158,16 +159,67 @@ namespace CrossBuy.Tests.TestSupport
 			}
 		}
 
+		// =========================================================================================
+		// D-5 — WHY THIS IS LINE-BASED AND NO LONGER A CROSS-LINE REGULAR EXPRESSION.
+		//
+		// THE DEFECT, MEASURED RATHER THAN REASONED ABOUT. The previous implementation matched an
+		// inline constraint with `FOREIGN KEY[^,\r\n]*`, and `[^,\r\n]*` stops at the FIRST COMMA.
+		// That is fine for a single-column key and wrong for a COMPOSITE one. Several Construction
+		// entities declare `HasAlternateKey(x => new { x.ID, x.ProjectId, x.CompanyID })`, so EF emits:
+		//
+		//   CONSTRAINT [FK_..._ParentId_CompanyID_Category] FOREIGN KEY ([ParentId], [CompanyID], [Category])
+		//       REFERENCES [ConstructionCostCodes] ([ID], [CompanyID], [Category]) ON DELETE NO ACTION
+		//
+		// The expression consumed as far as the first comma inside the REFERENCES list and stopped,
+		// leaving `, [CompanyID], [Category]) ON DELETE NO ACTION` behind. That orphan then appended
+		// itself to the PRECEDING line — an alternate-key UNIQUE constraint — producing:
+		//
+		//   CONSTRAINT [AK_...] UNIQUE ([ID], [CompanyID], [Category]), [CompanyID], [Category]) ON DELETE NO ACTION
+		//
+		// which SQL Server rejects with exactly the two errors that aborted both full regression runs:
+		// "The definition for column 'CompanyID' must include a data type" and "Incorrect syntax near
+		// 'ACTION'". It occurred 27 times in the generated script, so every probe database failed to
+		// build and every SQL-backed suite died at fixture setup.
+		//
+		// WHY LINES ARE THE RIGHT UNIT. EF's GenerateCreateScript emits each table constraint on its
+		// own line — measured, not assumed: all 157 `CONSTRAINT [FK_...]` entries in the current model
+		// are single-line. A line is therefore a complete, self-delimiting unit, which a regular
+		// expression spanning commas and parentheses is not. The parser that matters here is the line
+		// break, and using it removes the entire class of partial-consumption bugs rather than the one
+		// instance that happened to be noticed.
+		// =========================================================================================
 		private static string StripForeignKeys(string script)
 		{
-			var noInline = System.Text.RegularExpressions.Regex.Replace(
-				script,
-				@",\s*CONSTRAINT \[FK_[^\]]+\] FOREIGN KEY[^,\r\n]*(\([^)]*\))?\s*REFERENCES[^,\r\n]*(\([^)]*\))?(\s+ON DELETE [A-Z ]+)?(\s+ON UPDATE [A-Z ]+)?",
-				string.Empty,
-				System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+			var lines = script.Replace("\r\n", "\n").Split('\n');
+			var kept = new List<string>(lines.Length);
 
+			foreach (var line in lines)
+			{
+				// A whole line that IS an inline foreign-key constraint. Nothing else on it to keep.
+				if (System.Text.RegularExpressions.Regex.IsMatch(
+						line, @"^\s*CONSTRAINT \[FK_[^\]]+\] FOREIGN KEY\b",
+						System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+					continue;
+
+				kept.Add(line);
+			}
+
+			// Removing the LAST item of a CREATE TABLE body leaves the line above it ending in a comma
+			// immediately before the closing parenthesis, which is a syntax error in its own right. This
+			// runs after all removals so consecutive drops collapse correctly.
+			for (var i = 0; i < kept.Count - 1; i++)
+			{
+				if (System.Text.RegularExpressions.Regex.IsMatch(kept[i + 1], @"^\s*\)\s*;?\s*$")
+					&& kept[i].TrimEnd().EndsWith(","))
+					kept[i] = kept[i].TrimEnd().TrimEnd(',');
+			}
+
+			var joined = string.Join(Environment.NewLine, kept);
+
+			// Standalone `ALTER TABLE ... ADD CONSTRAINT [FK_...] ...;` statements. These are genuinely
+			// statement-shaped and terminated by a semicolon, so a regex is the right tool here.
 			return System.Text.RegularExpressions.Regex.Replace(
-				noInline,
+				joined,
 				@"ALTER TABLE[^;]*ADD CONSTRAINT \[FK_[^\]]+\][^;]*;",
 				string.Empty,
 				System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);

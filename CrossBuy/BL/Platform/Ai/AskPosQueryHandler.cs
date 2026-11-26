@@ -26,10 +26,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن مبيعات نقطة البيع: المبلغ أو الكمية أو عدد الطلبات، حسب الصنف أو الفرع أو الساعة أو نوع الطلب",
-			"Any point-of-sale question: amount, quantity or order count, by item, branch, hour or order type");
+			"Any point-of-sale question: amount, quantity or order count, by item, branch, hour or order type",
+			"Questions sur les ventes au point de vente : montant, quantité ou nombre de commandes, par article, succursale, heure ou type de commande");
 
 		public override AskText Example => AskText.Of(
-			"أي ساعة أكتر زحمة؟", "Which hour is busiest?");
+			"أي ساعة أكتر زحمة؟", "Which hour is busiest?", "Quelle heure est la plus fréquentée ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

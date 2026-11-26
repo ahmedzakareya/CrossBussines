@@ -40,6 +40,20 @@ namespace CrossBuy.Tests
             Payload = new JournalEntryEventPayload { OriginalJournalEntryId = entryId, ReversingJournalEntryId = entryId + 1 },
         };
 
+        // THE NO-TIMELINE EXAMPLE. JournalEntry used to play this part and no longer can: it now
+        // declares a timeline, because Accounting/JournalEntry renders one. The rule being proved
+        // was never about journals - it reads SupportsTimeline off whatever entity arrives - so it
+        // is proved by a quotation, whose capability genuinely is off.
+        private static BusinessEventRecord QuotationAccepted(int quotationId = 11) => new()
+        {
+            EntityCode = EntityRegistry.Quotation,
+            EntityId = quotationId,
+            EventType = QuotationEvents.AcceptedByCustomer,
+            Visibility = BusinessEventVisibility.Internal,
+            DedupKey = $"quotation-{quotationId}-accepted",
+            Payload = new { quotationId, decision = "Accepted" },
+        };
+
         private static BusinessEventRecord InvoiceCreated(int invoiceId = 5) => new()
         {
             EntityCode = EntityRegistry.SalesInvoice,
@@ -114,9 +128,9 @@ namespace CrossBuy.Tests
         public async Task An_entity_with_no_timeline_gets_no_timeline_dispatch()
         {
             using var host = new PlatformTestHost();
-            Assert.False(host.Registry().GetDefinition(EntityRegistry.JournalEntry).SupportsTimeline);
+            Assert.False(host.Registry().GetDefinition(EntityRegistry.Quotation).SupportsTimeline);
 
-            var consumers = await ConsumersFor(host, await RecordAsync(host, JournalReversal()));
+            var consumers = await ConsumersFor(host, await RecordAsync(host, QuotationAccepted()));
 
             // The row that used to be created, retried five times and left terminal.
             Assert.DoesNotContain(BusinessEventConsumers.TimelineProjection, consumers);
@@ -126,7 +140,7 @@ namespace CrossBuy.Tests
         public async Task Every_other_consumer_still_receives_its_dispatch_row()
         {
             using var host = new PlatformTestHost();
-            var consumers = await ConsumersFor(host, await RecordAsync(host, JournalReversal()));
+            var consumers = await ConsumersFor(host, await RecordAsync(host, QuotationAccepted()));
 
             // Suppression is scoped to the ONE consumer that cannot use the event. Everything else the
             // platform registers must still be there, named from the registered set rather than from a
@@ -146,17 +160,17 @@ namespace CrossBuy.Tests
         public async Task The_business_event_itself_is_still_recorded()
         {
             using var host = new PlatformTestHost();
-            var eventId = await RecordAsync(host, JournalReversal(entryId: 42));
+            var eventId = await RecordAsync(host, QuotationAccepted(42));
 
             using var verify = host.NewContext();
             var stored = await verify.BusinessEvents.AsNoTracking().SingleAsync(e => e.EventId == eventId);
 
-            // The reversal is a business fact. Option B removes projection work, never the audit record -
+            // The decision is a business fact. Option B removes projection work, never the audit record -
             // reporting, AI and any future consumer still see it.
-            Assert.Equal(EntityRegistry.JournalEntry, stored.EntityType);
-            Assert.Equal(JournalEntryEvents.Reversed, stored.EventType);
+            Assert.Equal(EntityRegistry.Quotation, stored.EntityType);
+            Assert.Equal(QuotationEvents.AcceptedByCustomer, stored.EventType);
             Assert.Equal(42, stored.EntityId);
-            Assert.Equal(BusinessEventVisibility.Confidential, stored.Visibility);
+            Assert.Equal(BusinessEventVisibility.Internal, stored.Visibility);
             Assert.False(string.IsNullOrWhiteSpace(stored.Payload));
         }
 
@@ -168,7 +182,7 @@ namespace CrossBuy.Tests
             using var host = new PlatformTestHost();
 
             var withTimeline = await RecordAsync(host, InvoiceCreated());
-            var without = await RecordAsync(host, JournalReversal());
+            var without = await RecordAsync(host, QuotationAccepted());
 
             using var verify = host.NewContext();
             var duplicates = await verify.BusinessEventDispatches.AsNoTracking()
@@ -202,8 +216,8 @@ namespace CrossBuy.Tests
             var envelope = new BusinessEventEnvelope
             {
                 EventUid = Guid.NewGuid(),
-                EventType = JournalEntryEvents.Reversed,
-                Entity = new BusinessEventEntity { Code = EntityRegistry.JournalEntry, Id = 7 },
+                EventType = QuotationEvents.AcceptedByCustomer,
+                Entity = new BusinessEventEntity { Code = EntityRegistry.Quotation, Id = 11 },
                 Actor = new BusinessEventActor { EmployeeId = 7 },
                 Context = new BusinessEventContext { CompanyId = 1 },
                 PayloadVersion = 1,

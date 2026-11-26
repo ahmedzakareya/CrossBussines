@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     # Service
     ai_service_port: int = 8000
 
+    # THE TAIL ENGINE. A local GGUF model, asked ONLY when the trained classifier and the
+    # nearest-neighbour matcher have both declined — so its seconds are spent instead of a
+    # failure, never instead of a fast answer. Off by default: it loads gigabytes of weights on
+    # first use, and a component that heavy should start running because someone decided it
+    # should. Needs no API key and no provider; the weights sit in crossbuy_ai/models/.
+    intent_llm_enabled: bool = False
+
     # SPEECH TO TEXT (owner 2026-11-19). Which Whisper weights in models/whisper-<size>/ transcribe a voice
     # message: "small", "medium", or "auto" — medium for a short message (reads Arabic far better), small for a
     # longer one (twice as fast). On the processor only (int8); the route answers 503 when no weights are there.

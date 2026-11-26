@@ -19,7 +19,7 @@
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
             <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["From warehouse"]</label><select name="fromWarehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["To warehouse"]</label><select name="toWarehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
-            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="transferDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="transferDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
             <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Transferred items"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
@@ -29,6 +29,7 @@
         </tr></thead><tbody id="rows"></tbody></table></div></div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="_ItemScanModal" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
@@ -69,7 +70,26 @@ function addRow(d){d=d||{};var tr=document.createElement('tr');tr.innerHTML=
 document.getElementById('add').addEventListener('click',function(){addRow();});
 document.getElementById('rows').addEventListener('change',function(e){if(e.target.classList.contains('it')){var tr=e.target.closest('tr'),o=e.target.options[e.target.selectedIndex];var b=o.getAttribute('data-base');if(b)tr.querySelector('.u').value=b;applyItemDefaultS(tr,e.target.value);applyItemDefault(tr,e.target.value);}else if(e.target.classList.contains('ssec')){fillRacksS(e.target.closest('tr'));}else if(e.target.classList.contains('sec')){fillRacks(e.target.closest('tr'));}});
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();}});
-document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0;var rk=tr.querySelector('.rack').value,sc=tr.querySelector('.sec').value,bin=rk||sc;var srk=tr.querySelector('.srack').value,ssc=tr.querySelector('.ssec').value,sbin=srk||ssc;if(it&&q>0)lines.push({itemId:parseInt(it),qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,batchNo:tr.querySelector('.b').value||null,serialNo:tr.querySelector('.sn').value||null,binLocationId:bin?parseInt(bin):null,sourceBinLocationId:sbin?parseInt(sbin):null});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add an item"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+document.getElementById('save').addEventListener('click',function(){
+var lines = CBLines.gather({
+  touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.num(tr,'.q')!==1
+      || CBLines.str(tr,'.b') || CBLines.str(tr,'.sn')); },
+  problem:function(tr){
+    if(!CBLines.str(tr,'.it')) return CBLines.T.item;
+    if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+    return null; },
+  build:function(tr){
+    var rk=CBLines.str(tr,'.rack'), sc=CBLines.str(tr,'.sec'), bin=rk||sc,
+        srk=CBLines.str(tr,'.srack'), ssc=CBLines.str(tr,'.ssec'), sbin=srk||ssc,
+        u=CBLines.str(tr,'.u');
+    return {itemId:parseInt(CBLines.str(tr,'.it')),qty:CBLines.num(tr,'.q'),
+            uoMId:u?parseInt(u):null,
+            batchNo:CBLines.str(tr,'.b')||null,serialNo:CBLines.str(tr,'.sn')||null,
+            binLocationId:bin?parseInt(bin):null,
+            sourceBinLocationId:sbin?parseInt(sbin):null}; }
+});
+if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
 addRow();
 window.onItemScanned=function(p){ addRow({itemId:p.id, text:(p.code?p.code+' — ':'')+(p.name||''), qty:p.qty, uomId:p.uomId}); };
 </script>

@@ -237,9 +237,16 @@ public sealed class NavigationGuardTests
 
             var parameters = method.GetParameters().Select(p => p.Name!).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var key in item.RouteValues.Keys)
+            // "culture" and "ui-culture" are NOT action parameters and never will be: they are the keys
+            // QueryStringRequestCultureProvider reads, and Program.cs keeps that provider (it removes only
+            // AcceptLanguageHeaderRequestCultureProvider) and calls UseRequestLocalization. A menu link that
+            // carries them is PRESERVING the reader's language across navigation, which is the behaviour the
+            // product wants; flagging them sent this guard after a localisation feature rather than a defect.
+            foreach (var key in item.RouteValues.Keys.Where(k =>
+                         !string.Equals(k, "culture", StringComparison.OrdinalIgnoreCase) &&
+                         !string.Equals(k, "ui-culture", StringComparison.OrdinalIgnoreCase)))
             {
-                if (!parameters.Contains(key))
+                if (!parameters.Contains(key) && !ViewReadsFromQuery(item.Controller, item.Action, key))
                 {
                     broken.Add($"{menu}: {item.LabelEn} passes '{key}' to {item.Controller}.{item.Action}, " +
                                $"which takes ({string.Join(", ", parameters)})");
@@ -442,6 +449,23 @@ public sealed class NavigationGuardTests
     private static bool ActionExists(string controller, string action) => FindAction(controller, action) is not null;
 
     private static string ViewRoot() => Path.Combine(RepoRoot(), "CrossBuy", "Views");
+
+    // A route value the ACTION does not declare can still be honoured - by the VIEW, which reads it
+    // straight from the query string. Views/Inventory/PurchaseOrders.cshtml does exactly that with
+    // "construction": it switches its title and its active navigation on allocation / approval /
+    // partial-invoice, while the action stays a bare shell by design (the rows arrive separately from
+    // PurchaseOrdersData). Flagging that sent this guard after a working feature, which is the same
+    // mistake as flagging "culture": a parameter list is not the only place a key can be consumed.
+    //
+    // This stays strict where it matters - a key that NOTHING reads still fails, because the view is
+    // searched for that exact key rather than waved through by name.
+    private static bool ViewReadsFromQuery(string controller, string action, string key)
+    {
+        var path = Path.Combine(ViewRoot(), controller, action + ".cshtml");
+        if (!File.Exists(path)) return false;
+        var source = File.ReadAllText(path);
+        return source.Contains("Query[\"" + key + "\"]", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static string RepoRoot()
     {

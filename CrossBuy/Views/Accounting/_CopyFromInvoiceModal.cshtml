@@ -1,0 +1,330 @@
+@model string
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isArC = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+
+    // ONE DIALOG, TWO SIDES. Purchase and sales ask the same question - which earlier document by
+    // this party, and which of its lines - and their screens' fillRow() already agree on the
+    // payload. A second copy of this file would be the same 200 lines drifting apart one fix at a
+    // time, so the page says which side it is and only the two URLs and the subtitle change.
+    var isSales = string.Equals(Model, "sales", System.StringComparison.OrdinalIgnoreCase);
+}
+@*
+    COPY LINES FROM AN EARLIER INVOICE BY THE SAME VENDOR.
+
+    TWO STEPS IN ONE DIALOG, because they are one decision: which invoice, then which of its
+    lines. A second modal on top of the first would bury the back-out, and a side-by-side split
+    would give each half a column too narrow to read a description in.
+
+    THE LINES ARRIVE ALL TICKED. "Bring everything over" is the common intent and the user asked
+    for it as one action; untick what you do not want is a shorter path than tick what you do. The
+    header checkbox is the whole-invoice switch, so neither direction costs more than one click.
+
+    NOTHING IS SAVED. The chosen lines are handed to the page's own fillRow(), which is the same
+    function the edit screen uses to put existing lines on the form. They become ordinary unsaved
+    rows: editable, removable, and committed only by the invoice's own Save.
+*@
+<div class="modal fade" id="cbCopyInvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-800px">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <div>
+                    <h2 class="fw-bold fs-4 m-0">@Localizer["Copy from an earlier invoice"]</h2>
+                    <div class="text-muted fs-7 mt-1" id="cbciSub">@(isSales ? Localizer["Invoices for this customer"] : Localizer["Invoices from this vendor"])</div>
+                </div>
+                <div class="btn btn-icon btn-sm btn-active-light" data-bs-dismiss="modal" aria-label="@SR["Cancel"]"><i class="ki-outline ki-cross fs-2"></i></div>
+            </div>
+
+            <div class="modal-body">
+                @* ---- step 1: the vendor's invoices ---- *@
+                <div id="cbciStep1">
+                    <div class="position-relative d-flex align-items-center mb-4">
+                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input id="cbciSearch" class="form-control form-control-solid ps-12" autocomplete="off"
+                               placeholder="@Localizer["Search by invoice number or note"]" />
+                    </div>
+
+                    @* The refusal idiom: a dashed notice that states the situation, never an empty
+                       table that looks like a failure to load. *@
+                    <div id="cbciEmpty" class="d-none border border-dashed border-gray-300 rounded p-6 text-center text-muted">
+                        <i class="ki-outline ki-document fs-2x text-gray-400 d-block mb-3"></i>
+                        <span id="cbciEmptyText">@(isSales ? Localizer["No earlier invoices for this customer"] : Localizer["No earlier invoices from this vendor"])</span>
+                    </div>
+
+                    <div id="cbciListWrap" class="table-responsive">
+                        <table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-muted text-uppercase">
+                                    <th>@Localizer["Invoice"]</th>
+                                    <th>@SR["Date"]</th>
+                                    <th class="text-center">@Localizer["Lines"]</th>
+                                    <th class="text-end">@SR["Total"]</th>
+                                    <th style="width:1%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cbciList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* ---- step 2: that invoice's lines ---- *@
+                <div id="cbciStep2" class="d-none">
+                    <button type="button" class="btn btn-sm btn-light mb-4" id="cbciBack">
+                        <i class="ki-outline ki-arrow-@(isArC ? "right" : "left") fs-4"></i>@Localizer["Back to invoices"]
+                    </button>
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-muted text-uppercase">
+                                    <th style="width:1%">
+                                        <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                            <input class="form-check-input" type="checkbox" id="cbciAll" checked
+                                                   aria-label="@Localizer["Select all lines"]" />
+                                        </div>
+                                    </th>
+                                    @* The item identifies the line; the description is the note beside it.
+                                       The barcode rides under the name rather than taking a column of its
+                                       own - the same two-line treatment the scan dialog uses - so the
+                                       figures keep the width they need to stay readable. *@
+                                    <th>@Localizer["Item"]</th>
+                                    <th>@SR["Description"]</th>
+                                    <th class="text-end">@Localizer["Qty"]</th>
+                                    <th class="text-end">@SR["Price"]</th>
+                                    <th class="text-end">@SR["Total"]</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cbciLines"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer py-4">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                <button type="button" class="btn btn-primary btn-sm d-none" id="cbciAdd">
+                    <i class="ki-outline ki-check fs-3"></i><span id="cbciAddText">@Localizer["Add selected lines"]</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var listUrl  = '@(isSales ? Url.Action("SalesInvoicesForCustomer", "Accounting") : Url.Action("PurchaseInvoicesForVendor", "Accounting"))';
+    var linesUrl = '@(isSales ? Url.Action("SalesInvoiceLinesForCopy", "Accounting") : Url.Action("PurchaseInvoiceLinesForCopy", "Accounting"))';
+    var PARTY    = '@(isSales ? "customerId" : "vendorId")';
+    var IS_AR = @(isArC ? "true" : "false");
+
+    var T = {
+        noneForVendor: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isSales ? Localizer["No earlier invoices for this customer"].Value : Localizer["No earlier invoices from this vendor"].Value)),
+        noneMatch:     @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No invoice matches this search"].Value)),
+        noLines:       @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["This invoice has no lines"].Value)),
+        fromInvoice:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Lines of invoice {0}"].Value)),
+        vendorFirst:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isSales ? Localizer["Choose a customer first"].Value : Localizer["Choose a vendor first"].Value)),
+        addN:          @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add selected lines ({0})"].Value)),
+        addedN:        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["{0} lines added"].Value)),
+        subtitle:      @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isSales ? Localizer["Invoices for this customer"].Value : Localizer["Invoices from this vendor"].Value)),
+        noItem:        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No item (expense line)"].Value)),
+        failed:        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Could not load. Try again."].Value))
+    };
+
+    var el = document.getElementById('cbCopyInvModal'); if (!el) return;
+    var modal = null, current = [], token = 0;
+
+    function M() { if (!modal) modal = new bootstrap.Modal(el); return modal; }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function num(v) { return (parseFloat(v) || 0).toFixed(2); }
+
+    // A Latin invoice number or a figure inside an Arabic sentence reverses without isolation.
+    function bidi(s) { return '<bdi>' + esc(s) + '</bdi>'; }
+
+    function step(n) {
+        document.getElementById('cbciStep1').classList.toggle('d-none', n !== 1);
+        document.getElementById('cbciStep2').classList.toggle('d-none', n !== 2);
+        document.getElementById('cbciAdd').classList.toggle('d-none', n !== 2);
+    }
+
+    function notice(text) {
+        var box = document.getElementById('cbciEmpty');
+        document.getElementById('cbciEmptyText').textContent = text;
+        box.classList.remove('d-none');
+        document.getElementById('cbciListWrap').classList.add('d-none');
+    }
+    function hideNotice() {
+        document.getElementById('cbciEmpty').classList.add('d-none');
+        document.getElementById('cbciListWrap').classList.remove('d-none');
+    }
+
+    // ---- step 1 --------------------------------------------------------------------------
+    function loadInvoices(vendorId, q) {
+        var mine = ++token;
+        fetch(listUrl + '?' + PARTY + '=' + encodeURIComponent(vendorId) + '&q=' + encodeURIComponent(q || ''),
+              { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (rows) {
+                if (mine !== token) return;            // a slower earlier search must not win
+                var body = document.getElementById('cbciList');
+                if (!rows || !rows.length) { body.innerHTML = ''; notice(q ? T.noneMatch : T.noneForVendor); return; }
+                hideNotice();
+                body.innerHTML = rows.map(function (r) {
+                    return '<tr class="cbci-row" data-id="' + r.id + '" data-no="' + esc(r.no) + '" style="cursor:pointer">'
+                         + '<td class="fw-bold text-gray-900">' + bidi(r.no || ('#' + r.id)) + '</td>'
+                         + '<td class="text-muted">' + bidi(r.date) + '</td>'
+                         + '<td class="text-center"><span class="badge badge-light-primary">' + r.lines + '</span></td>'
+                         + '<td class="text-end fw-semibold">' + bidi(num(r.total) + (r.currency ? ' ' + r.currency : '')) + '</td>'
+                         + '<td class="text-end"><i class="ki-outline ki-black-' + (IS_AR ? 'left' : 'right') + ' fs-3 text-muted"></i></td>'
+                         + '</tr>';
+                }).join('');
+            })
+            .catch(function () { if (mine === token) notice(T.failed); });
+    }
+
+    // ---- step 2 --------------------------------------------------------------------------
+    function loadLines(id, no) {
+        fetch(linesUrl + '?id=' + encodeURIComponent(id),
+              { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d || !d.ok) { notice(T.failed); return; }
+                current = d.lines || [];
+                document.getElementById('cbciSub').textContent = T.fromInvoice.replace('{0}', no || ('#' + id));
+                var body = document.getElementById('cbciLines');
+                if (!current.length) {
+                    body.innerHTML = '<tr><td colspan="6"><div class="border border-dashed border-gray-300 rounded p-6 text-center text-muted">'
+                                   + esc(T.noLines) + '</div></td></tr>';
+                    document.getElementById('cbciAll').checked = false;
+                } else {
+                    body.innerHTML = current.map(function (l, i) {
+                        // A line without an item is an expense line - it has no name and no barcode,
+                        // and saying so with a dash is clearer than an empty cell that reads as a
+                        // loading failure.
+                        var name = l.itemName
+                            ? '<span class="fw-semibold text-gray-900">' + esc(l.itemName) + '</span>'
+                            : '<span class="text-muted">' + T.noItem + '</span>';
+                        // A barcode is digits and Latin letters: it has to be isolated or it reverses
+                        // inside an Arabic row.
+                        //
+                        // AND IT IS DROPPED WHEN IT REPEATS THE NAME. Measured on this catalogue, 51
+                        // of 208 items carry a barcode identical to their name - a quarter of every
+                        // list would print the same string twice, which reads as a rendering fault
+                        // and buries the rows where the barcode genuinely adds something.
+                        var bc = (l.barcode && l.barcode !== l.itemName)
+                            ? '<div class="text-muted fs-8"><bdi dir="ltr">' + esc(l.barcode) + '</bdi></div>'
+                            : '';
+                        return '<tr>'
+                             + '<td><div class="form-check form-check-sm form-check-custom form-check-solid">'
+                             + '<input class="form-check-input cbci-pick" type="checkbox" data-i="' + i + '" checked></div></td>'
+                             + '<td>' + name + bc + '</td>'
+                             + '<td class="text-muted">' + esc(l.label || '') + '</td>'
+                             + '<td class="text-end">' + bidi(num(l.q)) + '</td>'
+                             + '<td class="text-end">' + bidi(num(l.p)) + '</td>'
+                             + '<td class="text-end fw-semibold">' + bidi(num(l.lineTotal)) + '</td>'
+                             + '</tr>';
+                    }).join('');
+                    document.getElementById('cbciAll').checked = true;
+                }
+                step(2);
+                refreshCount();
+            })
+            .catch(function () { notice(T.failed); });
+    }
+
+    function picked() {
+        return Array.prototype.slice.call(document.querySelectorAll('.cbci-pick:checked'))
+            .map(function (c) { return current[parseInt(c.getAttribute('data-i'), 10)]; })
+            .filter(Boolean);
+    }
+    function refreshCount() {
+        var n = picked().length;
+        document.getElementById('cbciAddText').textContent = T.addN.replace('{0}', n);
+        document.getElementById('cbciAdd').disabled = n === 0;
+    }
+
+    // ---- events --------------------------------------------------------------------------
+    document.getElementById('cbciList').addEventListener('click', function (e) {
+        var tr = e.target.closest('.cbci-row'); if (!tr) return;
+        loadLines(tr.getAttribute('data-id'), tr.getAttribute('data-no'));
+    });
+    document.getElementById('cbciBack').addEventListener('click', function () {
+        document.getElementById('cbciSub').textContent = T.subtitle;
+        step(1);
+    });
+    document.getElementById('cbciAll').addEventListener('change', function () {
+        var on = this.checked;
+        document.querySelectorAll('.cbci-pick').forEach(function (c) { c.checked = on; });
+        refreshCount();
+    });
+    document.getElementById('cbciLines').addEventListener('change', function (e) {
+        if (!e.target.classList.contains('cbci-pick')) return;
+        var all = document.querySelectorAll('.cbci-pick').length;
+        document.getElementById('cbciAll').checked = (document.querySelectorAll('.cbci-pick:checked').length === all);
+        refreshCount();
+    });
+
+    var search = document.getElementById('cbciSearch'), timer = null;
+    search.addEventListener('input', function () {
+        clearTimeout(timer);
+        var v = search.value;
+        timer = setTimeout(function () { if (el.dataset.vendor) loadInvoices(el.dataset.vendor, v); }, 250);
+    });
+
+    document.getElementById('cbciAdd').addEventListener('click', function () {
+        var rows = picked();
+        if (!rows.length || typeof window.fillRow !== 'function') return;
+
+        // THE EMPTY STARTER ROW GOES. The screen opens with one blank line; appending below it
+        // would leave a row that is not a purchase and that the save step silently drops anyway.
+        // Only a row that is genuinely untouched is removed - anything typed stays.
+        var first = document.querySelector('#rows tr');
+        if (first && rows.length) {
+            var it = first.querySelector('.it'), d = first.querySelector('.d'),
+                q = first.querySelector('.q'), p = first.querySelector('.p');
+            var blank = (!it || !it.value) && (!d || !d.value.trim())
+                     && ((parseFloat(q && q.value) || 0) * (parseFloat(p && p.value) || 0) === 0);
+            if (blank && document.querySelectorAll('#rows tr').length === 1) first.remove();
+        }
+
+        // THE COPIED PRICE IS THE POINT, AND THE SALES SCREEN WOULD OVERWRITE IT. Choosing an item
+        // there runs the pricing engine, which is right when a seller picks one by hand and wrong
+        // here - the whole reason to copy a line is that it carries what was actually charged. The
+        // edit path solves this with the same flag; copying is the same situation, so it uses it.
+        // The purchase screen has no such handler, and setting a flag nobody reads costs nothing.
+        var hadFlag = window.__editFill;
+        window.__editFill = true;
+        try {
+            rows.forEach(function (l) {
+                window.fillRow(l);
+                // The unit, which fillRow does not carry on either screen. Losing it turns 5 boxes
+                // into 5 pieces at the box price - the figures look copied and the quantity is not.
+                if (l.uom) {
+                    var tr = document.querySelector('#rows tr:last-child');
+                    var u = tr && tr.querySelector('.u');
+                    if (u) u.value = String(l.uom);
+                }
+            });
+        } finally {
+            // Released on the next tick, so a change event the fill queued cannot land after it.
+            setTimeout(function () { window.__editFill = hadFlag; }, 600);
+        }
+        M().hide();
+        if (window.toastr) toastr.success(T.addedN.replace('{0}', rows.length));
+    });
+
+    // ---- the way in ----------------------------------------------------------------------
+    // Exposed rather than bound here, because the button and the vendor <select> belong to the
+    // page, not to this partial - which is what lets a second screen reuse the dialog.
+    window.cbCopyFromInvoice = function (vendorId) {
+        if (!vendorId) { if (window.toastr) toastr.info(T.vendorFirst); return; }
+        el.dataset.vendor = vendorId;
+        search.value = '';
+        document.getElementById('cbciSub').textContent = T.subtitle;
+        document.getElementById('cbciList').innerHTML = '';
+        hideNotice();
+        step(1);
+        loadInvoices(vendorId, '');
+        M().show();
+    };
+})();
+</script>

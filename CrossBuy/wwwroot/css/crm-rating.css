@@ -1,0 +1,23 @@
+/* CRM C8 — the satisfaction scale. ONE file for every place a 1–5 rating is asked or shown: the e-mailed survey
+   page, the client portal and the staff screens. A numbered segmented scale (the current CSAT idiom) instead of
+   emoji faces; each score has its own colour, red → grey → green (no amber, by house rule). */
+.cb-rate { --r1: #DC2626; --r2: #EF4444; --r3: #6B7280; --r4: #16A34A; --r5: #15803D; }
+.cb-rate-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; }
+.cb-rate-opt { position: relative; margin: 0; cursor: pointer; }
+.cb-rate-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.cb-rate-opt span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; height: 76px; border-radius: 14px;
+  border: 1.5px solid var(--bs-gray-300); background: var(--bs-body-bg, #fff); transition: transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease; }
+.cb-rate-opt b { font-size: 1.6rem; font-weight: 700; line-height: 1; color: var(--bs-gray-800); font-variant-numeric: tabular-nums; }
+.cb-rate-opt small { font-size: .72rem; font-weight: 600; color: var(--bs-gray-600); text-align: center; line-height: 1.2; padding: 0 .2rem; }
+.cb-rate-opt:hover span { transform: translateY(-2px); border-color: var(--c); box-shadow: 0 6px 16px -10px var(--c); }
+.cb-rate-opt input:focus-visible + span { outline: 2px solid var(--c); outline-offset: 2px; }
+.cb-rate-opt input:checked + span { background: var(--c); border-color: var(--c); box-shadow: 0 10px 22px -12px var(--c); }
+.cb-rate-opt input:checked + span b, .cb-rate-opt input:checked + span small { color: #fff; }
+.cb-rate-ends { display: flex; justify-content: space-between; font-size: .72rem; color: var(--bs-gray-600); margin-top: .45rem; }
+/* the result, read-only: five segments filled up to the score, in the score's colour */
+.cb-rate-meter { display: inline-flex; align-items: center; gap: .5rem; }
+.cb-rate-meter .seg { display: inline-flex; gap: 3px; }
+.cb-rate-meter .seg i { width: 14px; height: 8px; border-radius: 3px; background: var(--bs-gray-200); }
+.cb-rate-meter .seg i.on { background: var(--c); }
+.cb-rate-meter .num { font-weight: 700; color: var(--c); font-variant-numeric: tabular-nums; }
+@media (max-width: 420px) { .cb-rate-opt span { height: 64px; } .cb-rate-opt small { font-size: .62rem; } }

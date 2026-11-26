@@ -1,0 +1,174 @@
+@using CrossBuy.Controllers
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var specs = ViewBag.Specs as HyperController.PlanSpec[] ?? Array.Empty<HyperController.PlanSpec>();
+    var key = ViewBag.PlanKey as string;
+    var one = string.IsNullOrWhiteSpace(key) ? null : specs.FirstOrDefault(s => s.Key == key);
+    ViewData["Title"] = isAr ? "خطة البناء" : "Build plan";
+
+    var groups = new (string Code, string Ar, string En, string Icon)[]
+    {
+        ("Checkout",   "الصندوق",              "Checkout",               "ki-outline ki-basket"),
+        ("Promotions", "العروض والولاء",        "Promotions & loyalty",   "ki-outline ki-discount"),
+        ("Items",      "الأصناف والتسعير",      "Items & pricing",        "ki-outline ki-tag"),
+        ("Stock",      "المخزون",               "Stock",                  "ki-outline ki-package"),
+        ("Purchasing", "المشتريات والموردون",   "Purchasing & suppliers", "ki-outline ki-truck"),
+        ("Customers",  "العملاء",               "Customers",              "ki-outline ki-profile-user"),
+        ("Reports",    "التقارير",              "Reports",                "ki-outline ki-chart-simple"),
+        ("Setup",      "الإعدادات",             "Setup",                  "ki-outline ki-setting-2"),
+    };
+}
+
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+
+        @if (one != null)
+        {
+            @* ---- one screen's specification -------------------------------------------------- *@
+            <div class="card mb-6">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        @* The badge was hardcoded "Planned" on every entry, including the ones whose own page
+                           then said "this screen already exists — do not build it". It now reports the state
+                           the rest of the page describes: reusable, engine-ready, or genuinely still planned. *@
+                        @if (one.ReuseUrl != null)
+                        {
+                            <span class="badge badge-light-success fs-8 me-3">@(isAr ? "موجود — يُعاد استخدامه" : "Exists — reuse it")</span>
+                        }
+                        else if (one.EngineReady)
+                        {
+                            <span class="badge badge-light-primary fs-8 me-3">@(isAr ? "المحرّك جاهز" : "Engine ready")</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-light-warning fs-8 me-3">@(isAr ? "مخطَّط" : "Planned")</span>
+                        }
+                        <h1 class="fs-2 fw-bold text-gray-900 mb-0">@(isAr ? one.TitleAr : one.TitleEn)</h1>
+                    </div>
+
+                    <div class="fs-5 text-gray-800 mb-6">@one.PurposeAr</div>
+
+                    @if (one.ReuseUrl != null)
+                    {
+                        @* The most useful thing this page can say about such a screen is "do not build it". *@
+                        <div class="bg-light-primary rounded p-5 mb-6">
+                            <div class="fw-bold fs-6 text-primary mb-2"><i class="ki-outline ki-abstract-26 fs-5 me-1"></i>@(isAr ? "هذه الشاشة موجودة بالفعل — لا تُبنى" : "This screen already exists — do not build it")</div>
+                            <div class="fs-7 text-gray-800 mb-4" style="line-height:1.9">
+                                @(isAr
+                                    ? "تعيش في وحدة " + one.ReuseWhere + "، وبناء نسخة هايبر منها يعني مصدرين لنفس الحقيقة يختلفان أول يوم يتغيّر أحدهما. ما يخصّ الهايبر هو الوصول إليها مقيّدةً بفرعه، لا إعادة كتابتها."
+                                    : "It lives in " + one.ReuseWhere + ", and a hypermarket copy would mean two sources for the same fact, free to disagree the first day one of them changes. What the hypermarket needs is branch-scoped access to it, not a rewrite.")
+                            </div>
+                            <a href="@one.ReuseUrl" class="btn btn-sm btn-primary"><i class="ki-outline ki-arrow-left fs-5"></i>@(isAr ? "افتح الشاشة الموجودة" : "Open the existing screen")</a>
+                        </div>
+                    }
+
+                    @* The part a roadmap document never carries: what already exists underneath. A screen
+                       over a finished engine is a very different estimate from one that needs a model, and
+                       the reader should be able to tell which this is without asking anybody. *@
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="fs-7 fw-bold text-gray-700 mb-2">
+                        <i class="ki-outline ki-information-5 fs-5 me-1"></i>@(isAr ? "ما هو مبني تحتها الآن" : "What already exists underneath")
+                    </div>
+                    <div class="@(one.EngineReady ? "bg-light-success" : "bg-light") rounded px-4 py-3 fs-6 text-gray-800">
+                        @one.Underneath
+                        @* "The screen is what is missing" is only true when there is no screen to reuse. On an
+                           entry that carries a ReuseUrl the page has ALREADY said "this screen exists — do not
+                           build it", and following that with "the screen is what is missing" told the reader
+                           both things at once. Twelve of the entries on this board reuse an existing screen,
+                           so this contradiction was the common case rather than the exception. *@
+                        @if (one.EngineReady && one.ReuseUrl == null)
+                        {
+                            <div class="fs-7 text-success fw-bold mt-2">
+                                <i class="ki-outline ki-check-circle fs-6 me-1"></i>@(isAr ? "المحرّك جاهز — الناقص هو الشاشة" : "The engine is ready — the screen is what is missing")
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-6">
+                        <a href="/hyper/plan" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-5"></i>@(isAr ? "كل الخطة" : "The whole plan")</a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* ---- the whole board ------------------------------------------------------------- *@
+            <div class="card mb-6">
+                <div class="card-body py-5">
+                    <h1 class="fs-2 fw-bold text-gray-900 mb-2">@(isAr ? "خطة بناء الهايبر ماركت" : "Hypermarket build plan")</h1>
+                    <div class="fs-6 text-gray-700">
+                        @(isAr
+                            ? "البروتوتايب هو الخطة. كل شاشة سيحتويها النظام ظاهرة في القائمة من اليوم الأول — المبني يعمل، والمخطَّط يشرح نفسه هنا بدل أن يكون رابطاً ميتاً."
+                            : "The prototype is the plan. Every screen the module will have is in the sidebar from day one - what is built works, and what is planned explains itself here instead of being a dead link.")
+                    </div>
+
+                    @{
+                        int reuse = specs.Count(s => s.ReuseUrl != null);
+                        int toBuild = specs.Length - reuse;
+                        int ready = specs.Count(s => s.EngineReady && s.ReuseUrl == null);
+                    }
+                    <div class="d-flex flex-wrap gap-6 mt-5">
+                        <div>
+                            <div class="fs-2hx fw-bolder text-primary">@reuse</div>
+                            <div class="fs-7 text-muted">@(isAr ? "موجودة بالفعل — تُستخدم لا تُبنى" : "already exist — reuse, don’t build")</div>
+                        </div>
+                        <div>
+                            <div class="fs-2hx fw-bolder text-gray-900">@toBuild</div>
+                            <div class="fs-7 text-muted">@(isAr ? "تخصّ الهايبر وحده" : "genuinely hypermarket")</div>
+                        </div>
+                        <div>
+                            <div class="fs-2hx fw-bolder text-success">@ready</div>
+                            <div class="fs-7 text-muted">@(isAr ? "منها محرّكها جاهز" : "of those, engine ready")</div>
+                        </div>
+                    </div>
+                    @* THE CORRECTION THIS PAGE EXISTS TO CARRY. Most of what looked like hypermarket work was
+                       the warehouse module's work seen from a till. Counting it as "to build" was how this
+                       module came close to re-implementing Inventory: stock counts, transfers, write-offs,
+                       batches, replenishment, purchase orders, goods receipts, price lists and promotions all
+                       already exist there, and vendors, purchase returns and customers exist in Accounting. *@
+                    <div class="bg-light-primary rounded p-4 mt-5 fs-7" style="line-height:1.9">
+                        @(isAr
+                            ? "أغلب ما بدا عملاً للهايبر هو عمل المخزون مرئياً من الصندوق. عدّه «يُبنى» كاد يجعل هذه الوحدة تعيد بناء المخزون كله — فالجرد والتحويلات والهالك والدفعات وإعادة الطلب وأوامر الشراء والاستلام وقوائم الأسعار والعروض كلها موجودة هناك، والموردون ومرتجعاتهم والعملاء في المحاسبة."
+                            : "Most of what looked like hypermarket work is warehouse work seen from a till. Counting it as «to build» nearly had this module re-implement Inventory: counts, transfers, write-offs, batches, replenishment, purchase orders, goods receipts, price lists and promotions all live there, and vendors, purchase returns and customers live in Accounting.")
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var g in groups)
+            {
+                var items = specs.Where(s => s.Group == g.Code).ToList();
+                if (items.Count == 0) { continue; }
+                <div class="card mb-5">
+                    <div class="card-header min-h-50px">
+                        <h3 class="card-title fs-5 fw-bold text-gray-900"><i class="@g.Icon fs-4 me-2"></i>@(isAr ? g.Ar : g.En)</h3>
+                        <div class="card-toolbar"><span class="badge badge-light">@items.Count</span></div>
+                    </div>
+                    <div class="card-body pt-4">
+                        <div class="row g-4">
+                            @foreach (var sp in items)
+                            {
+                                <div class="col-md-6 col-xl-4">
+                                    <a href="/hyper/plan?key=@sp.Key" class="d-block h-100 text-decoration-none border @(sp.ReuseUrl != null ? "border-primary" : "border-gray-300 border-dashed") rounded p-4">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="fw-bold text-gray-900">@(isAr ? sp.TitleAr : sp.TitleEn)</span>
+                                            @if (sp.ReuseUrl != null)
+                                            {
+                                                <span class="badge badge-light-primary fs-9 ms-auto">@(isAr ? "موجودة في " + sp.ReuseWhere : "in " + sp.ReuseWhere)</span>
+                                            }
+                                            else if (sp.EngineReady)
+                                            {
+                                                <span class="badge badge-light-success fs-9 ms-auto">@(isAr ? "المحرّك جاهز" : "engine ready")</span>
+                                            }
+                                        </div>
+                                        <div class="fs-8 text-gray-600">@sp.PurposeAr</div>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

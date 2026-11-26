@@ -83,7 +83,7 @@ namespace CrossBuy.Tests
             Assert.Equal(220m, rev.ValueImpact);
 
             // The BOQ line now points at the revision in force.
-            var state = await verify.BoqLineStates.AsNoTracking().SingleAsync(s => s.BoqItemId == ids["1"]);
+            var state = await verify.BoqItems.AsNoTracking().SingleAsync(b => b.ID == ids["1"]);
             Assert.Equal(open.revisionId, state.CurrentRevisionId);
         }
 
@@ -247,7 +247,7 @@ namespace CrossBuy.Tests
             Assert.Null(all[2].SupersededByRevisionId);
 
             // Only ONE revision is in force at a time, and it is the one the BOQ line points at.
-            var state = await verify.BoqLineStates.AsNoTracking().SingleAsync(s => s.BoqItemId == ids["1"]);
+            var state = await verify.BoqItems.AsNoTracking().SingleAsync(b => b.ID == ids["1"]);
             Assert.Equal(all[2].ID, state.CurrentRevisionId);
             Assert.NotEqual(baseline.revisionId, state.CurrentRevisionId);
         }

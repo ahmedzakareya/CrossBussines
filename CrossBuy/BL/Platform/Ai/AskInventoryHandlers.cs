@@ -34,7 +34,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"آخر حركات صنف معيّن في المخازن التي تملك صلاحية عليها",
-			"The latest movements of one item, in the warehouses you are allowed to see");
+			"The latest movements of one item, in the warehouses you are allowed to see",
+			"Les derniers mouvements d'un article dans les entrepôts auxquels vous avez accès");
 
 		// A SUGGESTION SHOWS THE SHAPE OF A QUESTION, NOT ONE ROW'S DATA.
 		//
@@ -46,7 +47,7 @@ namespace CrossBuy.BL.Platform.Ai
 		// Naming no item is not a loss: a question that names none makes the handler ASK which one,
 		// which is behaviour this already has. The chip teaches the shape and the assistant asks
 		// for the noun.
-		public AskText Example => AskText.Of("آخر حركات صنف معيّن", "Latest movements for an item");
+		public AskText Example => AskText.Of("آخر حركات صنف معيّن", "Latest movements for an item", "Quels sont les derniers mouvements de cet article ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{
@@ -206,9 +207,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"المخازن التي تملك صلاحية الاطلاع عليها",
-			"The warehouses you are allowed to see");
+			"The warehouses you are allowed to see",
+			"Les entrepôts auxquels vous êtes autorisé à accéder");
 
-		public AskText Example => AskText.Of("إيه المخازن اللي أقدر أشوفها؟", "Which warehouses can I see?");
+		public AskText Example => AskText.Of("إيه المخازن اللي أقدر أشوفها؟", "Which warehouses can I see?", "À quels entrepôts puis-je accéder ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

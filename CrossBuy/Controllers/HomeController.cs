@@ -7,7 +7,8 @@ using System.Globalization;
 
 namespace CrossBuy.Controllers
 {
-    public class HomeController : Controller
+    // PARTIAL: the public CRM lead form (CRM C2) lives in HomeController.WebForms.cs, on the same public surface.
+    public partial class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IStringLocalizer<SharedResources> _localizer;

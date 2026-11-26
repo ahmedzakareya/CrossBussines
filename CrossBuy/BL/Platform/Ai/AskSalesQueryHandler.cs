@@ -25,9 +25,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن المبيعات: الإيراد أو التكلفة أو الهامش أو الكمية، مجمَّعًا حسب الصنف أو العميل أو الشهر",
-			"Any sales question: revenue, cost, margin or quantity, grouped by item, customer or month");
+			"Any sales question: revenue, cost, margin or quantity, grouped by item, customer or month",
+			"Questions sur les ventes : chiffre d'affaires, coût, marge ou quantité, par article, client ou mois");
 
-		public override AskText Example => AskText.Of("إيه الإيراد لكل شهر؟", "What is the revenue by month?");
+		public override AskText Example => AskText.Of("إيه الإيراد لكل شهر؟", "What is the revenue by month?", "Quel est le chiffre d'affaires par mois ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

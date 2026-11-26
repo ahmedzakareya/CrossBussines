@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="Add line" xml:space="preserve">
+    <value>إضافة بند</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>المبلغ</value>
+  </data>
+  <data name="Approve version" xml:space="preserve">
+    <value>اعتماد الإصدار</value>
+  </data>
+  <data name="Approved history is read-only. Changes require a new version." xml:space="preserve">
+    <value>الإصدارات المعتمدة محفوظة للقراءة فقط. يتطلب التعديل إنشاء إصدار جديد.</value>
+  </data>
+  <data name="Baseline" xml:space="preserve">
+    <value>الميزانية المرجعية</value>
+  </data>
+  <data name="Choose explicitly" xml:space="preserve">
+    <value>اختر صراحةً</value>
+  </data>
+  <data name="Company budget policy" xml:space="preserve">
+    <value>سياسة ميزانية الشركة</value>
+  </data>
+  <data name="Copy from approved history" xml:space="preserve">
+    <value>نسخ من إصدار معتمد سابق</value>
+  </data>
+  <data name="Cost code" xml:space="preserve">
+    <value>رمز التكلفة</value>
+  </data>
+  <data name="Create a version" xml:space="preserve">
+    <value>إنشاء إصدار</value>
+  </data>
+  <data name="Create draft" xml:space="preserve">
+    <value>إنشاء مسودة</value>
+  </data>
+  <data name="Current policy" xml:space="preserve">
+    <value>السياسة الحالية</value>
+  </data>
+  <data name="Kind" xml:space="preserve">
+    <value>النوع</value>
+  </data>
+  <data name="Kind.Original" xml:space="preserve">
+    <value>أصلية</value>
+  </data>
+  <data name="Kind.Revised" xml:space="preserve">
+    <value>معدلة</value>
+  </data>
+  <data name="Kind.Scenario" xml:space="preserve">
+    <value>سيناريو تقديري</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>لا</value>
+  </data>
+  <data name="No previous version" xml:space="preserve">
+    <value>بدون إصدار سابق</value>
+  </data>
+  <data name="Not configured" xml:space="preserve">
+    <value>غير محدد</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>عرض</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>السياسة</value>
+  </data>
+  <data name="Policy.ApprovalRequired" xml:space="preserve">
+    <value>موافقة مطلوبة عند التجاوز</value>
+  </data>
+  <data name="Policy.HardBlock" xml:space="preserve">
+    <value>منع تجاوز الميزانية</value>
+  </data>
+  <data name="Policy.Warning" xml:space="preserve">
+    <value>تحذير عند تجاوز الميزانية</value>
+  </data>
+  <data name="Previous amount" xml:space="preserve">
+    <value>المبلغ السابق</value>
+  </data>
+  <data name="Project budget versions" xml:space="preserve">
+    <value>إصدارات ميزانية المشروع</value>
+  </data>
+  <data name="Project structure" xml:space="preserve">
+    <value>هيكل المشروع</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>المشاريع</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>السعر</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Reason for this save" xml:space="preserve">
+    <value>سبب هذا الحفظ</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>إزالة من المسودة</value>
+  </data>
+  <data name="Save draft" xml:space="preserve">
+    <value>حفظ المسودة</value>
+  </data>
+  <data name="Save policy" xml:space="preserve">
+    <value>حفظ السياسة</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Status.Approved" xml:space="preserve">
+    <value>معتمدة</value>
+  </data>
+  <data name="Status.Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="Status.Submitted" xml:space="preserve">
+    <value>مرسلة للمراجعة</value>
+  </data>
+  <data name="Status.Superseded" xml:space="preserve">
+    <value>استُبدلت بإصدار أحدث</value>
+  </data>
+  <data name="Submit saved draft" xml:space="preserve">
+    <value>إرسال المسودة المحفوظة</value>
+  </data>
+  <data name="The creator and submitter cannot approve this version." xml:space="preserve">
+    <value>لا يجوز لمن أنشأ هذا الإصدار أو أرسله اعتماده.</value>
+  </data>
+  <data name="The policy applies to the company. No policy is selected automatically." xml:space="preserve">
+    <value>تسري هذه السياسة على الشركة. يجب اختيارها صراحةً دون إعداد افتراضي.</value>
+  </data>
+  <data name="These are versioned budget estimates. Commitment enforcement and actual-cost reconciliation are not activated by this page." xml:space="preserve">
+    <value>تدعم هذه الميزانيات التخطيط والاعتماد فقط. ولا تمنع أوامر الشراء أو الترحيلات المالية حاليًا.</value>
+  </data>
+  <data name="These values were not saved. Current stored values appear below; review them before submitting another edit." xml:space="preserve">
+    <value>لم تُحفظ هذه القيم. تظهر القيم المحفوظة حاليًا أدناه؛ راجعها قبل إرسال تعديل جديد.</value>
+  </data>
+  <data name="Unrecognized dimension" xml:space="preserve">
+    <value>بُعد غير معروف</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>الإصدار</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>الإصدارات</value>
+  </data>
+  <data name="WBS" xml:space="preserve">
+    <value>بند هيكل الأعمال</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>نعم</value>
+  </data>
+  <data name="Your submitted values" xml:space="preserve">
+    <value>القيم التي أرسلتها</value>
+  </data>
+  <data name="Save your changes before submitting this version." xml:space="preserve">
+    <value>احفظ التعديلات قبل إرسال هذا الإصدار.</value>
+  </data>
+  <data name="Exposure.Actual" xml:space="preserve"><value>التكاليف الفعلية</value></data>
+  <data name="Exposure.AllocationCoverageRequired" xml:space="preserve"><value>وزّع أوامر الشراء القائمة على بنود العمل ورموز التكلفة أولًا.</value></data>
+  <data name="Exposure.AllocationSourceChanged" xml:space="preserve"><value>تغيّر مصدر أو سياسة بعد التوزيع. راجع التوزيع مجددًا.</value></data>
+  <data name="Exposure.ApprovedBaselineRequired" xml:space="preserve"><value>اعتمد ميزانية مرجعية قبل مراجعة الرصيد المتاح.</value></data>
+  <data name="Exposure.Baseline" xml:space="preserve"><value>الميزانية المرجعية المعتمدة الحالية</value></data>
+  <data name="Exposure.BaselineVersion" xml:space="preserve"><value>إصدار الميزانية المرجعية المعتمد {0}</value></data>
+  <data name="Exposure.Budget" xml:space="preserve"><value>الميزانية المعتمدة</value></data>
+  <data name="Exposure.BudgetCurrencyMismatch" xml:space="preserve"><value>لا تتطابق عملة المصدر مع الميزانية المعتمدة، ولم يُفترض أي تحويل بين العملات.</value></data>
+  <data name="Exposure.BudgetDimensionCoverageRequired" xml:space="preserve"><value>توجد تكاليف أو التزامات لا يقابلها بند في الميزانية المعتمدة.</value></data>
+  <data name="Exposure.Commitment" xml:space="preserve"><value>الالتزامات القائمة</value></data>
+  <data name="Exposure.CostCode" xml:space="preserve"><value>رمز التكلفة</value></data>
+  <data name="Exposure.Currency" xml:space="preserve"><value>العملة</value></data>
+  <data name="Exposure.Heading" xml:space="preserve"><value>تغطية الميزانية</value></data>
+  <data name="Exposure.PolicyNotConfigured" xml:space="preserve"><value>اختر سياسة ميزانية الشركة صراحةً قبل مراجعة الرصيد المتاح.</value></data>
+  <data name="Exposure.RealizationCoverageRequired" xml:space="preserve"><value>أكمل تصنيف التكاليف ومطابقة مصادرها قبل الاعتماد على رصيد متاح.</value></data>
+  <data name="Exposure.Remaining" xml:space="preserve"><value>المتاح من الميزانية</value></data>
+  <data name="Exposure.ReservationAmendmentRequired" xml:space="preserve"><value>تختلف التكلفة الفعلية عن توزيع الحجز. يلزم تعديل خاضع للمراجعة.</value></data>
+  <data name="Exposure.ReservationRebaseRequired" xml:space="preserve"><value>راجع الحجوزات الحالية مقابل الميزانية المعتمدة الحالية.</value></data>
+  <data name="Exposure.ReviewNotice" xml:space="preserve"><value>تساعد الأرقام الموثقة في المراجعة. لم يُفعّل بعد إلزام أوامر الشراء بحدود الميزانية.</value></data>
+  <data name="Exposure.SubcontractCoverageRequired" xml:space="preserve"><value>لم تكتمل بعد تغطية التزامات المقاولين ومستخلصاتهم بمصادر موثقة.</value></data>
+  <data name="Exposure.Unavailable" xml:space="preserve"><value>لا تظهر المبالغ حتى تكتمل مطابقة المصادر، ولا يُفترض وجود رصيد متاح.</value></data>
+  <data name="Exposure.WorkItem" xml:space="preserve"><value>بند العمل</value></data>
+  <data name="Exposure.ReceiptCoverageRequired" xml:space="preserve"><value>كميات الاستلام أو أدلة ترحيلها لا تطابق الشراء المعتمد. راجع مطابقة الاستلام قبل المتابعة.</value></data>
+</root>

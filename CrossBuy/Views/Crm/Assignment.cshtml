@@ -1,0 +1,165 @@
+@model List<CrossBuy.BL.CrmIdentity.TerritoryRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var canManage = ViewBag.CanManage == true;
+    var people = (List<CrossBuy.BL.CrmIdentity.PersonRef>)ViewBag.People;
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    Microsoft.AspNetCore.Html.IHtmlContent Face(CrossBuy.BL.CrmIdentity.PersonRef p, int size = 30)
+    {
+        var ini = System.Net.WebUtility.HtmlEncode(Initials(p.Name));
+        var inner = p.HasPhoto ? $"<img src=\"/People/Photo/{p.EmployeeId}\" alt=\"\" onerror=\"this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>{ini}</span>'\" />" : $"<span class=\"symbol-label crm-initials fs-8\">{ini}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString($"<span class=\"symbol symbol-{size}px symbol-circle\" data-bs-toggle=\"tooltip\" title=\"{System.Net.WebUtility.HtmlEncode(p.Name)}\">{inner}</span>");
+    }
+    string Crit(string? v) => string.IsNullOrWhiteSpace(v) ? T["any"].Value : v!;
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Assignment & territories"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Assignment & territories"]</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("WebForms","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@T["Website forms"]</a>
+            @if (canManage) { <button type="button" class="btn btn-sm btn-primary" data-territory="0"><i class="ki-outline ki-plus fs-4"></i>@T["New territory"]</button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Sales territories"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["Rules on area, segment or source — for any business. The first matching territory, by priority, takes the lead."]</span></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Priority"]</th><th>@T["Territory"]</th><th>@T["Takes leads whose"]</th><th>@T["Reps (in turn)"]</th><th class="text-end">@T["Leads in 30 days"]</th><th class="text-end pe-4"></th></tr></thead>
+                <tbody class="fs-6">
+                @foreach (var r in Model)
+                {
+                    var t = r.T;
+                    <tr class="@(t.IsActive ? "" : "opacity-50")">
+                        <td class="ps-4"><span class="badge crm-code num">@t.Priority</span></td>
+                        <td><div class="fw-bold text-gray-900">@N(t.Name, t.NameEn)</div>@if (!t.IsActive) { <span class="badge badge-light fs-9">@T["Off"]</span> }</td>
+                        <td class="fs-7"><div><span class="text-muted">@T["Area"]:</span> @Crit(t.Areas)</div><div><span class="text-muted">@T["Segment"]:</span> @Crit(t.Segments)</div><div><span class="text-muted">@T["Lead source"]:</span> @Crit(t.Sources)</div></td>
+                        @* Metronic's overlapping avatar stack (symbol-group symbol-hover); past five, a "+N" disc like the theme's. *@
+                        <td><div class="symbol-group symbol-hover flex-nowrap">@foreach (var p in r.Members.Take(5)) { @Face(p, 35) }
+                            @if (r.Members.Count() > 5) {<span class="symbol symbol-35px symbol-circle" data-bs-toggle="tooltip" title="@string.Join("، ", r.Members.Skip(5).Select(m => m.Name))"><span class="symbol-label bg-light text-gray-700 fs-8 fw-bold"><bdi dir="ltr">+@(r.Members.Count() - 5)</bdi></span></span>}</div></td>
+                        <td class="text-end fw-bold num">@r.LeadsLast30</td>
+                        <td class="text-end pe-4 text-nowrap">@if (canManage)
+                            {
+                                <button type="button" class="btn btn-sm btn-light-primary" data-territory="@t.ID" data-name="@t.Name" data-name-en="@t.NameEn" data-areas="@t.Areas" data-segments="@t.Segments" data-sources="@t.Sources" data-priority="@t.Priority" data-active="@(t.IsActive ? "1" : "0")" data-members="@string.Join(",", r.Members.Select(m => m.EmployeeId))">@T["Edit"]</button>
+                                <button type="button" class="btn btn-sm btn-icon btn-light ms-1" style="opacity:.6" data-delete-territory="@t.ID" title="@T["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button>
+                            }</td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@T["No territories yet: every new lead from a form waits unassigned until one is set up."]</td></tr> }
+                </tbody></table></div></div></div>
+
+        <div class="row g-5">
+            <div class="col-xl-6"><div class="card mb-5 h-100"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Assignment order"]</span></div></div>
+                <div class="card-body pt-2">
+                    @{ var steps = new[] { T["order:1"].Value, T["order:2"].Value, T["order:3"].Value, T["order:4"].Value }; }
+                    @for (var i = 0; i < steps.Length; i++)
+                    {
+                        <div class="d-flex align-items-center gap-3 py-3 crm-row-sep"><span class="symbol symbol-30px"><span class="symbol-label bg-light-success text-success fw-bold num">@(i + 1)</span></span><span class="fs-7 fw-semibold text-gray-800">@steps[i]</span></div>
+                    }
+                    <div class="text-muted fs-8 mt-3">@T["Typed-in leads keep today's routing; leads from website forms go through this order."]</div>
+                </div></div></div>
+            <div class="col-xl-6"><div class="card mb-5 h-100"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Who would get this lead?"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["The same rules the intake uses — try them"]</span></div></div>
+                <div class="card-body pt-2"><div class="row g-4">
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Area"]</label><input id="s_area" class="form-control form-control-solid" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Segment"]</label><input id="s_segment" class="form-control form-control-solid" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Lead source"]</label><input id="s_source" class="form-control form-control-solid" value="Website" /></div>
+                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Company"]</label><input id="s_company" class="form-control form-control-solid" /></div>
+                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Mobile"]</label><input id="s_phone" class="form-control form-control-solid" dir="ltr" /></div>
+                    <div class="col-12"><button type="button" class="btn btn-light-primary" id="s_go"><i class="ki-outline ki-route fs-4"></i>@T["Try it"]</button></div>
+                    <div class="col-12 d-none" id="s_out"><div class="crm-ai"><span class="crm-ai-tag"><i class="ki-outline ki-route fs-7"></i>@T["Result"]</span><div class="d-flex align-items-center gap-3" id="s_body"></div></div></div>
+                </div></div></div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="terrModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" id="terrTitle"></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10"><div class="row g-5">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="t_id" />
+        <div class="col-md-6"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input id="t_name" class="form-control form-control-solid" maxlength="100" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["English name"]</label><input id="t_nameEn" class="form-control form-control-solid" maxlength="100" /></div>
+        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Areas (comma separated, empty = any)"]</label><input id="t_areas" class="form-control form-control-solid" maxlength="400" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Segments (empty = any)"]</label><input id="t_segments" class="form-control form-control-solid" maxlength="200" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Lead sources (empty = any)"]</label><input id="t_sources" class="form-control form-control-solid" maxlength="200" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Priority (1 is checked first)"]</label><input id="t_priority" type="number" min="1" max="9999" class="form-control form-control-solid" /></div>
+        <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid mt-9"><input class="form-check-input" type="checkbox" id="t_active" /><span class="form-check-label fw-semibold">@T["Active"]</span></label></div>
+        <div class="col-12"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Reps who take turns"]</label>
+            <select id="t_members" class="form-select form-select-solid" multiple data-control="select2" data-dropdown-parent="#terrModal" data-placeholder="@T["Choose people"]">
+                @foreach (var p in people) { <option value="@p.EmployeeId">@p.Name</option> }
+            </select></div>
+        <div class="col-12 d-none" id="t_error"><div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 fs-7 fw-semibold text-danger"></div></div>
+    </div></div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="t_save">@T["Save"]</button></div>
+</div></div></div>
+
+@section Scripts {
+<script>
+(function(){
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["new"] = T["New territory"].Value, ["edit"] = T["Edit territory"].Value, ["confirm"] = T["Save the territory?"].Value,
+    ["del"] = T["Delete this territory? Leads already assigned keep their owner."].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+    ["nobody"] = T["Nobody — it waits unassigned and the sales managers are told"].Value, ["account"] = T["existing account"].Value }));
+  var modal = document.getElementById('terrModal');
+  function token(){ return document.querySelector('#terrModal input[name="__RequestVerificationToken"]').value; }
+  function val(id, v){ document.getElementById(id).value = v == null ? '' : v; }
+  function members(ids){ var s = document.getElementById('t_members'); [].forEach.call(s.options, function(o){ o.selected = ids.indexOf(o.value) !== -1; }); if (window.jQuery) jQuery(s).trigger('change'); }
+  document.querySelectorAll('[data-territory]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id = b.getAttribute('data-territory');
+      document.getElementById('terrTitle').textContent = id === '0' ? txt.new : txt.edit;
+      val('t_id', id); val('t_name', b.getAttribute('data-name')); val('t_nameEn', b.getAttribute('data-name-en')); val('t_areas', b.getAttribute('data-areas'));
+      val('t_segments', b.getAttribute('data-segments')); val('t_sources', b.getAttribute('data-sources')); val('t_priority', b.getAttribute('data-priority') || '100');
+      document.getElementById('t_active').checked = b.getAttribute('data-active') !== '0';
+      members((b.getAttribute('data-members') || '').split(',').filter(Boolean));
+      document.getElementById('t_error').classList.add('d-none');
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+  async function post(url, data){ var fd = new FormData(); Object.keys(data).forEach(function(k){ [].concat(data[k]).forEach(function(v){ fd.append(k, v); }); }); fd.append('__RequestVerificationToken', token());
+    return fetch(url, { method:'POST', body:fd, credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error: txt.failed }; }); }
+  document.getElementById('t_save').addEventListener('click', async function(){
+    if (window.cbConfirm && !(await window.cbConfirm(txt.confirm, { kind:'primary', title: document.getElementById('terrTitle').textContent }))) return;
+    var sel = [].filter.call(document.getElementById('t_members').options, function(o){ return o.selected; }).map(function(o){ return o.value; });
+    var r = await post('@Url.Action("SaveTerritory","Crm")', { id: document.getElementById('t_id').value, name: document.getElementById('t_name').value, nameEn: document.getElementById('t_nameEn').value,
+      areas: document.getElementById('t_areas').value, segments: document.getElementById('t_segments').value, sources: document.getElementById('t_sources').value,
+      priority: document.getElementById('t_priority').value || '100', isActive: document.getElementById('t_active').checked ? 'true' : 'false', memberIds: sel });
+    if (!r.ok) { var e = document.getElementById('t_error'); e.querySelector('div').textContent = r.error || txt.failed; e.classList.remove('d-none'); return; }
+    location.reload();   // the table's order and faces come from the server's rules; a settings save redraws the page
+  });
+  document.querySelectorAll('[data-delete-territory]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      if (window.cbConfirm && !(await window.cbConfirm(txt.del, { kind:'danger', title: txt.edit }))) return;
+      var r = await post('@Url.Action("DeleteTerritory","Crm")', { id: b.getAttribute('data-delete-territory') });
+      if (r.ok) b.closest('tr').remove(); else if (window.CB && CB.toast) CB.toast(r.error || txt.failed, 'error');
+    });
+  });
+  document.getElementById('s_go').addEventListener('click', async function(){
+    var q = ['area','segment','source','company','phone'].map(function(k){ return k + '=' + encodeURIComponent(document.getElementById('s_' + k).value); }).join('&');
+    var r = await fetch('@Url.Action("SimulateAssignment","Crm")?' + q, { credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false }; });
+    if (!r.ok) return;
+    var body = document.getElementById('s_body'); body.innerHTML = '';
+    var who = document.createElement('div');
+    if (r.owner) {
+      var face = document.createElement('span'); face.className = 'symbol symbol-45px symbol-circle';
+      var ini = (r.ownerName || '?').trim().split(/\s+/).slice(0, 2).map(function(w){ return w[0]; }).join('').toUpperCase();
+      if (r.hasPhoto) { var img = document.createElement('img'); img.src = '/People/Photo/' + r.owner; img.onerror = function(){ face.innerHTML = '<span class="symbol-label crm-initials">' + ini + '</span>'; }; face.appendChild(img); }
+      else face.innerHTML = '<span class="symbol-label crm-initials">' + ini + '</span>';
+      body.appendChild(face);
+      who.innerHTML = '<div class="fw-bold fs-5 text-gray-900"></div><div class="text-muted fs-7"></div>';
+      who.children[0].textContent = r.ownerName;
+      who.children[1].textContent = r.reason + (r.territory ? ' — ' + r.territory : '') + (r.account ? ' — ' + txt.account + ': ' + r.account : '');
+    } else { who.innerHTML = '<div class="fw-bold fs-6 text-danger"></div><div class="text-muted fs-7"></div>'; who.children[0].textContent = txt.nobody; who.children[1].textContent = r.reason; }
+    body.appendChild(who);
+    document.getElementById('s_out').classList.remove('d-none');
+  });
+})();
+</script>
+}

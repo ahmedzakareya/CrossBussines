@@ -130,13 +130,18 @@ namespace CrossBuy.Tests
         public async Task An_employee_without_a_resolvable_company_is_denied(bool active, int companyId)
         {
             using var host = new PlatformTestHost(companyId: null);
+            // EF CANNOT PERSIST EmpCompanyID = 0. It is a non-nullable required FK, so the change tracker
+            // reads 0 as "not yet known" and waits for a principal that never arrives. Both theory cases here
+            // pass 0, so this test was failing on the SEED and never reaching the denial it asserts.
+            // Seed legally, then break the column the way a company FK added WITH NOCHECK leaves it broken.
             host.Seed.Employee.Add(new Employee
             {
                 ID = 77, FirstName = "T", LastName = "T", FullName = "no-company", FullNameEn = "no-company",
-                EmpCompanyID = companyId, IsActive = active, Address = "-", PhoneNumber = "-",
+                EmpCompanyID = companyId > 0 ? companyId : CompanyOne, IsActive = active, Address = "-", PhoneNumber = "-",
                 Email = "e77@example.com", ProfileImage = "-", Gender = "M", MaritalStatus = "S", UserId = "user-77",
             });
             await host.Seed.SaveChangesAsync();
+            if (companyId <= 0) host.MakeEmployeeCompanyless(77);   // the state under test
 
             var decision = await Guard(host, BearerFor(77)).AuthorizeAsync("post", null);
 
@@ -612,8 +617,51 @@ namespace CrossBuy.Tests
             var controller = new AccountingApiController(
                 recorder, host.Db, recorder, recorder, recorder, recorder, recorder, recorder,
                 Guard(host, http));
+            
+            // HR6: PayrollPost and PayrollPreview resolve IBusinessContextAccessor and IHrAccessService from
+            // HttpContext.RequestServices rather than by constructor injection. A controller built on a bare
+            // DefaultHttpContext therefore dereferenced a NULL RequestServices, and the PayrollPost case died
+            // with a NullReferenceException BEFORE reaching anything it asserts - the only case in this theory
+            // that takes that path, which is why the other nine passed.
+            //
+            // Supplying the two services exercises the real gate instead of stepping around it. HR says yes
+            // here deliberately: this test is about the ACCOUNTING company/actor plumbing, and the HR6 refusal
+            // path has its own coverage. Asserting it from here would duplicate that and make this test fail
+            // for a reason it does not name.
+            var hrFactory = new BusinessContextFactory(
+                http, host.Db, host.Holder, NullLogger<BusinessContextFactory>.Instance);
+            http.HttpContext!.RequestServices = new GateServices(
+                new BusinessContextAccessor(hrFactory), new AllowingHr());
+            
             controller.ControllerContext = new ControllerContext { HttpContext = http.HttpContext! };
             return (controller, recorder);
+        }
+
+        // Only what PayrollHrAllowsAsync asks for. Anything else resolves to null, exactly as it would
+        // in a request whose container does not carry it - so a NEW service located this way still
+        // surfaces here rather than being silently satisfied.
+        private sealed class GateServices : IServiceProvider
+        {
+            private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
+            private readonly CrossBuy.BL.IHrAccessService _hr;
+            public GateServices(CrossBuy.BL.Platform.IBusinessContextAccessor contexts, CrossBuy.BL.IHrAccessService hr)
+            { _contexts = contexts; _hr = hr; }
+
+            public object? GetService(Type serviceType) =>
+                serviceType == typeof(CrossBuy.BL.Platform.IBusinessContextAccessor) ? _contexts
+                : serviceType == typeof(CrossBuy.BL.IHrAccessService) ? _hr
+                : null;
+        }
+
+        private sealed class AllowingHr : CrossBuy.BL.IHrAccessService
+        {
+            public Task<bool> CanAsync(CrossBuy.Models.Platform.BusinessContext context, string action,
+                CrossBuy.Models.Platform.PermissionTarget? target = null, CancellationToken cancellationToken = default)
+                => Task.FromResult(true);
+
+            public Task<CrossBuy.Models.Platform.AccessScope> ResolveEmployeeScopeAsync(CrossBuy.Models.Platform.BusinessContext context, string action,
+                CancellationToken cancellationToken = default)
+                => Task.FromResult(CrossBuy.Models.Platform.AccessScope.None());
         }
 
         // One dispatcher instead of ten near-identical call sites, so the Theories above stay readable and every

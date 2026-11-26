@@ -105,6 +105,42 @@
       "databaseEvidence": "governance/evidence/r1-accounting-hr-sql-matrix.json",
       "freshMatrix": "Fresh, both input-first paths, rerun, company collision, incompatible/disabled index refusal, malformed source/attachment refusal, concurrent initial creation and backfill passed",
       "productionApplied": false
+    },
+    {
+      "sliceId": "R1-CRM-CALL-CENTRE-SUCCESSOR-001",
+      "supersededSliceName": "crm_call_centre.sql",
+      "supersededSourceNames": [
+        "deploy/sql/crm_call_centre_legacy_001.sql",
+        "deploy/sql/crm_call_routing.sql",
+        "deploy/sql/crm_ticket_source.sql"
+      ],
+      "canonicalPath": "CrossBuy/deploy/sql/crm_call_centre_reconciled_001.sql",
+      "rawSha256": "253b851ababed78e5cfea0f4199a9ae121578f247493dc72fef874a10bd1913f",
+      "previousSourceHashes": [
+        "15e346b8740bf845ee7ff510ad8b8c7c0a8277f52235a481be61187b31a861be",
+        "25c6a2f226265ae2c0b12913aaae67138f3771f5ab4a600fff1ea07ef0518c86",
+        "7f5c2d869d90e585d68ce1e82d370477b2ff637d289df24e5fcd601ff7e89f90",
+        "1e1334c7914a9a00c3917096e1e6671e68e4cfc2ca29b0e977802a095bd7709f"
+      ],
+      "databaseEvidence": "No matching applied-history record for the legacy paths; no schema execution or live-state inference was made.",
+      "freshMatrix": "NOT RUN - source inspection only",
+      "status": "SOURCE RECONCILED; NOT RECORDED APPLIED; RELEASE MATRIX UNPROVEN",
+      "sourceNormalization": "The original four SQL byte streams remain unchanged in the canonical base file and renamed legacy files; the new successor adds only missing nullable columns under table/column guards."
+    },
+    {
+      "sliceId": "R1-INVENTORY-LOCATION-001",
+      "supersededSliceName": "purchase_invoice_line_location.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/purchase_invoice_line_location.sql",
+      "compatibilityPackagePath": "deploy/sql/purchase_invoice_line_location.sql",
+      "rawSha256": "c379c437227269700bd2871a63c01fc706a37ae5a976d65c6fbf1467895f0e8d",
+      "previousSourceHashes": [
+        "84c8c7e42fd14e6cede97b5378f0544168fade2a9061c88cdc3b63869182e5d3",
+        "c379c437227269700bd2871a63c01fc706a37ae5a976d65c6fbf1467895f0e8d"
+      ],
+      "databaseEvidence": "No matching applied-history record for the package path; no schema execution or live-state inference was made.",
+      "freshMatrix": "NOT RUN - source inspection only",
+      "status": "CANONICAL SOURCE ADOPTED; NOT RECORDED APPLIED; RELEASE MATRIX UNPROVEN",
+      "sourceNormalization": "The package file and canonical file are byte-identical. The canonical script guards the nullable column addition and filtered index; the prior bin-column slice remains unchanged."
     }
   ],
   "owner": "Integration Owner - R1 source adoption; POS domain ownership unchanged",

@@ -6,7 +6,18 @@
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var products = ViewBag.Products as List<OpportunityProduct> ?? new();
     var accountName = ViewBag.AccountName as string;
-    var initial = products.Select(p => new { itemId = p.ItemId, itemText = p.ItemDescription, qty = p.Qty, unitPrice = p.UnitPrice, discountPercent = p.DiscountPercent }).ToList();
+    var lineItems = ViewBag.LineItems as Dictionary<int, (string Code, string Name)>
+                    ?? new Dictionary<int, (string Code, string Name)>();
+    // THE ITEM AND THE DESCRIPTION ARE TWO FIELDS. `itemText` used to be the description, and the
+    // script below labelled the item picker with it - so a typed description came back as the
+    // item’s name on the next load. They travel separately now and never meet.
+    var initial = products.Select(p => new {
+        itemId = p.ItemId,
+        itemCode = p.ItemId != null && lineItems.ContainsKey(p.ItemId.Value) ? lineItems[p.ItemId.Value].Code : "",
+        itemName = p.ItemId != null && lineItems.ContainsKey(p.ItemId.Value) ? lineItems[p.ItemId.Value].Name : "",
+        description = p.ItemDescription,
+        qty = p.Qty, unitPrice = p.UnitPrice, discountPercent = p.DiscountPercent
+    }).ToList();
     var initialJson = System.Text.Json.JsonSerializer.Serialize(initial);
     var converted = Model.QuotationId.HasValue;
 }
@@ -17,8 +28,6 @@
         <a href="@Url.Action("Opportunities","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
-        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
 
         <div class="card mb-5"><div class="card-body py-5"><div class="d-flex flex-wrap gap-6 align-items-center">
             <div><div class="fs-8 text-muted">@SR["Account"]</div><div class="fw-bold text-gray-800">@(accountName ?? Localizer["No account"].Value)</div></div>
@@ -50,6 +59,7 @@
         </form>
     </div></div>
 </div>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 @section Scripts {
 <script>
 (function(){
@@ -59,14 +69,20 @@
     document.getElementById('tot').textContent=sum.toFixed(2); document.getElementById('oppValue').textContent=sum.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function addRow(d){ d=d||{}; var tr=document.createElement('tr'); tr.innerHTML=
     '<td><select class="form-select form-select-solid it"></select></td>'+
-    '<td><input class="form-control form-control-solid d" value="'+((d.itemText||'')+'').replace(/"/g,'&quot;')+'"></td>'+
+    '<td><input class="form-control form-control-solid d" value="'+((d.description||'')+'').replace(/"/g,'&quot;')+'"></td>'+
     '<td><input type="number" step="0.01" class="form-control form-control-solid q text-end" value="'+(d.qty||1)+'"></td>'+
     '<td><input type="number" step="0.01" class="form-control form-control-solid p text-end" value="'+(d.unitPrice||0)+'"></td>'+
     '<td><input type="number" step="0.01" class="form-control form-control-solid disc text-end" value="'+(d.discountPercent||0)+'"></td>'+
     '<td class="text-end lt fw-bold">0.00</td>'+
     '<td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';
     tb.appendChild(tr); var sel=tr.querySelector('.it'); cbItemSelect(sel, pickUrl);
-    if(d.itemId){ var o=new Option(d.itemText||('#'+d.itemId), d.itemId, true, true); sel.appendChild(o); }
+    // Same label the picker itself produces ("CODE — Name"), and the same data-name the change
+    // handler below reads when it auto-fills an empty description.
+    if(d.itemId){
+      var label=(d.itemCode?d.itemCode+' \u2014 ':'')+(d.itemName||('#'+d.itemId));
+      var o=new Option(label, d.itemId, true, true);
+      o.setAttribute('data-name', d.itemName||'');
+      sel.appendChild(o); }
     calc(); }
   tb.addEventListener('input',calc);
   tb.addEventListener('click',function(e){ if(e.target.closest('.del')){ e.target.closest('tr').remove(); calc(); } });
@@ -74,8 +90,22 @@
     if(id){ if(!tr.querySelector('.d').value)tr.querySelector('.d').value=opt.getAttribute('data-name')||''; var q=parseFloat(tr.querySelector('.q').value)||1;
       fetch(priceUrl+'?itemId='+id+'&qty='+q,{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(pr){ if(pr&&pr.unitPrice!=null){ tr.querySelector('.p').value=pr.unitPrice; tr.querySelector('.disc').value=pr.discountPercent||0; calc(); } }).catch(function(){}); } } });
   document.getElementById('add').addEventListener('click',function(){ addRow(); });
-  document.getElementById('save').addEventListener('click',function(){ var lines=[]; tb.querySelectorAll('tr').forEach(function(tr){ var it=tr.querySelector('.it').value, q=parseFloat(tr.querySelector('.q').value)||0, p=parseFloat(tr.querySelector('.p').value)||0;
-      if((it||tr.querySelector('.d').value)&&q>0) lines.push({ ItemId: it?parseInt(it):null, ItemDescription: tr.querySelector('.d').value, Qty:q, UnitPrice:p, DiscountPercent: parseFloat(tr.querySelector('.disc').value)||0 }); });
+  document.getElementById('save').addEventListener('click',function(){
+    // tb is #rows, the same tbody every other document screen uses.
+    var lines = CBLines.gather({
+      touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.d')
+          || CBLines.num(tr,'.q')!==1 || CBLines.num(tr,'.p')!==0 || CBLines.num(tr,'.disc')!==0); },
+      problem:function(tr){
+        if(!CBLines.str(tr,'.it') && !CBLines.str(tr,'.d')) return CBLines.T.item;
+        if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+        return null; },
+      build:function(tr){
+        var it=CBLines.str(tr,'.it');
+        return { ItemId: it?parseInt(it):null, ItemDescription: tr.querySelector('.d').value,
+                 Qty: CBLines.num(tr,'.q'), UnitPrice: CBLines.num(tr,'.p'),
+                 DiscountPercent: CBLines.num(tr,'.disc') }; }
+    });
+    if(!lines) return;
     document.getElementById('linesJson').value=JSON.stringify(lines); document.getElementById('pForm').submit(); });
   LINES.forEach(addRow); calc();
 })();

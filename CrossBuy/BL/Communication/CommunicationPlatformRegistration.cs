@@ -1,35 +1,15 @@
 using CrossBuy.Models.Communication;
+using CrossBuy.Models.Context;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace CrossBuy.BL.Communication
 {
-    // =============================================================================================
-    // Communication Platform (ADR-030 §10) — THE ONE REGISTRATION CALL.
-    //
-    // *** THIS IS NOT CALLED FROM Program.cs, AND THAT IS THE DELIVERABLE. ***
-    //
-    // The brief says architecture only, no production integration. So the entire platform is wired here, in a
-    // file this work stream owns, and the application does not call it. Today the running app is byte-for-byte
-    // unchanged: no service resolves, no hosted service starts, no request path differs. Switching the platform
-    // on is ONE line in Program.cs —
-    //
-    //     builder.Services.AddCommunicationPlatform(builder.Configuration);
-    //
-    // — reviewed by whoever owns production wiring, at a time of their choosing.
-    //
-    // THE DI GRAPH IS STILL PROVEN. CLAUDE.md is explicit that "a DI graph is not verified by unit tests that
-    // construct services by hand" — 112 green tests once coexisted with an application that could not boot.
-    // CommunicationDiWiringTests therefore builds a REAL ServiceProvider from this method with
-    // ValidateOnBuild + ValidateScopes and resolves every public service. An unregistered dependency, a captive
-    // dependency, or a scoped service captured by a singleton fails there rather than at somebody's first
-    // request.
-    //
-    // NO HOSTED SERVICE IS REGISTERED, deliberately. A hosted service is a SINGLETON that may never inject a
-    // scoped service, must take IServiceScopeFactory, and must bind an explicit company scope — three rules that
-    // each cost a real defect to learn. Delivery is a callable drain (ICommNotificationDispatcher) until the
-    // phase that owns production wiring can satisfy all three.
-    // =============================================================================================
+    // Communication services are registered by Program.cs through this single entry point.
+    // Request services stay scoped. Notification delivery is opt-in and requires an explicit
+    // positive company allowlist; the hosted worker opens a fresh company scope per pass.
+    // DI tests validate both the default graph and singleton/scoped lifetime boundaries.
     public static class CommunicationPlatformRegistration
     {
         public static IServiceCollection AddCommunicationPlatform(
@@ -49,7 +29,7 @@ namespace CrossBuy.BL.Communication
 
             // ---- foundations ---------------------------------------------------------------------------
             //
-            // Everything is AddScoped, matching the DbContext's lifetime. Nothing here is a singleton: every one
+            // Foundation services are AddScoped, matching the DbContext's lifetime. Every one
             // of these services either holds a CrossDbContext or holds something that does, and a singleton
             // capturing a scoped context is the captive-dependency bug ValidateScopes exists to catch.
             services.AddScoped<ICommEntitySurface, CommEntitySurface>();
@@ -59,13 +39,16 @@ namespace CrossBuy.BL.Communication
 
             // ---- principal expansion (ADR-032) ---------------------------------------------------------
             //
-            // Registered as IEnumerable, the shape the kernel uses for its adapters. A deployment adds @role
-            // support by registering an ICommPrincipalSource for Role AFTER this call — last registration wins
-            // per kind in CommPrincipalResolver, which is what makes an override actually override.
+            // Registered as IEnumerable, the shape the kernel uses for its adapters. Role uses the shared RBAC
+            // directory and requires an explicitly scoped key; a deployment may still replace it by registering
+            // another Role source AFTER this call — last registration wins per kind.
             services.AddScoped<ICommPrincipalSource, EmployeeCommPrincipalSource>();
             services.AddScoped<ICommPrincipalSource, TeamCommPrincipalSource>();
             services.AddScoped<ICommPrincipalSource, DepartmentCommPrincipalSource>();
+            services.AddScoped<ICommPrincipalSource, RoleCommPrincipalSource>();
             services.AddScoped<ICommPrincipalResolver, CommPrincipalResolver>();
+            services.AddScoped<ICommExternalAccessPolicy, CommExternalAccessPolicy>();
+            services.AddScoped<ICommPortalService, CommPortalService>();
 
             // ---- authorization -------------------------------------------------------------------------
             //
@@ -87,7 +70,7 @@ namespace CrossBuy.BL.Communication
 
             // ---- notifications (ADR-034) ---------------------------------------------------------------
             services.AddScoped<ICommTemplateCatalog, CommTemplateCatalog>();
-            services.AddScoped<ICommTemplateTextProvider, DefaultCommTemplateTextProvider>();
+            services.AddScoped<ICommTemplateTextProvider, ResourceCommTemplateTextProvider>();
             services.AddScoped<ICommTemplateRenderer, CommTemplateRenderer>();
             services.AddScoped<ICommPreferenceResolver, CommPreferenceResolver>();
             services.AddScoped<ICommNotificationService, CommNotificationService>();
@@ -96,7 +79,24 @@ namespace CrossBuy.BL.Communication
             // no adapter, so a delivery row addressed to one is parked Skipped WITH A REASON rather than sitting
             // Pending forever — see UnwiredCommNotificationChannel for why each is unwired.
             services.AddScoped<ICommNotificationChannel, InAppCommNotificationChannel>();
-            services.AddScoped<ICommDeliveryClaimStore, EfCommDeliveryClaimStore>();
+
+            // EMAIL — OPT-IN, and the default stays "declared, not wired".
+            //
+            // CommMailNotificationChannel QUEUES into the existing CommMessages outbox and never
+            // transmits. The reason it is still off by default is not transmission: it is that bridging
+            // makes this platform a SECOND PRODUCER for a queue owned elsewhere, with its own status
+            // vocabulary and retry policy (HM-D46). That is a production-wiring decision taken with the
+            // team that owns the queue, not a flag this platform flips for them.
+            if (configuration?.GetValue<bool>("CommunicationPlatform:EmailChannelEnabled") == true)
+                services.AddScoped<ICommNotificationChannel, CommMailNotificationChannel>();
+            services.AddScoped<ICommDeliveryClaimStore>(sp =>
+            {
+                var db = sp.GetRequiredService<CrossDbContext>();
+                var options = sp.GetRequiredService<IOptions<CommunicationPlatformOptions>>();
+                return string.Equals(db.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal)
+                    ? new SqlServerCommDeliveryClaimStore(db, options)
+                    : new EfCommDeliveryClaimStore(db, options);
+            });
             services.AddScoped<ICommNotificationDispatcher, CommNotificationDispatcher>();
 
             // ---- collaboration services ----------------------------------------------------------------
@@ -119,6 +119,10 @@ namespace CrossBuy.BL.Communication
             services.AddScoped<ICommTimelineSource, CommMentionTimelineSource>();
             services.AddScoped<ICommTimelineSource, CommAuditTimelineSource>();
             services.AddScoped<ICommTimelineAggregator, CommTimelineAggregator>();
+
+            // Re-offers bridgeable events the inline bridge could not deliver. Scoped, never singleton: a
+            // singleton here would capture the scoped DbContext, which the activation tests forbid.
+            services.AddScoped<ICommEventBridgeReplayService, CommEventBridgeReplayService>();
 
             // Communication ↔ Tasks. Registered here, but it takes NO Tasks type in its constructor — it
             // resolves ITaskService/ITasksAccessService at call time and reports their absence. So this
@@ -202,6 +206,26 @@ namespace CrossBuy.BL.Communication
                 services.AddScoped<EfCommPushTokenStore>();
                 services.AddScoped<ICommPushTokenStore, ProbingCommPushTokenStore>();
             }
+
+            if (configuration?.GetValue<bool>("CommunicationPlatform:NotificationWorkerEnabled") == true)
+            {
+                var companies = configuration.GetSection("CommunicationPlatform:NotificationWorkerCompanyIds").Get<List<int>>();
+                if (companies == null || companies.Count == 0 || companies.Any(id => id <= 0))
+                    throw new InvalidOperationException("Notification activation requires an explicit positive company allow-list.");
+                services.AddHostedService<CommNotificationHostedService>();
+            }
+
+            // Same fail-closed shape as the notification worker: absent configuration adds NO hosted
+            // service at all, and a bare "true" without a company allow-list is refused at startup rather
+            // than silently replaying for whichever company a background scope happens to resolve.
+            if (configuration?.GetValue<bool>("CommunicationPlatform:BridgeReplayEnabled") == true)
+            {
+                var replayCompanies = configuration.GetSection("CommunicationPlatform:BridgeReplayCompanyIds").Get<List<int>>();
+                if (replayCompanies == null || replayCompanies.Count == 0 || replayCompanies.Any(id => id <= 0))
+                    throw new InvalidOperationException("Bridge-replay activation requires an explicit positive company allow-list.");
+                services.AddHostedService<CommBridgeReplayHostedService>();
+            }
+
             return services;
         }
 

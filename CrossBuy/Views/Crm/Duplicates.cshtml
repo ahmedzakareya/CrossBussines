@@ -1,0 +1,113 @@
+@model List<CrossBuy.BL.CrmIdentity.DuplicatePair>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var h = (CrossBuy.BL.CrmIdentity.DataHealthFigures)ViewBag.Health;
+    var type = (string)ViewBag.Type;
+    var canEdit = ViewBag.CanEdit == true;
+    var canManage = ViewBag.CanManage == true;
+    int Pct(int n, int d) => d == 0 ? 0 : (int)Math.Round(n * 100.0 / d);
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    string Url360(int id) => type == "Contact" ? Url.Action("Contact", "Crm", new { id })! : Url.Action("Account360", "Crm", new { id })!;
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Data quality & duplicates"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Data quality & duplicates"]</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3"><a href="@Url.Action("Contacts","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-people fs-4"></i>@T["Contacts"]</a></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Possible duplicates"]</div><i class="ki-outline ki-copy fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold @(h.AccountPairs + h.ContactPairs > 0 ? "text-danger" : "text-success") num">@(h.AccountPairs + h.ContactPairs)</div>
+                <div class="text-muted fs-8 mt-1"><span class="num">@h.AccountPairs</span> @T["in accounts"] · <span class="num">@h.ContactPairs</span> @T["in contacts"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Financial customers sharing a name"]</div><i class="ki-outline ki-people fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900 num">@h.CustomerNameGroups</div>
+                <div class="text-muted fs-8 mt-1">@T["groups — merged in Accounting, not here"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Contacts with no recorded consent"]</div><i class="ki-outline ki-shield-cross fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold @(h.ContactsNoConsent > 0 ? "text-danger" : "text-success")"><span class="num">@Pct(h.ContactsNoConsent, h.ContactsTotal)%</span></div>
+                <div class="text-muted fs-8 mt-1"><a href="@Url.Action("Contacts","Crm")"><span class="num">@h.ContactsNoConsent</span> @T["of"] <span class="num">@h.ContactsTotal</span></a></div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Accounts with no owner"]</div><i class="ki-outline ki-user fs-2 text-gray-400"></i></div>
+                <div class="fs-2hx fw-bold text-gray-900 num">@h.AccountsNoOwner</div>
+                <div class="text-muted fs-8 mt-1">@T["of"] <span class="num">@h.AccountsTotal</span> @T["active accounts"] · <span class="num">@h.Merged</span> @T["merged so far"]</div></div></div></div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Duplicates that need a decision"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@(type == "Account" ? T["A merge moves deals, contacts, activities, tickets, calls and memberships to the remaining record, and keeps the other as a redirect"] : T["A merge moves tickets, calls, activities, memberships and the full consent history to the remaining contact"])</span>
+                </div>
+                <div class="card-toolbar gap-3">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(type == "Account" ? "active" : "")" href="@Url.Action("Duplicates","Crm", new { type = "Account" })">@T["Accounts"] <span class="badge badge-light-primary ms-1 num">@h.AccountPairs</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 @(type == "Contact" ? "active" : "")" href="@Url.Action("Duplicates","Crm", new { type = "Contact" })">@T["Contacts"] <span class="badge badge-light-primary ms-1 num">@h.ContactPairs</span></a></li>
+                    </ul>
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input type="text" id="pairSearch" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search…"]" autocomplete="off" /></div>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Record A"]</th><th>@T["Record B"]</th><th class="text-center">@T["Match"]</th><th>@T["Why"]</th><th class="text-end pe-4"></th></tr></thead>
+                    <tbody class="fs-6" id="pairRows">
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td class="ps-4"><div class="d-flex align-items-center min-w-0"><div class="symbol symbol-35px @(type == "Contact" ? "symbol-circle" : "") flex-shrink-0"><span class="symbol-label crm-initials fs-8">@Initials(p.LowName)</span></div>
+                                <div class="d-flex flex-column ms-3 min-w-0"><a href="@Url360(p.LowId)" class="text-gray-900 text-hover-primary fw-bold text-truncate">@p.LowName</a><span class="text-muted fs-8 text-truncate">@p.LowSub</span></div></div></td>
+                            <td><div class="d-flex align-items-center min-w-0"><div class="symbol symbol-35px @(type == "Contact" ? "symbol-circle" : "") flex-shrink-0"><span class="symbol-label crm-initials fs-8">@Initials(p.HighName)</span></div>
+                                <div class="d-flex flex-column ms-3 min-w-0"><a href="@Url360(p.HighId)" class="text-gray-900 text-hover-primary fw-bold text-truncate">@p.HighName</a><span class="text-muted fs-8 text-truncate">@p.HighSub</span></div></div></td>
+                            <td class="text-center"><span class="crm-score @(p.Score >= 80 ? "hi" : "mid") num">@p.Score%</span></td>
+                            <td>@foreach (var r in p.Reasons) { <span class="crm-reason">@T["dup:" + r]</span> }</td>
+                            <td class="text-end pe-4 text-nowrap">
+                                @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary" data-merge-type="@type" data-survivor="@p.LowId" data-merged="@p.HighId"><i class="ki-outline ki-arrows-loop fs-5"></i>@T["Preview merge"]</button> }
+                                @if (canEdit) { <button type="button" class="btn btn-sm btn-light ms-1" data-dismiss-pair data-type="@type" data-a="@p.LowId" data-b="@p.HighId">@T["Not the same"]</button> }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-12"><i class="ki-outline ki-check-circle fs-3x text-success mb-3 d-block"></i><div class="fw-bold fs-5 text-gray-800">@T["No possible duplicates found"]</div><div class="text-muted fs-7">@T["Records are compared on mobile, email, email domain, tax number and name."]</div></div>
+                }
+                <div class="d-flex flex-stack flex-wrap pt-5 @(Model.Count == 0 ? "d-none" : "")"><div class="fs-7 text-muted" id="pairInfo"></div><ul class="pagination" id="pairPager"></ul></div>
+            </div>
+        </div>
+
+        <div class="notice d-flex rounded border border-dashed p-6" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Prevent duplicates at entry"]</h4>
+                <div class="fs-6 text-gray-700">@T["While a lead, an account or a contact is being typed, a \"similar record exists\" line appears under the form with a link to it — before a second copy is saved."]</div></div>
+        </div>
+    </div></div>
+</div>
+<div id="mergeHost"></div>
+@section Scripts {
+<partial name="_MergeScript" />
+<script>
+// search + pages over the proposed pairs (the list is computed whole, at most 200 pairs)
+(function(){
+  var isAr = @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "true" : "false");
+  var rows = [].slice.call(document.querySelectorAll('#pairRows tr')), size = 25, page = 1, q = '';
+  function draw(){
+    var hit = rows.filter(function(r){ return !q || r.textContent.toLowerCase().indexOf(q) !== -1; });
+    var pages = Math.max(1, Math.ceil(hit.length / size)); if (page > pages) page = pages;
+    rows.forEach(function(r){ r.style.display = 'none'; });
+    hit.slice((page-1)*size, page*size).forEach(function(r){ r.style.display = ''; });
+    document.getElementById('pairInfo').textContent = hit.length + (isAr ? ' زوجاً' : ' pairs') + ' · ' + (isAr ? 'صفحة ' : 'page ') + page + '/' + pages;
+    var pg = document.getElementById('pairPager'); pg.innerHTML = '';
+    for (var i = 1; i <= pages; i++) { var li = document.createElement('li'); li.className = 'page-item' + (i === page ? ' active' : ''); li.innerHTML = '<a href="#" class="page-link">' + i + '</a>'; (function(n){ li.onclick = function(e){ e.preventDefault(); page = n; draw(); }; })(i); pg.appendChild(li); }
+  }
+  var s = document.getElementById('pairSearch'); if (s) s.addEventListener('input', function(){ q = s.value.trim().toLowerCase(); page = 1; draw(); });
+  new MutationObserver(function(){ rows = rows.filter(function(r){ return r.isConnected; }); draw(); }).observe(document.getElementById('pairRows'), { childList: true });
+  draw();
+})();
+</script>
+}

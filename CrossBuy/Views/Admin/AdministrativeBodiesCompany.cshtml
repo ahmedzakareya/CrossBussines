@@ -67,6 +67,10 @@
 			<div id="kt_account_settings_profile_details" class="collapse show">
 				<!--begin::Form-->
 				<form id="kt_account_profile_details_form" class="form">
+					@* SEC-01 — the endpoint now carries [ValidateAntiForgeryToken]. The token lives INSIDE the
+					   form on purpose: the submit handler posts `form.serialize()`, so a hidden input here is
+					   carried automatically and the JavaScript needs no change at all. *@
+					@Html.AntiForgeryToken()
 					<!--begin::Card body-->
 					<div class="card-body border-top p-9">
 						<input type="hidden" name="A_ID" asp-for="A_ID" />

@@ -40,14 +40,6 @@ namespace CrossBuy.Tests
         // gained or lost a call, so the reviewer's job is to add the verdict, not to silence the test.
         private static readonly (string File, int Count, string Verdict)[] ReviewedProductionRawSql =
         {
-            ("BL/Communication/CommPushTokenSchemaProbe.cs", 1,
-                "System catalogues ONLY - sys.tables and sys.indexes - asked whether the push-token slice has " +
-                "actually been applied to the connected database. Same shape and same verdict as " +
-                "CommTaskLinkSchemaProbe: no business table, no pilot entity, no row of customer data, so " +
-                "there is no company dimension for a predicate to scope. The question is about the SCHEMA, not " +
-                "about tenants. The identifiers interpolated into the text are compile-time constants of this " +
-                "class, never request input, and the query is a pure read - the probe reports an absent schema, " +
-                "it never creates or repairs one."),
             ("BL/AccountingPeriodControlService.cs", 1,
                 "Locked FiscalPeriods read has an explicit EXISTS on FiscalYears.CompanyID inside the raw query; caller authority is checked before locking."),
             ("BL/ProgressBillingService.cs", 1,
@@ -56,6 +48,18 @@ namespace CrossBuy.Tests
                 "1) barcode_cross_table_dup reads Items (PILOT) — company predicate ADDED in B5; it previously " +
                 "counted every company's barcodes. 2) fixed_barcode_in_scale_range reads Items (PILOT) with an " +
                 "explicit CompanyID. 3) sys.tables probe — no business data."),
+
+            ("BL/Communication/CommTaskLinkSchemaProbe.cs", 1,
+                "System catalogues ONLY — sys.tables, sys.indexes, sys.check_constraints, sys.foreign_keys — " +
+                "asked whether deploy/sql/comm_task_links.sql AND deploy/sql/comm_task_links_m2m.sql have " +
+                "actually been applied to the connected database — the m2m slice replaced the single live " +
+                "index with two filtered ones, and the probe now requires both, so a database carrying only " +
+                "the superseded index reports NOT provisioned. " +
+                "It reads no business table, no pilot entity and no row of customer data, so there " +
+                "is no company dimension for a predicate to scope: the question is about the SCHEMA, not " +
+                "about tenants. The query is also a pure read — the probe never creates, alters or repairs " +
+                "anything, because provisioning is a deployment act and not a side effect of a service " +
+                "starting up. Same stance as IntegrityCheckService's sys.tables probe above."),
 
             ("BL/JournalEntryService.cs", 2,
                 "NumberSequences only (NOT a pilot entity), with CompanyID as an explicit parameter in both the " +
@@ -101,6 +105,44 @@ namespace CrossBuy.Tests
                 "same choice StockService makes above. Including CompanyID in the lookup also makes a " +
                 "foreign-company id return NotFound instead of found-then-denied, so a caller cannot learn that " +
                 "another company's grant exists."),
+            ("BL/Communication/CommPushTokenSchemaProbe.cs", 1,
+                "System catalogues ONLY - sys.tables and sys.indexes - asked whether the push-token slice has " +
+                "actually been applied to the connected database. Same shape and same verdict as " +
+                "CommTaskLinkSchemaProbe above: no business table, no pilot entity, no row of customer data, so " +
+                "there is no company dimension for a predicate to scope. The question is about the SCHEMA, not " +
+                "about tenants. The identifiers interpolated into the text are compile-time constants of this " +
+                "class, never request input, and the query is a pure read - the probe reports an absent schema, " +
+                "it never creates or repairs one."),
+            ("BL/Construction/ConstructionOrderAllocationService.cs", 1,
+                "Locked PurchaseOrders read: FromSqlInterpolated with UPDLOCK/HOLDLOCK predicating ID, " +
+                "CompanyID and ProjectId, all three as parameters, with CompanyID taken from the RESOLVED " +
+                "BusinessContext rather than an argument. Scoped inside the statement, so a foreign-company " +
+                "order returns NotFound rather than found-then-denied."),
+            ("BL/Construction/ConstructionPurchaseApprovalService.cs", 1,
+                "Identical to ConstructionOrderAllocationService above - the same locked PurchaseOrders read, " +
+                "the same three parameters, the same CompanyID from the resolved context. The approval path " +
+                "needs the row locked for the same reason the allocation path does."),
+            ("BL/PosCouponService.cs", 3,
+                "SCOPED BY PROVENANCE, NOT BY PREDICATE - the weakest verdict in this inventory, and recorded " +
+                "as such. All three statements address PosCoupons by primary key alone with no CompanyID in " +
+                "the SQL. They are safe because the id cannot reach them unscoped: the apply path reads the " +
+                "coupon with x.CompanyID == companyId && x.Code == code before claiming a use, and the release " +
+                "paths carry the id from the POS order's own CouponId, which only that scoped apply can set. " +
+                "The claim/release pair is raw SQL on purpose: UsageCount is incremented by the DATABASE under " +
+                "the usage-limit predicate, because read-then-write is how the last use of a coupon gets spent " +
+                "twice. NOTE for whoever reads this next: PosCoupons carries no query filter, so if a second " +
+                "path ever loads a coupon by id alone the provenance argument fails and these need a predicate."),
+            ("BL/ProcurementService.cs", 3,
+                "Three locked reads inside the invoicing transaction. Two are PurchaseOrders with UPDLOCK/HOLDLOCK " +
+                "predicating ID and CompanyID as parameters, so a foreign order returns NotFound rather than " +
+                "found-then-denied. The third locks PurchaseOrderLines by PurchaseOrderId ALONE and is scoped by " +
+                "PROVENANCE, not by predicate: it runs only after the order above has been locked with its " +
+                "CompanyID and after the project and warehouse have been re-checked against the same companyId, " +
+                "so the id cannot arrive unproven. Lines carry no CompanyID of their own to predicate on."),
+            ("BL/SubcontractBillingService.cs", 1,
+                "Locked SubcontractBillings read: FromSqlInterpolated with UPDLOCK predicating ID and CompanyID " +
+                "as parameters inside the transaction. Same idiom and same verdict as ProgressBillingService " +
+                "above - a billing document is claimed under a lock so two approvals cannot settle it twice."),
         };
 
         // Files exempt from the inventory, each for a stated reason rather than convenience.

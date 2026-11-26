@@ -161,19 +161,14 @@ namespace CrossBuy.Models.Communication
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Mention target kinds. Employee / Team / Department are supported; Role is DECLARED-NOT-WIRED.
-    //
-    // Role is declared here so the vocabulary and the CHECK constraint are frozen now — the value cannot be
-    // spelled differently by whoever wires it. It is refused at write time until a target provider exists
-    // (see ADR-032 §5: IPlatformRoleDirectory answers "what does THIS principal hold" and has no reverse
-    // "who holds this role" query, so a role provider needs a new read that does not exist yet).
+    // Mention target kinds. Group mentions expand through company-scoped, active sources.
     // ---------------------------------------------------------------------------------------------
     public static class CommMentionTargetKind
     {
         public const string Employee = "Employee";
         public const string Team = "Team";             // a manager's direct + indirect reports (IOrgHierarchy)
         public const string Department = "Department";  // a Hierarchical org node and everyone beneath it
-        public const string Role = "Role";             // declared, not wired — see above
+        public const string Role = "Role";             // @role:{Scope}.{Role}; gated by EnableRoleMentions
 
         private static readonly HashSet<string> All =
             new(StringComparer.Ordinal) { Employee, Team, Department, Role };
@@ -333,6 +328,32 @@ namespace CrossBuy.Models.Communication
     }
 
     // ---------------------------------------------------------------------------------------------
+    // What happens to the USER'S operation when the platform-kernel bridge fails.
+    //
+    // HM-D44 recorded a missing BusinessEvents table failing a whole SALE with SQL-208; HM-D53 recorded the
+    // same shape reaching the GL writer, suspending every accounting correction on the kernel. The cause
+    // both times was a kernel write sharing the caller's transaction with no swallowing catch.
+    //
+    // Commenting must not inherit that. A comment is the user's work; a kernel event is our bookkeeping.
+    // When the bookkeeping breaks, the user's work is what must survive.
+    // ---------------------------------------------------------------------------------------------
+    public static class CommBridgeFailureMode
+    {
+        // The comment commits; the failure is logged and audited, and CommEventBridgeReplayService
+        // re-offers the event once the kernel is reachable again. THE DEFAULT.
+        public const string Isolate = "Isolate";
+
+        // The historical behaviour: a bridge failure fails the whole operation. Kept so a deployment that
+        // genuinely wants the comment and the kernel event to share one fate can still ask for it — and so
+        // the coupling stays reproducible in a test rather than only in a changelog.
+        public const string FailOperation = "FailOperation";
+
+        private static readonly HashSet<string> All = new(StringComparer.Ordinal) { Isolate, FailOperation };
+        public static bool IsValid(string? value) => value != null && All.Contains(value);
+        public static IReadOnlyCollection<string> Values => All;
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // Audit actions (module 31). Append-only; every mutating service operation names exactly one.
     // ---------------------------------------------------------------------------------------------
     public static class CommAuditActions
@@ -361,9 +382,21 @@ namespace CrossBuy.Models.Communication
         public const string NotificationFailed = "NotificationFailed";
         public const string AccessDenied = "AccessDenied";
 
+        // The kernel bridge threw and the isolated mode absorbed it. Recorded, not merely logged: a
+        // swallowed failure that leaves no row is a lost event nobody can find afterwards.
+        public const string BridgeFailed = "BridgeFailed";
+
+        // A Task was raised from a message. There is no task↔comment table, so this row is the ONLY
+        // durable record of which message a task came from — and the only place a repeated submission
+        // can be recognised. It is an audit trail, not a query index: the related-tasks panel reads the
+        // shared business anchor instead.
         public const string TaskCreatedFromMessage = "TaskCreatedFromMessage";
+
+        // An EXISTING task was attached to, or detached from, a conversation. Distinct from the row above:
+        // that one records work being raised, these record an association a person chose to make or undo.
         public const string TaskLinkedToConversation = "TaskLinkedToConversation";
         public const string TaskUnlinkedFromConversation = "TaskUnlinkedFromConversation";
+
         private static readonly HashSet<string> All = new(StringComparer.Ordinal)
         {
             ThreadCreated, ThreadLocked, ThreadUnlocked,
@@ -373,7 +406,7 @@ namespace CrossBuy.Models.Communication
             ParticipantAdded, ParticipantRemoved, ParticipantMuted,
             PermissionGranted, PermissionRevoked, ReadStatusUpdated,
             NotificationQueued, NotificationDelivered, NotificationSkipped, NotificationFailed,
-            AccessDenied,
+            AccessDenied, BridgeFailed,
             TaskCreatedFromMessage, TaskLinkedToConversation, TaskUnlinkedFromConversation,
         };
 

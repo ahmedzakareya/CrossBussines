@@ -48,7 +48,7 @@ namespace CrossBuy.Controllers
     // =============================================================================================
     [PortalAuthorize]
     [Route("ClientPortal")]
-    public class ClientPortalController : Controller
+    public partial class ClientPortalController : Controller
     {
         private readonly IPortalDataService _portal;
         private readonly ICommPortalService _conversations;
@@ -96,14 +96,29 @@ namespace CrossBuy.Controllers
 
             var content = await _photos.OpenForPortalAsync(me.PortalUserId, ct);
 
-            // One answer for absent, someone else's, deactivated, a locator that is not ours and a
-            // file that will not open. NOT 403: confirming that this id names a real contact is
-            // itself a disclosure to somebody who may not see them.
-            if (content == null) return NotFound();
-
             // Private personal data must not be retained by a shared cache; the response is as
-            // addressable as the cookie that earned it and no more.
+            // addressable as the cookie that earned it and no more. Set before either branch so the
+            // fallback cannot be cached as though it were this person's settled picture.
             Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private";
+
+            // A SIGNED-IN CALLER WITH NO SERVABLE PICTURE GETS THE NEUTRAL AVATAR, NOT A 404.
+            //
+            // WHAT WAS BROKEN. _PortalHeader decides the avatar by asking whether PhotoPath is blank,
+            // and falls back to blank.png when it is. But a row can carry a path whose FILE is gone -
+            // which is exactly the state of the demo contact, whose PhotoPath names
+            // /uploads/portal/1/a1c7...png and no such file exists anywhere. The view then points at
+            // this endpoint, this endpoint answered 404, and every portal page rendered the browser's
+            // torn-page glyph with the contact's name beside it. The view cannot tell the two cases
+            // apart without opening the file, so the endpoint is the only place that can.
+            //
+            // THIS DOES NOT WIDEN DISCLOSURE, and the distinction is the whole argument. The 404 above
+            // still stands for an unresolved portal context. Past it, the id was resolved from the
+            // CALLER'S OWN context and never from the URL, so the only question this branch can answer
+            // is "do I have a picture" - asked by the person about themselves, who already knows. No
+            // caller learns anything about anyone else, because no caller can name anyone else here.
+            if (content == null)
+                return File("/portal-assets/media/avatars/blank.png", "image/png");
+
             return File(content.Stream, content.ContentType);
         }
 
@@ -202,12 +217,12 @@ namespace CrossBuy.Controllers
         // This controller resolves the portal identity, asks that service, and renders what comes
         // back. A UI is not an authority, and none of these actions contains one.
         //
-        // WHY THESE RENDER SERVER-SIDE RATHER THAN CALLING THE JSON ENDPOINTS. This portal has no
-        // JavaScript at all — not a script tag in any of its five screens — and every page is a
-        // model-bound Razor view. Introducing fetch here to reach /ClientPortal/Conversations would
-        // have added anti-forgery plumbing, a client error path and a script dependency to a surface
-        // that has none, purely to avoid passing a model to a view. The six 3B-C JSON endpoints are
-        // untouched and remain the API; these render the same service's answers as HTML.
+        // WHY THESE RENDER SERVER-SIDE RATHER THAN CALLING THE JSON ENDPOINTS. The portal's
+        // conversation screens are model-bound Razor views and keep their post/redirect/get flow.
+        // The composer has only a local emoji picker; it does not fetch or post through JavaScript.
+        // Introducing fetch here to reach /ClientPortal/Conversations would add anti-forgery plumbing,
+        // a client error path and a second transport for no user-facing gain. The six 3B-C JSON
+        // endpoints are untouched and remain the API; these render the same service's answers as HTML.
         //
         // A THREAD ID IS AN IDENTIFIER AND NEVER AN AUTHORITY: the service re-proves access on every
         // single call, so a customer typing another customer's thread id into the URL gets exactly

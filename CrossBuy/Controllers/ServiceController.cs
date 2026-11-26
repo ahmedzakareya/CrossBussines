@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using System.Linq;
 using CrossBuy.Models;
 //using CrossBuy.Models.Context.Admin;
@@ -87,7 +87,7 @@ namespace CrossBuy.Controllers
 
 
 		[SessionValidation]
-		[HttpPost]
+		[HttpPost][ValidateAntiForgeryToken][PlatformOps(requireElevated: true)]
 		public async Task<IActionResult> CompanyDetails(CompanyDto model, string attachmentsFiles)
 		{
 			if (!IsPlatformAdministrator()) return RefuseCompanyAdministration();
@@ -199,6 +199,7 @@ namespace CrossBuy.Controllers
 
 		public async Task< IActionResult> BranchDetails(int? ID)
 		{
+            if (!IsPlatformAdministrator()) return RefuseCompanyAdministration();
 			BranchiesDto  Model= null; 
 			if (ID == null )
 			{
@@ -211,9 +212,10 @@ namespace CrossBuy.Controllers
 			return View(Model);
 		}
 		[SessionValidation]
-		[HttpPost]
+		[HttpPost][ValidateAntiForgeryToken][PlatformOps(requireElevated: true)]
 		public async Task<IActionResult> BranchDetails(BranchiesDto model, string attachmentsFiles)
 		{
+            if (!IsPlatformAdministrator()) return RefuseCompanyAdministration();
 			// Check if the model state is valid
 			if (ModelState.IsValid)
 			{

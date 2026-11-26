@@ -1,0 +1,27 @@
+@model List<CrossBuy.BL.CrmIdentity.SubmissionRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    string Tone(string st) => st switch { "Converted" => "success", "Linked" => "primary", "Pending" => "info", "Failed" => "danger", _ => "light" };
+}
+@foreach (var r in Model)
+{
+    var s = r.S;
+    <tr>
+        <td class="ps-4"><span class="num fs-7">@s.ReceivedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span><div class="text-muted fs-8">@r.FormName</div></td>
+        <td><div class="fw-bold text-gray-900">@s.Name</div>@if (!string.IsNullOrWhiteSpace(s.Company)) { <div class="text-muted fs-7">@s.Company</div> }</td>
+        <td class="fs-7">@if (s.Phone != null) { <div class="num">@s.Phone</div> }@if (s.Email != null) { <div class="num">@s.Email</div> }</td>
+        <td class="fs-7" style="max-width:260px">@if (s.Need != null) { <span class="crm-reason">@s.Need</span> }@if (s.Area != null) { <span class="crm-reason">@s.Area</span> }@if (s.Message != null) { <div class="text-muted text-truncate" title="@s.Message">@s.Message</div> }</td>
+        <td>@if (s.ConsentGiven) { <span class="crm-consent in" title="@s.ConsentText">✓ @T["consent:OptIn"]</span> } else { <span class="crm-consent none">@T["Never asked"]</span> }</td>
+        <td><span class="badge badge-light-@Tone(s.Status) @(s.Status == "Spam" ? "text-gray-600" : "")">@T["sub:" + s.Status]</span>
+            @if (s.LeadId != null) { <div class="mt-1"><a href="/Crm/Leads?q=@Uri.EscapeDataString(s.Name)" class="fs-8 fw-semibold">@T["Open the lead"]</a></div> }
+            @if (s.AssignReason != null) { <div class="text-muted fs-8">@T["why:" + s.AssignReason.Split(':')[0]]</div> }
+            @if (s.Error != null) { <div class="text-danger fs-8">@s.Error</div> }</td>
+        <td class="pe-4">@if (r.OwnerName != null)
+            {
+                <div class="d-flex align-items-center gap-2"><div class="symbol symbol-30px symbol-circle">@if (r.OwnerHasPhoto) { <img src="/People/Photo/@s.OwnerEmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>@Initials(r.OwnerName)</span>'" /> } else { <span class="symbol-label crm-initials fs-8">@Initials(r.OwnerName)</span> }</div><span class="fw-semibold fs-7">@r.OwnerName</span></div>
+            }
+            else if (s.Status is "Converted" or "Linked") { <span class="badge badge-light-danger">@T["No owner"]</span> }
+            else { <span class="text-gray-300">—</span> }</td>
+    </tr>
+}

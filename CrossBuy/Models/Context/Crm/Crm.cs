@@ -257,17 +257,98 @@ namespace CrossBuy.Models.Context.Crm
 		public int? AccountId { get; set; }
 		public int? ContactId { get; set; }
 		public int? CustomerId { get; set; }
+		// HOW THE CONTACT ARRIVED. A support desk without this cannot answer its first question -
+		// where is the volume coming from - and every call-centre report starts with this column.
+		// Campaign carried a Channel from the beginning; the ticket, which is where the contact
+		// actually lands, did not.
+		public string? Channel { get; set; }            // Phone | Email | WhatsApp | WalkIn | Portal | Other
+
+		// THE NUMBER THE CONTACT CAME FROM, captured on the ticket itself. Account, Contact and
+		// Lead each carry a Phone, but an inbound call from a number none of them match had
+		// nowhere to be recorded - so the caller could not be written down, let alone found again.
+		public string? CallerPhone { get; set; }
+
 		public string? Category { get; set; }
 		public string? CategoryEn { get; set; }            // optional English category
 		public string Priority { get; set; } = "Normal";
 		public string Status { get; set; } = "New";        // New | Open | Pending | Resolved | Closed
 		public int? OwnerEmployeeId { get; set; }           // assignee (data-scope owner)
+
+		// WHAT THIS IS ABOUT, in this system’s own records. A support call is never about nothing:
+		// it is about this delivery order, this invoice, this item. The pair is a registry code and
+		// an id - the same vocabulary IEntityRegistry freezes and resolves to a label and a deep
+		// link - so the department that receives the ticket opens the record instead of asking the
+		// customer to read the number out a second time.
+		public string? SourceType { get; set; }
+		public int? SourceId { get; set; }
+
+		// THE DEPARTMENT THE PROBLEM BELONGS TO, which is not the same question as who owns it.
+		// An owner is one person and changes with holidays and handovers; the department is where
+		// the work lives, and is what an agent on a call can answer ("this is for Finance") long
+		// before anyone knows which person will take it.
+		public int? DepartmentId { get; set; }
+
 		public int? SlaPolicyId { get; set; }
 		public DateTime? FirstResponseDueAt { get; set; }
 		public DateTime? ResolutionDueAt { get; set; }
 		public DateTime? FirstRespondedAt { get; set; }
 		public DateTime? ResolvedAt { get; set; }
 		public DateTime? ClosedAt { get; set; }
+		public string? CreatedBy { get; set; }
+		public DateTime? CreatedAt { get; set; }
+	}
+
+	// ============================================================================================
+	// A CALL. The thing a call centre is named after, and the thing this module had no record of.
+	//
+	// Separate from CrmTicket on purpose: one ticket can take many calls, and many calls never
+	// become a ticket at all (no answer, wrong number, a question answered on the spot). Folding
+	// the call into the ticket would have lost both of those.
+	//
+	// Every link is OPTIONAL. An inbound call starts as a ringing phone and nothing else; the
+	// agent identifies the caller DURING it, and may never identify them. A model that demanded
+	// a customer up front would be a model nobody could log a real call into.
+	// ============================================================================================
+	public class CrmCall
+	{
+		public int ID { get; set; }
+		public int CompanyID { get; set; }
+
+		public string Direction { get; set; } = "Inbound";   // Inbound | Outbound
+		public string? PhoneNumber { get; set; }
+
+		// Who it turned out to be, as far as the agent got. All nullable, all independent.
+		public int? TicketId { get; set; }
+		public int? AccountId { get; set; }
+		public int? ContactId { get; set; }
+		public int? CustomerId { get; set; }
+		public int? LeadId { get; set; }
+
+		public int? AgentEmployeeId { get; set; }
+
+		// The call keeps its own copy of what it was about: a call is logged before anyone decides
+		// whether it deserves a ticket, and that decision must not erase the subject.
+		public string? SourceType { get; set; }
+		public int? SourceId { get; set; }
+
+		// WHERE THE PROBLEM WENT NEXT. An org node (Hierarchicals) under this
+		// company - a BRANCH, a department or a post, never a person - because who picks the
+		// ticket up is the unit’s business, not the caller’s.
+		// Null is the normal case: most calls are answered on the spot and go nowhere.
+		public int? DepartmentId { get; set; }
+
+		public DateTime StartedAt { get; set; }
+		public DateTime? EndedAt { get; set; }
+
+		// STORED, not derived at read time. A call can be logged after the fact with a duration the
+		// agent types, and EndedAt - StartedAt would then disagree with what actually happened.
+		public int? DurationSeconds { get; set; }
+
+		// Answered is not the only ending, and the ones that are not answered are the ones a
+		// supervisor needs to count.
+		public string Outcome { get; set; } = "Answered";   // Answered | NoAnswer | Busy | Voicemail | Dropped
+
+		public string? Notes { get; set; }
 		public string? CreatedBy { get; set; }
 		public DateTime? CreatedAt { get; set; }
 	}

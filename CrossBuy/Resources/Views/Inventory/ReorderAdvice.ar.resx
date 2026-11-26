@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+    <data name="Accept" xml:space="preserve">
+    <value>اعتماد</value>
+  </data>
+  <data name="All movements" xml:space="preserve">
+    <value>كل الحركات</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>تعذّر إتمام التحليل</value>
+  </data>
+  <data name="Analysis service unavailable" xml:space="preserve">
+    <value>خدمة التحليل غير متاحة</value>
+  </data>
+  <data name="Below the computed point — order now" xml:space="preserve">
+    <value>تحت النقطة المحسوبة — يلزم الطلب الآن</value>
+  </data>
+  <data name="Declined — history too thin" xml:space="preserve">
+    <value>امتنع — التاريخ غير كافٍ</value>
+  </data>
+  <data name="Demand / day" xml:space="preserve">
+    <value>الطلب / يوم</value>
+  </data>
+  <data name="Every pair examined fell short of the minimum history. The breakdown above says what is missing." xml:space="preserve">
+    <value>كل الأزواج التي فُحصت لم تبلغ الحد الأدنى من التاريخ. والتفصيل أعلاه يوضّح الناقص.</value>
+  </data>
+  <data name="Evidence" xml:space="preserve">
+    <value>الأدلة</value>
+  </data>
+  <data name="Figures proposed" xml:space="preserve">
+    <value>أرقام مقترحة</value>
+  </data>
+  <data name="How much history supports this" xml:space="preserve">
+    <value>مقدار التاريخ الذي يسند هذا الرقم</value>
+  </data>
+  <data name="Intermittent" xml:space="preserve">
+    <value>متقطّع</value>
+  </data>
+  <data name="Item / warehouse pairs examined" xml:space="preserve">
+    <value>أزواج (صنف × مخزن) مفحوصة</value>
+  </data>
+  <data name="Lumpy" xml:space="preserve">
+    <value>متذبذب</value>
+  </data>
+  <data name="Measured over" xml:space="preserve">
+    <value>مقيس على مدى</value>
+  </data>
+  <data name="No outbound movements were found in the window, so there is no demand to measure." xml:space="preserve">
+    <value>لا توجد حركات صرف خلال المدة، فلا يوجد طلب يمكن قياسه.</value>
+  </data>
+  <data name="No reorder point can be proposed yet" xml:space="preserve">
+    <value>لا يمكن اقتراح نقطة إعادة طلب بعد</value>
+  </data>
+  <data name="No reorder point is recorded for this pair today." xml:space="preserve">
+    <value>لا توجد نقطة إعادة طلب مسجّلة لهذا الزوج حاليًا.</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>البيانات لا تكفي للتحليل</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>الرصيد</value>
+  </data>
+  <data name="On-premises model" xml:space="preserve">
+    <value>نموذج داخل المنشأة</value>
+  </data>
+  <data name="Order now" xml:space="preserve">
+    <value>اطلب الآن</value>
+  </data>
+  <data name="Proposed point" xml:space="preserve">
+    <value>النقطة المقترحة</value>
+  </data>
+  <data name="Proposed reorder points" xml:space="preserve">
+    <value>نقاط إعادة الطلب المقترحة</value>
+  </data>
+  <data name="Recorded today:" xml:space="preserve">
+    <value>المسجّل حاليًا:</value>
+  </data>
+  <data name="Reorder advice" xml:space="preserve">
+    <value>نصائح إعادة الطلب</value>
+  </data>
+  <data name="Risk Insights" xml:space="preserve">
+    <value>تحليلات المخاطر</value>
+  </data>
+  <data name="Safety stock" xml:space="preserve">
+    <value>مخزون الأمان</value>
+  </data>
+  <data name="Service level" xml:space="preserve">
+    <value>مستوى الخدمة</value>
+  </data>
+  <data name="Stable" xml:space="preserve">
+    <value>مستقر</value>
+  </data>
+  <data name="Suggestions for review only" xml:space="preserve">
+    <value>اقتراحات للمراجعة فقط</value>
+  </data>
+  <data name="The analysis service replied with a result that could not be read. Nothing has been changed." xml:space="preserve">
+    <value>ردّت خدمة التحليل بنتيجة تعذّرت قراءتها. ولم يتغيّر شيء.</value>
+  </data>
+  <data name="The on-premises analysis service did not respond. Every other inventory screen is unaffected." xml:space="preserve">
+    <value>لم تستجب خدمة التحليل الداخلية. وباقي شاشات المخزون تعمل كالمعتاد.</value>
+  </data>
+  <data name="The reorder point is the demand expected during the lead time, plus a safety stock sized from how much that demand varies and how late the supplier can be. Where the history cannot support a figure, none is proposed and the reason is shown instead. Nothing on this screen is written until you accept it." xml:space="preserve">
+    <value>نقطة إعادة الطلب هي الطلب المتوقّع خلال مهلة التوريد، مضافًا إليه مخزون أمان يُحسب من مقدار تذبذب ذلك الطلب ومن احتمال تأخّر المورّد. وحين لا يسند التاريخُ رقمًا، لا يُقترح رقم ويُعرض السبب بدلًا منه. ولا يُكتب شيء من هذه الشاشة حتى تعتمده.</value>
+  </data>
+  <data name="The request could not be sent." xml:space="preserve">
+    <value>تعذّر إرسال الطلب.</value>
+  </data>
+  <data name="These are not item faults. They describe the movement history this company has recorded so far — once an item is issued on more separate days, it becomes advisable without any change here." xml:space="preserve">
+    <value>هذه ليست عيوبًا في الأصناف، بل وصف لسجل الحركة الذي سجّلته الشركة حتى الآن. وبمجرّد أن يُصرَف الصنف في أيام متفرّقة أكثر، يصبح قابلًا للنصيحة دون أي تغيير هنا.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>محدَّث</value>
+  </data>
+  <data name="Whether the formula fits this demand" xml:space="preserve">
+    <value>ما إذا كانت الصيغة تناسب هذا الطلب</value>
+  </data>
+  <data name="Why no figure was proposed" xml:space="preserve">
+    <value>لماذا لم يُقترح رقم</value>
+  </data>
+  <data name="Why?" xml:space="preserve">
+    <value>لماذا؟</value>
+  </data>
+  <data name="Window" xml:space="preserve">
+    <value>المدة</value>
+  </data>
+  <data name="day" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="of the point" xml:space="preserve">
+    <value>من النقطة</value>
+  </data>
+  <data name="of them with an issue" xml:space="preserve">
+    <value>منها بها صرف</value>
+  </data>
+  <data name="pairs" xml:space="preserve">
+    <value>زوج</value>
+  </data>
+  <data name="safety stock is" xml:space="preserve">
+    <value>مخزون الأمان يمثّل</value>
+  </data>
+  <data name="standard deviation" xml:space="preserve">
+    <value>الانحراف المعياري</value>
+  </data>
+</root>

@@ -516,9 +516,11 @@ namespace CrossBuy.BL.Workspace
             return WorkspaceTone.Neutral;
         }
 
-        // The registry is fetched for this list and was never asked. m.Entity.Key is the storage
-        // key - "JournalEntry#16172" - so the Arabic dashboard showed an English type name nobody
-        // chose, while the conversation rows in this same file resolve the registry correctly.
+        // THE REGISTRY IS FETCHED FOR THIS LIST AND WAS NEVER ASKED. m.Entity.Key is the storage
+        // key - "JournalEntry#16172" - so the Arabic dashboard showed an English type name that
+        // nobody chose. The conversation rows in this same file already resolve the registry's
+        // DisplayNameAr/DisplayNameEn; this path simply did not. Falls back to the key when the
+        // registry is absent or the type is unregistered, so an unregistered entity still lists.
         private static string MentionEntityLabel(IEntityRegistry? registry, CommEntityRef entity)
         {
             EntityDefinition? definition = null;
@@ -534,8 +536,9 @@ namespace CrossBuy.BL.Workspace
         private static string? DueHint(DateTime? due, DateTime now)
         {
             if (!due.HasValue) return null;
-            // Display text that was English in every language, on the screen an Arabic user opens
-            // to find late work. Same culture test already used elsewhere in this file.
+            // THIS IS DISPLAY TEXT and it was English in every language. The screen it feeds is
+            // the one an Arabic user opens to find late work, so "28d late" was the most visible
+            // English string on the Arabic dashboard. Same culture test already used at line 607.
             bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
             var days = (due.Value.Date - now.Date).Days;
             return days switch

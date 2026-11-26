@@ -39,7 +39,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"تكلفة صنف وقيمة رصيده في المخازن التي تملك صلاحية عليها",
-			"The cost of an item and the value of its stock, in the warehouses you may see");
+			"The cost of an item and the value of its stock, in the warehouses you may see",
+			"Le coût d'un article et la valeur de son stock dans les entrepôts auxquels vous avez accès");
 
 		// A SUGGESTION SHOWS THE SHAPE OF A QUESTION, NOT ONE ROW'S DATA.
 		//
@@ -51,7 +52,7 @@ namespace CrossBuy.BL.Platform.Ai
 		// Naming no item is not a loss: a question that names none makes the handler ASK which one,
 		// which is behaviour this already has. The chip teaches the shape and the assistant asks
 		// for the noun.
-		public AskText Example => AskText.Of("كام تكلفة صنف معيّن؟", "What does an item cost us?");
+		public AskText Example => AskText.Of("كام تكلفة صنف معيّن؟", "What does an item cost us?", "Quel est le coût de cet article ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

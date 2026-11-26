@@ -1,0 +1,103 @@
+@model CrossBuy.BL.CrmIdentity.JourneyFile?
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var j = Model?.J;
+    var segments = (List<CrossBuy.BL.CrmIdentity.SegmentRow>)ViewBag.Segments;
+    var preset = ViewBag.Segment as int?;
+    var templates = (List<string>)ViewBag.Templates;
+    var nodes = Model?.Nodes ?? new List<CrossBuy.BL.CrmIdentity.CrmJourneyRules.Node> {
+        new() { Type = templates.Count > 0 ? "whatsapp" : "email", Template = templates.FirstOrDefault(), Subject = T["jdef:subject1"].Value, Body = T["jdef:body1"].Value },
+        new() { Type = "wait", Days = 3 },
+        new() { Type = "branch", Cond = "bought", Yes = { new() { Type = "email", Subject = T["jdef:thanks"].Value, Body = T["jdef:thanksBody"].Value } }, No = { new() { Type = "task", Subject = T["jdef:call"].Value } } } };
+    var js = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(j == null ? T["New journey"] : T["Edit journey"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Journeys","Crm")" class="text-muted text-hover-primary">@T["Marketing journeys"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(j?.Name ?? T["New journey"].Value)</li></ul></div>
+        <div class="d-flex gap-2"><a href="@(j == null ? Url.Action("Journeys","Crm") : Url.Action("Journey","Crm", new { id = j.ID }))" class="btn btn-sm btn-light">@T["Cancel"]</a>
+            <button type="button" class="btn btn-sm btn-primary" id="btnSave"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-5">
+            <div class="col-xl-4"><div class="card"><div class="card-body">
+                <div class="mb-5"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input id="jName" class="form-control form-control-solid" maxlength="150" value="@j?.Name" /></div>
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name in English"]</label><input id="jNameEn" class="form-control form-control-solid" maxlength="150" dir="ltr" value="@j?.NameEn" /></div>
+                <div class="mb-5"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Starts when someone enters"]</label>
+                    <select id="jSeg" class="form-select form-select-solid" data-control="select2">@foreach (var sg in segments) { <option value="@sg.Seg.ID" selected="@(sg.Seg.ID == (j?.SegmentId ?? preset))">@(!isAr && !string.IsNullOrWhiteSpace(sg.Seg.NameEn) ? sg.Seg.NameEn : sg.Seg.Name) (@sg.Seg.MemberCount)</option> }</select>
+                    @if (segments.Count == 0) { <div class="fs-8 text-danger mt-2">@T["Make a segment first."] <a href="@Url.Action("SegmentEditor","Crm")">@T["New segment"]</a></div> }</div>
+                <label class="form-check form-switch form-check-custom form-check-solid mb-4"><input class="form-check-input" type="checkbox" id="jExisting" @(j?.IncludeExisting == true ? "checked" : "") /><span class="form-check-label fw-semibold">@T["Also everyone already in the segment"]</span></label>
+                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="jLeave" @(j == null || j.ExitOnLeave ? "checked" : "") /><span class="form-check-label fw-semibold">@T["Leaving the segment ends the journey"]</span></label>
+                <div class="separator my-6"></div>
+                <div class="notice d-flex bg-light rounded p-4 fs-8 text-gray-700"><i class="ki-outline ki-shield-tick fs-3 me-3" style="color:#3A5795"></i>@T["Marketing goes only to people who said yes: an e-mail needs recorded e-mail consent, WhatsApp needs recorded WhatsApp consent. Never-asked is skipped and counted. Every e-mail ends with an unsubscribe link."]</div>
+                <div class="fw-bold fs-7 text-gray-800 mt-6 mb-2">@T["Words that fill themselves"]</div>
+                <div class="d-flex flex-wrap gap-2 fs-8">@foreach (var tk in new[] { "first", "name", "company", "rep" }) { <code class="crm-token" title="@T["tok:" + tk]">{@tk}</code> }</div>
+            </div></div></div>
+            <div class="col-xl-8"><div class="card"><div class="card-header border-0 pt-6"><div class="card-title flex-column align-items-start m-0"><span class="fw-bold fs-4 text-gray-900">@T["The path"]</span><span class="text-muted fs-7 mt-1">@T["Each person walks it from the top. A condition sends them down yes or no; at the end of either they carry on below it."]</span></div></div>
+                <div class="card-body pt-2"><div id="tree" class="crm-jr-edit"></div><div class="text-danger fs-7 fw-semibold mt-4 d-none" id="err"></div></div></div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var tree = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(nodes, js));
+  var templates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(templates));
+  var txt = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> {
+    ["email"] = T["node:email"].Value, ["whatsapp"] = T["node:whatsapp"].Value, ["wait"] = T["node:wait"].Value, ["branch"] = T["node:branch"].Value, ["task"] = T["node:task"].Value,
+    ["subject"] = T["Subject"].Value, ["body"] = T["Message"].Value, ["title"] = T["Title"].Value, ["notes"] = T["Notes for the owner"].Value, ["days"] = T["days"].Value,
+    ["yes"] = T["yes"].Value, ["no"] = T["no"].Value, ["add"] = T["Add a step"].Value, ["remove"] = T["Remove"].Value, ["failed"] = T["Could not save. Refresh the page and try again."].Value,
+    ["c_bought"] = T["cond:bought"].Value, ["c_replied"] = T["cond:replied"].Value, ["c_inSegment"] = T["cond:inSegment"].Value, ["c_waOptIn"] = T["cond:waOptIn"].Value, ["c_emailOptIn"] = T["cond:emailOptIn"].Value,
+    ["notpl"] = T["Connect WhatsApp with approved templates first"].Value }));
+  var conds = ['bought', 'replied', 'inSegment', 'waOptIn', 'emailOptIn'];
+  var icon = { email:'ki-sms', whatsapp:'ki-whatsapp', wait:'ki-time', branch:'ki-question-2', task:'ki-phone' }, col = { email:'#3A5795', whatsapp:'#25D366', wait:'#6B7280', branch:'#7239EA', task:'#0F766E' };
+  var host = document.getElementById('tree'), uid = 0, byUid = {}, listByUid = {};
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function norm(list){ list.forEach(function(n){ n.yes = n.yes || []; n.no = n.no || []; norm(n.yes); norm(n.no); }); }
+  function fields(n, u){
+    if (n.type === 'email') return '<input class="form-control form-control-sm form-control-solid mb-2" data-u="' + u + '" data-f="subject" maxlength="200" placeholder="' + txt.subject + '" value="' + esc(n.subject) + '" /><textarea class="form-control form-control-sm form-control-solid" rows="3" data-u="' + u + '" data-f="body" maxlength="4000" placeholder="' + txt.body + '">' + esc(n.body) + '</textarea>';
+    if (n.type === 'whatsapp') return templates.length ? '<select class="form-select form-select-sm form-select-solid" data-u="' + u + '" data-f="template">' + templates.map(function(t){ return '<option' + (t === n.template ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' : '<div class="text-danger fs-8">' + txt.notpl + '</div>';
+    if (n.type === 'wait') return '<div class="d-flex align-items-center gap-2"><input type="number" min="1" max="90" class="form-control form-control-sm form-control-solid w-75px num" data-u="' + u + '" data-f="days" value="' + (n.days || 1) + '" /><span class="fs-7">' + txt.days + '</span></div>';
+    if (n.type === 'task') return '<input class="form-control form-control-sm form-control-solid mb-2" data-u="' + u + '" data-f="subject" maxlength="200" placeholder="' + txt.title + '" value="' + esc(n.subject) + '" /><input class="form-control form-control-sm form-control-solid" data-u="' + u + '" data-f="body" maxlength="2000" placeholder="' + txt.notes + '" value="' + esc(n.body) + '" />';
+    return '<select class="form-select form-select-sm form-select-solid" data-u="' + u + '" data-f="cond">' + conds.map(function(c){ return '<option value="' + c + '"' + (c === n.cond ? ' selected' : '') + '>' + esc(txt['c_' + c]) + '</option>'; }).join('') + '</select>';
+  }
+  function adder(lu){ return '<div class="dropdown crm-jr-add"><button type="button" class="btn btn-sm btn-light-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="ki-outline ki-plus fs-5"></i>' + txt.add + '</button><ul class="dropdown-menu">'
+      + ['email','whatsapp','wait','branch','task'].map(function(t){ return '<li><a class="dropdown-item" href="#" data-add="' + t + '" data-l="' + lu + '"><i class="ki-outline ' + icon[t] + ' fs-5 me-2"></i>' + txt[t] + '</a></li>'; }).join('') + '</ul></div>'; }
+  function drawList(list){
+    var lu = 'L' + (++uid); listByUid[lu] = list;
+    return '<div class="crm-jr-list">' + list.map(function(n, i){
+      var u = 'N' + (++uid); byUid[u] = { node: n, list: list, i: i };
+      var html = '<div class="crm-jr-card"><div class="crm-step-ico" style="--c:' + col[n.type] + '"><i class="ki-outline ' + icon[n.type] + ' fs-3"></i></div><div class="flex-grow-1 min-w-0">'
+        + '<div class="d-flex flex-stack mb-2"><span class="fw-bold fs-7">' + txt[n.type] + '</span><button type="button" class="btn btn-icon btn-sm btn-light-danger" data-rm="' + u + '" title="' + txt.remove + '"><i class="ki-outline ki-trash fs-6"></i></button></div>' + fields(n, u) + '</div></div>';
+      if (n.type === 'branch') html += '<div class="crm-jr-split"><div><span class="badge badge-light-success mb-2">' + txt.yes + '</span>' + drawList(n.yes) + '</div><div><span class="badge badge-light mb-2">' + txt.no + '</span>' + drawList(n.no) + '</div></div>';
+      return html + '<div class="crm-jr-line"></div>';
+    }).join('') + adder(lu) + '</div>';
+  }
+  function draw(){ uid = 0; byUid = {}; listByUid = {}; host.innerHTML = drawList(tree); }
+  host.addEventListener('input', function(e){ var u = e.target.getAttribute('data-u'); if (!u) return; var f = e.target.getAttribute('data-f'); byUid[u].node[f] = f === 'days' ? (+e.target.value || 1) : e.target.value; });
+  host.addEventListener('change', function(e){ var u = e.target.getAttribute('data-u'); if (!u) return; var f = e.target.getAttribute('data-f'); byUid[u].node[f] = f === 'days' ? (+e.target.value || 1) : e.target.value; });
+  host.addEventListener('click', function(e){
+    var rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
+    if (rm) { var x = byUid[rm.getAttribute('data-rm')]; x.list.splice(x.list.indexOf(x.node), 1); draw(); }
+    if (add) { e.preventDefault(); var t = add.getAttribute('data-add');
+      listByUid[add.getAttribute('data-l')].push({ id: '', type: t, days: t === 'wait' ? 2 : 0, cond: t === 'branch' ? 'bought' : null, template: t === 'whatsapp' ? templates[0] : null, subject: '', body: '', yes: [], no: [] }); draw(); }
+  });
+  document.getElementById('btnSave').addEventListener('click', async function(){
+    var fd = new FormData();
+    fd.append('id', '@(j?.ID ?? 0)'); fd.append('name', document.getElementById('jName').value); fd.append('nameEn', document.getElementById('jNameEn').value);
+    fd.append('segmentId', document.getElementById('jSeg').value || '0'); fd.append('includeExisting', document.getElementById('jExisting').checked ? 'true' : 'false');
+    fd.append('exitOnLeave', document.getElementById('jLeave').checked ? 'true' : 'false'); fd.append('nodesJson', JSON.stringify(tree));
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveJourney","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: txt.failed }; });
+    var err = document.getElementById('err');
+    if (!r.ok) { err.textContent = r.error || txt.failed; err.classList.remove('d-none'); return; }
+    location.href = '@Url.Action("Journey","Crm")/' + r.extra;
+  });
+  norm(tree); draw();
+})();
+</script>
+}

@@ -107,6 +107,11 @@
             var t = search.terms(); if (t) p.set('q', t);
             if (typeof opts.addParams === 'function') opts.addParams(p);
             p.set('page', page); p.set('pageSize', (size && size.value) || '25');
+            // The rows come back as a SERVER-RENDERED partial, so this request decides their language.
+            // Without the culture it is answered under the default culture and every row label returns
+            // in English on an Arabic page - the translations exist, the request just never asked for them.
+            var here = new URLSearchParams(window.location.search);
+            ['culture', 'ui-culture'].forEach(function (k) { var v = here.get(k); if (v) p.set(k, v); });
             return p.toString();
         }
         function load() {
@@ -130,6 +135,11 @@
                 .then(function (html) {
                     if (loading) loading.classList.add('d-none');
                     if (body) body.innerHTML = html;
+                    // Every row's actions menu arrives with this HTML. Metronic only auto-inits menus that
+                    // existed at page load, so without this each injected dropdown is inert: the button is
+                    // there, it looks right, and clicking it does nothing. Measured on Inventory/PurchaseOrders
+                    // against Inventory/Categories, whose rows are server-rendered and whose menus work.
+                    if (window.KTMenu && typeof KTMenu.createInstances === 'function') { try { KTMenu.createInstances(); } catch (e) { } }
                     if (empty) { empty.innerHTML = emptyHtml; empty.classList.toggle('d-none', total !== 0); }
                     if (resultCount) resultCount.textContent = isAr ? ('النتائج: ' + total.toLocaleString()) : (total.toLocaleString() + ' results');
                     renderPager();
@@ -157,6 +167,7 @@
                             history.replaceState(history.state, '', u.toString());
                         } catch (e) { /* a URL the browser will not let us rewrite is not worth failing over */ }
                     }
+
                     // A list may need to say something its rows cannot: how wide a search was, or
                     // that the answer hit a ceiling, or WHICH empty table this is. Called here, after
                     // the empty block has been restored from its original markup a few lines above —
@@ -230,6 +241,33 @@
                 pager.parentNode.insertBefore(xbtn, pager);
             }
         }
+        // =========================================================================================
+        // A LINK CAN POINT AT ONE ROW.
+        //
+        // The assistant answers with rows that link to the record behind them, and for anything
+        // without a detail page that link is "this list, filtered to it". That only works if the
+        // list reads the filter out of the address bar, which it did not: ?q= was being read by the
+        // print menu and ignored by the list itself, so such a link would open the FULL list while
+        // looking like it had worked. A link that silently does nothing is worse than no link.
+        //
+        // Seeded here, once, before the first load, and only when ?q= is actually present - so no
+        // existing screen changes behaviour until something deliberately links to it.
+        // =========================================================================================
+        var seeded = false;
+        try {
+            var seedQ = new URLSearchParams(window.location.search).get('q');
+            if (seedQ) {
+                if (search.tagify) {
+                    // addTags fires the change handler, which reloads - so the load below is skipped
+                    // rather than firing a second identical request.
+                    search.tagify.addTags(seedQ.split('|').filter(function (t) { return t; }));
+                    seeded = true;
+                } else if (qel) {
+                    qel.value = seedQ;
+                }
+            }
+        } catch (e) { seeded = false; }
+
         var reset = document.getElementById('f_reset');
         if (reset) reset.addEventListener('click', function () {
             search.clear();
@@ -237,7 +275,7 @@
             if (typeof opts.onReset === 'function') opts.onReset();
             reload();
         });
-        load();
+        if (!seeded) load();
         return { reload: reload, search: search };
     }
     w.cbServerList = cbServerList;
@@ -256,7 +294,7 @@
         var $sel = jQuery(sel);
         sel._cbPickUrl = url;   // cbItemSelectSet asks it for a name it was not given
         $sel.select2({
-            placeholder: opts.placeholder || (rtl ? 'Search for an item…' : 'Search item…'),
+            placeholder: opts.placeholder || (rtl ? 'ابحث عن صنف…' : 'Search item…'),
             allowClear: true,
             minimumInputLength: 1,
             dropdownParent: opts.dropdownParent || undefined,

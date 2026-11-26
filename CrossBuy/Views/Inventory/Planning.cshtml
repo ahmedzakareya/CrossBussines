@@ -99,6 +99,7 @@
         </div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 @section Scripts {
 <script>
 (function(){
@@ -109,8 +110,21 @@
   document.getElementById('genPo').addEventListener('click',function(){
     var form=document.getElementById('f'); var vendor=form.querySelector('[name=vendorId]').value;
     if(!vendor){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select a vendor"].Value)));return;}
-    var lines=[];[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){var chk=tr.querySelector('.rowchk');var q=parseFloat(tr.querySelector('.sug').value)||0;if(chk&&chk.checked&&q>0)lines.push({itemId:parseInt(tr.getAttribute('data-item')),itemName:tr.getAttribute('data-name'),suggested:q,cost:parseFloat(tr.getAttribute('data-cost'))||0});});
-    if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select an item"].Value)));return;}
+    var lines = CBLines.gather({
+      rows: '#t tbody tr',
+      // A TICK IS THE TOUCH HERE. This screen lists every item the system suggests reordering;
+      // an unticked row is not an unfinished line, it is a suggestion the buyer declined. So the
+      // checkbox decides, and a TICKED row with no quantity is the unfinished case worth refusing.
+      touched:function(tr){ var c=tr.querySelector('.rowchk'); return !!(c && c.checked); },
+      problem:function(tr){ return CBLines.num(tr,'.sug')>0 ? null : CBLines.T.qty; },
+      build:function(tr){
+        return {itemId:parseInt(tr.getAttribute('data-item')),
+                itemName:tr.getAttribute('data-name'),
+                suggested:CBLines.num(tr,'.sug'),
+                cost:parseFloat(tr.getAttribute('data-cost'))||0}; },
+      emptyMessage: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select an item"].Value))
+    });
+    if(!lines) return;
     document.getElementById('linesJson').value=JSON.stringify(lines);form.submit();
   });
 })();

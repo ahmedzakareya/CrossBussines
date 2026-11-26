@@ -3,6 +3,7 @@ using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Crm;
 using CrossBuy.Models.Context.Inventory;
 using CrossBuy.Models.Context.Platform;
+using CrossBuy.Models.Context.Construction;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL.Platform
@@ -66,6 +67,20 @@ namespace CrossBuy.BL.Platform
             nameof(SalesRepRoute), nameof(SalesRepRouteStop), nameof(SalesRepVisit),
             // cheques under collection (2026-11-19)
             nameof(CrossBuy.Models.Context.Accounting.ReceiptCheque),
+            // R7: company financial policy is protected on both read and write paths.
+            nameof(ConstructionBudgetPolicy),
+            nameof(ConstructionBudgetVersion), nameof(ConstructionBudgetLine),
+            nameof(PurchaseOrderInvoiceLink),
+            nameof(PurchaseOrderInvoiceLineLink),
+            nameof(ConstructionOrderAllocation), nameof(ConstructionOrderAllocationLine),
+            nameof(ConstructionCommitmentReservation), nameof(ConstructionCommitmentRelease),
+            nameof(ConstructionBudgetExceptionRequest), nameof(ConstructionBudgetExceptionDecision), nameof(ConstructionBudgetExceptionConsumption),
+            nameof(ConstructionPurchaseDraft),
+            nameof(ConstructionPurchaseApprovalRequest),
+            nameof(ConstructionPurchaseAdmission),
+            nameof(ConstructionActualCostAllocation), nameof(ConstructionActualCostAllocationLine),
+            nameof(ConstructionStructureSettings), nameof(WbsNode),
+            nameof(ConstructionCostCode), nameof(ConstructionSite),
         };
 
         // The pilot membership test, used by B4's write guard so the read filter and the write guard cover exactly
@@ -73,6 +88,35 @@ namespace CrossBuy.BL.Platform
         // the reverse) would be a half-isolated entity — the most confusing possible state.
         public static bool IsPilotEntity(string clrTypeName)
             => Array.IndexOf(PilotEntities, clrTypeName) >= 0;
+
+        // WRITE-GUARD MEMBERSHIP, DERIVED FROM THE MODEL RATHER THAN RESTATED (2026-11-10, TAB-0 ruling).
+        //
+        // The guard used to ask IsPilotEntity(name) over the hand-written array above, and the two halves of
+        // isolation drifted apart exactly as that array's own comment feared. By today the MODEL carried a
+        // query filter on 65 entity types while the array listed 35: the whole Construction pack and the two
+        // purchase-order invoice links declare HasQueryFilter beside their own entity, so they were READ
+        // filtered and SILENTLY SKIPPED by the write guard. An entity nobody can read across companies but
+        // anybody can write across companies is the half-isolated state the comment above calls the most
+        // confusing possible state - and it had been true for 30 entities.
+        //
+        // Deriving membership from the model makes that drift impossible: whatever the model filters is
+        // guarded, by construction. GetQueryFilter() reads metadata on a model EF builds once and caches,
+        // so the write guard's per-entry hot path stays a field read.
+        public static bool IsGuarded(Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType)
+        {
+            ArgumentNullException.ThrowIfNull(entityType);
+            if (entityType.GetQueryFilter() == null) return false;
+            foreach (var (entity, _) in GuardExclusions)
+                if (string.Equals(entity, entityType.ClrType.Name, StringComparison.Ordinal)) return false;
+            return true;
+        }
+
+        // Filtered on READ but deliberately NOT guarded on WRITE. EMPTY TODAY, and that is the point of
+        // having it: an entry here is a recorded decision carrying its reason, which is what the previous
+        // arrangement could not distinguish from someone forgetting. Anything added here has to say why the
+        // write path is safe without the guard.
+        public static readonly (string Entity, string Reason)[] GuardExclusions =
+            Array.Empty<(string, string)>();
 
         // Entities that carry a CompanyID but are deliberately NOT filtered, with the reason in one word. The
         // full reasoning is in Stage-001-B1-Entity-Isolation-Classification.md; this list exists so a B2 test can
@@ -133,6 +177,7 @@ namespace CrossBuy.BL.Platform
 
             builder.Entity<Warehouse>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
+
             // HR0 (2026-11-11): the organisation tree, job titles, leave types and the policy groups with their
             // leave / attendance / salary policies. Until now every company read and edited the same rows. A row
             // with no company (CompanyID null — orphans of deleted or test companies) is seen by no company.

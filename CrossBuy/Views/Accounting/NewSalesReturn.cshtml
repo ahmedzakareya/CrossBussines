@@ -46,12 +46,22 @@
         <div class="alert alert-light-warning border border-warning d-flex align-items-center mb-5"><i class="ki-outline ki-information fs-2 text-warning me-3"></i>@Localizer["The return reverses revenue & VAT, reduces the customer's receivable, and returns goods to stock at cost."]</div>
             <div class="card mb-5"><div class="card-body"><div class="row g-5">
                 <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Customer"]</label>
-                    <select name="customerId" class="form-select form-select-solid" required>
+                    <select name="customerId" id="srCustomer" class="form-select form-select-solid" required>
                         <option value="">@Localizer["Select customer"]</option>
                         @foreach (var c in customers) { <option value="@c.ID" selected="@(isEdit && edit!.CustomerId == c.ID)">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }
                     </select></div>
-                <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="returnDate" class="form-control form-control-solid" value="@(isEdit ? edit!.ReturnDate.ToString("yyyy-MM-dd") : DateTime.Today.ToString("yyyy-MM-dd"))" required /></div>
-                <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Original invoice"]</label><input type="number" name="originalInvoiceId" class="form-control form-control-solid" placeholder="#" value="@(isEdit ? edit!.OriginalInvoiceId?.ToString() : "")" /></div>
+                <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="returnDate" class="form-control form-control-solid" value="@(isEdit ? edit!.ReturnDate.ToString("yyyy-MM-dd") : DateTime.Today.ToString("yyyy-MM-dd"))" required /></div>
+                @* The invoice is CHOSEN, not typed. It used to be a number box wanting the row's internal
+                   id while every screen shows SV-2026-xxxxx, so the only way to fill it right was to know a
+                   database key - and the likely result was a credit note against the wrong invoice. *@
+                <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Original invoice"]</label>
+                    <select name="originalInvoiceId" id="srOrigInv" class="form-select form-select-solid"
+                            data-control="select2" data-placeholder="@(isAr ? "ابحث برقم الفاتورة…" : "Search by invoice no…")"
+                            data-selected="@(isEdit ? edit!.OriginalInvoiceId?.ToString() : "")">
+                        <option value="">@(isAr ? "بلا فاتورة أصلية" : "No original invoice")</option>
+                    </select>
+                    <div class="form-text" id="srOrigInvHint">@(isAr ? "اختر العميل أولًا." : "Choose the customer first.")</div>
+                </div>
                 <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" value="@(isEdit ? edit!.Notes : "")" /></div>
             </div></div></div>
             <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
@@ -63,9 +73,84 @@
             </div></div>
     </div></div>
 </form>
+<partial name="~/Views/Shared/_DocumentLineGuard.cshtml" />
 <partial name="~/Views/Inventory/_ItemScanModal.cshtml" />
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
+<script>
+/* The customer's invoices, from SalesInvoicesForCustomer - the same endpoint the copy-from-invoice
+   modal uses. Reusing it means one definition of "this customer's invoices" rather than two that
+   can disagree about ordering, status or how many to show. */
+(function origInvoicePicker() {
+    var cust = document.getElementById('srCustomer');
+    var sel  = document.getElementById('srOrigInv');
+    var hint = document.getElementById('srOrigInvHint');
+    if (!cust || !sel) return;
+    var url  = '@Url.Action("SalesInvoicesForCustomer", "Accounting")';
+    var isAr = @(isAr ? "true" : "false");
+    var keep = sel.getAttribute('data-selected') || '';
+
+    /* A SEQUENCE TOKEN, because this is bound three ways - the native listener, jQuery's (select2
+       swallows the native one), and once on load - so a single change can start several fetches.
+       Clearing the list up front does not help: every clear runs before any response arrives, and
+       then every response appends. Only the newest request may touch the list, and it clears the
+       list itself at the moment it fills it. */
+    /* Metronic runs select2 over data-control="select2" ONCE, at page load. These options arrive
+       afterwards, and a select2 widget does not notice options appended to the element underneath
+       it - it keeps drawing the empty snapshot it took, which is exactly "the dropdown shows
+       nothing". So it is torn down and rebuilt at the moment the list is real. */
+    function refresh() {
+        var $ = window.jQuery;
+        if (!$ || !$.fn || !$.fn.select2) return;
+        var $sel = $(sel);
+        if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
+        $sel.select2({
+            width: '100%',
+            dropdownParent: $sel.parent(),
+            placeholder: sel.getAttribute('data-placeholder') || '',
+            /* ALWAYS show the search box. select2 hides it for short lists by default, and the
+               length of this list is an accident of which customer was chosen - the same field
+               must not become un-searchable for a customer who happens to have three invoices. */
+            minimumResultsForSearch: 0
+        });
+    }
+
+    var seq = 0;
+    function load() {
+        var id = cust.value;
+        var mine = ++seq;
+        if (!id) {
+            while (sel.options.length > 1) sel.remove(1);
+            refresh();
+            hint.textContent = isAr ? 'اختر العميل أولًا.' : 'Choose the customer first.';
+            return;
+        }
+        hint.textContent = isAr ? 'جارٍ التحميل…' : 'Loading…';
+        fetch(url + '?customerId=' + encodeURIComponent(id) + '&take=100', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (rows) {
+                if (mine !== seq) return;
+                while (sel.options.length > 1) sel.remove(1);
+                (rows || []).forEach(function (r) {
+                    var o = document.createElement('option');
+                    o.value = r.id;
+                    o.textContent = (r.no || ('#' + r.id)) + ' — ' + r.total + (r.date ? ' — ' + r.date : '');
+                    if (String(r.id) === String(keep)) o.selected = true;
+                    sel.appendChild(o);
+                });
+                refresh();
+                hint.textContent = (rows && rows.length)
+                    ? (isAr ? 'اختر الفاتورة التي يُرجَع عليها.' : 'Pick the invoice this comes back against.')
+                    : (isAr ? 'لا فواتير لهذا العميل.' : 'No invoices for this customer.');
+            })
+            .catch(function () { if (mine === seq) hint.textContent = isAr ? 'تعذّر تحميل الفواتير.' : 'Could not load the invoices.'; });
+    }
+    cust.addEventListener('change', load);
+    /* select2 replaces the control and its change never reaches addEventListener. */
+    if (window.jQuery) { window.jQuery(cust).on('change', load); }
+    if (cust.value) load();
+})();
+</script>
 <script>
 var REV=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(revAccts.Select(a=>new{id=a.Id,code=a.Code,name=(isAr?a.Name:DisplayName.Or(a.NameEn, a.Name))})));
 var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
@@ -101,10 +186,23 @@ document.getElementById('rows').addEventListener('change',function(e){
 });
 document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
 document.getElementById('save').addEventListener('click',function(){
- var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var acc=tr.querySelector('.acc').value;var it=tr.querySelector('.it').value;var wh=tr.querySelector('.wh').value;var q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;
-  if(acc&&q*p>0)lines.push({itemDescription:tr.querySelector('.d').value,qty:q,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0,revenueAccountId:parseInt(acc),itemId:it?parseInt(it):null,warehouseId:wh?parseInt(wh):null});});
- if(!lines.length){alert('@Localizer["Add at least one line"]');return;}
- document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
+ var lines = CBLines.gather({
+   touched:function(tr){ return !!(CBLines.str(tr,'.it') || CBLines.str(tr,'.d')
+       || CBLines.num(tr,'.p')!==0 || CBLines.num(tr,'.disc')!==0 || CBLines.num(tr,'.q')!==1); },
+   problem:function(tr){
+     if(!CBLines.str(tr,'.acc')) return CBLines.T.account;
+     if(CBLines.num(tr,'.q')<=0) return CBLines.T.qty;
+     if(CBLines.num(tr,'.p')<=0) return CBLines.T.price;
+     return null; },
+   build:function(tr){
+     var it=CBLines.str(tr,'.it'), wh=CBLines.str(tr,'.wh');
+     return {itemDescription:tr.querySelector('.d').value,qty:CBLines.num(tr,'.q'),
+             unitPrice:CBLines.num(tr,'.p'),discountAmount:CBLines.num(tr,'.disc'),
+             taxRate:CBLines.num(tr,'.tax'),revenueAccountId:parseInt(CBLines.str(tr,'.acc')),
+             itemId:it?parseInt(it):null,warehouseId:wh?parseInt(wh):null}; }
+ });
+ if(!lines) return;
+document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
  if(window.CB&&CB.submitForm){CB.submitForm(_f,{type:'@(isEdit ? "edit" : "save")'@Html.Raw(isEdit ? ",text:(window.CB?CB.L('سيتم عكس القيد الأصلي للمرتجع وإعادة ترحيله بالقيم الجديدة — هل تريد المتابعة؟','The original entry will be reversed and the return re-posted with the new values — continue?'):null)" : "")});}else{_f.submit();}});
 // P3 edit prefill
 var EDIT_LINES=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(editLines));

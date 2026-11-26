@@ -66,6 +66,26 @@
 				// التحقق من وجود جلسة الموظف
 				if (string.IsNullOrEmpty(context.Session.GetString("Employee")))
 				{
+					// "REMEMBER ME" ENDS HERE, and this is where it used to die.
+					//
+					// Signing in writes TWO independent records: the ASP.NET identity cookie, which
+					// PasswordSignInAsync makes PERSISTENT (14 days) when the box is ticked, and this
+					// "Employee" blob, which lives in CrossBuy.Session - a session cookie, always, that
+					// dies the moment the browser closes. Every page in the product passes this gate, and
+					// the gate read only the blob. So the persistent cookie was issued, kept, and sent back
+					// correctly for fourteen days, and never once consulted: the user ticked a box that
+					// changed nothing they could see.
+					//
+					// Rebuilding the blob from the identity the request already carries OPENS NO NEW DOOR.
+					// A user who did NOT tick the box gets a session-scoped identity cookie too, so it is
+					// gone on the next launch and there is nothing here to rebuild from. This can only ever
+					// restore what the user asked to have remembered, for as long as that cookie lives.
+					if (await TryRestoreFromIdentityAsync(context))
+					{
+						await _next(context);
+						return;
+					}
+					
 					// نحتفظ بالصفحة التي كان عليها المستخدم لنعيده إليها بعد إعادة تسجيل الدخول.
 					// نلتقط returnUrl فقط لطلبات الصفحات (GET وغير Ajax) حتى لا نعيد المستخدم
 					// إلى نقطة نهاية Ajax/JSON بدلًا من صفحة فعلية.
@@ -84,6 +104,51 @@
 			}
 
 			await _next(context);
+		}
+
+		// Rebuild the session blob for a request that is already authenticated.
+		//
+		// IT IS BUILT THE SAME WAY THE LOGIN BUILDS IT - IEmployeeService.GetEmployeeByUserIdAsync,
+		// serialized whole - because a second, differently-shaped blob is a bug waiting to happen:
+		// every access service in the product deserializes this string and would silently read
+		// nulls out of a hand-rolled one.
+		//
+		// FAIL CLOSED. A fourteen-day-old cookie must not outlive the account it names, so the
+		// same two conditions the login enforces are re-checked here: the user is still active and
+		// still an end user, and an employee row still exists. Any of them failing leaves the blob
+		// empty and the caller redirects to the login page exactly as before.
+		private static async Task<bool> TryRestoreFromIdentityAsync(HttpContext context)
+		{
+			if (context.User?.Identity?.IsAuthenticated != true) { return false; }
+
+			var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId)) { return false; }
+
+			// This middleware is a SINGLETON, so every scoped service has to come from the request.
+			var services = context.RequestServices;
+			var users = services.GetService(typeof(Microsoft.AspNetCore.Identity.UserManager<CrossBuy.Models.Context.Admin.Users>))
+				as Microsoft.AspNetCore.Identity.UserManager<CrossBuy.Models.Context.Admin.Users>;
+			var employees = services.GetService(typeof(CrossBuy.BL.IEmployeeService)) as CrossBuy.BL.IEmployeeService;
+			if (users == null || employees == null) { return false; }
+
+			try
+			{
+				var user = await users.FindByIdAsync(userId);
+				if (user == null || !user.IsActive || !user.IsEndUser) { return false; }
+
+				var employee = await employees.GetEmployeeByUserIdAsync(userId);
+				if (employee == null) { return false; }
+
+				context.Session.SetString("Employee",
+					System.Text.Json.JsonSerializer.Serialize(employee));
+				return true;
+			}
+			catch
+			{
+				// A database that cannot be reached is not an authorization decision. Refusing to
+				// restore sends the user to the login page, which is the same answer they got before.
+				return false;
+			}
 		}
 
 	}

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CrossBuy.BL
 {
 	// payloads captured at submit-time and replayed on approval
-	public class PoApprovalPayload { public int VendorId { get; set; } public int? WarehouseId { get; set; } public DateTime OrderDate { get; set; } public DateTime? ExpectedDate { get; set; } public string? Notes { get; set; } public List<PoLineInput> Lines { get; set; } = new(); }
+	public class PoApprovalPayload { public int VendorId { get; set; } public int? WarehouseId { get; set; } public int? ProjectId { get; set; } public DateTime OrderDate { get; set; } public DateTime? ExpectedDate { get; set; } public string? Notes { get; set; } public List<PoLineInput> Lines { get; set; } = new(); }
 	public class TransferApprovalPayload { public int FromWarehouseId { get; set; } public int ToWarehouseId { get; set; } public DateTime Date { get; set; } public string? Notes { get; set; } public List<TransferLineInput> Lines { get; set; } = new(); }
 	public class CountApprovalPayload { public int WarehouseId { get; set; } public DateTime CountDate { get; set; } public string? Notes { get; set; } public List<CountLineInput> Lines { get; set; } = new(); }
 	public class WriteOffApprovalPayload { public int WarehouseId { get; set; } public DateTime WriteOffDate { get; set; } public string? Reason { get; set; } public string? Notes { get; set; } public List<WriteOffLineInput> Lines { get; set; } = new(); }
@@ -84,6 +84,28 @@ namespace CrossBuy.BL
 			: this(db, stock, proc, notify, context, modules) { _events = events; }
 
 		private readonly CrossBuy.BL.Platform.IBusinessEventService? _events;
+		private readonly CrossBuy.BL.Construction.IConstructionPurchaseApprovalService? _constructionPurchases;
+
+		public InventoryApprovalService(CrossDbContext db, IStockService stock, IProcurementService proc,
+			INotificationService notify, CrossBuy.BL.Platform.IBusinessContextAccessor context,
+			IEnumerable<CrossBuy.BL.Platform.IModuleAccessService> modules,
+			CrossBuy.BL.Platform.IBusinessEventService events,
+			CrossBuy.BL.Construction.IConstructionPurchaseApprovalService constructionPurchases)
+			: this(db, stock, proc, notify, context, modules, events) { _constructionPurchases = constructionPurchases; }
+
+		private async Task<(bool handled, bool ok, string? error)> ConstructionDecision(int id, int employee, string? note, bool approve)
+		{
+			if (_constructionPurchases == null) return (false, false, null);
+			var actor = await _context.TryGetCurrentAsync();
+			if (actor == null || !await CanDecideAsync(actor.CompanyId)) return (false, false, null);
+			if (!await _db.InventoryApprovals.AsNoTracking().AnyAsync(x => x.ID == id && x.CompanyID == actor.CompanyId && x.DocType == CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DocumentType)) return (false, false, null);
+			if (actor.EmployeeId != employee) return (true, false, "Construction.Purchase.Error.AccessDenied");
+			var reason = string.IsNullOrWhiteSpace(note) ? (approve ? "Approve construction purchase order" : "Reject construction purchase order") : note;
+			var result = approve
+				? await _constructionPurchases.ApproveAsync(id, CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DecisionRequestId(actor.CompanyId, id), reason)
+				: await _constructionPurchases.RejectAsync(id, reason);
+			return (true, result.Ok, result.Ok ? null : "Construction.Purchase.Error." + result.Code);
+		}
 
 		// ---- the lifecycle event -------------------------------------------------------------------
 		//
@@ -274,13 +296,24 @@ namespace CrossBuy.BL
 				.OrderByDescending(a => a.ID)
 				.ToListAsync(cancellationToken);
 
+			// Construction decisions additionally require project authority and independence from the draft creator.
+			// Legacy document visibility remains unchanged; an unavailable construction reader fails closed.
+			foreach (var approval in pending.Where(a => a.DocType == CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DocumentType).ToArray())
+				if (context.EmployeeId != approverEmployeeId || _constructionPurchases == null ||
+					!await _constructionPurchases.CanReviewAsync(context, approval.ID, cancellationToken)) pending.Remove(approval);
 			return (true, pending);
 		}
 
 		public async Task<List<InventoryApproval>> RecentAsync(int take = 50)
 		{
 			int companyId = await CurrentCompanyIdAsync();
-			return await _db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == companyId).OrderByDescending(a => a.ID).Take(take).ToListAsync();
+			var recent = await _db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == companyId).OrderByDescending(a => a.ID).Take(take).ToListAsync();
+			var construction = recent.Where(a => a.DocType == CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DocumentType).ToArray();
+			if (construction.Length == 0) return recent;
+			var candidate = await _context.TryGetCurrentAsync();
+			foreach (var approval in construction)
+				if (candidate == null || _constructionPurchases == null || !await _constructionPurchases.CanReviewAsync(candidate, approval.ID)) recent.Remove(approval);
+			return recent;
 		}
 
 		// ONE TRANSACTION FOR THE CONSEQUENCE AND THE DECISION.
@@ -308,6 +341,8 @@ namespace CrossBuy.BL
 		// record and the document agree about whether the first one happened.
 		public async Task<(bool ok, string? error)> ApproveAsync(int id, int approverEmp, string? note)
 		{
+			var construction = await ConstructionDecision(id, approverEmp, note, true);
+			if (construction.handled) return (construction.ok, construction.error);
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 
 			// Scoped to the approver's company so an id from another company reads as "not found" — the same
@@ -334,7 +369,7 @@ namespace CrossBuy.BL
 					case "PurchaseOrder":
 						{
 							var p = JsonSerializer.Deserialize<PoApprovalPayload>(ap.PayloadJson ?? "{}", opts)!;
-							var (ok, e, po) = await _proc.CreatePurchaseOrderAsync(ap.CompanyID, p.VendorId, p.WarehouseId, p.OrderDate, p.ExpectedDate, p.Notes, p.Lines, null);
+							var (ok, e, po) = await _proc.CreatePurchaseOrderAsync(ap.CompanyID, p.VendorId, p.WarehouseId, p.OrderDate, p.ExpectedDate, p.Notes, p.Lines, null, p.ProjectId);
 							if (!ok) { err = e; } else resultNo = po?.OrderNo;
 							break;
 						}
@@ -404,6 +439,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> RejectAsync(int id, int approverEmp, string? note)
 		{
+			var construction = await ConstructionDecision(id, approverEmp, note, false);
+			if (construction.handled) return (construction.ok, construction.error);
 			// A TRANSACTION, matching ApproveAsync. Rejecting writes one row today, so a transaction looks
 			// like ceremony - it is a prerequisite. A canonical Rejected Business Event must be recorded
 			// INSIDE the transaction that carries the decision (ADR-001), and a bare SaveChanges leaves
@@ -423,6 +460,7 @@ namespace CrossBuy.BL
 			if (ap == null) return (false, "Order not found");
 			if (ap.Status != "Pending") return (false, "The request has already been processed");
 			if (ap.RequestedByEmployeeId == approverEmp) return (false, "Segregation of duties: the person who created the document cannot reject it");
+			if (ap.DocType == CrossBuy.BL.Construction.ConstructionPurchaseApprovalService.DocumentType) return (false, "Construction.Purchase.Error.ServiceUnavailable");
 			ap.Status = "Rejected"; ap.DecidedByEmployeeId = approverEmp; ap.DecidedAt = DateTime.UtcNow; ap.DecisionNote = note;
 
 			// The seam the approve path already carries, so the rejection window can be reproduced

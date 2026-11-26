@@ -1,0 +1,23 @@
+@model (int? Score, bool Ask)
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@*
+    CRM C8 — the 1–5 satisfaction scale, asked (radio buttons named "score") or shown (a five-segment meter). One
+    partial for the e-mailed survey page, the client portal and the staff screens; styles in ~/css/crm-rating.css.
+*@
+@{ string C(int s) => "var(--r" + s + ")"; }
+@if (Model.Ask)
+{
+    <div class="cb-rate">
+        <div class="cb-rate-scale" role="radiogroup">
+            @for (var i = 1; i <= 5; i++)
+            {
+                <label class="cb-rate-opt" style="--c:@C(i)"><input type="radio" name="score" value="@i" @(Model.Score == i ? "checked" : "") required /><span><b>@i</b><small>@T["csat:" + i]</small></span></label>
+            }
+        </div>
+        <div class="cb-rate-ends"><span>@T["Not satisfied"]</span><span>@T["Very satisfied"]</span></div>
+    </div>
+}
+else if (Model.Score is int s and >= 1 and <= 5)
+{
+    <span class="cb-rate cb-rate-meter" style="--c:@C(s)" title="@T["csat:" + s]"><span class="seg">@for (var i = 1; i <= 5; i++) { <i class="@(i <= s ? "on" : "")"></i> }</span><span class="num">@s/5</span></span>
+}

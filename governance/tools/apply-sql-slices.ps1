@@ -8,7 +8,7 @@ failure - in dbo.PlatformSchemaHistory.
 SAFETY, stated before anything else:
 
   * DRY RUN IS THE DEFAULT. Nothing is executed unless -Apply is passed explicitly.
-  * PRODUCTION CATALOGUES ARE REFUSED OUTRIGHT. CrossBuyDB, CrossBuyDB2 and CrossBuy are rejected
+  * PRODUCTION CATALOGUES ARE REFUSED OUTRIGHT. CrossBuyDB and CrossBuy are rejected
     whatever flags are passed. This pipeline is not the tool that touches them; the runbook and a
     human are. A deployment tool that can reach production by accident will eventually reach it
     by accident.
@@ -54,7 +54,19 @@ $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $manifestPath = Join-Path $repo 'CrossBuy\deploy\sql\manifest.json'
 
 # Catalogues this tool refuses to touch under any flag combination.
-$forbiddenCatalogs = @('CrossBuyDB', 'CrossBuyDB2', 'CrossBuy')
+# OWNER RULING 2026-11-10: "CrossBuyDB2 ليست انتاجا كله تست احنا لسه مفيش عندنا اي انتاج" —
+# CrossBuyDB2 is NOT production; there is no production estate yet, and under the same ruling
+# ("ممنوع العمل بأي قاعدة بيانات جديدة") it is the ONLY database anything may run against.
+#
+# This list previously held CrossBuyDB2, which made the tool refuse the one catalogue the
+# hypermarket runbook names as its acceptance target. That was not a safe default, it was a
+# DEADLOCK: the guard and the runbook disagreed about the same database, so the documented path
+# could not be walked and the pressure was on whoever hit it to work around the guard by hand —
+# which is strictly more dangerous than the tool doing it with a history table and a dry run.
+#
+# CrossBuyDB and CrossBuy stay refused. They are not in use, and the day an estate does exist
+# those are the names it will take; a guard that has to be re-added later never is.
+$forbiddenCatalogs = @('CrossBuyDB', 'CrossBuy')
 
 if (-not (Test-Path $manifestPath)) { Write-Host "manifest not found: $manifestPath" -ForegroundColor Red; exit 3 }
 

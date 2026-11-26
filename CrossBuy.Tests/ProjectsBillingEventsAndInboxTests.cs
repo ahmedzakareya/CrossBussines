@@ -1,4 +1,5 @@
 using CrossBuy.BL;
+using CrossBuy.BL.Construction;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context.Accounting;
 using CrossBuy.Models.Context.Admin;
@@ -129,7 +130,8 @@ namespace CrossBuy.Tests
             var events = new BusinessEventService(
                 host.Db, host.Registry(), new StubContextAccessor(Ctx(actorForEvents, companyId)),
                 NullLogger<BusinessEventService>.Instance);
-            var billing = new ProgressBillingService(host.Db, ar, new ProgressService(host.Db), ContractOf(host), events, access);
+            var billing = new ProgressBillingService(host.Db, ar, new ProgressService(host.Db), ContractOf(host), events, access,
+                new CommercialRevisionService(host.Db, new ConstructionAuditService(host.Db)));
             return new Fx(host, billing, ar, access);
         }
 
@@ -178,6 +180,13 @@ namespace CrossBuy.Tests
             Assert.True((await f.Billing.SubmitAsync(CompanyOne, id, Preparer)).ok);
             Assert.True((await f.Billing.ApproveAsync(CompanyOne, id, Approver)).ok);
             Assert.True((await f.Billing.PostAsync(CompanyOne, id, Approver)).ok);
+
+            var posted = await host.Db.ProgressBillings.AsNoTracking().Include(b => b.Lines).SingleAsync(b => b.ID == id);
+            var snapshot = Assert.Single(posted.Lines);
+            Assert.NotNull(snapshot.SnapshotCapturedAt);
+            Assert.Equal(50m, snapshot.SnapshotCertifiedQuantity);
+            Assert.Equal(100m, snapshot.SnapshotContractedRate);
+            Assert.Equal(5_000m, snapshot.SnapshotCertifiedValue);
 
             var types = (await EventsOf(f)).Select(e => e.EventType).ToList();
             Assert.Equal(

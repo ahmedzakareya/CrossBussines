@@ -67,6 +67,9 @@
 			<div id="kt_account_settings_profile_details" class="collapse show">
 				<!--begin::Form-->
 				<form id="kt_account_profile_details_form" class="form">
+					@* SEC-01 — posted via form.serialize(), so a hidden token inside the form is sent with
+					   the payload and no script change is needed. *@
+					@Html.AntiForgeryToken()
 					<!--begin::Card body-->
 					<div class="card-body border-top p-9">
 						<input type="hidden" name="ID" asp-for="ID" />

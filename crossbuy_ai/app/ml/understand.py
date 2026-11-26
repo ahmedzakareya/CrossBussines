@@ -42,13 +42,12 @@ not affected by what this returns, because all it can return is an id that was s
 from __future__ import annotations
 
 import hashlib
-import re
-import unicodedata
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from app.ml.text_normalization import normalise
 
 # ---------------------------------------------------------------------------------------------
 # Confidence bands.
@@ -79,45 +78,6 @@ OFFER_FLOOR = 0.18
 #: and stock value — sit close together while one of them is still the right answer. Requiring a
 #: gap refused "كام رصيد لابتوب" and let the supplier question through, which is both failures at
 #: once. Raising the bar is the lever that matches what is actually happening.
-
-_TASHKEEL = re.compile(r"[ً-ْـ]")
-_NONWORD = re.compile(r"[^\w\s]", re.UNICODE)
-_SPACES = re.compile(r"\s+")
-
-_FOLD = {
-    "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",
-    "ى": "ي", "ة": "ه", "ؤ": "و", "ئ": "ي",
-}
-
-
-def normalise(text: str) -> str:
-    """Fold the spellings Arabic writes the same word in.
-
-    The SAME folding the .NET side applies, for the same reason: comparing a folded query against
-    an unfolded candidate guarantees a miss. Nothing is compared across the boundary — .NET folds
-    for its own lookups and this folds for its own vectors — but the two must agree about what
-    counts as the same word, or a question answered here cannot be answered there.
-    """
-    if not text:
-        return ""
-    text = unicodedata.normalize("NFKC", text)
-    text = _TASHKEEL.sub("", text)
-    out = []
-    for ch in text:
-        if ch in _FOLD:
-            out.append(_FOLD[ch])
-        elif "٠" <= ch <= "٩":          # Arabic-Indic digits
-            out.append(chr(ord("0") + ord(ch) - 0x0660))
-        elif "۰" <= ch <= "۹":          # Extended Arabic-Indic digits
-            out.append(chr(ord("0") + ord(ch) - 0x06F0))
-        else:
-            out.append(ch.lower())
-    text = "".join(out)
-    # Punctuation separates words; it is never part of one. A trailing "؟" that stays attached
-    # changes every n-gram at the end of the question.
-    text = _NONWORD.sub(" ", text)
-    return _SPACES.sub(" ", text).strip()
-
 
 @dataclass(frozen=True)
 class Intent:

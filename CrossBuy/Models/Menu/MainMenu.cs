@@ -161,6 +161,12 @@
 			{
 				new() { LabelAr = "الأرصدة الافتتاحية", LabelEn = "Opening balances", Action = "OpeningBalances", Controller = "Inventory" },
 				new() { LabelAr = "تسوية السلامة", LabelEn = "Integrity check", Action = "IntegrityReconciliation", Controller = "Inventory" },
+				// A DIAGNOSTIC NOBODY CAN NAVIGATE TO IS THE PROBLEM IT WAS BUILT TO SOLVE. The
+				// refused-question screen exists so the product reports its own gaps instead of the
+				// owner finding them one screenshot at a time; reachable only by typing a URL, it
+				// would have stayed exactly as invisible as the JSON endpoint it replaced.
+				// Same "manage" permission the screen itself enforces, beside the other diagnostics.
+				new() { LabelAr = "أسئلة بلا إجابة", LabelEn = "Unanswered questions", Action = "AskGaps", Controller = "Inventory", Perm = "manage" },
 				new() { LabelAr = "الموافقات", LabelEn = "Approvals", Action = "Approvals", Controller = "Inventory", Perm = "manage" },
 				new() { LabelAr = "صلاحيات المخزون", LabelEn = "Inventory roles", Action = "InventoryRoles", Controller = "Inventory", Perm = "manage" },
 				new() { LabelAr = "إعدادات المخزون", LabelEn = "Inventory settings", Action = "Settings", Controller = "Inventory", Perm = "manage" },
@@ -168,6 +174,13 @@
 			new() { LabelAr = "التقارير", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
 			{
 				new() { LabelAr = "تقارير المخزون", LabelEn = "Inventory reports", Action = "Reports", Controller = "Inventory", Aliases = new() { "ValuationReport", "StagnantReport", "ReorderReport", "ExpiryAlerts" } },
+			}},
+			new() { LabelAr = "مشتريات المشاريع", LabelEn = "Project purchasing", Icon = "ki-outline ki-handcart", Items = new()
+			{
+				new() { LabelAr = "مسودة شراء مشروع", LabelEn = "New project purchase draft", Action = "Projects", Controller = "Project", Perm = "construction-purchase", RouteValues = ConstructionRoute("purchase") },
+				new() { LabelAr = "توزيع تكلفة شراء المشروع", LabelEn = "Project purchase allocation", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("allocation") },
+				new() { LabelAr = "اعتماد شراء المشروع", LabelEn = "Project purchase approval", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("approval") },
+				new() { LabelAr = "فواتير شراء المشروع الجزئية", LabelEn = "Partial project purchase invoices", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("partial-invoice") },
 			}},
 		};
 
@@ -234,27 +247,6 @@
 			}},
 		};
 
-		// ===== Hypermarket (HM-0 scaffold) — its OWN sidebar, separate from Restaurant. =====
-		// HM-0 ships only the diagnostic dashboard + a link into the independent lane. Every other item is a
-		// PLACEHOLDER for a later HM phase (kept navigable → Dashboard until its screen exists). LabelEn values reuse
-		// EXISTING SharedResources keys so the Arabic UI renders correctly (a bare non-key would show English).
-		public static List<MenuCategory> Hyper() => new()
-		{
-			new() { LabelAr = "عام", LabelEn = "General", Icon = "ki-outline ki-element-11", Items = new()
-			{
-				new() { LabelAr = "لوحة التشخيص", LabelEn = "Dashboard", Action = "Dashboard", Controller = "Hyper" },
-			}},
-			new() { LabelAr = "التشغيل", LabelEn = "Operations", Icon = "ki-outline ki-handcart", Items = new()
-			{
-				new() { LabelAr = "شاشة الكاشير", LabelEn = "Cashier terminal", Action = "Login", Controller = "HyperPos" },
-			}},
-			new() { LabelAr = "التقارير", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
-			{
-				new() { LabelAr = "مبيعات الهايبر", LabelEn = "Hyper sales", Action = "Sales", Controller = "Hyper" },
-				new() { LabelAr = "هامش الصنف", LabelEn = "Item margin", Action = "ItemMargin", Controller = "Hyper" },
-			}},
-		};
-
 		// ===== Accounting & Finance (AccountingController only) =====
 		public static List<MenuCategory> Accounting() => new()
 		{
@@ -289,11 +281,19 @@
 				}},
 				new() { LabelAr = "إدارة العلاقات (CRM)", LabelEn = "CRM", Icon = "ki-outline ki-people", Items = new()
 				{
+					// CRM C9: a rep's work for today in one ordered list, from the assistant's rules.
+					new() { LabelAr = "يومي", LabelEn = "My day", Action = "MyDay", Controller = "Crm" },
 					new() { LabelAr = "لوحة CRM", LabelEn = "CRM dashboard", Action = "Index", Controller = "Crm" },
 					new() { LabelAr = "الحسابات", LabelEn = "Accounts", Action = "Accounts", Controller = "Crm" },
+					// CRM C1: the people behind the accounts, each with their communication consent.
+					new() { LabelAr = "جهات الاتصال", LabelEn = "Contacts", Action = "Contacts", Controller = "Crm" },
 					new() { LabelAr = "العملاء المحتملون", LabelEn = "Leads", Action = "Leads", Controller = "Crm" },
+					// CRM C2: leads that arrive by themselves from the company's website.
+					new() { LabelAr = "نماذج الموقع", LabelEn = "Website forms", Action = "WebForms", Controller = "Crm" },
 					new() { LabelAr = "الفرص البيعية", LabelEn = "Opportunities", Action = "Opportunities", Controller = "Crm" },
 					new() { LabelAr = "خط الأنابيب (Kanban)", LabelEn = "Pipeline (Kanban)", Action = "Pipeline", Controller = "Crm" },
+					// CRM C3: discounts above someone's limit wait here for a person whose own limit covers them.
+					new() { LabelAr = "موافقات الخصم", LabelEn = "Discount approvals", Action = "DiscountApprovals", Controller = "Crm" },
 					// Rules-based review list. Placed straight after the pipeline because it answers the
 					// question a salesperson asks while looking at one: which of these needs me today?
 					new() { LabelAr = "تحليلات الفرص", LabelEn = "Opportunity Insights", Action = "OpportunityInsights", Controller = "Crm" },
@@ -302,15 +302,41 @@
 					// between the two questions constantly.
 					new() { LabelAr = "تحليلات الحسابات", LabelEn = "Account Insights", Action = "AccountInsights", Controller = "Crm" },
 					new() { LabelAr = "إعداد خطوط الأنابيب", LabelEn = "Pipeline setup", Action = "Pipelines", Controller = "Crm", Perm = "crm-manage" },
+					// CRM C3: what each stage requires, and the discount each role may give alone.
+					new() { LabelAr = "قواعد الصفقات", LabelEn = "Deal rules", Action = "DealRules", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "الأنشطة والمهام", LabelEn = "Activities", Action = "Activities", Controller = "Crm" },
+					// CRM C6: timed follow-up steps that stop when the person answers, and each rep's public booking page.
+					new() { LabelAr = "تسلسلات المتابعة", LabelEn = "Follow-up sequences", Action = "Sequences", Controller = "Crm" },
+					new() { LabelAr = "رابط حجز مواعيدي", LabelEn = "My booking link", Action = "Booking", Controller = "Crm" },
 					new() { LabelAr = "الحملات التسويقية", LabelEn = "Campaigns", Action = "Campaigns", Controller = "Crm" },
 					new() { LabelAr = "القوائم التسويقية", LabelEn = "Marketing lists", Action = "MarketingLists", Controller = "Crm" },
+					// CRM C7: audiences that keep themselves current, and the drawn paths their new members walk.
+					new() { LabelAr = "الشرائح", LabelEn = "Segments", Action = "Segments", Controller = "Crm" },
+					new() { LabelAr = "رحلات التسويق", LabelEn = "Marketing journeys", Action = "Journeys", Controller = "Crm" },
+					// CRM C4: website chat, WhatsApp and e-mail conversations in one place, each matched to the person it came from.
+					new() { LabelAr = "صندوق المحادثات الموحد", LabelEn = "Unified inbox", Action = "Inbox", Controller = "Crm" },
+					new() { LabelAr = "القنوات", LabelEn = "Conversation channels", Action = "Channels", Controller = "Crm", Perm = "crm-manage" },
+					// CRM C8: the desk at a glance (SLA, first reply, satisfaction) and the answers it shares.
+					new() { LabelAr = "مكتب الخدمة", LabelEn = "Service desk", Action = "ServiceDesk", Controller = "Crm" },
 					new() { LabelAr = "التذاكر", LabelEn = "Tickets", Action = "Tickets", Controller = "Crm" },
+					new() { LabelAr = "قاعدة المعرفة", LabelEn = "Knowledge base", Action = "KnowledgeBase", Controller = "Crm" },
+					// The calls themselves. Sits next to Tickets because an agent moves between the two all
+					// day: a call becomes a ticket, a ticket prompts a call back.
+					new() { LabelAr = "مركز الاتصال", LabelEn = "Call centre", Action = "Calls", Controller = "Crm" },
 					new() { LabelAr = "سياسات SLA", LabelEn = "SLA policies", Action = "SlaPolicies", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "التنبؤ بالمبيعات", LabelEn = "Forecast", Action = "Forecast", Controller = "Crm" },
+					// CRM C5: the target each person is measured against, month by month.
+					new() { LabelAr = "أهداف المبيعات", LabelEn = "Sales targets", Action = "Quotas", Controller = "Crm" },
 					new() { LabelAr = "تقارير 360°", LabelEn = "360° reports", Action = "Reports", Controller = "Crm" },
 					new() { LabelAr = "تقييم العملاء والأتمتة", LabelEn = "Scoring & automation", Action = "ScoringRules", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "الحقول المخصّصة", LabelEn = "Custom fields", Action = "CustomFields", Controller = "Crm", Perm = "crm-manage" },
+					// Beside the custom fields deliberately: both are the VOCABULARY a CRM record is described
+					// with, both are manage-only, and both are things you set up once and rarely revisit.
+					new() { LabelAr = "الوسوم", LabelEn = "Tags", Action = "Tags", Controller = "Crm", Perm = "crm-manage" },
+					// CRM C1: one customer record — possible duplicates, merge, and the consent gaps.
+					new() { LabelAr = "جودة البيانات والتكرار", LabelEn = "Data quality & duplicates", Action = "Duplicates", Controller = "Crm" },
+					// CRM C2: who takes a new lead — territories, their reps, and the order the rules follow.
+					new() { LabelAr = "التوزيع والمناطق", LabelEn = "Assignment & territories", Action = "Assignment", Controller = "Crm" },
 					new() { LabelAr = "قواعد الأتمتة", LabelEn = "Automation rules", Action = "AutomationRules", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "صلاحيات CRM", LabelEn = "CRM roles", Action = "CrmRoles", Controller = "Crm", Perm = "crm-manage" },
 			}},
@@ -405,6 +431,113 @@
 				new() { LabelAr = "التقويم", LabelEn = "Calendar", Action = "Index", Controller = "Calendar" },
 				new() { LabelAr = "الجدول الزمني", LabelEn = "Timeline", Action = "Timeline", Controller = "Calendar" },
 				new() { LabelAr = "عرض الموارد", LabelEn = "Resource view", Action = "ResourceView", Controller = "Calendar" },
+			}},
+		};
+
+		// ===== Hypermarket / Retail (HyperController + HyperPosController) =====
+		//
+		// THIS MENU IS THE PLAN. The hypermarket is being built as a prototype FIRST and the prototype is
+		// the blueprint, so the navigation shows the WHOLE shape of the module from day one - not only the
+		// parts that happen to work today. A reader must be able to see what a hypermarket is going to be
+		// without opening a roadmap document.
+		//
+		// HONESTY IS ENFORCED BY `Soon`, not by omission. A built item links to its real screen. A planned
+		// item carries Soon = true and lands on the Plan screen, which states what that screen will do,
+		// what it depends on and what is already underneath it. Nothing here is a dead link, and nothing
+		// pretends to work. The day a screen ships, its item loses Soon and gains its own Action - one
+		// edit, in one place.
+		//
+		// Same chrome as Hospital deliberately: _LayoutBackend renders this through the shared _MainMenu
+		// partial, so the retail pack inherits the back-office shell instead of copying a sixth layout.
+		public static List<MenuCategory> Hyper() => new()
+		{
+			new() { LabelAr = "لوحة الهايبر", LabelEn = "Hypermarket", Icon = "ki-outline ki-element-11", Items = new()
+			{
+				new() { LabelAr = "لوحة التحكم", LabelEn = "Dashboard", Action = "Dashboard", Controller = "Hyper" },
+				new() { LabelAr = "خطة البناء", LabelEn = "Build plan", Action = "Plan", Controller = "Hyper" },
+			}},
+
+			new() { LabelAr = "الصندوق", LabelEn = "Checkout", Icon = "ki-outline ki-basket", Items = new()
+			{
+				new() { LabelAr = "ممرّ الكاشير", LabelEn = "Cashier lane", Action = "Lane", Controller = "HyperPos" },
+				new() { LabelAr = "بدء وردية", LabelEn = "Open a shift", Action = "Start", Controller = "HyperPos" },
+				new() { LabelAr = "الإيصالات", LabelEn = "Receipts", Action = "Receipts", Controller = "HyperPos" },
+				new() { LabelAr = "فحص السعر", LabelEn = "Price check", Action = "PriceCheck", Controller = "HyperPos" },
+				// REMOVED: this pointed at HyperPos.Receipts, the same destination as the entry above. Returns are
+				// performed FROM the receipts screen (ReverseSale is [HttpPost("receipt/void")], not a page), so a
+				// second label for the same page promised a Returns screen that does not exist. Restore this the
+				// day HyperPos gains a real returns page - with that page's own action, not this one.
+				new() { LabelAr = "درج النقد", LabelEn = "Cash drawer", Action = "CashDrawer", Controller = "Hyper" },
+				// REMOVED: pointed at HyperPos.Lane, so it landed on the till lane rather than the page it names.
+				// Repointing it at PriceCheck only moved the problem - "Price check" above is already that page,
+				// and a PLU lookup IS a price check. One destination, one entry.
+			}},
+
+			new() { LabelAr = "العروض والولاء", LabelEn = "Promotions & loyalty", Icon = "ki-outline ki-discount", Items = new()
+			{
+				new() { LabelAr = "العروض", LabelEn = "Promotions", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "promotions" } },
+				new() { LabelAr = "الكوبونات", LabelEn = "Coupons", Action = "Coupons", Controller = "Hyper" },
+				new() { LabelAr = "برنامج الولاء", LabelEn = "Loyalty programme", Action = "LoyaltySetup", Controller = "Hyper" },
+				// REMOVED: pointed at Hyper.LoyaltySetup, the same page as "Loyalty programme" above it.
+				// Redemption is NOT BUILT - it needs schema and, first, a business number nobody has decided:
+				// what one point is worth in currency. Restore it when the page exists, with its own action.
+			}},
+
+			new() { LabelAr = "الأصناف والتسعير", LabelEn = "Items & pricing", Icon = "ki-outline ki-tag", Items = new()
+			{
+				new() { LabelAr = "هوامش الأصناف", LabelEn = "Item margins", Action = "ItemMargin", Controller = "Hyper" },
+				// REMOVED: pointed at Hyper.ScaleSetup, which "Scale setup" in this same menu already names.
+				// The view titles itself "إعداد الموازين" / "Scale setup" - it configures scales, it is not a
+				// weighed-items list, so this label promised a screen that does not exist.
+				new() { LabelAr = "الباركودات", LabelEn = "Barcodes", Action = "Barcodes", Controller = "Hyper" },
+				new() { LabelAr = "قوائم الأسعار", LabelEn = "Price lists", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "pricelists" } },
+				new() { LabelAr = "تغيير سعر جماعي", LabelEn = "Bulk price change", Action = "BulkPrice", Controller = "Hyper" },
+				new() { LabelAr = "ملصقات الرفوف", LabelEn = "Shelf labels", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "shelflabels" } },
+			}},
+
+			new() { LabelAr = "المخزون", LabelEn = "Stock", Icon = "ki-outline ki-package", Items = new()
+			{
+				new() { LabelAr = "أرصدة الفرع", LabelEn = "Branch stock", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "stock" } },
+				new() { LabelAr = "الجرد", LabelEn = "Stock count", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "count" } },
+				new() { LabelAr = "التحويلات بين الفروع", LabelEn = "Branch transfers", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "transfers" } },
+				new() { LabelAr = "الهالك والتلف", LabelEn = "Waste & write-off", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "waste" } },
+				new() { LabelAr = "تتبّع الصلاحية", LabelEn = "Expiry control", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "expiry" } },
+				new() { LabelAr = "إعادة الطلب", LabelEn = "Replenishment", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "replenish" } },
+			}},
+
+			new() { LabelAr = "المشتريات والموردون", LabelEn = "Purchasing & suppliers", Icon = "ki-outline ki-truck", Items = new()
+			{
+				new() { LabelAr = "أوامر الشراء", LabelEn = "Purchase orders", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "po" } },
+				new() { LabelAr = "استلام البضاعة", LabelEn = "Goods receipt", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "grn" } },
+				new() { LabelAr = "الموردون", LabelEn = "Suppliers", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "suppliers" } },
+				new() { LabelAr = "مرتجع المورد", LabelEn = "Supplier returns", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "supplierreturn" } },
+			}},
+
+			new() { LabelAr = "العملاء", LabelEn = "Customers", Icon = "ki-outline ki-profile-user", Items = new()
+			{
+				new() { LabelAr = "عميل الصندوق", LabelEn = "Till customer", Action = "Customer", Controller = "HyperPos" },
+				new() { LabelAr = "سجل العملاء", LabelEn = "Customer registry", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "customers" } },
+			}},
+
+			new() { LabelAr = "التقارير", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
+			{
+				new() { LabelAr = "المبيعات", LabelEn = "Sales", Action = "Sales", Controller = "Hyper" },
+				new() { LabelAr = "تقرير الوردية Z", LabelEn = "Z report", Action = "ZReport", Controller = "Hyper" },
+				new() { LabelAr = "الأكثر مبيعاً", LabelEn = "Top sellers", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "topsellers" } },
+				new() { LabelAr = "تحليل السلة", LabelEn = "Basket analysis", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "basket" } },
+				new() { LabelAr = "الفاقد والانكماش", LabelEn = "Shrinkage", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "shrinkage" } },
+			}},
+
+			new() { LabelAr = "الإعدادات", LabelEn = "Setup", Icon = "ki-outline ki-setting-2", Items = new()
+			{
+				new() { LabelAr = "الفروع ونقاط البيع", LabelEn = "Branches & terminals", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "terminals" } },
+				new() { LabelAr = "قدرات الفرع", LabelEn = "Branch capabilities", Action = "CapabilitySetup", Controller = "Hyper" },
+				// HM-PROMO: the engine had no way in until this screen existed.
+				new() { LabelAr = "عروض نقاط البيع", LabelEn = "Till promotions", Action = "Promotions", Controller = "Hyper" },
+				new() { LabelAr = "طرق الدفع", LabelEn = "Payment methods", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "tenders" } },
+				new() { LabelAr = "إعداد الموازين", LabelEn = "Scale setup", Action = "ScaleSetup", Controller = "Hyper" },
+				new() { LabelAr = "الضرائب والفوترة", LabelEn = "Tax & invoicing", Action = "TaxSetup", Controller = "Hyper" },
+				new() { LabelAr = "صلاحيات الكاشير", LabelEn = "Cashier roles", Action = "Plan", Controller = "Hyper", Soon = true, RouteValues = new() { ["key"] = "roles" } },
 			}},
 		};
 
@@ -584,6 +717,12 @@
 		};
 
 		// ===== Projects & Contracting (ProjectController — its OWN system, not under Accounting) =====
+		private static Dictionary<string, string> ConstructionRoute(string destination) => new()
+		{
+			["construction"] = destination,
+			["culture"] = System.Globalization.CultureInfo.CurrentCulture.Name,
+			["ui-culture"] = System.Globalization.CultureInfo.CurrentUICulture.Name
+		};
 		public static List<MenuCategory> Projects() => new()
 		{
 			new() { LabelAr = "المشاريع والمقاولات", LabelEn = "Projects & Contracting", Icon = "ki-outline ki-briefcase", Items = new()
@@ -595,6 +734,23 @@
 				new() { LabelAr = "رد محتجز الباطن", LabelEn = "Release subcontractor retention", Action = "SubRetentionRelease", Controller = "Project" },
 				new() { LabelAr = "أنواع نشاط المشاريع", LabelEn = "Project activity types", Action = "ActivityTypes", Controller = "Project" },
 				new() { LabelAr = "ربحية المشاريع", LabelEn = "Project profitability", Action = "Profitability", Controller = "Project" },
+			}},
+			new() { LabelAr = "الإنشاءات وميزانيات المشاريع", LabelEn = "Construction & project budgets", Icon = "ki-outline ki-element-11", Items = new()
+			{
+				new() { LabelAr = "تقارير الموقع اليومية", LabelEn = "Daily site reports", Action = "Projects", Controller = "Project", Perm = "projects-sitereport-read", RouteValues = ConstructionRoute("daily-report") },
+				new() { LabelAr = "هيكل المشروع", LabelEn = "Project structure", Action = "Projects", Controller = "Project", Perm = "projects-budget-view", RouteValues = ConstructionRoute("structure") },
+				new() { LabelAr = "إصدارات الميزانية", LabelEn = "Budget versions", Action = "Projects", Controller = "Project", Perm = "projects-budget-view", RouteValues = ConstructionRoute("budget") },
+				new() { LabelAr = "استثناءات الميزانية", LabelEn = "Budget exceptions", Action = "Projects", Controller = "Project", Perm = "projects-budget-manage", RouteValues = ConstructionRoute("exceptions") },
+                new() { LabelAr = "إعادة اعتماد المشتريات", LabelEn = "Purchase budget readmission", Action = "Projects", Controller = "Project", Perm = "projects-budget-manage", RouteValues = ConstructionRoute("rebase") },
+                new() { LabelAr = "توزيع التكاليف الفعلية", LabelEn = "Allocate actual costs", Action = "Projects", Controller = "Project", Perm = "projects-budget-manage", RouteValues = ConstructionRoute("actual-cost") },
+                new() { LabelAr = "ربط استهلاك المواد", LabelEn = "Material consumption linkage", Action = "Projects", Controller = "Project", Perm = "projects-budget-manage", RouteValues = ConstructionRoute("consumption") },
+                new() { LabelAr = "فحص إمكانية نقل الميزانية", LabelEn = "Budget transfer feasibility", Action = "Projects", Controller = "Project", Perm = "projects-budget-manage", RouteValues = ConstructionRoute("transfer-preview") },
+                new() { LabelAr = "توقّع تكلفة المشروع", LabelEn = "Project cost forecast", Action = "Projects", Controller = "Project", Perm = "projects-budget-view", RouteValues = ConstructionRoute("cost-forecast") },
+                new() { LabelAr = "سياسات الإنشاءات للشركة", LabelEn = "Company construction policies", Action = "Index", Controller = "ConstructionCompanyPolicy", Perm = "projects-manage" },
+				new() { LabelAr = "مسودة شراء مشروع", LabelEn = "New project purchase draft", Action = "Projects", Controller = "Project", Perm = "construction-purchase", RouteValues = ConstructionRoute("purchase") },
+				new() { LabelAr = "توزيع تكلفة شراء المشروع", LabelEn = "Project purchase allocation", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("allocation") },
+				new() { LabelAr = "اعتماد شراء المشروع", LabelEn = "Project purchase approval", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("approval") },
+				new() { LabelAr = "فواتير شراء المشروع الجزئية", LabelEn = "Partial project purchase invoices", Action = "PurchaseOrders", Controller = "Inventory", Perm = "construction-purchase", RouteValues = ConstructionRoute("partial-invoice") },
 			}},
 		};
 

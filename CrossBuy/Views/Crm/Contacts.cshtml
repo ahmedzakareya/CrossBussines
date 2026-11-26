@@ -1,0 +1,79 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var h = ViewBag.Health as CrossBuy.BL.CrmIdentity.DataHealthFigures;
+    int Pct(int n, int d) => d == 0 ? 0 : (int)Math.Round(n * 100.0 / d);
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Contacts"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@T["Customer relationships"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Contacts"]</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Duplicates","Crm")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-copy fs-4"></i>@T["Data quality & duplicates"]</a>
+            <a href="@Url.Action("Accounts","Crm")" class="btn btn-sm btn-primary"><i class="ki-outline ki-briefcase fs-4"></i>@T["Accounts"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (h != null)
+        {
+            <div class="row g-5 g-xl-8 mb-5">
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Contacts"]</div><i class="ki-outline ki-people fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold text-gray-900 num">@h.ContactsTotal</div>
+                    <div class="text-muted fs-8 mt-1">@T["across"] <span class="num">@h.AccountsTotal</span> @T["(count) accounts"]</div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["No recorded consent"]</div><i class="ki-outline ki-shield-cross fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold @(h.ContactsNoConsent > 0 ? "text-danger" : "text-success")"><span class="num">@Pct(h.ContactsNoConsent, h.ContactsTotal)%</span></div>
+                    <div class="text-muted fs-8 mt-1"><span class="num">@h.ContactsNoConsent</span> @T["people we may not message yet"]</div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["No mobile and no email"]</div><i class="ki-outline ki-sms fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold text-gray-900"><span class="num">@Pct(h.ContactsNoReach, h.ContactsTotal)%</span></div>
+                    <div class="text-muted fs-8 mt-1"><span class="num">@h.ContactsNoReach</span> @T["cannot be reached"]</div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Possible duplicate contacts"]</div><i class="ki-outline ki-copy fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold @(h.ContactPairs > 0 ? "text-danger" : "text-gray-900") num">@h.ContactPairs</div>
+                    <div class="text-muted fs-8 mt-1"><a href="@Url.Action("Duplicates","Crm", new { type = "Contact" })">@T["Review them"]</a></div></div></div></div>
+            </div>
+        }
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@T["Search by name, mobile, email or account"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@T["Add search terms…"]" /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-shield-tick fs-5 me-1"></i>@T["Consent"]</label>
+                <select id="f_consent" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true">
+                    <option value="">@T["Everyone"]</option>
+                    <option value="none">@T["Never asked"]</option>
+                    <option value="optout">@T["Withdrew on a channel"]</option>
+                    <option value="whatsapp">@T["Agreed to WhatsApp"]</option>
+                    <option value="email">@T["Agreed to email"]</option>
+                    <option value="noreach">@T["No mobile and no email"]</option>
+                </select></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @T["Reset"]</button></div>
+        </div></div></div>
+        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Contacts"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7" id="resultCount">—</span></div>
+            <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table" style="font-variant-numeric:tabular-nums;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="width:26%">@T["Contact"]</th><th>@T["Account"]</th><th>@T["Mobile"]</th><th>@T["Email"]</th><th>@T["Consent"]</th><th class="text-end pe-4"></th></tr></thead>
+                <tbody id="rows" class="fs-6"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No contacts match"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+        <div class="notice d-flex rounded border border-dashed p-6 mt-5" style="background:var(--cb-brand-surface,#E7F0FF);border-color:var(--cb-brand,#3A5795)!important;">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label" style="background:var(--cb-brand,#3A5795)"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Consent comes before any message"]</h4>
+                <div class="fs-6 text-gray-700">@T["Never asked is not consent. Each person's file records when, how and by whom consent was given or withdrawn on each channel, and every message the CRM sends will check it first."]</div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+cbServerList({ url:'@Url.Action("ContactsData","Crm")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var c=document.getElementById('f_consent'); if(c&&c.value)p.set('consent',c.value); } });
+</script>
+}

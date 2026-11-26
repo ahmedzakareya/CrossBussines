@@ -282,7 +282,7 @@
             document.getElementById('viewDocTitle').textContent = name || '@Localizer["View"]';
             document.getElementById('viewDocOpen').href = url;
             var body = document.getElementById('viewDocBody');
-            var ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+            var ext = ((name.indexOf('.') >= 0 ? name : url.split('?')[0]).split('.').pop() || '').toLowerCase();   // File Manager URLs carry no extension: the name decides
             if (!url) { body.innerHTML = '<div class="text-center text-muted p-10">' + '@Localizer["No file"]' + '</div>'; }
             else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].indexOf(ext) >= 0) { body.innerHTML = '<div class="text-center p-4"><img src="' + url + '" style="max-width:100%;max-height:70vh;border-radius:.5rem;" onerror="this.parentNode.innerHTML=\'<div class=&quot;text-muted p-10&quot;>@Localizer["File not found"]</div>\'"/></div>'; }
             else if (ext === 'pdf') { body.innerHTML = '<iframe src="' + url + '" style="width:100%;height:70vh;border:0;"></iframe>'; }

@@ -49,9 +49,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"الأصناف التي لها رصيد ولم تتحرك منذ فترة، في المخازن التي تملك صلاحية عليها",
-			"Items holding stock that have not moved for a while, in the warehouses you may see");
+			"Items holding stock that have not moved for a while, in the warehouses you may see",
+			"Les articles en stock qui n'ont pas bougé récemment, dans les entrepôts auxquels vous avez accès");
 
-		public AskText Example => AskText.Of("إيه الأصناف الراكدة؟", "Which items are not moving?");
+		public AskText Example => AskText.Of("إيه الأصناف الراكدة؟", "Which items are not moving?", "Quels articles ne se vendent plus ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{
@@ -127,6 +128,7 @@ namespace CrossBuy.BL.Platform.Ai
 				{
 					["name"] = it == null ? null : (isArabic ? it.Name : (it.NameEn ?? it.Name)),
 					["code"] = it?.ItemCode,
+					["href"] = it == null ? null : "/Inventory/EditItem?id=" + it.ID.ToString(System.Globalization.CultureInfo.InvariantCulture),
 
 					// AN ANSWER THAT NAMES WORK CAN START IT.
 					//
@@ -166,6 +168,23 @@ namespace CrossBuy.BL.Platform.Ai
 					"كل الأرصدة التي لم تتحرك هي أرصدة لم تُسجَّل عليها حركة قط، وهذه فجوة بيانات لا ركود.",
 					"Every still balance is one that never had a movement at all — a data gap, not dormancy."),
 				Rows = rows,
+				Spoken = AskText.Of(
+					$"وجدت أرصدة لم تتحرك لأكثر من {QuietDays} يومًا. أعرض حتى {rows.Count} رصيدًا، وإجمالي قيمتها المحتجزة {decimal.Round(tiedUp, 2).ToString(inv)}.",
+					$"I found balances with no movement for more than {QuietDays} days. Showing up to {rows.Count} balances; their total tied-up value is {decimal.Round(tiedUp, 2).ToString(inv)}.",
+					$"J'ai trouvé des soldes sans mouvement depuis plus de {QuietDays} jours. Jusqu'à {rows.Count} soldes sont affichés ; leur valeur totale immobilisée est de {decimal.Round(tiedUp, 2).ToString(inv)}."),
+				Suggestions = rows
+					.Select(r => r.TryGetValue("name", out var value) ? Convert.ToString(value) : null)
+					.Where(name => !string.IsNullOrWhiteSpace(name))
+					.Distinct(StringComparer.OrdinalIgnoreCase)
+					.Take(3)
+					.Select(name =>
+					{
+						var question = isArabic ? "كام رصيد " + name + "؟"
+							: System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr"
+								? "stock de " + name : "stock of " + name;
+						return new AskSuggestion { Label = question, Question = question };
+					})
+					.ToList(),
 				Understood = AskText.Of(
 					$"ساكن أكثر من {QuietDays} يومًا، حتى {today:yyyy-MM-dd}. القيمة المحتجزة في هذه الأصناف:"
 					+ $" {decimal.Round(tiedUp, 2).ToString(inv)}."
@@ -220,9 +239,10 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public AskText Description => AskText.Of(
 			"متوسط أيام التحصيل من تاريخ الفاتورة حتى الاستلام، وعدد الفواتير التي لم تُحصَّل بعد",
-			"Average days from invoice to receipt, and how many invoices have not been collected at all");
+			"Average days from invoice to receipt, and how many invoices have not been collected at all",
+			"Délai moyen entre la facture et l'encaissement, ainsi que le nombre de factures encore impayées");
 
-		public AskText Example => AskText.Of("العملاء بياخدوا كام يوم عشان يدفعوا؟", "How long do customers take to pay?");
+		public AskText Example => AskText.Of("العملاء بياخدوا كام يوم عشان يدفعوا؟", "How long do customers take to pay?", "Combien de jours les clients mettent-ils à payer ?");
 
 		public IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

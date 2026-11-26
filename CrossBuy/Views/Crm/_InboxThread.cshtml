@@ -1,0 +1,93 @@
+@model CrossBuy.BL.CrmIdentity.ThreadView
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    var r = Model.Row; var c = r.C;
+    var canEdit = ViewBag.CanEdit == true;
+    var people = (List<CrossBuy.BL.CrmIdentity.PersonRef>)ViewBag.People;
+    var name = r.PartyName ?? c.Phone ?? c.Email ?? T["Visitor"].Value;
+    var chName = T["channel:" + r.ChannelKind].Value;
+    var optOut = Model.ConsentState == "OptOut";
+    var waClosed = r.ChannelKind == "WhatsApp" && !Model.WindowOpen;
+}
+<div class="crm-ib-thread" id="thread" data-conv="@c.ID" data-last="@(Model.Messages.LastOrDefault()?.Id ?? 0)">
+    <div class="d-flex flex-stack px-5 py-4 bg-body border-bottom gap-3 flex-wrap">
+        <div class="d-flex align-items-center min-w-0"><span class="symbol symbol-40px symbol-circle"><span class="symbol-label crm-initials">@Initials(name)</span></span>
+            <div class="ms-3 min-w-0"><div class="fw-bold text-gray-900 text-truncate">@name</div><div class="text-muted fs-8 text-truncate">@chName · <span class="num">@(c.Phone ?? c.Email ?? "")</span></div></div></div>
+        @if (canEdit)
+        {
+            <div class="d-flex gap-2 align-items-center">
+                <select class="form-select form-select-sm form-select-solid w-175px" id="convOwner" title="@T["Owner"]">
+                    <option value="">@T["No owner"]</option>
+                    @foreach (var p in people) { <option value="@p.EmployeeId" selected="@(p.EmployeeId == c.OwnerEmployeeId)">@p.Name</option> }
+                </select>
+                @if (c.Status != "Closed") { <button type="button" class="btn btn-sm btn-light-success" data-status="Closed"><i class="ki-outline ki-check fs-5"></i>@T["Close"]</button> }
+                else { <button type="button" class="btn btn-sm btn-light-primary" data-status="Open">@T["Reopen"]</button> }
+            </div>
+        }
+    </div>
+    <div class="crm-ib-msgs" id="msgs">
+        @foreach (var m in Model.Messages)
+        {
+            var cls = m.Direction switch { "In" => "in", "Out" => "out" + (m.Delivery == "Failed" ? " failed" : ""), "Note" => "note", _ => "sys" };
+            <div class="crm-bub @cls">
+                @if (m.Direction == "Note") { <div class="fw-bold fs-8 mb-1" style="color:#7239EA"><i class="ki-outline ki-lock-2 fs-8" style="color:#7239EA"></i> @T["Internal note — the customer cannot see it"]</div> }
+                <div class="body">@m.Body</div>
+                @if (m.Direction != "System")
+                {
+                    <div class="meta"><span class="num">@m.At.ToLocalTime().ToString("MM-dd HH:mm")</span>@if (m.By != null) { <span> · @m.By.Name</span> }@if (m.Direction == "Out") { <span> · @T["dlv:" + m.Delivery]</span> }</div>
+                    @if (m.Error != null) { <div class="meta">@T[m.Error]</div> }
+                }
+            </div>
+        }
+    </div>
+    @if (canEdit)
+    {
+        <div class="bg-body border-top p-4">
+            @if (optOut) { <div class="text-danger fs-8 fw-semibold mb-2"><i class="ki-outline ki-shield-cross fs-7 text-danger"></i> @T["This person withdrew consent on this channel — only internal notes are possible."]</div> }
+            else if (waClosed) { <div class="fs-8 fw-semibold mb-2" style="color:#7239EA"><i class="ki-outline ki-time fs-7" style="color:#7239EA"></i> @T["More than 24 hours since the customer's last message: WhatsApp allows only an approved template."]</div> }
+            <div class="d-flex gap-2 mb-3" role="tablist">
+                <button type="button" class="btn btn-sm btn-primary" data-mode="reply" @(optOut || waClosed ? "disabled" : "")>@T["Reply"]</button>
+                <button type="button" class="btn btn-sm btn-light" data-mode="note">@T["Internal note"]</button>
+                @if (r.ChannelKind == "WhatsApp" && Model.Templates.Count > 0) { <button type="button" class="btn btn-sm btn-light" data-mode="template" @(optOut ? "disabled" : "")>@T["Template"]</button> }
+            </div>
+            <div class="d-flex gap-3" id="composer" data-mode="@(optOut || waClosed ? "note" : "reply")">
+                <textarea class="form-control form-control-solid" id="composerText" rows="2" maxlength="4000" placeholder="@(optOut || waClosed ? T["Write an internal note…"] : T["Reply on"].Value + " " + chName + "…")"></textarea>
+                @if (Model.Templates.Count > 0) { <select class="form-select form-select-solid d-none w-200px" id="composerTemplate">@foreach (var t in Model.Templates) { <option>@t</option> }</select> }
+                <button type="button" class="btn btn-primary btn-icon h-auto px-5" id="composerSend" title="@T["Send"]"><i class="ki-outline ki-send fs-2"></i></button>
+            </div>
+        </div>
+    }
+</div>
+<div class="crm-ib-side" id="side">
+    @if (c.ContactId != null || c.LeadId != null)
+    {
+        <div class="fw-bold fs-8 text-muted text-uppercase mb-3">@(c.ContactId != null ? T["Contact"] : T["kind:Lead"])</div>
+        <a href="@(c.ContactId != null ? Url.Action("Contact","Crm", new { id = c.ContactId }) : Url.Action("Leads","Crm", new { q = Model.LeadName }))" class="d-flex align-items-center text-hover-primary">
+            <span class="symbol symbol-40px symbol-circle"><span class="symbol-label crm-initials">@Initials(Model.ContactName ?? Model.LeadName)</span></span>
+            <span class="ms-3 fw-bold text-gray-900">@(Model.ContactName ?? Model.LeadName)</span></a>
+        @if (r.AccountName != null)
+        {
+            <div class="separator my-4"></div>
+            <div class="fw-bold fs-8 text-muted text-uppercase mb-2">@T["Account"]</div>
+            <a href="@Url.Action("Account360","Crm", new { id = c.AccountId })" class="fw-bold text-gray-900 text-hover-primary">@r.AccountName</a>
+            @if (Model.AccountSales != null) { <div class="crm-line mt-2"><span class="text-muted">@T["12-month sales"]</span><span class="num fw-semibold">@Model.AccountSales.Value.ToString("N0")</span></div> }
+        }
+        @if (Model.ConsentState != null)
+        {
+            <div class="mt-3"><span class="crm-consent @(Model.ConsentState == "OptIn" ? "in" : "out")">@(Model.ConsentState == "OptIn" ? "✓" : "✕") @chName</span></div>
+        }
+    }
+    else
+    {
+        <div class="fw-bold fs-8 text-muted text-uppercase mb-2">@T["New person"]</div>
+        <div class="fs-7 text-gray-700 mb-3">@T["Nobody in the CRM has this number or e-mail yet."]</div>
+        @if (canEdit) { <button type="button" class="btn btn-sm btn-light-primary w-100" data-act="lead"><i class="ki-outline ki-plus fs-5"></i>@T["Create a lead"]</button> }
+    }
+    <div class="separator my-4"></div>
+    <div class="fw-bold fs-8 text-muted text-uppercase mb-2">@T["Linked to"]</div>
+    @if (c.OpportunityId != null) { <a href="@Url.Action("Deal","Crm", new { id = c.OpportunityId })" class="d-block fw-bold text-gray-900 text-hover-primary mb-2"><i class="ki-outline ki-briefcase fs-6 me-1"></i>@Model.DealTitle</a> }
+    @if (c.TicketId != null) { <a href="@Url.Action("TicketEditor","Crm", new { id = c.TicketId })" class="d-block fw-bold text-danger mb-2"><i class="ki-outline ki-support-24 fs-6 text-danger me-1"></i>#@c.TicketId @Model.TicketSubject</a> }
+    @if (c.OpportunityId == null && c.TicketId == null) { <div class="text-muted fs-8 mb-2">—</div> }
+    @if (canEdit && c.TicketId == null) { <button type="button" class="btn btn-sm btn-light w-100 mt-2" data-act="ticket"><i class="ki-outline ki-support-24 fs-5"></i>@T["Ticket from this conversation"]</button> }
+</div>

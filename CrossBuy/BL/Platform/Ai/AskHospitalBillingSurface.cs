@@ -48,7 +48,8 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"فواتير المستشفى: المبلغ المفوتر وعدد البنود حسب التصنيف أو القسم أو حالة الفاتورة أو الشهر",
-			"Hospital bills: the billed amount and line count by category, department, bill status or month");
+			"Hospital bills: the billed amount and line count by category, department, bill status or month",
+			"Factures de l'hôpital : montants facturés et nombre de lignes par catégorie, service, statut de facture ou mois");
 
 		public override AskText Rules => AskText.Of(
 			"المبلغ هو المفوتر (الكمية × سعر الوحدة) قبل الضريبة — مش المحصَّل ومش اللي التأمين وافق عليه · "
@@ -73,25 +74,25 @@ namespace CrossBuy.BL.Platform.Ai
 			// rank every category instead of filtering to radiology. That exact shape has cost three
 			// wrong answers in this layer already; the value words reach the filter through the row's
 			// own search text, which is where they belong.
-			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف", "Category"),
+			new AskColumn { Name = "category", Kind = AskColumnKind.Dimension, Label = AskText.Of("التصنيف", "Category", "Catégorie"),
 				Synonyms = new[] { "تصنيف", "التصنيف", "نوع الخدمة", "نوع البند", "بند", "البنود",
 					"category", "categories", "service type", "line type" } },
-			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department"),
+			new AskColumn { Name = "department", Kind = AskColumnKind.Dimension, Label = AskText.Of("القسم", "Department", "Service"),
 				Synonyms = new[] { "قسم", "القسم", "اقسام", "الاقسام", "حسب القسم",
 					"department", "departments", "by department" } },
-			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الفاتورة", "Bill status"),
+			new AskColumn { Name = "status", Kind = AskColumnKind.Dimension, Label = AskText.Of("حالة الفاتورة", "Bill status", "Statut de facture"),
 				Synonyms = new[] { "حالة", "الحالة", "حالة الفاتورة", "status", "bill status" } },
-			new AskColumn { Name = "source", Kind = AskColumnKind.Dimension, Label = AskText.Of("مصدر البند", "Line source"),
+			new AskColumn { Name = "source", Kind = AskColumnKind.Dimension, Label = AskText.Of("مصدر البند", "Line source", "Origine de la ligne"),
 				Synonyms = new[] { "مصدر", "المصدر", "مصدر البند", "source", "line source", "origin" } },
-			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month"),
+			new AskColumn { Name = "month", Kind = AskColumnKind.Dimension, Label = AskText.Of("الشهر", "Month", "Mois"),
 				Synonyms = new[] { "شهر", "شهري", "شهور", "الشهور", "بالشهر", "month", "monthly", "by month" } },
-			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date"),
+			new AskColumn { Name = "date", Kind = AskColumnKind.Dimension, Label = AskText.Of("التاريخ", "Date", "Date"),
 				Synonyms = new[] { "تاريخ", "يوم", "يومي", "بالتاريخ", "date", "day", "daily" } },
 
 			// MONEY — withheld by column from anyone without the hospital's billing authority.
 			new AskColumn { Name = "billed", Kind = AskColumnKind.Measure, IsMoney = true,
 				Action = HospitalActions.Bill,
-				Label = AskText.Of("المبلغ المفوتر", "Billed"),
+				Label = AskText.Of("المبلغ المفوتر", "Billed", "Facturé"),
 				// THE VERB, NOT ONLY THE NOUN. «كام فوترنا» asked for MONEY and was answered with the
 				// LINE COUNT, because "فوترنا" matched nothing here while "كام" sat in the count's
 				// synonyms. A measure has to know the verb people use for it.
@@ -99,7 +100,7 @@ namespace CrossBuy.BL.Platform.Ai
 					"مفوتر", "المفوتر", "فاتورة", "فواتير", "الفواتير", "مبلغ", "المبلغ",
 					"ايراد", "الايراد", "ايرادات", "الايرادات", "فلوس", "قيمة", "القيمة",
 					"billed", "billing", "revenue", "amount", "charges", "charged", "value" } },
-			new AskColumn { Name = "lines", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد البنود", "Lines"),
+			new AskColumn { Name = "lines", Kind = AskColumnKind.Measure, Label = AskText.Of("عدد البنود", "Lines", "Lignes"),
 				// "كام" IS DELIBERATELY ABSENT. On a money surface it means "how MUCH" far more
 				// often than "how MANY", and leaving it here made «كام فوترنا» return 104 lines
 				// instead of 4,253.91. The count is still reachable by naming it: "عدد البنود".

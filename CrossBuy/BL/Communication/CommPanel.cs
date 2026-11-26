@@ -33,9 +33,30 @@ namespace CrossBuy.BL.Communication
         // that, and the cap is what stops a scanned catalogue being pinned to an invoice.
         public const long MaxUploadBytes = 20L * 1024 * 1024;
 
-        // Under a prefix PrivateFileGate already requires authentication for. A new top-level folder
-        // would be served anonymously until somebody remembered to register it.
+        // THE LEGACY PREFIX. Bytes written here before GAP-01 was closed, and the reason it was open.
+        //
+        // The original note read: "Under a prefix PrivateFileGate already requires authentication for. A new
+        // top-level folder would be served anonymously until somebody remembered to register it." That was
+        // true and insufficient. PrivateFileGate's policy for this prefix is RequireAuthenticated — it
+        // checks that SOMEONE is signed in, never WHO — so every signed-in user of every company could
+        // fetch any of these files by path. Authentication was mistaken for authorization.
+        //
+        // Nothing is written here any more (see StageAsync). The constant stays because rows created
+        // earlier still carry keys under it and must keep resolving, and because the delivery path has to
+        // recognise them.
         public const string UploadFolderUrl = "/uploads/comm/threads";
+
+        // WHERE NEW BYTES GO: outside the web root, where StaticFileMiddleware cannot reach them at all.
+        //
+        // This is the same boundary the platform document store already draws (App_Data/documents). A file
+        // here has NO url, so there is no static surface to bypass and no gate rule to remember — the
+        // protection is structural rather than configured. Keys written under it are opaque: they are not
+        // paths the browser could use even if one leaked.
+        public const string PrivateStoreFolder = "comm-attachments";
+
+        // The opaque key prefix, chosen so a legacy "/uploads/..." key and a private key can never be
+        // confused by the resolver below.
+        public const string PrivateKeyPrefix = "commstore:";
 
         /// <summary>
         /// WHO IS READING — their own name and photograph, for the composer's avatar.
@@ -67,9 +88,73 @@ namespace CrossBuy.BL.Communication
             };
         }
 
+        /// <summary>
+        /// WHICH OF THESE COMMENTS NAMED THE READER — one indexed read for a whole page.
+        ///
+        /// WHY THIS IS HERE AND NOT IN EACH CONTROLLER. Project() takes `mentionedMe`, and four
+        /// screens render that projection (Accounting, Inventory, Hospital, BusinessEventMonitor).
+        /// Resolving it inline meant six lines of EF per screen, which is both four chances to write
+        /// the predicate differently and four places to forget the company. One screen having a
+        /// subtly different idea of "I was mentioned" is not a performance problem, it is two
+        /// answers to one question.
+        ///
+        /// AN OMITTED CALL IS NOT A FAILURE, IT IS A SCREEN THAT HAS NOT OPTED IN. A caller that
+        /// does not pass the result gets `mentionsMe = false` on every row — indistinguishable from
+        /// "nobody mentioned you". That is a deliberate property of Project's optional parameter and
+        /// the reason this helper is one argument rather than six lines: opting a screen in should
+        /// be too small a change to get wrong, and too visible to forget.
+        ///
+        /// IT READS CommMentionRecipients, not CommMentions, so a mention that reached the caller
+        /// through their team, department or role counts exactly as a direct one does — the
+        /// recipient table is where the platform has already resolved that.
+        ///
+        /// SCOPED BY COMPANY EXPLICITLY. No Communication entity carries a global query filter —
+        /// there is no HasQueryFilter anywhere in CommunicationModel — so every read in this
+        /// platform states its own company predicate, 45 times across BL/Communication. The comment
+        /// ids alone would very nearly do it here, since they come from a page that is already
+        /// scoped; "very nearly" is not a tenancy argument, and (CompanyID, EmployeeId) is also the
+        /// leading edge of IX_CommMentionRecipients_Employee, so the correct predicate is the fast
+        /// one too.
+        /// </summary>
+        public static async Task<IReadOnlySet<long>> MentionedMeAsync(
+            CrossDbContext db, BusinessContext context,
+            IReadOnlyList<CommCommentDto>? items, CancellationToken ct = default)
+        {
+            // EMPTY, NEVER NULL. Project treats null as "this screen did not ask" and an empty set as
+            // "asked, and nothing named you". A caller that genuinely resolved no mentions must not
+            // be mistaken for one that never looked.
+            var none = (IReadOnlySet<long>)new HashSet<long>();
+
+            if (db is null || context?.EmployeeId is not > 0 || context.CompanyId <= 0) return none;
+            if (items is null || items.Count == 0) return none;
+
+            int me = context.EmployeeId.Value;
+            int companyId = context.CompanyId;
+            var pageIds = items.Select(c => c.CommentId).Distinct().ToList();
+            if (pageIds.Count == 0) return none;
+
+            var hit = await new CommDb(db).MentionRecipients.AsNoTracking()
+                .Where(r => r.CompanyID == companyId
+                            && r.EmployeeId == me
+                            && pageIds.Contains(r.CommentId))
+                .Select(r => r.CommentId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            return hit.ToHashSet();
+        }
+
         /// <summary>The per-comment shape the panel renders. `avatars` is employee id → photo url.</summary>
+        // `mentionedMe` is the one thing this projection says about the READER rather than about
+        // the comment: was I, personally, reached by a mention on it.
+        //
+        // A BOOLEAN ABOUT MYSELF, never the ids. The rule above stands - target ids and recipient
+        // counts describe an organisation the caller may not see - and "I was named here" leaks
+        // nothing about anyone else. It is resolved from CommMentionRecipients, so a mention that
+        // reached me through my team or my department counts exactly as a direct one does.
         public static object[] Project(
-            IReadOnlyList<CommCommentDto> items, bool arabic, IReadOnlyDictionary<int, string> avatars)
+            IReadOnlyList<CommCommentDto> items, bool arabic, IReadOnlyDictionary<int, string> avatars,
+            IReadOnlySet<long>? mentionedMe = null)
         {
             if (items is null) return Array.Empty<object>();
 
@@ -86,11 +171,29 @@ namespace CrossBuy.BL.Communication
                 editedAt = c.EditedAt,
                 isDeleted = c.IsDeleted,
 
+                mentionsMe = mentionedMe is not null && mentionedMe.Contains(c.CommentId),
+
                 // LABELS only — never TargetId, TargetKey or ResolvedRecipientCount. How many people a
                 // role mention reached describes the shape of an organisation the caller may not see.
+                //
+                // TWO FIELDS, BECAUSE WRITING AND READING HAPPEN IN DIFFERENT LANGUAGES. `display` is
+                // the name for THIS reader; `match` is every name the mention has ever been known by.
+                //
+                // The composer writes the name into the body in the author's language, so a message
+                // typed in English and read in Arabic carries "@ahmed anas" while `display` is
+                // "احمد انس". A panel matching only `display` finds nothing, and the mention falls back
+                // to a badge - which is exactly what one message did and the one above it did not,
+                // for no reason a reader could see.
+                //
+                // Both labels are frozen at mention time, so this changes nothing about what the
+                // record says; it only lets the reader's own language be the one on screen.
                 mentions = c.Mentions.Select(m => new
                 {
                     display = arabic ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr),
+                    match = new[] { m.LabelAr, m.LabelEn }
+                        .Where(l => !string.IsNullOrWhiteSpace(l))
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray(),
                 }),
 
                 // `mine` is what lets the chip render as pressed, and it is computed by the platform
@@ -107,11 +210,13 @@ namespace CrossBuy.BL.Communication
                         name = a.FileName,
                         contentType = a.ContentType,
                         size = a.SizeBytes,
-                        url = ServableUrl(a.StorageKey),
+                        // The authorized route, not the stored path. Every attachment the caller is
+                        // already permitted to see gets one, so nothing is dropped from the panel — but
+                        // the bytes behind it are re-authorized on each request.
+                        url = DeliveryUrl(a.AttachmentId),
                         isImage = a.Preview.CanInline
                                   && a.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase),
-                    })
-                    .Where(a => a.url != null),
+                    }),
 
                 can = new
                 {
@@ -123,20 +228,63 @@ namespace CrossBuy.BL.Communication
             }).ToArray();
         }
 
-        // A STORED HANDLE IS NOT A URL. This deployment's file store writes site-relative paths under
-        // /uploads, so those are served as-is and everything else — an absolute url, a Windows path, a
-        // key from some future object store — comes back null and the attachment is simply not offered
-        // as a link. Refusing to guess is the only safe reading of an opaque handle.
-        public static string? ServableUrl(string? storageKey)
+        // THE BROWSER IS GIVEN A ROUTE, NEVER A STORED PATH (GAP-01).
+        //
+        // This used to return the StorageKey itself whenever it looked like a site-relative /uploads path,
+        // which put the file's real location into the page as an href. Two things were wrong with that.
+        // The link bypassed every authorization the platform performs — StaticFileMiddleware answers it
+        // behind a gate that only asks whether SOMEONE is signed in — and the key, which is capability-
+        // bearing, was handed to the client where it could be copied, forwarded or logged and would keep
+        // working forever with no way to revoke it.
+        //
+        // The id is safe to publish precisely because it is NOT a capability: /Documents/comm/{id}/content
+        // re-authorizes the caller on every request, so holding the number grants nothing. That is the
+        // difference between an identifier and a key, and it is the whole point of addressing bytes by
+        // business id.
+        public static string DeliveryUrl(long attachmentId) => $"/Documents/comm/{attachmentId}/content";
+
+        // Resolves a stored key to a file on disk, for the AUTHORIZED delivery path only. Never call it
+        // before authorizing the attachment's comment.
+        //
+        // Two shapes are accepted and nothing else:
+        //   · "commstore:<name>"            - written by StageAsync, lives outside the web root.
+        //   · "/uploads/comm/threads/<name>" - written before GAP-01, still under wwwroot.
+        //
+        // The file NAME is taken through Path.GetFileName in both branches, so a key carrying "..", a
+        // rooted path or a directory part cannot walk out of its folder. A key of any other shape returns
+        // null rather than being guessed at.
+        public static string? ResolvePhysicalPath(string? storageKey, string webRootPath)
         {
-            if (string.IsNullOrWhiteSpace(storageKey)) return null;
+            if (string.IsNullOrWhiteSpace(storageKey) || string.IsNullOrWhiteSpace(webRootPath)) return null;
 
             var key = storageKey.Replace('\\', '/').Trim();
             if (key.Contains("://", StringComparison.Ordinal)) return null;
-            if (key.Contains("..", StringComparison.Ordinal)) return null;
-            if (!key.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)) return null;
 
-            return key;
+            if (key.StartsWith(PrivateKeyPrefix, StringComparison.Ordinal))
+            {
+                var name = Path.GetFileName(key.Substring(PrivateKeyPrefix.Length));
+                if (string.IsNullOrWhiteSpace(name)) return null;
+                return Path.Combine(PrivateStoreRoot(webRootPath), name);
+            }
+
+            if (key.StartsWith(UploadFolderUrl + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = Path.GetFileName(key);
+                if (string.IsNullOrWhiteSpace(name)) return null;
+                return Path.Combine(webRootPath, "uploads", "comm", "threads", name);
+            }
+
+            return null;
+        }
+
+        // The content root is the web root's parent — that is what WebRootPath means — so the private store
+        // sits beside App_Data rather than inside the served tree. Derived here instead of taken as another
+        // parameter so the three existing StageAsync callers keep compiling unchanged.
+        public static string PrivateStoreRoot(string webRootPath)
+        {
+            var contentRoot = Path.GetDirectoryName(webRootPath.TrimEnd(Path.DirectorySeparatorChar, '/'));
+            if (string.IsNullOrWhiteSpace(contentRoot)) contentRoot = webRootPath;
+            return Path.Combine(contentRoot, "App_Data", PrivateStoreFolder);
         }
 
         public static class UploadRefusal
@@ -170,7 +318,11 @@ namespace CrossBuy.BL.Communication
 
             try
             {
-                var dir = Path.Combine(webRootPath, "uploads", "comm", "threads");
+                // OUTSIDE THE WEB ROOT (GAP-01). Bytes written here have no url at all, so there is no
+                // static request that could reach them and no gate rule that has to be remembered. The
+                // previous destination was wwwroot/uploads/comm/threads, where the file was served to any
+                // signed-in caller who knew the path.
+                var dir = PrivateStoreRoot(webRootPath);
                 Directory.CreateDirectory(dir);
 
                 // A GUID plus the VALIDATED extension. The client's filename is kept only as a display
@@ -186,7 +338,10 @@ namespace CrossBuy.BL.Communication
                         ? "application/octet-stream"
                         : file.ContentType,
                     SizeBytes = file.Length,
-                    StorageKey = UploadFolderUrl + "/" + stored,
+
+                    // An OPAQUE key, not a path. Even if this value leaked it names nothing the browser
+                    // can fetch; delivery goes through /Documents/comm/{id}/content, which authorizes.
+                    StorageKey = PrivateKeyPrefix + stored,
                 }, UploadRefusal.None);
             }
             catch (OperationCanceledException) { throw; }

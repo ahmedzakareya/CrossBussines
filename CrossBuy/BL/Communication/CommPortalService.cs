@@ -150,7 +150,8 @@ namespace CrossBuy.BL.Communication
             if (!IsResolved(portal)) return Array.Empty<PortalConversationDto>();
 
             int take = _options.ClampPageSize(page?.PageSize);
-            var anchorCodes = _external.ExternallyAnchorableEntityCodes.ToList();
+            var anchorCodes = _external.ExternallyAnchorableEntityCodes
+                .Where(code => _options.MayAuthorVisibility(code, CommVisibility.Public)).ToList();
 
             var candidates = await (
                 from p in _db.Participants.AsNoTracking()
@@ -442,6 +443,8 @@ namespace CrossBuy.BL.Communication
                 .Where(t => t.Id == threadId)
                 .FirstOrDefaultAsync(cancellationToken);
             if (thread == null) return (null, null);
+            // Policy withdrawal closes legacy public threads to external reads and writes too.
+            if (!_options.MayAuthorVisibility(thread.EntityType, CommVisibility.Public)) return (null, null);
 
             var access = await _external.ResolveThreadAccessAsync(portal, thread, cancellationToken);
             return access.CanRead ? (thread, access) : (null, null);

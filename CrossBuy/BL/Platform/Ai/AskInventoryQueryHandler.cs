@@ -34,10 +34,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن حركة المخزون: الوارد أو المنصرف أو الصافي أو التكلفة، مجمَّعًا حسب المخزن أو الصنف أو نوع الحركة أو الشهر",
-			"Any stock movement question: in, out, net or cost, grouped by warehouse, item, movement type or month");
+			"Any stock movement question: in, out, net or cost, grouped by warehouse, item, movement type or month",
+			"Questions sur les mouvements de stock : entrées, sorties, solde net ou coût, par entrepôt, article, type de mouvement ou mois");
 
 		public override AskText Example => AskText.Of(
-			"إيه الوارد لكل مخزن؟", "What came in by warehouse?");
+			"إيه الوارد لكل مخزن؟", "What came in by warehouse?", "Quelles sont les quantités entrées par entrepôt ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

@@ -43,16 +43,20 @@ namespace CrossBuy.Tests.SqlServer
             "ReportTemplates", "ReportTemplateVersions", "ReportCategories", "ReportTags", "ReportTagLinks",
             "ReportFavorites", "ReportShares", "ReportRuns", "ReportArchiveEntries",
             "ReportSchedules", "ReportScheduleRecipients", "ReportDeliveryAttempts",
+            // REPORT STUDIO V2. Both are created by reporting_platform.sql and both have entities under
+            // Models/Context/Reporting, so their absence here made the count assertion fail at 12 against a
+            // slice that correctly builds 14. The slice was right and the expectation had not followed it.
+            "ReportAssets", "ReportDatasetSpecs",
         };
 
         private readonly SqlServerFixture _sql;
         public ReportingSchemaDeploymentTests(SqlServerFixture sql) { _sql = sql; }
 
-        private bool Skip(out string reason)
-        {
-            reason = _sql.SkipReason ?? "";
-            return !_sql.Available;
-        }
+        // Reports SKIPPED, never passed, when no SQL Server fixture is configured. The old helper
+        // returned a bool and each caller answered it with Assert.True(true, reason), which is a PASS -
+        // so an unconfigured machine reported this entire suite green without opening a connection.
+        // Named Ready() because `Skip` as a method name shadows the static Skip type used below.
+        private void Ready() => Skip.If(!_sql.Available, _sql.SkipReason);
 
         // The Reporting tables the EF MODEL declares, read from the model itself. This is what makes the
         // parity test mechanical: adding a 13th Reporting entity to CrossDbContext changes this set, and the
@@ -127,10 +131,10 @@ ORDER BY 1;");
         // ============================================================================================
         // 1. FROM EMPTY
         // ============================================================================================
-        [Fact]
+        [SkippableFact]
         public async Task The_reporting_slice_creates_its_whole_schema_in_an_empty_database()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptEmpty", applyModelSchema: false);
             try
@@ -173,10 +177,10 @@ SELECT i.name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id
         // ============================================================================================
         // 2. IDEMPOTENCY — object-for-object, not count-for-count
         // ============================================================================================
-        [Fact]
+        [SkippableFact]
         public async Task Applying_the_slice_twice_leaves_an_identical_object_inventory()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptIdem", applyModelSchema: false);
             try
@@ -201,10 +205,10 @@ SELECT i.name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id
         // ============================================================================================
         // 3. EF ↔ SQL PARITY, DERIVED — this is the test that stops A0 recurring
         // ============================================================================================
-        [Fact]
+        [SkippableFact]
         public async Task Every_reporting_entity_in_the_ef_model_has_a_table_in_the_authored_slice()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptParity", applyModelSchema: false);
             try
@@ -240,10 +244,10 @@ SELECT i.name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id
         // Column-level parity for every Reporting entity: a property the model persists must exist as a
         // column. Catches the failure mode TaskScopeQuerySqlTests already paid for once — a hand-written
         // table with the columns the test happened to touch.
-        [Fact]
+        [SkippableFact]
         public async Task Every_persisted_reporting_property_has_a_column()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptColumns", applyModelSchema: false);
             try
@@ -282,7 +286,7 @@ SELECT t.name + '.' + c.name FROM sys.columns c
         // ============================================================================================
         // 4. CONSTRAINTS ACTUALLY REJECT — a CHECK nobody tested is a comment
         // ============================================================================================
-        [Theory]
+        [SkippableTheory]
         [InlineData("ReportTemplates", "CK_ReportTemplates_Scope")]
         [InlineData("ReportShares", "CK_ReportShares_PrincipalType")]
         [InlineData("ReportShares", "CK_ReportShares_AccessLevel")]
@@ -292,7 +296,7 @@ SELECT t.name + '.' + c.name FROM sys.columns c
         [InlineData("ReportDeliveryAttempts", "CK_ReportDeliveryAttempts_Status")]
         public async Task Each_vocabulary_check_constraint_is_present(string table, string constraint)
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptCk", applyModelSchema: false);
             try
@@ -310,10 +314,10 @@ SELECT t.name + '.' + c.name FROM sys.columns c
         // The constraints REFUSE data, proven by inserting a value one past the top of each enum. Asserting
         // that a constraint exists proves a row in sys.check_constraints; it does not prove the predicate is
         // the right way round.
-        [Fact]
+        [SkippableFact]
         public async Task Out_of_range_vocabulary_values_are_rejected_by_the_database()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptReject", applyModelSchema: false);
             try
@@ -366,10 +370,10 @@ SELECT t.name + '.' + c.name FROM sys.columns c
         }
 
         // The unique constraint that stops two live grants answering "what does this person have?" two ways.
-        [Fact]
+        [SkippableFact]
         public async Task A_duplicate_live_share_grant_is_rejected()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptUnique", applyModelSchema: false);
             try
@@ -404,10 +408,10 @@ SELECT t.name + '.' + c.name FROM sys.columns c
         // ============================================================================================
         // 5. PLATFORM SCHEMA HISTORY — through the EXISTING mechanism, no new history table
         // ============================================================================================
-        [Fact]
+        [SkippableFact]
         public async Task The_reporting_slice_records_through_the_existing_platform_schema_history()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptHistory", applyModelSchema: false);
             try
@@ -454,10 +458,10 @@ VALUES ('x', '" + hash.ToUpperInvariant() + @"', 'A0-proof', 1);", connection);
 
         // A CHANGED FILE MUST SHOW AS DRIFT. Recording a second, different hash for the same script is what
         // the drift report reads; if the view collapsed them the report could never say "this changed".
-        [Fact]
+        [SkippableFact]
         public async Task A_changed_slice_hash_is_visible_as_a_second_apply()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptDrift", applyModelSchema: false);
             try
@@ -497,10 +501,10 @@ VALUES (@name, @hash, 'A0-proof', 1);", connection);
         // The point of A0 is that /Reports/Viewer works on a database built by the SQL file. Asserting the
         // tables exist is necessary and not sufficient: the columns must also be the ones EF binds to, which
         // only a real query proves.
-        [Fact]
+        [SkippableFact]
         public async Task The_reporting_services_run_against_the_authored_schema()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
             var probe = await _sql.CreateProbeDatabaseAsync("rptRuntime", applyModelSchema: false);
             try
@@ -552,14 +556,29 @@ VALUES (@name, @hash, 'A0-proof', 1);", connection);
         // ============================================================================================
         // 7. CLEANUP IS PART OF THE PROOF
         // ============================================================================================
-        [Fact]
+        [SkippableFact]
         public async Task No_probe_database_is_left_behind()
         {
-            if (Skip(out var reason)) { Assert.True(true, reason); return; }
+            Ready();
 
-            var probe = await _sql.CreateProbeDatabaseAsync("rptCleanup", applyModelSchema: false);
+            // THE ONE UNPROTECTED PATH IN THIS FILE, and the leak window is not where it looks.
+            //
+            // The other ten probes here sit in try/finally. This one did not, and the exposure was NOT the
+            // assertion below - by then the database is already dropped - but ApplyAsync between the two,
+            // which runs the real deployment slice and is the single most likely statement in this file to
+            // throw. A failure there skipped the drop entirely and orphaned the probe.
+            //
+            // THE LEASE IS RELEASED EXPLICITLY, BECAUSE THAT IS THE SUBJECT OF THIS TEST. A bare
+            // `await using` would release at scope exit - after the assertion - and the test would then be
+            // asking whether a database it still holds has gone away. So it is disposed HERE, and the
+            // scope-exit disposal is a documented no-op: ProbeLease.DisposeAsync is idempotent, so there is
+            // still exactly ONE owner and exactly ONE DROP.
+            await using var lease = await _sql.LeaseProbeDatabaseAsync("rptCleanup", applyModelSchema: false);
+            var probe = lease.Database;
+
             await ApplyAsync(_sql, probe);
-            await _sql.DropProbeDatabaseAsync(probe);
+
+            await lease.DisposeAsync();
 
             var remaining = await _sql.ListOwnedProbeDatabasesAsync();
             Assert.DoesNotContain(probe.Name, remaining);

@@ -1,0 +1,202 @@
+@using System.Globalization
+@using CrossBuy.BL
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "عروض نقاط البيع" : "Till promotions";
+    var rows = ViewBag.Rows as List<PosPromoRow> ?? new List<PosPromoRow>();
+    var branches = ViewBag.Branches as List<CrossBuy.Models.Context.Admin.Branch> ?? new();
+    int? bid = ViewBag.BranchId as int?;
+    bool canManage = ViewBag.CanManageCaps as bool? ?? false;
+
+    string TypeLabel(string t) => t switch
+    {
+        "BuyXGetY" => isAr ? "اشترِ واحصل" : "Buy X get Y",
+        "AmountOff" => isAr ? "خصم مبلغ" : "Amount off",
+        "ThresholdAmount" => isAr ? "عند بلوغ مبلغ" : "Basket threshold",
+        _ => isAr ? "خصم نسبة" : "Percent off",
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-container container-fluid">
+
+        @if (TempData["HyperErr"] != null)
+        {
+            <div class="alert alert-light-danger d-flex align-items-center p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@TempData["HyperErr"]</div>
+            </div>
+        }
+        @if (TempData["HyperMsg"] != null)
+        {
+            <div class="alert alert-light-primary d-flex align-items-center p-4 mb-5">
+                <i class="ki-outline ki-check-circle fs-2 me-3"></i>
+                <div>@(isAr ? "تم الحفظ." : "Saved.")</div>
+            </div>
+        }
+
+        @if (!canManage)
+        {
+            @* Say it once, at the top, instead of letting someone find out by pressing a button. *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+                <div class="fs-7 text-gray-700">@(isAr
+                    ? "يمكنك الاطّلاع على العروض دون تعديلها — إنشاء عرض أو تعطيله يحتاج صلاحية إدارة نقاط البيع."
+                    : "You can see these promotions but not change them — creating or disabling one needs the POS management permission.")</div>
+            </div>
+        }
+
+        @* THE SCREEN MUST NOT IMPLY MORE THAN THE CODE DOES.
+           Two promotion engines exist. The one the till ACTUALLY uses today is the pricing engine:
+           PosOrderService.AddLineAsync reads the branch's Promotions capability and hands it to
+           IPricingService.GetPriceAsync, which applies the Inventory `Promotion` rules into the line.
+           PosPromotionEngine - the richer one, with buy-X-get-Y, exclusivity and per-rule ceilings -
+           is registered in DI and injected into the lane but never CALLED: HM-12 wired it and was
+           withdrawn because running both discounted the same basket twice.
+           So these rows are authored and validated, and nothing reads them yet. Saying so here costs
+           a sentence; not saying it costs a shop an offer it believed was running. *@
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+            <div class="fs-7 text-gray-700">
+                <div class="fw-bold text-gray-900 mb-1">@(isAr ? "هذه القواعد ليست موصولة بالكاشير بعد" : "These rules are not yet connected to the till")</div>
+                @(isAr
+                    ? "الخصومات التي تُطبَّق اليوم فعلًا تأتي من عروض التسعير في المخزون. محرّك عروض نقاط البيع — بقواعد «اشترِ س واحصل على ص» والحصرية والسقوف — مُسجَّل لكنه غير مستدعى، لأن تشغيل المحرّكين معًا خصم السلة الواحدة مرّتين. تُحفظ القواعد هنا وتُتحقَّق، وتعمل فور وصل المحرّك."
+                    : "The discounts that actually apply today come from the inventory pricing promotions. The till's own promotion engine — buy X get Y, exclusivity, per-rule ceilings — is registered but never called, because running both engines discounted the same basket twice. Rules saved here are validated and will take effect the moment that engine is reconnected.")
+            </div>
+        </div>
+
+        <div class="card card-flush shadow-sm">
+            <div class="card-header pt-6">
+                <h3 class="card-title fw-bold text-gray-900">@(isAr ? "عروض نقاط البيع" : "Till promotions")</h3>
+                <div class="card-toolbar gap-2">
+                    <form method="get" action="/hyper/setup/promotions" class="d-flex gap-2">
+                        <select name="branchId" class="form-select form-select-solid w-200px" onchange="this.form.submit()">
+                            @foreach (var b in branches)
+                            {
+                                <option value="@b.ID" selected="@(b.ID == bid)">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</option>
+                            }
+                        </select>
+                    </form>
+                    @if (canManage)
+                    {
+                        <a href="/hyper/setup/promotion?branchId=@bid" class="btn btn-primary">
+                            <i class="ki-outline ki-plus fs-4"></i>@(isAr ? "عرض جديد" : "New promotion")
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body pt-2">
+                @* The engine applies rules in PRIORITY order and an exclusive rule locks the lines it touched,
+                   so the order of this list is not cosmetic - it is the order the till will actually use. The
+                   screen is sorted the same way for that reason. *@
+                <div class="text-muted fs-7 mb-4">
+                    @(isAr
+                        ? "تُطبَّق العروض بترتيب الأولوية — الأصغر أولاً. العرض الحصري يُغلق السطور التي لمسها فلا يطالها عرض بعده."
+                        : "Promotions apply in priority order — lowest first. An exclusive rule locks the lines it touched so no later rule can reach them.")
+                </div>
+
+                @if (rows.Count == 0)
+                {
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+                        <i class="ki-outline ki-discount fs-2x text-primary me-4"></i>
+                        <div>
+                            <div class="fw-bold text-gray-900 mb-1">@(isAr ? "لا توجد عروض بعد" : "No promotions yet")</div>
+                            <div class="fs-7 text-gray-700">@(isAr
+                                ? "قدرة «العروض» على الفرع لا تفعل شيئًا حتى يوجد عرض واحد على الأقل."
+                                : "The branch's Promotions capability does nothing until at least one promotion exists.")</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle gy-3">
+                            <thead>
+                                <tr class="fw-bold text-muted fs-7 text-uppercase">
+                                    <th class="w-60px">@(isAr ? "الأولوية" : "Priority")</th>
+                                    <th>@(isAr ? "العرض" : "Promotion")</th>
+                                    <th>@(isAr ? "النوع" : "Type")</th>
+                                    <th>@(isAr ? "القيمة" : "Value")</th>
+                                    <th>@(isAr ? "النطاق" : "Scope")</th>
+                                    <th>@(isAr ? "المدّة" : "Window")</th>
+                                    <th class="text-end w-150px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in rows)
+                                {
+                                    <tr>
+                                        <td><span class="badge badge-light-primary fs-7" style="font-variant-numeric:tabular-nums">@r.Priority</span></td>
+                                        <td>
+                                            <div class="fw-bold text-gray-900">@(isAr ? r.NameAr : (string.IsNullOrWhiteSpace(r.NameEn) ? r.NameAr : r.NameEn))</div>
+                                            <div class="fs-8 text-muted">@r.Code@(r.IsExclusive ? (isAr ? " · حصري" : " · exclusive") : "")</div>
+                                        </td>
+                                        <td><span class="badge badge-light fs-7">@TypeLabel(r.PromoType)</span></td>
+                                        <td style="font-variant-numeric:tabular-nums">
+                                            @switch (r.PromoType)
+                                            {
+                                                case "BuyXGetY":
+                                                    <text>@r.TriggerQty.ToString("0.##") → @r.RewardQty.ToString("0.##")</text>
+                                                    break;
+                                                case "AmountOff":
+                                                    <text>@r.DiscountAmount.ToString("0.###")</text>
+                                                    break;
+                                                case "ThresholdAmount":
+                                                    <text>@(isAr ? "من " : "over ")@r.MinBasket.ToString("0.###") → @(r.DiscountPct > 0 ? r.DiscountPct.ToString("0.##") + "%" : r.DiscountAmount.ToString("0.###"))</text>
+                                                    break;
+                                                default:
+                                                    <text>@r.DiscountPct.ToString("0.##")%</text>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td class="fs-7 text-muted">
+                                            @(r.BranchId == null ? (isAr ? "كل الفروع" : "All branches") : (isAr ? "هذا الفرع" : "This branch"))
+                                            @if (r.TargetCount > 0)
+                                            {
+                                                <span> · @r.TargetCount @(isAr ? "هدفًا" : "targets")</span>
+                                            }
+                                            else
+                                            {
+                                                <span> · @(isAr ? "السلة كاملة" : "whole basket")</span>
+                                            }
+                                        </td>
+                                        <td class="fs-8 text-muted" style="font-variant-numeric:tabular-nums">
+                                            @(r.StartsAt?.ToString("yyyy-MM-dd") ?? "—") → @(r.EndsAt?.ToString("yyyy-MM-dd") ?? "—")
+                                        </td>
+                                        <td class="text-end">
+                                            @if (canManage)
+                                            {
+                                                <a href="/hyper/setup/promotion?id=@r.Id&branchId=@bid" class="btn btn-sm btn-light-primary">
+                                                    <i class="ki-outline ki-pencil fs-6"></i>@(isAr ? "تعديل" : "Edit")
+                                                </a>
+                                                <form method="post" action="/hyper/setup/promotion/active" class="d-inline ms-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="branchId" value="@bid" />
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <input type="hidden" name="active" value="@((!r.IsActive).ToString().ToLowerInvariant())" />
+                                                    <button type="submit" class="btn btn-sm @(r.IsActive ? "btn-light-danger" : "btn-light-primary")"
+                                                            data-cb-confirm="@(r.IsActive
+                                                                ? (isAr ? "إيقاف هذا العرض؟ لن يُطبَّق على أي بيعة جديدة." : "Stop this promotion? It will not apply to any new sale.")
+                                                                : (isAr ? "تفعيل هذا العرض؟ سيُطبَّق على البيعات فورًا." : "Activate this promotion? It applies to sales immediately."))">
+                                                        @(r.IsActive ? (isAr ? "إيقاف" : "Stop") : (isAr ? "تفعيل" : "Activate"))
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge @(r.IsActive ? "badge-light-primary" : "badge-light") fs-8">
+                                                    @(r.IsActive ? (isAr ? "مُفعَّل" : "Active") : (isAr ? "موقوف" : "Stopped"))
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -59,6 +59,17 @@ namespace CrossBuy.BL.Platform
                     presentation = PresentPurchaseInvoice(eventType, purchase);
                     return true;
 
+                case GoodsReceiptEvents.Posted:
+                    if (!TryPayload<GoodsReceiptEventPayload>(eventType, payloadVersion, 1, payloadJson, out var receipt, out error)) return false;
+                    presentation = new Presentation
+                    {
+                        TitleAr = "ترحيل إذن استلام", TitleEn = "Goods receipt posted",
+                        DescriptionAr = $"تم ترحيل إذن الاستلام {receipt?.ReceiptNumber}",
+                        DescriptionEn = $"Goods receipt {receipt?.ReceiptNumber} was posted",
+                        Icon = "ki-outline ki-parcel", Color = "success",
+                    };
+                    return true;
+
                 case ManufWorkOrderEvents.Created:
                 case ManufWorkOrderEvents.Updated:
                 case ManufWorkOrderEvents.Released:

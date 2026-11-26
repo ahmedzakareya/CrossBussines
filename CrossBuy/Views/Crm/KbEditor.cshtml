@@ -1,0 +1,59 @@
+@model CrossBuy.Models.Context.Crm.CrmKbArticle?
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var a = Model; var canEdit = ViewBag.CanEdit == true; var dis = canEdit ? "" : "disabled";
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(a?.Title ?? T["New article"].Value)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("KnowledgeBase","Crm")" class="text-muted text-hover-primary">@T["Knowledge base"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(a?.Title ?? T["New article"].Value)</li></ul></div>
+        @if (canEdit) { <button type="button" class="btn btn-sm btn-primary" id="btnSave"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="row g-5">
+            <div class="col-xl-8"><div class="card"><div class="card-body">
+                <div class="mb-5"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["Title"]</label><input id="aTitle" class="form-control form-control-solid fs-5 fw-semibold" maxlength="200" value="@a?.Title" @dis /></div>
+                <div class="mb-5"><label class="required fw-semibold fs-7 text-gray-700 mb-2">@T["The answer"]</label><textarea id="aBody" class="form-control form-control-solid" rows="12" @dis>@a?.Body</textarea>
+                    <div class="fs-8 text-muted mt-1">@T["Write it the way you would answer the customer: it can go into a reply as it is."]</div></div>
+                <div class="separator my-6"></div>
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Title in English"]</label><input id="aTitleEn" class="form-control form-control-solid" maxlength="200" dir="ltr" value="@a?.TitleEn" @dis /></div>
+                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["The answer in English"]</label><textarea id="aBodyEn" class="form-control form-control-solid" rows="6" dir="ltr" @dis>@a?.BodyEn</textarea></div>
+            </div></div></div>
+            <div class="col-xl-4"><div class="card"><div class="card-body">
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["State"]</label>
+                    <select id="aStatus" class="form-select form-select-solid" data-control="select2" data-hide-search="true" @dis>@foreach (var s in new[] { "Draft", "Published", "Archived" }) { <option value="@s" selected="@((a?.Status ?? "Draft") == s)">@T["kb:" + s]</option> }</select></div>
+                <label class="form-check form-switch form-check-custom form-check-solid mb-6"><input class="form-check-input" type="checkbox" id="aPublic" @(a?.IsPublic == true ? "checked" : "") @dis /><span class="form-check-label fw-semibold">@T["Show it to customers on the portal"]</span></label>
+                <div class="mb-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Category"]</label><input id="aCat" class="form-control form-control-solid" maxlength="100" value="@a?.Category" @dis /></div>
+                <div class="mb-2"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Keywords"]</label><input id="aKeys" class="form-control form-control-solid" maxlength="400" value="@a?.Keywords" @dis /></div>
+                <div class="fs-8 text-muted">@T["The words a customer would use for this problem, separated by commas. They count as much as the title when a ticket is matched."]</div>
+                @if (a != null)
+                {
+                    <div class="separator my-6"></div>
+                    <div class="crm-line"><span class="text-muted">@T["Shared in replies"]</span><span class="num fw-bold">@a.UsedInTickets</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["Read on the portal"]</span><span class="num fw-bold">@a.Views</span></div>
+                    <div class="crm-line"><span class="text-muted">@T["Found it helpful"]</span><span class="num fw-bold">@a.Helpful / @(a.Helpful + a.NotHelpful)</span></div>
+                }
+                <div class="text-danger fs-7 fw-semibold mt-4 d-none" id="err"></div>
+            </div></div></div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var b = document.getElementById('btnSave'); if (!b) return;
+  var failed = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(T["Could not save. Refresh the page and try again."].Value));
+  b.addEventListener('click', async function(){
+    var fd = new FormData(); fd.append('id', '@(a?.ID ?? 0)');
+    [['title','aTitle'],['titleEn','aTitleEn'],['body','aBody'],['bodyEn','aBodyEn'],['category','aCat'],['keywords','aKeys'],['status','aStatus']].forEach(function(p){ fd.append(p[0], document.getElementById(p[1]).value); });
+    fd.append('isPublic', document.getElementById('aPublic').checked ? 'true' : 'false');
+    fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+    var r = await fetch('@Url.Action("SaveKb","Crm")', { method:'POST', body:fd, credentials:'same-origin' }).then(function(x){ return x.json(); }).catch(function(){ return { ok:false, error: failed }; });
+    if (r.ok) location.href = '@Url.Action("KbEditor","Crm")/' + r.extra; else { var e = document.getElementById('err'); e.textContent = r.error || failed; e.classList.remove('d-none'); }
+  });
+})();
+</script>
+}

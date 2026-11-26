@@ -24,10 +24,11 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override AskText Description => AskText.Of(
 			"أي سؤال عن التشخيصات المسجَّلة على الكشوف: أكتر الأمراض، وتوزيعها على الأقسام والأطباء والشهور",
-			"Any question about the diagnoses recorded on consultations: the commonest conditions and how they fall across departments, practitioners and months");
+			"Any question about the diagnoses recorded on consultations: the commonest conditions and how they fall across departments, practitioners and months",
+			"Questions sur les diagnostics consignés lors des consultations : les plus fréquents et leur répartition par service, praticien et mois");
 
 		public override AskText Example => AskText.Of(
-			"ايه اكتر التشخيصات عندنا", "What are our commonest diagnoses");
+			"ايه اكتر التشخيصات عندنا", "What are our commonest diagnoses", "Quels sont les diagnostics les plus fréquents ?");
 
 		public override IReadOnlyCollection<string> Keywords { get; } = new[]
 		{

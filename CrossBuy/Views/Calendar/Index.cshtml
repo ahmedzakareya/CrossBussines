@@ -7,6 +7,10 @@
 }
 <link href="@Url.Content("~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css")" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
+@* The schedule skin this calendar shares with /Calendar/Timeline, /Calendar/ResourceView and the
+   hospital's doctor schedule. Loaded LAST so its header band and tile metrics sit on top of the
+   FullCalendar bundle; it deliberately sets no event colour, which stays with crossbuy-brand.css. *@
+<link rel="stylesheet" href="~/css/schedule-grid.css" asp-append-version="true" />
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
@@ -331,20 +335,46 @@
     document.getElementById('kt_modal_view_event_delete').addEventListener('click', function(){
         if(!currentEvent) return;
         Swal.fire({
-            text: '@Localizer["Delete this event?"]', icon: 'warning', showCancelButton: true, buttonsStyling: false,
+            // NO iconColor HERE. The house confirm (_CbConfirm.cshtml) paints a danger icon red, but it is
+            // not reachable from this page: that partial is included only by _LabCriticalAlerts and this
+            // view runs under _LayoutInventory, so window.cbConfirm is undefined here. Hardcoding its
+            // own danger red instead fails TasksCalendarVisualConformanceTests — the Inventory authority does not
+            // use that hex — and widening the allowed palette to admit one dialog would be bumping the
+            // guard to fit the code. The destructive affordance is carried by btn-danger below, which the
+            // authority does allow, plus focusCancel. Reaching the house confirm from the back-office
+            // layouts is a platform change, not a Calendar one.
+            text: '@Localizer["Delete this event?"]', icon: 'warning',
+            showCancelButton: true, buttonsStyling: false, focusCancel: true,
             confirmButtonText: '@Localizer["Yes, delete"]', cancelButtonText: '@Localizer["Cancel"]',
             customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-active-light' }
         }).then(function(res){
             if(!res.isConfirmed) return;
             var fd = new FormData(); fd.append('id', currentEvent.id); fd.append('__RequestVerificationToken', token);
             fetch('@Url.Action("Delete","Calendar")', {method:'POST', credentials:'same-origin', body:fd})
-                .then(function(r){return r.json();}).then(function(res){ if(res && res.ok){ viewModal.hide(); calendar.refetchEvents(); if(window.toastr) toastr.success('@Localizer["Deleted"]'); } });
+                .then(function(r){return r.json();}).then(function(res){
+                    if(res && res.ok){ viewModal.hide(); calendar.refetchEvents(); if(window.toastr) toastr.success('@Localizer["Deleted"]'); return; }
+                    // A REFUSED DELETE MUST SAY SO. This arm did not exist: the handler read res.ok and
+                    // returned, so a refusal left the modal open with nothing said and the event still
+                    // listed — indistinguishable from a click that never registered. The server answers
+                    // { ok: false } with no reason on purpose, because "not yours" and "does not exist"
+                    // must not be told apart, so the message here is deliberately the same for both.
+                    if(window.toastr) toastr.error('@Localizer["Could not delete"]');
+                })
+                .catch(function(){ if(window.toastr) toastr.error('@Localizer["Could not delete"]'); });
         });
     });
 
     // ---------- FullCalendar ----------
-    // On phones let the grid flow (auto height, page scrolls); on desktop keep the fixed Metronic height.
-    function calHeight(){ return window.innerWidth < 768 ? 'auto' : 750; }
+    // THE GRID FLOWS, AND THE PAGE SCROLLS. It used to be a fixed 750 on desktop, which gave each
+    // day of a six-row month about 105px — the day number plus three chips. A day with four events
+    // hid two of them behind "+N more" and the ones that showed sat edge to edge with the row below.
+    //
+    // Raising the number instead just moves the problem: 900 is still a fixed budget divided by
+    // however many rows the month has, so a 6-row month squeezes its LAST row to whatever is left.
+    // 'auto' lets every row take the floor set in schedule-grid.css and the page carry the rest,
+    // which is also what makes `stickyHeaderDates` earn its keep — the day names stay put while the
+    // page scrolls. Phones were already on 'auto' for the same reason.
+    function calHeight(){ return 'auto'; }
     // Full weekday names overlap in a seven-column phone month grid. Keep the
     // complete accessible label while rendering locale-native narrow day names.
     // Desktop and the date-bearing week/day headers retain FullCalendar's text.
@@ -385,9 +415,19 @@
         initialView: 'dayGridMonth',
         dayHeaderContent: calDayHeader,
         height: calHeight(),
+        // THE DAY HEADER STAYS PUT WHILE THE GRID SCROLLS. Stated rather than inferred: FullCalendar's
+        // default is 'auto', which resolves to `height === 'auto'` — so the header stuck on a phone,
+        // where calHeight() returns 'auto', and relied on the fixed-height scrollgrid keeping it out
+        // of the scroller on a desktop. Two different mechanisms for one behaviour, and the desktop
+        // one silently stops being true the moment somebody changes calHeight(). true in both.
+        stickyHeaderDates: true,
         selectable: true,
         navLinks: true,
-        dayMaxEvents: true,
+        // A NUMBER, NOT `true`. `true` means "as many as the cell height allows", which made the
+        // cut-off depend on the window: the same day showed three events on one screen and one on
+        // another, and the count in "+N more" moved while nothing about the day had changed. Four
+        // is what the raised row height holds with the spacing in schedule-grid.css.
+        dayMaxEvents: 4,
         // ACCESSIBILITY FIX FOR THE "+N more" LINK, applied through FullCalendar's OWN documented
         // mount hook rather than by patching the vendor bundle.
         //

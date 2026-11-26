@@ -1,0 +1,145 @@
+@model CrossBuy.BL.CrmIdentity.Account360
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string N(string n, string? en) => !isAr && !string.IsNullOrWhiteSpace(en) ? en! : n;
+    string Initials(string? s) { var p = (s ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant(); }
+    var a = Model.Account;
+    var curCode = (string)ViewBag.CurCode; var curDec = (int)ViewBag.CurDec;
+    string M(decimal v) => v.ToString("N" + curDec, System.Globalization.CultureInfo.InvariantCulture);
+    var healthKind = Model.Health < 40 ? "danger" : Model.Health < 65 ? "primary" : "success";
+    var channels = new[] { ("WhatsApp", "WhatsApp"), ("Email", T["ch:Email"].Value), ("Sms", "SMS") };
+    string StageBadge(string s) => s switch { "Won" => "success", "Lost" => "danger", "Negotiation" => "primary", _ => "info" };
+}
+@section Styles { <link href="~/css/crm-identity.css" rel="stylesheet" asp-append-version="true" /> }
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@N(a.Name, a.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Accounts","Crm")" class="text-muted text-hover-primary">@T["Accounts"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@N(a.Name, a.NameEn)</li></ul></div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("AccountEditor","Crm", new { id = a.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit details"]</a>
+            <a href="@Url.Action("Opportunities","Crm")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["Deal"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!a.IsActive)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5"><span class="symbol symbol-45px me-5"><span class="symbol-label bg-danger"><i class="ki-outline ki-lock-2 fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["This account is closed"]</h4><div class="fs-6 text-gray-700">@T["It is kept for its history; new work goes on an active account."]</div></div></div>
+        }
+        <div class="card mb-5"><div class="card-body d-flex flex-wrap gap-6 align-items-center">
+            <div class="symbol symbol-90px"><span class="symbol-label crm-initials fs-1">@Initials(a.NameEn ?? a.Name)</span></div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-center gap-3 mb-1 flex-wrap"><span class="fs-2 fw-bold text-gray-900">@N(a.Name, a.NameEn)</span>
+                    @if (!string.IsNullOrWhiteSpace(a.Segment)) { <span class="badge crm-code fw-bold">@a.Segment</span> }</div>
+                <div class="text-muted fw-semibold mb-2">
+                    @N(a.Industry ?? "", a.IndustryEn)@if (!string.IsNullOrWhiteSpace(a.Address)) { <span> · @a.Address</span> }
+                    @if (a.CustomerId != null) { <span> · @T["Financial customer"] <span class="num">@Model.CustomerName</span></span> } else { <span> · @T["Not yet a financial customer"]</span> }
+                </div>
+                <div>@foreach (var tg in Model.Tags) { <span class="crm-reason">#@tg</span> }</div>
+            </div>
+            <div class="d-flex flex-wrap gap-8">
+                <div><div class="text-muted fs-7">@T["12-month sales"]</div><div class="fw-bold fs-3"><span class="num">@M(Model.Sales12m)</span> <span class="text-muted fs-8">@curCode</span></div></div>
+                <div><div class="text-muted fs-7">@T["Receivable"]</div><div class="fw-bold fs-3 @(Model.Outstanding > 0 ? "text-gray-900" : "text-muted")"><span class="num">@M(Model.Outstanding)</span> <span class="text-muted fs-8">@curCode</span></div></div>
+                <div style="min-width:160px"><div class="text-muted fs-7 mb-1">@T["Account health"]</div>
+                    <div class="d-flex align-items-center w-100"><div class="progress h-6px w-100 bg-light-primary me-3"><div class="progress-bar bg-@healthKind" style="width:@(Model.Health)%"></div></div><span class="fw-bold fs-7 num">@Model.Health%</span></div></div>
+                <div><div class="text-muted fs-7 mb-1">@T["Owner"]</div>
+                    @if (Model.Owner != null)
+                    {
+                        <div class="d-flex align-items-center gap-2"><div class="symbol symbol-30px symbol-circle">@if (Model.Owner.HasPhoto) { <img src="/People/Photo/@Model.Owner.EmployeeId" alt="" onerror="this.outerHTML='<span class=&quot;symbol-label crm-initials fs-8&quot;>@Initials(Model.Owner.Name)</span>'" /> } else { <span class="symbol-label crm-initials fs-8">@Initials(Model.Owner.Name)</span> }</div><span class="fw-bold fs-7">@Model.Owner.Name</span></div>
+                    }
+                    else { <span class="badge badge-light-danger">@T["No owner"]</span> }
+                </div>
+            </div>
+        </div></div>
+
+        <div class="card"><div class="card-body pt-6">
+            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold mb-6" role="tablist">
+                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 active" data-bs-toggle="tab" href="#ac_o">@T["360 overview"]</a></li>
+                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#ac_c">@T["Contacts"] <span class="badge badge-light-primary ms-1 num">@Model.Contacts.Count</span></a></li>
+                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#ac_d">@T["Deals"] <span class="badge badge-light-primary ms-1 num">@Model.Deals.Count</span></a></li>
+                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#ac_f">@T["Invoices"]</a></li>
+                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6" data-bs-toggle="tab" href="#ac_t">@T["Tickets"] <span class="badge badge-light-primary ms-1 num">@Model.Tickets.Count</span></a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="ac_o" role="tabpanel"><div class="row g-5">
+                    <div class="col-md-6">
+                        <div class="crm-ai">
+                            <span class="crm-ai-tag"><i class="ki-outline ki-technology-4 fs-7"></i>@T["Account health — what the rules see"]</span>
+                            @if (Model.Insights.Count == 0) { <div class="fs-7 text-gray-800">@T["Nothing needs attention: recent engagement, a next step, and no overdue deal."]</div> }
+                            @foreach (var i in Model.Insights)
+                            {
+                                <div class="d-flex gap-2 fs-7 text-gray-800 mb-1"><span class="badge badge-light-@(i.Severity == CrossBuy.BL.Platform.Ai.CrmAccountHealthRules.Severity.High ? "danger" : i.Severity == CrossBuy.BL.Platform.Ai.CrmAccountHealthRules.Severity.Medium ? "primary" : "secondary") fs-9">@T["sev:" + i.Severity]</span><span>@T["finding:" + i.Finding]@if (i.DaysSinceLastActivity is int d) { <span> · <span class="num">@d</span> @T["days since the last activity"]</span> }@if (i.DeclinePercent is int p) { <span> · <span class="num">-@p%</span></span> }</span></div>
+                            }
+                            <div class="text-muted fs-8 mt-2">@T["Health starts at 100 and loses 30 for each serious finding, 15 for each medium and 5 for each minor one."]</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="crm-line"><span class="text-muted">@T["First invoice"]</span><span class="num fw-semibold">@(Model.FirstInvoice?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Last invoice"]</span><span class="num fw-semibold">@(Model.LastInvoice?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Open deals"]</span><span class="num fw-semibold">@Model.Deals.Count(d => d.Stage != "Won" && d.Stage != "Lost")</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Open tickets"]</span><span class="num fw-semibold">@Model.OpenTickets</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Phone"]</span><span class="num fw-semibold">@(a.Phone ?? "—")</span></div>
+                        <div class="crm-line"><span class="text-muted">@T["Email"]</span><span class="num fw-semibold">@(a.Email ?? "—")</span></div>
+                    </div>
+                </div></div>
+                <div class="tab-pane fade" id="ac_c" role="tabpanel">
+                    <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Contact"]</th><th>@T["Mobile"]</th><th>@T["Consent"]</th><th class="text-end pe-4"></th></tr></thead>
+                        <tbody class="fs-6">
+                        @foreach (var c in Model.Contacts)
+                        {
+                            <tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px symbol-circle"><span class="symbol-label crm-initials fs-8">@Initials(c.NameEn ?? c.Name)</span></div>
+                                    <div class="d-flex flex-column ms-3"><a href="@Url.Action("Contact","Crm", new { id = c.Id })" class="text-gray-900 text-hover-primary fw-bold">@N(c.Name, c.NameEn)</a><span class="text-muted fs-7">@N(c.Title ?? "", c.TitleEn)@if (c.IsPrimary) { <span class="badge badge-light-primary fs-9 ms-1">@T["Primary"]</span> }</span></div></div></td>
+                                <td><span class="num">@(c.Phone ?? "—")</span></td>
+                                <td>@foreach (var (k, label) in channels) { var st = c.Consent.TryGetValue(k, out var s) ? s.State : null; <span class="crm-consent @(st == "OptIn" ? "in" : st == "OptOut" ? "out" : "none")">@(st == "OptIn" ? "✓" : st == "OptOut" ? "✕" : "?") @label</span> }</td>
+                                <td class="text-end pe-4"><a href="@Url.Action("Contact","Crm", new { id = c.Id })" class="btn btn-sm btn-light-primary">@T["Open"]</a></td></tr>
+                        }
+                        @if (Model.Contacts.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-10">@T["No contacts on this account yet."]</td></tr> }
+                        </tbody></table></div>
+                </div>
+                <div class="tab-pane fade" id="ac_d" role="tabpanel">
+                    <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Deal"]</th><th>@T["Stage"]</th><th>@T["Expected close"]</th><th class="text-end pe-4">@T["Amount"]</th></tr></thead>
+                        <tbody class="fs-6">
+                        @foreach (var d in Model.Deals)
+                        {
+                            <tr><td class="ps-4"><a href="@Url.Action("Deal","Crm", new { id = d.Id })" class="fw-bold text-gray-900 text-hover-primary">@d.Title</a></td><td><span class="badge badge-light-@StageBadge(d.Stage)">@T["stage:" + d.Stage]</span></td><td><span class="num">@(d.ExpectedClose?.ToString("yyyy-MM-dd") ?? "—")</span></td><td class="text-end pe-4 fw-bold"><span class="num">@M(d.Amount)</span></td></tr>
+                        }
+                        @if (Model.Deals.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-10">@T["No deals yet."]</td></tr> }
+                        </tbody></table></div>
+                </div>
+                <div class="tab-pane fade" id="ac_f" role="tabpanel">
+                    @if (a.CustomerId == null)
+                    {
+                        <div class="text-center text-muted py-10">@T["Invoices appear here once the account becomes a financial customer — automatically, when its first deal is won."]</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@T["Invoice"]</th><th>@T["Date"]</th><th>@T["State"]</th><th class="text-end pe-4">@T["Amount"]</th></tr></thead>
+                            <tbody class="fs-6">
+                            @foreach (var i in Model.Invoices)
+                            {
+                                <tr><td class="ps-4"><span class="badge crm-code num">@(i.No ?? "#" + i.Id)</span></td><td><span class="num">@i.Date.ToString("yyyy-MM-dd")</span></td><td><span class="badge badge-light-@(i.Status == "Paid" ? "success" : "primary")">@T["inv:" + i.Status]</span></td><td class="text-end pe-4 fw-bold"><span class="num">@M(i.Total)</span></td></tr>
+                            }
+                            @if (Model.Invoices.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-10">@T["No posted invoices yet."]</td></tr> }
+                            </tbody></table></div>
+                    }
+                </div>
+                <div class="tab-pane fade" id="ac_t" role="tabpanel">
+                    <div class="table-responsive"><table class="table align-middle gy-4 mb-0 crm-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">#</th><th>@T["Subject"]</th><th>@T["Priority"]</th><th class="text-end pe-4">@T["State"]</th></tr></thead>
+                        <tbody class="fs-6">
+                        @foreach (var tk in Model.Tickets)
+                        {
+                            <tr><td class="ps-4"><a href="@Url.Action("TicketEditor","Crm", new { id = tk.Id })" class="badge crm-code num">#@tk.Id</a></td><td class="fw-semibold">@tk.Subject</td><td>@T["pri:" + tk.Priority]</td><td class="text-end pe-4"><span class="badge badge-light-@(tk.Status is "Resolved" or "Closed" ? "success" : "primary")">@T["tk:" + tk.Status]</span></td></tr>
+                        }
+                        @if (Model.Tickets.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-10">@T["No tickets."]</td></tr> }
+                        </tbody></table></div>
+                </div>
+            </div>
+        </div></div>
+    </div></div>
+</div>

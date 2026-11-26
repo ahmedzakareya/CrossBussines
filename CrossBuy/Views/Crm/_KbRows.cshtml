@@ -1,0 +1,19 @@
+@model List<CrossBuy.BL.CrmIdentity.KbRow>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.CrmResources> T
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var tone = new Dictionary<string, string> { ["Published"] = "badge-light-success", ["Draft"] = "badge-light-primary", ["Archived"] = "badge-light" };
+}
+@foreach (var r in Model)
+{
+    var a = r.A; var votes = a.Helpful + a.NotHelpful;
+    <tr>
+        <td class="ps-4"><a href="@Url.Action("KbEditor","Crm", new { id = a.ID })" class="fw-bold text-gray-900 text-hover-primary">@(!isAr && !string.IsNullOrWhiteSpace(a.TitleEn) ? a.TitleEn : a.Title)</a>
+            <div class="text-muted fs-8">@a.Category@if (a.Keywords != null) { <span> · @a.Keywords</span> }</div></td>
+        <td><span class="badge @tone[a.Status]">@T["kb:" + a.Status]</span>@if (a.IsPublic && a.Status == "Published") { <span class="badge badge-light-info ms-1"><i class="ki-outline ki-screen fs-8"></i> @T["On the portal"]</span> }</td>
+        <td class="text-end num">@a.UsedInTickets</td>
+        <td class="text-end num">@a.Views</td>
+        <td class="fs-8">@if (votes > 0) { <span class="num fw-semibold" style="color:#15803D">@(a.Helpful * 100 / votes)%</span> <span class="text-muted">· <span class="num">@votes</span></span> } else { <span class="text-muted">—</span> }</td>
+        <td class="fs-8 text-muted"><span class="num">@a.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>@if (r.By != null) { <span> · @r.By.Name</span> }</td>
+    </tr>
+}

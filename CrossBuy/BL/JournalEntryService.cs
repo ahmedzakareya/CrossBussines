@@ -206,6 +206,8 @@ namespace CrossBuy.BL
 			entry.EntryDate = rebuilt.EntryDate;
 			entry.FiscalPeriodId = newPeriod.ID;
 			entry.CurrencyId = curId;
+			entry.FunctionalCurrencyId = rebuilt.FunctionalCurrencyId;
+			entry.FunctionalCurrencyDecimals = rebuilt.FunctionalCurrencyDecimals;
 			entry.Description = rebuilt.Description;
 			entry.DescriptionEn = rebuilt.DescriptionEn;
 			// EntryNo stays NULL. A draft never holds a number and an edit must not reserve one — the filtered
@@ -239,7 +241,15 @@ namespace CrossBuy.BL
 		// rounding remainder is loaded — on the largest eligible P&L line, within the guard — counted + logged (visible, not silent).
 		private async Task<(bool ok, string? error)> ApplyCurrencyRoundingAsync(JournalEntry entry)
 		{
-			int dp = await _rounding.DecimalsAsync(entry.CompanyID, null);   // functional dp (Debit/Credit are functional)
+			int dp;
+			if (_rounding is ICurrencyRoundingEvidence evidence)
+			{
+				var basis = await evidence.FunctionalBasisAsync(entry.CompanyID);
+				dp = basis.DecimalPlaces;
+				entry.FunctionalCurrencyId = basis.CurrencyId;
+				entry.FunctionalCurrencyDecimals = basis.DecimalPlaces;
+			}
+			else dp = await _rounding.DecimalsAsync(entry.CompanyID, null); // No invented evidence for an opaque substitute.
 			decimal unit = 1m; for (int i = 0; i < dp; i++) unit /= 10m;     // 10^(-dp) exactly, no double/Pow
 
 			// 1) CALLER imbalance on the RAW (pre-rounding) lines ⇒ rejected. A caller bug is never absorbed as a rounding diff.
@@ -455,6 +465,9 @@ UPDATE dbo.NumberSequences SET NextNumber = NextNumber + 1 OUTPUT deleted.NextNu
 				SourceType = "Reversal",
 				SourceId = entry.ID,
 				CurrencyId = entry.CurrencyId,
+				// Reversals mirror the original valuation; a changed company default cannot revalue history.
+				FunctionalCurrencyId = entry.FunctionalCurrencyId,
+				FunctionalCurrencyDecimals = entry.FunctionalCurrencyDecimals,
 				Description = $"عكس القيد {entry.EntryNo}" + (string.IsNullOrWhiteSpace(reason) ? "" : $" — {reason}"),
 				DescriptionEn = $"Reversal of {entry.EntryNo}",
 				Status = "Draft",

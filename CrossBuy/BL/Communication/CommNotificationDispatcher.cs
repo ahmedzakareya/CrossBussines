@@ -382,8 +382,10 @@ namespace CrossBuy.BL.Communication
                 {
                     TitleAr = notification.TitleAr,
                     TitleEn = notification.TitleEn,
+                    TitleFr = notification.TitleFr ?? notification.TitleEn,
                     BodyAr = notification.BodyAr,
                     BodyEn = notification.BodyEn,
+                    BodyFr = notification.BodyFr ?? notification.BodyEn,
                     Category = notification.Category,
                     Priority = notification.Priority,
                     LegacyNotificationType = notification.LegacyType,

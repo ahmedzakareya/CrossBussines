@@ -91,6 +91,11 @@ namespace CrossBuy.BL.TasksCalendar
 		public required int EmployeeId { get; init; }
 		public required string EmployeeName { get; init; }
 
+		/// Web path of the employee's photograph, or null when there is none on file. The grid shows a
+		/// face wherever it names a person; initials on the brand tint are the fallback, never a
+		/// silhouette. Normalised through EmployeePhotos so a stored Windows path cannot reach a src.
+		public string? PhotoUrl { get; init; }
+
 		/// The branch the employee belongs to, resolved for the reader's language. The row used to
 		/// carry a name alone, so the grid could say somebody is busy without saying where they sit.
 		public string? BranchName { get; init; }
@@ -610,7 +615,7 @@ namespace CrossBuy.BL.TasksCalendar
 			var employees = await _db.Employee.AsNoTracking()
 				.Where(e => e.EmpCompanyID == companyId && e.IsActive)
 				.OrderBy(e => e.ID)
-				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.BranchID })
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.BranchID, e.ProfileImage })
 				.ToListAsync(ct);
 
 			// The branch names, in one round trip rather than one per row. Scoped to this company as
@@ -654,6 +659,9 @@ namespace CrossBuy.BL.TasksCalendar
 			{
 				EmployeeId = e.ID,
 				EmployeeName = EmployeeNames.Of(e.FullName, e.FullNameEn, e.ID),
+				// The row above is already filtered to this company, so this is the same photo the
+				// shared resolver would hand back — read in the trip that was happening anyway.
+				PhotoUrl = CrossBuy.BL.Platform.EmployeePhotos.Web(e.ProfileImage),
 				BranchId = e.BranchID != null && branches.ContainsKey(e.BranchID.Value) ? e.BranchID : null,
 				BranchName = e.BranchID != null && branches.TryGetValue(e.BranchID.Value, out var bn) ? bn : null,
 				// Always a List, never Array.Empty: a caller must not have to discover which runtime

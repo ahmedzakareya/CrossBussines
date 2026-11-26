@@ -4,7 +4,11 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    string st(string s) => s switch { "Approved" => "primary", "Delivered" => "success", "Closed" => "dark", "Cancelled" => "danger", _ => "secondary" };
+    // Closed reads RED on the owner's instruction: it is the terminal state, the row keeps no actions,
+    // and a dark badge did not say that loudly enough to stop someone reaching for a menu.
+    // "Delivered" was green, which this product does not use - it is brand blue like every other
+    // in-progress state.
+    string st(string s) => s switch { "Approved" => "primary", "Delivered" => "info", "Closed" => "danger", "Cancelled" => "dark", _ => "secondary" };
     string stName(string s) => s switch { "Approved" => Localizer["Approved"].Value, "Delivered" => Localizer["Delivered"].Value, "Closed" => Localizer["Invoiced"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => SR["Draft"].Value };
 }
 @foreach (var p in Model)
@@ -31,7 +35,9 @@
                         </form>
                     </div>
                 }
-                @if (p.Status == "Closed") { <div class="menu-item px-3"><span class="menu-link px-3 text-muted"><i class="ki-outline ki-check-circle fs-6 me-2 text-primary"></i>@Localizer["Converted to invoice"]</span></div> }
+                @* A converted order simply has no actions left, so the menu offers none. There was a
+                   dead "Converted to invoice" row here and a sentence explaining it; both repeated the
+                   status column, which already reads "Invoiced". An action list is for actions. *@
             </div>
         </td>
     </tr>

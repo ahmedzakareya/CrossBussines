@@ -37,7 +37,7 @@
         <td class="text-muted">@(o.ExpectedCloseDate?.ToString("yyyy-MM-dd") ?? "—")</td>
         <td class="text-center">@{ var oh = hex(o.Stage); }<span class="badge fw-bold" style="background:@(oh)22;color:@oh;">@nm(o.Stage)</span></td>
         <td class="text-center pe-4">
-            <a href="@Url.Action("OpportunityProducts","Crm", new { id = o.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Products / convert"]"><i class="ki-outline ki-handcart fs-6"></i></a>
+            <a href="@Url.Action("Deal","Crm", new { id = o.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "افتح الصفقة" : "Open the deal")"><i class="ki-outline ki-briefcase fs-6"></i></a><a href="@Url.Action("OpportunityProducts","Crm", new { id = o.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Products / convert"]"><i class="ki-outline ki-handcart fs-6"></i></a>
             <button class="btn btn-sm btn-icon btn-light-primary" title="@SR["Edit"]" onclick="oppEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
         </td>
     </tr>

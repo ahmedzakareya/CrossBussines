@@ -35,6 +35,7 @@ namespace CrossBuy.BL.Platform
         public const string Receipt = "Receipt";                   // سند قبض من عميل
         public const string Payment = "Payment";                   // سند دفع لمورد
         public const string JournalEntry = "JournalEntry";         // slice 3 (Stage 0)
+        public const string CrmTicket = "CrmTicket";               // call centre / support desk
         public const string Customer = "Customer";
         public const string Supplier = "Supplier";
         public const string ManufWorkOrder = "ManufWorkOrder";
@@ -384,17 +385,58 @@ namespace CrossBuy.BL.Platform
             },
             new EntityDefinition
             {
+                // THE SUPPORT TICKET, registered so it can hold a conversation.
+                //
+                // A ticket is the one record in this product whose VALUE is the conversation: what the
+                // customer said, what was promised, what was tried. TicketEditor was 116 lines of form
+                // with no notes, no history and no attachments, so none of that was written down
+                // anywhere - while a complete comment platform (threads, mentions, attachments) sat
+                // beside it, unusable here for one missing registration.
+                //
+                // COMMENTS AND FILES: ON. A support reply routinely carries a screenshot or an invoice
+                // copy, and the panel always draws its paperclip - leaving files off would put one dead
+                // control on this screen alone.
+                //
+                // TIMELINE: OFF, deliberately, and this is the rule the registry already learned the
+                // hard way - declaring a timeline for an entity that produces no business events strands
+                // the panel with nothing to render, and declaring an event type without a presenter arm
+                // strands the rows. Tickets produce no events yet. When they do, this flips and the
+                // presenter gains its arm in the same change.
+                Code = CrmTicket,
+                DisplayNameAr = "تذكرة دعم", DisplayNameEn = "Support ticket",
+                Module = "Crm", Icon = "ki-outline ki-message-question", Color = "primary",
+                RouteTemplate = "/Crm/TicketEditor?id={id}",
+                SupportsSearch = true, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeCrm,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
                 // Slice 3 (Stage 0). Registered so JournalEntry.Reversed can be recorded — reversal is the most
                 // audit-relevant operation in the system and previously left no durable trace.
-                // Timeline is NOT enabled: there is no journal-entry timeline screen, and enabling the flag
-                // without one would make ITimelineProjectionService answer for a screen that does not exist.
+                //
+                // TIMELINE AND COMMENTS ARE NOW ON, and the reason the flags were off is the reason they
+                // flip: this entry used to say "there is no journal-entry timeline screen, and enabling the
+                // flag without one would make ITimelineProjectionService answer for a screen that does not
+                // exist." The screen exists now — Accounting/JournalEntry mounts both panels — so the
+                // condition the flags were waiting on is met rather than overridden.
+                //
+                // NOTHING ELSE HAD TO BE BUILT FOR THE TIMELINE: TimelineEventPresenter already carries the
+                // JournalEntry.Reversed arm, so the 87 reversals already recorded render as themselves
+                // instead of as an unlabelled row — which is the failure a new event type without a
+                // presenter arm produces.
+                //
+                // FILES FOLLOW COMMENTS, not a separate judgement about journals. The conversation panel
+                // always draws its paperclip; the surface, not the view, decides whether an attachment is
+                // accepted. Leaving this false would put one dead control on this screen alone.
                 Code = JournalEntry,
                 EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "قيد يومية", DisplayNameEn = "Journal entry",
                 Module = "Accounting", Icon = "ki-outline ki-notepad-edit", Color = "dark",
                 RouteTemplate = "/Accounting/JournalEntry?id={id}",
-                SupportsSearch = true, SupportsTimeline = false, SupportsComments = false,
-                SupportsFiles = false, SupportsFollowers = false,
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeAccounting,
                 ListedInRecordPicker = false,
             },
@@ -1001,13 +1043,27 @@ namespace CrossBuy.BL.Platform
                     .OrderByDescending(o => o.ID).Take(SearchTake)
                     .Select(o => new ValueTuple<int, string>(o.ID, o.ReceiptNo ?? ("#" + o.ID))).ToListAsync(cancellationToken),
 
-                // KNOWN DEVIATION from the platform company-isolation rule, preserved deliberately: the
-                // TM-2 employee picker never filtered by company. Adding the filter here would silently
-                // hide employees from an existing multi-company picker, which is a behaviour change outside
-                // this slice's pilot. Tracked in PKS-001 "Known limitations".
+                // THE COMPANY PREDICATE IS FIRST, AND IT IS EXPLICIT.
+                //
+                // WHAT USED TO BE HERE, and why the note that defended it was wrong. This case carried a
+                // "KNOWN DEVIATION ... preserved deliberately" comment: the TM-2 picker never filtered by
+                // company, and adding the filter was said to risk hiding employees from an existing
+                // multi-company picker. That reasoning protects a convenience and pays for it with a
+                // tenant boundary. Typing one letter into the record picker returned every company's
+                // staff, by name - and TaskLinkResolver passes straight through to this method, so the
+                // leak was reachable from /Tasks/LinkSearch, not merely present in a library.
+                //
+                // EMPLOYEE IS NOT GLOBALLY FILTERED AND CANNOT BE. CompanyQueryFilters lists it among the
+                // deliberately-unfiltered entities with the reason: "the company is resolved FROM it -
+                // filtering is circular". So a global filter will never arrive to cover this, and an
+                // explicit predicate is the only thing between two tenants. It is applied BEFORE the name
+                // match, the ordering and the projection, so no foreign row is ever ranked or taken: Take
+                // runs after it, and a cap applied to a cross-tenant set is a cap on the wrong set.
+                //
                 // SEARCHES BOTH NAMES. It matched FullName only, so typing an English name returned
                 // nothing - and the label it returned was Arabic even on an English screen.
                 Employee => (await _db.Employee.AsNoTracking()
+                    .Where(e => e.EmpCompanyID == companyId)
                     .Where(e => e.FullName != null && e.FullName != "")
                     .Where(e => any
                         || (e.FullName != null && e.FullName.Contains(term))
@@ -1051,6 +1107,102 @@ namespace CrossBuy.BL.Platform
                     .Where(e => e.CompanyID == companyId && e.DeletedAt == null && (any || e.Title.Contains(term)))
                     .OrderByDescending(e => e.StartAt).Take(SearchTake)
                     .Select(e => new ValueTuple<int, string>(e.Id, e.Title)).ToListAsync(cancellationToken),
+
+                // THE PICKER PROMISED THESE AND THE SWITCH NEVER ANSWERED.
+                //
+                // All twelve are ListedInRecordPicker AND SupportsSearch, and every one of them fell
+                // through to the empty default - so choosing "أمر بيع" in any picker in the product
+                // returned "No results found" with the rows sitting in the table. SupportsSearch is a
+                // promise the registry makes to every caller; an unimplemented arm breaks it silently,
+                // which is the worst way for a list to be empty.
+                //
+                // Each mirrors the SalesInvoice arm exactly - company scope, number contains, newest
+                // first, same take - because a picker that sorts or filters differently per document
+                // type is a picker nobody can predict. The number fields are the ones ResolveAsync
+                // already uses to label the same rows.
+                PurchaseOrder => await _db.PurchaseOrders.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.OrderNo != null && d.OrderNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.OrderNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                GoodsReceipt => await _db.GoodsReceipts.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.ReceiptNo != null && d.ReceiptNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.ReceiptNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                SalesOrder => await _db.SalesOrders.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.OrderNo != null && d.OrderNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.OrderNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                DeliveryNote => await _db.DeliveryNotes.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.DeliveryNo != null && d.DeliveryNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.DeliveryNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                StockTransfer => await _db.StockTransfers.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.TransferNo != null && d.TransferNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.TransferNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                StockCount => await _db.StockCounts.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.CountNo != null && d.CountNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.CountNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                StockWriteOff => await _db.StockWriteOffs.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.WriteOffNo != null && d.WriteOffNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.WriteOffNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                LandedCost => await _db.LandedCosts.AsNoTracking()
+                    .Where(d => d.CompanyID == companyId && (any || (d.LandedNo != null && d.LandedNo.Contains(term))))
+                    .OrderByDescending(d => d.ID).Take(SearchTake)
+                    .Select(d => new ValueTuple<int, string>(d.ID, d.LandedNo ?? ("#" + d.ID))).ToListAsync(cancellationToken),
+
+                SalesReturn => await _db.SalesReturns.AsNoTracking()
+                    .Where(r => r.CompanyID == companyId && (any || (r.ReturnNo != null && r.ReturnNo.Contains(term))))
+                    .OrderByDescending(r => r.ID).Take(SearchTake)
+                    .Select(r => new ValueTuple<int, string>(r.ID, r.ReturnNo ?? ("#" + r.ID))).ToListAsync(cancellationToken),
+
+                PurchaseReturn => await _db.PurchaseReturns.AsNoTracking()
+                    .Where(r => r.CompanyID == companyId && (any || (r.ReturnNo != null && r.ReturnNo.Contains(term))))
+                    .OrderByDescending(r => r.ID).Take(SearchTake)
+                    .Select(r => new ValueTuple<int, string>(r.ID, r.ReturnNo ?? ("#" + r.ID))).ToListAsync(cancellationToken),
+
+                Receipt => await _db.Receipts.AsNoTracking()
+                    .Where(r => r.CompanyID == companyId && (any || (r.ReceiptNo != null && r.ReceiptNo.Contains(term))))
+                    .OrderByDescending(r => r.ID).Take(SearchTake)
+                    .Select(r => new ValueTuple<int, string>(r.ID, r.ReceiptNo ?? ("#" + r.ID))).ToListAsync(cancellationToken),
+
+                Payment => await _db.Payments.AsNoTracking()
+                    .Where(p => p.CompanyID == companyId && (any || (p.PaymentNo != null && p.PaymentNo.Contains(term))))
+                    .OrderByDescending(p => p.ID).Take(SearchTake)
+                    .Select(p => new ValueTuple<int, string>(p.ID, p.PaymentNo ?? ("#" + p.ID))).ToListAsync(cancellationToken),
+
+                // THE SEARCHABLE ENTITY THAT COULD NOT BE FOUND.
+                //
+                // CrmTicket declares SupportsSearch = true and had no arm here, so it fell to the
+                // default below and every search for a ticket returned an empty list. Not an error, not
+                // a refusal - just nothing, which reads as "no tickets match" however many there are.
+                //
+                // BILINGUAL ON BOTH HALVES, because the ticket carries a twin: Subject is what the
+                // author typed and SubjectEn is its English twin, and matching only the first means an
+                // English subject is unreachable by its own words - the same defect the Employee search
+                // above was fixed for. The LABEL is resolved after materialisation, because
+                // DisplayName.Of reads the UI culture and has no SQL translation.
+                CrmTicket => (await _db.CrmTickets.AsNoTracking()
+                    .Where(t => t.CompanyID == companyId)
+                    .Where(t => any
+                        || t.Subject.Contains(term)
+                        || (t.SubjectEn != null && t.SubjectEn.Contains(term)))
+                    .OrderByDescending(t => t.ID).Take(SearchTake)
+                    .Select(t => new { t.ID, t.Subject, t.SubjectEn })
+                    .ToListAsync(cancellationToken))
+                    .Select(t => new ValueTuple<int, string>(
+                        t.ID, CrossBuy.BL.DisplayName.Of(t.Subject, t.SubjectEn) is { Length: > 0 } s
+                            ? s : ("#" + t.ID)))
+                    .ToList(),
 
                 _ => new List<(int, string)>(),
             };
@@ -1100,6 +1252,18 @@ namespace CrossBuy.BL.Platform
                     label = await _db.BusinessEvents.AsNoTracking()
                         .Where(e => e.EventId == entityId && e.CompanyID == companyId)
                         .Select(e => e.EventType + " #" + e.EventId).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                // THE SUPPORT TICKET. Registering an entity is only half of it: without a case HERE the
+                // platform cannot resolve the record, BelongsToCompanyAsync answers "not in this company",
+                // and every capability built on the registration is denied for a reason that names the
+                // company rather than the gap. That is how the conversation panel failed its first run.
+                //
+                // CompanyID is in the WHERE clause, like every case around it, so a ticket in another
+                // company is NOT FOUND rather than found and then refused.
+                case CrmTicket:
+                    label = await _db.CrmTickets.AsNoTracking()
+                        .Where(t => t.ID == entityId && t.CompanyID == companyId)
+                        .Select(t => t.Subject ?? ("#" + t.ID)).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case SalesInvoice:
                     label = await _db.SalesInvoices.AsNoTracking()
@@ -1208,9 +1372,15 @@ namespace CrossBuy.BL.Platform
                         .Select(i => (i.ItemCode ?? "") + " — " + i.Name).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case Employee:
-                    // Same deliberate deviation as the search above: no company filter (TM-2 behaviour).
+                    // AN ID IS NOT AN IDENTITY. Resolving on e.ID alone turned any integer into another
+                    // company's employee NAME, and Found = true made it a working deep link. Every
+                    // neighbouring case here pairs the id with the company for exactly that reason; this
+                    // one was the exception, defended by the same stale TM-2 note as the search above.
+                    //
+                    // Absent and other-company now answer IDENTICALLY - the label degrades to "#id" and
+                    // Url is null - so an id cannot be used as an oracle for which employees exist.
                     label = await _db.Employee.AsNoTracking()
-                        .Where(e => e.ID == entityId)
+                        .Where(e => e.ID == entityId && e.EmpCompanyID == companyId)
                         .Select(EmployeeNames.Display()).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case ProjectBilling:

@@ -176,9 +176,6 @@ namespace CrossBuy.BL.Platform.Ai
 			if (!Enabled || candidates.Count == 0 || string.IsNullOrWhiteSpace(question))
 				return AskIntentChoice.NotRun(Engine);
 
-			var isArabic = System.Globalization.CultureInfo.CurrentUICulture
-				.TwoLetterISOLanguageName == "ar";
-
 			// EVERYTHING A PERSON MIGHT SAY TO MEAN THIS QUESTION, in one list. The service does not
 			// care which string is a keyword and which is the example — it measures how close the
 			// question came to any known way of asking, so the distinction would only be noise.
@@ -189,7 +186,8 @@ namespace CrossBuy.BL.Platform.Ai
 				{
 					id = h.Intent,
 					phrasings = h.Keywords
-						.Concat(new[] { h.Example.Ar, h.Example.En, h.Description.Ar, h.Description.En })
+						.Concat(new[] { h.Example.Ar, h.Example.En, h.Example.Fr,
+							h.Description.Ar, h.Description.En, h.Description.Fr })
 						.Where(p => !string.IsNullOrWhiteSpace(p))
 						.ToArray(),
 				}).ToArray(),

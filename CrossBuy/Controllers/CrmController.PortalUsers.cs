@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CrossBuy.BL.Portal;
+using CrossBuy.Models;
 using CrossBuy.Models.Context.Portal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -149,13 +150,13 @@ namespace CrossBuy.Controllers
 
             if (photo == null || photo.Length == 0)
             {
-                TempData["CrmErr"] = L["Choose an image first."].Value;
+                this.ToastError(L["Choose an image first."].Value);
                 return RedirectToAction(nameof(PortalUsers));
             }
 
             if (photo.Length > PortalPhotoService.MaxBytes)
             {
-                TempData["CrmErr"] = L["The image is larger than 4 MB."].Value;
+                this.ToastError(L["The image is larger than 4 MB."].Value);
                 return RedirectToAction(nameof(PortalUsers));
             }
 
@@ -163,7 +164,7 @@ namespace CrossBuy.Controllers
             // start accepting something the reader will refuse to serve.
             if (Photos.ExtensionFor(photo.ContentType) == null)
             {
-                TempData["CrmErr"] = L["Only JPG, PNG or WEBP images are accepted."].Value;
+                this.ToastError(L["Only JPG, PNG or WEBP images are accepted."].Value);
                 return RedirectToAction(nameof(PortalUsers));
             }
 
@@ -173,7 +174,7 @@ namespace CrossBuy.Controllers
                 // The same failure the employee photo documents: on a deployed server the app pool
                 // identity often cannot write under the content root. Named as a relative folder and
                 // a fix, rather than letting the raw exception publish the server's absolute layout.
-                TempData["CrmErr"] = L["The photo could not be saved: App_Data/portal-photos is not writable on the server."].Value;
+                this.ToastError(L["The photo could not be saved: App_Data/portal-photos is not writable on the server."].Value);
                 return RedirectToAction(nameof(PortalUsers));
             }
 
@@ -185,7 +186,7 @@ namespace CrossBuy.Controllers
             // contact pointing at nothing if the save failed.
             Photos.Delete(cid, previous);
 
-            TempData["CrmMsg"] = L["Photo updated."].Value;
+            this.ToastSuccess(L["Photo updated."].Value);
             return RedirectToAction(nameof(PortalUsers));
         }
 
@@ -207,7 +208,7 @@ namespace CrossBuy.Controllers
 
             Photos.Delete(cid, previous);
 
-            TempData["CrmMsg"] = L["Photo removed."].Value;
+            this.ToastSuccess(L["Photo removed."].Value);
             return RedirectToAction(nameof(PortalUsers));
         }
 
@@ -273,8 +274,8 @@ namespace CrossBuy.Controllers
         /// different vocabularies for the same outcome.
         private IActionResult ProvisioningOutcome(PortalProvisioningResult result, string success)
         {
-            if (result.Ok) TempData["CrmMsg"] = success;
-            else TempData["CrmErr"] = result.Code switch
+            if (result.Ok) this.ToastSuccess(success);
+            else this.ToastError(result.Code switch
             {
                 PortalProvisioningResult.NoSuchCustomer => L["That customer does not exist in this company."].Value,
                 PortalProvisioningResult.AlreadyLinked => L["That login or contact is already linked."].Value,
@@ -282,7 +283,7 @@ namespace CrossBuy.Controllers
                 PortalProvisioningResult.NoSuchPortalUser => L["That portal contact does not exist in this company."].Value,
                 PortalProvisioningResult.InvalidArgument => L["Some of the details are missing or invalid."].Value,
                 _ => L["You are not permitted to do that."].Value,
-            };
+            });
 
             return RedirectToAction(nameof(PortalUsers));
         }

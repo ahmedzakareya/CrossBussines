@@ -133,6 +133,11 @@ namespace CrossBuy.Tests.Portal
         public Task<bool> AnyConfiguredAsync(int companyId, string scope, CancellationToken cancellationToken = default)
             => throw new InvalidOperationException(
                 "gate 7 must refuse a portal identity BEFORE any role lookup; reaching this means it did not.");
+
+        public Task<IReadOnlyList<int>> EmployeeIdsForRoleAsync(
+            int companyId, string scope, string role, CancellationToken cancellationToken = default)
+            => throw new InvalidOperationException(
+                "gate 7 must refuse a portal identity BEFORE any role lookup; reaching this means it did not.");
     }
 
     internal sealed class ThrowingOrgHierarchy : IOrgHierarchy

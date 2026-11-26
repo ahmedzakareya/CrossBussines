@@ -1,4 +1,4 @@
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject CrossBuy.BL.Platform.IBusinessContextAccessor Contexts
 @{
     // =========================================================================================
@@ -67,6 +67,44 @@
     var convListUrl = (ViewBag.ConversationListUrl as string) ?? "";
     var convAddUrl = (ViewBag.ConversationAddUrl as string) ?? "";
     var convReactUrl = (ViewBag.ConversationReactUrl as string) ?? "";
+
+    // OPTIONAL, like the reaction url above it. A host that supplies it gets the @-picker; one that
+    // does not gets the panel exactly as before. The platform parses "@[Name](employee:12)" out of
+    // the body either way - what the picker adds is the only practical way for a person to WRITE
+    // that grammar, since typing a bare "@name" is plain text and notifies nobody.
+    var convMentionUrl = (ViewBag.ConversationMentionUrl as string) ?? "";
+
+    // ---- COMMUNICATION PHASE 3: TASKS -------------------------------------------------------
+    // OPT-IN, exactly like the reaction and mention urls above. A host that names neither url gets
+    // this panel precisely as it was: no action on a message, no related-tasks section, no fetch.
+    // That is deliberate and not temporary caution - CommTaskIntegration is registered in DI but no
+    // HTTP endpoint exposes it yet, so the opt-in IS the integration contract. The day a module
+    // names these two urls the UI switches on with no change here.
+    //
+    // THE SERVER ENFORCES, NOT THIS FILE. A url being present means the host wired the feature, NOT
+    // that this reader may use it. The create endpoint re-checks the caller against the message and
+    // the Tasks module exactly as the Tasks screens do; hiding a button is courtesy, never control.
+    var convCreateTaskUrl = (ViewBag.ConversationCreateTaskUrl as string) ?? "";
+    var convTasksUrl = (ViewBag.ConversationTasksUrl as string) ?? "";
+
+    // APPROVALS ON THIS RECORD - read only, and opt-in on the same terms as the two above.
+    //
+    // ICommTaskIntegrationService.ApprovalsForEntityAsync EXISTS and is implemented, but NO HTTP
+    // endpoint publishes it yet, so no host can name this url and the section below never renders.
+    // That is the whole safety story: the feature ships complete and inert, and the day an
+    // authorized endpoint exists a host names it and the section appears with no change here.
+    // A view does not reach into a service, so this waits for the endpoint rather than routing
+    // around it.
+    var convApprovalsUrl = (ViewBag.ConversationApprovalsUrl as string) ?? "";
+
+    // LINKING IS THREE URLS, AND ALL THREE ARE THE HOST'S OPT-IN - the same shape as every other
+    // capability on this panel. A host that names none of them renders exactly what it does today.
+    // The search url is separate because this partial may not name a module or a controller: it is
+    // handed the candidate endpoint rather than composing /Tasks/LinkSearch for itself.
+    var convLinkUrl = (ViewBag.ConversationLinkUrl as string) ?? "";
+    var convUnlinkUrl = (ViewBag.ConversationUnlinkUrl as string) ?? "";
+    var convLinkSearchUrl = (ViewBag.ConversationLinkSearchUrl as string) ?? "";
+
     var convWired = !string.IsNullOrWhiteSpace(convListUrl) && !string.IsNullOrWhiteSpace(convAddUrl);
 
     // WHO IS READING, so "mine" can be marked on a bubble. Nothing is disclosed by it: the id is the
@@ -74,16 +112,87 @@
     var convCtx = await Contexts.TryGetCurrentAsync();
     var convMe = convCtx?.EmployeeId?.ToString() ?? "";
 }
+<style>
+    .cb-emoji-picker { width: min(276px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--bs-gray-200); border-radius: 16px; background: var(--bs-body-bg); box-shadow: 0 12px 32px rgba(16, 24, 40, .16); }
+    .cb-emoji-heading { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; margin-bottom: 8px; border-bottom: 1px solid var(--bs-gray-200); color: var(--bs-gray-700); font-size: .78rem; font-weight: 600; }
+    .cb-emoji-heading i { color: var(--bs-primary); font-size: 1rem; }
+    .cb-emoji-grid { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+    .cb-emoji-choice { display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 11px; background: transparent; color: inherit; cursor: pointer; font: 21px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; transition: background .14s ease, transform .14s ease; }
+    .cb-emoji-choice:hover, .cb-emoji-choice:focus-visible { background: var(--bs-light-primary); outline: none; transform: translateY(-1px); }
+    .cb-emoji-choice.is-selected { background: var(--bs-light-primary); box-shadow: inset 0 0 0 1px var(--bs-primary); }
+    #cbConv .cb-task-card { display: grid; grid-template-columns: 50px minmax(0,1fr) auto; align-items: center; gap: 13px; padding: 15px 16px; border: 1px solid var(--bs-gray-300); border-radius: 16px; background: var(--bs-body-bg); box-shadow: 0 4px 14px rgba(16,24,40,.07); }
+    #cbConv .cb-task-card-icon { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 14px; background: #e8f0ff; color: #3a5795; font-size: 1.2rem; }
+    #cbConv .cb-task-card-main { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+    #cbConv .cb-task-card-heading, #cbConv .cb-task-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 11px; min-width: 0; }
+    #cbConv .cb-task-card-title { min-width: 0; color: var(--bs-gray-900); font-size: 1rem; font-weight: 700; line-height: 1.45; }
+    #cbConv .cb-task-card-number { flex: 0 0 auto; padding: 4px 9px; border: 1px solid var(--bs-gray-200); border-radius: 8px; background: var(--bs-gray-100); color: var(--bs-gray-700); font-size: .82rem; font-weight: 700; }
+    #cbConv .cb-task-card-meta { justify-content: flex-start; flex-wrap: wrap; gap: 8px 13px; color: var(--bs-gray-700); font-size: .84rem; }
+    #cbConv .cb-task-card-meta .badge { padding: .42em .68em; font-size: .8rem !important; }
+    #cbConv .cb-task-card-meta .fs-9 { font-size: .82rem !important; }
+    #cbConv .cb-task-card-meta .cb-task-assignee { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+    #cbConv .cb-task-card > .cb-unlink { width: 36px; height: 36px; border-radius: 10px; }
+    #cbConv .cb-task-result { display: grid; grid-template-columns: 50px minmax(0,1fr); align-items: center; gap: 16px; width: 100%; min-height: 96px; margin: 8px 0; padding: 14px 16px; border: 1px solid #e5eaf2; border-radius: 16px; background: #fff; color: inherit; text-align: start; white-space: normal; box-shadow: 0 2px 8px rgba(20,38,70,.04); transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease; }
+    #cbConv .cb-task-result:last-child { margin-bottom: 0; }
+    #cbConv .cb-task-result:hover, #cbConv .cb-task-result:focus-visible { border-color: #b9c9e8; background: #fbfcff; box-shadow: 0 5px 16px rgba(38,74,133,.09); outline: none; }
+    #cbConv .cb-task-result.is-active { border-color: #8eaddf; background: #f5f8ff; box-shadow: 0 0 0 2px rgba(58,87,149,.08); }
+    #cbConv .cb-task-result.is-picked { border-color: #3a5795; background: #f1f5ff; }
+    #cbConv .cb-task-result-icon { display: grid; place-items: center; box-sizing: border-box; flex: 0 0 50px; width: 50px; min-width: 50px; height: 50px; min-height: 50px; border-radius: 14px; background-color: #e8f0ff; color: #3a5795; font-size: 1.2rem; }
+    #cbConv .cb-task-result-content { display: flex; flex: 1 1 auto; flex-direction: column; gap: 7px; width: 100%; min-width: 0; }
+    #cbConv .cb-task-result-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-width: 0; }
+    #cbConv .cb-task-result-title { flex: 1 1 auto; min-width: 0; color: #172b4d; font-size: 1rem; font-weight: 700; line-height: 1.5; }
+    #cbConv .cb-task-result-number { flex: 0 0 auto; padding: 3px 8px; border: 1px solid var(--bs-gray-200); border-radius: 999px; background: var(--bs-body-bg); color: var(--bs-gray-600); font-size: .75rem; font-weight: 600; }
+    #cbConv .cb-task-result-summary { color: #64748b; font-size: .88rem; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    #cbConv .cb-task-result-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; width: 100%; min-width: 0; margin-top: 2px; }
+    #cbConv .cb-task-result-tags, #cbConv .cb-task-result-details { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    #cbConv .cb-task-result-details { justify-content: flex-start; color: var(--bs-gray-600); }
+    #cbConv .cb-task-result-person, #cbConv .cb-task-result-due { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: #52627b; font-size: .84rem; line-height: 1.4; }
+    #cbConv .cb-task-result-person span:last-child { max-width: 150px; }
+    #cbConv .cb-task-result-selected { flex: 0 0 auto; }
+    @@media (max-width: 575.98px) {
+        #cbConv .cb-task-card { grid-template-columns: 44px minmax(0,1fr) auto; gap: 9px; padding: 12px; border-radius: 13px; }
+        #cbConv .cb-task-card-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 1rem; }
+        #cbConv .cb-task-card-title { font-size: .92rem; }
+        #cbConv .cb-task-card-meta { gap: 7px 9px; }
+        #cbConv .cb-task-card-number { font-size: .76rem; padding: 3px 7px; }
+        #cbConv .cb-task-card-heading { align-items: flex-start; }
+        #cbConv .cb-task-result { grid-template-columns: 44px minmax(0,1fr); align-items: center; gap: 10px; min-height: 84px; padding: 12px; border-radius: 13px; }
+        #cbConv .cb-task-result-icon { flex-basis: 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; border-radius: 12px; font-size: 1rem; }
+        #cbConv .cb-task-result-heading { align-items: flex-start; gap: 8px; }
+        #cbConv .cb-task-result-title { font-size: .94rem; }
+        #cbConv .cb-task-result-summary { font-size: .82rem; }
+        #cbConv .cb-task-result-meta { align-items: center; gap: 7px 12px; }
+        #cbConv .cb-task-result-details { justify-content: flex-start; gap: 8px 12px; }
+        #cbConv .cb-task-result-person span:last-child { max-width: 120px; }
+    }
+    @@media (max-width: 575.98px) {
+        #cbConv .cb-conv-tasks-head { align-items: stretch !important; flex-wrap: wrap; }
+        #cbConv .cb-conv-tasks-title { flex: 1 1 100%; min-width: 0; }
+        #cbConv #cbConvLinkTask { width: 100%; justify-content: center; }
+        #cbConv #cbConvLinkHint { flex: 1 1 100%; }
+    }
+</style>
 <div class="card mt-5" id="cbConv"
      data-code="@convCode" data-id="@convId"
-     data-list="@convListUrl" data-add="@convAddUrl" data-react="@convReactUrl" data-me="@convMe">
+     data-list="@convListUrl" data-add="@convAddUrl" data-react="@convReactUrl"
+     data-mention="@convMentionUrl" data-me="@convMe"
+     data-createtask="@convCreateTaskUrl" data-tasks="@convTasksUrl"
+     data-approvals="@convApprovalsUrl"
+     data-link="@convLinkUrl" data-unlink="@convUnlinkUrl" data-linksearch="@convLinkSearchUrl">
 
     <div class="card-header align-items-center">
         <div class="card-title fw-bold fs-5 m-0">
             <i class="ki-outline ki-message-text-2 fs-3 text-primary me-2" aria-hidden="true"></i>@Localizer["Conversation"]
         </div>
-        <div class="card-toolbar">
+        <div class="card-toolbar d-flex align-items-center gap-2">
+            @* MAIL SITS WITH THE CONVERSATION because they answer the same question - "tell
+               somebody about this record" - and differ only in whether the somebody is inside
+               the company. Putting it here means every screen that already carries a
+               conversation gets mail too, with no change of its own. *@
+            <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal"
+                    data-bs-target="#cbMailModal" title="@Localizer["Send an email"]">
+                <i class="ki-outline ki-sms fs-4"></i>@Localizer["Email"]</button>
             <span class="badge badge-light-primary fs-8 fw-bold d-none" id="cbConvCount"></span>
+
         </div>
     </div>
 
@@ -143,13 +252,44 @@
                 @* ONE SHELL AROUND THE WHOLE COMPOSER — the text, its toolbar and the send button read
                    as a single control, the way every messaging surface people already use is built.
                    Focus is mirrored onto the shell by script so the border lights up as one thing. *@
-                <div class="flex-grow-1 rounded" id="cbConvShell"
-                     style="min-width:0;border:1px solid var(--bs-gray-300);background:var(--bs-body-bg);transition:border-color .15s;">
+                <div class="flex-grow-1 rounded-3 shadow-sm" id="cbConvShell"
+                     @* position:relative so the @@-menu below anchors to the composer and not to the
+                        page - the textarea grows as it is typed into, and a menu anchored to IT
+                        would walk down the screen while you choose from it. *@
+                     style="min-width:0;position:relative;border:1px solid var(--bs-gray-300);background:var(--bs-body-bg);transition:border-color .15s,box-shadow .15s;">
+                    @* A MENTION LOOKS LIKE A MENTION WHILE IT IS BEING TYPED.
+
+                       A textarea cannot style part of its own text - there is no span inside one - so
+                       the name you just picked sat in the box as plain prose until the message was
+                       sent, and only then turned into the blue chip. Two people reading the same
+                       composer could not tell a real mention from someone typing an email address.
+
+                       The standard answer, and the one that does not break anything else: a mirrored
+                       DIV behind a transparent textarea. The textarea keeps every behaviour it already
+                       has - caret, selection, paste, undo, the @-picker, Ctrl+Enter, autogrow - and the
+                       div draws the same text with the mention wrapped. The two must share EVERY metric
+                       that affects where a glyph lands (font, size, line-height, padding, wrapping,
+                       direction) or the drawn text drifts off the real one as a line fills up. *@
+                    <div id="cbConvHl" aria-hidden="true"
+                         class="px-4 pt-3 pb-1 fs-7"
+                         style="position:absolute;inset:0;pointer-events:none;overflow:hidden;
+                                white-space:pre-wrap;word-break:break-word;color:var(--bs-gray-800);"></div>
+                    @* color:transparent + caret-color keeps the caret and the selection visible while
+                       the glyphs come from the layer underneath. The placeholder is unaffected: it has
+                       its own colour rule and shows normally when the box is empty. *@
                     <textarea id="cbConvInput" class="form-control border-0 bg-transparent px-4 pt-3 pb-1 fs-7"
                               rows="1" maxlength="4000"
-                              style="resize:none;overflow:hidden;min-height:44px;box-shadow:none;"
+                              style="resize:none;overflow:hidden;min-height:44px;box-shadow:none;
+                                     position:relative;z-index:1;color:transparent;caret-color:var(--bs-gray-900);"
                               placeholder="@Localizer["Write a message"]"
                               aria-label="@Localizer["Add a message"]"></textarea>
+
+                    @* THE @@-PICKER'S MENU. Positioned against the composer shell rather than the
+                       textarea, because the textarea grows as it is typed into and the menu would
+                       walk down the page with it. Hidden until there is something to show. *@
+                    <div id="cbConvAtMenu" class="d-none shadow-sm rounded border bg-body"
+                         role="listbox" aria-label="@Localizer["People you can mention"]"
+                         style="position:absolute;z-index:1060;max-height:232px;overflow-y:auto;min-width:240px;"></div>
 
                     @* THE CHOSEN FILE AS A THUMBNAIL, not a bar of text. A row carrying a GUID
                        filename and a size tells you a file is attached; a picture of it tells you
@@ -167,27 +307,229 @@
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center justify-content-between px-3 pb-2 gap-2">
-                        <div class="d-flex align-items-center gap-1 position-relative">
-                            <button type="button" class="btn btn-sm btn-icon btn-active-light w-32px h-32px rounded"
+                    <div class="d-flex align-items-center justify-content-between px-3 pt-2 pb-2 gap-2"
+                         style="border-top:1px solid var(--bs-gray-200);">
+                        <div class="d-flex align-items-center gap-2 position-relative">
+                            <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-36px h-36px rounded-circle"
                                     id="cbConvAttach" title="@Localizer["Attach a file"]"
-                                    style="font-size:17px;line-height:1;">📎</button>
-                            <button type="button" class="btn btn-sm btn-icon btn-active-light w-32px h-32px rounded"
+                                    aria-label="@Localizer["Attach a file"]">
+                                <i class="ki-outline ki-paper-clip fs-4" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-36px h-36px rounded-circle"
                                     id="cbConvEmoji" title="@Localizer["Insert an emoji"]"
-                                    style="font-size:17px;line-height:1;">🙂</button>
+                                    aria-label="@Localizer["Insert an emoji"]">
+                                <i class="ki-outline ki-emoji-happy fs-4" aria-hidden="true"></i>
+                            </button>
                             <input type="file" id="cbConvFile" class="d-none"
                                    accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.avif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rtf" />
                             <span class="text-muted fs-9 ms-2 d-none d-md-inline" id="cbConvHint">@Localizer["Ctrl + Enter to send"]</span>
                         </div>
 
-                        <button type="button" class="btn btn-sm btn-primary flex-shrink-0" id="cbConvSend" disabled>
-                            <i class="ki-outline ki-send fs-5" aria-hidden="true"></i>@Localizer["Send"]
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 py-2 flex-shrink-0" id="cbConvSend" disabled>
+                            <i class="ki-outline ki-send fs-5 me-1" aria-hidden="true"></i>@Localizer["Send"]
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="text-danger fs-8 mt-2 ms-13 d-none" id="cbConvErr" role="alert"></div>
+        </div>
+
+        @* RELATED TASKS. Rendered only when the host named ConversationTasksUrl - a screen that did
+           not ask for the integration gets no empty heading promising a feature it has not got.
+
+           THE TWO RELATIONSHIPS ARE NEVER MERGED. CommTaskRelationship keeps SharedBusinessContext
+           and ExplicitLink apart because one is INFERRED from the record the conversation is about
+           and the other is a row somebody deliberately created. Showing them in one unlabelled list
+           would tell the reader that a person linked a task when nobody did. They get separate
+           groups with separate headings, and the link group is listed first because it is the one
+           that carries a human decision. *@
+        <div id="cbConvTasks" class="d-none">
+            <div class="separator my-4"></div>
+            @* THE THEME'S OWN SECTION HEAD (demo39 widgets/lists.html): a symbol tile carrying the
+               icon, a stacked label over a muted descriptor, and the action on the far side via
+               flex-stack. A bare icon beside bold text is not the pattern the rest of the theme uses. *@
+            <div class="cb-conv-tasks-head d-flex align-items-center justify-content-between gap-3 mb-5">
+                <div class="cb-conv-tasks-title d-flex align-items-center">
+                    <div class="symbol symbol-40px me-4">
+                        <span class="symbol-label bg-light-primary">
+                            <i class="ki-outline ki-check-square fs-2 text-primary" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold fs-6 text-gray-900">@Localizer["Related tasks"]</span>
+                        <span class="text-muted fw-semibold fs-8">@Localizer["Linked to this conversation"]</span>
+                    </div>
+                    <span class="badge badge-light-primary fs-8 fw-bold ms-3 d-none" id="cbConvTasksCount"></span>
+                </div>
+                @* LINK EXISTING IS NOT OFFERED WHILE THE STORE IS UNPROVISIONED. The service answers
+                   LinkingAvailable=false until CommTaskLinks exists, and a button that is certain to
+                   be refused is worse than an absent one. Shown only when the endpoint says true. *@
+                <button type="button" class="btn btn-sm btn-light-primary d-none" id="cbConvLinkTask">
+                    <i class="ki-outline ki-paper-clip fs-5" aria-hidden="true"></i>@Localizer["Link an existing task"]
+                </button>
+                <span id="cbConvLinkHint" class="fs-9 text-gray-600 d-none"></span>
+            </div>
+            @* THE CANDIDATE PICKER. Hidden until the button is pressed, and the button itself is
+               hidden unless the service says linking is available AND a thread exists to link to.
+
+               A COMBOBOX OVER A LISTBOX, so the keyboard reaches it. The input keeps focus and
+               owns aria-activedescendant; the rows are options. Without that pairing the arrow
+               keys move the caret inside the text box and the list is mouse-only. *@
+            <div id="cbConvLinkPicker" class="d-none mb-5 p-5 rounded border border-gray-300 border-dashed">
+                @* WHICH MESSAGE, QUOTED. The picker serves two targets and the only difference
+                   between them is invisible otherwise - the same list, the same button, a
+                   different relationship written. *@
+                <div id="cbConvLinkTarget" class="d-none fs-9 text-gray-700 mb-2 px-3 py-2 rounded"
+                     style="background:var(--bs-light-primary);border-inline-start:3px solid var(--bs-primary);"></div>
+                <div class="position-relative">
+                    <i class="ki-outline ki-magnifier search-icon fs-2 text-gray-500 position-absolute top-50 translate-middle-y ms-5"
+                       aria-hidden="true"></i>
+                    <input type="text" id="cbConvLinkSearch" class="search-input form-control form-control border h-45px ps-13"
+                           autocomplete="off" role="combobox" aria-expanded="false"
+                           aria-autocomplete="list" aria-controls="cbConvLinkResults"
+                           aria-describedby="cbConvLinkSearchHelp" />
+                </div>
+                <div id="cbConvLinkSearchHelp" class="fs-9 text-gray-600 mt-1">
+                    @Localizer["Search by task title or task number"] &middot;
+                    @Localizer["Use the arrow keys to choose and Enter to confirm"]
+                </div>
+                <div id="cbConvLinkResults" class="mt-3 bg-body rounded px-2" role="listbox"
+                     aria-label="@Localizer["Matching tasks"]"
+                     style="max-height:320px;overflow-y:auto;"></div>
+
+                @* THE CONFIRMATION, which is the only control that writes. It names the task that
+                   will be linked, so the act is checked against what the reader can see rather
+                   than against what they meant to click. *@
+                @*  The house notice shape, coloured by kind - not a one-off box with inline colours, which is
+                    what this was. It names the task that will be linked, so the act is checked against
+                    what the reader can see rather than against what they meant to click. *@
+                <div id="cbConvLinkConfirm" class="d-none align-items-center gap-3 mt-4 p-4 rounded notice bg-light-primary border-primary border border-dashed">
+                    <div class="flex-grow-1" style="min-width:0;" id="cbConvLinkChosen"></div>
+                    <button type="button" class="btn btn-sm btn-primary flex-shrink-0" id="cbConvLinkConfirmBtn">
+                        <i class="ki-outline ki-paper-clip fs-5" aria-hidden="true"></i>@Localizer["Link task"]
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light flex-shrink-0" id="cbConvLinkCancelBtn">
+                        @Localizer["Cancel"]
+                    </button>
+                </div>
+            </div>
+            <div id="cbConvTasksBody"></div>
+        </div>
+
+        @* APPROVALS ON THIS RECORD. READ ONLY, deliberately and permanently: deciding an approval
+           is the owning module's screen and its own authorization, and a decide button here would
+           be a second approval surface answering to nobody. This states what is pending and links
+           to the module that owns the decision.
+
+           EMPTY IS INDISTINGUISHABLE ON PURPOSE. The service returns an empty list when the
+           approvals module is absent, when the record has no workflow, and when the viewer is not
+           an approver - three states a reader must not be able to tell apart, because telling them
+           apart would disclose that an approval exists to somebody not entitled to see it. *@
+        <div id="cbConvApprovals" class="d-none">
+            <div class="separator my-4"></div>
+            <div class="d-flex align-items-center mb-3">
+                <i class="ki-outline ki-shield-tick fs-3 text-primary me-2" aria-hidden="true"></i>
+                <span class="fw-bold fs-6 text-gray-900">@Localizer["Approvals on this record"]</span>
+                <span class="badge badge-light-primary fs-8 fw-bold ms-2 d-none" id="cbConvApprovalsCount"></span>
+            </div>
+            <div id="cbConvApprovalsBody"></div>
+        </div>
+    </div>
+</div>
+
+@* CREATE A TASK FROM ONE MESSAGE. One dialog per panel and reused, same as the file dialog
+   below: a modal built per click leaks a node on every click.
+
+   IT IS RENDERED ALWAYS AND OPENED NEVER unless the host named ConversationCreateTaskUrl -
+   markup nothing can reach costs one hidden div, while a dialog built on demand costs a second
+   code path that only ever runs in production. *@
+<div class="modal fade" id="cbConvTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h5 class="modal-title fs-6 fw-bold">@Localizer["Task from this message"]</h5>
+                <button type="button" class="btn btn-sm btn-icon btn-active-light" data-bs-dismiss="modal" aria-label="close">
+                    <i class="ki-outline ki-cross fs-4"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                @* THE MESSAGE BEING TURNED INTO WORK, quoted and not editable: what the task
+                   came from has to stay visible while the title is being written. *@
+                <div class="rounded px-3 py-2 mb-4 fs-8 text-gray-700"
+                     style="background:var(--bs-gray-100);border-inline-start:3px solid var(--bs-primary);">
+                    <div class="fw-semibold text-gray-900 mb-1" id="cbConvTaskFrom"></div>
+                    <div id="cbConvTaskQuote" style="white-space:pre-wrap;word-break:break-word;"></div>
+                </div>
+
+                <label class="form-label required fs-8 fw-semibold">@Localizer["Title"]</label>
+                <input type="text" class="form-control form-control-sm mb-3" id="cbConvTaskTitle" maxlength="200" />
+
+                @* BILINGUAL BY THE HOUSE RULE: a shown field carries its twin and both are
+                   captured at input rather than translated afterwards. *@
+                <label class="form-label fs-8 fw-semibold">@Localizer["Title (English)"]</label>
+                <input type="text" class="form-control form-control-sm mb-3" id="cbConvTaskTitleEn" maxlength="200" dir="ltr" />
+
+                <label class="form-label fs-8 fw-semibold">@Localizer["Description"]</label>
+                <textarea class="form-control form-control-sm mb-3" id="cbConvTaskDesc" rows="2" maxlength="2000"></textarea>
+
+                @* THE ASSIGNEE IS A PERSON, SO IT SHOWS A PERSON. The people source is the
+                   mention endpoint this panel already carries - same employees, same photos,
+                   one lookup contract. A host that wired create-task but no mention url gets a
+                   plain id field, which is honest rather than a list that can never populate. *@
+                <label class="form-label required fs-8 fw-semibold">@Localizer["Assignee"]</label>
+                <div class="position-relative mb-3">
+                    <input type="text" class="form-control form-control-sm" id="cbConvTaskAssignee"
+                           autocomplete="off" aria-describedby="cbConvTaskAssigneeHint" />
+                    <input type="hidden" id="cbConvTaskAssigneeId" />
+                    <div id="cbConvTaskPeople" class="d-none position-absolute w-100 bg-body border rounded shadow-sm"
+                         role="listbox" style="z-index:1060;max-height:220px;overflow-y:auto;"></div>
+                    <div class="form-text fs-9" id="cbConvTaskAssigneeHint"></div>
+                </div>
+
+                <div class="row g-3 mb-2">
+                    <div class="col-6">
+                        <label class="form-label fs-8 fw-semibold">@Localizer["Priority"]</label>
+                        <select class="form-select form-select-sm" id="cbConvTaskPriority">
+                            <option value="Low">@Localizer["Low"]</option>
+                            <option value="Normal" selected>@Localizer["Normal"]</option>
+                            <option value="High">@Localizer["High"]</option>
+                            <option value="Urgent">@Localizer["Urgent"]</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fs-8 fw-semibold">@Localizer["Due date"]</label>
+                        <input type="date" class="form-control form-control-sm" id="cbConvTaskDue" />
+                    </div>
+                </div>
+
+                @* PARTIAL SUCCESS IS A REAL OUTCOME, SO IT GETS A REAL PLACE ON SCREEN.
+
+                   CreateFromMessage makes the task and writes the provenance link as two separate
+                   acts with their own SaveChanges - deliberately not one transaction, because two
+                   services own them. It therefore reports `linked` as its OWN field so that a
+                   caller cannot infer it from `ok`. Closing on a plain "created" would leave a
+                   task that exists and a message that does not point at it, and the only person
+                   who could fix that would never learn it had happened.
+
+                   The tone is notice()'s own warning pair; the ACTION on it is primary, because a
+                   warning-coloured button is not something this platform ships. *@
+                <div class="d-none rounded p-3 mb-3" id="cbConvTaskRecovery" role="alert"
+                     style="background:#FEF3C7;border:1px solid #B45309;">
+                    <div class="fs-8 text-gray-800" id="cbConvTaskRecoveryText"></div>
+                    <button type="button" class="btn btn-sm btn-primary mt-3" id="cbConvTaskAttach">
+                        <i class="ki-outline ki-paper-clip fs-5" aria-hidden="true"></i>@Localizer["Attach it to the message"]
+                    </button>
+                </div>
+
+                <div class="text-danger fs-8 mt-2 d-none" id="cbConvTaskErr" role="alert"></div>
+            </div>
+            <div class="modal-footer py-3">
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+                <button type="button" class="btn btn-sm btn-primary" id="cbConvTaskSave">
+                    <i class="ki-outline ki-check fs-5" aria-hidden="true"></i>@Localizer["Create the task"]
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -234,6 +576,13 @@
     var listUrl = box.getAttribute('data-list');
     var addUrl = box.getAttribute('data-add');
     var reactUrl = box.getAttribute('data-react') || '';
+    var mentionUrl = box.getAttribute('data-mention') || '';
+    var createTaskUrl = box.getAttribute('data-createtask') || '';
+    var tasksUrl = box.getAttribute('data-tasks') || '';
+    var approvalsUrl = box.getAttribute('data-approvals') || '';
+    var linkUrl = box.getAttribute('data-link') || '';
+    var unlinkUrl = box.getAttribute('data-unlink') || '';
+    var linkSearchUrl = box.getAttribute('data-linksearch') || '';
     var me = box.getAttribute('data-me') || '';
 
     var list = document.getElementById('cbConvList');
@@ -241,12 +590,36 @@
     var countBadge = document.getElementById('cbConvCount');
     var LOC = document.documentElement.lang || 'ar';
 
+    // Deep links are emitted by the entity registry without a UI-language choice. Preserve the
+    // current page's culture when the conversation panel opens a task; otherwise an Arabic invoice
+    // silently lands on the English Tasks screen. Keep the registry's route and query intact.
+    function withCurrentCulture(path) {
+        try {
+            var target = new URL(path, window.location.origin);
+            if (target.origin !== window.location.origin) { return path; }
+            var current = new URLSearchParams(window.location.search);
+            var fallback = (document.documentElement.lang || '').trim();
+            var culture = current.get('culture') || fallback;
+            var uiCulture = current.get('ui-culture') || fallback || culture;
+            if (culture && !target.searchParams.has('culture')) { target.searchParams.set('culture', culture); }
+            if (uiCulture && !target.searchParams.has('ui-culture')) { target.searchParams.set('ui-culture', uiCulture); }
+            return target.pathname + target.search + target.hash;
+        } catch (_) { return path; }
+    }
+
     var T = {
         empty: @Html.Raw(Json.Serialize(Localizer["No messages on this record yet"].Value)),
         emptyHint: @Html.Raw(Json.Serialize(Localizer["Be the first to write one"].Value)),
         unavailable: @Html.Raw(Json.Serialize(Localizer["Conversations are unavailable in this environment"].Value)),
         denied: @Html.Raw(Json.Serialize(Localizer["This conversation is not available"].Value)),
         failed: @Html.Raw(Json.Serialize(Localizer["The conversation could not be loaded"].Value)),
+        @* A SEND THAT FAILS MUST NOT SAY "could not be LOADED". One string served both, so every
+           refused message - an expired page, a file the server would not take - reported itself as
+           a reading problem, and the one person who could act on it was told to look the wrong way. *@
+        sendFailed: @Html.Raw(Json.Serialize(Localizer["The message was not sent"].Value)),
+        expired: @Html.Raw(Json.Serialize(Localizer["This page has been open too long. Refresh it and send again."].Value)),
+        tooLarge: @Html.Raw(Json.Serialize(Localizer["The attachment is too large"].Value)),
+        mentionedYou: @Html.Raw(Json.Serialize(Localizer["You were mentioned"].Value)),
         edited: @Html.Raw(Json.Serialize(Localizer["edited"].Value)),
         removed: @Html.Raw(Json.Serialize(Localizer["message removed"].Value)),
         mine: @Html.Raw(Json.Serialize(Localizer["You"].Value)),
@@ -257,7 +630,85 @@
         reactFailed: @Html.Raw(Json.Serialize(Localizer["The reaction could not be saved"].Value)),
         openTab: @Html.Raw(Json.Serialize(Localizer["Open in a new tab"].Value)),
         download: @Html.Raw(Json.Serialize(Localizer["Download"].Value)),
-        noPreview: @Html.Raw(Json.Serialize(Localizer["This file has no preview"].Value))
+        noPreview: @Html.Raw(Json.Serialize(Localizer["This file has no preview"].Value)),
+        createTask: @Html.Raw(Json.Serialize(Localizer["Create a task"].Value)),
+        taskFrom: @Html.Raw(Json.Serialize(Localizer["Task from this message"].Value)),
+        groupLinked: @Html.Raw(Json.Serialize(Localizer["Linked to this conversation"].Value)),
+        groupShared: @Html.Raw(Json.Serialize(Localizer["About the same record"].Value)),
+        badgeLinked: @Html.Raw(Json.Serialize(Localizer["Linked"].Value)),
+        badgeShared: @Html.Raw(Json.Serialize(Localizer["Same record"].Value)),
+        noTasks: @Html.Raw(Json.Serialize(Localizer["No tasks are related to this conversation"].Value)),
+        tasksFailed: @Html.Raw(Json.Serialize(Localizer["The related tasks could not be loaded"].Value)),
+        taskFailed: @Html.Raw(Json.Serialize(Localizer["The task was not created"].Value)),
+        taskCreated: @Html.Raw(Json.Serialize(Localizer["The task was created"].Value)),
+        needTitle: @Html.Raw(Json.Serialize(Localizer["Write a title for the task"].Value)),
+        needAssignee: @Html.Raw(Json.Serialize(Localizer["Choose who the task is for"].Value)),
+        pickPerson: @Html.Raw(Json.Serialize(Localizer["Type a name to search"].Value)),
+        employeeNo: @Html.Raw(Json.Serialize(Localizer["Employee"].Value)),
+        due: @Html.Raw(Json.Serialize(Localizer["Due"].Value)),
+        anchorWarning: @Html.Raw(Json.Serialize(Localizer["The task was created but could not be attached to this record"].Value)),
+        approvals: @Html.Raw(Json.Serialize(Localizer["Approvals on this record"].Value)),
+        noApprovals: @Html.Raw(Json.Serialize(Localizer["Nothing is waiting for approval here"].Value)),
+        approvalsFailed: @Html.Raw(Json.Serialize(Localizer["The approvals could not be loaded"].Value)),
+        loadingTasks: @Html.Raw(Json.Serialize(Localizer["Loading the related tasks"].Value)),
+        @* REFUSED IS NOT FAILED. A 403 means the server understood and said no; a failure means it
+           never answered. Rendering both as "could not be loaded" tells someone who lacks access to
+           go and retry something that will never work, and hides a real outage behind a shrug. *@
+        tasksDenied: @Html.Raw(Json.Serialize(Localizer["You do not have access to the tasks on this record"].Value)),
+        approvalsDenied: @Html.Raw(Json.Serialize(Localizer["You do not have access to the approvals on this record"].Value)),
+        requestedBy: @Html.Raw(Json.Serialize(Localizer["Requested by"].Value)),
+        submitted: @Html.Raw(Json.Serialize(Localizer["Submitted"].Value)),
+        loadingApprovals: @Html.Raw(Json.Serialize(Localizer["Loading the approvals"].Value)),
+        linkSearchPlaceholder: @Html.Raw(Json.Serialize(Localizer["Search for a task to link"].Value)),
+        unlinkAction: @Html.Raw(Json.Serialize(Localizer["Unlink"].Value)),
+        noCandidates: @Html.Raw(Json.Serialize(Localizer["No matching tasks"].Value)),
+        working: @Html.Raw(Json.Serialize(Localizer["Working"].Value)),
+        @* EACH REFUSAL SAYS WHICH ONE IT WAS. The endpoint maps its service codes onto 401, 403,
+           404, 400 and 503 precisely so the panel does not have to guess, and collapsing them back
+           into one message here would throw away the distinction it was built to make. *@
+        linkNeedsThread: @Html.Raw(Json.Serialize(Localizer["Write the first message before linking a task"].Value)),
+        linkUnavailable: @Html.Raw(Json.Serialize(Localizer["Task linking is not available in this environment"].Value)),
+        linkDenied: @Html.Raw(Json.Serialize(Localizer["You are not allowed to link tasks on this record"].Value)),
+        linkNotFound: @Html.Raw(Json.Serialize(Localizer["The task or the conversation was not found"].Value)),
+        linkRejected: @Html.Raw(Json.Serialize(Localizer["The link was refused"].Value)),
+        linkFailed: @Html.Raw(Json.Serialize(Localizer["The link could not be saved"].Value)),
+        unlinkFailed: @Html.Raw(Json.Serialize(Localizer["The link could not be removed"].Value)),
+        linkTaskAction: @Html.Raw(Json.Serialize(Localizer["Link task"].Value)),
+        searching: @Html.Raw(Json.Serialize(Localizer["Searching"].Value)),
+        @* A SEARCH THAT NEVER ANSWERED IS NOT A SEARCH THAT FOUND NOTHING. One says try a
+           different word, the other says the list is not to be trusted; rendering both as
+           "no matching tasks" is how a reader concludes the task they can see does not exist. *@
+        searchFailed: @Html.Raw(Json.Serialize(Localizer["The task search could not be completed"].Value)),
+        selectedLabel: @Html.Raw(Json.Serialize(Localizer["Selected"].Value)),
+        taskNumber: @Html.Raw(Json.Serialize(Localizer["Task number"].Value)),
+        unassigned: @Html.Raw(Json.Serialize(Localizer["Unassigned"].Value)),
+        linkCreated: @Html.Raw(Json.Serialize(Localizer["The task was linked to this conversation"].Value)),
+        @* THE STALE ANSWER SAYS ONLY THAT IT IS GONE. Which of renamed, reassigned out of reach,
+           or deleted it was is information about a task this caller may no longer read. *@
+        linkStale: @Html.Raw(Json.Serialize(Localizer["This task is no longer available"].Value)),
+        statuses: {
+            New: @Html.Raw(Json.Serialize(Localizer["New"].Value)),
+            InProgress: @Html.Raw(Json.Serialize(Localizer["In progress"].Value)),
+            Done: @Html.Raw(Json.Serialize(Localizer["Done"].Value))
+        },
+        priorities: {
+            Urgent: @Html.Raw(Json.Serialize(Localizer["Urgent"].Value)),
+            High: @Html.Raw(Json.Serialize(Localizer["High"].Value)),
+            Normal: @Html.Raw(Json.Serialize(Localizer["Normal"].Value)),
+            Low: @Html.Raw(Json.Serialize(Localizer["Low"].Value))
+        },
+        linkToMessage: @Html.Raw(Json.Serialize(Localizer["Link a task to this message"].Value)),
+        messageTasks: @Html.Raw(Json.Serialize(Localizer["Tasks from this message"].Value)),
+        groupOnMessage: @Html.Raw(Json.Serialize(Localizer["Linked to a message"].Value)),
+        badgeFromMessage: @Html.Raw(Json.Serialize(Localizer["From a message"].Value)),
+        openTask: @Html.Raw(Json.Serialize(Localizer["Open the task"].Value)),
+        @* A 409 IS NOT A SUCCESS AND IT IS NOT A PLAIN FAILURE EITHER. The request was
+           authorized and well formed; it lost to a relationship that already exists. Telling
+           somebody "the link could not be saved" would send them to look for a fault that is
+           not there, when what they need is to go and look at the link that IS there. *@
+        linkDowngraded: @Html.Raw(Json.Serialize(Localizer["This task is already attached to another part of this conversation"].Value)),
+        attachNow: @Html.Raw(Json.Serialize(Localizer["Attach it to the message"].Value)),
+        createdNotLinked: @Html.Raw(Json.Serialize(Localizer["The task was created but it could not be attached to this message"].Value))
     };
 
     // THE PLATFORM'S SIX FROZEN KEYS, and nothing else. CommReactionKeys is a closed set so reactions
@@ -274,13 +725,39 @@
     REACTIONS.forEach(function (r) { REACTION_CH[r.key] = r.ch; });
 
     // For the composer's own picker: these go INTO the text, so they are not the reaction set.
-    var TEXT_EMOJI = ['🙂','😀','😊','😉','👍','🙏','🎉','🔥','✅','❌','⚠️','❓','📌','📎','💰','📈','📉','🕒','✍️','👌'];
+    var TEXT_EMOJI = ['😀','😃','😄','😁','😆','😂','🤣','🥹','😊','😍','🥰','😘','😎','🤩','🥳','🫠','🥲','🤔','🫡','🤯','🫣','🤗','🫶','🙂','😉','👍','👎','👏','🙌','🙏','🤝','💪','👌','🫰','❤️','🩷','✨','🔥','🎉','🚀','🌟','💯','✅','❌','⚡','🎯','🧠','🫧','🪩','🪄'];
 
-    var state = { comments: [], replyTo: null, file: null, canReact: false };
+    // `tasks` is the RELATIONSHIP list from ForConversation, kept because the per-message chips
+    // and the grouped panel are drawn from the same answer. Declared here so an empty panel is an
+    // empty list rather than undefined.
+    //
+    // `linkingAnswered` IS THE THIRD STATE, and the hint below cannot be written without it.
+    // linkingAvailable is read with `=== true`, which answers false both for a service that said
+    // no and for a panel that has not asked yet - and those two must not render alike. Only the
+    // success path sets this; it starts false and a load that fails puts it back.
+    var state = { comments: [], tasks: [], replyTo: null, file: null, canReact: false,
+                  canCreateTask: false, linkingAnswered: false };
 
     // ---- text safety --------------------------------------------------------------------------
     // Every value below is server data that may contain a person's own words.
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+    // THESE ENDPOINTS RETURN SERVER-RENDERED TEXT - task titles resolved through DisplayName.Of,
+    // status and priority labels, relative times. So each request decides its own language, and a
+    // request without the culture is answered under the DEFAULT one: an Arabic page quietly fills
+    // with English rows. It is masked for anyone whose session already carries a culture cookie,
+    // which is why it survives casual testing. Carry what the page was opened with.
+    function withCulture(u) {
+        try {
+            var here = new URLSearchParams(window.location.search);
+            var c = here.get('culture'), uc = here.get('ui-culture');
+            if (!c && !uc) { return u; }
+            var extra = [];
+            if (c) { extra.push('culture=' + encodeURIComponent(c)); }
+            if (uc) { extra.push('ui-culture=' + encodeURIComponent(uc)); }
+            return u + (u.indexOf('?') >= 0 ? '&' : '?') + extra.join('&');
+        } catch (e) { return u; }
+    }
 
     // ---- time -----------------------------------------------------------------------------------
     //
@@ -291,6 +768,17 @@
         var s = /(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : iso + 'Z';
         var d = new Date(s);
         return isNaN(d.getTime()) ? null : d;
+    }
+
+    // A DATE IS ASSEMBLED FROM PARTS, never toLocaleDateString. Chrome's Arabic date format embeds
+    // RIGHT-TO-LEFT MARKS between the components, and those marks survive an LRI/PDI isolate: due
+    // dates rendered on screen as "112026/10/" and "42026/11/" - the day torn off and thrown to the
+    // front. The isolate was not the thing that was missing; the locale formatter was the thing
+    // that was wrong. Digits and hyphens only, which no direction can reorder, matching the
+    // YYYY-MM-DD the notification bell and the task activity feed already write.
+    function dateText(d) {
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
     }
 
     // ASSEMBLED, not formatted whole: Intl.RelativeTimeFormat gives the unit its correct Arabic
@@ -374,6 +862,20 @@
             '</div></div>';
     }
 
+    // THE SAME DASHED NOTICE, WRITTEN INTO A PANEL BODY. notice() targets the conversation list, so
+    // the task and approval panels could not reuse it and had only one tone - danger - for every way
+    // of not showing a result. The tone names and the denied colours are notice()'s own, so a refusal
+    // looks the same wherever this panel shows one.
+    function panelNotice(body, text, tone) {
+        var panelTones = { denied: ['#EEF2F6', '#334155'], danger: ['transparent', 'var(--bs-danger)'] };
+        var c = panelTones[tone] || panelTones.danger;
+        body.innerHTML =
+            '<div class="notice d-flex rounded border border-dashed p-4" ' +
+            'style="background:' + c[0] + ';border-color:' + c[1] + ' !important;">' +
+            '<i class="ki-outline ki-information-5 fs-2 me-3" aria-hidden="true" style="color:' + c[1] + ';"></i>' +
+            '<span class="fs-8 text-gray-700">' + esc(text) + '</span></div>';
+    }
+
     // ---- one message ------------------------------------------------------------------------------
     function attachmentsHtml(c) {
         if (!c.attachments || !c.attachments.length) { return ''; }
@@ -389,10 +891,11 @@
                 // The tile IS the control, and it is a THUMBNAIL: the picture at a size you can
                 // recognise, not at a size that outweighs the message it came with. The dialog shows
                 // it properly.
-                return '<a href="' + esc(a.url) + '" ' + meta + ' class="d-block rounded overflow-hidden" ' +
+                var imagePreviewUrl = a.url + (a.url.indexOf('?') >= 0 ? '&' : '?') + 'preview=true';
+                return '<a href="' + esc(imagePreviewUrl) + '" ' + meta + ' class="d-block rounded overflow-hidden" ' +
                        'style="width:' + TILE + 'px;height:' + TILE + 'px;border:1px solid var(--bs-gray-300);' +
                        'cursor:zoom-in;" title="' + esc(a.name) + '">' +
-                       '<img src="' + esc(a.url) + '" alt="' + esc(a.name) + '" ' +
+                       '<img src="' + esc(imagePreviewUrl) + '" alt="' + esc(a.name) + '" ' +
                        'style="width:100%;height:100%;display:block;object-fit:cover;" /></a>';
             }
 
@@ -443,24 +946,117 @@
             bits.push('<button type="button" class="btn btn-link p-0 fs-9 fw-semibold text-muted text-hover-primary" ' +
                       'data-act="reply" data-c="' + c.id + '">' + esc(T.reply) + '</button>');
         }
+        // CREATE A TASK, in the same text-action vocabulary as React and Reply rather than a new
+        // button style or an icon nobody has seen before.
+        //
+        // THREE THINGS HAVE TO BE TRUE. The host named the endpoint (canCreateTask), the list
+        // endpoint did not switch the affordance off for this reader, and the message still
+        // exists - turning a removed message into work would carry text the platform withdrew.
+        // None of that is authorization: the create endpoint re-checks the caller itself.
+        if (state.canCreateTask && !c.isDeleted && !(c.can && c.can.createTask === false)) {
+            bits.push('<button type="button" class="btn btn-link p-0 fs-9 fw-semibold text-muted text-hover-primary" ' +
+                      'data-act="task" data-c="' + c.id + '">' + esc(T.createTask) + '</button>');
+        }
+        // LINK AN EXISTING TASK TO THIS MESSAGE. The same four conditions the conversation-level
+        // control answers to, and they are not all known yet: linkingAvailable and the thread id
+        // arrive from a different endpoint than the one that drew this bubble. So the button is
+        // always rendered and syncMessageLinkButtons decides whether it is visible - the
+        // alternative is a control whose presence depends on which response won the race.
+        if (!c.isDeleted) {
+            bits.push('<button type="button" class="cb-msg-link d-none btn btn-link p-0 fs-9 fw-semibold text-muted text-hover-primary" ' +
+                      'data-act="linktask" data-c="' + c.id + '">' + esc(T.linkToMessage) + '</button>');
+        }
+
         if (!bits.length) { return ''; }
 
         return '<div class="d-flex align-items-center gap-2 mt-1 ms-2">' +
             bits.join('<span class="text-gray-400 fs-9">·</span>') + '</div>';
     }
 
+    // Marks every mentioned name inside a message body and reports the ones it could not find.
+    //
+    // ONE PASS, NOT ONE PER NAME. Replacing name by name lets a short label match inside the markup
+    // a longer one just produced - "@@Ahmed" inside "<span...>Ahmed Anas</span>" - so the labels are
+    // alternated into a single expression and the string is walked once. Longest first, so "Ahmed
+    // Anas" wins over "Ahmed" where both were mentioned.
+    //
+    // ESCAPED FIRST, MATCHED SECOND. The body is escaped before anything is inserted, and the
+    // labels are escaped the same way before being searched for, so a name containing a quote or an
+    // angle bracket still matches and nothing a person typed can become markup.
+    function markMentions(c) {
+        var html = esc(c.body || '');
+        var rows = (c.mentions || []).filter(function (m) { return m && m.display; });
+        if (!rows.length) return { html: html, unseen: [] };
+
+        // EVERY NAME THE MENTION HAS BEEN KNOWN BY maps to the ONE name this reader should see.
+        // The body carries whichever language the author was writing in; `display` is this reader's.
+        // Matching on both and rendering `display` is what makes a message typed in English read in
+        // Arabic - and it is why the two messages above no longer look like different features.
+        var toDisplay = {};
+        rows.forEach(function (m) {
+            var names = (m.match && m.match.length) ? m.match : [m.display];
+            names.forEach(function (n) {
+                if (n && String(n).trim()) toDisplay[esc(String(n))] = esc(String(m.display));
+            });
+        });
+
+        var keys = Object.keys(toDisplay).sort(function (a, b) { return b.length - a.length; });
+        if (!keys.length) return { html: html, unseen: [] };
+
+        var found = {};
+        var alts = keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+        var re = new RegExp('@@(' + alts.join('|') + ')', 'g');
+
+        html = html.replace(re, function (_whole, written) {
+            found[written] = true;
+            return '<span class="cb-mention">' + toDisplay[written] + '</span>';
+        });
+
+        // A mention is "unseen" only when NONE of its names appears in the text - a group mention, or
+        // one written as the raw grammar. One written in the other language is now seen.
+        var unseen = rows.filter(function (m) {
+            var names = (m.match && m.match.length) ? m.match : [m.display];
+            return !names.some(function (n) { return found[esc(String(n))]; });
+        }).map(function (m) { return m.display; });
+
+        return { html: html, unseen: unseen };
+    }
+
     function message(c, isReply) {
         var isMine = me && String(c.authorEmployeeId || '') === me;
         var d = parseUtc(c.createdAt);
 
-        var mentions = (c.mentions || []).filter(function (m) { return m.display; })
-            .map(function (m) { return '<span class="badge badge-light-info fs-9 me-1">@@' + esc(m.display) + '</span>'; })
+        // THE MENTION IS MARKED WHERE IT WAS WRITTEN, not listed underneath.
+        //
+        // The composer puts the NAME in the text, so the badge row that used to sit under the bubble
+        // now repeats, word for word, something already on the line above it - which is how the
+        // invitation card came to say everything twice.
+        //
+        // The names are matched against the mention rows the SERVER resolved, whose labels were
+        // frozen when the mention was made. Nothing is guessed from the prose: a reader who types
+        // "@@ahmed" about nobody gets plain text, because no mention row carries that label.
+        //
+        // .cb-mention is the platform's own treatment, shared with Tasks and the Workspace mentions
+        // list, and it draws NO "@@": the tint and the weight are the mark, and the sign is authoring
+        // syntax the reader has no use for.
+        var marked = markMentions(c);
+
+        // Only the mentions that are NOT visible in the text keep a badge - a group mention, or one
+        // written as the raw "@@employee:12" grammar. Without that fallback, mentioning somebody in a
+        // way the body does not spell out would notify them invisibly.
+        var mentions = marked.unseen
+            .map(function (m) { return '<span class="badge badge-light-info fs-9 me-1">' + esc(m) + '</span>'; })
             .join('');
 
         var head =
             '<div class="d-flex align-items-center gap-2 mb-1">' +
                 '<span class="fw-bold text-gray-900 fs-7 text-truncate" style="min-width:0;">' + esc(c.author) + '</span>' +
                 (isMine ? '<span class="badge badge-light-primary fs-9 flex-shrink-0">' + esc(T.mine) + '</span>' : '') +
+                @* SAY IT, do not only colour it. The mention inside the text is tinted, which tells
+                   you SOMEBODY was named - you still have to read the name and recognise it as
+                   your own. On a thread where several people are mentioned, the one line that is
+                   addressed to YOU should not need decoding. *@
+                (c.mentionsMe ? '<span class="badge badge-light-danger fs-9 flex-shrink-0">' + esc(T.mentionedYou) + '</span>' : '') +
                 (d ? '<span class="text-muted fs-9 flex-shrink-0" title="' + esc(exact(d)) + '">' + esc(ago(d)) + '</span>' : '') +
                 (c.editedAt ? '<span class="text-muted fs-9 flex-shrink-0">(' + esc(T.edited) + ')</span>' : '') +
             '</div>';
@@ -470,7 +1066,7 @@
         var text = c.isDeleted
             ? '<div class="fst-italic text-muted fs-7">' + esc(T.removed) + '</div>'
             : ((c.body || '').trim()
-                ? '<div class="fs-7 text-gray-800" style="white-space:pre-wrap;word-break:break-word;">' + esc(c.body) + '</div>'
+                ? '<div class="fs-7 text-gray-800" style="white-space:pre-wrap;word-break:break-word;">' + marked.html + '</div>'
                 : '');
 
         // A BUBBLE HUGS ITS CONTENT. Stretched to the full width of the card, a two-word message reads
@@ -482,11 +1078,19 @@
             text + attachmentsHtml(c) + (mentions ? '<div class="mt-2">' + mentions + '</div>' : '') +
             '</div>';
 
-        return '<div class="cb-msg d-flex align-items-start gap-3 mb-3" data-id="' + c.id + '">' +
+        // THE ANCHOR THE REST OF THE PLATFORM ALREADY POINTS AT. MessagesForTask builds every
+        // route as "<record url>#cbComment<id>" through IEntityRegistry, and nothing in this panel
+        // carried that id - so each of those links landed on the record and stopped, leaving the
+        // reader to find the message by eye. The id is the destination, not decoration.
+        return '<div class="cb-msg d-flex align-items-start gap-3 mb-3" id="cbComment' + c.id + '" data-id="' + c.id + '">' +
             avatar(c.author, isReply ? 30 : 38, c.authorAvatar) +
             '<div class="flex-grow-1" style="min-width:0;">' + head + bubble + reactionsHtml(c) +
+            @* FILLED BY A SECOND PASS, not here. The tasks arrive from their own endpoint, which
+               answers after the thread has already been drawn; rendering them inside message()
+               would mean repainting every bubble whenever a link changed. *@
+            '<div class="cb-msg-tasks d-none" data-c="' + c.id + '"></div>' +
             actionsHtml(c) +
-            '<div class="cb-picker d-none flex-wrap gap-1 mt-2"></div>' +
+            '<div class="cb-picker d-none cb-emoji-picker cb-emoji-grid mt-2" role="group" aria-label="' + esc(T.react) + '"></div>' +
             '</div></div>';
     }
 
@@ -520,12 +1124,47 @@
         return roots.map(branch).join('');
     }
 
-    function render(data) {
-        state.comments = data.comments || [];
+    // What the thread LOOKS like, cheaply. Ids alone would miss an edit or a new reaction, and
+    // comparing the rendered html would redraw on every whitespace difference the server happens
+    // to produce.
+    function signature(comments) {
+        var out = '';
+        for (var i = 0; i < comments.length; i++) {
+            var c = comments[i];
+            out += (c.id || '') + ':' + (c.editedAt || '') + ':' + (c.deleted ? 'd' : '') +
+                   ':' + ((c.reactions || []).length) + '|';
+        }
+        return out;
+    }
+    var lastSig = null;
+
+    function render(data, quiet) {
+        var next = data.comments || [];
+        var sig = signature(next);
+        // A poll that found nothing new leaves the DOM completely alone.
+        if (quiet && sig === lastSig) { return false; }
+        var grew = lastSig !== null && next.length > (state.comments || []).length;
+        lastSig = sig;
+
+        state.comments = next;
         state.canReact = !!data.canReact && !!reactUrl;
+        // Same shape as canReact: the url is the host's half, the payload flag is the server's.
+        // An endpoint that says nothing leaves it on, because naming the url WAS the opt-in.
+        state.canCreateTask = !!createTaskUrl && data.canCreateTask !== false;
+
+        // THE THREAD ID COMES FROM THE LIST ENDPOINT, which is the only contract that resolved it:
+        // ListForEntityAsync picked the thread for THIS record under the caller's own context, and
+        // the response has carried the id all along with "no client reads it today" written beside
+        // it. This is that client.
+        //
+        // IT IS NOT THE RECORD ID AND IT IS NEVER INVENTED. Sending `id` here would attach a task to
+        // whatever thread happened to carry that number. It is also NULL until the first comment
+        // creates the thread, which is why linking asks for a message first rather than failing.
+        state.threadId = (data.threadId > 0) ? data.threadId : 0;
+        syncLinkButton();
 
         if (!state.comments.length) {
-            // EMPTY IS NOT A FAILURE, so it does not wear a failure's colour.
+            // EMPTY IS NOT A FAILURE, so it does not wear a failure’s colour.
             notice(T.empty, 'off', T.emptyHint);
         } else {
             list.innerHTML = thread(state.comments);
@@ -533,7 +1172,25 @@
 
         countBadge.textContent = state.comments.length;
         countBadge.classList.remove('d-none');
+
+        // ARRIVED WHILE YOU WERE READING. Scrolling the newest message into view is the whole
+        // point of the poll - a message that lands below the fold is a message nobody saw. Only
+        // on growth, and only from a poll: re-anchoring the view on every edit would fight the
+        // reader for control of the page.
+        if (grew && quiet) {
+            try {
+                var items = list.children;
+                var lastEl = items && items.length ? items[items.length - 1] : null;
+                if (lastEl && lastEl.scrollIntoView) { lastEl.scrollIntoView({ block: 'nearest' }); }
+            } catch (e) { }
+        }
         composer.classList.remove('d-none');
+
+        // The thread was just replaced wholesale, so every per-message control and task chip is a
+        // new node. Both passes are idempotent and cheap, and skipping them is how the chips
+        // vanish on the first poll after a link was made.
+        syncMessageLinkButtons();
+        paintMessageTasks();
         paintMyAvatar(data.me);
     }
 
@@ -571,11 +1228,14 @@
 
         if (act === 'reply') { startReply(cid); return; }
 
+        if (act === 'task') { openTaskDialog(cid); return; }
+        if (act === 'linktask') { openPicker(cid); return; }
+
         if (act === 'picker') {
             var pane = btn.closest('.cb-msg').querySelector('.cb-picker');
             if (!pane) { return; }
             if (!pane.classList.contains('d-none')) {
-                pane.classList.add('d-none'); pane.classList.remove('d-flex'); return;
+                pane.classList.add('d-none'); pane.classList.remove('d-grid'); return;
             }
 
             // THE PICKER USED TO SEND on=true FOR EVERY EMOJI, so pressing the like you had already
@@ -589,12 +1249,12 @@
             pane.innerHTML = REACTIONS.map(function (r) {
                 // The picker is the one place a picture IS the label — an emoji is what you are choosing.
                 var on = already[r.key] ? '0' : '1';
-                return '<button type="button" class="btn btn-sm px-2 py-1 rounded ' +
-                       (already[r.key] ? 'bg-light-primary' : 'btn-active-light') + '" ' +
+                return '<button type="button" class="cb-emoji-choice ' +
+                       (already[r.key] ? 'is-selected' : '') + '" ' +
                        'data-act="toggle" data-c="' + cid + '" data-key="' + r.key + '" data-on="' + on + '" ' +
-                       'title="' + r.key + '" style="font-size:17px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;">' + r.ch + '</button>';
+                       'title="' + r.key + '" aria-label="' + r.key + '">' + r.ch + '</button>';
             }).join('');
-            pane.classList.remove('d-none'); pane.classList.add('d-flex');
+            pane.classList.remove('d-none'); pane.classList.add('d-grid');
             return;
         }
 
@@ -613,10 +1273,17 @@
         var type = (link.getAttribute('data-type') || '').toLowerCase();
         if (!url) { return; }
 
+        // The authorized document endpoint defaults to Content-Disposition: attachment. Only its
+        // explicit preview=true path may render an image/PDF inline in this dialog.
+        var inlinePreview = type.indexOf('image/') === 0 || type.indexOf('pdf') >= 0;
+        var previewUrl = inlinePreview
+            ? url + (url.indexOf('?') >= 0 ? '&' : '?') + 'preview=true'
+            : url;
+
         document.getElementById('cbConvFileTitle').textContent = name;
         var open = document.getElementById('cbConvFileOpen');
         var dl = document.getElementById('cbConvFileDownload');
-        open.setAttribute('href', url);
+        open.setAttribute('href', previewUrl);
         dl.setAttribute('href', url);
         dl.setAttribute('download', name);
         document.getElementById('cbConvFileOpenText').textContent = T.openTab;
@@ -624,10 +1291,10 @@
 
         var body = document.getElementById('cbConvFileBody');
         if (type.indexOf('image/') === 0) {
-            body.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(name) + '" ' +
+            body.innerHTML = '<img src="' + esc(previewUrl) + '" alt="' + esc(name) + '" ' +
                              'style="max-width:100%;max-height:80vh;display:block;object-fit:contain;" />';
         } else if (type.indexOf('pdf') >= 0) {
-            body.innerHTML = '<iframe src="' + esc(url) + '" title="' + esc(name) + '" ' +
+            body.innerHTML = '<iframe src="' + esc(previewUrl) + '" title="' + esc(name) + '" ' +
                              'style="width:100%;height:80vh;border:0;background:#fff;"></iframe>';
         } else {
             body.innerHTML = '<div class="text-center py-10">' +
@@ -716,6 +1383,163 @@
     input.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); send(); }
     });
+
+    // =====================================================================================
+    // THE @@-MENTION PICKER.
+    //
+    // IT EXISTS BECAUSE THE GRAMMAR CANNOT BE TYPED. The platform recognises exactly two
+    // forms - "@@employee:12" and "@@[Name](employee:12)" - and a bare "@@ahmed" is plain text.
+    // Without a picker the feature is reachable only by someone who knows an employee id,
+    // and the failure is silent: the message posts, nobody is notified, and nothing says so.
+    //
+    // IT INSERTS THE TOKEN AND NOTHING ELSE. Everything after that already works - the body
+    // policy parses it, CommMentionService writes the mention and its recipients, and the
+    // notification path excludes the author and drops anyone who may not read the subject.
+    //
+    // A HOST THAT SUPPLIES NO URL SIMPLY HAS NO PICKER, so this partial stays mountable on a
+    // screen whose controller has not grown the endpoint yet.
+    // =====================================================================================
+    var atMenu = document.getElementById('cbConvAtMenu');
+    var cbAt = { items: [], idx: 0, from: -1, to: -1, timer: null, seq: 0 };
+
+    function atClose() {
+        if (atMenu) atMenu.classList.add('d-none');
+        cbAt.items = []; cbAt.from = -1; cbAt.to = -1;
+    }
+
+    function atRender() {
+        if (!atMenu) return;
+        if (!cbAt.items.length) { atClose(); return; }
+        atMenu.innerHTML = cbAt.items.map(function (it, i) {
+            var face = it.avatar
+                ? '<img src="' + encodeURI(it.avatar) + '" alt="" class="rounded-circle" ' +
+                  'style="width:24px;height:24px;object-fit:cover;flex:0 0 24px;">'
+                : '<span class="symbol-label bg-light-primary text-primary fw-bold rounded-circle d-flex ' +
+                  'align-items-center justify-content-center fs-8" style="width:24px;height:24px;flex:0 0 24px;">' +
+                  esc((it.name || '?').trim().charAt(0)) + '</span>';
+            return '<div class="d-flex align-items-center gap-3 px-3 py-2 cb-conv-at' +
+                   (i === cbAt.idx ? ' bg-light-primary' : '') + '" role="option" data-i="' + i +
+                   '" style="cursor:pointer;">' + face +
+                   '<span class="text-gray-900 fs-7 text-truncate">' + esc(it.name) + '</span></div>';
+        }).join('');
+        // Under the composer in both directions: `inset-inline-start` mirrors for Arabic without
+        // a second rule, the way the rest of this panel's spacing does.
+        atMenu.style.insetInlineStart = '8px';
+        atMenu.style.top = Math.min(input.offsetHeight + 4, 260) + 'px';
+        atMenu.classList.remove('d-none');
+    }
+
+    // The token under the caret, or null. Anchored to a word boundary so the domain of an e-mail
+    // address typed mid-sentence does not open the picker.
+    function atToken() {
+        var upto = input.value.slice(0, input.selectionStart);
+        var m = /(?:^|[\s(\[])@@([^\s@@\]]{0,30})$/.exec(upto);
+        if (!m) return null;
+        return { q: m[1], from: upto.length - m[1].length - 1, to: input.selectionStart };
+    }
+
+    // WHAT THE AUTHOR SEES IS THE NAME. THE ID TRAVELS BESIDE IT.
+    //
+    // Writing the platform grammar into the textarea put "@@[سارة اختبار الشات](employee:1044)" in
+    // front of the person typing. It is machine punctuation in the middle of a sentence they are
+    // composing, and it is the one part of the message they cannot read.
+    //
+    // A <textarea> cannot render a chip, so the two halves are separated: the TEXT carries the
+    // name, and the picked ids ride along in `picked` and are posted explicitly. The service was
+    // built for exactly this - CommAddCommentRequest.Mentions exists "because a picker UI knows the
+    // target id without the author having typed a token" - and it unions and dedupes them with
+    // whatever it parses from the body, so an author who types the raw grammar still works too.
+    var picked = [];   // [{ id, name }] in the order they were inserted
+
+    function atInsert(item) {
+        if (!item || cbAt.from < 0) return;
+        var before = input.value.slice(0, cbAt.from);
+        var after = input.value.slice(cbAt.to);
+        // Brackets are stripped from the name for the same reason the grammar strips them: a person
+        // called "Ali (Sales)" would otherwise be matched back out wrongly on send.
+        var shown = String(item.name).replace(/[\[\]()]/g, '');
+        var token = '@@' + shown + ' ';
+        input.value = before + token + after;
+        var caret = (before + token).length;
+        input.setSelectionRange(caret, caret);
+        picked.push({ id: item.id, name: shown });
+        // The name only becomes a mention at this moment, so this is when it must light up.
+        paintHighlight();
+        atClose();
+        input.focus();
+        refresh();
+    }
+
+    // WHICH PICKS SURVIVED THE EDITING. A name deleted from the text is a mention withdrawn, so the
+    // id must go with it - otherwise somebody is notified about a message that does not name them.
+    //
+    // Counted, not merely tested for presence: picking the same name twice is two mentions, and
+    // deleting one of them must drop exactly one id. Two colleagues who genuinely share a display
+    // name are indistinguishable in the text, so the count is what decides, and the surplus id is
+    // dropped rather than guessed at.
+    function survivingMentions(text) {
+        var seen = {}, out = [];
+        for (var i = 0; i < picked.length; i++) {
+            var p = picked[i];
+            var needle = '@@' + p.name;
+            if (seen[p.name] === undefined) {
+                seen[p.name] = text.split(needle).length - 1;   // occurrences still written
+            }
+            if (seen[p.name] > 0) { seen[p.name]--; out.push(p.id); }
+        }
+        return out;
+    }
+
+    if (atMenu && mentionUrl) {
+        input.addEventListener('input', function () {
+            var tok = atToken();
+            if (!tok) { atClose(); return; }
+            cbAt.from = tok.from; cbAt.to = tok.to;
+            clearTimeout(cbAt.timer);
+            // Debounced, and each reply carries its request number: a slow answer for "a" must not
+            // land on top of the list for "ahm" typed after it.
+            var seq = ++cbAt.seq;
+            cbAt.timer = setTimeout(function () {
+                var u = mentionUrl + (mentionUrl.indexOf('?') >= 0 ? '&' : '?') +
+                        'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id) +
+                        '&q=' + encodeURIComponent(tok.q);
+                fetch(withCulture(u), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(function (rows) {
+                        if (seq !== cbAt.seq) return;      // a stale answer
+                        cbAt.items = rows || []; cbAt.idx = 0;
+                        atRender();
+                    })
+                    .catch(atClose);
+            }, 160);
+        });
+
+        // Capture, so the arrow keys and Enter are claimed BEFORE the Ctrl+Enter send handler and
+        // before the textarea's own caret movement.
+        input.addEventListener('keydown', function (e) {
+            if (!cbAt.items.length) return;   // menu closed: every key keeps its normal meaning
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                cbAt.idx = (cbAt.idx + (e.key === 'ArrowDown' ? 1 : -1) + cbAt.items.length) % cbAt.items.length;
+                atRender();
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                atInsert(cbAt.items[cbAt.idx]);
+            } else if (e.key === 'Escape') {
+                e.preventDefault(); atClose();
+            }
+        }, true);
+
+        input.addEventListener('blur', function () { setTimeout(atClose, 150); });
+
+        // mousedown, not click: the textarea's blur would close the menu before a click landed.
+        atMenu.addEventListener('mousedown', function (e) {
+            var row = e.target.closest('.cb-conv-at');
+            if (!row) return;
+            e.preventDefault();
+            atInsert(cbAt.items[+row.dataset.i]);
+        });
+    }
 
     function startReply(commentId) {
         var c = state.comments.filter(function (x) { return String(x.id) === String(commentId); })[0];
@@ -812,12 +1636,27 @@
         if (open) { open.remove(); return; }
         var pane = document.createElement('div');
         pane.id = 'cbConvEmojiPane';
-        pane.className = 'd-flex flex-wrap gap-1 p-2 rounded shadow-sm bg-body';
-        pane.style.cssText = 'position:absolute;bottom:36px;inset-inline-start:0;z-index:20;width:220px;border:1px solid var(--bs-gray-300);';
-        pane.innerHTML = TEXT_EMOJI.map(function (ch) {
-            return '<button type="button" class="btn btn-sm btn-active-light px-2 py-1" ' +
-                   'style="font-size:16px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;" data-ch="' + ch + '">' + ch + '</button>';
-        }).join('');
+        pane.className = 'cb-emoji-picker';
+        pane.setAttribute('role', 'dialog');
+        pane.setAttribute('aria-label', emojiBtn.title);
+        pane.style.cssText = 'position:absolute;bottom:calc(100% + 10px);inset-inline-start:0;z-index:1085;';
+        var heading = document.createElement('div');
+        heading.className = 'cb-emoji-heading';
+        heading.innerHTML = '<i class="ki-outline ki-emoji-happy" aria-hidden="true"></i>';
+        var headingText = document.createElement('span');
+        headingText.textContent = emojiBtn.title;
+        heading.appendChild(headingText);
+        pane.appendChild(heading);
+        var grid = document.createElement('div');
+        grid.className = 'cb-emoji-grid';
+        TEXT_EMOJI.forEach(function (ch) {
+            var choice = document.createElement('button');
+            choice.type = 'button'; choice.className = 'cb-emoji-choice';
+            choice.setAttribute('data-ch', ch); choice.setAttribute('aria-label', ch);
+            choice.title = ch; choice.textContent = ch;
+            grid.appendChild(choice);
+        });
+        pane.appendChild(grid);
         pane.addEventListener('click', function (e) {
             var b = e.target.closest('[data-ch]');
             if (!b) { return; }
@@ -837,22 +1676,132 @@
         if (pane && !pane.contains(e.target) && e.target !== emojiBtn && !emojiBtn.contains(e.target)) { pane.remove(); }
     });
 
-    function load() {
+    // `quiet` is the polling caller: a refusal or a dropped connection must not replace a thread
+    // the reader is looking at with an error panel just because one background poll failed.
+    function load(quiet) {
         var url = listUrl + (listUrl.indexOf('?') >= 0 ? '&' : '?') +
                   'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
-        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        return fetch(withCulture(url), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) {
                 // 404 is the deliberately indistinguishable refusal; 503 is an inactive capability.
-                if (r.status === 404) { notice(T.denied, 'denied'); return null; }
-                if (r.status === 503) { notice(T.unavailable, 'off'); return null; }
-                if (!r.ok) { notice(T.failed, 'warn'); return null; }
+                if (r.status === 404) { if (!quiet) { notice(T.denied, 'denied'); } return null; }
+                if (r.status === 503) { if (!quiet) { notice(T.unavailable, 'off'); } return null; }
+                if (!r.ok) { if (!quiet) { notice(T.failed, 'warn'); } return null; }
                 return r.json();
             })
-            .then(function (d) { if (d && d.ok) { render(d); } else if (d) { notice(T.failed, 'warn'); } })
-            .catch(function () { notice(T.failed, 'warn'); });
+            .then(function (d) {
+                if (d && d.ok) { return render(d, quiet); }
+                if (d && !quiet) { notice(T.failed, 'warn'); }
+                return false;
+            })
+            .catch(function () { if (!quiet) { notice(T.failed, 'warn'); } return false; });
     }
 
+    // THE THREAD KEEPS ITSELF CURRENT, ON EVERY SCREEN THAT CARRIES IT.
+    //
+    // Until now a reply from the other side appeared only if you reloaded the page - so two people
+    // working the same ticket each sat looking at a conversation that had already moved on. The
+    // poll lives HERE, in the shared partial, so every screen with a conversation gets it rather
+    // than the one screen somebody remembered.
+    //
+    // Three things it must not do:
+    //   * REDRAW WHEN NOTHING CHANGED - render() repaints the list, which would close an open
+    //     reply box, drop a reaction popover and throw away the scroll position every few seconds.
+    //     The signature below is what decides.
+    //   * POLL A TAB NOBODY IS LOOKING AT. Hidden tabs are skipped, and a tab coming back to the
+    //     front refreshes immediately rather than waiting out the rest of its interval.
+    //   * OVERLAP. One request at a time; a slow answer must not stack a queue behind it.
+    var polling = false;
+    function poll() {
+        if (polling || document.hidden) { return; }
+        polling = true;
+        load(true).then(function () { polling = false; }, function () { polling = false; });
+    }
+    setInterval(poll, 15000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) { poll(); } });
+
+    @* The server speaks first: when it sent a reason, that reason wins. Only when it could not
+       (a non-JSON refusal) does the status have to be translated here. *@
+    function sendError(d) {
+        if (d && d.error) { return d.error; }
+        var st = d && d.httpStatus;
+        if (st === 400) { return T.expired; }      // the antiforgery token aged out with the page
+        if (st === 413) { return T.tooLarge; }
+        return st ? (T.sendFailed + ' (' + st + ')') : T.sendFailed;
+    }
+
+    @* THE BACKDROP PAINTER.
+
+       It highlights the names that were actually PICKED, not every @word: the composer already
+       knows them (`picked`), and matching a bare @token would promise a mention for something the
+       server will not resolve - a worse lie than no highlight at all.
+
+       Longest name first, so "احمد" does not eat the start of "احمد زكريا". *@
+    var hl = document.getElementById('cbConvHl');
+
+    @* THE MIRROR COPIES ITS METRICS FROM THE BOX, it does not restate them.
+
+       Matching them in markup looked right and was not: the textarea inherits font-weight 500 from
+       .form-control while the div inherited 400 from the page, and a weight difference changes every
+       glyph's advance - so the drawn text crept away from the caret across a line. Anything that
+       moves a glyph is read off the live computed style, so the two can never drift again, whatever
+       the theme does to .form-control later. *@
+    var MIRRORED = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+                    'lineHeight', 'letterSpacing', 'wordSpacing', 'textIndent', 'textTransform',
+                    'direction', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
+    function mirrorMetrics() {
+        if (!hl || !input) { return; }
+        var cs = window.getComputedStyle(input);
+        for (var i = 0; i < MIRRORED.length; i++) { hl.style[MIRRORED[i]] = cs[MIRRORED[i]]; }
+    }
+    mirrorMetrics();
+    window.addEventListener('resize', mirrorMetrics);
+
+
+    function escHtml(t) {
+        return String(t).replace(/[&<>"]/g, function (ch) {
+            return ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&quot;';
+        });
+    }
+
+    function paintHighlight() {
+        if (!hl) { return; }
+        var text = input.value || '';
+        var names = picked.map(function (p) { return p.name; })
+                          .filter(Boolean)
+                          .sort(function (a, b) { return b.length - a.length; });
+        var out = '';
+        var i = 0;
+        outer: while (i < text.length) {
+            // '@@' - a literal at-sign in a .cshtml is Razor's transition character and has to be
+            // doubled, or the view stops compiling at the first one.
+            if (text.charAt(i) === '@@') {
+                for (var n = 0; n < names.length; n++) {
+                    var tok = '@@' + names[n];
+                    if (text.substr(i, tok.length) === tok) {
+                        // cb-mention-LIVE: the same pill with no padding and no weight change, so the
+                        // mirror advances exactly as the textarea does and the caret stays on the text.
+                        out += '<span class="cb-mention-live">' + escHtml(tok) + '</span>';
+                        i += tok.length;
+                        continue outer;
+                    }
+                }
+            }
+            out += escHtml(text.charAt(i));
+            i++;
+        }
+        @* A trailing newline collapses in html, so the backdrop would come up one line short
+           exactly when the caret sits on that new line. *@
+        hl.innerHTML = out + (text.slice(-1) === '\n' ? '<br>' : '');
+        hl.scrollTop = input.scrollTop;
+    }
+
+    input.addEventListener('input', paintHighlight);
+    input.addEventListener('scroll', function () { hl.scrollTop = input.scrollTop; });
+
     function send() {
+
+
         var text = (input.value || '').trim();
         err.classList.add('d-none');
         if (!text && !state.file) { return; }
@@ -861,6 +1810,9 @@
         fd.append('entity', code);
         fd.append('id', id);
         fd.append('body', text);
+        // The ids behind the names still written in the text. Repeated, not joined: that is the
+        // shape model binding reads into an int[] without a separator convention to agree on.
+        survivingMentions(text).forEach(function (mid) { fd.append('mentionIds', mid); });
         if (state.replyTo) { fd.append('parentCommentId', state.replyTo); }
         if (state.file) { fd.append('file', state.file); }
         fd.append('__RequestVerificationToken', token());
@@ -870,10 +1822,20 @@
         sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="presentation"></span>';
 
         fetch(addUrl, { method: 'POST', credentials: 'same-origin', body: fd })
-            .then(function (r) { return r.status === 404 || r.status === 503 ? null : r.json(); })
+            .then(function (r) {
+                if (r.status === 404 || r.status === 503) { return null; }
+                @* A REFUSAL IS NOT ALWAYS JSON. An expired antiforgery token answers 400 with an
+                   empty body and a request over the size limit answers 413 with an html page, so
+                   r.json() THREW and every one of them fell into the one generic catch below -
+                   which is how "the conversation could not be loaded" came to be the message for a
+                   message that was refused. Keep the status and say something true about it. *@
+                return r.json().catch(function () { return { ok: false, httpStatus: r.status }; });
+            })
             .then(function (d) {
                 if (d && d.ok) {
                     input.value = '';
+                    picked = [];            // the next message starts with no one picked
+                    paintHighlight();       // ...and the cleared box must not keep the old chips
                     state.file = null; fileInput.value = '';
                     dropPreview();
                     document.getElementById('cbConvFilePreview').innerHTML = '';
@@ -881,16 +1843,1136 @@
                     state.replyTo = null;
                     replyBar.classList.add('d-none'); replyBar.classList.remove('d-flex');
                     load();
+                    @* THE HOST SCREEN MAY HAVE CHANGED TOO. A reply can stamp a ticket’s first
+                       response, and this partial has no business knowing that - so it announces
+                       what the server said and whoever cares listens. The house rule is that a
+                       mutation repaints its own section; this is how a SHARED section tells the
+                       page around it that something else moved. *@
+                    try {
+                        document.dispatchEvent(new CustomEvent("cb:conversation:added", { detail: d }));
+                    } catch (e) { }
                 } else {
-                    err.textContent = (d && d.error) ? d.error : T.failed;
+                    err.textContent = sendError(d);
                     err.classList.remove('d-none');
                 }
             })
-            .catch(function () { err.textContent = T.failed; err.classList.remove('d-none'); })
+            .catch(function () { err.textContent = T.sendFailed; err.classList.remove('d-none'); })
             .finally(function () { sendBtn.innerHTML = label; refresh(); });
+    }
+
+    // ================================================================================================
+    // COMMUNICATION PHASE 3 - TASKS. Everything below is inert unless the host named a url.
+    // ================================================================================================
+
+    var taskModalEl = document.getElementById('cbConvTaskModal');
+    var taskFor = null;              // the comment this dialog is about
+
+    function taskModal() {
+        // Bootstrap is the page's, not this panel's. If it is absent the dialog cannot open, and
+        // saying so beats a dead button that reports nothing.
+        if (!taskModalEl || !window.bootstrap || !window.bootstrap.Modal) { return null; }
+        return window.bootstrap.Modal.getOrCreateInstance(taskModalEl);
+    }
+
+    function openTaskDialog(commentId) {
+        var c = state.comments.filter(function (x) { return String(x.id) === String(commentId); })[0];
+        if (!c) { return; }
+        var m = taskModal();
+        if (!m) { return; }
+        taskFor = c;
+
+        document.getElementById('cbConvTaskFrom').textContent = c.author || '';
+        document.getElementById('cbConvTaskQuote').textContent = c.body || '';
+
+        // A SENSIBLE TITLE, NOT AN EMPTY BOX. The first line of the message is almost always what
+        // the task is called; it stays editable, and a long line is cut rather than scrolled.
+        var seed = (c.body || '').split(/\r?\n/)[0].trim();
+        if (seed.length > 120) { seed = seed.slice(0, 117) + '...'; }
+        document.getElementById('cbConvTaskTitle').value = seed;
+        document.getElementById('cbConvTaskTitleEn').value = '';
+        document.getElementById('cbConvTaskDesc').value = '';
+        document.getElementById('cbConvTaskDue').value = '';
+        document.getElementById('cbConvTaskPriority').value = 'Normal';
+        setAssignee('', '');
+        document.getElementById('cbConvTaskAssigneeHint').textContent = mentionUrl ? T.pickPerson : T.employeeNo;
+        document.getElementById('cbConvTaskAssignee').setAttribute('inputmode', mentionUrl ? 'text' : 'numeric');
+        hideRecovery();
+        taskErr('');
+        m.show();
+    }
+
+    function taskErr(msg) {
+        var el = document.getElementById('cbConvTaskErr');
+        if (!el) { return; }
+        el.textContent = msg || '';
+        el.classList.toggle('d-none', !msg);
+    }
+
+    function setAssignee(id, name) {
+        document.getElementById('cbConvTaskAssigneeId').value = id || '';
+        document.getElementById('cbConvTaskAssignee').value = name || '';
+        var pane = document.getElementById('cbConvTaskPeople');
+        if (pane) { pane.classList.add('d-none'); pane.innerHTML = ''; }
+    }
+
+    // The people lookup reuses the mention endpoint - {id, name, avatar} - so the assignee is
+    // chosen as a face and a name, never typed as a number, wherever the host wired mentions.
+    (function () {
+        var inp = document.getElementById('cbConvTaskAssignee');
+        var pane = document.getElementById('cbConvTaskPeople');
+        if (!inp || !pane) { return; }
+        var timer = null, seq = 0;
+
+        inp.addEventListener('input', function () {
+            // NO MENTION URL, NO LIST. The field then means the employee id itself, and the hint
+            // under it already says so - a silent empty dropdown would read as "nobody matches".
+            if (!mentionUrl) {
+                var raw = inp.value.replace(/[^0-9]/g, '');
+                document.getElementById('cbConvTaskAssigneeId').value = raw;
+                return;
+            }
+            document.getElementById('cbConvTaskAssigneeId').value = '';
+            var q = inp.value.trim();
+            if (timer) { clearTimeout(timer); }
+            if (q.length < 1) { pane.classList.add('d-none'); pane.innerHTML = ''; return; }
+            var mine = ++seq;
+            timer = setTimeout(function () {
+                var u = mentionUrl + (mentionUrl.indexOf('?') >= 0 ? '&' : '?') +
+                        'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id) +
+                        '&q=' + encodeURIComponent(q);
+                fetch(withCulture(u), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(function (rows) {
+                        if (mine !== seq) { return; }        // a stale answer
+                        rows = rows || [];
+                        if (!rows.length) { pane.classList.add('d-none'); pane.innerHTML = ''; return; }
+                        pane.innerHTML = rows.map(function (it) {
+                            return '<div class="d-flex align-items-center gap-3 px-3 py-2 cb-conv-person" ' +
+                                   'role="option" style="cursor:pointer;" data-pid="' + esc(it.id) + '" ' +
+                                   'data-pname="' + esc(it.name) + '">' +
+                                   avatar(it.name, 24, it.avatar) +
+                                   '<span class="fs-8 text-gray-800 text-truncate">' + esc(it.name) + '</span></div>';
+                        }).join('');
+                        pane.classList.remove('d-none');
+                    })
+                    .catch(function () { pane.classList.add('d-none'); });
+            }, 160);
+        });
+
+        pane.addEventListener('click', function (e) {
+            var row = e.target.closest ? e.target.closest('[data-pid]') : null;
+            if (!row) { return; }
+            setAssignee(row.getAttribute('data-pid'), row.getAttribute('data-pname'));
+        });
+    })();
+
+    // ---- create -----------------------------------------------------------------------------
+    var taskSave = document.getElementById('cbConvTaskSave');
+    if (taskSave) {
+        taskSave.addEventListener('click', function () {
+            if (!createTaskUrl || !taskFor) { return; }
+            var title = document.getElementById('cbConvTaskTitle').value.trim();
+            var who = document.getElementById('cbConvTaskAssigneeId').value.trim();
+            if (!title) { taskErr(T.needTitle); return; }
+            if (!who) { taskErr(T.needAssignee); return; }
+            taskErr('');
+
+            var fd = new FormData();
+            fd.append('entity', code);
+            fd.append('id', id);
+            fd.append('commentId', taskFor.id);
+            fd.append('title', title);
+            fd.append('titleEn', document.getElementById('cbConvTaskTitleEn').value.trim());
+            fd.append('description', document.getElementById('cbConvTaskDesc').value.trim());
+            fd.append('assigneeEmployeeId', who);
+            fd.append('priority', document.getElementById('cbConvTaskPriority').value);
+            fd.append('dueDate', document.getElementById('cbConvTaskDue').value);
+            // IDEMPOTENCY FOR A DOUBLE-CLICKED DIALOG. CommTaskCreateRequest.DedupKey returns the
+            // FIRST task for a repeated key instead of making a second one, so the key is the
+            // message - one message yields one task however many times the button is pressed.
+            fd.append('dedupKey', 'commtask:' + code + ':' + id + ':' + taskFor.id);
+            fd.append('__RequestVerificationToken', token());
+
+            var label = taskSave.innerHTML;
+            taskSave.disabled = true;
+            fetch(createTaskUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+                .then(function (r) {
+                    return r.json().then(function (d) { d.httpStatus = r.status; return d; },
+                                         function () { return { ok: false, httpStatus: r.status }; });
+                })
+                .then(function (d) {
+                    if (!d || !d.ok) { taskErr(sendError(d) === T.sendFailed ? T.taskFailed : sendError(d)); return; }
+
+                    // THE TASK EXISTS; WHETHER IT IS ATTACHED IS A SECOND FACT, and the endpoint
+                    // sends it as a field rather than leaving it to be guessed from a null id.
+                    // The dialog STAYS OPEN, because the recovery belongs where the reader is
+                    // already looking and because the task id they will need is written in it.
+                    if (d.linked !== true) {
+                        showRecovery(d);
+                        loadTasks();
+                        load(true);
+                        return;
+                    }
+
+                    var m = taskModal();
+                    if (m) { m.hide(); }
+                    // A MUTATION NEVER RELOADS THE PAGE. The two things that changed are repainted:
+                    // the related list, and the thread when the create left a system message.
+                    loadTasks();
+                    load(true);
+                    say(d.anchorWarning ? T.anchorWarning : T.taskCreated, !!d.anchorWarning);
+                })
+                .catch(function () { taskErr(T.taskFailed); })
+                .finally(function () { taskSave.disabled = false; taskSave.innerHTML = label; });
+        });
+    }
+
+    // ---- partial success: the task exists, the link does not ---------------------------------
+    //
+    // NOTHING HERE CREATES A SECOND TASK. The recovery attaches the task that was ALREADY made, by
+    // its id, through the ordinary link endpoint - and AddAsync is idempotent on
+    // (company, task, thread, comment), so pressing it twice completes the pair exactly once.
+    // Re-submitting the dialog would also be safe, because the create is idempotent on DedupKey,
+    // but it is the wrong act: the task is not the thing that is missing.
+    var createdUnlinked = null;
+
+    function hideRecovery() {
+        createdUnlinked = null;
+        var el = document.getElementById('cbConvTaskRecovery');
+        if (el) { el.classList.add('d-none'); }
+    }
+
+    function showRecovery(d) {
+        var el = document.getElementById('cbConvTaskRecovery');
+        var txt = document.getElementById('cbConvTaskRecoveryText');
+        var btn = document.getElementById('cbConvTaskAttach');
+
+        // THE COMMENT COMES BACK FROM THE SERVER, echoed on the response for exactly this reason.
+        // The dialog's own copy is the fallback, never the first choice.
+        createdUnlinked = {
+            taskId: d.taskId,
+            commentId: (d.commentId > 0) ? d.commentId : (taskFor ? taskFor.id : 0)
+        };
+
+        // No panel to write into: the confirmation strip still has to carry the outcome, because
+        // the one thing that must not happen is silence over a half-done pair.
+        if (!el || !txt) { say(T.createdNotLinked, true); return; }
+
+        // THE ID IS THE RECOVERY. Whatever is done next, the task that was made can be found.
+        txt.innerHTML = esc(T.createdNotLinked) + ' <span class="fw-bold">' +
+                        esc(T.taskNumber) + ' \u2066#' + esc(d.taskId) + '\u2069</span>';
+        if (d.anchorWarning) {
+            txt.innerHTML += '<div class="mt-1">' + esc(T.anchorWarning) + '</div>';
+        }
+
+        // OFFERED ONLY WHERE IT CAN RUN. The attach needs the same thread and comment the link
+        // endpoint takes; without either, the text and the task id still stand on their own.
+        var can = !!linkUrl && state.threadId > 0 && createdUnlinked.commentId > 0;
+        if (btn) { btn.classList.toggle('d-none', !can); btn.disabled = false; }
+        el.classList.remove('d-none');
+    }
+
+    (function wireRecovery() {
+        var btn = document.getElementById('cbConvTaskAttach');
+        if (!btn) { return; }
+        btn.addEventListener('click', function () {
+            if (!createdUnlinked || busy) { return; }
+
+            var fd = new FormData();
+            fd.append('threadId', state.threadId);
+            fd.append('taskId', createdUnlinked.taskId);
+            fd.append('commentId', createdUnlinked.commentId);
+
+            btn.disabled = true;
+            postLink(fd, linkUrl, function (r) {
+                btn.disabled = false;
+                // The same rule as every other write here: no persisted id, no confirmation.
+                if (!(r.linkId > 0)) { taskErr(T.linkUnavailable); return; }
+                hideRecovery();
+                var m = taskModal();
+                if (m) { m.hide(); }
+                loadTasks();
+                load(true);
+                say(T.linkCreated);
+            }, function (msg) {
+                btn.disabled = false;
+                taskErr(msg);
+            });
+        });
+    })();
+
+    // A short confirmation in the panel's own error strip, reused so there is one place a reader
+    // looks. A warning keeps the danger colour; a plain success does not pretend to be one.
+    function say(msg, warn) {
+        var err = document.getElementById('cbConvErr');
+        if (!err) { return; }
+        err.textContent = msg;
+        err.classList.toggle('text-danger', !!warn);
+        err.classList.toggle('text-success', !warn);
+        err.classList.remove('d-none');
+        setTimeout(function () {
+            err.classList.add('d-none');
+            err.classList.remove('text-success'); err.classList.add('text-danger');
+        }, 5000);
+    }
+
+    // ---- related tasks ------------------------------------------------------------------------
+    // THE STORED TOKEN IS NOT A LABEL. Status is persisted as New | InProgress | Done, and this
+    // badge printed it verbatim - so an Arabic panel said "InProgress". The token still decides
+    // the colour; what the reader sees is the translation, and an unknown token falls back to
+    // itself rather than to an empty badge.
+    function statusLabel(s) { return (T.statuses && T.statuses[s]) || s || ''; }
+    function priorityLabel(p) { return (T.priorities && T.priorities[p]) || p || ''; }
+
+    function statusBadge(s) {
+        // TaskStatuses is New | InProgress | Done. Overdue is DERIVED and never stored, so it is
+        // derived here too rather than expected in the payload.
+        var cls = s === 'Done' ? 'badge-light-success'
+                : s === 'InProgress' ? 'badge-light-info' : 'badge-light-primary';
+        return '<span class="badge ' + cls + ' fs-9 fw-semibold">' + esc(statusLabel(s)) + '</span>';
+    }
+
+    // The Tasks screens' own mapping, borrowed rather than reinvented: Urgent is danger, High is
+    // warning, everything else is neutral. A second colour vocabulary for the same field would
+    // make the picker disagree with the board it picks from.
+    function priorityBadge(p) {
+        if (!p) { return ''; }
+        var cls = p === 'Urgent' ? 'badge-light-danger' : p === 'High' ? 'badge-light-warning' : 'badge-light';
+        return '<span class="badge ' + cls + ' fs-9 fw-semibold">' + esc(priorityLabel(p)) + '</span>';
+    }
+
+    // =============================================================================================
+    // LINK AND UNLINK.
+    //
+    // FOUR THINGS MUST ALL BE TRUE before the button exists at all: the host named the endpoints,
+    // the service says LinkingAvailable, and this record has resolved a thread. A control that is
+    // certain to be refused is worse than an absent one, and the third condition is the one that is
+    // easy to miss - threadId is null until the first message creates the thread.
+    //
+    // ONE WRITE AT A TIME. busy guards both operations: a double click used to mean two POSTs, and
+    // the second one racing the refresh of the first is how a row appears twice.
+    // =============================================================================================
+
+    var busy = false;
+
+    // WHICH KIND OF RELATIONSHIP THIS ROW IS. The server says so in `scope`, and that is the
+    // answer that counts. The fallback derives it the way the server does, so a panel talking to
+    // an older build groups sanely instead of filing every row under "same record".
+    function scopeOf(t) {
+        if (t.scope === 'conversation' || t.scope === 'message' || t.scope === 'inferred') { return t.scope; }
+        if (t.relationship !== 'ExplicitLink' || !(t.linkId > 0)) { return 'inferred'; }
+        return t.commentId > 0 ? 'message' : 'conversation';
+    }
+
+    function syncMessageLinkButtons() {
+        if (!list) { return; }
+        var on = canLink();
+        var els = list.querySelectorAll('.cb-msg-link');
+        for (var i = 0; i < els.length; i++) { els[i].classList.toggle('d-none', !on); }
+    }
+
+    // ONE CHIP PER RELATIONSHIP, KEYED BY ITS LINK. Two tasks on one message are two chips; one
+    // task on two messages is one chip under each - and each chip removes ONLY its own link,
+    // because data-linkid names the row the endpoint deletes, not the task.
+    function messageTaskChip(t) {
+        var title = (LOC.indexOf('ar') === 0 ? t.title : (t.titleEn || t.title)) || '';
+        var drop = '';
+        if (unlinkUrl && t.linkId > 0) {
+            drop = '<button type="button" class="cb-unlink btn btn-icon btn-active-light-danger p-0 flex-shrink-0" ' +
+                   'style="width:16px;height:16px;" data-linkid="' + esc(t.linkId) + '" ' +
+                   'title="' + esc(T.unlinkAction) + '" ' +
+                   'aria-label="' + esc(T.unlinkAction) + ' \u2066#' + esc(t.taskId) + '\u2069">' +
+                   '<i class="ki-outline ki-cross fs-8" aria-hidden="true"></i></button>';
+        }
+        return '<span class="d-inline-flex align-items-center gap-2 px-2 py-1 rounded" role="listitem" ' +
+               'style="border:1px solid var(--bs-gray-300);background:var(--bs-gray-100);max-width:100%;">' +
+                 '<i class="ki-outline ki-check-square fs-7 text-primary flex-shrink-0" aria-hidden="true"></i>' +
+                 '<a href="' + encodeURI(withCurrentCulture(t.route || ('/Tasks/Detail/' + t.taskId))) + '" ' +
+                   'class="fs-9 fw-semibold text-gray-900 text-hover-primary text-truncate" ' +
+                   'style="min-width:0;" title="' + esc(T.openTask) + '">' + esc(title) + '</a>' +
+                 '<span class="fs-9 text-gray-500 flex-shrink-0">\u2066#' + esc(t.taskId) + '\u2069</span>' +
+                 statusBadge(t.status) + drop +
+               '</span>';
+    }
+
+    // THE SECOND PAINT. The thread and the task list answer from different endpoints, so neither
+    // can render the other; this reconciles them without repainting a single bubble.
+    function paintMessageTasks() {
+        if (!list) { return; }
+        var holders = list.querySelectorAll('.cb-msg-tasks');
+        if (!holders.length) { return; }
+
+        // GROUPED BY MESSAGE, NEVER BY TASK. A task attached to two messages in this conversation
+        // is two rows from the endpoint and must appear under both - keying this by taskId is the
+        // exact collapse the m2m migration was done to end.
+        var byComment = {};
+        (state.tasks || []).forEach(function (t) {
+            if (scopeOf(t) !== 'message' || !(t.commentId > 0)) { return; }
+            (byComment[t.commentId] = byComment[t.commentId] || []).push(t);
+        });
+
+        for (var i = 0; i < holders.length; i++) {
+            var h = holders[i];
+            var rows = byComment[h.getAttribute('data-c')] || [];
+            if (!rows.length) { h.innerHTML = ''; h.classList.add('d-none'); continue; }
+            h.classList.remove('d-none');
+            h.setAttribute('role', 'list');
+            h.setAttribute('aria-label', T.messageTasks);
+            h.innerHTML = '<div class="d-flex flex-wrap align-items-center gap-2 mt-2">' +
+                          rows.map(messageTaskChip).join('') + '</div>';
+        }
+    }
+
+    // ONE PICKER, TWO TARGETS. 0 attaches to the conversation; a positive id attaches to THAT
+    // message, and the quoted line above the search box says which - the two requests are
+    // otherwise identical on screen.
+    function openPicker(commentId) {
+        var wanted = Number(commentId) || 0;
+
+        // OPENED FROM A MESSAGE, THE ID IS THE REQUEST. Without it the picker would quietly become
+        // a conversation-level one while the quote above it claimed otherwise - the downgrade the
+        // server returns 409 for, performed by the client instead.
+        if (commentId !== 0 && !(wanted > 0)) { return; }
+        if (!canLink() || busy) { return; }
+
+        var picker = document.getElementById('cbConvLinkPicker');
+        var input = linkInput();
+        if (!picker) { return; }
+
+        pickerFor = wanted;
+        chosen = null;
+        renderChosen();
+        paintPickerTarget();
+
+        picker.classList.remove('d-none');
+        try { if (picker.scrollIntoView) { picker.scrollIntoView({ block: 'nearest' }); } } catch (e) { }
+        if (input) { input.value = ''; input.focus(); }
+        searchCandidates('');
+    }
+
+    function paintPickerTarget() {
+        var el = document.getElementById('cbConvLinkTarget');
+        if (!el) { return; }
+        if (!(pickerFor > 0)) { el.classList.add('d-none'); el.innerHTML = ''; return; }
+
+        var c = (state.comments || []).filter(function (x) { return String(x.id) === String(pickerFor); })[0];
+        var quote = c ? (c.body || '').split(/\r?\n/)[0].trim() : '';
+        if (quote.length > 120) { quote = quote.slice(0, 117) + '\u2026'; }
+        el.innerHTML = '<span class="fw-semibold text-gray-900">' + esc(T.linkToMessage) + '</span>' +
+                       (c ? '<span class="d-block text-truncate mt-1">' + esc(c.author || '') +
+                            (quote ? ' \u2014 ' + esc(quote) : '') + '</span>' : '');
+        el.classList.remove('d-none');
+    }
+
+    function canLink() {
+        return !!linkUrl && !!linkSearchUrl && state.linkingAvailable === true && state.threadId > 0;
+    }
+
+    function syncLinkButton() {
+        // BEFORE the early return: the per-message controls answer to the same four conditions and
+        // live in a different part of the DOM, so a panel without the heading button must still
+        // sync them.
+        syncMessageLinkButtons();
+
+        var btn = document.getElementById('cbConvLinkTask');
+        if (!btn) { return; }
+        btn.classList.toggle('d-none', !canLink());
+        btn.disabled = busy;
+
+        // WHY IT IS NOT OFFERED. The button hides on four conditions and leaves a heading with
+        // nothing under it; one sentence is the difference between "there is nothing to do here"
+        // and a screen that looks broken. It says nothing on a screen that never named the
+        // endpoints - that host did not ask for linking, so it is not missing anything.
+        var hint = document.getElementById('cbConvLinkHint');
+        if (hint) {
+            var wired = !!linkUrl && !!linkSearchUrl;
+
+            // THE SERVICE SAID NO, AND ONLY THE SERVICE MAY SAY SO. linkingAnswered is what
+            // separates that answer from a panel that never received one, which is the whole
+            // reason it exists: before the response there is nothing to report, and a load that
+            // failed or was REFUSED leaves it false - so a 403 on the task list, a decision about
+            // this reader, can never surface as an unprovisioned environment.
+            var unavailable = wired && state.linkingAnswered === true &&
+                              state.linkingAvailable === false;
+
+            // The service is willing and the host is wired; the only thing still missing is a
+            // conversation to attach the task to.
+            var needsThread = wired && state.linkingAvailable === true && !(state.threadId > 0);
+
+            // UNAVAILABLE WINS WHERE BOTH COULD BE TRUE, because writing the first message would
+            // not help: the store is missing for the whole deployment, not for this conversation.
+            var hintText = unavailable ? T.linkUnavailable : (needsThread ? T.linkNeedsThread : '');
+            hint.textContent = hintText;
+            hint.classList.toggle('d-none', !hintText);
+        }
+    }
+
+    @* The server speaks first here too: a code it sent wins, and the status only has to be
+       translated when the refusal carried no JSON. 503 is the provisioning answer and must never
+       read as a failure the user could retry away. *@
+    function linkError(status, d) {
+        if (status === 401) { return T.expired; }
+        if (status === 403) { return T.linkDenied; }
+        if (status === 404) { return T.linkNotFound; }
+        if (status === 503) { return T.linkUnavailable; }
+        if (status === 409) { return T.linkDowngraded; }
+        if (status === 400) { return T.linkRejected; }
+        return (d && d.error) ? d.error : T.linkFailed;
+    }
+
+    function linkResultsBox() { return document.getElementById('cbConvLinkResults'); }
+
+    function postLink(fd, url, onOk, onFail) {
+        if (busy) { return; }
+        busy = true;
+        syncLinkButton();
+        fd.append('__RequestVerificationToken', token());
+
+        fetch(url, { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) {
+                return r.json().then(function (d) { d.httpStatus = r.status; return d; },
+                                     function () { return { ok: false, httpStatus: r.status }; });
+            })
+            .then(function (d) {
+                busy = false;
+                if (!d || d.ok !== true) { onFail(linkError(d && d.httpStatus, d), d && d.httpStatus); return; }
+                onOk(d);
+            })
+            .catch(function () { busy = false; onFail(T.linkFailed, 0); });
+    }
+
+    // =============================================================================================
+    // THE TASK PICKER.
+    //
+    // WHY IT PICKS OVER TASKS AND NOT OVER RECORDS. This panel used to call Tasks/LinkSearch, which
+    // answers the OTHER question - "which business record is this task about" - and returns the ids
+    // of SalesInvoices, Customers and Items. The panel posted one of those as a taskId, and a live
+    // attempt arrived as { threadId: 10002, taskId: 12545 } and was refused: 12545 is a SalesInvoice
+    // and no task carries that id. The refusal was right and the wiring was wrong - and the 404 was
+    // never the danger. The danger was the id that DOES exist on both sides, which would have linked
+    // somebody else's task without a word. Tasks/LinkCandidates answers with tasks, under the same
+    // TasksActions.Edit gate the write applies, so a candidate offered here is one the write accepts.
+    //
+    // CHOOSING AND LINKING ARE TWO ACTS. The old picker wrote on the click that chose, so a mis-click
+    // was a persisted relationship on a record somebody else reads. A row now only becomes the
+    // selection; the confirmation bar names what will be written and is the only thing that posts.
+    // =============================================================================================
+
+    var candidates = [];     // the rows last rendered, in render order - data-index points into this
+    var activeIndex = -1;    // the keyboard cursor, which is NOT the selection
+    var chosen = null;       // the selection, and the only thing the confirmation may post
+    var searchSeq = 0;       // the answer to the LATEST query wins, never the slowest one
+
+    // 0 = the conversation, a positive id = that message. ONE picker serves both, because the
+    // only difference between them is which relationship gets written - duplicating it beside
+    // every bubble would be the candidate contract in two places, drifting apart.
+    var pickerFor = 0;
+
+    function linkInput() { return document.getElementById('cbConvLinkSearch'); }
+    function currentTerm() { var i = linkInput(); return i ? i.value : ''; }
+
+    @* The combobox tells assistive technology what the eye reads from the highlight: whether a list
+       is open, and which row the cursor is on. Kept in one place so the two can never disagree. *@
+    function syncCombo() {
+        var input = linkInput();
+        var picker = document.getElementById('cbConvLinkPicker');
+        if (!input || !picker) { return; }
+        var open = !picker.classList.contains('d-none') && candidates.length > 0;
+        input.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open && activeIndex >= 0 && candidates[activeIndex]) {
+            input.setAttribute('aria-activedescendant', 'cbConvLinkOpt' + activeIndex);
+        } else {
+            input.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    // ONE ROW, AND EVERYTHING THE ENDPOINT ACTUALLY SENDS. LinkCandidates returns id, text, title,
+    // summary, status, priority, assigneeName, assigneeEmployeeId, dueDate, entityType and entityId.
+    // Nothing here reads a field outside that list: an invented property renders as "undefined" in
+    // production and as nothing in a demo, which is the worst possible pair.
+    function candidateRow(c, i) {
+        var picked = !!chosen && chosen.id === c.id;
+        var active = i === activeIndex;
+
+        // THE TITLE IS THE ROW. The endpoint already resolved it through DisplayName.Of, so there is
+        // no second language choice to make here; `text` is its older twin and the fallback.
+        var title = c.title || c.text || '';
+
+        var tags = [statusBadge(c.status)];
+        var pr = priorityBadge(c.priority);
+        if (pr) { tags.push(pr); }
+
+        var details = [];
+
+        // THE PERSON, NOT A NUMBER, when the endpoint sent a name. It resolves the name through
+        // COMPANY-SCOPED employees and sends no avatar, so the initials tile is the honest face;
+        // the photo arrives the day the payload carries one - see the report.
+        if (c.assigneeName) {
+            details.push('<span class="cb-task-result-person">' +
+                         avatar(c.assigneeName, 22, c.assigneeAvatar) +
+                         '<span class="text-truncate">' + esc(c.assigneeName) + '</span></span>');
+        } else if (c.assigneeEmployeeId) {
+            details.push('<span class="cb-task-result-person"><i class="ki-outline ki-profile-circle text-gray-500" aria-hidden="true"></i>' +
+                         '<span>' + esc(T.employeeNo) + ' \u2066' + esc(c.assigneeEmployeeId) + '\u2069</span></span>');
+        } else {
+            details.push('<span class="cb-task-result-person"><i class="ki-outline ki-profile-circle text-gray-500" aria-hidden="true"></i>' +
+                         '<span>' + esc(T.unassigned) + '</span></span>');
+        }
+
+        var d = parseUtc(c.dueDate);
+        if (d) {
+            // Isolated, so a Gregorian date does not reorder inside an Arabic row.
+            details.push('<span class="cb-task-result-due"><i class="ki-outline ki-calendar-2 text-gray-500" aria-hidden="true"></i>' +
+                         '<span>' + esc(T.due) + ' \u2066' + dateText(d) + '\u2069</span></span>');
+        }
+
+        var summary = c.summary
+            ? '<span class="cb-task-result-summary">' + esc(c.summary) + '</span>'
+            : '';
+
+        var mark = picked
+            ? '<span class="cb-task-result-selected badge badge-primary fs-9 fw-semibold">' + esc(T.selectedLabel) + '</span>'
+            : '';
+
+        // Keep the result as a quiet list row with a clear reading order. Task status and priority
+        // stay together; owner and due date occupy their own metadata group so long Arabic names or
+        // dates never collide with the badges or wrap into a narrow vertical stack.
+        return '<button type="button" role="option" id="cbConvLinkOpt' + i + '" ' +
+               'class="cb-link-pick cb-task-result btn btn-flush w-100 text-start' +
+               (active ? ' is-active' : '') + (picked ? ' is-picked' : '') + '" ' +
+               'data-index="' + i + '" data-taskid="' + esc(c.id) + '" ' +
+               'aria-selected="' + (picked ? 'true' : 'false') + '">' +
+                 '<span class="cb-task-result-icon" aria-hidden="true"><i class="ki-outline ki-check-square"></i></span>' +
+                 '<span class="cb-task-result-content">' +
+                   '<span class="cb-task-result-heading">' +
+                     '<span class="cb-task-result-title text-truncate">' + esc(title) + '</span>' +
+                     '<span class="d-flex align-items-center gap-2 flex-shrink-0">' + mark +
+                       '<span class="cb-task-result-number" aria-label="' + esc(T.taskNumber) + '">⁦#' + esc(c.id) + '⁩</span>' +
+                     '</span>' +
+                   '</span>' + summary +
+                   '<span class="cb-task-result-meta">' +
+                     '<span class="cb-task-result-tags">' + tags.join('') + '</span>' +
+                     '<span class="cb-task-result-details">' + details.join('') + '</span>' +
+                   '</span>' +
+                 '</span>' +
+               '</button>';
+    }
+
+    function renderCandidates() {
+        var out = linkResultsBox();
+        if (!out) { return; }
+        if (!candidates.length) {
+            out.innerHTML = '<div class="text-muted fs-8 py-3">' + esc(T.noCandidates) + '</div>';
+            syncCombo();
+            return;
+        }
+        out.innerHTML = candidates.map(candidateRow).join('');
+        syncCombo();
+        var el = document.getElementById('cbConvLinkOpt' + activeIndex);
+        if (el && el.scrollIntoView) { el.scrollIntoView({ block: 'nearest' }); }
+    }
+
+    function renderChosen() {
+        var bar = document.getElementById('cbConvLinkConfirm');
+        var who = document.getElementById('cbConvLinkChosen');
+        if (!bar || !who) { return; }
+        if (!chosen) { bar.classList.add('d-none'); bar.classList.remove('d-flex'); who.innerHTML = ''; return; }
+        who.innerHTML =
+            '<div class="fs-8 fw-semibold text-gray-900 text-truncate">' + esc(chosen.title || chosen.text || '') + '</div>' +
+            '<div class="fs-9 text-gray-600">' + esc(T.taskNumber) + ' \u2066#' + esc(chosen.id) + '\u2069</div>';
+        bar.classList.remove('d-none');
+        bar.classList.add('d-flex');
+    }
+
+    // SELECTING IS NOT WRITING. It moves focus to the confirmation, because that is the next act -
+    // and it means a keyboard user never has to find the button by tabbing past the whole list.
+    function choose(i) {
+        var c = candidates[i];
+        if (!c) { return; }
+        chosen = c;
+        activeIndex = i;
+        taskErr('');
+        renderCandidates();
+        renderChosen();
+        var btn = document.getElementById('cbConvLinkConfirmBtn');
+        if (btn) { btn.focus(); }
+    }
+
+    function clearChoice() { chosen = null; renderChosen(); renderCandidates(); }
+
+    function searchCandidates(term) {
+        var out = linkResultsBox();
+        if (!out || !linkSearchUrl) { return; }
+
+        // LOADING IS A STATE. An empty box while the request is in flight reads as "there are no
+        // tasks", which is the one answer a picker must never give by accident.
+        var seq = ++searchSeq;
+        out.innerHTML = '<div class="d-flex align-items-center text-muted fs-8 py-3">' +
+            '<span class="spinner-border spinner-border-sm me-3" role="presentation"></span>' +
+            esc(T.searching) + '</div>';
+
+        // ONE PARAMETER, BECAUSE THE ENDPOINT TAKES ONE. The old call also sent entityType, left
+        // over from the record picker this used to point at. LinkCandidates ignores it, and keeping
+        // it would go on suggesting the two endpoints are interchangeable. They are not: one
+        // answers with tasks and the other with invoices.
+        var u = linkSearchUrl + (linkSearchUrl.indexOf('?') >= 0 ? '&' : '?') +
+                'term=' + encodeURIComponent(term || '');
+
+        fetch(withCulture(u), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                // A SLOWER EARLIER QUERY MUST NOT OVERWRITE A NEWER ANSWER. Typing "inv" then "invo"
+                // can return in either order, and the stale list would be the one you click.
+                if (seq !== searchSeq) { return; }
+                if (!d) { throw new Error('failed'); }
+
+                // ONLY REAL TASK IDS REACH THE ROWS. The write refuses anything else anyway, but a
+                // row that cannot be linked is a row that should never have been offered.
+                candidates = (d.results || []).filter(function (c) { return c && c.id > 0; });
+                activeIndex = candidates.length ? 0 : -1;
+                renderCandidates();
+            })
+            .catch(function () {
+                if (seq !== searchSeq) { return; }
+                candidates = []; activeIndex = -1;
+                out.innerHTML = '<div class="notice d-flex rounded border border-dashed p-3" ' +
+                    'style="border-color:var(--bs-danger) !important;">' +
+                    '<i class="ki-outline ki-information-5 fs-3 text-danger me-3" aria-hidden="true"></i>' +
+                    '<span class="fs-8 text-gray-700">' + esc(T.searchFailed) + '</span></div>';
+                syncCombo();
+            });
+    }
+
+    function linkTask(taskId) {
+        if (!canLink() || !(Number(taskId) > 0)) { return; }
+
+        // THE BUTTON GOES DOWN BEFORE THE REQUEST GOES OUT. busy already refuses a second write,
+        // but a control that still looks pressable invites the second click that it then swallows.
+        var btn = document.getElementById('cbConvLinkConfirmBtn');
+        var label = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="presentation"></span>' +
+                            esc(T.working);
+        }
+        function restore() { if (btn) { btn.disabled = false; btn.innerHTML = label; } }
+
+        var fd = new FormData();
+        fd.append('threadId', state.threadId);
+        fd.append('taskId', taskId);
+
+        // THE COMMENT IS WHAT MAKES IT A MESSAGE-LEVEL LINK. openPicker refuses to enter message
+        // mode without a real id, so a positive pickerFor here is the one the reader was shown.
+        // Omitting it would widen the request to the whole conversation while the dialog said
+        // "this message", which is the downgrade the endpoint answers 409 for.
+        if (pickerFor > 0) { fd.append('commentId', pickerFor); }
+
+        postLink(fd, linkUrl, function (d) {
+            // NEVER A SUCCESS WITHOUT A PERSISTED ID. The endpoint already refuses to claim one it
+            // did not write; the panel refuses to draw one it was not given, and says nothing
+            // reassuring until it has one.
+            if (!(d.linkId > 0)) { restore(); taskErr(T.linkUnavailable); return; }
+            restore();
+            closePicker();
+            loadTasks();
+            load(true);
+            say(T.linkCreated);
+        }, function (msg, status) {
+            restore();
+
+            // THE CANDIDATE WENT AWAY BETWEEN THE SEARCH AND THE CONFIRMATION - closed out of reach,
+            // reassigned, deleted. Which one it was is information about a task this caller may no
+            // longer read, so the message says only that it is gone, and the list is re-asked so the
+            // next choice is made against what is true now.
+            if (status === 404) { clearChoice(); taskErr(T.linkStale); searchCandidates(currentTerm()); return; }
+
+            taskErr(msg);
+            syncLinkButton();
+        });
+    }
+
+    function unlinkTask(linkId) {
+        if (!unlinkUrl || !(linkId > 0)) { return; }
+        var fd = new FormData();
+        fd.append('linkId', linkId);
+
+        postLink(fd, unlinkUrl, function () { loadTasks(); load(true); },
+                 function (msg) { taskErr(msg === T.linkFailed ? T.unlinkFailed : msg); loadTasks(); });
+    }
+
+    // EVERY PIECE OF STATE, not just the visible ones. A selection left behind after the panel
+    // closed is a task the next confirmation would write without the reader ever seeing it named.
+    function closePicker() {
+        var picker = document.getElementById('cbConvLinkPicker');
+        var out = linkResultsBox();
+        var input = linkInput();
+        candidates = []; activeIndex = -1; chosen = null; searchSeq++;
+        pickerFor = 0;
+        paintPickerTarget();
+        renderChosen();
+        if (picker) { picker.classList.add('d-none'); }
+        if (out) { out.innerHTML = ''; }
+        if (input) {
+            input.value = '';
+            input.setAttribute('aria-expanded', 'false');
+            input.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    (function wireLinking() {
+        var btn = document.getElementById('cbConvLinkTask');
+        var picker = document.getElementById('cbConvLinkPicker');
+        var input = linkInput();
+        var confirm = document.getElementById('cbConvLinkConfirmBtn');
+        var cancel = document.getElementById('cbConvLinkCancelBtn');
+        if (input) { input.placeholder = T.linkSearchPlaceholder; }
+
+        if (btn && picker) {
+            btn.addEventListener('click', function () {
+                // 0 is the conversation. One entry point for both targets, so the reset that
+                // clears a stale message id cannot be forgotten on one of the two paths.
+                if (picker.classList.contains('d-none')) { openPicker(0); } else { closePicker(); }
+            });
+        }
+
+        if (input) {
+            // DEBOUNCED, because every keystroke is otherwise an authorized query against the task
+            // table for every person with the panel open.
+            var t = null;
+            input.addEventListener('input', function () {
+                if (t) { clearTimeout(t); }
+                var v = input.value;
+                t = setTimeout(function () { searchCandidates(v); }, 250);
+            });
+
+            // THE KEYBOARD REACHES THE LIST WITHOUT LEAVING THE BOX. The cursor moves, Enter chooses,
+            // and Escape backs out one step at a time - the selection first, then the picker - so a
+            // mis-keyed Escape never discards the search as well.
+            input.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape') {
+                    ev.preventDefault();
+                    if (chosen) { clearChoice(); } else { closePicker(); if (btn) { btn.focus(); } }
+                    return;
+                }
+                if (!candidates.length) { return; }
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    activeIndex = (activeIndex + 1) % candidates.length;
+                    renderCandidates();
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    activeIndex = (activeIndex - 1 + candidates.length) % candidates.length;
+                    renderCandidates();
+                } else if (ev.key === 'Home') {
+                    ev.preventDefault(); activeIndex = 0; renderCandidates();
+                } else if (ev.key === 'End') {
+                    ev.preventDefault(); activeIndex = candidates.length - 1; renderCandidates();
+                } else if (ev.key === 'Enter') {
+                    // ENTER CHOOSES. It does not link: the confirmation is a separate act, and a
+                    // return key that wrote a relationship would be the mis-click in another form.
+                    ev.preventDefault();
+                    choose(activeIndex);
+                }
+            });
+        }
+
+        if (confirm) {
+            confirm.addEventListener('click', function () {
+                if (!chosen || busy) { return; }
+                linkTask(chosen.id);
+            });
+        }
+        if (cancel) {
+            cancel.addEventListener('click', function () {
+                clearChoice();
+                if (input) { input.focus(); }
+            });
+        }
+
+        // DELEGATED, because both the candidate list and the task rows are repainted wholesale and a
+        // handler bound to a button that no longer exists is the quiet way this stops working.
+        box.addEventListener('click', function (ev) {
+            var pick = ev.target.closest ? ev.target.closest('.cb-link-pick') : null;
+            if (pick) { ev.preventDefault(); choose(Number(pick.getAttribute('data-index'))); return; }
+
+            var drop = ev.target.closest ? ev.target.closest('.cb-unlink') : null;
+            if (drop) { ev.preventDefault(); ev.stopPropagation(); unlinkTask(Number(drop.getAttribute('data-linkid'))); }
+        });
+    })();
+
+    function taskRow(t) {
+        // THE TITLE IN THE READER'S LANGUAGE, falling back to the Arabic one rather than blank.
+        var title = (LOC.indexOf('ar') === 0 ? t.title : (t.titleEn || t.title)) || '';
+        // A MESSAGE LINK AND A CONVERSATION LINK ARE DIFFERENT RELATIONSHIPS, so they do not share
+        // a badge. Both were "Linked" before, which made the row that unlinks a message look like
+        // the row that unlinks the conversation.
+        var sc = scopeOf(t);
+        var badge = sc === 'message'
+            ? '<span class="badge badge-light-info fs-9 fw-semibold">' + esc(T.badgeFromMessage) + '</span>'
+            : sc === 'conversation'
+                ? '<span class="badge badge-light-primary fs-9 fw-semibold">' + esc(T.badgeLinked) + '</span>'
+                : '<span class="badge badge-light fs-9 fw-semibold">' + esc(T.badgeShared) + '</span>';
+
+        // ForConversation resolves the assignee name and photo from employees in the same company.
+        // EmployeeNames.Of selects the English name for English UI and the Arabic name for Arabic UI.
+        // Keep the employee number as a truthful fallback if the employee record is unavailable.
+        var who = '';
+        if (t.assigneeName) {
+            who = avatar(t.assigneeName, 24, t.assigneeAvatar) +
+                  '<span class="fs-9 text-gray-700 text-truncate">' + esc(t.assigneeName) + '</span>';
+        } else if (t.assigneeEmployeeId) {
+            who = '<span class="fs-9 text-gray-600">' + esc(T.employeeNo) + ' ' +
+                  '\u2066' + esc(t.assigneeEmployeeId) + '\u2069</span>';
+        }
+
+        var due = '';
+        if (t.dueDate) {
+            var d = new Date(String(t.dueDate).slice(-1) === 'Z' ? t.dueDate : t.dueDate + 'Z');
+            if (!isNaN(d.getTime())) {
+                // Isolated, so a Gregorian date does not reorder inside an Arabic sentence.
+                due = '<span class="fs-9 text-gray-600">' + esc(T.due) + ' \u2066' +
+                      dateText(d) + '\u2069</span>';
+            }
+        }
+
+        // UNLINK IS OFFERED ONLY WHERE IT CAN SUCCEED: a deliberate link that carries the row id the
+        // endpoint removes by. A shared business context has nothing to detach - there is no link row
+        // behind it - so offering the control there would promise an operation that cannot run.
+        var drop = '';
+        if (unlinkUrl && t.linkId > 0) {
+            drop = '<button type="button" class="btn btn-sm btn-icon btn-light cb-unlink flex-shrink-0" ' +
+                   'data-linkid="' + esc(t.linkId) + '" title="' + esc(T.unlinkAction) + '" ' +
+                   'aria-label="' + esc(T.unlinkAction) + '">' +
+                   '<i class="ki-outline ki-cross fs-5" aria-hidden="true"></i></button>';
+        }
+
+        // COMPACT CARD (proposal A): one clear title line, one wrapping metadata line and a separate
+        // unlink control. The link identity remains the relationship row, not the task itself: the
+        // same task can be linked to the conversation and to individual messages independently.
+        // THE LINK IS THE KEY, NOT THE TASK. The same taskId legitimately appears more than once
+        // in this list - once for the conversation and once for each message - and every one of
+        // them is addressed, and removed, by its own linkId.
+        return '<div class="cb-task-card mb-2 cb-conv-task" ' +
+               'data-linkid="' + esc(t.linkId || '') + '" data-taskid="' + esc(t.taskId) + '">' +
+               '<span class="cb-task-card-icon" aria-hidden="true"><i class="ki-outline ki-check-square"></i></span>' +
+               '<div class="cb-task-card-main">' +
+                 '<div class="cb-task-card-heading">' +
+                 '<a href="' + encodeURI(withCurrentCulture(t.route || ('/Tasks/Detail/' + t.taskId))) + '" ' +
+                   'class="cb-task-card-title text-truncate">' + esc(title) + '</a>' +
+                 '<span class="cb-task-card-number">⁦#' + esc(t.taskId) + '⁩</span></div>' +
+                 '<div class="cb-task-card-meta">' + statusBadge(t.status) + badge +
+                   (who ? '<span class="cb-task-assignee">' + who + '</span>' : '') + due + '</div>' +
+               '</div>' + drop + '</div>';
+    }
+
+    // ---- approvals (read only) -----------------------------------------------------------------
+    function loadApprovals() {
+        if (!approvalsUrl) { return; }
+        var panel = document.getElementById('cbConvApprovals');
+        var body = document.getElementById('cbConvApprovalsBody');
+        var count = document.getElementById('cbConvApprovalsCount');
+        if (!panel || !body) { return; }
+        panel.classList.remove('d-none');
+
+        // LOADING IS A STATE, NOT A BLANK. Revealing the heading with an empty body underneath it
+        // reads as "nothing is waiting for approval" for as long as the request takes, which is
+        // the one answer this section must never give by accident. Same spinner vocabulary the
+        // conversation list uses above.
+        body.innerHTML = '<div class="d-flex align-items-center text-muted fs-8 py-3">' +
+            '<span class="spinner-border spinner-border-sm me-3" role="presentation"></span>' +
+            esc(T.loadingApprovals) + '</div>';
+
+        // Addressed by the RECORD, exactly like the tasks panel: ApprovalsForEntityAsync takes a
+        // CommEntityRef, and the endpoint resolves the viewer's own visibility from the context.
+        var u = approvalsUrl + (approvalsUrl.indexOf('?') >= 0 ? '&' : '?') +
+                'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
+        var approvalsRefused = false;
+        fetch(withCulture(u), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                // Same Forbid() on TasksActions.Read that gates the tasks panel.
+                if (r.status === 403) { approvalsRefused = true; return null; }
+                return r.ok ? r.json() : null;
+            })
+            .then(function (d) {
+                if (approvalsRefused) { throw new Error('denied'); }
+                if (!d || d.ok === false) { throw new Error('refused'); }
+
+                // NOT APPLICABLE IS NOT EMPTY. The endpoint now says whether this record type has an
+                // approval relationship at all, and when it does not the whole section goes away:
+                // "Nothing is waiting for approval here" over a heading is a claim about a workflow
+                // that does not exist, which reads as "all clear" to the one person who would act.
+                if (d.supported === false) {
+                    panel.classList.add('d-none');
+                    body.innerHTML = '';
+                    if (count) { count.classList.add('d-none'); }
+                    return;
+                }
+
+                var rows = d.approvals || [];
+                if (!rows.length) {
+                    body.innerHTML = '<div class="text-muted fs-8 py-2">' + esc(T.noApprovals) + '</div>';
+                    if (count) { count.classList.add('d-none'); }
+                    return;
+                }
+                body.innerHTML = rows.map(approvalRow).join('');
+                if (count) { count.textContent = rows.length; count.classList.remove('d-none'); }
+            })
+            .catch(function (e) {
+                var wasDenied = !!e && e.message === 'denied';
+                panelNotice(body, wasDenied ? T.approvalsDenied : T.approvalsFailed, wasDenied ? 'denied' : 'danger');
+                if (count) { count.classList.add('d-none'); }
+            });
+    }
+
+    function approvalRow(a) {
+        // The owning module's own title, in the reader's language, falling back rather than blank.
+        var title = (LOC.indexOf('ar') === 0 ? (a.titleAr || a.titleEn) : (a.titleEn || a.titleAr)) || '';
+        var who = (LOC.indexOf('ar') === 0 ? (a.requesterNameAr || a.requesterNameEn)
+                                           : (a.requesterNameEn || a.requesterNameAr)) || '';
+
+        var when = '';
+        if (a.submittedAt) {
+            var d = new Date(String(a.submittedAt).slice(-1) === 'Z' ? a.submittedAt : a.submittedAt + 'Z');
+            if (!isNaN(d.getTime())) {
+                when = '<span class="fs-9 text-gray-600">' + esc(T.submitted) + ' \u2066' +
+                       dateText(d) + '\u2069</span>';
+            }
+        }
+
+        // A NUMBER INSIDE AN ARABIC SENTENCE IS ISOLATED, or the currency and the digits reorder.
+        var amount = (a.amount === null || a.amount === undefined) ? '' :
+            '<span class="fs-9 fw-semibold text-gray-800">\u2066' +
+            esc(Number(a.amount).toLocaleString(LOC, { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
+            '\u2069</span>';
+
+        // THE ROUTE IS THE OWNING MODULE'S. This file builds none: when the endpoint resolved one it
+        // is a link, and when it did not the row is plain text rather than a dead anchor.
+        var open = a.url ? '<a href="' + encodeURI(a.url) + '" class="btn btn-sm btn-light-primary fs-9 py-1">' +
+                           esc(T.openTab) + '</a>' : '';
+
+        // Same house row as the linked tasks above - a hairline between rows, not a box around each.
+        return '<div class="cb-row d-flex align-items-center gap-3 px-3 py-3">' +
+               '<i class="ki-outline ki-shield-tick fs-4 text-primary flex-shrink-0" aria-hidden="true"></i>' +
+               '<span class="flex-grow-1 text-truncate fs-8 fw-semibold text-gray-900" style="min-width:0;">' +
+               esc(title) + (who ? '<span class="fs-9 fw-normal text-gray-600 ms-2">' + esc(T.requestedBy) +
+               ' ' + esc(who) + '</span>' : '') + '</span>' +
+               '<span class="d-flex align-items-center gap-2 flex-shrink-0">' + amount + when +
+               '<span class="badge badge-light fs-9 fw-semibold">' + esc(a.status || '') + '</span>' +
+               open + '</span></div>';
+    }
+
+    function loadTasks() {
+        if (!tasksUrl) { return; }
+        // ADDRESSED BY THE RECORD, NOT THE THREAD, because that is what this panel legitimately
+        // knows and what the endpoint now asks for. ForConversation resolves the threads itself
+        // through ListForEntityAsync, and that resolution IS the authorization: a record the
+        // caller may not read yields no threads and therefore no tasks, with no 404 to probe with.
+        var panel = document.getElementById('cbConvTasks');
+        var body = document.getElementById('cbConvTasksBody');
+        var count = document.getElementById('cbConvTasksCount');
+        var link = document.getElementById('cbConvLinkTask');
+        if (!panel || !body) { return; }
+        panel.classList.remove('d-none');
+
+        // LOADING IS A STATE HERE TOO. The approvals panel below already says so and this one did not:
+        // revealing the heading over an empty body reads as "no tasks are related to this" for as long
+        // as the request takes, which is the one answer it must not give by accident.
+        body.innerHTML = '<div class="d-flex align-items-center text-muted fs-8 py-3">' +
+            '<span class="spinner-border spinner-border-sm me-3" role="presentation"></span>' +
+            esc(T.loadingTasks) + '</div>';
+        if (count) { count.classList.add('d-none'); }
+
+        var u = tasksUrl + (tasksUrl.indexOf('?') >= 0 ? '&' : '?') +
+                'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
+        var tasksRefused = false;
+        fetch(withCulture(u), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                // Forbid() on TasksActions.Read. The caller is known and was told no - a distinct
+                // answer from "the request never completed", and the two must not render alike.
+                if (r.status === 403) { tasksRefused = true; return null; }
+                return r.ok ? r.json() : null;
+            })
+            .then(function (d) {
+                if (tasksRefused) { throw new Error('denied'); }
+                if (!d || d.ok === false) { throw new Error('refused'); }
+                var rows = d.tasks || [];
+
+                // KEPT, because the per-message chips are drawn from the same answer. Asking the
+                // server once for a list this panel already has would be a second round trip for
+                // rows that are already on the page.
+                state.tasks = rows;
+                paintMessageTasks();
+
+                // LinkingAvailable is the service's own answer and the ONLY thing that may reveal
+                // this button. Absent means false: an older endpoint must not light it up.
+                // The decision itself lives in syncLinkButton, which also requires a thread.
+                state.linkingAvailable = d.linkingAvailable === true;
+
+                // THE ANSWER ARRIVED. Recorded here and nowhere else, so the hint speaks only for
+                // a response this panel actually received.
+                state.linkingAnswered = true;
+                syncLinkButton();
+
+                if (!rows.length) {
+                    body.innerHTML = '<div class="text-muted fs-8 py-2">' + esc(T.noTasks) + '</div>';
+                    if (count) { count.classList.add('d-none'); }
+                    return;
+                }
+
+                // THREE KINDS OF RELATIONSHIP, THREE GROUPS, AND NONE OF THEM MERGED.
+                //
+                // Splitting on relationship === 'ExplicitLink' folded conversation-level and
+                // message-level links into one list, so a task attached to this conversation AND to
+                // two of its messages drew three identical rows with three interchangeable-looking
+                // unlink buttons - each of which removes a different thing. `scope` is the server's
+                // own classification and it is used rather than re-derived.
+                var onConversation = rows.filter(function (t) { return scopeOf(t) === 'conversation'; });
+                var onMessage = rows.filter(function (t) { return scopeOf(t) === 'message'; });
+                var inferred = rows.filter(function (t) { return scopeOf(t) === 'inferred'; });
+
+                function group(label, items) {
+                    if (!items.length) { return ''; }
+                    return '<div class="fs-9 fw-semibold text-gray-500 text-uppercase mb-2' +
+                           (html ? ' mt-4' : '') + '">' + esc(label) + '</div>' +
+                           items.map(taskRow).join('');
+                }
+
+                var html = '';
+                html += group(T.groupLinked, onConversation);
+                html += group(T.groupOnMessage, onMessage);
+                html += group(T.groupShared, inferred);
+                body.innerHTML = html;
+                if (count) { count.textContent = rows.length; count.classList.remove('d-none'); }
+            })
+            .catch(function (e) {
+                // A FAILED PANEL SAYS SO. Silence here would read as "no tasks", which is a
+                // different and much more comfortable claim than "this did not load".
+                var wasDenied = !!e && e.message === 'denied';
+                panelNotice(body, wasDenied ? T.tasksDenied : T.tasksFailed, wasDenied ? 'denied' : 'danger');
+                if (count) { count.classList.add('d-none'); }
+                // The chips came from this answer, so a failed reload must clear them rather than
+                // leave a relationship on screen that nothing has confirmed still exists.
+                state.tasks = [];
+                paintMessageTasks();
+                state.linkingAvailable = false;
+
+                // AND IT IS NOT THE SERVICE'S "NO". This branch is reached by a refusal, a network
+                // failure and a 403 alike; the panel already says which. Retracting the answer is
+                // what stops the hint from explaining an outage - or a permission decision - as a
+                // deployment without the task-link store.
+                state.linkingAnswered = false;
+                syncLinkButton();
+            });
     }
 
     sendBtn.addEventListener('click', send);
     load();
+    loadTasks();
+    loadApprovals();
 })();
 </script>
+
+
+@* The compose panel. Rendered here so a host screen gets it by rendering the
+   conversation - there is no second thing to remember to include. *@
+@await Html.PartialAsync("_EntityMail")
