@@ -1,23 +1,42 @@
+@using CrossBuy.Models.Menu
+@model CrossBuy.Controllers.PortalController.LauncherModel
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     Layout = null;
-    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    var name = isAr ? (ViewBag.NameAr ?? ViewBag.NameEn) : (ViewBag.NameEn ?? ViewBag.NameAr);
-    // language picker: show ALL supported languages, highlight the current one (click to switch)
-    var _cur = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName ?? "en";
-    var _langs = new[] { ("ar", "العربية"), ("en", "English"), ("fr", "Français") };
-    // orbs mirror the side panels. START side = left in LTR / right in RTL; the grid flips panels in RTL so the orbs flip too.
-    // top/bottom orbs sit closer to centre (…TB), middle orbs bulge outward (…MID).
-    var sTB  = isAr ? "72%" : "28%";   var sMID = isAr ? "92%" : "8%";    // start side (Back-office / People / Reports)
-    var eTB  = isAr ? "28%" : "72%";   var eMID = isAr ? "8%"  : "92%";   // end side  (Inventory / Accounting / Support)
-    var arrow = isAr ? "left" : "right";
-    // numeric versions (viewBox 0-100) for the SVG connector lines from the hub to each orb
-    int sTBn = isAr ? 72 : 28, sMIDn = isAr ? 92 : 8, eTBn = isAr ? 28 : 72, eMIDn = isAr ? 8 : 92;
-    var _links = new (int x, int y)[] { (sTBn,14),(eTBn,14),(sMIDn,50),(eMIDn,50),(sTBn,86),(eTBn,86) };
+    // The opening screen after sign-in (approved prototype rev. 3: design-output/hospital-prototype/launcher.html, 2026-11-15).
+    // Order: header with a real search · brand hero · what waits for you · pinned + continue · every system by domain.
+    // Palette: the brand only (primary #3A5795, ink #1F2D4D, surface #E7F0FF); red marks only what is urgent. No per-system
+    // colour (SystemEntry.Color is not used here) and no yellow — the owner's standing rule.
+    var cur = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName ?? "en";
+    bool isAr = cur == "ar";
+    var langs = new[] { ("ar", "العربية"), ("en", "English"), ("fr", "Français") };
+    var curLang = langs.FirstOrDefault(l => l.Item1 == cur).Item2 ?? "English";
+    string Name(SystemEntry s) => isAr ? s.NameAr : s.NameEn;
+    string Desc(SystemEntry s) => isAr ? s.DescAr : s.DescEn;
+    var hour = DateTime.Now.Hour;
+    var greet = hour < 12 ? Localizer["Good morning"] : hour < 18 ? Localizer["Good afternoon"] : Localizer["Good evening"];
+    var first = (Model.Name ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    string Face(string cls) => first.Length > 0
+        ? "<span class=\"symbol-label fw-bold " + cls + "\" style=\"background:#E7F0FF;color:#3A5795\">" + System.Net.WebUtility.HtmlEncode(first[..1]) + "</span>"
+        : "<span class=\"symbol-label\" style=\"background:#E7F0FF\"><i class=\"ki-outline ki-user fs-2\" style=\"color:#3A5795\"></i></span>";
+    var today = DateTime.Now.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture);
+    var domainIcons = new Dictionary<string, string> { ["ops"] = "ki-handcart", ["fin"] = "ki-dollar", ["people"] = "ki-people", ["cust"] = "ki-message-text-2", ["work"] = "ki-briefcase", ["pack"] = "ki-category" };
+    var domains = SystemCatalog.Domains.Where(d => Model.Systems.Any(s => s.Entry.Domain == d.Key)).ToList();
+    // What waits for the user: the controller's signals, the urgent ones first.
+    string SignalIcon(string url) => url.Contains("/Approvals", StringComparison.OrdinalIgnoreCase) ? "ki-check-circle"
+                                   : url.Contains("/Tasks", StringComparison.OrdinalIgnoreCase) ? "ki-time" : "ki-sms";
+    var signals = Model.Signals.OrderByDescending(s => s.Urgent).ThenByDescending(s => s.Count).ToList();
+    int waitTotal = signals.Sum(s => s.Count), waitUrgent = signals.Where(s => s.Urgent).Sum(s => s.Count);
+    var arrow = isAr ? "ki-arrow-left" : "ki-arrow-right";
+    var data = new
+    {
+        systems = Model.Systems.Select(s => new { k = s.Entry.Key, g = s.Entry.Domain, name = Name(s.Entry), desc = Desc(s.Entry), url = s.Url, icon = s.Entry.Icon, count = s.Count, countText = isAr ? s.CountAr : s.CountEn, isNew = s.Entry.IsNew }),
+        screens = Model.Screens.Select(x => new { k = x.System, name = isAr ? x.Ar : x.En, alt = isAr ? x.En : x.Ar, url = x.Url }),
+        domains = domains.Select(d => new { k = d.Key, name = isAr ? d.Ar : d.En, icon = domainIcons.GetValueOrDefault(d.Key, "ki-category") }),
+    };
 }
 <!DOCTYPE html>
-<html lang="@_cur" dir="@(isAr ? "rtl" : "ltr")">
+<html lang="@cur" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
 <head>
     <title>@Localizer["Choose destination"] - @CrossBuy.BL.Platform.ProductIdentity.Name</title>
     <meta charset="utf-8" />
@@ -34,534 +53,419 @@
     {
         <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
         <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@@400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <link href="~/Backend-assets/fonts/inter/inter.css" rel="stylesheet">
     }
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
     <style>
-        /* ==========================================================================================
-           THE PORTAL CHOOSER.
+        :root { --lx-ink: #1F2D4D; --lx-brand: #3A5795; --lx-surface: #E7F0FF; --lx-radius: 1.25rem;
+            --lx-shadow: 0 1px 2px rgba(31,45,77,.04), 0 8px 24px rgba(31,45,77,.06); --lx-shadow-hi: 0 2px 4px rgba(31,45,77,.05), 0 18px 40px rgba(31,45,77,.12); }
+        body { font-family: Inter, Cairo, sans-serif; background: #F4F6FA; }
+        html[dir=rtl] body { font-family: Cairo, Inter, sans-serif; }
+        .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
-           ON THE SIGN-IN SCREEN'S PALETTE. The two pages are seen one after the other, so they use
-           the same ground, the same ink and the same blues; a user who signs in should not feel the
-           product changed hands between one screen and the next.
+        /* header: translucent, sticky, a pill search */
+        .lx-head { position: sticky; top: 0; z-index: 105; background: rgba(255,255,255,.82); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); border-bottom: 1px solid rgba(31,45,77,.06); }
+        .lx-head .lx-bar { min-height: 72px; }
+        .lx-search { position: relative; }
+        .lx-search input { border-radius: 999px; background: #EEF1F6; border: 1px solid transparent; transition: background .15s, border-color .15s, box-shadow .15s; }
+        .lx-search input:focus { background: #fff; border-color: var(--bs-primary-border-subtle, #C8D1E3); box-shadow: 0 0 0 4px rgba(58,87,149,.10); }
+        .lx-drop { position: absolute; top: calc(100% + 8px); inset-inline: 0; z-index: 110; display: none; max-height: 70vh; overflow: auto; border-radius: var(--lx-radius); box-shadow: var(--lx-shadow-hi); }
+        .lx-search.open .lx-drop { display: block; }
+        .lx-kbd { font-size: .7rem; border: 1px solid var(--bs-gray-300); border-radius: 6px; padding: 1px 7px; color: var(--bs-gray-600); background: #fff; }
+        .lx-hit { display: flex; align-items: center; gap: .85rem; padding: .6rem .75rem; border-radius: .85rem; cursor: pointer; color: inherit; }
+        .lx-hit.act, .lx-hit:hover { background: var(--lx-surface); }
+        .lx-round { width: 42px; height: 42px; border-radius: 50%; }
+        .lx-round:hover { background: var(--lx-surface) !important; }
 
-           EVERY DIRECTIONAL RULE IS LOGICAL - inset-inline-*, padding-inline-*, text-align:start.
-           One stylesheet serves Arabic and English with no mirrored copy to keep in step.
-           ========================================================================================== */
-        *{ box-sizing:border-box; }
+        /* every card: borderless, soft shadow, a generous radius */
+        .lx-card { border: 0 !important; border-radius: var(--lx-radius) !important; box-shadow: var(--lx-shadow) !important; }
+        .lx-lift { transition: transform .18s ease, box-shadow .18s ease; }
+        .lx-lift:hover { transform: translateY(-4px); box-shadow: var(--lx-shadow-hi) !important; }
 
-        :root{
-            --ink:#0B2545;        /* headings */
-            --ink-soft:#40587C;   /* body copy */
-            --ink-mute:#6B82A6;   /* the quietest tier */
-            --blue:@CrossBuy.BL.Platform.ProductIdentity.Palette.Primary;
-            --line:#E6EDF7;       /* hairlines */
-            --card:#ffffff;
+        /* hero: the brand gradient, the theme's wave faint on top, a soft ring for depth */
+        .lx-hero { position: relative; overflow: hidden; border-radius: 1.5rem; color: #fff; background: linear-gradient(120deg, #1F2D4D 0%, #2B4170 55%, #3A5795 100%); }
+        .lx-hero::before { content: ''; position: absolute; inset: 0; background: url('@Url.Content("~/Backend-assets/media/svg/shapes/wave-bg-dark.svg")') center / cover no-repeat; opacity: .35; }
+        .lx-hero::after { content: ''; position: absolute; width: 420px; height: 420px; border-radius: 50%; inset-inline-end: -120px; top: -180px; background: radial-gradient(circle, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 70%); }
+        .lx-hero > * { position: relative; z-index: 1; }
+        .lx-hero .lx-eyebrow { color: rgba(255,255,255,.65); letter-spacing: .04em; }
+        .lx-hero .lx-chip { background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.16); color: #fff; border-radius: 999px; }
+        .lx-hero .lx-face { box-shadow: 0 0 0 4px rgba(255,255,255,.18); }
+        .lx-glass { background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.18); border-radius: 1.1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .lx-bar-track { height: 6px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; display: flex; }
+        .lx-bar-track span { display: block; height: 100%; }
+        .lx-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .lx-hero .btn-light { border-radius: 999px; }
+
+        /* squircle icons in the approved palette; they fill with the brand on hover */
+        .lx-ic { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 30%; background: var(--lx-surface); color: var(--lx-brand); transition: background .18s ease, color .18s ease; }
+        .lx-ic i { color: inherit !important; font-size: inherit !important; line-height: 1; }
+        .lx-ic.solid { background: linear-gradient(135deg, #3A5795 0%, #1F2D4D 100%); color: #fff; box-shadow: 0 8px 18px rgba(31,45,77,.22); }
+        .lx-ic.red.solid { background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%); color: #fff; box-shadow: 0 8px 18px rgba(185,28,28,.22); }
+        .lx-sys:hover .lx-ic { background: var(--lx-brand); color: #fff; }
+        .lx-ic-35 { width: 35px; height: 35px; font-size: 1.15rem; } .lx-ic-40 { width: 40px; height: 40px; font-size: 1.25rem; }
+        .lx-ic-48 { width: 48px; height: 48px; font-size: 1.5rem; } .lx-ic-56 { width: 56px; height: 56px; font-size: 1.75rem; } .lx-ic-64 { width: 64px; height: 64px; font-size: 2rem; }
+
+        /* what waits for you */
+        .lx-stat .lx-go { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #F1F3F8; color: var(--bs-gray-500); transition: background .18s, color .18s; }
+        .lx-stat .lx-go i { color: inherit !important; }
+        .lx-stat:hover .lx-go { background: var(--lx-brand); color: #fff; }
+        .lx-stat.red:hover .lx-go { background: var(--bs-danger, #DC2626); }
+        .lx-stat.red { background: linear-gradient(180deg, #fff 55%, #FFF6F6 100%); }
+
+        /* pinned: app tiles */
+        .lx-fav { border-radius: 1.1rem; background: #F6F8FB; transition: background .18s ease, box-shadow .18s ease, transform .18s ease; }
+        .lx-fav:hover { background: #fff; box-shadow: var(--lx-shadow-hi); transform: translateY(-3px); }
+        .lx-fav .lx-count { position: absolute; top: -7px; inset-inline-end: -7px; border: 2px solid #fff; }
+
+        /* continue where you left off */
+        .lx-row { border-radius: .9rem; padding: .7rem .75rem; transition: background .15s ease; }
+        .lx-row:hover { background: #F6F8FB; }
+
+        /* all systems: demo39's icon tiles (dashboards/delivery) as the domain filter */
+        .lx-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: .25rem; }
+        .lx-tabs::-webkit-scrollbar { display: none; }
+        .lx-tabs .nav-link { min-width: 96px; height: 92px; border-radius: 1rem !important; white-space: nowrap; border-color: var(--bs-gray-200) !important; }
+        .lx-tabs .nav-link.active { background: var(--lx-surface) !important; border-color: var(--bs-primary-border-subtle, #C8D1E3) !important; }
+        .lx-tabs .nav-link.active .nav-text { color: var(--lx-ink) !important; }
+        .lx-tabs .nav-link .bullet-custom { display: none; }
+        .lx-tabs .nav-link.active .bullet-custom { display: block; }
+        .lx-sys { color: inherit; }
+        .lx-sys .lx-pin { opacity: 0; transition: opacity .12s ease; }
+        .lx-sys:hover .lx-pin, .lx-sys:focus-within .lx-pin, .lx-pin.on { opacity: 1; }
+        .lx-sys .lx-open { opacity: 0; transform: translateX(var(--lx-nudge, 6px)); transition: opacity .18s ease, transform .18s ease; }
+        html[dir=rtl] .lx-sys .lx-open { --lx-nudge: -6px; }
+        .lx-sys:hover .lx-open { opacity: 1; transform: none; }
+        .lx-desc { min-height: 2.7em; }
+
+        @@media (max-width: 575.98px) {
+            .lx-sys .card-body { padding: 1.1rem !important; }
+            .lx-sys .lx-desc, .lx-sys .lx-foot { display: none !important; }
+            .lx-sys .fs-4 { font-size: 1rem !important; }
+            .lx-hero .lx-hero-body { padding: 1.5rem !important; }
+            .lx-hero .fs-2qx { font-size: 1.6rem !important; }
+            .lx-hero .lx-face { display: none; }
         }
-
-        /* THE SAME SCENE THE SIGN-IN PAGE STANDS ON. The two screens are seen one after the other;
-           carrying the render across is what makes them one place rather than two. A white wash over
-           the middle keeps the content readable while the office shows at both edges, which is how
-           the design uses it. */
-        body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
-            font-family:'Inter',system-ui,Tahoma,sans-serif;
-            background:#EDF3FC;
-            background-image:
-              /* The wash covers the MIDDLE THIRD only. At 13%-87% it bleached the office to a pale
-                 suggestion; the design shows the blue sweep on the left and the window and plant on
-                 the right quite clearly, and only lifts the surface the content stands on. */
-              linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 11%,
-                                     rgba(255,255,255,.72) 26%, rgba(255,255,255,.80) 50%,
-                                     rgba(255,255,255,.72) 74%, rgba(255,255,255,0) 89%,
-                                     rgba(255,255,255,0) 100%),
-              url('@Url.Content("~/Backend-assets/media/brand/login-scene.png")');
-            background-repeat:no-repeat, no-repeat;
-            background-size:cover, cover;
-            background-position:center, center;
-            background-attachment:fixed, fixed; }
-        html[lang="ar"] body{ font-family:'Cairo',system-ui,Tahoma,sans-serif; }
-        a{ text-decoration:none; }
-
-        /* ---- the corner furniture ------------------------------------------------------------ */
-        .dots{ position:fixed; width:120px; height:90px; z-index:0; opacity:.6;
-            background-image:radial-gradient(rgba(22,103,214,.16) 1.4px, transparent 1.4px); background-size:16px 16px; }
-        .dots.tl{ top:120px; left:40px; } .dots.bl{ bottom:160px; left:30px; }
-        /* A glow is light from something darker than its surroundings; on a light page there is
-           nothing for it to do, so the amber halo is a faint blue tint. */
-        .glow-corner{ position:fixed; bottom:-80px; left:-60px; width:420px; height:240px; z-index:0; pointer-events:none;
-            background:radial-gradient(closest-side, rgba(22,103,214,.09), transparent 70%); filter:blur(8px); transform:rotate(-12deg); }
-
-        .langbar{ position:fixed; top:22px; left:28px; z-index:6; display:inline-flex; align-items:center; gap:4px;
-            background:#fff; border:1px solid var(--line); border-radius:30px; padding:5px 6px;
-            box-shadow:0 2px 10px rgba(11,37,69,.06); }
-        .langbar .gl{ display:flex; align-items:center; color:var(--blue); margin:0 6px; }
-        .langopt{ color:var(--ink-soft); font-weight:600; font-size:13px; padding:6px 14px; border-radius:22px; line-height:1;
-            transition:background .2s ease, color .2s ease; }
-        .langopt:hover{ color:var(--blue); background:#F2F7FF; }
-        .langopt.on{ color:#fff; background:var(--blue); font-weight:800; }
-
-        .shieldtop{ position:fixed; top:22px; right:28px; z-index:6; width:44px; height:44px; border-radius:14px;
-            background:var(--blue); border:0; display:flex; align-items:center; justify-content:center; color:#fff;
-            box-shadow:0 6px 16px rgba(22,103,214,.28); }
-
-        /* The design sets this down the outer edge; it is decoration, so it is hidden from readers. */
-        /* PHYSICALLY LEFT, not inline-start. The reference keeps this at the bottom-left in the
-           Arabic composition as well — it belongs to the artwork's margin, which does not mirror
-           with the reading direction. Low on the page, clear of the cards. */
-        .edgeline{ position:fixed; left:36px; bottom:96px; z-index:1;
-            writing-mode:vertical-rl; text-orientation:mixed; letter-spacing:.34em;
-            font-size:13px; font-weight:700; color:#8AA3C7; text-align:center; pointer-events:none; }
-        html[dir="rtl"] .edgeline{ writing-mode:vertical-rl; }
-        .edgeline::after{ content:""; display:block; width:4px; height:30px; border-radius:2px;
-            background:#F5A623; margin:14px auto 0; }
-        @@media (max-width:1400px){ .edgeline{ display:none; } }
-
-        /* ---- the head ------------------------------------------------------------------------- */
-        .head{ text-align:center; padding:4px 20px 4px; position:relative; z-index:3; }
-        .logo{ height:52px; margin-bottom:14px; }
-        .hello{ font-size:1.9rem; font-weight:900; margin:0 0 4px; color:var(--ink); }
-        .hello span{ color:var(--blue); }
-        .sub{ color:var(--ink-soft); font-size:1.05rem; margin:0; }
-        .dash{ display:flex; align-items:center; justify-content:center; gap:7px; margin-top:14px; }
-        .dash i{ width:34px; height:5px; border-radius:5px; background:#CBDDF4; display:block; }
-        .dash i.on{ width:42px; background:var(--blue); }
-
-        /* ---- the stage ------------------------------------------------------------------------ */
-        .stage{ position:relative; z-index:2; width:100%; max-width:1340px; margin:2px auto 0; padding:0 20px;
-            display:grid; grid-template-columns:1fr 560px 1fr; align-items:stretch; gap:34px; }
-        .side{ display:flex; flex-direction:column; justify-content:flex-start; gap:14px; z-index:3; padding:4px 0; }
-        .core{ position:relative; height:470px; z-index:2; }
-        /* THE CENTRE'S OWN LIGHT. A halo wider than the orbit, fading to nothing well before the
-           side columns, so the cluster reads against light instead of against the office render.
-           Pointer-events none: it covers the orbs and would otherwise eat every click. */
-        .core::before{ content:""; position:absolute; top:50%; left:50%; translate:-50% -50%;
-            width:150%; height:130%; border-radius:50%; z-index:0; pointer-events:none;
-            background:radial-gradient(closest-side,
-                rgba(255,255,255,.95) 0%, rgba(255,255,255,.88) 42%,
-                rgba(255,255,255,.55) 68%, rgba(255,255,255,0) 100%); }
-        .links{ position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; overflow:visible; }
-        .orbit{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:392px; height:392px;
-            border:1.5px dashed rgba(22,103,214,.34); border-radius:50%; z-index:1; }
-        .orbit.two{ width:300px; height:300px; border-color:rgba(22,103,214,.18); }
-
-        /* THE ORBS ARE SOLID DISCS. The originals were dark glass with an emitted halo - both need a
-           dark page to exist at all. On white the same object is a filled circle in its accent, with
-           the label the design puts underneath it. */
-        .orb{ position:absolute; width:86px; height:86px; border-radius:50%; transform:translate(-50%,-50%); z-index:3;
-            display:grid; place-items:center; cursor:pointer; background:var(--c);
-            box-shadow:0 10px 26px -6px var(--c),
-                       0 0 0 7px color-mix(in srgb, var(--c) 12%, transparent),
-                       0 18px 44px -10px color-mix(in srgb, var(--c) 55%, transparent),
-                       inset 0 2px 6px rgba(255,255,255,.45),
-                       inset 0 -8px 16px -6px rgba(11,37,69,.22);
-            border:4px solid #fff;
-            transition:transform .25s ease, box-shadow .25s ease; }
-        .orb:hover{ transform:translate(-50%,-50%) scale(1.06);
-            box-shadow:0 16px 34px -6px var(--c),
-                       0 0 0 11px color-mix(in srgb, var(--c) 16%, transparent),
-                       0 24px 56px -10px color-mix(in srgb, var(--c) 65%, transparent),
-                       inset 0 2px 6px rgba(255,255,255,.5),
-                       inset 0 -8px 16px -6px rgba(11,37,69,.22); }
-        .orb i{ font-size:36px; color:#fff; }
-        .orb .orbsvg{ width:38px; height:38px; color:#fff; }
-        .orb .num{ position:absolute; top:-6px; inset-inline-end:-6px; width:28px; height:28px; border-radius:50%;
-            display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:800; color:var(--c);
-            background:#fff; border:2px solid var(--c); box-shadow:0 2px 6px rgba(11,37,69,.14); }
-        /* The label sits under the disc, centred on it and free of the layout — a positioned block so
-           it cannot push the orbit around. */
-        .orb .lbl{ position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%);
-            white-space:nowrap; font-size:12px; font-weight:700; line-height:1;
-            color:var(--c); background:rgba(255,255,255,.72);
-            padding:5px 12px 6px; border-radius:999px;
-            border:1px solid transparent;
-            box-shadow:0 1px 3px rgba(11,37,69,.05);
-            backdrop-filter:blur(6px);
-            transition:background .25s ease, color .25s ease, transform .25s ease; }
-        /* 1/1.06 — the chip holds still while the disc grows, instead of resampling its own text. */
-        .orb:hover .lbl{ transform:translateX(-50%) scale(.943);
-            background:var(--c); color:#fff; border-color:transparent; }
-        .dotn{ position:absolute; width:9px; height:9px; border-radius:50%; transform:translate(-50%,-50%); z-index:2;
-            background:var(--c); }
-
-        /* A BIGGER CIRCLE, AND CONTENT HELD WELL INSIDE IT. The logo measured 196px across in a
-           192px circle — ten pixels OUTSIDE the rim — because it was sized by height and the lockup
-           is 4.9:1, so the height decided a width nobody checked.
-           A circle's usable width is not its diameter: at the corners of an 84px-tall block the
-           chord is only 2*sqrt(R^2-42^2). At R=110 that is 203px, so 150px of content leaves real
-           air at every corner. */
-        .hub{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:220px; height:220px; border-radius:50%; z-index:4;
-            display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer;
-            padding:0 34px;
-            background:#fff; border:1px solid var(--line);
-            box-shadow:0 20px 50px rgba(11,37,69,.14), 0 4px 12px rgba(11,37,69,.06); }
-        .hub:hover{ box-shadow:0 26px 60px rgba(11,37,69,.20), 0 4px 14px rgba(11,37,69,.08); }
-        /* Measured on the reference: in a 180px circle the logo is 40px, then 8px to the title and
-           4px to the caption — an 84px block, centred, with 48px of clear circle above and below.
-           The logo carried a margin of its own before, which pushed the block off centre. */
-        /* SIZED BY WIDTH, not height — that is the dimension the circle constrains. */
-        .hublogo{ width:150px; max-width:100%; height:auto; margin:0 0 10px; display:block; }
-        .hub b{ font-size:1.02rem; font-weight:800; color:var(--ink); line-height:1.2; }
-        .hub small{ font-size:.73rem; color:var(--ink-soft); margin-top:5px; line-height:1.35; max-width:150px; }
-
-        /* ---- the six portal cards -------------------------------------------------------------- */
-        /* THE CARD. The design puts the icon tile on the card's OUTER edge and the text beside it,
-           with the action pill running the width of the text column and its arrow at the far end.
-           row-reverse does that in both directions: the tile lands on the page's outer side because
-           the whole layout mirrors, not because a second rule says so. */
-        .panel{ z-index:3; text-align:start; display:flex; gap:15px; align-items:flex-start;
-            flex-direction:row-reverse;
-            /* 25px all round and 15px to the text — the reference card is 325x178 and those are its
-               own figures. At 16/18 the panels read as cramped boxes. */
-            background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:20px; padding:25px;
-            backdrop-filter:blur(6px);
-            box-shadow:0 18px 40px -18px rgba(11,37,69,.22), 0 2px 6px rgba(11,37,69,.04);
-            transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-        .panel:hover{ transform:translateY(-2px); border-color:var(--c); box-shadow:0 16px 36px rgba(11,37,69,.12); }
-        /* A squircle with a lit top edge, not a flat square — the design's tiles have depth. */
-        .panel .pic{ width:75px; height:75px; flex:none; border-radius:21px; color:#fff;
-            display:flex; align-items:center; justify-content:center;
-            position:relative; overflow:hidden;
-            background:linear-gradient(160deg, color-mix(in srgb, var(--c) 78%, #fff) 0%, var(--c) 55%,
-                                              color-mix(in srgb, var(--c) 82%, #000) 100%);
-            box-shadow:0 14px 26px -10px var(--c),
-                       0 3px 8px -2px color-mix(in srgb, var(--c) 45%, transparent),
-                       inset 0 1px 0 rgba(255,255,255,.45); }
-        /* A 1px inset line reads flat at 75px. A real gloss on the lit corner does not — and it is
-           the same corner the tile's own gradient and its drop shadow already agree on. */
-        .panel .pic::after{ content:""; position:absolute; inset:0; border-radius:inherit;
-            pointer-events:none;
-            background:radial-gradient(120% 90% at 18% 8%,
-                rgba(255,255,255,.42) 0%, rgba(255,255,255,.14) 38%, rgba(255,255,255,0) 66%); }
-        .panel .pic i, .panel .pic svg{ position:relative; z-index:1; }
-        .panel .pic i{ font-size:34px; }
-        .panel .pic svg{ width:34px; height:34px; }
-        .panel .body{ min-width:0; flex:1 1 auto; }
-        .panel .t{ font-weight:800; font-size:1.06rem; margin:0 0 5px; color:var(--c); }
-        .panel .d{ color:var(--ink-soft); font-size:.8rem; line-height:1.45; margin:0 0 2px; }
-        .panel ul{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:1px; }
-        .panel li{ color:var(--ink-soft); font-size:.79rem; line-height:1.5; }
-        /* A SHORT PILL AT THE TEXT'S START EDGE. Stretched across the card it read as a bar; the
-           design gives it only the width its own label needs. */
-        /* A WHITE PILL WITH A BLUE CIRCLE, and the blue is the SAME on every card — it is the
-           product's action colour, not the card's subject colour. The card's own accent is already
-           carried by its tile and its title; putting it on the button too made six different-coloured
-           buttons where the design has one.
-           I had this solid in the card colour with a white circle and a door-entry glyph: the fill
-           inverted, the accent wrongly per-card, and the wrong icon. */
-        /* NO FIXED WIDTH. At min-width:112 with space-between every spare pixel went BETWEEN the
-           word and the circle, leaving the word flat against the padding and a hole in the middle.
-           Sized to its contents, the padding is the only spacing there is and it holds. */
-        /* THE BADGE IS THE FIRST CHILD, so it sits at the inline-START and the label at the
-           inline-END. The 5px belongs to the badge (it is already a filled circle, it needs no
-           breathing room) and the wide rim belongs to the LABEL. Stated logically: one rule, no
-           mirrored copy to get backwards. */
-        .cta{ display:inline-flex; align-items:center; gap:14px;
-            align-self:flex-start; height:40px;
-            padding-block:0; padding-inline-start:5px; padding-inline-end:22px; border-radius:30px;
-            font-weight:700; font-size:.86rem; background:#fff; border:0; color:var(--ink);
-            box-shadow:0 3px 10px rgba(11,37,69,.10);
-            transition:box-shadow .2s ease, transform .2s ease; }
-        .cta .ic{ width:30px; height:30px; border-radius:50%; background:var(--blue); display:flex;
-            align-items:center; justify-content:center; color:#fff; flex:none; }
-        .cta .ic svg{ width:16px; height:16px; }
-        /* THE ARROW POINTS OUTWARD, away from the hub: the column on the right points right, the
-           one on the left points left. The columns are .side.start / .side.end, so "start" is the
-           right-hand column in Arabic and the left-hand one in English — flipping on that keeps the
-           outward reading true in both without a mirrored copy of the rule.
-           The drawn path points RIGHT, so only the column currently on the left is flipped. */
-        html:not([dir="rtl"]) .side.start .cbarrow,
-        html[dir="rtl"]       .side.end   .cbarrow { transform:scaleX(-1); }
-        .panel:hover .cta{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(11,37,69,.14); }
-
-        /* ---- the six secondary systems ---------------------------------------------------------- */
-        /* Tucked under the orbit rather than run across the page: the design keeps them inside the
-           middle column's measure so the two side columns stay the tallest thing on the page. */
-        /* The middle column's own measure — squeezed to 660 their captions wrapped to three lines. */
-        .morsys{ position:relative; z-index:3; max-width:740px; margin:6px auto 0;
-            display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; padding:0 16px; }
-        .msys{ display:flex; align-items:center; gap:11px; padding:12px 13px; border-radius:15px;
-            flex-direction:row-reverse;
-            background:rgba(255,255,255,.94); border:1px solid var(--line); box-shadow:0 3px 14px rgba(11,37,69,.05);
-            backdrop-filter:blur(6px);
-            transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-        .msys:hover{ transform:translateY(-2px); border-color:var(--c); box-shadow:0 12px 26px rgba(11,37,69,.10); }
-        .msys-ic{ width:40px; height:40px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center;
-            background:linear-gradient(160deg, color-mix(in srgb, var(--c) 78%, #fff) 0%, var(--c) 60%,
-                                              color-mix(in srgb, var(--c) 82%, #000) 100%);
-            color:#fff; box-shadow:0 6px 14px -6px var(--c); }
-        .msys-ic i{ font-size:20px; }
-        .msys-t{ font-weight:800; font-size:.88rem; color:var(--ink); line-height:1.25; }
-        .msys-d{ color:var(--ink-mute); font-size:.7rem; line-height:1.35; margin-top:6px; }
-
-        /* ---- the feature bar --------------------------------------------------------------------- */
-        .features{ position:relative; z-index:3; max-width:1340px; margin:10px auto 18px; background:var(--card);
-            border:1px solid var(--line); border-radius:20px; padding:14px 20px; display:flex; align-items:center;
-            gap:14px; flex-wrap:wrap; justify-content:space-between; box-shadow:0 4px 18px rgba(11,37,69,.06); }
-        .features .lead{ display:flex; align-items:center; gap:12px; padding-inline-end:20px;
-            border-inline-end:1px solid var(--line); }
-        .features .lead .sh{ width:54px; height:54px; border-radius:15px; background:var(--blue);
-            display:flex; align-items:center; justify-content:center; color:#fff; flex:none;
-            box-shadow:0 8px 20px -6px rgba(22,103,214,.6); }
-        .features .lead .sh i{ font-size:28px; line-height:1; }
-        .features .lead b{ color:var(--ink); font-size:.98rem; }
-        .features .lead small{ display:block; color:var(--ink-soft); font-size:.8rem; max-width:230px; }
-        /* min-width:0 is what actually lets a flex child shrink: without it the text's intrinsic width
-           is the floor, which is why the captions kept their size while the BOX collapsed under them. */
-        .feat{ display:flex; align-items:center; gap:11px; min-width:0; }
-        .feat > div{ min-width:0; }
-        .feat .fi{ width:46px; height:46px; border-radius:12px; background:#F2F7FD; border:1px solid var(--line);
-            display:flex; align-items:center; justify-content:center; color:var(--blue); flex:none; }
-        .feat .fi i{ font-size:23px; line-height:1; }
-        .feat b{ font-size:.9rem; color:var(--ink); } .feat small{ display:block; color:var(--ink-mute); font-size:.76rem; }
-
-        /* The filled action that closes the bar. */
-        .growcta{ display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:16px;
-            background:#fff; border:1px solid var(--line); box-shadow:0 3px 14px rgba(11,37,69,.06);
-            transition:box-shadow .2s ease, transform .2s ease; }
-        html[dir="rtl"] .growcta{ padding:8px 16px 8px 8px; }
-        .growcta:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(11,37,69,.12); }
-        .growcta .gi{ width:44px; height:44px; flex:none; border-radius:12px; display:flex; align-items:center;
-            justify-content:center; color:#fff;
-            background:linear-gradient(160deg,@CrossBuy.BL.Platform.ProductIdentity.Palette.Primary 0%,var(--blue) 60%,@CrossBuy.BL.Platform.ProductIdentity.Palette.Dark 100%);
-            box-shadow:0 6px 14px -6px var(--blue); }
-        .growcta .gi i{ font-size:21px; }
-        .growcta .gt b{ display:block; font-size:.92rem; color:var(--ink); }
-        .growcta .gt small{ display:block; color:var(--ink-mute); font-size:.76rem; }
-        .growcta .ga{ width:44px; height:44px; flex:none; border-radius:50%; background:var(--blue); color:#fff;
-            display:flex; align-items:center; justify-content:center; font-size:1.1rem;
-            box-shadow:0 8px 18px -6px var(--blue); }
-
-        /* ---- narrow screens ----------------------------------------------------------------------- */
-        @@media (max-width:1200px){
-            .stage{ grid-template-columns:1fr 1fr; max-width:840px; gap:16px; align-items:stretch; }
-            .core{ display:none; }
-            .side{ justify-content:flex-start; gap:16px; padding:0; }
-            .morsys{ grid-template-columns:repeat(2,minmax(0,1fr)); }
-
-            /* The bar becomes rows: the lead takes the full width with the rule moved UNDER it
-               (a vertical rule between stacked blocks reads as a stray line), the four features pair
-               up two to a row, and the action closes it across the bottom. */
-            .features{ margin-inline:16px; row-gap:14px; }
-            .features .lead{ flex:1 1 100%; border-inline-end:none; padding-inline-end:0;
-                             padding-bottom:14px; border-bottom:1px solid var(--line); }
-            .features .lead small{ max-width:none; }
-            .feat{ flex:1 1 calc(50% - 7px); }
-            .growcta{ flex:1 1 100%; justify-content:space-between; }
-        }
-
-        /* A phone. The decorations go first — they are fixed-position and 461px wide, so on a 390px
-           screen they are nothing but overflow — and the scene stops being `fixed`, which iOS Safari
-           renders badly and repaints on every scroll. */
-        @@media (max-width:900px){
-            /* The scene leaves the body and becomes a FIXED layer behind the content. `cover` on the
-               body was measuring itself against the document — 2202px tall on a phone — which blew a
-               1536x1024 render up to ~3300px wide and left a narrow slice with its top cut off.
-               A fixed layer is measured against the VIEWPORT, and unlike background-attachment:fixed
-               it is composited correctly by iOS Safari. z-index 0: the page's own content all sits at
-               2 or above, so it stays in front without touching any of it. */
-            body{ background-image:none; }
-            body::before{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
-                background-color:#EDF3FC;
-                background-image:
-                  linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 11%,
-                                         rgba(255,255,255,.72) 26%, rgba(255,255,255,.80) 50%,
-                                         rgba(255,255,255,.72) 74%, rgba(255,255,255,0) 89%,
-                                         rgba(255,255,255,0) 100%),
-                  url('@Url.Content("~/Backend-assets/media/brand/login-scene.png")');
-                background-repeat:no-repeat, no-repeat;
-                background-size:cover, cover;
-                background-position:center, center; }
-            .dots, .glow-corner, .edgeline{ display:none; }
-        }
-        @@media (max-width:640px){
-            .stage{ grid-template-columns:1fr; max-width:480px; }
-            .hello{ font-size:1.6rem; } .sub{ font-size:.95rem; }
-            .langbar{ position:static; margin:12px auto 0; }
-            .shieldtop{ display:none; }
-            .morsys{ grid-template-columns:1fr; }
-            .features{ padding:16px; gap:14px; }
-            .panel{ padding:18px; gap:12px; }
-            .panel .pic{ width:60px; height:60px; border-radius:17px; }
-            .panel .pic i{ font-size:26px; } .panel .pic svg{ width:26px; height:26px; }
-        }
-        /* Below this a two-up feature is ~170px wide and every caption breaks; one per row reads. */
-        @@media (max-width:520px){
-            .feat{ flex:1 1 100%; }
-            .growcta{ padding:8px; }
-            .growcta .gt b{ font-size:.88rem; } .growcta .gt small{ font-size:.72rem; }
-        }
+        @@media (max-width: 991.98px) { .lx-search { order: 9; width: 100%; } .lx-head .lx-bar { flex-wrap: wrap; padding-block: .75rem; } }
     </style>
 </head>
 <body>
-    <span class="dots tl"></span><span class="dots bl"></span><span class="glow-corner"></span>
-    @* The design runs this down the outer edge. Decoration, so it is hidden from screen readers —
-       the page says nothing here it does not also say in its content. *@
-    <div class="edgeline" aria-hidden="true">@SR["BrandFootline"]</div>
+    <!--begin::Header-->
+    <div class="lx-head">
+        <div class="container-xxl lx-bar d-flex align-items-center gap-3 gap-lg-6">
+            <img src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight)" alt="@CrossBuy.BL.Platform.ProductIdentity.Name" class="h-25px h-lg-30px" />
+            <div class="lx-search flex-lg-grow-1 mw-lg-560px mx-lg-auto" id="srch">
+                <i class="ki-outline ki-magnifier fs-2 text-gray-500 position-absolute top-50 translate-middle-y ms-5"></i>
+                <input type="text" id="q" class="form-control h-48px ps-13 pe-15 fs-6" autocomplete="off" placeholder="@Localizer["Search a system or a screen… journal, invoice, patient"]" />
+                <span class="lx-kbd num position-absolute top-50 end-0 translate-middle-y me-4 d-none d-lg-inline">Ctrl K</span>
+                <div class="lx-drop card"><div class="card-body p-3" id="qOut"></div></div>
+            </div>
+            <div class="d-flex align-items-center gap-1 gap-lg-2 ms-auto ms-lg-0">
+                <!--begin::Language (theme menu)-->
+                <div>
+                    <button type="button" class="btn btn-sm btn-light-primary fw-bold rounded-pill px-4" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end"><i class="ki-outline ki-flag fs-5 me-1"></i>@curLang</button>
+                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-3 fs-6 w-175px" data-kt-menu="true">
+                        @foreach (var (code, label) in langs)
+                        {
+                            <div class="menu-item px-3"><a class="menu-link px-5 @(code == cur ? "active" : "")" href="@Url.Action("SetLanguage", "Account", new { culture = code, returnUrl = Url.Action("Choose", "Portal") })">@label</a></div>
+                        }
+                    </div>
+                </div>
+                <!--end::Language-->
+                <a class="btn btn-icon lx-round position-relative" href="@Url.Action("Index", "Chat")" title="@Localizer["Messages"]">
+                    <i class="ki-outline ki-notification-on fs-1 text-gray-700"></i>
+                    @if (Model.Unread > 0) {<span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger w-18px h-18px ms-n4 mt-3 fs-9 num">@Model.Unread</span>}
+                </a>
+                <!--begin::User menu (demo39 header)-->
+                <div class="ms-1 ms-lg-2">
+                    <div class="cursor-pointer symbol symbol-circle symbol-35px symbol-lg-42px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+                        @if (!string.IsNullOrEmpty(Model.Photo)) { <img src="@Url.Content(Model.Photo)" alt="" style="object-fit:cover" data-face="@Face("")" onerror="this.outerHTML=this.getAttribute('data-face')" /> } else { @Html.Raw(Face("")) }
+                    </div>
+                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-275px" data-kt-menu="true">
+                        <div class="menu-item px-3">
+                            <div class="menu-content d-flex align-items-center px-3">
+                                <div class="symbol symbol-50px symbol-circle me-5">
+                                    @if (!string.IsNullOrEmpty(Model.Photo)) { <img src="@Url.Content(Model.Photo)" alt="" style="object-fit:cover" data-face="@Face("")" onerror="this.outerHTML=this.getAttribute('data-face')" /> } else { @Html.Raw(Face("")) }
+                                </div>
+                                <div class="d-flex flex-column min-w-0">
+                                    <div class="fw-bold fs-5 text-truncate">@Model.Name</div>
+                                    @if (!string.IsNullOrEmpty(Model.CompanyName)) {<span class="fw-semibold text-muted fs-7">@Model.CompanyName</span>}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator my-2"></div>
+                        <div class="menu-item px-5"><a href="@Url.Action("Dashboard", "People")" class="menu-link px-5">@Localizer["My profile"]</a></div>
+                        <div class="menu-item px-5"><a href="@Url.Action("Index", "Chat")" class="menu-link px-5"><span class="menu-text">@Localizer["Messages"]</span>@if (Model.Unread > 0) {<span class="menu-badge"><span class="badge badge-light-danger badge-circle fw-bold fs-7 num">@Model.Unread</span></span>}</a></div>
+                        <div class="separator my-2"></div>
+                        <div class="menu-item px-5"><a href="@Url.Action("Logout", "Account")" class="menu-link px-5">@Localizer["Sign out"]</a></div>
+                    </div>
+                </div>
+                <!--end::User menu-->
+            </div>
+        </div>
+    </div>
+    <!--end::Header-->
 
-    <div class="langbar">
-        <span class="gl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"></path></svg></span>
-        @foreach (var (code, label) in _langs)
+    <div class="container-xxl py-6 py-lg-8">
+        <!--begin::Hero-->
+        <div class="lx-hero mb-6 mb-xl-8">
+            <div class="lx-hero-body d-flex flex-column flex-lg-row align-items-lg-center gap-7 px-8 px-lg-12 py-10">
+                <div class="d-flex align-items-center gap-6 flex-grow-1 min-w-0">
+                    <div class="symbol symbol-80px symbol-circle lx-face flex-shrink-0">
+                        @if (!string.IsNullOrEmpty(Model.Photo)) { <img src="@Url.Content(Model.Photo)" alt="" style="object-fit:cover" data-face="@Face("fs-1")" onerror="this.outerHTML=this.getAttribute('data-face')" /> } else { @Html.Raw(Face("fs-1")) }
+                    </div>
+                    <div class="min-w-0">
+                        <div class="lx-eyebrow fw-semibold fs-7 mb-1">@Localizer["Your workspace"]</div>
+                        <div class="fw-bolder fs-2qx lh-sm mb-4">@greet@(first.Length > 0 ? (isAr ? "، " : ", ") + first : "")</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="lx-chip fs-7 fw-semibold px-4 py-2"><i class="ki-outline ki-calendar fs-6 text-white me-2"></i>@today</span>
+                            @if (!string.IsNullOrEmpty(Model.CompanyName)) {<span class="lx-chip fs-7 fw-semibold px-4 py-2"><i class="ki-outline ki-office-bag fs-6 text-white me-2"></i>@Model.CompanyName</span>}
+                        </div>
+                    </div>
+                </div>
+                <div class="lx-glass p-6 flex-shrink-0 w-lg-325px">
+                    <div class="d-flex align-items-end justify-content-between mb-4">
+                        <div>
+                            <div class="text-white opacity-75 fw-semibold fs-7 mb-1">@Localizer["Waiting for you today"]</div>
+                            <div class="text-white fw-bolder fs-3x lh-1 num">@waitTotal</div>
+                        </div>
+                        <div class="lx-ic lx-ic-48" style="background:rgba(255,255,255,.14);color:#fff"><i class="ki-outline ki-notification-status"></i></div>
+                    </div>
+                    @if (waitTotal > 0)
+                    {
+                        <div class="lx-bar-track mb-3"><span style="width:@((waitUrgent * 100.0 / waitTotal).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;background:#F87171"></span><span style="width:@(((waitTotal - waitUrgent) * 100.0 / waitTotal).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;background:rgba(255,255,255,.75)"></span></div>
+                        <div class="d-flex gap-5 fs-8 fw-semibold text-white opacity-75 mb-5">
+                            <span><span class="lx-dot me-2" style="background:#F87171"></span>@Localizer["Urgent"] <span class="num">@waitUrgent</span></span>
+                            <span><span class="lx-dot me-2" style="background:rgba(255,255,255,.75)"></span>@Localizer["Other"] <span class="num">@(waitTotal - waitUrgent)</span></span>
+                        </div>
+                        <a href="@signals[0].Url" class="btn btn-sm btn-light fw-bold w-100">@Localizer["Start:"] @(isAr ? signals[0].Ar : signals[0].En)<i class="ki-outline @arrow fs-5 ms-2"></i></a>
+                    }
+                    else
+                    {
+                        <div class="text-white opacity-75 fw-semibold fs-7">@Localizer["Nothing is waiting for you"]</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <!--end::Hero-->
+
+        @if (signals.Count > 0)
         {
-            <a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="@code" asp-route-returnUrl="@Context.Request.Path" class="langopt @(_cur == code ? "on" : "")">@label</a>
-        }
-    </div>
-    <div class="shieldtop"><i class="ki-outline ki-shield-tick fs-2"></i></div>
-
-    <div class="head">
-        <img class="logo" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" alt="@CrossBuy.BL.Platform.ProductIdentity.Name" asp-append-version="true" />
-        <h1 class="hello">@Localizer["Welcome, "]<span>@name</span></h1>
-        <p class="sub">@Localizer["Choose the portal that fits your needs today"]</p>
-        <div class="dash"><i></i><i class="on"></i><i></i></div>
-    </div>
-
-    <div class="stage">
-        <!-- start-side panels: Back-office · People · Reports & Analytics -->
-        <div class="side start">
-            <div class="panel" style="--c:#10A36F;">
-                <span class="pic"><i class="ki-solid ki-setting-2"></i></span>
-                <div class="body">
-                <div class="t">@Localizer["Administrative system"]</div>
-                <div class="d">@Localizer["Companies, employees, roles & data"]</div>
-                <ul><li>@Localizer["Users & permissions"]</li><li>@Localizer["System settings & data"]</li><li>@Localizer["Reports & statistics"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Service")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
-                </div>
-            </div>
-            <div class="panel" style="--c:#7C5CFC;">
-                <span class="pic"><i class="ki-solid ki-people"></i></span>
-                <div class="body">
-                <div class="t">@Localizer["Employees portal"]</div>
-                <div class="d">@Localizer["Profile, leaves, payslips & alerts"]</div>
-                <ul><li>@Localizer["Personal profile & data"]</li><li>@Localizer["Leaves & attendance"]</li><li>@Localizer["Requests & notifications"]</li></ul>
-                <a class="cta" href="@Url.Action("Dashboard","People")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
-                </div>
-            </div>
-            <div class="panel" style="--c:#F0A020;">
-                <span class="pic"><i class="ki-solid ki-chart-line-up"></i></span>
-                <div class="body">
-                <div class="t">@Localizer["Reports & Analytics"]</div>
-                <div class="d">@Localizer["Comprehensive reports & analytics for better decisions"]</div>
-                <ul><li>@Localizer["Custom reports"]</li><li>@Localizer["Key performance indicators"]</li><li>@Localizer["Analytics & charts"]</li></ul>
-                <a class="cta" href="@Url.Action("Executive","Accounting")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- centre hub + orbiting systems -->
-        <div class="core">
-            <svg class="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                @foreach (var p in _links)
+            <!--begin::Waiting for you-->
+            <div class="row g-5 g-xl-6 mb-6 mb-xl-8">
+                @foreach (var s in signals)
                 {
-                    <line x1="50" y1="50" x2="@p.x" y2="@p.y" stroke="rgba(22,103,214,.26)" stroke-width="1" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"></line>
-                    <circle cx="@(((50 + p.x) / 2))" cy="@(((50 + p.y) / 2))" r="0.9" fill="rgba(22,103,214,.55)"></circle>
-                    <circle cx="@(((50 + p.x * 3) / 4))" cy="@(((50 + p.y * 3) / 4))" r="0.7" fill="rgba(22,103,214,.35)"></circle>
+                    <div class="col-sm-6 col-lg">
+                        <a href="@s.Url" class="card lx-card lx-lift lx-stat h-100 @(s.Urgent ? "red" : "")">
+                            <div class="card-body d-flex align-items-center gap-5 p-6">
+                                <span class="lx-ic lx-ic-56 solid @(s.Urgent ? "red" : "")"><i class="ki-outline @SignalIcon(s.Url)"></i></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-2"><span class="fs-2hx fw-bolder text-gray-900 lh-1 num">@s.Count</span>@if (s.Urgent) {<span class="badge badge-light-danger rounded-pill fs-9 fw-bold">@Localizer["Urgent"]</span>}</div>
+                                    <div class="fw-bold text-gray-700 fs-6 mt-2">@(isAr ? s.Ar : s.En)</div>
+                                </div>
+                                <span class="lx-go"><i class="ki-outline @arrow fs-5"></i></span>
+                            </div>
+                        </a>
+                    </div>
                 }
-            </svg>
-            <div class="orbit"></div>
-            <div class="orbit two"></div>
-            <a class="hub" href="@Url.Action("Index", "Service")">
-                <img class="hublogo" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" alt="" asp-append-version="true" />
-                <b>@Localizer["Control panel"]</b>
-                <small>@Localizer["Quick access to all systems"]</small>
-            </a>
-            <a class="orb" href="@Url.Action("Index","Service")"      style="--c:#10A36F;  left:@sTB;  top:14%;"><span class="num">01</span><i class="ki-solid ki-setting-2"></i><span class="lbl">@Localizer["Administrative system"]</span></a>
-            <a class="orb" href="@Url.Action("Index","Inventory")"    style="--c:#1F6FEB;  left:@eTB;  top:14%;"><span class="num">02</span><i class="ki-solid ki-handcart"></i><span class="lbl">@SR["Inventory"]</span></a>
-            <a class="orb" href="@Url.Action("Dashboard","People")"   style="--c:#7C5CFC; left:@sMID; top:50%;"><span class="num">03</span><i class="ki-solid ki-people"></i><span class="lbl">@Localizer["Employees portal"]</span></a>
-            <a class="orb" href="@Url.Action("Index","Accounting")"   style="--c:#0E86B8;  left:@eMID; top:50%;"><span class="num">04</span><i class="ki-solid ki-bill"></i><span class="lbl">@SR["Accounting"]</span></a>
-            <a class="orb" href="@Url.Action("Executive","Accounting")" style="--c:#F0A020; left:@sTB;  top:86%;"><span class="num">05</span><i class="ki-solid ki-chart-line-up"></i><span class="lbl">@Localizer["Reports & Analytics"]</span></a>
-            <a class="orb" href="@Url.Action("Tickets","Crm")"        style="--c:#E2445C; left:@eTB;  top:86%;"><span class="num">06</span><svg class="orbsvg" viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"></path><rect x="2.4" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><rect x="17.3" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><path d="M19.45 19.4v.7a3 3 0 0 1-3 3H13.5"></path><circle cx="12" cy="23.1" r="1.15" fill="currentColor" stroke="none"></circle></svg><span class="lbl">@Localizer["Technical support"]</span></a>
-        </div>
+            </div>
+            <!--end::Waiting for you-->
+        }
 
-        <!-- end-side panels: Inventory · Accounting · Technical support -->
-        <div class="side end">
-            <div class="panel" style="--c:#1F6FEB;">
-                <span class="pic"><i class="ki-solid ki-parcel"></i></span>
-                <div class="body">
-                <div class="t">@SR["Inventory"]</div>
-                <div class="d">@Localizer["Items, stock & movements"]</div>
-                <ul><li>@Localizer["Items & warehouses"]</li><li>@Localizer["Stock movements & purchases"]</li><li>@Localizer["Counting & receiving"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Inventory")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+        <div class="row g-5 g-xl-6 mb-6 mb-xl-8">
+            <!--begin::Pinned-->
+            <div class="col-xl-8">
+                <div class="card lx-card h-100">
+                    <div class="card-header border-0 pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Pinned"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Your everyday systems — up to 8, star any system"]</span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-4"><div class="row g-4" id="favs"></div></div>
                 </div>
             </div>
-            <div class="panel" style="--c:#0E86B8;">
-                <span class="pic"><i class="ki-solid ki-bill"></i></span>
-                <div class="body">
-                <div class="t">@SR["Accounting"]</div>
-                <div class="d">@Localizer["Accounts, journals & reports"]</div>
-                <ul><li>@Localizer["Journals & accounts"]</li><li>@Localizer["Invoices & payments"]</li><li>@Localizer["Financial reports"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Accounting")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+            <!--end::Pinned-->
+            <!--begin::Continue-->
+            <div class="col-xl-4">
+                <div class="card lx-card h-100">
+                    <div class="card-header border-0 pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Continue where you left off"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["What you opened last"]</span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-2 px-6" id="recent"></div>
                 </div>
             </div>
-            <div class="panel" style="--c:#E2445C;">
-                <span class="pic"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.4" y="12.8" width="4.3" height="6.6" rx="1.9"/><rect x="17.3" y="12.8" width="4.3" height="6.6" rx="1.9"/><path d="M19.45 19.4v.7a3 3 0 0 1-3 3H13.5"/></svg></span>
-                <div class="body">
-                <div class="t">@Localizer["Technical support"]</div>
-                <div class="d">@Localizer["Reach our support & assistance team"]</div>
-                <ul><li>@Localizer["Support tickets & follow-up"]</li><li>@Localizer["Knowledge base"]</li><li>@Localizer["Direct contact"]</li></ul>
-                <a class="cta" href="@Url.Action("Tickets","Crm")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
-                </div>
+            <!--end::Continue-->
+        </div>
+
+        <!--begin::All systems-->
+        <div class="card lx-card">
+            <div class="card-header border-0 pt-7 align-items-center">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">@Localizer["All systems"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="num">@Model.Systems.Count</span> @Localizer["systems available to you"]</span>
+                </h3>
             </div>
+            <div class="px-9 pt-4"><ul class="nav lx-tabs gap-3" id="tabs"></ul></div>
+            <div class="card-body pt-6"><div class="row g-5" id="grid"></div></div>
         </div>
+        <!--end::All systems-->
+
+        <div class="text-center text-gray-500 fs-7 mt-8">@Localizer["Only the systems you are allowed to open appear here"] · @CrossBuy.BL.Platform.ProductIdentity.Name @DateTime.Now.Year</div>
     </div>
 
-    <!--begin::Bottom wide systems (Manufacturing · CRM) -->
-    <div class="morsys">
-        <a class="msys" href="@Url.Action("WorkOrders","Inventory")" style="--c:#0E86B8;">
-            <span class="msys-ic"><i class="ki-solid ki-gear"></i></span>
-            <div><div class="msys-t">@SR["Manufacturing"]</div>
-            <div class="msys-d">@Localizer["Work orders & production tracking (WIP)"]</div></div>
-        </a>
-        <a class="msys" href="@Url.Action("Index","Crm")" style="--c:#E2445C;">
-            <span class="msys-ic"><i class="ki-solid ki-people"></i></span>
-            <div><div class="msys-t">@SR["CRM"]</div>
-            <div class="msys-d">@Localizer["Customers, opportunities, campaigns & tickets"]</div></div>
-        </a>
-        <a class="msys" href="@Url.Action("Index","Tasks")" style="--c:#7C5CFC;">
-            <span class="msys-ic"><i class="ki-solid ki-abstract-26"></i></span>
-            <div><div class="msys-t">@SR["Tasks"]</div>
-            <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "المهام والتايم شيت: تكلفة وفوترة ومرتبات" : "Tasks & timesheet: cost, billing & payroll")</div></div>
-        </a>
-        @* Calendar is a system in its own right — three screens and its own sidebar (MainMenu.Calendar()).
-           The Systems quick-switch in _MainMenu.cshtml already lists it, but THIS page does not render that
-           partial: it is the post-login landing page and the destination of the switcher's own "All systems"
-           row, so a user who starts here had no way to reach Timeline or Resource View without first entering
-           some OTHER system to borrow its sidebar. Same .msys component, same colour the switcher already
-           gives Calendar (#C0399B), same label source — a listing of a system this page had omitted, not a
-           new navigation design. *@
-        <a class="msys" href="@Url.Action("Index","Calendar")" style="--c:#C0399B;">
-            <span class="msys-ic"><i class="ki-solid ki-calendar"></i></span>
-            <div><div class="msys-t">@SR["Calendar"]</div>
-            <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "التقويم: الجدول الزمني وعرض الموارد والتكرار" : "Calendar: timeline, resource view & recurrence")</div></div>
-        </a>
-        <a class="msys" href="@Url.Action("Projects","Project")" style="--c:#0E9F84;">
-            <span class="msys-ic"><i class="ki-solid ki-questionnaire-tablet"></i></span>
-            <div><div class="msys-t">@SR["Projects & Contracting"]</div>
-            <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "المشاريع والمقاولات: BOQ والعقود والمستخلصات" : "Projects, BOQ, contracts & progress billing")</div></div>
-        </a>
-        <a class="msys" href="@Url.Action("Dashboard","Hyper")" style="--c:#E0518F;">
-            <span class="msys-ic"><i class="ki-solid ki-basket"></i></span>
-            <div><div class="msys-t">@SR["Hypermarket"]</div>
-            <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "الهايبر ماركت: ممرّات الكاشير والقدرات والورديات" : "Hypermarket: lanes, capabilities & shifts")</div></div>
-        </a>
-    </div>
+    <script type="application/json" id="lxData">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(data))</script>
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+    <script>
+    (function () {
+        'use strict';
+        var D = JSON.parse(document.getElementById('lxData').textContent);
+        var W = {
+            all: @Json.Serialize(Localizer["All"].Value), pinHint: @Json.Serialize(Localizer["Star any system to pin it here"].Value), pin: @Json.Serialize(Localizer["Pin"].Value),
+            max: @Json.Serialize(Localizer["At most 8 pinned systems"].Value), isNew: @Json.Serialize(Localizer["New"].Value), systems: @Json.Serialize(Localizer["Systems"].Value),
+            screens: @Json.Serialize(Localizer["Screens"].Value), none: @Json.Serialize(Localizer["No results"].Value), system: @Json.Serialize(Localizer["System"].Value),
+            recent: @Json.Serialize(Localizer["Recent"].Value), open: @Json.Serialize(Localizer["Open"].Value), noRecent: @Json.Serialize(Localizer["The screens you open will appear here"].Value)
+        };
+        var arrow = @Json.Serialize(arrow), lang = document.documentElement.lang || 'en';
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        // Pins, the open tab and the recent screens are per-viewer conveniences: this browser only, and the screen works without them.
+        var store = { get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
+        var BY = {}; D.systems.forEach(function (s) { BY[s.k] = s; });
+        var DOM = {}; D.domains.forEach(function (d) { DOM[d.k] = d; });
+        var pins = store.get('cb.launch.pins', []).filter(function (k) { return BY[k]; });
+        var recent = store.get('cb.launch.recent', []).filter(function (r) { return BY[r.k]; });
+        var tab = store.get('cb.launch.tab', 'all');
 
-    <div class="features">
-        <div class="lead">
-            <div class="sh"><i class="ki-solid ki-shield-tick"></i></div>
-            <div><b>@Localizer["Your data security is our priority"]</b>
-                <small>@Localizer["Top security & privacy standards to protect your data"]</small></div>
-        </div>
-        <div class="feat"><div class="fi"><i class="ki-outline ki-shield-search"></i></div><div><b>@Localizer["Advanced security"]</b><small>@Localizer["Modern security tech"]</small></div></div>
-        <div class="feat"><div class="fi"><i class="ki-outline ki-cloud-add"></i></div><div><b>@Localizer["Backups"]</b><small>@Localizer["Periodic backups"]</small></div></div>
-        <div class="feat"><div class="fi"><i class="ki-outline ki-time"></i></div><div><b>@Localizer["24/7 support"]</b><small>@Localizer["Always-on support"]</small></div></div>
-        <div class="feat"><div class="fi"><i class="ki-outline ki-rocket"></i></div><div><b>@Localizer["High performance"]</b><small>@Localizer["Fast & reliable"]</small></div></div>
+        function remember(k, name, url) {
+            recent = [{ k: k, name: name, url: url, t: Date.now() }].concat(recent.filter(function (r) { return r.url !== url; })).slice(0, 5);
+            store.set('cb.launch.recent', recent);
+        }
+        var rtf = null; try { rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' }); } catch (e) { }
+        function ago(t) {
+            if (!t || !rtf) return '';
+            var m = Math.round((Date.now() - t) / 60000);
+            if (m < 60) return rtf.format(-Math.max(m, 1), 'minute');
+            var h = Math.round(m / 60); if (h < 24) return rtf.format(-h, 'hour');
+            return rtf.format(-Math.round(h / 24), 'day');
+        }
+        function ic(icon, size, extra) { return '<span class="lx-ic lx-ic-' + size + ' ' + (extra || '') + '"><i class="ki-outline ' + esc(icon) + '"></i></span>'; }
 
-        @* The design closes the bar with a filled action. It goes to the control panel — the one
-           destination on this page that is not already a card, so the button leads somewhere the
-           six portals do not. *@
-        <a class="growcta" href="@Url.Action("Index","Service")">
-            <span class="gi"><i class="ki-solid ki-chart-simple"></i></span>
-            <span class="gt"><b>@SR["GrowingTogether"]</b><small>@SR["YourPartnerInSuccess"]</small></span>
-            <span class="ga"><i class="ki-outline ki-arrow-@arrow"></i></span>
-        </a>
-    </div>
+        /* a system: identity, name, the description in full, what waits there, a star to pin, "open" on hover */
+        function card(s) {
+            var pinned = pins.indexOf(s.k) !== -1, dom = DOM[s.g];
+            return '<div class="col-6 col-lg-4 col-xxl-3"><a class="card lx-card lx-lift lx-sys h-100" href="' + esc(s.url) + '" data-k="' + s.k + '">' +
+                '<div class="card-body d-flex flex-column p-6">' +
+                '<div class="d-flex align-items-start justify-content-between mb-5">' + ic(s.icon, '56') +
+                '<div class="d-flex align-items-center gap-1">' +
+                (s.isNew ? '<span class="badge badge-light-primary rounded-pill fw-bold fs-8 px-3">' + esc(W.isNew) + '</span>' : '') +
+                '<button type="button" class="btn btn-icon btn-sm btn-active-light-primary rounded-circle w-32px h-32px lx-pin ' + (pinned ? 'on' : '') + '" data-pin="' + s.k + '" title="' + esc(W.pin) + '"><i class="ki-' + (pinned ? 'solid text-primary' : 'outline') + ' ki-star fs-3"></i></button>' +
+                '</div></div>' +
+                '<div class="fs-4 fw-bold text-gray-900 mb-1">' + esc(s.name) + '</div>' +
+                '<div class="text-gray-600 fw-semibold fs-7 lx-desc">' + esc(s.desc) + '</div>' +
+                '<div class="lx-foot d-flex align-items-center justify-content-between mt-auto pt-5">' +
+                (s.count ? '<span class="badge badge-light-danger rounded-pill fw-bold fs-8 px-3 py-2"><span class="num me-1">' + s.count + '</span>' + esc(s.countText) + '</span>'
+                    : '<span class="fs-8 fw-semibold text-gray-500">' + esc(dom ? dom.name : '') + '</span>') +
+                '<span class="lx-open text-primary fw-bold fs-7 d-flex align-items-center gap-1">' + esc(W.open) + '<i class="ki-outline ' + arrow + ' fs-5 text-primary"></i></span>' +
+                '</div></div></a></div>';
+        }
+
+        function render() {
+            /* pinned: app tiles */
+            var fav = pins.map(function (k) { return BY[k]; });
+            document.getElementById('favs').innerHTML = fav.length ? fav.map(function (s) {
+                return '<div class="col-6 col-md-3"><a href="' + esc(s.url) + '" class="lx-fav d-flex flex-column align-items-center text-center gap-3 h-100 px-3 py-7" data-k="' + s.k + '">' +
+                    '<div class="position-relative">' + ic(s.icon, '64', 'solid') + (s.count ? '<span class="lx-count badge badge-circle badge-danger num">' + s.count + '</span>' : '') + '</div>' +
+                    '<span class="fw-bold fs-6 text-gray-900 lh-sm">' + esc(s.name) + '</span>' +
+                    (s.count ? '<span class="fw-semibold fs-8 text-danger lh-sm">' + esc(s.countText) + '</span>' : '<span class="fw-semibold fs-8 text-gray-500 lh-sm">' + esc(DOM[s.g] ? DOM[s.g].name : '') + '</span>') + '</a></div>';
+            }).join('') : '<div class="col-12"><div class="d-flex align-items-center gap-4 rounded-4 border border-dashed border-gray-300 p-6"><i class="ki-outline ki-star fs-2x text-gray-400"></i><span class="text-gray-600 fw-semibold fs-6">' + esc(W.pinHint) + '</span></div></div>';
+
+            /* continue where you left off */
+            document.getElementById('recent').innerHTML = recent.length ? recent.map(function (r) {
+                var s = BY[r.k];
+                return '<a href="' + esc(r.url) + '" class="lx-row d-flex align-items-center gap-4 mb-1">' + ic(s.icon, '40') +
+                    '<div class="flex-grow-1 min-w-0"><div class="text-gray-900 fw-bold fs-6 text-truncate">' + esc(r.name) + '</div>' +
+                    '<div class="text-gray-500 fw-semibold fs-7">' + esc(s.name) + '</div></div>' +
+                    '<span class="text-gray-500 fs-8 fw-semibold text-nowrap">' + esc(ago(r.t)) + '</span></a>';
+            }).join('') : '<div class="d-flex align-items-center gap-4 rounded-4 border border-dashed border-gray-300 p-6"><i class="ki-outline ki-time fs-2x text-gray-400"></i><span class="text-gray-600 fw-semibold fs-6">' + esc(W.noRecent) + '</span></div>';
+
+            /* all systems, filtered by domain */
+            var tabs = [['all', W.all, D.systems.length, 'ki-element-11']].concat(D.domains.map(function (d) { return [d.k, d.name, D.systems.filter(function (s) { return s.g === d.k; }).length, d.icon]; }));
+            if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'all';
+            document.getElementById('tabs').innerHTML = tabs.map(function (t) {
+                return '<li class="nav-item"><a class="nav-link btn btn-outline btn-flex btn-color-muted btn-active-color-primary flex-column overflow-hidden position-relative pt-5 pb-3 px-5 ' + (t[0] === tab ? 'active' : '') + '" href="#" data-tab="' + t[0] + '">' +
+                    '<div class="nav-icon mb-2"><i class="ki-outline ' + t[3] + ' fs-1 p-0"></i></div>' +
+                    '<span class="nav-text text-gray-700 fw-bold fs-7 lh-1">' + esc(t[1]) + ' <span class="num text-gray-500 fw-semibold">' + t[2] + '</span></span>' +
+                    '<span class="bullet-custom position-absolute bottom-0 start-0 w-100 h-3px bg-primary"></span></a></li>';
+            }).join('');
+            var list = tab === 'all' ? D.systems : D.systems.filter(function (s) { return s.g === tab; });
+            document.getElementById('grid').innerHTML = list.map(card).join('');
+        }
+        render();
+
+        document.addEventListener('click', function (e) {
+            var t;
+            if ((t = e.target.closest('[data-tab]'))) { e.preventDefault(); tab = t.getAttribute('data-tab'); store.set('cb.launch.tab', tab); render(); return; }
+            if ((t = e.target.closest('[data-pin]'))) {
+                e.preventDefault(); e.stopPropagation();
+                var k = t.getAttribute('data-pin'), i = pins.indexOf(k);
+                if (i !== -1) pins.splice(i, 1); else if (pins.length >= 8) { if (window.toastr) toastr.warning(W.max); return; } else pins.push(k);
+                store.set('cb.launch.pins', pins); render(); return;
+            }
+            if ((t = e.target.closest('[data-k]'))) { var s = BY[t.getAttribute('data-k')]; if (s) remember(s.k, s.name, s.url); }
+        });
+
+        /* ---- the header search: every system and every screen the systems publish, keyboard first ---- */
+        var box = document.getElementById('srch'), qIn = document.getElementById('q'), out = document.getElementById('qOut'), hits = [], cur = 0;
+        function norm(s) { return String(s).toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي'); }
+        // Arabic singular ↔ broken plural for the words people type most, so "فاتورة" finds "الفواتير".
+        var FORMS = [['فاتوره', 'فواتير'], ['قيد', 'قيود'], ['صنف', 'اصناف'], ['مريض', 'مرضي'], ['موظف', 'موظفين'], ['طلب', 'طلبات'], ['حساب', 'حسابات'], ['عميل', 'عملاء'],
+            ['مورد', 'موردين'], ['امر', 'اوامر'], ['تقرير', 'تقارير'], ['مستودع', 'مستودعات'], ['مهمه', 'مهام'], ['مشروع', 'مشاريع'], ['غرفه', 'غرف'], ['سرير', 'اسره'], ['موعد', 'مواعيد']];
+        function matches(text, v) {
+            var t = norm(text);
+            return v.split(/\s+/).every(function (w) {
+                if (t.indexOf(w) !== -1) return true;
+                var bare = w.replace(/^ال/, '');
+                return FORMS.some(function (f) { return (f[0] === bare || f[1] === bare) && (t.indexOf(f[0]) !== -1 || t.indexOf(f[1]) !== -1); });
+            });
+        }
+        function search() {
+            var v = norm(qIn.value.trim());
+            hits = [];
+            if (!v) recent.forEach(function (r) { hits.push({ s: BY[r.k], name: r.name, url: r.url, grp: 'rec' }); });
+            D.systems.forEach(function (s) { if (!v || matches(s.name + ' ' + s.desc, v)) hits.push({ s: s, name: s.name, url: s.url, grp: 'sys' }); });
+            if (v) D.screens.forEach(function (x) { if (BY[x.k] && matches(x.name + ' ' + x.alt, v)) hits.push({ s: BY[x.k], name: x.name, url: x.url, grp: 'scr' }); });
+            hits = hits.slice(0, 40); cur = 0; draw();
+        }
+        function draw() {
+            var heads = { rec: W.recent, sys: W.systems, scr: W.screens }, html = '', last = '';
+            hits.forEach(function (h, i) {
+                if (h.grp !== last) { html += '<div class="text-gray-500 fw-bold fs-8 text-uppercase px-3 pt-3 pb-2">' + esc(heads[h.grp]) + '</div>'; last = h.grp; }
+                html += '<a class="lx-hit ' + (i === cur ? 'act' : '') + '" data-i="' + i + '" href="' + esc(h.url) + '">' + ic(h.s.icon, '35') +
+                    '<div class="flex-grow-1 min-w-0"><div class="fw-semibold fs-6 text-gray-800 text-truncate">' + esc(h.name) + '</div><div class="text-gray-500 fs-7">' + esc(h.grp === 'sys' ? W.system : h.s.name) + '</div></div>' +
+                    (i === cur ? '<span class="lx-kbd num">Enter</span>' : '') + '</a>';
+            });
+            out.innerHTML = html || '<div class="text-gray-500 fs-6 p-5 text-center">' + esc(W.none) + '</div>';
+            var a = out.querySelector('.lx-hit.act'); if (a) a.scrollIntoView({ block: 'nearest' });
+        }
+        function go(h) { remember(h.s.k, h.name, h.url); location.href = h.url; }
+        function show() { box.classList.add('open'); search(); }
+        function hide() { box.classList.remove('open'); }
+        qIn.addEventListener('focus', show);
+        qIn.addEventListener('input', search);
+        document.addEventListener('mousedown', function (e) { if (!box.contains(e.target)) hide(); });
+        document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); qIn.focus(); qIn.select(); show(); } });
+        qIn.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') { cur = Math.min(hits.length - 1, cur + 1); draw(); e.preventDefault(); }
+            else if (e.key === 'ArrowUp') { cur = Math.max(0, cur - 1); draw(); e.preventDefault(); }
+            else if (e.key === 'Enter' && hits[cur]) { e.preventDefault(); go(hits[cur]); }
+            else if (e.key === 'Escape') { hide(); qIn.blur(); }
+        });
+        out.addEventListener('click', function (e) { var it = e.target.closest('.lx-hit'); if (it) { e.preventDefault(); go(hits[+it.getAttribute('data-i')]); } });
+    })();
+    </script>
+    @await Html.PartialAsync("_LabCriticalAlerts")
 </body>
 </html>

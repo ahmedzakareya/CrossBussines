@@ -487,6 +487,9 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Pla
 // Global cross-entity search: fans out over the registry's per-type search, gated by each module's
 // IModuleAccessService (the kernel doc named Search as a planned reuser of that one permission engine).
 builder.Services.AddScoped<CrossBuy.BL.Platform.IGlobalSearchService, CrossBuy.BL.Platform.GlobalSearchService>();
+// Which SYSTEMS and screens a person may open — one rule, asked by the opening screen and by the
+// header search box. It takes every IModuleAccessService and is not one itself, so there is no cycle.
+builder.Services.AddScoped<CrossBuy.BL.Platform.ISystemVisibility, CrossBuy.BL.Platform.SystemVisibility>();
 
 // ---- Central Document Platform: the SHARED SECURITY SPINE only ----
 //

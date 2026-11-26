@@ -9,8 +9,8 @@
     try { catalogue = await Ask.AvailableAsync(Context.RequestAborted); }
     catch { catalogue = new List<IAskHandler>(); }
 
-    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    string T(AskText t) => isAr ? t.Ar : t.En;
+    var uiCulture = System.Globalization.CultureInfo.CurrentUICulture;
+    string T(AskText t) => t.ForCulture(uiCulture);
 }
 
 @if (catalogue.Count > 0)
@@ -54,6 +54,16 @@
             display:none;flex-direction:column;overflow:hidden;
             opacity:0;transform:translateY(8px);transition:opacity .15s ease,transform .15s ease}
         .cb-ai-panel.show{display:flex;opacity:1;transform:none}
+
+        /* ---- anchored under the header box ----
+           When the question was typed in the header, the answer belongs under the header. Floating it
+           back down to the button in the opposite corner makes the person look for their own answer,
+           and breaks the only link they have between what they typed and what appeared. The two
+           offsets are written by JS from the box's own rectangle, so this follows the box wherever a
+           shell puts it, in either direction. */
+        .cb-ai-panel.cb-ai-anchored{inset-block-start:var(--cb-ai-top,72px);inset-block-end:auto;
+            inset-inline-end:var(--cb-ai-end,24px);
+            max-height:min(720px,calc(100vh - var(--cb-ai-top,72px) - 24px))}
 
         /* ---- header: one calm band, not a heavy slab ---- */
         .cb-ai-head{display:flex;align-items:center;gap:11px;padding:14px 16px;
@@ -323,7 +333,9 @@
             if (e.target.closest('[data-kt-menu-trigger], [data-bs-toggle="dropdown"]')) open(false);
         }, true);
 
-        fab.addEventListener('click', function () { open(!panel.classList.contains('show')); });
+        // Opened from the button, the panel belongs AT the button — so drop any anchoring a header
+        // box left behind, or the panel would open by the search field nobody just touched.
+        fab.addEventListener('click', function () { unanchor(); open(!panel.classList.contains('show')); });
         document.getElementById('cbAiClose').addEventListener('click', function () { open(false); });
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && panel.classList.contains('show')) { open(false); fab.focus(); }
@@ -749,6 +761,44 @@
         document.querySelectorAll('.cb-ai-example').forEach(function (b) {
             b.addEventListener('click', function () { ask(b.getAttribute('data-q')); });
         });
+
+        // THE ONE DOOR IN, for any box in the shell that wants to ask.
+        //
+        // The header search field calls this instead of growing an assistant of its own. That keeps a
+        // single conversation, a single history, a single set of refusal and "how this was worked out"
+        // renderers, and one place where the permission wording lives. A second implementation in
+        // global-search.js would have had to re-answer every one of those questions, and would drift
+        // from this one the first time either changed.
+        //
+        // Declared last so nothing can reach `ask` or `open` before they exist.
+        // Where the panel sits when a header box asked the question, rather than the floating button.
+        var anchorEl = null;
+        function place() {
+            if (!anchorEl || !document.body.contains(anchorEl)) { unanchor(); return; }
+            var r = anchorEl.getBoundingClientRect();
+            if (!r.width) { unanchor(); return; }           // hidden at this breakpoint
+            var rtl = document.documentElement.getAttribute('dir') === 'rtl';
+            // inline-end is the RIGHT edge in LTR and the LEFT edge in RTL, so the panel's trailing
+            // edge lines up with the box's trailing edge in both directions without a second rule.
+            var end = rtl ? r.left : (document.documentElement.clientWidth - r.right);
+            panel.style.setProperty('--cb-ai-top', Math.max(8, r.bottom + 8) + 'px');
+            panel.style.setProperty('--cb-ai-end', Math.max(12, end) + 'px');
+            panel.classList.add('cb-ai-anchored');
+        }
+        function unanchor() { anchorEl = null; panel.classList.remove('cb-ai-anchored'); }
+        window.addEventListener('resize', function () { if (anchorEl) place(); });
+
+        window.cbAi = {
+            open: function () { unanchor(); open(true); },
+            // `from` is the control the question was typed into. Passing it moves the panel under
+            // that control; omitting it leaves the panel at the floating button, as before.
+            ask: function (q, from) {
+                q = (q || '').trim();
+                if (from) { anchorEl = from; place(); } else { unanchor(); }
+                open(true);
+                if (q) ask(q);
+            }
+        };
 
         // Last, so every renderer it replays through is already defined.
         historyRestore();

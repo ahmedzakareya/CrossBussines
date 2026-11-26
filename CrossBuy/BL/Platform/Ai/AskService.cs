@@ -167,25 +167,9 @@ namespace CrossBuy.BL.Platform.Ai
 		/// Arabic arrives written several ways for the same word. Normalising both sides means a
 		/// person who types ‏"المخزون"‏ and one who types ‏"مخزون"‏ reach the same intent, without the
 		/// matcher becoming loose about WHICH intent.
-		private static string Normalise(string s)
-		{
-			if (string.IsNullOrWhiteSpace(s)) return string.Empty;
-			var sb = new System.Text.StringBuilder(s.Length);
-			foreach (var ch in s)
-			{
-				// Tashkeel and tatweel carry no lexical weight here.
-				if (ch >= '\u064B' && ch <= '\u0652') continue;
-				if (ch == '\u0640') continue;
-				sb.Append(ch switch
-				{
-					'\u0623' or '\u0625' or '\u0622' => '\u0627',   // أ إ آ -> ا
-					'\u0649' => '\u064A',                            // ى -> ي
-					'\u0629' => '\u0647',                            // ة -> ه
-					_ => char.ToLowerInvariant(ch),
-				});
-			}
-			return sb.ToString();
-		}
+		// The folding itself moved to BL/ArabicText, so the header search box asks the SAME question of
+		// the same word. Two foldings that drift would let "الاصناف" find a screen and miss a record.
+		private static string Normalise(string s) => CrossBuy.BL.ArabicText.Fold(s);
 
 		/// Words that carry no intent. Removed from the parameter so "كام رصيد مياه معدنية" asks
 		/// about "مياه معدنية" and not about the whole sentence.

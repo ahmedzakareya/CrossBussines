@@ -230,6 +230,11 @@ namespace CrossBuy.Tests
             services.AddScoped<IModulePermissionAdapter, DefaultPermissionAdapter>();
 
             // The singleton hosted service that broke the container. It must take IServiceScopeFactory.
+            // Takes IEnumerable<IModuleAccessService> and is NOT one itself, so it cannot close the cycle
+            // that broke this container once. Registered here because the project rule is that any service
+            // injecting that enumeration is proved in the real graph, not by hand-construction.
+            services.AddScoped<ISystemVisibility, SystemVisibility>();
+
             services.AddHostedService<PermissionScopeStartupValidator>();
 
             // ValidateOnBuild + ValidateScopes catches a singleton consuming a scoped service. It does NOT catch
@@ -313,6 +318,16 @@ namespace CrossBuy.Tests
             // …and the lazily-resolved provider still works once construction is done.
             var tasks = scope.ServiceProvider.GetRequiredService<CrossBuy.BL.TasksAccessService>();
             Assert.NotNull(tasks);
+
+            // The screen/system visibility rule takes the same enumeration. Resolving it here is the
+            // whole point: a cycle through IEnumerable<T> does not fail ValidateOnBuild, it hangs.
+            var visibility = scope.ServiceProvider.GetRequiredService<ISystemVisibility>();
+            Assert.NotNull(visibility);
+            // With no context nothing scoped is readable, so it must return the UNGATED systems only —
+            // never everything. Failing open here would hand an unauthenticated caller the whole menu.
+            var open = await visibility.VisibleAsync(null, default);
+            Assert.NotEmpty(open);
+            Assert.All(open, s => Assert.Null(s.Scope));
 
             // The startup gate itself — exactly what the host awaits before Kestrel binds.
             var validator = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>()

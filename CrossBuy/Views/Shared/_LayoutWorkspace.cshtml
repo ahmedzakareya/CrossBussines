@@ -85,16 +85,13 @@
                 </div>
 
                 <div class="d-flex align-items-center flex-grow-1 gap-3 py-3">
-                    @* Global search. Presentational in R1–R3: the Workspace does not own a search index, and
-                       building one would duplicate a capability that belongs to a search service. *@
-                    <div class="cbw-search d-none d-md-block">
-                        <i class="ki-outline ki-magnifier cbw-search-icon"></i>
-                        <label class="cbw-visually-hidden" for="cbw-global-search">
-                            @(arabic ? "بحث" : "Search")
-                        </label>
-                        <input id="cbw-global-search" type="search" autocomplete="off"
-                               placeholder="@(arabic ? "ابحث في مساحة العمل…" : "Search the workspace…")" />
-                    </div>
+                    @* This box used to be PRESENTATIONAL — its own comment said so: the Workspace owns
+                       no search index, so the field accepted text and did nothing with it. It is now
+                       the same box the rest of the shell uses, which searches the real cross-entity
+                       index and hands questions to the assistant. The workspace-only markup it
+                       replaced (cbw-search / #cbw-global-search) was a second copy of a control that
+                       already existed, and a dead one. *@
+                    @await Html.PartialAsync("_HeaderSearch")
                 </div>
 
                 <div class="d-flex align-items-center gap-1">
@@ -207,7 +204,11 @@
 @* Metronic bundles last, as in every other layout in this product. *@
 <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
 <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/global-search.js" asp-append-version="true"></script>
 @await Html.PartialAsync("_LabCriticalAlerts")
+@* The assistant, so the header box here has somewhere to send a question. Without it the box still
+   searches records and simply never shows the ask row. *@
+@await Html.PartialAsync("_AiAssistant")
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

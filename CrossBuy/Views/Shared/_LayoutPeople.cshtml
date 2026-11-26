@@ -1,4 +1,4 @@
-@using System.Globalization
+﻿@using System.Globalization
 @using CrossBuy.ViewModel
 @using System.Text.Json
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
@@ -7,6 +7,7 @@
     var employeeJson = Context.Session.GetString("Employee");
     var employee = employeeJson != null ? JsonSerializer.Deserialize<EmployeeViewModel>(employeeJson) : null;
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var isFr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr");
     var path = Context.Request.Path.Value ?? "";
     string active(string action) => path.Equals(Url.Action(action, "People"), StringComparison.OrdinalIgnoreCase) ? "active" : "";
     var avatar = (employee != null && !string.IsNullOrWhiteSpace(employee.ProfileImage))
@@ -75,6 +76,13 @@
                     </div>
                     <!--begin::Navbar-->
                     <div class="app-navbar flex-grow-1 justify-content-end" id="kt_app_header_navbar">
+                        @* The box the rest of the back office already has. It was missing here, so HR
+                           was the one shell where you could not ask the assistant a question without
+                           first finding the floating button. me-auto keeps the other navbar items
+                           pinned to the end, in both directions. *@
+                        <div class="app-navbar-item me-auto">
+                            @await Html.PartialAsync("_HeaderSearch")
+                        </div>
                         <!--begin::Switch portal-->
                         <div class="app-navbar-item ms-2 ms-lg-4">
                             <a href="@Url.Action("Choose", "Portal")" class="btn btn-sm btn-light-primary fw-bold" data-bs-toggle="tooltip" title="@Localizer["Switch portal"]">
@@ -271,13 +279,19 @@
     <script src="~/Backend-assets/js/widgets.bundle.js" asp-append-version="true"></script>
     <script src="~/assets/js/app.ajax.js" asp-append-version="true"></script>
     <script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/custom/global-search.js" asp-append-version="true"></script>
     @await Html.PartialAsync("_CbToastr")
     @await Html.PartialAsync("_LabCriticalAlerts")
+	@* The assistant. A floating control on every back-office screen rather than a page: a question
+	   arrives while you are looking at something, and making someone navigate away to ask it is the
+	   same as not having it. Renders nothing at all for a user whose question catalogue is empty. *@
+	@await Html.PartialAsync("_AiAssistant")
     <!--begin::Notifications (SignalR)-->
     <script src="~/Backend-assets/plugins/signalr.min.js"></script>
     <script>
         (function () {
             var isAr = @(isAr ? "true" : "false");
+            var isFr = @(isFr ? "true" : "false");
             var badge = document.getElementById('ppl_notif_badge');
             var list = document.getElementById('ppl_notif_list');
             var empty = document.getElementById('ppl_notif_empty');
@@ -320,8 +334,8 @@
                 try { var d = new Date(iso); return d.toLocaleString(); } catch (e) { return ''; }
             }
             function itemHtml(n) {
-                var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
-                var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+                var title = (isAr ? n.titleAr : isFr ? n.titleFr : n.titleEn) || n.titleEn || n.titleAr || '';
+                var body = (isAr ? n.bodyAr : isFr ? n.bodyFr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
                 var icon = n.type === 'leave_approved' ? 'ki-check-circle text-primary'
                     : n.type === 'leave_rejected' ? 'ki-cross-circle text-danger'
                     : 'ki-calendar-tick text-primary';
@@ -345,8 +359,8 @@
 
             var maxId = 0;
             function toastFor(n) {
-                var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
-                var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+                var title = (isAr ? n.titleAr : isFr ? n.titleFr : n.titleEn) || n.titleEn || n.titleAr || '';
+                var body = (isAr ? n.bodyAr : isFr ? n.bodyFr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
                 var level = n.type === 'leave_approved' ? 'success'
                     : n.type === 'leave_rejected' ? 'error'
                     : 'info';

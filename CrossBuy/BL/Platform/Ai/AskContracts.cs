@@ -23,12 +23,26 @@ namespace CrossBuy.BL.Platform.Ai
 	// by omission. The count is all that is disclosed — never which rows, never their values.
 	// =================================================================================================
 
-	/// A bilingual string. Kept local to the platform layer so BL does not reach into ViewModel.
+	/// A localized string. Kept local to the platform layer so BL does not reach into ViewModel.
 	public sealed class AskText
 	{
 		public string Ar { get; init; } = "";
 		public string En { get; init; } = "";
-		public static AskText Of(string ar, string en) => new() { Ar = ar, En = en };
+		public string Fr { get; init; } = "";
+
+		public static AskText Of(string ar, string en, string fr = "") =>
+			new() { Ar = ar, En = en, Fr = fr };
+
+		public string ForCulture(System.Globalization.CultureInfo culture)
+		{
+			if (culture == null) throw new System.ArgumentNullException(nameof(culture));
+			return culture.TwoLetterISOLanguageName switch
+			{
+				"ar" => Ar,
+				"fr" when !string.IsNullOrWhiteSpace(Fr) => Fr,
+				_ => En,
+			};
+		}
 	}
 
 	/// Why an answer was not given. Travels as a CODE, never as message text: matching a localised
@@ -158,6 +172,18 @@ namespace CrossBuy.BL.Platform.Ai
 		public string Parameter { get; init; } = "";
 		/// What the person was asked, so a stale answer can be matched to the right question.
 		public string Asked { get; init; } = "";
+		/// The original free-text question when the assistant is clarifying which intent was meant.
+		public string OriginalQuestion { get; init; } = "";
+		/// Permission-filtered choices offered by the assistant. A reply can select one in natural language.
+		public IReadOnlyList<AskPendingChoice> Choices { get; init; } = System.Array.Empty<AskPendingChoice>();
+	}
+
+	/// A safe, short-lived clarification option. It contains only catalogue wording, never business data.
+	public sealed class AskPendingChoice
+	{
+		public string Intent { get; init; } = "";
+		public string Example { get; init; } = "";
+		public IReadOnlyList<string> Keywords { get; init; } = System.Array.Empty<string>();
 	}
 
 	/// A question offered as a button. Clicking it ASKS it — the assistant never runs a guess on

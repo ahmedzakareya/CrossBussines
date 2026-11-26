@@ -1,5 +1,19 @@
-// Global search wiring for the header box. Typing (>= 2 chars) shows a live dropdown of grouped hits
-// from /Search/Suggest; Enter opens the full /Search/Results page.
+// The header box. ONE field, two jobs.
+//
+// Typing (>= 2 chars) shows a live dropdown of grouped record hits from /Search/Suggest; above them
+// sits a row that hands the same text to the assistant. Enter does whichever one the text asks for:
+// a question goes to the assistant, a plain term opens /Search/Results.
+//
+// WHY ONE FIELD AND NOT TWO. A second box beside this one would make the person choose, before
+// typing, between "find a record" and "ask a question" - a distinction they do not have in mind and
+// cannot always make correctly ("أحمد" is a lookup, "كم عميل اسمه أحمد" is a question, and both
+// start the same way). So the box takes either and decides afterwards, and the decision is always
+// visible and always reversible: the ask row is on screen even when records matched, and the record
+// hits stay on screen even when the text reads like a question.
+//
+// THE ASSISTANT ITSELF IS NOT REIMPLEMENTED HERE. window.cbAi.ask() is a door into the panel in
+// _AiAssistant.cshtml - its conversation, its history, its refusal wording, its "how this was worked
+// out" box. Answering inline would have meant a second renderer that drifts from that one.
 //
 // IT IS DRAWN IN THE THEME'S OWN VOCABULARY, NOT IN HAND-WRITTEN CSS.
 //
@@ -43,7 +57,58 @@
       scope: isAr ? 'ضمن صلاحيتك'      : 'within what you may view',
       more:  isAr ? 'أول النتائج فقط'  : 'first matches only',
       listOnly: isAr ? 'في القائمة' : 'in the list',
+      ask:   isAr ? 'اسأل المساعد'     : 'Ask the assistant',
+      records: isAr ? 'سجلات'          : 'Records',
     };
+
+    // WHAT COUNTS AS A QUESTION — deliberately cautious, because being wrong in one direction costs
+    // far more than the other. Sending a lookup to the assistant wastes a few seconds and shows the
+    // wrong kind of answer; sending a question to /Search/Results shows "nothing matched" for a
+    // question that has a perfectly good answer, which reads as the product not knowing.
+    //
+    // So: a single word is NEVER a question, however it is spelled — "أحمد", "INV-4821", "Baghdad"
+    // are what people actually type. Two or more words qualify only on an explicit mark (؟ / ?) or
+    // an opening interrogative. Everything else keeps today's behaviour exactly.
+    var QW = ['كم','كام','ما','ماهي','ماهو','إيه','ايه','مين','من','فين','أين','اين','امتى','إمتى','متى',
+              'ليه','لماذا','هل','اعرض','أعرض','عرض','اعطني','أعطني','وريني','قارن','لخص','احسب','كيف','ازاي','إزاي',
+              'how','what','whats','which','who','where','when','why','is','are','do','does','did','can',
+              'show','list','count','total','compare','summarise','summarize','give','top','any'];
+
+    function isQuestion(t) {
+      t = (t || '').trim();
+      if (!t) return false;
+      if (/[؟?]\s*$/.test(t)) return true;
+      var words = t.split(/\s+/);
+      if (words.length < 2) return false;
+      var first = words[0].toLowerCase().replace(/[^ء-يa-z]/g, '');
+      return QW.indexOf(first) >= 0;
+    }
+
+    function hasAssistant() { return !!(window.cbAi && typeof window.cbAi.ask === 'function'); }
+
+    // THE SPINNER IS OURS NOW, because the theme's never stopped.
+    //
+    // KTSearch is still attached to this box (its attributes are what make the mobile toggle work),
+    // and on the first keystroke it strips `d-none` off .search-spinner to say a search has started.
+    // Nothing ever tells it one finished — the ajax it expects does not exist here — so the spinner
+    // span kept turning for the rest of the page's life, on every screen, claiming the box was busy
+    // long after results had been drawn. Driving it from OUR fetch makes it mean what it looks like.
+    function spin(on) {
+      var s = root.querySelector('.search-spinner');
+      if (s) s.classList.toggle('d-none', !on);
+    }
+
+    function askAssistant(term) {
+      term = (term || '').trim();
+      if (!term || !hasAssistant()) return false;
+      hide();
+      var el = liveInput();
+      if (el) el.blur();
+      // Hand over the field itself, so the answer opens under the box that was typed in rather than
+      // at the floating button in the far corner.
+      window.cbAi.ask(term, el || null);
+      return true;
+    }
 
     var box = null, timer = null, lastTerm = '', activeIndex = -1;
 
@@ -65,6 +130,12 @@
       box.style.zIndex = '1060';
       box.style.display = 'none';
       box.setAttribute('data-cb-global-search', '1');
+      box.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[data-cb-ask]') : null;
+        if (!a) return;
+        e.preventDefault();
+        askAssistant(liveInput().value);
+      });
       document.body.appendChild(box);
       return box;
     }
@@ -84,9 +155,11 @@
       p.style.width = Math.max(260, r.width) + 'px';
     }
 
-    function hide() { if (box) { box.style.display = 'none'; activeIndex = -1; } }
+    function hide() { if (box) { box.style.display = 'none'; activeIndex = -1; } spin(false); }
     function visible() { return box && box.style.display === 'block'; }
-    function items() { return box ? Array.prototype.slice.call(box.querySelectorAll('a.menu-link[data-cb-hit]')) : []; }
+    // The ask row is part of the keyboard path, not a mouse-only extra — it is the first thing
+    // ArrowDown lands on, which is also the fastest way to reach it.
+    function items() { return box ? Array.prototype.slice.call(box.querySelectorAll('a.menu-link[data-cb-ask], a.menu-link[data-cb-hit]')) : []; }
 
     function highlight(delta) {
       var list = items();
@@ -101,10 +174,26 @@
       var p = panel(), html = '';
       var groups = (data && data.groups) || [];
 
+      // THE ASK ROW, FIRST AND ALWAYS (when an assistant is on the page). It is not conditional on
+      // the text looking like a question: a person who typed a bare noun may still want the count
+      // rather than the list, and the row is how they find out the assistant is there at all. It is
+      // conditional on cbAi existing, so a layout without the assistant degrades to plain search.
+      if (hasAssistant()) {
+        html += '<div class="menu-item px-3">' +
+                  '<a href="#" data-cb-ask="1" class="menu-link px-3 d-flex align-items-center gap-3">' +
+                    '<i class="ki-outline ki-abstract-26 fs-5 text-primary flex-shrink-0"></i>' +
+                    '<span class="text-truncate">' + esc(T.ask) +
+                      ' <span class="text-muted">«<bdi>' + esc(term) + '</bdi>»</span>' +
+                    '</span>' +
+                  '</a>' +
+                '</div>' +
+                '<div class="separator my-2"></div>';
+      }
+
       if (!groups.length) {
         // Says what was searched AND the limit on it: "nothing matched" alone would read as a claim
         // that the record does not exist, when it may only be outside this person's permission.
-        html = '<div class="menu-item px-3 py-2">' +
+        html += '<div class="menu-item px-3 py-2">' +
                '<div class="menu-content text-gray-700 fs-7">' + esc(T.none) + ' «<bdi>' + esc(term) + '</bdi>» — ' +
                '<span class="text-muted">' + esc(T.scope) + '</span></div></div>';
       } else {
@@ -155,19 +244,23 @@
       if (!e.target.classList || !e.target.classList.contains('search-input')) return;
       var term = (e.target.value || '').trim();
       if (timer) clearTimeout(timer);
-      if (term.length < 2) { hide(); return; }
+      if (term.length < 2) { hide(); spin(false); return; }
       if (term === lastTerm && visible()) return;
       timer = setTimeout(function () {
         lastTerm = term;
+        spin(true);
         fetch('/Search/Suggest?q=' + encodeURIComponent(term), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
           .then(function (r) { return r.ok ? r.json() : null; })
           // The guard matters: answers can arrive out of order, and the one that matches what is in
           // the box now is the only one worth drawing.
           .then(function (d) { if (liveInput().value.trim() === term) render(d, term); })
-          .catch(function () { /* a failed suggest never breaks the box; Enter still works */ });
+          .catch(function () { /* a failed suggest never breaks the box; Enter still works */ })
+          // Whatever happened, the box is no longer waiting — and saying so is the whole point.
+          .then(function () { if (liveInput().value.trim() === term) spin(false); });
       }, 250);
     }
 
+    spin(false);   // in case KTSearch unhid it before we got here
     root.addEventListener('input', onType, true);
     root.addEventListener('keyup', onType, true);
 
@@ -179,9 +272,19 @@
       if (e.key === 'Escape') { hide(); return; }
       if (e.key === 'Enter') {
         e.preventDefault(); e.stopPropagation();
+        var term = (e.target.value || '').trim();
         var list = items();
-        if (visible() && activeIndex >= 0 && list[activeIndex]) { window.location.href = list[activeIndex].href; return; }
-        go(e.target.value);
+        if (visible() && activeIndex >= 0 && list[activeIndex]) {
+          var sel = list[activeIndex];
+          if (sel.hasAttribute('data-cb-ask')) { askAssistant(term); return; }
+          window.location.href = sel.href;
+          return;
+        }
+        // Nothing picked from the list, so the TEXT decides. A question reaches the assistant; a
+        // term opens the results page. On a page with no assistant, isQuestion's answer is never
+        // acted on and Enter behaves exactly as it did before this box learned to ask.
+        if (isQuestion(term) && askAssistant(term)) return;
+        go(term);
       }
     }, true);
 
