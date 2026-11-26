@@ -33,6 +33,8 @@ namespace CrossBuy.Controllers
 			ViewBag.Staff = await NursingSvc.StaffAsync(ctx, ct);
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			// H270: the order picks the pharmacy's medicine (its item: the pack scan at the bedside matches through it)
+			if (ViewBag.CanConsult == true) ViewBag.Formulary = await _pharmacy.FormularyAsync(ctx, ct);
 			var board = pick == null ? null : await NursingSvc.BoardAsync(ctx, pick.Value, DateTime.UtcNow, ct);
 			// H76: each patient's isolation and the devices in place, beside the name
 			if (board != null) ViewBag.Ic = await HospitalInfectionService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => (p.AdmissionId, p.PatientId)).ToList(), DateTime.UtcNow, ct);

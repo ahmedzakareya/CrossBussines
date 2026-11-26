@@ -284,7 +284,7 @@
                 <div class="col-6"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i>@T["Wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /></div>
                 <div class="col-6"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i>@T["Medicine pack"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /></div>
             </div>
-            <a href="#" class="fs-7 fw-semibold d-inline-block mt-2" data-d-noscan>@T["The scan cannot be made"]</a>
+            <button type="button" class="btn btn-sm btn-light-danger mt-3" data-d-noscan><i class="ki-outline ki-scan-barcode fs-4"></i>@T["The scan cannot be made"]</button>@* H270: a button, not a line of text the owner read past *@
             <div class="mt-2 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
                 <div class="form-text text-danger">@T["A dose given without the scan counts against the ward's scanning."]</div></div>
         </div>
@@ -301,7 +301,14 @@
         <div class="modal-header"><h2 class="fw-bold m-0">@T["Medication order"] <span class="text-muted fs-6" data-o-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-6 px-lg-10" data-o-form>
             <div class="row g-4">
-                <div class="col-md-8"><label class="form-label required">@T["Drug"]</label><input class="form-control form-control-solid" maxlength="200" data-k="drug" /></div>
+                @* H270: picked from the pharmacy's medicines (the item links the pack scan at the bedside); a drug the pharmacy
+                   does not stock can still be typed — it is then given with the reason the pack could not be scanned *@
+                <div class="col-md-8"><label class="form-label required">@T["Drug"]</label>
+                    <select class="form-select form-select-solid" data-o-drug data-placeholder="@T["Drug name and strength"]"><option value=""></option>
+                        @foreach (var f in ((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()))
+                        { <option value="i:@f.Id">@CrossBuy.BL.DisplayName.Of(f.Name, f.NameEn) · @f.Code</option> }
+                    </select>
+                    <input type="hidden" data-k="drug" /><input type="hidden" data-k="itemId" /></div>
                 <div class="col-md-4"><label class="form-label required">@T["Dose"]</label><input class="form-control form-control-solid hp-num" maxlength="60" data-k="dose" placeholder="1 g" /></div>
                 <div class="col-md-4"><label class="form-label required">@T["Route"]</label><select class="form-select form-select-solid" data-k="route">@foreach (var r in HospitalMedRoute.All) { <option value="@r">@T["route:" + r]</option> }</select></div>
                 <div class="col-md-8"><label class="form-label">@T["Hours"] <span class="text-muted fs-8">06,14,22</span></label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="60" data-k="hours" placeholder="06,14,22" /></div>
@@ -515,6 +522,23 @@
             // the hours box empties and locks while "as needed" is on, so the form cannot ask for what the rule refuses
             function prnHours() { var prn = oEl.querySelector('[data-k=asNeeded]').checked, h = oEl.querySelector('[data-k=hours]'); if (prn) h.value = ''; h.disabled = prn; }
             oEl.querySelector('[data-k=asNeeded]').addEventListener('change', prnHours);
+            // H270: the drug picker - a medicine of the pharmacy (sets its item) or a typed name; typed and left without Enter, kept
+            (function () {
+                var sel = oEl.querySelector('[data-o-drug]'), drug = oEl.querySelector('[data-k=drug]'), item = oEl.querySelector('[data-k=itemId]');
+                if (!sel || !window.jQuery || !jQuery.fn.select2) return;
+                var $s = jQuery(sel);
+                $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dropdownParent: jQuery(oEl), dir: document.documentElement.dir || 'ltr' })
+                  .on('change', function () { var v = $s.val() || '', o = sel.options[sel.selectedIndex];
+                      if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = v.replace(/^t:/, ''); } })
+                  .on('select2:closing', function () {
+                      var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
+                      if (term.length < 2 || $s.val()) return;
+                      var same = [].filter.call(sel.options, function (o) { return /^i:/.test(o.value) && o.text.replace(/\s·\s[^·]*$/, '').toLowerCase() === term.toLowerCase(); })[0];
+                      var v = same ? same.value : 't:' + term;
+                      if (!same && ![].some.call(sel.options, function (o) { return o.value === v; })) sel.appendChild(new Option(term, v, false, false));
+                      setTimeout(function () { $s.val(v).trigger('change'); }, 0);
+                  });
+            })();
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-dose],[data-stop-order],[data-new-order],[data-task-add],[data-handover-save]'); if (!t) return;
                 if (t.hasAttribute('data-dose')) {
@@ -532,6 +556,7 @@
                     orderFor = { admissionId: Number(t.getAttribute('data-new-order')), who: t.getAttribute('data-who') };
                     oEl.querySelector('[data-o-who]').textContent = orderFor.who;
                     oEl.querySelectorAll('[data-k]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else if (i.tagName !== 'SELECT') i.value = ''; });
+                    if (window.jQuery) jQuery(oEl.querySelector('[data-o-drug]')).val(null).trigger('change.select2');
                     prnHours();
                     bootstrap.Modal.getOrCreateInstance(oEl).show(); return;
                 }
@@ -575,6 +600,7 @@
             if (oEl) oEl.querySelector('[data-o-save]').addEventListener('click', function (e) {
                 var btn = e.currentTarget, body = { admissionId: orderFor.admissionId };
                 oEl.querySelectorAll('[data-k]').forEach(function (i) { body[i.getAttribute('data-k')] = i.type === 'checkbox' ? i.checked : (i.value.trim() || null); });
+                body.itemId = body.itemId ? Number(body.itemId) : null;
                 cbConfirm(W.order.replace('{0}', (body.drug || '') + ' ' + (body.dose || '')).replace('{1}', orderFor.who)).then(function (ok) { if (!ok) return; btn.disabled = true; placeOrder(body, btn); });
             });
         })();
