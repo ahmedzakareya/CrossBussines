@@ -16,7 +16,7 @@
     {
         add = T["Add an allergy"].Value, nka = T["No known allergy"].Value, choose = T["Choose or type an allergy"].Value,
         reaction = T["Reaction"].Value, severity = T["Severity"].Value, notCoded = T["Not in the list"].Value, none = T["No allergy recorded yet"].Value,
-        remove = T["Remove"].Value, nkaOn = T["The patient was asked and has no known allergy"].Value,
+        remove = T["Remove"].Value, allergen = T["Allergy"].Value, nkaOn = T["The patient was asked and has no known allergy"].Value,
         groups = new Dictionary<string, string> { [HospitalAllergenCatalog.Drug] = T["Medicines"].Value, [HospitalAllergenCatalog.Food] = T["Food"].Value, [HospitalAllergenCatalog.Environment] = T["Environment and other"].Value },
         reactions = HospitalAllergenCatalog.Reactions.Select(r => new { code = r.Code, label = lang == "ar" ? r.Ar : lang == "fr" ? r.Fr : r.En }),
         severities = new[] { new { code = HospitalAllergenCatalog.Mild, label = T["Mild"].Value }, new { code = HospitalAllergenCatalog.Moderate, label = T["Moderate"].Value }, new { code = HospitalAllergenCatalog.Severe, label = T["Severe"].Value } },
@@ -31,10 +31,14 @@
     {
         <input type="hidden" name="allergyItemsJson" data-ap-value value="@System.Text.Json.JsonSerializer.Serialize(Model.Items, json)" />
     }
+    @* H272: the section as the rest of the window draws it (the owner: "strange and off the design") - its head with the
+       two-tone icon, "no known allergy" as the theme's switch, the rows and the add action in one dashed frame *@
     <div class="d-flex flex-stack flex-wrap gap-3 mb-3">
-        <label class="fw-semibold fs-7 text-gray-700 mb-0"><i class="ki-outline ki-shield-cross fs-6 text-danger me-1"></i>@T["Allergies"]</label>
-        <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" data-ap-nka /><span class="form-check-label fs-7 text-gray-700">@T["No known allergy"]</span></label>
+        <span class="fw-semibold fs-6 text-gray-800 d-inline-flex align-items-center gap-2"><i class="ki-duotone ki-shield-cross fs-2 text-danger"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>@T["Allergies"]</span>
+        <label class="form-check form-switch form-check-custom form-check-solid m-0"><input class="form-check-input h-20px w-35px" type="checkbox" data-ap-nka /><span class="form-check-label fs-7 fw-semibold text-gray-700">@T["No known allergy"]</span></label>
     </div>
-    <div data-ap-rows></div>
-    <button type="button" class="btn btn-sm btn-light-danger mt-1" data-ap-add><i class="ki-outline ki-plus fs-4"></i>@T["Add an allergy"]</button>
+    <div class="rounded border border-dashed border-gray-300 p-5">
+        <div data-ap-rows></div>
+        <button type="button" class="btn btn-sm btn-light-primary d-inline-flex align-items-center gap-1" data-ap-add><i class="ki-outline ki-plus fs-3"></i>@T["Add an allergy"]</button>
+    </div>
 </div>

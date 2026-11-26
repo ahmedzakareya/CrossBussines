@@ -49,15 +49,18 @@
             }
             function draw() {
                 add.classList.toggle('d-none', nka.checked);
-                if (nka.checked) { rowsEl.innerHTML = '<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-3 mb-2 fs-7 fw-semibold text-gray-700"><i class="ki-outline ki-shield-tick fs-4 text-primary me-2"></i>' + esc(W.nkaOn) + '</div>'; sync(); return; }
-                if (!items.length) { rowsEl.innerHTML = '<div class="text-muted fs-7 mb-2">' + esc(W.none) + '</div>'; sync(); return; }
-                rowsEl.innerHTML = items.map(function (i, n) {
-                    return '<div class="row g-2 align-items-start mb-3 mx-0 p-2 rounded border border-dashed border-gray-300" data-ap-row="' + n + '">' +
-                        '<div class="col-12"><select class="form-select form-select-sm form-select-solid" data-ap-what data-placeholder="' + esc(W.choose) + '">' + allergenOptions(i) + '</select>' +
-                        (!i.code && i.text ? '<span class="badge badge-light-info fs-9 fw-bold mt-1">' + esc(W.notCoded) + '</span>' : '') + '</div>' +
-                        '<div class="col"><select class="form-select form-select-sm form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction).replace('<option value=""></option>', '<option value="">' + esc(W.reaction) + '</option>') + '</select></div>' +
-                        '<div class="col"><select class="form-select form-select-sm form-select-solid" data-ap-severity title="' + esc(W.severity) + '">' + options(W.severities || [], i.severity).replace('<option value=""></option>', '<option value="">' + esc(W.severity) + '</option>') + '</select></div>' +
-                        '<div class="col-auto"><button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger" data-ap-remove="' + n + '" title="' + esc(W.remove) + '"><i class="ki-outline ki-trash fs-4"></i></button></div></div>';
+                // H272: the states inside the section's dashed frame - asked and none, nothing yet, or the rows under their heads
+                if (nka.checked) { rowsEl.innerHTML = '<div class="d-flex align-items-center gap-3 fs-6 fw-semibold text-gray-700"><i class="ki-duotone ki-shield-tick fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>' + esc(W.nkaOn) + '</div>'; sync(); return; }
+                if (!items.length) { rowsEl.innerHTML = '<div class="d-flex align-items-center gap-3 mb-4 fs-7 text-gray-600"><i class="ki-duotone ki-information-5 fs-2 text-gray-500"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>' + esc(W.none) + '</div>'; sync(); return; }
+                var label = function (t) { return '<label class="fw-semibold fs-7 text-gray-600 mb-2 d-md-none">' + esc(t) + '</label>'; };
+                rowsEl.innerHTML = '<div class="row g-4 mb-2 d-none d-md-flex fw-semibold fs-7 text-gray-600"><div class="col-md-6">' + esc(W.allergen || '') + '</div><div class="col-md-3">' + esc(W.reaction) + '</div><div class="col">' + esc(W.severity) + '</div><div class="col-auto"><span class="d-inline-block w-40px"></span></div></div>' +
+                  items.map(function (i, n) {
+                    return '<div class="row g-4 align-items-start mb-4" data-ap-row="' + n + '">' +
+                        '<div class="col-md-6">' + label(W.allergen || '') + '<select class="form-select form-select-solid" data-ap-what data-placeholder="' + esc(W.choose) + '">' + allergenOptions(i) + '</select>' +
+                        (!i.code && i.text ? '<span class="badge badge-light-info fs-8 fw-bold mt-2">' + esc(W.notCoded) + '</span>' : '') + '</div>' +
+                        '<div class="col-md-3">' + label(W.reaction) + '<select class="form-select form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction).replace('<option value=""></option>', '<option value="">' + esc(W.reaction) + '</option>') + '</select></div>' +
+                        '<div class="col">' + label(W.severity) + '<select class="form-select form-select-solid" data-ap-severity title="' + esc(W.severity) + '">' + options(W.severities || [], i.severity).replace('<option value=""></option>', '<option value="">' + esc(W.severity) + '</option>') + '</select></div>' +
+                        '<div class="col-auto"><button type="button" class="btn btn-icon btn-light btn-active-light-danger w-40px h-40px" data-ap-remove="' + n + '" title="' + esc(W.remove) + '"><i class="ki-outline ki-trash fs-3"></i></button></div></div>';
                 }).join('');
                 if (window.jQuery && jQuery.fn.select2) jQuery(rowsEl).find('[data-ap-what]').each(function () {
                     var $s = jQuery(this), modal = box.closest('.modal');
