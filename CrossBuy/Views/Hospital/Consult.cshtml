@@ -101,7 +101,7 @@
             <div class="col-xl-8">
                 <div class="card card-flush mb-5">
                     <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-gray-800">@T["Clinical note"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7" dir="ltr">SOAP</span>
+                        <span class="card-label fw-bold text-gray-800"><span class="badge badge-circle badge-primary fs-7 me-2">1</span>@T["Clinical note"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7" dir="ltr">SOAP</span>
                     </h3>
                     @* H254: ambient documentation — record the visit, the hospital's own speech service drafts the note *@
                     @if (canEdit) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-scribe data-rec="@T["Record the visit"]" data-stop="@T["Stop and draft"]"><i class="ki-outline ki-microphone-2 fs-4"></i><span>@T["Record the visit"]</span></button></div>}
@@ -126,7 +126,7 @@
                 </div>
 
                 <div class="card card-flush mb-5">
-                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Assessment (A)"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Coding system"]: <bdi dir="ltr">ICD-10</bdi></span></h3>
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800"><span class="badge badge-circle badge-primary fs-7 me-2">2</span>@T["Assessment (A)"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Coding system"]: <bdi dir="ltr">ICD-10</bdi></span></h3>
                         @if (codeCount == 0 && canManage) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-seed-codes><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load standard ICD-10 codes"]</button></div> }
                     </div>
                     <div class="card-body pt-2">
@@ -139,8 +139,13 @@
                 </div>
 
                 <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800"><span class="badge badge-circle badge-primary fs-7 me-2">3</span>@T["Plan (P)"]</span></h3></div>
+                    <div class="card-body pt-2"><textarea name="planNote" rows="3" maxlength="4000" class="form-control form-control-solid" @ro>@e.PlanNote</textarea></div>
+                </div>
+
+                <div class="card card-flush mb-5">
                     <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-gray-800">@T["Orders (P)"]</span>
+                        <span class="card-label fw-bold text-gray-800"><span class="badge badge-circle badge-primary fs-7 me-2">4</span>@T["Orders (P)"]</span>
                         <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Lab, imaging and procedures — billed to the visit when it is signed"]</span>
                     </h3></div>
                     <div class="card-body pt-2">
@@ -154,8 +159,8 @@
 
                 <div class="card card-flush mb-5">
                     <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-gray-800">@T["Prescription"]</span>
-                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Linked to the pharmacy stock when the pharmacy unit lands"]</span>
+                        <span class="card-label fw-bold text-gray-800"><span class="badge badge-circle badge-primary fs-7 me-2">5</span>@T["Prescription"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Pick from the pharmacy's medicines — a drug it does not stock is marked"]</span>
                     </h3>
                         @if (canEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rx-add><i class="ki-outline ki-plus fs-4"></i>@T["Add drug"]</button></div> }
                     </div>
@@ -167,10 +172,20 @@
                     </div>
                 </div>
 
-                <div class="card card-flush">
-                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Plan (P)"]</span></h3></div>
-                    <div class="card-body pt-2"><textarea name="planNote" rows="3" maxlength="4000" class="form-control form-control-solid" @ro>@e.PlanNote</textarea></div>
-                </div>
+                @* H271: the save and the sign follow the doctor down the page (the owner: they were only at the top of a
+                   2,600px page) *@
+                @if (canEdit)
+                {
+                    <div class="position-sticky bottom-0 mt-5 d-print-none" style="z-index:5">
+                        <div class="card card-flush shadow-sm border border-gray-300"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-3">
+                            <span class="text-gray-600 fs-7 fw-semibold"><i class="ki-outline ki-information-5 fs-6 text-primary me-1"></i>@T["Save the draft as you go; sign when the visit is done"]</span>
+                            <div class="d-flex gap-2 ms-auto">
+                                <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save draft"]</button>
+                                <button type="button" class="btn btn-sm btn-primary" data-sign><i class="ki-outline ki-check-square fs-4"></i>@T["Sign & close visit"]</button>
+                            </div>
+                        </div></div>
+                    </div>
+                }
             </div>
 
             <div class="col-xl-4">
@@ -306,7 +321,7 @@
             var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), allergy: @Json.Serialize(Url.Action("ConsultAllergyCheck", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             // H126: the theme's empty state and icon action
-            function empty(icon, text, cols) { var h = '<div class="text-center py-6"><i class="ki-outline ki-' + icon + ' fs-3x text-gray-300 mb-3 d-block"></i><div class="fs-7 fw-semibold text-gray-500">' + esc(text) + '</div></div>'; return cols ? '<tr><td colspan="' + cols + '">' + h + '</td></tr>' : h; }
+            function empty(icon, text, cols) { var h = '<div class="text-center py-3"><i class="ki-outline ki-' + icon + ' fs-2x text-gray-300 mb-2 d-block"></i><div class="fs-7 fw-semibold text-gray-500">' + esc(text) + '</div></div>'; return cols ? '<tr><td colspan="' + cols + '">' + h + '</td></tr>' : h; }
             function trash(attr, i) { return '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger" title="' + esc(W.remove) + '" ' + attr + '="' + i + '"><i class="ki-outline ki-trash fs-4"></i></button>'; }
 
             // ---- diagnoses ------------------------------------------------------------------
@@ -459,16 +474,15 @@
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                     .then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); return false; } toast('success', W.saved); if (after) after(); return true; });
             }
-            var s = document.querySelector('[data-save]'); if (s) s.addEventListener('click', function () { s.disabled = true; send(urls.save).then(function () { s.disabled = false; }); });
-            var g = document.querySelector('[data-sign]');
-            if (g) g.addEventListener('click', function () {
+            document.querySelectorAll('[data-save]').forEach(function (s) { s.addEventListener('click', function () { s.disabled = true; send(urls.save).then(function () { s.disabled = false; }); }); });
+            document.querySelectorAll('[data-sign]').forEach(function (g) { g.addEventListener('click', function () {
                 var hit = [].concat.apply([], rx.map(function (r) { return r.hits || []; })).filter(function (h, i, a) { return a.indexOf(h) === i; });
                 (hit.length ? cbConfirm(W.allergySign.replace('{0}', hit.join(', '))) : Promise.resolve(true)).then(function (go) { return go ? cbConfirm(W.confirm) : false; }).then(function (yes) {
                     if (!yes) return;
                     g.disabled = true;
                     send(urls.sign, function () { location.href = urls.worklist; }).then(function (ok) { if (!ok) g.disabled = false; });
                 });
-            });
+            }); });
             var seed = document.querySelector('[data-seed-codes]');
             if (seed) seed.addEventListener('click', function () {
                 seed.disabled = true;
