@@ -146,6 +146,35 @@ namespace CrossBuy.Controllers
 			return View(await _billing.BillsAsync(ctx, ViewBag.Status as string, null, DateTime.UtcNow, ct));
 		}
 
+		/// H271: one page of the bills - by bill number, the patient's name in either language or the file number, and the
+		/// status - for the list's search and pager (the owner: every list has both).
+		[HospitalReceptionAllowed]   // the same guard as the Bills page it fills
+		[HttpGet("Bills/Data")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> BillsData(string? q, string? status, int page = 1, int pageSize = 25, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			if (pageSize is < 1 or > 200) pageSize = 25;
+			if (page < 1) page = 1;
+			var st = status is HospitalBillStatus.Open or HospitalBillStatus.Closed ? status : null;
+			IEnumerable<HospitalBillRow> all = await _billing.BillsAsync(ctx, st, null, DateTime.UtcNow, ct);
+			foreach (var term in (q ?? "").Split(new[] { ' ', ',', '،' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+			{
+				var t = term;
+				all = all.Where(b => b.BillNo.Contains(t, StringComparison.OrdinalIgnoreCase) || b.Mrn.Contains(t, StringComparison.OrdinalIgnoreCase)
+					|| b.PatientName.Contains(t, StringComparison.OrdinalIgnoreCase) || (b.PatientNameEn ?? "").Contains(t, StringComparison.OrdinalIgnoreCase));
+			}
+			var list = all.ToList();
+			int pages = Math.Max(1, (int)Math.Ceiling(list.Count / (double)pageSize));
+			if (page > pages) page = pages;
+			Response.Headers["X-Total"] = list.Count.ToString();
+			Response.Headers["X-Page"] = page.ToString();
+			Response.Headers["X-Pages"] = pages.ToString();
+			ViewBag.Currency = await _facility.CurrencyAsync(ctx, ct);
+			return PartialView("_BillRows", list.Skip((page - 1) * pageSize).Take(pageSize).ToList());
+		}
+
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Bill/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]

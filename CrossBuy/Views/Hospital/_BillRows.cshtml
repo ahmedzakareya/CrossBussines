@@ -1,0 +1,30 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalBillRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H271: one page of the bills, fetched by the list (search + status + pages); the rows as Bills drew them *@
+@{
+    var currency = ViewBag.Currency as HospitalCurrency;
+    string M(decimal v) => currency == null ? v.ToString("N2") : currency.Format(v);
+    string RM(HospitalBillRow b, decimal v) => b.Currency != null ? b.Currency.Format(v) : M(v);
+    bool Foreign(HospitalBillRow b) => b.Currency != null && b.Currency.Code != currency?.Code;
+}
+@foreach (var b in Model)
+                            {
+                                var url = Url.Action("Bill", new { id = b.Id });
+                                var due = b.Total - b.Paid;
+                                <tr>
+                                    <td class="ps-4"><div class="d-flex align-items-center min-w-0">
+                                        <div class="symbol symbol-45px symbol-circle flex-shrink-0 me-4">@if (b.PatientPhoto != null) {<img src="@b.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(b.PatientNameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(b.PatientNameEn)</span>}</div>
+                                        <div class="d-flex flex-column min-w-0"><a href="@Url.Action("Patient", new { id = b.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6 text-truncate"><bdi>@DisplayName.Of(b.PatientName, b.PatientNameEn)</bdi></a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@b.Mrn</bdi></div>
+                                    </div></td>
+                                    <td><a href="@url" class="text-gray-900 fw-bold text-hover-primary d-block fs-6"><bdi class="hp-num">@b.BillNo</bdi></a>
+                                        <span class="text-muted fw-semibold d-block fs-7">@(b.Inpatient ? T["Inpatient stay"] : T["Outpatient visit"]) · <span class="hp-num" dir="ltr">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span></span></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Total)</span>@if (Foreign(b)) {<span class="badge badge-light-info fs-8 ms-1">@b.Currency!.Code</span>}</td>
+                                    <td class="text-end"><span class="text-primary fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Paid)</span></td>
+                                    <td class="text-end"><span class="badge badge-light-@(due > 0 ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@RM(b, due)</span></td>
+                                    <td><span class="badge badge-light-@(b.Status == HospitalBillStatus.Open ? "primary" : "primary") fs-7 fw-bold">@T["bill:" + b.Status]</span></td>
+                                    <td class="text-end pe-4"><a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the bill"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
+                                </tr>
+                            }

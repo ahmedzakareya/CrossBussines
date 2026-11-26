@@ -61,54 +61,41 @@
 
         @* table widget — demo39 widgets/tables *@
         <div class="card card-flush">
-            <div class="card-header pt-5">
+            @* H271: search + status + pages (the owner: every list has a search and pagination) *@
+            <div class="card-header pt-5 flex-wrap gap-3">
                 <h3 class="card-title align-items-start flex-column">
                     <span class="card-label fw-bold text-gray-800">@T["Bills"]</span>
-                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} of {1}", open.Count, Model.Count] · @T["bill:Open"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7" id="resultCount"></span>
                 </h3>
-                <div class="card-toolbar">
-                    <div class="btn-group">
-                        <a href="@Url.Action("Bills")" class="btn btn-sm @(status == null ? "btn-primary" : "btn-light")">@T["All"]</a>
-                        <a href="@Url.Action("Bills", new { status = HospitalBillStatus.Open })" class="btn btn-sm @(status == HospitalBillStatus.Open ? "btn-primary" : "btn-light")">@T["bill:Open"]</a>
-                        <a href="@Url.Action("Bills", new { status = HospitalBillStatus.Closed })" class="btn btn-sm @(status == HospitalBillStatus.Closed ? "btn-primary" : "btn-light")">@T["bill:Closed"]</a>
-                    </div>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-250px position-relative d-flex align-items-center"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="f_q" class="form-control form-control-solid form-control-sm ps-12" placeholder="@T["Bill number, patient or file number"]" /></div>
+                    <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_status">
+                        <option value="" selected="@(status == null)">@T["All"]</option>
+                        <option value="@HospitalBillStatus.Open" selected="@(status == HospitalBillStatus.Open)">@T["bill:Open"]</option>
+                        <option value="@HospitalBillStatus.Closed" selected="@(status == HospitalBillStatus.Closed)">@T["bill:Closed"]</option></select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-color-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
                 </div>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0)
-                {
-                    <div class="text-center py-10"><i class="ki-outline ki-bill fs-3x text-gray-300 mb-4 d-block"></i>
-                        <div class="fs-6 fw-bold text-gray-700">@T["No bills yet. A bill opens when a visit is signed or a patient is admitted."]</div></div>
-                }
-                else
-                {
-                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
-                        <thead><tr class="fw-bold text-muted bg-light">
-                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Bill"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Paid"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
-                        </tr></thead>
-                        <tbody>
-                            @foreach (var b in Model)
-                            {
-                                var url = Url.Action("Bill", new { id = b.Id });
-                                var due = b.Total - b.Paid;
-                                <tr>
-                                    <td class="ps-4"><div class="d-flex align-items-center min-w-0">
-                                        <div class="symbol symbol-45px symbol-circle flex-shrink-0 me-4">@if (b.PatientPhoto != null) {<img src="@b.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(b.PatientNameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(b.PatientNameEn)</span>}</div>
-                                        <div class="d-flex flex-column min-w-0"><a href="@Url.Action("Patient", new { id = b.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6 text-truncate"><bdi>@DisplayName.Of(b.PatientName, b.PatientNameEn)</bdi></a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@b.Mrn</bdi></div>
-                                    </div></td>
-                                    <td><a href="@url" class="text-gray-900 fw-bold text-hover-primary d-block fs-6"><bdi class="hp-num">@b.BillNo</bdi></a>
-                                        <span class="text-muted fw-semibold d-block fs-7">@(b.Inpatient ? T["Inpatient stay"] : T["Outpatient visit"]) · <span class="hp-num" dir="ltr">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span></span></td>
-                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Total)</span>@if (Foreign(b)) {<span class="badge badge-light-info fs-8 ms-1">@b.Currency!.Code</span>}</td>
-                                    <td class="text-end"><span class="text-primary fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Paid)</span></td>
-                                    <td class="text-end"><span class="badge badge-light-@(due > 0 ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@RM(b, due)</span></td>
-                                    <td><span class="badge badge-light-@(b.Status == HospitalBillStatus.Open ? "primary" : "primary") fs-7 fw-bold">@T["bill:" + b.Status]</span></td>
-                                    <td class="text-end pe-4"><a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the bill"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table></div>
-                }
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Bill"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Paid"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
+                    </tr></thead>
+                    <tbody id="rows"></tbody>
+                </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</div>
+                <div class="text-center py-10 d-none" id="emptyRow"><i class="ki-outline ki-bill fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No bill matches."]</div></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
             </div>
         </div>
     </div></div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            cbServerList({ url: @Json.Serialize(Url.Action("BillsData")), isAr: @(DisplayName.IsArabic ? "true" : "false"), addParams: function (p) { p.set('status', document.getElementById('f_status').value); } });
+        })();
+    </script>
+}
