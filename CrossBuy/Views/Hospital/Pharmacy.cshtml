@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Html
 @using CrossBuy.BL
 @using CrossBuy.BL.Hospital
 @using CrossBuy.Models.Context.Hospital
@@ -27,6 +28,21 @@
     var clinical = ViewBag.Clinical as HospitalRxClinical;
     var interventions = (ViewBag.Interventions as IReadOnlyList<HospitalInterventionView>) ?? Array.Empty<HospitalInterventionView>();
     string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
+    // H271: the theme's two-tone icons - each glyph is drawn in layers (the owner: the scan and the other icons were primitive)
+    IHtmlContent Duo(string icon, string css)
+    {
+        var n = icon switch { "scan-barcode" => 8, "syringe" => 3, "shield-search" => 3, "eraser" => 3, "basket" => 4, "bill" => 6, _ => 2 };
+        var sb = new System.Text.StringBuilder("<i class=\"ki-duotone ki-" + icon + " " + css + "\">");
+        for (int k = 1; k <= n; k++) sb.Append("<span class=\"path" + k + "\"></span>");
+        return new HtmlString(sb.Append("</i>").ToString());
+    }
+    IHtmlContent FormIcon(string? form, string css) => form switch
+    {
+        HospitalDrugForm.Injection => Duo("syringe", css),
+        HospitalDrugForm.Infusion or HospitalDrugForm.Solution or HospitalDrugForm.Syrup or HospitalDrugForm.Suspension or HospitalDrugForm.Drops or HospitalDrugForm.Nebule => Duo("drop", css),
+        HospitalDrugForm.Cream or HospitalDrugForm.Ointment or HospitalDrugForm.Gel or HospitalDrugForm.Patch => Duo("bandage", css),
+        _ => Duo("capsule", css),
+    };
     string WarnText(string w, HospitalRxLineView l) => w switch
     {
         HospitalPharmacyService.WarnAllergy => string.Format(T["{0} — the file records an allergy it mentions: {1}"].Value, l.Drug, string.Join(", ", HospitalPharmacyService.AllergiesIn(l.MatchText ?? l.Drug, sel?.Patient.Allergies))),
@@ -179,14 +195,16 @@
                     <div class="card-body pt-3">
                         @* the three steps, where this prescription stands *@
                         <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
-                            @foreach (var (n, label, isDone, isNow) in new[] {
-                                (1, T["Pharmacist's review"].Value, !isNew && !refused, isNew),
-                                (2, T["Scan the packs"].Value, done || (giving && withItem.Count > 0 && scannedLines == withItem.Count), giving),
-                                (3, T["Dispense and charge"].Value, done, false) })
+                            @foreach (var (n, label, isDone, isNow, icon) in new[] {
+                                (1, T["Pharmacist's review"].Value, !isNew && !refused, isNew, "verify"),
+                                (2, T["Scan the packs"].Value, done || (giving && withItem.Count > 0 && scannedLines == withItem.Count), giving, "scan-barcode"),
+                                (3, T["Dispense and charge"].Value, done, false, "basket") })
                             {
-                                <div class="d-flex align-items-center gap-2 px-4 py-3 rounded border @(isNow ? "border-primary bg-light-primary" : isDone ? "border-primary" : "border-gray-300 border-dashed")">
-                                    <span class="badge badge-circle @(isDone ? "badge-primary" : isNow ? "badge-primary" : "badge-light") fs-7">@if (isDone) {<i class="ki-outline ki-check fs-7 text-white"></i>} else {@n}</span>
-                                    <span class="fw-bold fs-6 @(isNow ? "text-primary" : isDone ? "text-gray-800" : "text-gray-500")">@label</span>
+                                <div class="d-flex align-items-center gap-3 px-4 py-3 rounded border @(isNow ? "border-primary bg-light-primary" : isDone ? "border-primary" : "border-gray-300 border-dashed")">
+                                    <span class="symbol symbol-40px"><span class="symbol-label @(isDone || isNow ? "bg-primary" : "bg-light")">@Duo(icon, "fs-2 " + (isDone || isNow ? "text-white" : "text-gray-500"))</span></span>
+                                    <span class="d-flex flex-column"><span class="fs-8 fw-semibold @(isNow ? "text-primary" : "text-gray-500")">@(isDone ? T["Done"].Value : string.Format(T["Step {0}"].Value, n))</span>
+                                        <span class="fw-bold fs-6 @(isNow ? "text-primary" : isDone ? "text-gray-800" : "text-gray-500")">@label</span></span>
+                                    @if (isDone) {<i class="ki-outline ki-check-circle fs-2 text-primary"></i>}
                                 </div>
                                 if (n < 3) {<i class="ki-outline ki-arrow-left fs-3 text-gray-400 d-none d-md-inline"></i>}
                             }
@@ -286,7 +304,7 @@
                                     <label class="fs-6 fw-semibold mb-2">@T["Pharmacist's note (optional)"]</label>
                                     <textarea class="form-control form-control-solid mb-5" rows="3" maxlength="400" data-note placeholder="@T["Pharmacist's note (optional)"]"></textarea>
                                     <div class="d-flex gap-3">
-                                        <button type="button" class="btn btn-primary flex-grow-1" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Approve the prescription"]</button>
+                                        <button type="button" class="btn btn-primary flex-grow-1" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)">@Duo("verify", "fs-3")@T["Approve the prescription"]</button>
                                         <button type="button" class="btn btn-light-danger" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
                                     </div>
                                 }
@@ -326,12 +344,16 @@
                         @if (giving)
                         {
                             @* H150: each pack scanned (GS1 or the store's barcode) - checked, then given from its own batch *@
-                            <div class="mb-6" data-scan-box>
-                                <label class="form-label fw-bold fs-6"><i class="ki-outline ki-scan-barcode fs-3 text-primary me-2"></i>@T["Scan each pack"]</label>
-                                <div class="input-group input-group-solid input-group-lg"><span class="input-group-text"><i class="ki-outline ki-scan-barcode fs-2"></i></span>
+                            <div class="d-flex align-items-start gap-5 p-5 mb-6 rounded border border-2 border-dashed border-primary bg-light-primary" data-scan-box>
+                                <div class="symbol symbol-65px flex-shrink-0 d-none d-sm-block"><span class="symbol-label bg-primary">@Duo("scan-barcode", "fs-3tx text-white")</span></div>
+                                <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap align-items-center gap-3 mb-3"><span class="fw-bold fs-4 text-gray-900">@T["Scan each pack"]</span>
+                                    <span class="d-inline-flex align-items-center gap-2 badge badge-light-primary fs-8 fw-bold"><span class="bullet bullet-dot bg-primary h-8px w-8px animation-blink"></span>@T["Ready to scan"]</span></div>
+                                <div class="input-group input-group-solid input-group-lg bg-white rounded"><span class="input-group-text bg-white">@Duo("scan-barcode", "fs-1 text-primary")</span>
                                     <input type="text" class="form-control form-control-solid form-control-lg hp-num" dir="ltr" autocomplete="off" spellcheck="false" data-scan="@d.ID" placeholder="@T["Scan or type the code"]" aria-label="@T["Scan each pack"]" /></div>
                                 <div class="fs-7 fw-semibold mt-2 d-none" data-scan-note></div>
-                                <div class="text-muted fs-8 mt-2">@T["The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice."]</div>
+                                <div class="text-gray-600 fs-8 mt-2">@T["The pack's GS1 code is checked: this prescription's medicine, not expired, not recalled, a batch the store holds, and never given twice."]</div>
+                                </div>
                             </div>
                         }
                         <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
@@ -352,7 +374,7 @@
                                     bool full = sc != null && sc.Count >= owed && owed > 0;
                                     <tr class="@(full ? "bg-light-primary" : "")">
                                             <td class="ps-4"><div class="d-flex align-items-center">
-                                                <div class="symbol symbol-40px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(l.Line.ItemId == null ? "danger" : l.Warnings.Count > 0 ? "danger" : "primary")"><i class="ki-outline ki-capsule fs-2 text-@(l.Line.ItemId == null || l.Warnings.Count > 0 ? "danger" : "primary")"></i></span></div>
+                                                <div class="symbol symbol-40px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(l.Line.ItemId == null ? "danger" : l.Warnings.Count > 0 ? "danger" : "primary")">@FormIcon(l.Master?.Form, "fs-2x text-" + (l.Line.ItemId == null || l.Warnings.Count > 0 ? "danger" : "primary"))</span></div>
                                                 <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@l.Drug</bdi> @if (l.Line.ItemId == null) {<span class="badge badge-light-danger fs-8 fw-bold ms-1">@T["Not stocked"]</span>}</span>
                                                     @if (l.Master is { } dm)
                                                     {
@@ -387,8 +409,8 @@
                                         {
                                             <td class="text-center">@if (l.Line.ItemId != null && owed > 0)
                                                 {
-                                                    <span class="badge @(full ? "badge-primary" : sc != null ? "badge-light-primary" : "badge-light") fs-7 fw-bold py-2 px-3" data-scanned="@l.Line.ID">@if (full) {<i class="ki-outline ki-check fs-7 text-white me-1"></i>}<span class="hp-num">@(sc?.Count ?? 0)</span>&nbsp;@T["of"]&nbsp;<span class="hp-num">@HospitalUi.LabNum(owed, 0)</span></span>
-                                                    @if (sc != null) {<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger ms-1" data-clear-scans="@l.Line.ID" data-id="@d.ID" title="@T["Clear the scans"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-5"></i></button>}
+                                                    <span class="badge @(full ? "badge-primary" : sc != null ? "badge-light-primary" : "badge-light") fs-7 fw-bold py-2 px-3" data-scanned="@l.Line.ID">@if (full) {@Duo("check-circle", "fs-5 text-white me-1")}<span class="hp-num">@(sc?.Count ?? 0)</span>&nbsp;@T["of"]&nbsp;<span class="hp-num">@HospitalUi.LabNum(owed, 0)</span></span>
+                                                    @if (sc != null) {<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger ms-1" data-clear-scans="@l.Line.ID" data-id="@d.ID" title="@T["Clear the scans"]" data-bs-toggle="tooltip">@Duo("eraser", "fs-3")</button>}
                                                     @if (sc != null && sc.Batches.Count > 0) {<div class="text-muted fs-8 mt-1"><bdi class="hp-num" dir="ltr">@string.Join(", ", sc.Batches)</bdi></div>}
                                                 } else {<span class="text-muted">—</span>}</td>
                                             <td class="text-center">@if (l.Line.ItemId != null && owed > 0)
@@ -438,7 +460,7 @@
                                 }
                                 <div class="d-flex gap-3">
                                     <button type="button" class="btn btn-light-danger" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
-                                    <button type="button" class="btn btn-primary btn-lg" data-step="Dispense" data-id="@d.ID" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))"><i class="ki-outline ki-check fs-3"></i>@(d.Status == HospitalDispenseStatus.Partial ? T["Dispense what is owed"] : T["Dispense and charge"])</button>
+                                    <button type="button" class="btn btn-primary btn-lg" data-step="Dispense" data-id="@d.ID" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))">@Duo("basket", "fs-2")@(d.Status == HospitalDispenseStatus.Partial ? T["Dispense what is owed"] : T["Dispense and charge"])</button>
                                 </div>
                             }
                             else if (done)
