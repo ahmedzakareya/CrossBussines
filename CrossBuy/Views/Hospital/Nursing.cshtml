@@ -206,7 +206,7 @@
                                                             var whoD = DisplayName.Of(p.Name, p.NameEn);
                                                             if (d.Entry == null && canAdmit && d.State != HospitalNursingRules.Upcoming)
                                                             {
-                                                                <button type="button" class="mar-hit" data-dose="@o.ID" data-due="@d.DueAt.ToString("o")" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@whoD — @o.Drug @o.Dose (@h.ToString("00"):00)">@Html.Raw(Dot(d))</button>
+                                                                <button type="button" class="mar-hit" data-dose="@o.ID" data-due="@d.DueAt.ToString("o")" data-who="@whoD" data-mrn="@p.Mrn" data-photo="@p.Photo" data-drug="@o.Drug" data-dosetxt="@o.Dose · @T["route:" + o.Route]" data-when="@h.ToString("00"):00" data-allergy="@(p.Allergies == null ? "" : HospitalAllergyText.Display(p.Allergies))" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@whoD — @o.Drug @o.Dose (@h.ToString("00"):00)">@Html.Raw(Dot(d))</button>
                                                             }
                                                             else
                                                             {
@@ -215,19 +215,19 @@
                                                         }
                                                     </td>
                                                 }
-                                                <td class="text-end pe-4"><div class="d-flex align-items-center justify-content-end gap-2">
+                                                <td class="text-end pe-4"><div class="d-flex flex-column align-items-end gap-2">
                                                     @if (!o.AsNeeded && !stopped && canAdmit)
                                                     {
                                                         <div class="d-flex align-items-center justify-content-end gap-2">
                                                             @if (line.AsNeededGiven.Any()) {<span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@line.AsNeededGiven.Count(x => x.Status == HospitalMarStatus.Given)×</span>}
-                                                            <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 text-nowrap" data-dose="@o.ID" data-due="" data-extra="1" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose"><i class="ki-outline ki-time fs-5"></i>@T["Dose now"]</button>
+                                                            <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 text-nowrap" data-dose="@o.ID" data-due="" data-extra="1" data-who="@DisplayName.Of(p.Name, p.NameEn)" data-mrn="@p.Mrn" data-photo="@p.Photo" data-drug="@o.Drug" data-dosetxt="@o.Dose · @T["route:" + o.Route]" data-when="@T["Outside its hours"]" data-allergy="@(p.Allergies == null ? "" : HospitalAllergyText.Display(p.Allergies))" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose"><i class="ki-outline ki-time fs-5"></i>@T["Dose now"]</button>
                                                         </div>
                                                     }
                                                     @if (o.AsNeeded)
                                                     {
                                                         <div class="d-flex align-items-center justify-content-end gap-2">
                                                             <span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@line.AsNeededGiven.Count(x => x.Status == HospitalMarStatus.Given)×</span>
-                                                            @if (canAdmit && !stopped) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7" data-dose="@o.ID" data-due="" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose">@T["Give"]</button>}
+                                                            @if (canAdmit && !stopped) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7" data-dose="@o.ID" data-due="" data-who="@DisplayName.Of(p.Name, p.NameEn)" data-mrn="@p.Mrn" data-photo="@p.Photo" data-drug="@o.Drug" data-dosetxt="@o.Dose · @T["route:" + o.Route]" data-when="@T["As needed"]" data-allergy="@(p.Allergies == null ? "" : HospitalAllergyText.Display(p.Allergies))" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose">@T["Give"]</button>}
                                                         </div>
                                                     }
                                                     @if (canConsult && !stopped) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-7 text-nowrap" data-stop-order="@o.ID" data-what="@o.Drug @o.Dose"><i class="ki-outline ki-cross-circle fs-5"></i>@T["Stop"]</button>}
@@ -306,27 +306,57 @@
 </div>
 @functions { private static string NowWard() => DateTime.Now.AddHours(1).ToString("HH:00"); }
 
-<div class="modal fade" id="doseModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-    <div class="modal-header"><h2 class="fw-bold m-0 fs-4" data-d-what></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+<div class="modal fade" id="doseModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    @* H271: the dose window, designed (the owner: it was left out of the redesign) - who and what at the top with the
+       allergy, the answer as three clear choices, the bedside scan as two numbered steps that say what they read *@
+    <div class="modal-header py-5"><h2 class="fw-bold m-0 fs-3"><i class="ki-outline ki-capsule fs-2 text-primary me-2"></i>@T["Record a dose"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
     <div class="modal-body py-6 px-lg-10">
-        <div class="d-flex gap-2 mb-5">
-            @foreach (var s in HospitalMarStatus.All) { <label class="flex-fill"><input type="radio" class="btn-check" name="d-status" value="@s" @(s == HospitalMarStatus.Given ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@T["mar:" + s]</span></label> }
-        </div>
-        @* H205: the bedside scan — the wristband, then the pack; a scanner types the code and presses Enter *@
-        <div class="mb-4" data-d-scan-wrap>
-            <div class="row g-3">
-                <div class="col-6"><label class="form-label"><i class="ki-outline ki-user-square fs-5 me-1"></i>@T["Wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /><div class="fs-7 fw-semibold mt-2 d-none" data-d-wrist-note></div></div>
-                <div class="col-6"><label class="form-label"><i class="ki-outline ki-scan-barcode fs-5 me-1"></i>@T["Medicine pack"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /><div class="fs-7 fw-semibold mt-2 d-none" data-d-pack-note></div></div>
+        <span class="d-none" data-d-what></span>
+        <div class="d-flex align-items-center gap-4 p-4 rounded bg-light-primary mb-4">
+            <div class="symbol symbol-50px symbol-circle flex-shrink-0" data-d-photo></div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="fw-bold fs-5 text-gray-900" data-d-who></div>
+                <div class="text-gray-600 fs-7 hp-num" dir="ltr" style="text-align:start" data-d-mrn></div>
             </div>
-            <button type="button" class="btn btn-sm btn-light-danger mt-3" data-d-noscan><i class="ki-outline ki-scan-barcode fs-4"></i>@T["The scan cannot be made"]</button>@* H270: a button, not a line of text the owner read past *@
-            <div class="mt-2 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
+            <div class="text-end min-w-0">
+                <div class="fw-bold fs-6 text-gray-900" data-d-drug dir="auto"></div>
+                <div class="text-gray-600 fs-7"><span data-d-dosetxt></span> · <span class="fw-semibold text-primary" data-d-when></span></div>
+            </div>
+        </div>
+        <div class="d-none align-items-center gap-2 p-3 rounded bg-light-danger text-danger fw-semibold fs-7 mb-5" data-d-allergy-wrap><i class="ki-outline ki-information-5 fs-4 text-danger"></i><span>@T["Allergy"]:</span><bdi data-d-allergy></bdi></div>
+
+        <label class="form-label fw-bold">@T["What happened to the dose"]</label>
+        <div class="row g-3 mb-6">
+            @foreach (var s in HospitalMarStatus.All)
+            {
+                var icon = s == HospitalMarStatus.Given ? "check-circle" : s == HospitalMarStatus.Held ? "time" : "cross-circle";
+                <div class="col-4"><input type="radio" class="btn-check" name="d-status" id="d-st-@s" value="@s" @(s == HospitalMarStatus.Given ? "checked" : "") />
+                    <label class="btn btn-outline btn-outline-dashed btn-active-light-primary w-100 d-flex flex-column align-items-center gap-1 py-3" for="d-st-@s"><i class="ki-outline ki-@icon fs-2x"></i><span class="fw-bold fs-7">@T["mar:" + s]</span></label></div>
+            }
+        </div>
+
+        @* H205: the bedside scan - the wristband, then the pack; a scanner types the code and presses Enter *@
+        <div class="border border-dashed border-gray-300 rounded p-5 mb-5" data-d-scan-wrap>
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="fw-bold fs-6 text-gray-900"><i class="ki-outline ki-scan-barcode fs-3 text-primary me-2"></i>@T["Bedside scan"]</div>
+                <button type="button" class="btn btn-sm btn-light-danger" data-d-noscan><i class="ki-outline ki-information-5 fs-5"></i>@T["The scan cannot be made"]</button>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6"><label class="form-label fw-semibold"><span class="badge badge-circle badge-primary me-2">1</span>@T["Wristband"]</label>
+                    <div class="input-group input-group-solid"><span class="input-group-text"><i class="ki-outline ki-user-square fs-3"></i></span><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="60" data-d-wrist placeholder="@T["Scan the wristband"]" /></div>
+                    <div class="fs-7 fw-semibold mt-2 d-none" data-d-wrist-note></div></div>
+                <div class="col-md-6"><label class="form-label fw-semibold"><span class="badge badge-circle badge-primary me-2">2</span>@T["Medicine pack"]</label>
+                    <div class="input-group input-group-solid"><span class="input-group-text"><i class="ki-outline ki-capsule fs-3"></i></span><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" maxlength="200" data-d-pack placeholder="@T["Scan the pack"]" /></div>
+                    <div class="fs-7 fw-semibold mt-2 d-none" data-d-pack-note></div></div>
+            </div>
+            <div class="mt-4 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
                 <div class="form-text text-danger">@T["A dose given without the scan counts against the ward's scanning."]</div></div>
         </div>
         <div class="mb-4 d-none" data-d-reason-wrap><label class="form-label required" data-d-reason-label>@T["Reason"]</label><input class="form-control form-control-solid" maxlength="300" data-d-reason placeholder="@T["e.g. BP 85/50, doctor informed"]" /></div>
         <div class="mb-2 d-none" data-d-witness-wrap><label class="form-label required">@T["Witness"]</label><select class="form-select form-select-solid" data-d-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
             <div class="form-text">@T["A controlled drug is given with a second signature."]</div></div>
     </div>
-    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-d-save>@T["Record"]</button></div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-d-save><i class="ki-outline ki-check fs-4"></i>@T["Record the dose"]</button></div>
 </div></div></div>
 
 @if (canConsult)
@@ -612,6 +642,13 @@
                 if (t.hasAttribute('data-dose')) {
                     dose = { orderId: Number(t.getAttribute('data-dose')), dueAt: t.getAttribute('data-due') || null, controlled: t.getAttribute('data-controlled') === '1', what: t.getAttribute('data-what'), extra: t.getAttribute('data-extra') === '1' };
                     dEl.querySelector('[data-d-what]').textContent = dose.what;
+                    // H271: who and what, with the allergy, at the top of the window
+                    ['who', 'mrn', 'drug', 'dosetxt', 'when'].forEach(function (k) { dEl.querySelector('[data-d-' + k + ']').textContent = t.getAttribute('data-' + k) || ''; });
+                    var ph = t.getAttribute('data-photo'), pEl = dEl.querySelector('[data-d-photo]'); pEl.innerHTML = '';
+                    if (ph) { var im = document.createElement('img'); im.src = ph; im.alt = ''; im.style.objectFit = 'cover'; pEl.appendChild(im); }
+                    else { var sp = document.createElement('span'); sp.className = 'symbol-label bg-white text-primary fw-bold'; sp.textContent = (t.getAttribute('data-who') || '?').trim().charAt(0); pEl.appendChild(sp); }
+                    var al = t.getAttribute('data-allergy') || ''; dEl.querySelector('[data-d-allergy]').textContent = al;
+                    dEl.querySelector('[data-d-allergy-wrap]').classList.toggle('d-none', !al); dEl.querySelector('[data-d-allergy-wrap]').classList.toggle('d-flex', !!al);
                     dEl.querySelector('[name=d-status][value=Given]').checked = true; dEl.querySelector('[data-d-reason]').value = ''; $(dEl.querySelector('[data-d-witness]')).val(null).trigger('change');
                     ['[data-d-wrist]', '[data-d-pack]', '[data-d-override]'].forEach(function (k) { dEl.querySelector(k).value = ''; }); dEl.querySelector('[data-d-override-wrap]').classList.add('d-none'); note('wrist', null); note('pack', null);
                     reasonShown(); bootstrap.Modal.getOrCreateInstance(dEl).show(); return;
@@ -642,7 +679,7 @@
                 cbConfirm(W.done.replace('{0}', c.getAttribute('data-what'))).then(function (ok) { if (!ok) return; c.disabled = true; post(root + '/Task/' + c.getAttribute('data-task-done') + '/Done').then(done(null)); });
             });
             dEl.querySelector('[data-d-save]').addEventListener('click', function (e) {
-                var btn = e.currentTarget, status = (dEl.querySelector('[name=d-status]:checked') || {}).value, label = dEl.querySelector('[name=d-status]:checked').nextElementSibling.textContent;
+                var btn = e.currentTarget, status = (dEl.querySelector('[name=d-status]:checked') || {}).value, label = dEl.querySelector('[name=d-status]:checked').nextElementSibling.textContent.trim();
                 var w = dEl.querySelector('[data-d-witness]').value;
                 var body = { orderId: dose.orderId, dueAt: dose.dueAt, status: status, reason: dEl.querySelector('[data-d-reason]').value.trim() || null, witnessEmployeeId: w ? Number(w) : null,
                     wristband: dEl.querySelector('[data-d-wrist]').value.trim() || null, pack: dEl.querySelector('[data-d-pack]').value.trim() || null, scanOverride: dEl.querySelector('[data-d-override]').value.trim() || null };
