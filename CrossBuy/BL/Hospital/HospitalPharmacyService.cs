@@ -183,9 +183,14 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			else q = q.Where(x => x.d.Status == HospitalDispenseStatus.New || x.d.Status == HospitalDispenseStatus.Verified || x.d.Status == HospitalDispenseStatus.Partial
 				|| (x.d.Status == HospitalDispenseStatus.Dispensed && x.d.DispensedAt >= DateTime.UtcNow.AddDays(-1)));
 			bool Open(HospitalDispense d) => d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified || d.Status == HospitalDispenseStatus.Partial;
-			// H136: what still needs the pharmacy comes first, the most urgent priority first, then the oldest
-			var rows = (await q.OrderBy(x => x.d.PrescribedAt).Take(300).ToListAsync(ct))
-				.OrderBy(x => Open(x.d) ? 0 : 1).ThenBy(x => HospitalRxPriority.Rank(HospitalRxPriority.Effective(x.d.Priority, x.d.Source))).ThenBy(x => x.d.PrescribedAt).ToList();
+			// H136: what still needs the pharmacy comes first. H271 (the owner): newest first - except a prescription LATE for
+			// its review, which is pinned on top, the most urgent priority first
+			var nowUtc = DateTime.UtcNow;
+			bool Late(HospitalDispense d) => d.Status == HospitalDispenseStatus.New && HospitalReviewRules.IsLate(HospitalRxPriority.Effective(d.Priority, d.Source), d.PrescribedAt, null, nowUtc);   // the same rule as the "late" tile
+			var rows = (await q.OrderByDescending(x => x.d.PrescribedAt).Take(300).ToListAsync(ct))
+				.OrderBy(x => Open(x.d) ? 0 : 1).ThenBy(x => Late(x.d) ? 0 : 1)
+				.ThenBy(x => Late(x.d) ? HospitalRxPriority.Rank(HospitalRxPriority.Effective(x.d.Priority, x.d.Source)) : 0)
+				.ThenByDescending(x => x.d.PrescribedAt).ToList();
 			var dids = rows.Select(x => x.d.ID).ToList();
 			var lines = await _db.HospitalDispenseLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && dids.Contains(l.DispenseId)).ToListAsync(ct);
 			var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, rows.Where(x => x.r?.EmployeeId != null).Select(x => x.r!.EmployeeId!.Value).Distinct(), ct);

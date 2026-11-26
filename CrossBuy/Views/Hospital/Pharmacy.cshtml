@@ -81,7 +81,8 @@
                 (T["Interventions this month"].Value, stats.Interventions.ToString(), stats.AcceptedPct is int ap ? string.Format(T["{0}% accepted by prescribers"].Value, ap) : T["no answer recorded yet"].Value, "ki-shield-tick", "primary"),
                 (T["Near-expiry batches"].Value, stats.NearExpiry.ToString(), string.Format(T["within {0} days"].Value, stats.NearExpiryDays), "ki-calendar-remove", stats.NearExpiry > 0 ? "danger" : "primary") })
             {
-                <div class="col-sm-6 col-xl"><div class="card card-flush h-100">
+                @* H271: the "late" tile is a switch - the queue shows only what is late, and back *@
+                <div class="col-sm-6 col-xl"><div class="card card-flush h-100 @(s.Item4 == "ki-timer" ? "cursor-pointer border border-hover-danger" : "")" @(s.Item4 == "ki-timer" ? "data-late-filter" : "") title="@(s.Item4 == "ki-timer" ? T["Show only the late prescriptions"].Value : "")">
                     <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
                         <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div>
                         <div class="d-flex flex-column">
@@ -119,7 +120,9 @@
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in Model)
                             {
-                                <tr data-row class="cursor-pointer @(sel?.Dispense.ID == r.Id ? "bg-light-primary" : "")" data-href="@(Url.Action("Pharmacy", new { rx = r.Id, status }))#rx-detail">
+                                int waited0 = HospitalReviewRules.WaitingMinutes(r.PrescribedAt, r.ReviewedAt, now); bool lateRow = r.Status == HospitalDispenseStatus.New && waited0 > HospitalRxPriority.TargetMinutes(r.Priority);
+                                @* H271: a prescription late for review is pinned on top, tinted, edged and named (the owner) *@
+                                <tr data-row data-late="@(lateRow ? "1" : "0")" class="cursor-pointer @(sel?.Dispense.ID == r.Id ? "bg-light-primary" : lateRow ? "bg-light-danger" : "")" style="@(lateRow ? "box-shadow: inset -4px 0 0 var(--bs-danger)" : "")" data-href="@(Url.Action("Pharmacy", new { rx = r.Id, status }))#rx-detail">
                                     <td class="ps-4"><a href="@(Url.Action("Pharmacy", new { rx = r.Id, status }))#rx-detail" class="text-gray-900 fw-bold text-hover-primary fs-6 hp-num">@r.RxNo</a></td>
                                     <td><div class="d-flex align-items-center gap-3">
                                         <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
@@ -127,7 +130,7 @@
                                     @{ int waited = HospitalReviewRules.WaitingMinutes(r.PrescribedAt, r.ReviewedAt, now); bool late = waited > HospitalRxPriority.TargetMinutes(r.Priority); bool waiting = r.Status == HospitalDispenseStatus.New; }
                                     <td><span class="badge @PriClass(r.Priority) fs-7 fw-bold">@T["rxp:" + r.Priority]</span></td>
                                     <td>@if (r.Status == HospitalDispenseStatus.New || r.Status == HospitalDispenseStatus.Verified)
-                                        {<span class="badge badge-light-@(late ? "danger" : "primary") fs-7 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-7 me-1 text-@(late ? "danger" : "primary")"></i>@Dur(waited)</span>
+                                        {<span class="badge badge-light-@(late ? "danger" : "primary") fs-7 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-7 me-1 text-@(late ? "danger" : "primary")"></i>@Dur(waited)</span>@if (late && waiting) {<span class="badge badge-danger fs-8 fw-bold ms-1">@T["Late"]</span>}
                                          <span class="text-muted fs-8 d-block mt-1">@(waiting ? string.Format(T["target {0}"].Value, Dur(HospitalRxPriority.TargetMinutes(r.Priority))) : T["reviewed"].Value)</span>}
                                         else {<span class="text-gray-400">—</span>}</td>
                                     <td><span class="badge badge-light-@(r.Source == HospitalDispenseSource.Oncology ? "info" : r.Source == HospitalDispenseSource.Inpatient ? "primary" : r.Source == HospitalDispenseSource.Emergency ? "danger" : "primary") fs-7 fw-bold">@Src(r.Source)</span></td>
@@ -532,6 +535,17 @@
 @await Html.PartialAsync("_ReportPreviewModal", (object)T["Dispensing labels"].Value)
 
 @section Scripts {
+    <script>
+        // H271: the "late" tile shows only the late prescriptions; pressed again, the whole queue
+        (function () {
+            var tile = document.querySelector('[data-late-filter]'); if (!tile) return;
+            tile.addEventListener('click', function () {
+                var on = !tile.classList.contains('border-danger');
+                tile.classList.toggle('border-danger', on); tile.classList.toggle('bg-light-danger', on);
+                document.querySelectorAll('tr[data-row]').forEach(function (r) { r.classList.toggle('d-none', on && r.getAttribute('data-late') !== '1'); });
+            });
+        })();
+    </script>
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
