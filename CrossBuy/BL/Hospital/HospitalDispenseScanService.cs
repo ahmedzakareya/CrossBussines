@@ -150,16 +150,30 @@ namespace CrossBuy.BL.Hospital
 		{
 			if (!await _access.CanAsync(ctx, HospitalActions.Pharmacy, null, ct)) return HospitalResult.Fail("forbidden");
 			var code = HospitalGs1.Parse(raw);
-			if (code == null) return HospitalResult.Fail("This is not a GS1 code this counter can read");
+			// H271: a pack with no GS1 code is scanned by the store's own barcode or item code (the walk-through's 10-digit
+			// store barcode was refused at the bedside the same way); it carries no batch, expiry or serial
+			int? plainItem = null;
+			if (code == null)
+			{
+				var plain = (raw ?? "").Trim();
+				plainItem = plain.Length == 0 || plain.Length > 14 ? null : await HospitalBedsideScanLookup.ItemOfAsync(_db, ctx, plain, ct);
+				if (plainItem == null) return HospitalResult.Fail("This is not a GS1 code this counter can read");
+				code = new HospitalGs1Code(plain, null, null, null);
+			}
 			var d = await _db.HospitalDispenses.AsNoTracking().FirstOrDefaultAsync(x => x.ID == dispenseId && x.CompanyId == ctx.CompanyId, ct);
 			if (d == null) return HospitalResult.Fail("not_found");
 			if (!HospitalDispenseStatus.Dispensable(d.Status)) return HospitalResult.Fail("Review the prescription before dispensing");
 
 			var lines = await _db.HospitalDispenseLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.DispenseId == d.ID && l.ItemId != null).OrderBy(l => l.SortOrder).ToListAsync(ct);
 			var itemIds = lines.Select(l => l.ItemId!.Value).Distinct().ToList();
-			var forms = HospitalGs1.Forms(code.Gtin);
-			var matched = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && itemIds.Contains(i.ID) && i.Barcode != null && forms.Contains(i.Barcode)).Select(i => i.ID).ToListAsync(ct);
-			matched.AddRange(await _db.ItemBarcodes.AsNoTracking().Where(b => itemIds.Contains(b.ItemId) && forms.Contains(b.Barcode)).Select(b => b.ItemId).ToListAsync(ct));
+			List<int> matched;
+			if (plainItem is int pi) matched = itemIds.Contains(pi) ? new List<int> { pi } : new List<int>();
+			else
+			{
+				var forms = HospitalGs1.Forms(code.Gtin);
+				matched = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && itemIds.Contains(i.ID) && i.Barcode != null && forms.Contains(i.Barcode)).Select(i => i.ID).ToListAsync(ct);
+				matched.AddRange(await _db.ItemBarcodes.AsNoTracking().Where(b => itemIds.Contains(b.ItemId) && forms.Contains(b.Barcode)).Select(b => b.ItemId).ToListAsync(ct));
+			}
 			if (matched.Count == 0) return HospitalResult.Fail("This pack is not a medicine of this prescription");
 
 			// a pack is given once: its serial, anywhere, before anything else

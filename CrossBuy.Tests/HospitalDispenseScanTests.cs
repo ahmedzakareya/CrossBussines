@@ -98,6 +98,23 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
+		public async Task A_pack_without_a_GS1_code_is_scanned_by_the_store_barcode()
+		{
+			// H271: the walk-through's medicines carry 10-digit store barcodes, not GS1 codes
+			var (w, rx, para, amox) = await Prescribed();
+			using var _h = w.Host;
+			var svc = await Ready(w, tracked: false);
+			var it = await w.Host.Db.Items.FirstAsync(i => i.ID == para); it.Barcode = "6287010001";
+			var other = await w.Host.Db.Items.FirstAsync(i => i.ID == amox); other.Barcode = "6287010002";
+			await w.Host.Db.SaveChangesAsync();
+			var ok = await svc.ScanAsync(Ctx(), rx.ID, " 6287010001 ", 7, Now);
+			Assert.True(ok.Ok, ok.Error);
+			var row = await w.Host.Db.Set<HospitalDispenseScan>().SingleAsync();
+			Assert.Equal((para, "6287010001", (string?)null), (row.ItemId, row.Gtin, row.BatchNo));
+			Assert.Equal("This is not a GS1 code this counter can read", (await svc.ScanAsync(Ctx(), rx.ID, "NOT-A-CODE", 7, Now)).Error);
+		}
+
+		[Fact]
 		public async Task A_pack_is_counted_once_and_never_past_what_the_line_owes()
 		{
 			var (w, rx, para, amox) = await Prescribed();   // 10 paracetamol, 4 amoxicillin
