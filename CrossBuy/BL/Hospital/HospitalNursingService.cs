@@ -186,7 +186,11 @@ namespace CrossBuy.BL.Hospital
 			if (o == null) return HospitalResult.Fail("not_found");
 			if (await AdmissionAsync(ctx, o.AdmissionId, ct) == null) return HospitalResult.Fail("The patient is no longer admitted");
 			DateTime? due = input.DueAt == null ? null : DateTime.SpecifyKind(input.DueAt.Value, DateTimeKind.Utc);
-			if (o.AsNeeded != (due == null)) return HospitalResult.Fail(o.AsNeeded ? "An as-needed dose has no scheduled time" : "Choose the scheduled dose");
+			if (o.AsNeeded && due != null) return HospitalResult.Fail("An as-needed dose has no scheduled time");
+			// H270: a scheduled order's dose OUTSIDE its hours (the first dose now, when the order came after today's hour) is
+			// given with its reason - the owner's walk-through found no way to give the first dose of a morning order
+			if (!o.AsNeeded && due == null && (input.Status != HospitalMarStatus.Given || string.IsNullOrWhiteSpace(input.Reason)))
+				return HospitalResult.Fail("A dose outside the order's hours is given with its reason");
 			if (due is DateTime d)
 			{
 				var hours = HospitalNursingRules.ParseHours(o.Hours) ?? Array.Empty<int>();

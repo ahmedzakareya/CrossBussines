@@ -82,6 +82,10 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			// H270: the ward orders from the pharmacy's list; a drug outside it (the patient's own medicine) is an explicit
+			// choice with its reason, never typed words the search did not find
+			if (input.ItemId is int pick && !(await _pharmacy.MedicineItemIdsAsync(ctx, ct)).Contains(pick)) return Result(HospitalResult.Fail("Choose a medicine of the pharmacy's list"));
+			if (input.ItemId == null && string.IsNullOrWhiteSpace(input.Note)) return Result(HospitalResult.Fail("A drug outside the pharmacy's list needs its reason"));
 			var alerts = await DrugSafetySvc.CheckOrderAsync(ctx, input.AdmissionId, input.Drug ?? "", input.Dose, input.Route, input.Hours, input.AsNeeded, ct);
 			bool stops = alerts.Any(a => a.Blocks);
 			if (stops && string.IsNullOrWhiteSpace(input.OverrideReason))

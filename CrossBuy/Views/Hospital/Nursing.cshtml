@@ -106,17 +106,19 @@
                     {
                         <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
                             <thead><tr class="fw-bold text-muted bg-light">
-                                <th class="ps-4 min-w-200px rounded-start">@T["Patient"]</th><th class="min-w-175px">@T["Medication"]</th>
+                                <th class="ps-4 min-w-225px rounded-start">@T["Patient"]</th><th class="min-w-225px">@T["Medication"]</th>
                                 @foreach (var h in b.Hours) { <th class="mar-cell"><span class="hp-num">@h.ToString("00"):00</span></th> }
-                                <th class="text-center">@T["As needed"]</th><th class="text-end pe-4 rounded-end"></th>
+                                <th class="text-end pe-4 rounded-end">@T["Actions"]</th>
                             </tr></thead>
                             <tbody>
                                 @foreach (var p in b.Patients)
                                 {
-                                    var rows = p.Lines.Count == 0 ? 1 : p.Lines.Count;
+                                    var live = p.Lines.Where(l => l.Order.Status != HospitalMedOrderStatus.Stopped).ToList();
+                                    var gone = p.Lines.Where(l => l.Order.Status == HospitalMedOrderStatus.Stopped).ToList();
+                                    var rows = live.Count == 0 ? 1 : live.Count;
                                     for (int i = 0; i < rows; i++)
                                     {
-                                        var line = p.Lines.Count == 0 ? null : p.Lines[i];
+                                        var line = live.Count == 0 ? null : live[i];
                                         <tr class="@(i == rows - 1 ? "border-bottom border-gray-200" : "")">
                                             @if (i == 0)
                                             {
@@ -125,7 +127,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.Photo != null) {<img src="@p.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7 hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
                                                         <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@who</a>
-                                                            <span class="text-gray-500 fw-semibold fs-7">@T["Bed"] <bdi class="hp-num text-gray-800 fw-bold">@p.Bed</bdi> · <bdi class="hp-num">@p.Mrn</bdi></span></div>
+                                                            <span class="text-gray-500 fw-semibold fs-7 text-nowrap">@T["Bed"] <bdi class="hp-num text-gray-800 fw-bold" dir="ltr">@p.Bed</bdi> · <bdi class="hp-num" dir="ltr">@p.Mrn</bdi></span></div>
                                                     </div>
                                                     @if (p.Allergies != null) {<div class="mt-3"><span class="badge badge-light-danger fs-8 fw-bold text-wrap text-start"><i class="ki-outline ki-information-5 fs-7 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span></div>}
                                                     @{ var ic = (ViewBag.Ic as IReadOnlyDictionary<int, HospitalIcBadge>) is { } icAll && icAll.TryGetValue(p.AdmissionId, out var icOne) ? icOne : null; }
@@ -139,24 +141,40 @@
                                                         @if ((ViewBag.Fb as IReadOnlyDictionary<int, HospitalFluidBadge>) is { } fbAll && fbAll.TryGetValue(p.AdmissionId, out var fb)) {<button type="button" class="badge badge-light fs-8 fw-bold border-0" data-fluid="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-drop fs-8 text-primary me-1"></i>@T["Fluid balance"] <bdi dir="ltr" class="hp-num ms-1 @(fb.Balance < 0 ? "text-danger" : "text-primary")">@((fb.Balance > 0 ? "+" : fb.Balance < 0 ? "−" : "") + Math.Abs(fb.Balance).ToString("#,0", System.Globalization.CultureInfo.InvariantCulture))&nbsp;ml</bdi></button>}
                                                         @if ((ViewBag.Cp as IReadOnlyDictionary<int, HospitalCareBadge>) is { } cpAll && cpAll.TryGetValue(p.AdmissionId, out var cpb)) {<button type="button" class="badge @(cpb.ReviewDue > 0 || cpb.Suggested > 0 ? "badge-light-danger" : "badge-light-primary") fs-8 fw-bold border-0" data-careplan="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-notepad-edit fs-8 me-1"></i>@T["Care plan"] · <span class="hp-num">@cpb.ActivePlans</span>@if (cpb.ReviewDue > 0) {<text> · @T["Review due"]</text>}@if (cpb.Suggested > 0) {<text> · @T["Plan suggested"]</text>}</button>}
                                                     </div>
-                                                    @* the patient's actions — demo39 icon buttons, each named by its tooltip *@
+                                                    @* H270: the patient's actions, NAMED - the medication order as the one primary button, the rest in a
+                                                       menu of words (the owner: a row of seven bare icons was unreadable) *@
                                                     @if (canConsult || canAdmit)
                                                     {
                                                         <div class="d-flex flex-wrap gap-2 mt-3">
-                                                            @if (canConsult) {<button type="button" class="btn btn-sm btn-icon btn-light-primary" data-new-order="@p.AdmissionId" data-who="@who" title="@T["Medication order"]" data-bs-toggle="tooltip"><i class="ki-outline ki-capsule fs-3"></i></button>
-                                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-set-order="@p.AdmissionId" data-who="@who" title="@T["Order set"]" data-bs-toggle="tooltip"><i class="ki-outline ki-questionnaire-tablet fs-3"></i></button>
-                                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-diag-order="@p.AdmissionId" data-who="@who" title="@T["Tests & imaging"]" data-bs-toggle="tooltip"><i class="ki-outline ki-flask fs-3"></i></button>
-                                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-cr-new="@p.AdmissionId" data-who="@who" title="@T["Ask a specialty"]" data-bs-toggle="tooltip"><i class="ki-outline ki-messages fs-3"></i></button>}
-                                                            <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-fluid="@p.AdmissionId" data-who="@who" title="@T["Fluids"]" data-bs-toggle="tooltip"><i class="ki-outline ki-drop fs-3"></i></button>
-                                                            <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-careplan="@p.AdmissionId" data-who="@who" title="@T["Problems & care plan"]" data-bs-toggle="tooltip"><i class="ki-outline ki-notepad-edit fs-3"></i></button>
-                                                            <button type="button" class="btn btn-sm btn-icon btn-light-danger" data-ic="@p.AdmissionId" data-who="@who" title="@T["Infection control"]" data-bs-toggle="tooltip"><i class="ki-outline ki-shield-cross fs-3"></i></button>
+                                                            @if (canConsult) {<button type="button" class="btn btn-sm btn-primary" data-new-order="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-capsule fs-4"></i>@T["Medication order"]</button>}
+                                                            <div class="dropdown">
+                                                                <button type="button" class="btn btn-sm btn-light-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">@T["More"]</button>
+                                                                <ul class="dropdown-menu dropdown-menu-end py-2 min-w-200px">
+                                                                    @if (canConsult)
+                                                                    {
+                                                                        <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold" data-set-order="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-questionnaire-tablet fs-4 text-primary"></i>@T["Order set"]</button></li>
+                                                                        <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold" data-diag-order="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-flask fs-4 text-primary"></i>@T["Tests & imaging"]</button></li>
+                                                                        <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold" data-cr-new="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-messages fs-4 text-primary"></i>@T["Ask a specialty"]</button></li>
+                                                                        <li><hr class="dropdown-divider" /></li>
+                                                                    }
+                                                                    <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold" data-fluid="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-drop fs-4 text-primary"></i>@T["Fluids"]</button></li>
+                                                                    <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold" data-careplan="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-notepad-edit fs-4 text-primary"></i>@T["Problems & care plan"]</button></li>
+                                                                    <li><button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 fs-7 fw-semibold text-danger" data-ic="@p.AdmissionId" data-who="@who"><i class="ki-outline ki-shield-cross fs-4 text-danger"></i>@T["Infection control"]</button></li>
+                                                                </ul>
+                                                            </div>
                                                         </div>
+                                                    }
+                                                    @* H270: stopped orders leave the grid; they are one line away, not four rows of grey *@
+                                                    @if (gone.Count > 0)
+                                                    {
+                                                        <div class="mt-3"><a href="#stopped-@p.AdmissionId" class="fs-7 fw-semibold text-gray-600 text-hover-primary" data-bs-toggle="collapse" role="button"><i class="ki-outline ki-down fs-7 me-1"></i>@T["Stopped orders ({0})", gone.Count]</a>
+                                                            <div class="collapse" id="stopped-@p.AdmissionId"><div class="d-flex flex-column gap-1 mt-2">@foreach (var g in gone) {<span class="fs-8 text-gray-500 d-block text-truncate mw-225px" title="@g.Order.Drug · @g.Order.Dose"><bdi>@g.Order.Drug</bdi> · <bdi class="hp-num">@g.Order.Dose</bdi></span>}</div></div></div>
                                                     }
                                                 </td>
                                             }
                                             @if (line == null)
                                             {
-                                                <td colspan="@(b.Hours.Count + 3)"><span class="text-gray-500 fw-semibold fs-7"><i class="ki-outline ki-capsule fs-5 text-gray-400 me-1"></i>@T["No medication orders."]</span></td>
+                                                <td colspan="@(b.Hours.Count + 2)"><span class="text-gray-500 fw-semibold fs-7"><i class="ki-outline ki-capsule fs-5 text-gray-400 me-1"></i>@T["No medication orders."]</span></td>
                                             }
                                             else
                                             {
@@ -166,7 +184,16 @@
                                                         <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label @(o.Controlled ? "bg-light-danger" : "bg-light-primary")"><i class="ki-outline ki-capsule fs-3 @(o.Controlled ? "text-danger" : "text-primary")"></i></span></div>
                                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@o.Drug</bdi></span>
                                                             <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@o.Dose</bdi> · @T["route:" + o.Route] · @if (o.AsNeeded) {@T["As needed"]} else {<bdi class="hp-num" dir="ltr">@o.Hours</bdi>}</span>
-                                                            @if (o.Controlled || stopped) {<div class="d-flex flex-wrap gap-1 mt-1">@if (o.Controlled) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Controlled — two signatures"]</span>}@if (stopped) {<span class="badge badge-light fs-8 fw-bold">@T["Stopped"]</span>}</div>}
+                                                            @if (o.Controlled || stopped || o.ItemId == null) {<div class="d-flex flex-wrap gap-1 mt-1">@if (o.Controlled) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Controlled — two signatures"]</span>}@if (o.ItemId == null) {<span class="badge badge-light-info fs-8 fw-bold" title="@o.Note">@T["Outside the pharmacy's list"]</span>}@if (stopped) {<span class="badge badge-light fs-8 fw-bold">@T["Stopped"]</span>}</div>}
+                                                            @{ string? nextDose = null;
+                                                               if (!o.AsNeeded && !stopped)
+                                                               {
+                                                                   var up = line.Doses.FirstOrDefault(x => x.Entry == null && x.State == HospitalNursingRules.Upcoming);
+                                                                   var hrs = HospitalNursingRules.ParseHours(o.Hours);
+                                                                   if (up != null) nextDose = string.Format(T["Next dose today at {0}"].Value, up.Hour.ToString("00") + ":00");
+                                                                   else if (hrs is { Count: > 0 } && !line.Doses.Any(x => x.Entry == null)) nextDose = string.Format(T["Next dose tomorrow at {0}"].Value, hrs.Min().ToString("00") + ":00");
+                                                               } }
+                                                            @if (nextDose != null) {<span class="fs-8 fw-semibold text-primary mt-1"><i class="ki-outline ki-time fs-8 text-primary me-1"></i>@nextDose</span>}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -188,16 +215,23 @@
                                                         }
                                                     </td>
                                                 }
-                                                <td class="text-center">
+                                                <td class="text-end pe-4"><div class="d-flex align-items-center justify-content-end gap-2">
+                                                    @if (!o.AsNeeded && !stopped && canAdmit)
+                                                    {
+                                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                                            @if (line.AsNeededGiven.Any()) {<span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@line.AsNeededGiven.Count(x => x.Status == HospitalMarStatus.Given)×</span>}
+                                                            <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 text-nowrap" data-dose="@o.ID" data-due="" data-extra="1" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose"><i class="ki-outline ki-time fs-5"></i>@T["Dose now"]</button>
+                                                        </div>
+                                                    }
                                                     @if (o.AsNeeded)
                                                     {
-                                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                                        <div class="d-flex align-items-center justify-content-end gap-2">
                                                             <span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@line.AsNeededGiven.Count(x => x.Status == HospitalMarStatus.Given)×</span>
                                                             @if (canAdmit && !stopped) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7" data-dose="@o.ID" data-due="" data-controlled="@(o.Controlled ? "1" : "0")" data-what="@DisplayName.Of(p.Name, p.NameEn) — @o.Drug @o.Dose">@T["Give"]</button>}
                                                         </div>
                                                     }
-                                                </td>
-                                                <td class="text-end pe-4">@if (canConsult && !stopped) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-stop-order="@o.ID" data-what="@o.Drug @o.Dose" title="@T["Stop"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>}</td>
+                                                    @if (canConsult && !stopped) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-7 text-nowrap" data-stop-order="@o.ID" data-what="@o.Drug @o.Dose"><i class="ki-outline ki-cross-circle fs-5"></i>@T["Stop"]</button>}
+                                                </div></td>
                                             }
                                         </tr>
                                     }
@@ -288,7 +322,7 @@
             <div class="mt-2 d-none" data-d-override-wrap><label class="form-label required">@T["Why the scan cannot be made"]</label><input class="form-control form-control-solid" maxlength="300" data-d-override placeholder="@T["e.g. the wristband is torn — a new one is being printed"]" />
                 <div class="form-text text-danger">@T["A dose given without the scan counts against the ward's scanning."]</div></div>
         </div>
-        <div class="mb-4 d-none" data-d-reason-wrap><label class="form-label required">@T["Reason"]</label><input class="form-control form-control-solid" maxlength="300" data-d-reason placeholder="@T["e.g. BP 85/50, doctor informed"]" /></div>
+        <div class="mb-4 d-none" data-d-reason-wrap><label class="form-label required" data-d-reason-label>@T["Reason"]</label><input class="form-control form-control-solid" maxlength="300" data-d-reason placeholder="@T["e.g. BP 85/50, doctor informed"]" /></div>
         <div class="mb-2 d-none" data-d-witness-wrap><label class="form-label required">@T["Witness"]</label><select class="form-select form-select-solid" data-d-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
             <div class="form-text">@T["A controlled drug is given with a second signature."]</div></div>
     </div>
@@ -309,6 +343,11 @@
                         { <option value="i:@f.Id">@CrossBuy.BL.DisplayName.Of(f.Name, f.NameEn) · @f.Code</option> }
                     </select>
                     <input type="hidden" data-k="drug" /><input type="hidden" data-k="itemId" /></div>
+                <div class="col-12"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-o-outside /><label class="form-check-label fw-semibold">@T["A drug outside the pharmacy's list (the patient's own medicine)"]</label></div></div>
+                <div class="col-12 d-none" data-o-outside-wrap><div class="row g-4">
+                    <div class="col-md-6"><label class="form-label required">@T["Drug name and strength"]</label><input class="form-control form-control-solid" maxlength="200" data-o-outside-name /></div>
+                    <div class="col-md-6"><label class="form-label required">@T["Why it is outside the list"]</label><input class="form-control form-control-solid" maxlength="250" data-o-outside-reason placeholder="@T["e.g. the patient's own inhaler, brought from home"]" /></div>
+                </div></div>
                 <div class="col-md-4"><label class="form-label required">@T["Dose"]</label><input class="form-control form-control-solid hp-num" maxlength="60" data-k="dose" placeholder="1 g" /></div>
                 <div class="col-md-4"><label class="form-label required">@T["Route"]</label><select class="form-select form-select-solid" data-k="route">@foreach (var r in HospitalMedRoute.All) { <option value="@r">@T["route:" + r]</option> }</select></div>
                 <div class="col-md-8"><label class="form-label">@T["Hours"] <span class="text-muted fs-8">06,14,22</span></label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="60" data-k="hours" placeholder="06,14,22" /></div>
@@ -483,7 +522,10 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                 record: @Json.Serialize(T["Record \"{1}\" for {0}?"].Value), stop: @Json.Serialize(T["Stop the order {0}? Its future doses are no longer given."].Value),
-                done: @Json.Serialize(T["Mark \"{0}\" done?"].Value), order: @Json.Serialize(T["Write the order {0} for {1}?"].Value) };
+                done: @Json.Serialize(T["Mark \"{0}\" done?"].Value), order: @Json.Serialize(T["Write the order {0} for {1}?"].Value),
+                noMed: @Json.Serialize(T["No medicine of the pharmacy's list has this name — for one outside it, use the switch below"].Value),
+                pickMed: @Json.Serialize(T["Choose a medicine of the pharmacy's list"].Value), outsideNeeds: @Json.Serialize(T["A drug outside the pharmacy's list needs its name and reason"].Value),
+                extraWhy: @Json.Serialize(T["Why this dose is given outside its hours"].Value), reason: @Json.Serialize(T["Reason"].Value) };
             var root = @Json.Serialize(Url.Action("Nursing")), wardId = @(b?.Ward.Id ?? 0);
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
@@ -511,7 +553,9 @@
             if (wardSel && window.CB && CB.onSelectChange) CB.onSelectChange(wardSel, function () { document.getElementById('wardForm').submit(); });
 
             var dEl = document.getElementById('doseModal'), dose = null;
-            function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value; dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given'); dEl.querySelector('[data-d-scan-wrap]').classList.toggle('d-none', s !== 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
+            function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value, extra = !!(dose && dose.extra);
+                dEl.querySelector('[data-d-reason-label]').textContent = extra && s === 'Given' ? W.extraWhy : W.reason;
+                dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given' && !extra); dEl.querySelector('[data-d-scan-wrap]').classList.toggle('d-none', s !== 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
             // H205: Enter from the scanner moves from the wristband to the pack; "cannot be scanned" opens the reason
             dEl.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; if (e.target.hasAttribute('data-d-wrist')) { e.preventDefault(); look(); dEl.querySelector('[data-d-pack]').focus(); } else if (e.target.hasAttribute('data-d-pack')) { e.preventDefault(); look(); } });
             // H270: what was read, said under each box (the owner: Enter gave no sign); spaces around a scan are dropped
@@ -533,43 +577,32 @@
             // the hours box empties and locks while "as needed" is on, so the form cannot ask for what the rule refuses
             function prnHours() { var prn = oEl.querySelector('[data-k=asNeeded]').checked, h = oEl.querySelector('[data-k=hours]'); if (prn) h.value = ''; h.disabled = prn; }
             oEl.querySelector('[data-k=asNeeded]').addEventListener('change', prnHours);
-            // H270: the drug picker - a medicine of the pharmacy (sets its item) or a typed name; typed and left without Enter, kept
+            // H270: the drug picker - a medicine of the pharmacy's list only (its item links the pack scan); a drug outside the
+            // list is the explicit switch under it, with its name and its reason (the owner: words the search did not find
+            // must not become an order)
             (function () {
                 var sel = oEl.querySelector('[data-o-drug]'), drug = oEl.querySelector('[data-k=drug]'), item = oEl.querySelector('[data-k=itemId]');
+                var out = oEl.querySelector('[data-o-outside]'), wrap = oEl.querySelector('[data-o-outside-wrap]');
                 if (!sel || !window.jQuery || !jQuery.fn.select2) return;
                 var $s = jQuery(sel);
                 function norm(t) { return String(t || '').toLowerCase().replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\s+/g, ' ').trim(); }
-                function medicineFor(t) {
-                    var n = norm(t); if (n.length < 2) return null;
-                    var hits = [].filter.call(sel.options, function (o) {
-                        if (!/^i:/.test(o.value)) return false;
-                        var full = norm(o.text), name = full.replace(/\s·\s[^·]*$/, ''), code = (full.match(/·\s([^·]*)$/) || [])[1] || '';
-                        return n === full || n === name || (code !== '' && (n === code || n.slice(-(code.length + 2)) === '· ' + code));
-                    });
-                    return hits.length === 1 ? hits[0] : null;
-                }
-                $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dropdownParent: jQuery(oEl), dir: document.documentElement.dir || 'ltr' })
+                $s.select2({ width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dropdownParent: jQuery(oEl), dir: document.documentElement.dir || 'ltr',
+                        language: { noResults: function () { return W.noMed; } },
+                        // dashes and spaces as anyone types them ("-" finds "—")
+                        matcher: function (params, data) { var t = norm(params.term); if (!t) return data; return norm(data.text).indexOf(t) >= 0 ? data : null; } })
                   .on('change', function () { var v = $s.val() || '', o = sel.options[sel.selectedIndex];
-                      // typed words that name a medicine of the list (its whole line, its name or its code, dashes and spaces
-                      // as anyone types them) are that medicine, not a free-text drug - the owner's walk-through pasted a
-                      // name with "-" for "—" and got an order no pack scan could ever match
-                      // a tag select2 makes from the search keeps the bare words as its value (no "t:"), so every value that
-                      // is not a medicine of the list is read as typed words (the owner clicked the "MED-OMEP" tag line)
-                      if (v && !/^i:/.test(v)) { var hit = medicineFor(v.replace(/^t:/, '')); if (hit) { $s.val(hit.value).trigger('change'); return; } }
-                      if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = v.replace(/^t:/, ''); } })
-                  .on('select2:closing', function () {
-                      var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
-                      if (term.length < 2 || $s.val()) return;
-                      var same = medicineFor(term);
-                      var v = same ? same.value : 't:' + term;
-                      if (!same && ![].some.call(sel.options, function (o) { return o.value === v; })) sel.appendChild(new Option(term, v, false, false));
-                      setTimeout(function () { $s.val(v).trigger('change'); }, 0);
-                  });
+                      if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = ''; } });
+                out.addEventListener('change', function () {
+                    wrap.classList.toggle('d-none', !out.checked); $s.prop('disabled', out.checked);
+                    if (out.checked) { $s.val(null).trigger('change'); oEl.querySelector('[data-o-outside-name]').focus(); }
+                });
+                window.__orderReset = function () { out.checked = false; wrap.classList.add('d-none'); $s.prop('disabled', false).val(null).trigger('change');
+                    oEl.querySelector('[data-o-outside-name]').value = ''; oEl.querySelector('[data-o-outside-reason]').value = ''; };
             })();
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-dose],[data-stop-order],[data-new-order],[data-task-add],[data-handover-save]'); if (!t) return;
                 if (t.hasAttribute('data-dose')) {
-                    dose = { orderId: Number(t.getAttribute('data-dose')), dueAt: t.getAttribute('data-due') || null, controlled: t.getAttribute('data-controlled') === '1', what: t.getAttribute('data-what') };
+                    dose = { orderId: Number(t.getAttribute('data-dose')), dueAt: t.getAttribute('data-due') || null, controlled: t.getAttribute('data-controlled') === '1', what: t.getAttribute('data-what'), extra: t.getAttribute('data-extra') === '1' };
                     dEl.querySelector('[data-d-what]').textContent = dose.what;
                     dEl.querySelector('[name=d-status][value=Given]').checked = true; dEl.querySelector('[data-d-reason]').value = ''; $(dEl.querySelector('[data-d-witness]')).val(null).trigger('change');
                     ['[data-d-wrist]', '[data-d-pack]', '[data-d-override]'].forEach(function (k) { dEl.querySelector(k).value = ''; }); dEl.querySelector('[data-d-override-wrap]').classList.add('d-none'); note('wrist', null); note('pack', null);
@@ -583,7 +616,7 @@
                     orderFor = { admissionId: Number(t.getAttribute('data-new-order')), who: t.getAttribute('data-who') };
                     oEl.querySelector('[data-o-who]').textContent = orderFor.who;
                     oEl.querySelectorAll('[data-k]').forEach(function (i) { if (i.type === 'checkbox') i.checked = false; else if (i.tagName !== 'SELECT') i.value = ''; });
-                    if (window.jQuery) jQuery(oEl.querySelector('[data-o-drug]')).val(null).trigger('change.select2');
+                    if (window.__orderReset) window.__orderReset();
                     prnHours();
                     bootstrap.Modal.getOrCreateInstance(oEl).show(); return;
                 }
@@ -628,6 +661,11 @@
                 var btn = e.currentTarget, body = { admissionId: orderFor.admissionId };
                 oEl.querySelectorAll('[data-k]').forEach(function (i) { body[i.getAttribute('data-k')] = i.type === 'checkbox' ? i.checked : (i.value.trim() || null); });
                 body.itemId = body.itemId ? Number(body.itemId) : null;
+                if (oEl.querySelector('[data-o-outside]').checked) {
+                    var nm = oEl.querySelector('[data-o-outside-name]').value.trim(), why = oEl.querySelector('[data-o-outside-reason]').value.trim();
+                    if (!nm || !why) { toast('error', W.outsideNeeds); return; }
+                    body.drug = nm; body.itemId = null; body.note = why + (body.note ? ' · ' + body.note : '');
+                } else if (!body.itemId) { toast('error', W.pickMed); return; }
                 cbConfirm(W.order.replace('{0}', (body.drug || '') + ' ' + (body.dose || '')).replace('{1}', orderFor.who)).then(function (ok) { if (!ok) return; btn.disabled = true; placeOrder(body, btn); });
             });
         })();
