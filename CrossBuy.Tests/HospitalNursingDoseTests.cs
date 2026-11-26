@@ -42,6 +42,12 @@ namespace CrossBuy.Tests
 			Assert.Equal("An as-needed dose has no scheduled time",
 				(await svc.RecordAsync(Ctx(), new HospitalMarInput { OrderId = prn.Id!.Value, DueAt = now, Status = HospitalMarStatus.Given, ScanOverride = "x" }, 7, now)).Error);
 			Assert.Equal(2, await host.Db.Set<HospitalMarEntry>().CountAsync(m => m.DueAt == null && m.Status == HospitalMarStatus.Given));
+
+			// the discharge ends the stay's orders with it (the owner's walk-through found two active after the patient left)
+			var left = await new HospitalAdmissionService(host.Db, access).DischargeAsync(Ctx(), adm, 7, now.AddHours(1));
+			Assert.True(left.Ok, left.Error);
+			var orders = await host.Db.Set<HospitalMedOrder>().AsNoTracking().Where(o => o.AdmissionId == adm).ToListAsync();
+			Assert.All(orders, o => { Assert.Equal(HospitalMedOrderStatus.Stopped, o.Status); Assert.Equal(7, o.StoppedByEmployeeId); Assert.NotNull(o.StoppedAt); });
 		}
 	}
 }

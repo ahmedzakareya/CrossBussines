@@ -213,6 +213,10 @@ namespace CrossBuy.BL.Hospital
 				await SetBedAsync(ctx, stay.BedId, HospitalBedStatus.Cleaning, employeeId, ct);   // housekeeping turns it back to Vacant
 			}
 			admission.Status = HospitalAdmissionStatus.Discharged; admission.DischargedAt = now; admission.DischargedByEmployeeId = employeeId;
+			// H271: the stay's medication orders end with it (the owner's walk-through found two still active after the
+			// patient left: a ward chart, a dispensing queue and a dose alert would go on for a patient who is gone)
+			foreach (var o in await _db.Set<HospitalMedOrder>().Where(o => o.CompanyId == ctx.CompanyId && o.AdmissionId == admission.ID && o.Status == HospitalMedOrderStatus.Active).ToListAsync(ct))
+			{ o.Status = HospitalMedOrderStatus.Stopped; o.StoppedAt = now; o.StoppedByEmployeeId = employeeId; }
 			await _db.SaveChangesAsync(ct);
 			await tx.CommitAsync(ct);
 			return HospitalResult.Success(admission.ID);
