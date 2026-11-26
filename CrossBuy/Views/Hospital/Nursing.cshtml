@@ -556,7 +556,9 @@
                 done: @Json.Serialize(T["Mark \"{0}\" done?"].Value), order: @Json.Serialize(T["Write the order {0} for {1}?"].Value),
                 noMed: @Json.Serialize(T["No medicine of the pharmacy's list has this name — for one outside it, use the switch below"].Value),
                 pickMed: @Json.Serialize(T["Choose a medicine of the pharmacy's list"].Value), outsideNeeds: @Json.Serialize(T["A drug outside the pharmacy's list needs its name and reason"].Value),
-                extraWhy: @Json.Serialize(T["Why this dose is given outside its hours"].Value), reason: @Json.Serialize(T["Reason"].Value) };
+                extraWhy: @Json.Serialize(T["Why this dose is given outside its hours"].Value), extraEg: @Json.Serialize(T["e.g. first dose now, as the doctor ordered"].Value),
+                heldWhy: @Json.Serialize(T["Why the dose is held"].Value), heldEg: @Json.Serialize(T["e.g. BP 85/50, doctor informed"].Value),
+                missedWhy: @Json.Serialize(T["Why the dose was missed"].Value), missedEg: @Json.Serialize(T["e.g. the patient was off the ward for imaging"].Value) };
             var root = @Json.Serialize(Url.Action("Nursing")), wardId = @(b?.Ward.Id ?? 0);
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
@@ -585,7 +587,9 @@
 
             var dEl = document.getElementById('doseModal'), dose = null;
             function reasonShown() { var s = (dEl.querySelector('[name=d-status]:checked') || {}).value, extra = !!(dose && dose.extra);
-                dEl.querySelector('[data-d-reason-label]').textContent = extra && s === 'Given' ? W.extraWhy : W.reason;
+                // H271: the reason's words follow the answer (the generic "Reason" read "why refused" on every choice)
+                var why = s === 'Held' ? [W.heldWhy, W.heldEg] : s === 'Missed' ? [W.missedWhy, W.missedEg] : [W.extraWhy, W.extraEg];
+                dEl.querySelector('[data-d-reason-label]').textContent = why[0]; dEl.querySelector('[data-d-reason]').placeholder = why[1];
                 dEl.querySelector('[data-d-reason-wrap]').classList.toggle('d-none', s === 'Given' && !extra); dEl.querySelector('[data-d-scan-wrap]').classList.toggle('d-none', s !== 'Given'); dEl.querySelector('[data-d-witness-wrap]').classList.toggle('d-none', !(s === 'Given' && dose && dose.controlled)); }
             // H205: Enter from the scanner moves from the wristband to the pack; "cannot be scanned" opens the reason
             dEl.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; if (e.target.hasAttribute('data-d-wrist')) { e.preventDefault(); look(); dEl.querySelector('[data-d-pack]').focus(); } else if (e.target.hasAttribute('data-d-pack')) { e.preventDefault(); look(); } });
