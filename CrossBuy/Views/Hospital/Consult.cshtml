@@ -292,7 +292,7 @@
             var dx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Diagnoses.Select(d => new { code = d.Code, name = DisplayName.Of(d.Name, d.NameEn), primary = d.IsPrimary })));
             var rx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Prescription.Select(r => new { drug = r.Drug, itemId = r.ItemId, instructions = r.Instructions, instructionsEn = r.InstructionsEn, quantity = r.Quantity })));
             // H10: what the pharmacy stocks — the doctor picks from it, or types a drug the hospital does not stock.
-            var formulary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()).Select(f => new { id = f.Id, name = DisplayName.Of(f.Name, f.NameEn), code = f.Code, price = f.Price })));
+            var formulary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()).Select(f => { var shown = DisplayName.Of(f.Name, f.NameEn); var other = shown == f.Name ? f.NameEn : f.Name; return new { id = f.Id, name = shown, alt = other == shown ? "" : other, code = f.Code, price = f.Price }; })));
             var orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model.Orders ?? Array.Empty<HospitalEncounterOrder>()).Select(o => new { id = o.ServiceId, code = o.Code, name = DisplayName.Of(o.Name, o.NameEn), price = o.Price })));
             var money = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { dp = (ViewBag.Currency as HospitalCurrency)?.Decimals ?? 2, label = (ViewBag.Currency as HospitalCurrency)?.Label(DisplayName.IsArabic) ?? "" }));
             var W = {
@@ -374,7 +374,11 @@
                     var $s = jQuery(this);
                     $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dir: document.documentElement.dir || 'ltr',
                         templateResult: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null;
-                            return f ? jQuery('<span><span class="fw-semibold">' + esc(f.name) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-primary fs-9">' + esc(W.stocked) + '</span></span>') : o.text; },
+                            return f ? jQuery('<span class="d-flex flex-column"><span><span class="fw-semibold">' + esc(f.name) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-primary fs-9">' + esc(W.stocked) + '</span></span><span class="fs-8 text-muted">' + esc((f.alt ? f.alt + ' · ' : '') + f.code) + '</span></span>') : o.text; },
+                        // H271: Arabic or English finds the medicine, as its code does
+                        matcher: function (params, data) { var t = (params.term || '').trim().toLowerCase(); if (!t) return data;
+                            var f = /^i:/.test(data.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === data.id; })[0] : null;
+                            var hay = (f ? [f.name, f.alt, f.code].join(' ') : data.text || '').toLowerCase(); return hay.indexOf(t) >= 0 ? data : null; },
                         // the search matches the Arabic name, the English name and the code; the chosen line shows the reader's name
                         templateSelection: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null; return f ? f.name : o.text; } })
                       .on('change', function () {

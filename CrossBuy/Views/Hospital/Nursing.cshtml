@@ -340,7 +340,8 @@
                 <div class="col-12"><label class="form-label required">@T["Drug"]</label>
                     <select class="form-select form-select-solid" data-o-drug data-placeholder="@T["Drug name and strength"]"><option value=""></option>
                         @foreach (var f in ((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()))
-                        { <option value="i:@f.Id">@CrossBuy.BL.DisplayName.Of(f.Name, f.NameEn) · @f.Code</option> }
+                        { var shown = CrossBuy.BL.DisplayName.Of(f.Name, f.NameEn); var other = shown == f.Name ? f.NameEn : f.Name;
+                          <option value="i:@f.Id" data-alt="@(other == shown ? "" : other)" data-code="@f.Code">@shown · @f.Code</option> }
                     </select>
                     <input type="hidden" data-k="drug" /><input type="hidden" data-k="itemId" /></div>
                 <div class="col-12"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-o-outside /><label class="form-check-label fw-semibold">@T["A drug outside the pharmacy's list (the patient's own medicine)"]</label></div></div>
@@ -589,7 +590,14 @@
                 $s.select2({ width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dropdownParent: jQuery(oEl), dir: document.documentElement.dir || 'ltr',
                         language: { noResults: function () { return W.noMed; } },
                         // dashes and spaces as anyone types them ("-" finds "—")
-                        matcher: function (params, data) { var t = norm(params.term); if (!t) return data; return norm(data.text).indexOf(t) >= 0 ? data : null; } })
+                        // H271: Arabic or English finds the medicine (owner: a drug is searched in either language), and the
+                        // result shows both names with the code
+                        matcher: function (params, data) { var t = norm(params.term); if (!t) return data;
+                            var alt = data.element ? data.element.getAttribute('data-alt') || '' : ''; return norm(data.text + ' ' + alt).indexOf(t) >= 0 ? data : null; },
+                        templateResult: function (d) { if (!d.element || !/^i:/.test(d.id || '')) return d.text;
+                            var name = d.text.replace(/\s·\s[^·]*$/, ''), alt = d.element.getAttribute('data-alt') || '', code = d.element.getAttribute('data-code') || '';
+                            var $r = jQuery('<div class="d-flex flex-column"><span class="fw-semibold"></span><span class="fs-8 text-muted"></span></div>');
+                            $r.children().eq(0).text(name); $r.children().eq(1).text((alt ? alt + ' · ' : '') + code); return $r; } })
                   .on('change', function () { var v = $s.val() || '', o = sel.options[sel.selectedIndex];
                       if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = ''; } });
                 out.addEventListener('change', function () {
