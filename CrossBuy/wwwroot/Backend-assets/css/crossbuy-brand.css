@@ -213,6 +213,8 @@
 .tagify__tag__removeBtn{ opacity:.85; pointer-events:auto; z-index:2; }
 .tagify__tag__removeBtn:hover{ opacity:1; background:#3A5795; color:#fff; }
 .tagify__dropdown{ z-index:1056; }
+/* the list search's magnifier sat UNDER the solid tagify field on 86 screens (hidden, its padding left as a gap) - above it, click-through */
+.position-relative > .ki-magnifier.position-absolute{ z-index:3; pointer-events:none; }
 .tagify__dropdown .tagify__dropdown__item--active,
 .tagify__dropdown .tagify__dropdown__item:hover{ background:#E7F0FF; color:#1F2D4D; }
 /* a list toolbar's search (cbServerList makes it a tagify field): tags and the typing caret share ONE line, so the box
