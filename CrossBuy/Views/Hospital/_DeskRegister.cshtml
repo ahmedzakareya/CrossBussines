@@ -12,7 +12,7 @@
    H272: redesigned (the owner: the fields were small) - sections with their heads, the photo beside the names instead of
    a full-height column, every field at half or full width. *@
 @{
-    var countries = (List<(int Id, string Label)>)ViewBag.Countries; int? nat = ViewBag.DefaultNationality as int?;
+    var countries = (List<(int Id, string Label)>)ViewBag.Countries;   // H272: no nationality is chosen for the desk (the owner: "choose the nationality", then he picks)
     var today = (DateTime)ViewBag.Today;
     IHtmlContent Duo(string icon, string css)
     {
@@ -80,7 +80,7 @@
             @Head("pulse", T["Medical details"].Value, null)
             <div class="row g-6">
                 <div class="col-md-8"><label class="@Lbl">@T["Nationality"]</label>
-                    <select class="form-select form-select-solid" data-reg-f="nationalityId">@foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == nat)">@c.Label</option> }</select></div>
+                    <select class="form-select form-select-solid" data-reg-f="nationalityId" data-placeholder="@T["Choose the nationality"]"><option value="">@T["Choose the nationality"]</option>@foreach (var c in countries) { <option value="@c.Id">@c.Label</option> }</select></div>
                 <div class="col-md-4"><label class="@Lbl">@T["Blood group"]</label>
                     <select class="form-select form-select-solid" data-reg-f="bloodGroup"><option value="">—</option>@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
                 <div class="col-12">@await Html.PartialAsync("_AllergyPicker", (new List<CrossBuy.BL.Hospital.HospitalAllergyItem>(), true))</div>@* H270: the coded allergy list *@

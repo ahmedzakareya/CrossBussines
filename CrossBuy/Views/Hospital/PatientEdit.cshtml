@@ -5,7 +5,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     bool isNew = Model == null;
-    var p = Model ?? new HospitalPatient { NationalityId = ViewBag.DefaultNationality as int? };
+    var p = Model ?? new HospitalPatient();   // H272: a new patient has no nationality chosen for him
     var title = isNew ? T["Register a new patient"].Value : T["Edit patient file"].Value;
     ViewData["Title"] = title;
     var countries = (ViewBag.Countries as List<(int Id, string Label)>) ?? new();
@@ -50,8 +50,8 @@
                             <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Mobile"]</label><input name="phone" value="@p.Phone" class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-similar placeholder="+20 1xx xxx xxxx" /></div>
                             @* nationality and blood group share their own full row (owner) *@
                             <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Nationality"]</label>
-                                <select name="nationalityId" class="form-select form-select-solid" data-control="select2">
-                                    <option value="">—</option>
+                                <select name="nationalityId" class="form-select form-select-solid" data-control="select2" data-placeholder="@T["Choose the nationality"]">
+                                    <option value="">@T["Choose the nationality"]</option>
                                     @foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == p.NationalityId)">@c.Label</option> }
                                 </select>
                                 <div class="text-muted fs-8 mt-1">@T["From the system country table"]</div></div>
