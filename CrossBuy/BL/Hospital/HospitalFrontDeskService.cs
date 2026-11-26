@@ -312,6 +312,14 @@ namespace CrossBuy.BL.Hospital
 
 		/// A walk-in: the doctor's next free slot today, booked and arrived at once.
 		/// H140: the desk may pick the slot; a picked slot that is no longer free is refused rather than moved.
+		/// H271: a walk-in the desk does not type is a follow-up when the same doctor saw the patient in the last 30 days, a
+		/// new visit otherwise (the owner's walk-through: the day-after visit to the same doctor was booked as "new").
+		public const int FollowUpWindowDays = 30;
+		private async Task<string> WalkInTypeAsync(BusinessContext ctx, int patientId, int practitionerId, DateTime todayLocal, CancellationToken ct)
+			=> await _db.HospitalAppointments.AsNoTracking().AnyAsync(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId && a.PractitionerId == practitionerId
+				&& a.Status == CrossBuy.Models.Context.Hospital.HospitalAppointmentStatus.Done && a.AppointmentDate >= todayLocal.AddDays(-FollowUpWindowDays) && a.AppointmentDate < todayLocal, ct)
+				? HospitalVisitTypes.FollowUp : HospitalVisitTypes.New;
+
 		public async Task<HospitalResult> WalkInAsync(BusinessContext ctx, int patientId, int practitionerId, string? visitType, int? employeeId, DateTime nowUtc, DateTime nowLocal, CancellationToken ct = default, int? startMinute = null)
 		{
 			var free = await _portal.StaffFreeSlotsAsync(ctx, practitionerId, nowLocal.Date, nowLocal, ct);
@@ -319,7 +327,7 @@ namespace CrossBuy.BL.Hospital
 			var slot = startMinute is int chosen ? HospitalFrontDeskRules.ChosenSlot(free, nowMinute, chosen) : HospitalFrontDeskRules.WalkInSlot(free, nowMinute);
 			if (slot == null) return HospitalResult.Fail(startMinute != null ? "This slot is no longer free" : "This doctor has no free slot left today");
 			var booked = await _op.BookAsync(ctx, new HospitalBookingInput { PatientId = patientId, PractitionerId = practitionerId, Date = nowLocal.Date, StartMinute = slot.Value,
-				VisitType = HospitalVisitTypes.All.Contains(visitType ?? "") ? visitType! : HospitalVisitTypes.New, Note = HospitalFrontDeskRules.WalkInNote }, employeeId, nowLocal.Date, ct);
+				VisitType = HospitalVisitTypes.All.Contains(visitType ?? "") ? visitType! : await WalkInTypeAsync(ctx, patientId, practitionerId, nowLocal.Date, ct), Note = HospitalFrontDeskRules.WalkInNote }, employeeId, nowLocal.Date, ct);
 			if (!booked.Ok) return booked;
 			var arrived = await _op.MoveAsync(ctx, booked.Id!.Value, HospitalAppointmentStatus.Arrived, employeeId, nowUtc, ct);
 			return arrived.Ok ? HospitalResult.Success(booked.Id) : arrived;
