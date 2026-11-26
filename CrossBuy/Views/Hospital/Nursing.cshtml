@@ -553,7 +553,9 @@
                       // typed words that name a medicine of the list (its whole line, its name or its code, dashes and spaces
                       // as anyone types them) are that medicine, not a free-text drug - the owner's walk-through pasted a
                       // name with "-" for "—" and got an order no pack scan could ever match
-                      if (/^t:/.test(v)) { var hit = medicineFor(v.slice(2)); if (hit) { $s.val(hit.value).trigger('change'); return; } }
+                      // a tag select2 makes from the search keeps the bare words as its value (no "t:"), so every value that
+                      // is not a medicine of the list is read as typed words (the owner clicked the "MED-OMEP" tag line)
+                      if (v && !/^i:/.test(v)) { var hit = medicineFor(v.replace(/^t:/, '')); if (hit) { $s.val(hit.value).trigger('change'); return; } }
                       if (/^i:/.test(v)) { item.value = v.slice(2); drug.value = (o ? o.text : '').replace(/\s·\s[^·]*$/, ''); } else { item.value = ''; drug.value = v.replace(/^t:/, ''); } })
                   .on('select2:closing', function () {
                       var term = (jQuery('.select2-container--open .select2-search__field').val() || '').trim();
