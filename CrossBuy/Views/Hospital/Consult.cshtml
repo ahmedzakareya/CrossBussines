@@ -134,7 +134,7 @@
                         {
                             <div class="mb-4"><select class="form-select form-select-solid" data-no-select2 data-dx-picker data-placeholder="@T["Search code or description..."]"></select></div>
                         }
-                        <div data-dx-list></div>
+                        <div data-dx-list></div><div data-fe-at="dx"></div>
                     </div>
                 </div>
 
@@ -154,6 +154,7 @@
                             <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Service"]</th><th class="text-end">@T["Price"]</th><th>@T["Coverage"]</th><th class="w-50px pe-4 rounded-end"></th></tr></thead>
                             <tbody data-order-body></tbody>
                         </table></div>
+                        <div data-fe-at="orders"></div>
                     </div>
                 </div>
 
@@ -169,6 +170,7 @@
                             <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Drug"]</th><th>@T["Dose & duration"]</th><th class="w-100px">@T["Qty"]</th><th class="w-50px pe-4 rounded-end"></th></tr></thead>
                             <tbody data-rx-body></tbody>
                         </table></div>
+                        <div data-fe-at="rx"></div>
                     </div>
                 </div>
 
@@ -467,12 +469,42 @@
                 };
             }
             // H270: directions with no drug are a drug that was lost on the way — say so, never send the line away silently
+            // H271: a refusal is said UNDER the field it is about (the owner: validation is not a passing message) - the
+            // server sends its untranslated key; a refusal no field owns stays a toast
+            var FIELD = {
+                'Enter the chief complaint before signing': '[name=chiefComplaint]',
+                'Systolic pressure is 50 to 260': '[name=bpSystolic]', 'Diastolic pressure is 30 to 160': '[name=bpDiastolic]',
+                'Diastolic pressure must be below systolic': '[name=bpDiastolic]', 'Heart rate is 20 to 250': '[name=heartRate]',
+                'Temperature is 30 to 44 °C': '[name=temperatureC]', 'Oxygen saturation is 50 to 100': '[name=spO2]',
+                'Weight is 0.5 to 400 kg': '[name=weightKg]', 'Height is 30 to 250 cm': '[name=heightCm]',
+                'Follow-up is 1 to 730 days': '[name=followUpDays]',
+                'Add at least one diagnosis before signing': 'dx', 'Mark exactly one diagnosis as primary': 'dx',
+                'A diagnosis is listed twice': 'dx', 'Unknown diagnosis code: {0}': 'dx',
+                'A quantity is 1 to 10000': 'rx', 'rx-no-drug': 'rx', 'An order is not a service the doctor can order': 'orders'
+            };
+            function clearFieldErrors() {
+                document.querySelectorAll('[data-fe]').forEach(function (n) { n.remove(); });
+                document.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
+            }
+            function fieldError(key, msg) {
+                var where = FIELD[key]; if (!where) return false;
+                var el = /^[a-z]+$/.test(where) ? document.querySelector('[data-fe-at="' + where + '"]') : form.querySelector(where);
+                if (!el) return false;
+                var note = document.createElement('div'); note.className = 'invalid-feedback d-block fw-semibold'; note.setAttribute('data-fe', ''); note.textContent = msg;
+                if (el.matches('input, textarea, select')) { el.classList.add('is-invalid');
+                    var after = el.nextElementSibling && el.nextElementSibling.classList.contains('select2') ? el.nextElementSibling : el; after.insertAdjacentElement('afterend', note);
+                    el.addEventListener('input', function once() { el.classList.remove('is-invalid'); note.remove(); el.removeEventListener('input', once); }); }
+                else el.appendChild(note);
+                note.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                return true;
+            }
             function rxIncomplete() { return rx.some(function (r) { return !(r.drug || '').trim() && ((r.instructions || '').trim() || (r.instructionsEn || '').trim()); }); }
             function send(url, after) {
-                if (rxIncomplete()) { toast('error', W.rxNoDrug); return Promise.resolve(false); }
+                clearFieldErrors();
+                if (rxIncomplete()) { fieldError('rx-no-drug', W.rxNoDrug); return Promise.resolve(false); }
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(payload()) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-                    .then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); return false; } toast('success', W.saved); if (after) after(); return true; });
+                    .then(function (res) { if (!res.ok) { if (!fieldError(res.key, res.error || W.failed)) toast('error', res.error || W.failed); return false; } toast('success', W.saved); if (after) after(); return true; });
             }
             document.querySelectorAll('[data-save]').forEach(function (s) { s.addEventListener('click', function () { s.disabled = true; send(urls.save).then(function () { s.disabled = false; }); }); });
             document.querySelectorAll('[data-sign]').forEach(function (g) { g.addEventListener('click', function () {

@@ -58,7 +58,7 @@ namespace CrossBuy.Controllers
 			? Json(new { ok = true, id = r.Id })
 			: r.Error == "forbidden" ? StatusCode(StatusCodes.Status403Forbidden, new { ok = false, error = _sr["You do not have permission to perform this action"].Value })
 			: r.Error == "not_found" ? NotFound(new { ok = false, code = "not_found" })
-			: Json(new { ok = false, error = _t[r.Error!, r.Args ?? Array.Empty<object>()].Value });   // service refusals translate from the module's own resx
+			: Json(new { ok = false, error = _t[r.Error!, r.Args ?? Array.Empty<object>()].Value, key = r.Error });   // service refusals translate from the module's own resx; H271: the untranslated key lets a form put the message under the field it is about
 
 		private void Chrome() => ViewBag.SidebarMenu = MainMenu.Hospital();
 
