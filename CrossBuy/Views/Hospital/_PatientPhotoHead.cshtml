@@ -1,0 +1,35 @@
+@using Microsoft.AspNetCore.Html
+@model (string? Mrn, string? PhotoPath, string MrnNote)
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* HOSPITAL H272 — the patient's photo and file number, as the registration window and the file's edit page both draw it
+   (the owner: the photo on top, the same way in both): the theme's profile-photo pattern - a circle with its two actions
+   on its rim (from a file, the camera) - and the number beside it. js/hospital/hospital-patient-form.js (photo) works it;
+   a message about the photo shows in red under it (data-ph-msg), never as a toast. *@
+@{
+    var words = new
+    {
+        big = T["The photo must be an image of up to 5 MB"].Value,
+        camera = T["The camera could not be opened: allow it in the browser, or take the photo from a file."].Value,
+        cameraHttps = T["The camera needs a secure connection: open the system over https (an address starting with https://), or take the photo from a file."].Value,
+    };
+    bool has = !string.IsNullOrEmpty(Model.PhotoPath);
+}
+<div class="d-flex flex-wrap align-items-center gap-6 flex-grow-1" data-ph data-ph-words="@System.Text.Json.JsonSerializer.Serialize(words)">
+    <div class="position-relative flex-shrink-0">
+        <div class="position-relative w-100px h-100px rounded-circle overflow-hidden bg-light-primary border border-4 border-white shadow-sm d-flex align-items-center justify-content-center">
+            <span class="@(has ? "d-none" : "")" data-ph-empty><i class="ki-duotone ki-profile-circle fs-4tx text-primary"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i></span>
+            <video class="d-none position-absolute w-100 h-100" style="object-fit:cover" autoplay playsinline muted data-ph-video></video>
+            <img class="@(has ? "" : "d-none") position-absolute w-100 h-100" style="object-fit:cover" alt="" src="@(has ? Model.PhotoPath : null)" data-ph-shot />
+        </div>
+        <button type="button" class="btn btn-icon btn-circle btn-color-gray-700 btn-active-color-primary bg-body shadow w-35px h-35px position-absolute" style="bottom:-2px; inset-inline-end:-4px" data-ph-cam title="@T["Start the camera"]" data-bs-toggle="tooltip"><i class="ki-outline ki-faceid fs-3"></i></button>
+        <label class="btn btn-icon btn-circle btn-color-gray-700 btn-active-color-primary bg-body shadow w-35px h-35px position-absolute mb-0" style="top:-2px; inset-inline-end:-4px" title="@T["From a file"]" data-bs-toggle="tooltip"><i class="ki-outline ki-folder-up fs-3"></i><input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-ph-file /></label>
+    </div>
+    <div class="d-flex flex-column flex-grow-1 min-w-200px">
+        <span class="fs-7 fw-semibold text-gray-600">@T["Medical record number"]</span>
+        <span class="fs-2 fw-bold text-gray-900 hp-num">@Model.Mrn</span>
+        <span class="fs-8 text-gray-500 mt-1">@Model.MrnNote</span>
+        <span class="fs-8 text-gray-500">@T["Patient photo"] · @T["JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in."]</span>
+        <div class="invalid-feedback d-none fs-7 fw-semibold mt-1" data-ph-msg></div>
+        <div><button type="button" class="btn btn-sm btn-primary mt-3 d-none" data-ph-snap><i class="ki-outline ki-faceid fs-4"></i>@T["Capture"]</button></div>
+    </div>
+</div>

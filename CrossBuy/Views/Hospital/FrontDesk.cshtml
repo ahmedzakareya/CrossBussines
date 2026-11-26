@@ -367,6 +367,7 @@
 
 @section Scripts {
     <script src="~/js/hospital/hospital-allergy-picker.js" asp-append-version="true"></script>
+    <script src="~/js/hospital/hospital-patient-form.js" asp-append-version="true"></script>
     <script src="~/js/hospital/hospital-journey.js" asp-append-version="true"></script>
     <script>
         (function () {
@@ -612,13 +613,12 @@
             }
 
             // ---------------- H142: registering inside the desk ----------------
-            var shot = null, stream = null, dupHits = [], dupTimer = null;
-            function stopCam() { if (stream) { stream.getTracks().forEach(function (x) { x.stop(); }); stream = null; } }
+            // H272: the photo head is shared with the file's edit page (_PatientPhotoHead + HospPatientForm.photo)
+            var photoCtl = null, dupHits = [], dupTimer = null;
+            function stopCam() { if (photoCtl) photoCtl.stop(); }
             modalEl.addEventListener('hidden.bs.modal', stopCam);
             function reg() { return mBody.querySelector('[data-reg]'); }
             function field(k) { return reg().querySelector('[data-reg-f="' + k + '"]'); }
-            function showShot(blob) { shot = blob; var box = reg(), img = box.querySelector('[data-reg-shot]'); img.src = URL.createObjectURL(blob); img.classList.remove('d-none');
-                box.querySelector('[data-reg-video]').classList.add('d-none'); box.querySelector('[data-reg-empty]').classList.add('d-none'); }
             function dupCheck() {
                 clearTimeout(dupTimer); dupTimer = setTimeout(function () {
                     var p = new URLSearchParams(); ['nationalId', 'phone', 'name', 'nameEn'].forEach(function (k) { var v = field(k).value.trim(); if (v) p.set(k, v); });
@@ -636,14 +636,14 @@
                 }, 350);
             }
             function registerWindow(q) {
-                shot = null; dupHits = [];
+                photoCtl = null; dupHits = [];
                 windowOf(W3.register, U3.win + (q ? '?q=' + encodeURIComponent(q) : ''), 'mw-1000px');
                 var wait = setInterval(function () { var box = reg(); if (!box) return; clearInterval(wait);
                     var d = box.querySelector('[data-reg-date]');
                     if (d && window.flatpickr) flatpickr(d, { dateFormat: 'Y-m-d', maxDate: d.getAttribute('data-max'), disableMobile: true, static: true,
                         locale: @(isAr ? "true" : "false") && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default' });
                     box.querySelectorAll('[data-reg-dup]').forEach(function (el) { el.addEventListener('input', dupCheck); });
-                    box.querySelector('[data-reg-file]').addEventListener('change', function (ev) { var f = ev.target.files[0]; if (!f) return; if (f.size > 5 * 1024 * 1024) { toastr.error(W3.big); return; } stopCam(); showShot(f); });
+                    photoCtl = HospPatientForm.photo(box);
                     dupCheck();
                     if (window.hospAllergyPicker) hospAllergyPicker.init(box);   // H270: the coded allergy list
                     var first = box.querySelector('[data-reg-f="name"]'); if (first && !first.value) first.focus();
@@ -655,14 +655,15 @@
                     if (el.type === 'checkbox') body[k] = el.checked; else if (el.closest('[data-reg-full]') && el.closest('[data-reg-full]').classList.contains('d-none')) return; else body[k] = el.value.trim() || null; });
                 if (body.nationalityId) body.nationalityId = Number(body.nationalityId);
                 var go = function () {
-                    btn.disabled = true;
+                    btn.disabled = true; HospPatientForm.clear(reg());
                     post(U3.save, body).then(function (r) {
-                        if (!r.ok) { btn.disabled = false; toastr.error(r.error || W.failed); return; }
+                        if (!r.ok) { btn.disabled = false; if (!HospPatientForm.refusal(reg(), r)) toastr.error(r.error || W.failed); return; }   // H272: under the field
                         var id = r.id, done = function (photoOk) {
                             btn.disabled = false; stopCam(); toastr.success(W3.saved); if (photoOk === false) toastr.warning(W3.photoFail);
                             openCard(id, true); list.reload();
                             if (then === 'walkin') walkIn(id, null); else bootstrap.Modal.getOrCreateInstance(modalEl).hide();
                         };
+                        var shot = photoCtl && photoCtl.blob();
                         if (!shot) { done(); return; }
                         var fd = new FormData(); fd.append('photo', shot, 'photo.jpg');
                         fetch(U3.photo + id + '/Photo', { method: 'POST', headers: { 'RequestVerificationToken': token, 'X-Requested-With': 'XMLHttpRequest' }, body: fd })
@@ -678,25 +679,6 @@
                 if ((t = e.target.closest('[data-reg-mode]'))) { e.preventDefault(); var full = t.getAttribute('data-reg-mode') === 'full';
                     reg().querySelectorAll('[data-reg-mode]').forEach(function (a) { a.classList.toggle('active', a === t); }); reg().querySelector('[data-reg-full]').classList.toggle('d-none', !full); return; }
                 if ((t = e.target.closest('[data-reg-reader]'))) { var nid = field('nationalId'); nid.value = ''; nid.focus(); toastr.info(W3.reader); return; }
-                if ((t = e.target.closest('[data-reg-cam]'))) {
-                    var v = reg().querySelector('[data-reg-video]');
-                    // A browser offers the camera only on https (or localhost); over plain http mediaDevices is simply absent, and
-                    // "allow it in the browser" sent people hunting for a permission that does not exist there.
-                    if (!window.isSecureContext) { toastr.error(W3.cameraHttps); return; }
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toastr.error(W3.camera); return; }
-                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } }, audio: false }).then(function (s) {
-                        stream = s; v.srcObject = s; v.classList.remove('d-none'); reg().querySelector('[data-reg-shot]').classList.add('d-none'); reg().querySelector('[data-reg-empty]').classList.add('d-none');
-                        reg().querySelector('[data-reg-snap]').classList.remove('d-none');
-                    }).catch(function () { toastr.error(W3.camera); });
-                    return;
-                }
-                if ((t = e.target.closest('[data-reg-snap]'))) {
-                    var vid = reg().querySelector('[data-reg-video]'), w = vid.videoWidth, h = vid.videoHeight, side = Math.min(w, h); if (!side) return;
-                    var c = document.createElement('canvas'); c.width = c.height = Math.min(side, 640);
-                    c.getContext('2d').drawImage(vid, (w - side) / 2, (h - side) / 2, side, side, 0, 0, c.width, c.height);
-                    c.toBlob(function (b) { stopCam(); showShot(b); t.classList.add('d-none'); }, 'image/jpeg', 0.9);
-                    return;
-                }
                 if ((t = e.target.closest('[data-reg-use]'))) { e.preventDefault(); stopCam(); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); openCard(t.getAttribute('data-reg-use'), true); return; }
                 if ((t = e.target.closest('[data-reg-save]'))) { e.preventDefault(); saveRegistration(t, t.getAttribute('data-reg-save')); return; }
                 if ((t = e.target.closest('[data-desk-resched]'))) { e.preventDefault(); rescheduleWindow(t.getAttribute('data-desk-resched')); return; }

@@ -52,13 +52,14 @@
                 // H272: the states inside the section's dashed frame - asked and none, nothing yet, or the rows under their heads
                 if (nka.checked) { rowsEl.innerHTML = '<div class="d-flex align-items-center gap-3 fs-6 fw-semibold text-gray-700"><i class="ki-duotone ki-shield-tick fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>' + esc(W.nkaOn) + '</div>'; sync(); return; }
                 if (!items.length) { rowsEl.innerHTML = '<div class="d-flex align-items-center gap-3 mb-4 fs-7 text-gray-600"><i class="ki-duotone ki-information-5 fs-2 text-gray-500"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>' + esc(W.none) + '</div>'; sync(); return; }
-                var label = function (t) { return '<label class="fw-semibold fs-7 text-gray-600 mb-2 d-md-none">' + esc(t) + '</label>'; };
-                rowsEl.innerHTML = '<div class="row g-4 mb-2 d-none d-md-flex fw-semibold fs-7 text-gray-600"><div class="col-md-6">' + esc(W.allergen || '') + '</div><div class="col-md-3">' + esc(W.reaction) + '</div><div class="col">' + esc(W.severity) + '</div><div class="col-auto"><span class="d-inline-block w-40px"></span></div></div>' +
-                  items.map(function (i, n) {
-                    return '<div class="row g-4 align-items-start mb-4" data-ap-row="' + n + '">' +
-                        '<div class="col-md-6">' + label(W.allergen || '') + '<select class="form-select form-select-solid" data-ap-what data-placeholder="' + esc(W.choose) + '">' + allergenOptions(i) + '</select>' +
+                // H272: two lines per allergy - the allergy across, then its reaction, severity and removal - so a narrow form
+                // (the file's edit page) never cuts "متوسطة" to "متو"
+                var label = function (t) { return '<label class="fw-semibold fs-7 text-gray-600 mb-2">' + esc(t) + '</label>'; };
+                rowsEl.innerHTML = items.map(function (i, n) {
+                    return '<div class="row g-4 align-items-end pb-5 mb-5 border-bottom border-dashed border-gray-300" data-ap-row="' + n + '">' +
+                        '<div class="col-12">' + label(W.allergen || '') + '<select class="form-select form-select-solid" data-ap-what data-placeholder="' + esc(W.choose) + '">' + allergenOptions(i) + '</select>' +
                         (!i.code && i.text ? '<span class="badge badge-light-info fs-8 fw-bold mt-2">' + esc(W.notCoded) + '</span>' : '') + '</div>' +
-                        '<div class="col-md-3">' + label(W.reaction) + '<select class="form-select form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction) + '</select></div>' +
+                        '<div class="col">' + label(W.reaction) + '<select class="form-select form-select-solid" data-ap-reaction title="' + esc(W.reaction) + '" data-placeholder="' + esc(W.reaction) + '">' + options(W.reactions || [], i.reaction) + '</select></div>' +
                         '<div class="col">' + label(W.severity) + '<select class="form-select form-select-solid" data-ap-severity title="' + esc(W.severity) + '" data-placeholder="' + esc(W.severity) + '">' + options(W.severities || [], i.severity) + '</select></div>' +
                         '<div class="col-auto"><button type="button" class="btn btn-icon btn-light btn-active-light-danger w-40px h-40px" data-ap-remove="' + n + '" title="' + esc(W.remove) + '"><i class="ki-outline ki-trash fs-3"></i></button></div></div>';
                 }).join('');
