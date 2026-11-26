@@ -12,6 +12,9 @@
       day after today.
    4. The month is the theme's static name between the arrows, not the
       browser's drop-down list; the year is typed or stepped.
+   5. A select2 given a .modal as its dropdownParent is parented to the
+      modal's content (the .modal scrolls; the list opened far from its field).
+   6. The month's name opens the twelve months as a grid of theme buttons.
 
    Loaded right after plugins.bundle.js and before any layout enhancer runs
    (they run on DOMContentLoaded), so flatpickr.localize() is in place before
@@ -78,12 +81,73 @@
     //    drop-down list - the owner: «الشكل دا مروع في الكالندر».
     fp.defaultConfig.monthSelectorType = 'static';
 
+    // 5. H272: a select2 opened inside a modal. Screens hand it the .modal as its dropdownParent; the .modal is the element
+    //    that SCROLLS, and select2 places its list against the parent without that scroll - on a scrolled window the
+    //    list opened up to 490px away from its field (measured), and a click meant for it landed elsewhere and closed it.
+    //    The list is parented to the window's content instead: it scrolls with the field, so the list stays under it.
+    var $ = w.jQuery;
+    if ($ && $.fn && $.fn.select2 && !$.fn.select2.__cbModal) {
+        var original = $.fn.select2;
+        var steady = function (options) {
+            if (options && typeof options === 'object' && options.dropdownParent) {
+                var p = $(options.dropdownParent);
+                if (p.is('.modal')) {
+                    var content = p.find('.modal-content').first();
+                    if (content.length) options = $.extend({}, options, { dropdownParent: content });
+                }
+            }
+            var args = Array.prototype.slice.call(arguments); args[0] = options;
+            return original.apply(this, args);
+        };
+        $.extend(steady, original);   // select2's defaults and amd stay reachable
+        steady.__cbModal = true;
+        $.fn.select2 = steady;
+    }
+
+    // 6. H272: the month's name opens the twelve months as a grid inside the calendar (the owner: the months must show as
+    //    a list, not only by the arrows). Theme buttons; the open month is marked; a month outside min/max is disabled.
+    function addMonthGrid(inst) {
+        var cal = inst.calendarContainer;
+        if (!cal || inst.config.noCalendar || cal.__cbMonths) return;
+        var head = cal.querySelector('.flatpickr-current-month'), name = head && head.querySelector('.cur-month');
+        if (!name) return;
+        cal.__cbMonths = true;
+        var chev = d.createElement('i');
+        chev.className = 'ki-outline ki-down fs-8 ms-1';
+        name.parentNode.insertBefore(chev, name.nextSibling);
+        name.style.cursor = chev.style.cursor = 'pointer';
+        var panel = d.createElement('div');
+        panel.className = 'cb-fp-months d-none';
+        panel.style.cssText = 'position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--bs-body-bg,#fff);padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;border-radius:0 0 12px 12px;';
+        cal.appendChild(panel);
+        function bound(v) { return v ? (v instanceof Date ? v : inst.parseDate(v)) : null; }
+        function show() {
+            var max = bound(inst.config.maxDate), min = bound(inst.config.minDate), names = inst.l10n.months.longhand;
+            panel.style.top = (cal.querySelector('.flatpickr-months') || {}).offsetHeight + 'px';
+            panel.innerHTML = names.map(function (m, i) {
+                var first = new Date(inst.currentYear, i, 1), last = new Date(inst.currentYear, i + 1, 0);
+                var off = (max && first > max) || (min && last < min);
+                return '<button type="button" class="btn btn-sm ' + (i === inst.currentMonth ? 'btn-primary' : 'btn-light btn-active-light-primary') + ' px-2 py-3 fw-semibold" data-cb-month="' + i + '"' + (off ? ' disabled' : '') + '>' + m + '</button>';
+            }).join('');
+            panel.classList.remove('d-none');
+        }
+        function hide() { panel.classList.add('d-none'); }
+        [name, chev].forEach(function (el) { el.addEventListener('click', function (e) { e.stopPropagation(); panel.classList.contains('d-none') ? show() : hide(); }); });
+        panel.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-cb-month]'); if (!b || b.disabled) return;
+            e.stopPropagation(); inst.changeMonth(+b.getAttribute('data-cb-month'), false); hide();
+        });
+        inst.config.onClose.push(hide);
+        inst.config.onYearChange.push(function () { if (!panel.classList.contains('d-none')) show(); });
+    }
+
     var prev = fp.defaultConfig.onReady;
     var hooks = Array.isArray(prev) ? prev.slice() : (prev ? [prev] : []);
     hooks.push(function (_sel, _str, inst) {
         try {
             if (isBirth(inst.input) && !inst.config.maxDate) inst.set('maxDate', 'today');
             addIcon(inst);
+            addMonthGrid(inst);
         } catch (e) { }
     });
     fp.defaultConfig.onReady = hooks;
